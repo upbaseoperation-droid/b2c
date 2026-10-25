@@ -85,6 +85,7 @@ const PURPOSE_ICONS: Record<OperationalApiPurposeId, React.ComponentType<{ class
   KOC_HISTORY_EVALUATION: Users,
   KNOWLEDGE_QA: BookOpen,
   BRAND_MARKET_RESEARCH: Search,
+  TRAINING_EXAM_GENERATION: BookOpen,
 };
 
 const DEPT_SCOPE_LABELS: Record<SavedNamedApiKey['departmentScope'], string> = {

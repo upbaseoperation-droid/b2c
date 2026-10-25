@@ -38,6 +38,7 @@ import {
   MOCK_SAMPLE_SHIPMENTS
 } from '../../lib/mockData';
 import { REAL_B2C_69_STORES } from '../../lib/realB2cPlanData';
+import { filterScopedStores } from '../../lib/rbacScope';
 import { getVietnamDateTimeShort } from '../../lib/format';
 import { bookingDealCost } from '../../lib/planDealLink';
 import { KocProfileModal } from '../KocProfileModal';
@@ -878,8 +879,9 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const storePlanOverview = useMemo(() => {
     const shortStaff = selectedStaffName.split(' ').slice(-2).join(' ').toLowerCase();
     const lowerStaff = selectedStaffName.toLowerCase();
+    const scopedBaseStores = filterScopedStores(REAL_B2C_69_STORES, currentUser);
 
-    const matchedStores = REAL_B2C_69_STORES.filter(st => {
+    const matchedStores = scopedBaseStores.filter(st => {
       if (selectedBrandFilter !== 'ALL' && st.brandName.toLowerCase() !== selectedBrandFilter.toLowerCase()) {
         return false;
       }
@@ -925,7 +927,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       isOverbudget,
       isUnbudgetedSpend,
     };
-  }, [selectedBrandFilter, selectedDealPicFilter, selectedStaffName, dealFilterCounts]);
+  }, [selectedBrandFilter, selectedDealPicFilter, selectedStaffName, dealFilterCounts, currentUser]);
 
   // Gom nhóm Deal theo từng Gian hàng kèm đối soát Hạn mức Net & Tiến độ 5 bước
   const storePipelineGroups = useMemo(() => {

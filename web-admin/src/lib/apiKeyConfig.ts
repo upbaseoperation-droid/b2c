@@ -17,7 +17,8 @@ export type OperationalApiPurposeId =
   | 'KOC_MATCHING'
   | 'KOC_HISTORY_EVALUATION'
   | 'KNOWLEDGE_QA'
-  | 'BRAND_MARKET_RESEARCH';
+  | 'BRAND_MARKET_RESEARCH'
+  | 'TRAINING_EXAM_GENERATION';
 
 export interface ApiModelOption {
   id: string;
@@ -813,6 +814,24 @@ Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng
       sampleInputText:
         'Thương hiệu: Kutieskin (Chăm sóc da Mẹ & Bé)\nKhoảng giá: 85.000đ - 245.000đ | Sản phẩm chính: Kem mẩn ngứa hăm (95.000đ), Kem chàm sữa (215.000đ).\nĐối thủ: Bepanthen, Mustela, Cỏ Mềm.\nBình luận khách hàng: Sợ chứa corticoid (42%), Hỏi trẻ sơ sinh 1 tháng tuổi bôi mặt được không (31%).',
     },
+      TRAINING_EXAM_GENERATION: {
+      purposeId: 'TRAINING_EXAM_GENERATION',
+      title: '10. Khởi tạo khóa học & bộ đề sát hạch B2C',
+      departmentTag: 'Đào tạo & Nhân sự B2C',
+      usedInScreens: ['Trung tâm học tập & Khảo thí'],
+      description:
+        'Tạo khóa đào tạo thực chiến, bộ đề thi trắc nghiệm và câu hỏi tình huống thực tế cho nhân sự dựa trên 18 chuyên đề, 42 FAQ, 22 SLA và dữ liệu thật của 69 gian hàng B2C.',
+      primaryProvider: 'GOOGLE',
+      primaryModel: 'gemini-3.8-flash',
+      fallbackProvider: 'INTERNAL',
+      fallbackModel: 'upbase-local-engine',
+      temperature: 0.2,
+      maxTokens: 3000,
+      systemInstruction:
+        'Bạn là Chuyên gia Đào tạo & Khảo thí Nghiệp vụ Marketing B2C tại Upbase. Dựa trên 18 Chuyên đề quy trình chuẩn (SOP-PLAN-01, SOP-QC-01, SOP-LEGAL-01, POL-ORG-01), 22 mốc SLA cam kết, 9 bậc lương KL1-KL7, 42 FAQ, chính sách thuế (TNCN 10%, HKD 7%, VAT 8%/10%) và dữ liệu vận hành thực tế của 69 gian hàng B2C (Cathy Doll, ClubClio, Cindy Bloom, Rejuran, Cocoon, C10, L\'Occitane...), hãy tạo khóa học thực chiến và bộ câu hỏi sát hạch chính xác, gắn chặt tình huống số liệu thật, có đáp án đúng kèm trích dẫn điều khoản SOP rõ ràng.',
+      sampleInputText:
+        'Tạo bộ đề kiểm tra 5 câu tình huống cho Chuyên viên Booking phụ trách gian hàng Cathy Doll TikTok, tập trung vào đàm phán thù lao Net/Gross, kiểm tra điều kiện duyệt kịch bản và xử lý đơn vi phạm thời hạn lên video.',
+    },
   },
   updatedAt: '2026-10-20T12:00:00.000Z',
 };
@@ -921,6 +940,7 @@ export function loadApiWorkspaceConfig(): ApiWorkspaceConfigState {
         KOC_HISTORY_EVALUATION: mergeRoute('KOC_HISTORY_EVALUATION'),
         KNOWLEDGE_QA: mergeRoute('KNOWLEDGE_QA'),
         BRAND_MARKET_RESEARCH: mergeRoute('BRAND_MARKET_RESEARCH'),
+        TRAINING_EXAM_GENERATION: mergeRoute('TRAINING_EXAM_GENERATION'),
       },
       updatedAt: parsed.updatedAt || INITIAL_API_WORKSPACE_CONFIG.updatedAt,
     };
@@ -1286,6 +1306,7 @@ export function getAggregatedUsageMetrics(logs: ApiUsageLogItem[]) {
     KOC_HISTORY_EVALUATION: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
     KNOWLEDGE_QA: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
     BRAND_MARKET_RESEARCH: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
+    TRAINING_EXAM_GENERATION: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
   };
 
   for (const log of logs) {

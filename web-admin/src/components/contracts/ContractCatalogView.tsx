@@ -26,6 +26,7 @@ import {
   Modal,
   Panel,
   Segmented,
+  SearchInput,
   Select,
   Status,
   Textarea,
@@ -36,9 +37,26 @@ import { GROUP_ORDER, OFFICIAL_3STAGE_TEMPLATE_IDS, ROLE_LABEL, uniqueFields } f
 
 export const CATEGORY_LABELS: Record<ContractCategory, string> = {
   BOOKING_VIDEO: 'Hợp đồng Booking Video',
+  LIVESTREAM_APPENDIX: 'Phụ lục hợp đồng & SOW',
   ACCEPTANCE_SETTLEMENT: 'Nghiệm thu & Tất toán',
   CTV_FRAMEWORK: 'Hợp đồng nguyên tắc CTV',
-  LIVESTREAM_APPENDIX: 'Phụ lục & Livestream',
+};
+
+export function getTemplateCategory(t: { id: string; category?: ContractCategory; kind?: string }): ContractCategory {
+  if (t.category) return t.category;
+  if (t.id.endsWith('-SOW') || t.id.includes('-LIVE-')) return 'LIVESTREAM_APPENDIX';
+  if (t.id.startsWith('CTV-')) return 'CTV_FRAMEWORK';
+  if (t.kind === 'ACCEPTANCE') return 'ACCEPTANCE_SETTLEMENT';
+  return 'BOOKING_VIDEO';
+}
+
+export const COMPANION_TEMPLATES: Record<string, { id: string; label: string; role: 'SOW' | 'HDNT' }> = {
+  'IND-HDNT': { id: 'IND-SOW', label: 'Phụ lục SOW tương ứng (IND-SOW)', role: 'SOW' },
+  'HKD-HDNT': { id: 'HKD-SOW', label: 'Phụ lục SOW tương ứng (HKD-SOW)', role: 'SOW' },
+  'COM-HDNT': { id: 'COM-SOW', label: 'Phụ lục SOW tương ứng (COM-SOW)', role: 'SOW' },
+  'IND-SOW': { id: 'IND-HDNT', label: 'Hợp đồng nguyên tắc gốc (IND-HDNT)', role: 'HDNT' },
+  'HKD-SOW': { id: 'HKD-HDNT', label: 'Hợp đồng nguyên tắc gốc (HKD-HDNT)', role: 'HDNT' },
+  'COM-SOW': { id: 'COM-HDNT', label: 'Hợp đồng nguyên tắc gốc (COM-HDNT)', role: 'HDNT' },
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -150,7 +168,7 @@ export function ContractCatalogView({
     return activeCatalogTemplates.filter(t => {
       const scope = t.scope || 'GLOBAL';
       if (scopeFilter !== 'ALL' && scope !== scopeFilter) return false;
-      const cat = t.category || (t.id.startsWith('CTV-') ? 'CTV_FRAMEWORK' : t.kind === 'ACCEPTANCE' ? 'ACCEPTANCE_SETTLEMENT' : 'BOOKING_VIDEO');
+      const cat = getTemplateCategory(t);
       if (categoryFilter !== 'ALL' && cat !== categoryFilter) return false;
       if (!q) return true;
       return `${t.id} ${t.name} ${t.subject} ${t.version} ${t.filename} ${t.description || ''} ${t.kocName || ''} ${t.kocId || ''} ${t.legalNotes || ''}`.toLowerCase().includes(q);
@@ -189,16 +207,14 @@ export function ContractCatalogView({
   ], [data.templates]);
 
   const categoryChips = useMemo(() => {
-    const getCat = (t: LegalTemplate): ContractCategory =>
-      t.category || (t.id.startsWith('CTV-') ? 'CTV_FRAMEWORK' : t.kind === 'ACCEPTANCE' ? 'ACCEPTANCE_SETTLEMENT' : 'BOOKING_VIDEO');
     return [
       { key: 'ALL' as const, label: 'Tất cả danh mục', count: activeCatalogTemplates.length },
-      { key: 'BOOKING_VIDEO' as const, label: CATEGORY_LABELS.BOOKING_VIDEO, count: activeCatalogTemplates.filter(t => getCat(t) === 'BOOKING_VIDEO').length },
-      { key: 'ACCEPTANCE_SETTLEMENT' as const, label: CATEGORY_LABELS.ACCEPTANCE_SETTLEMENT, count: activeCatalogTemplates.filter(t => getCat(t) === 'ACCEPTANCE_SETTLEMENT').length },
-      { key: 'CTV_FRAMEWORK' as const, label: CATEGORY_LABELS.CTV_FRAMEWORK, count: activeCatalogTemplates.filter(t => getCat(t) === 'CTV_FRAMEWORK').length },
-
+      { key: 'BOOKING_VIDEO' as const, label: CATEGORY_LABELS.BOOKING_VIDEO, count: activeCatalogTemplates.filter(t => getTemplateCategory(t) === 'BOOKING_VIDEO').length },
+      { key: 'LIVESTREAM_APPENDIX' as const, label: CATEGORY_LABELS.LIVESTREAM_APPENDIX, count: activeCatalogTemplates.filter(t => getTemplateCategory(t) === 'LIVESTREAM_APPENDIX').length },
+      { key: 'ACCEPTANCE_SETTLEMENT' as const, label: CATEGORY_LABELS.ACCEPTANCE_SETTLEMENT, count: activeCatalogTemplates.filter(t => getTemplateCategory(t) === 'ACCEPTANCE_SETTLEMENT').length },
+      { key: 'CTV_FRAMEWORK' as const, label: CATEGORY_LABELS.CTV_FRAMEWORK, count: activeCatalogTemplates.filter(t => getTemplateCategory(t) === 'CTV_FRAMEWORK').length },
     ];
-  }, [data.templates]);
+  }, [activeCatalogTemplates]);
 
   const openEditMeta = (tpl: LegalTemplate) => {
     setEditName(tpl.name);
@@ -412,35 +428,34 @@ export function ContractCatalogView({
   return (
     <div className="space-y-4">
       <Panel flush>
-        <div className="p-3.5 border-b border-line flex flex-wrap items-center justify-between gap-3">
-          <div className="flex-1 min-w-0 w-full sm:min-w-[240px]">
-            <FilterBar
-              search={{
-                value: search,
-                onChange: setSearch,
-                placeholder: 'Tìm tên mẫu, mã (IND-HD, COM-HD...), đối tượng...',
-              }}
-              filters={
-                kocCustomCount > 0 ? (
-                  <Select
-                    value={scopeFilter}
-                    onChange={e => setScopeFilter(e.target.value as 'ALL' | 'GLOBAL' | 'KOC_CUSTOM')}
-                    className="w-auto min-w-[160px]"
-                    aria-label="Nguồn biểu mẫu"
-                  >
-                    {scopeChips.map(s => (
-                      <option key={s.key} value={s.key}>
-                        {s.label} ({s.count})
-                      </option>
-                    ))}
-                  </Select>
-                ) : undefined
-              }
-              chips={<Chips items={categoryChips.filter(c => c.key === 'ALL' || c.count > 0)} value={categoryFilter} onChange={setCategoryFilter} />}
-            />
+        {/* Hàng 1: Tìm kiếm, lọc nguồn & nút thao tác gọn gàng, không khoảng trắng thừa */}
+        <div className="p-2.5 px-3 border-b border-line flex flex-wrap items-center justify-between gap-2.5 bg-surface">
+          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Tìm mã mẫu (IND-SOW, HDNT...), tên văn bản..."
+                className="w-full text-xs"
+              />
+            </div>
+            {kocCustomCount > 0 && (
+              <Select
+                value={scopeFilter}
+                onChange={e => setScopeFilter(e.target.value as 'ALL' | 'GLOBAL' | 'KOC_CUSTOM')}
+                className="w-auto text-xs"
+                aria-label="Nguồn biểu mẫu"
+              >
+                {scopeChips.map(s => (
+                  <option key={s.key} value={s.key}>
+                    {s.label} ({s.count})
+                  </option>
+                ))}
+              </Select>
+            )}
           </div>
           {(canManageCatalog || canCreateContract) && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 shrink-0">
               <Button size="sm" variant="secondary" icon={Upload} onClick={() => openUploadModal('NEW', undefined, 'KOC_CUSTOM')}>
                 Tải mẫu KOC (.docx)
               </Button>
@@ -451,6 +466,11 @@ export function ContractCatalogView({
               )}
             </div>
           )}
+        </div>
+
+        {/* Hàng 2: Nhãn danh mục biểu mẫu (bao gồm Phụ lục hợp đồng & SOW) */}
+        <div className="px-3 py-1.5 border-b border-line bg-surface/50 overflow-x-auto flex items-center gap-1.5">
+          <Chips items={categoryChips.filter(c => c.key === 'ALL' || c.count > 0)} value={categoryFilter} onChange={setCategoryFilter} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[290px_minmax(0,1fr)] divide-y lg:divide-y-0 lg:divide-x divide-line">
@@ -576,6 +596,27 @@ export function ContractCatalogView({
                     )}
                   </div>
                 </div>
+
+                {COMPANION_TEMPLATES[loadedTemplate.id] && (
+                  <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-accent-soft/40 border border-accent/20 text-xs text-ink">
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-accent shrink-0" />
+                      <span>
+                        {COMPANION_TEMPLATES[loadedTemplate.id].role === 'SOW'
+                          ? 'Văn bản phụ lục đi kèm:'
+                          : 'Hợp đồng khung cơ sở:'}{' '}
+                        <strong>{COMPANION_TEMPLATES[loadedTemplate.id].label}</strong>
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedId(COMPANION_TEMPLATES[loadedTemplate.id].id)}
+                      className="text-2xs font-semibold text-accent hover:underline flex items-center gap-1 shrink-0"
+                    >
+                      Mở biểu mẫu này →
+                    </button>
+                  </div>
+                )}
 
                 {loadedTemplate.scope === 'KOC_CUSTOM' && loadedTemplate.legalNotes && (
                   <div className="rounded-lg border border-accent/30 bg-accent-soft/30 px-3 py-2 text-xs text-ink">

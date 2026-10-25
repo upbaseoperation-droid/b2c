@@ -421,7 +421,7 @@ export function ContractManagementView({
   const canCreate = data.actor.roles.some(r => ['CREATOR', 'LEAD'].includes(r));
 
   return (
-    <div className="space-y-6" onClickCapture={e => {
+    <div className="space-y-3.5" onClickCapture={e => {
       if (!browserDemoEnabled()) return;
       const link = (e.target as HTMLElement).closest('a');
       if (link?.getAttribute('href')?.startsWith('/api/contracts/')) { e.preventDefault(); downloadBrowserDemo(link.getAttribute('href')!).catch(error => onNotify?.(error.message, 'error')); }

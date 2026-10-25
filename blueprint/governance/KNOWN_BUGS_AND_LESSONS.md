@@ -1004,6 +1004,78 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 
 ---
 
+### BUG-054 — Các Thẻ KPI Và Bộ Lọc Trên Màn Hình Báo Cáo & Dashboard Của Nhân Viên Vẫn Hiển Thị Số Tổng Toàn Bộ 69 Gian Hàng B2C
+- **Ngày phát hiện:** 26/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/views/ExecutiveDashboardReportsView.tsx`, `web-admin/src/components/views/StorePipelineFunnelOverview.tsx`, `web-admin/src/components/views/WeeklyAirSyncDashboardSection.tsx`, `web-admin/src/components/views/PlanActualReportView.tsx`, `web-admin/src/components/views/BookingView.tsx`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. Tại `ExecutiveDashboardReportsView.tsx` (dòng 121–126) và `StorePipelineFunnelOverview.tsx` (dòng 92–95), hàm khởi tạo `stores` đặt điều kiện `if (storePortfolios && storePortfolios.length >= 69) return storePortfolios; return REAL_B2C_69_STORES;`. Khi nhân viên/chuyên viên (ví dụ `Hoàng Hải Long` phụ trách 6 gian hàng) đăng nhập, `page.tsx` truyền `storePortfolios={scopedStores}` có `< 69` phần tử nên bị bỏ qua và rơi về toàn bộ 69 gian hàng `REAL_B2C_69_STORES`.
+  2. Nhiều thẻ KPI, tiêu đề bảng và tùy chọn lọc (`Quy Mô 69 Gian Hàng B2C`, `69 / 69 Gian hàng`, `39 TikTok · 30 Shopee`, `786 Đơn Video`, `2,63 Tỷ VNĐ`, `TIKTOK_SELLER_ADS_SUMMARY`, `TIKTOK_SELLER_CAMPAIGNS`, `B2C_BOOKED_VIDEOS_OCT_2026`, `B2C_STAFF_ANALYTICS_LIST`, `B2C_STORE_WEEKLY_AIR_SYNC_LIST`) bị gắn cứng hằng số toàn công ty thay vì tính động theo tập `stores` đã phân quyền.
+- **Cách khắc phục:**
+  1. Loại bỏ điều kiện `>= 69` tại `ExecutiveDashboardReportsView.tsx` và `StorePipelineFunnelOverview.tsx`; sử dụng `filterScopedStores(storePortfolios, currentUser, brands)` từ `rbacScope.ts` để đảm bảo nhân viên/Leader chỉ nhìn thấy các gian hàng và nhãn hàng thuộc phạm vi phụ trách.
+  2. Tính động toàn bộ các chỉ số thẻ KPI (`kpiSummary`, `scopedSellerCampaigns`, `scopedSellerCreatives`, `scopedSellerAdsSummary`, `scopedBookedVideos`, `videoKpiSummary`, `sortedKlBreakdown`, `scopedFormatBreakdown`, `scopedVideoTypeBreakdown`, `governanceStats`, `enrichedStaffList`) và các nhãn đếm trên tab/dropdown theo đúng tập `stores` và `filteredStores` của người dùng.
+  3. Truyền `allowedStoreNames` xuống `WeeklyAirSyncDashboardSection` và `PlanActualReportView`, đồng thời áp dụng `filterScopedStores(REAL_B2C_69_STORES, currentUser)` cho `storePlanOverview` trong `BookingView.tsx`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đối soát toàn bộ 7 tab trong `ExecutiveDashboardReportsView` (`OVERVIEW_FINANCE`, `STORE_PIPELINE`, `PLAN_ACTUAL`, `STORE_SELLER`, `VIDEO_CREATIVE`, `TEAM_SLA`, `STAFF_EFFICIENCY`) và `BookingView` để đảm bảo tuân thủ `RULE-SYNC-01`.
+
+---
+
+
+### BUG-055 — Nâng Cấp Toàn Diện Hub Tri Thức Nghiệp Vụ Marketing B2C & Thống Nhất Trải Nghiệm Tra Cứu
+- **Ngày phát hiện:** 26/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/views/MarketingKnowledgeQaView.tsx`, `web-admin/src/lib/marketingKnowledgeDataset.ts`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. Màn hình Tri thức & Hỏi đáp trước đây chỉ có 1 khung chat đặt câu hỏi và danh sách câu hỏi dạng phẳng, thiếu cấu trúc của một Hub tri thức chuyên nghiệp, nhân sự khó tra cứu nhanh các mốc SLA, quy trình chuẩn SOP, khung lương hay kịch bản đàm phán KOC trong thực tế tác nghiệp hàng ngày.
+  2. Dữ liệu Lark Base nạp về cần được tổ chức thành các phân khu rõ ràng theo vai trò (Chuyên viên Booking, Sáng tạo Nội dung, Pháp chế & Kế toán, Quản lý) để nhân sự truy cập đúng tài liệu trong 1 chạm.
+- **Cách khắc phục:**
+  1. Nâng cấp `MarketingKnowledgeQaView.tsx` thành Hub Tri thức 5 Phân khu chuyên biệt:
+     - **Tổng quan Hub tri thức (`hub`):** 4 Bento Card định vị 4 trụ cột (18 Chuyên đề, 42 FAQ, 22 SLA, 15 Kịch bản), bộ lọc theo vai trò, bảng 4 SOP cốt lõi, công cụ tính nhanh thuế/lương và lịch các mốc cố định hàng tháng.
+     - **Kho tài liệu & Quy trình (`library`):** Bộ đọc chuyên sâu 2 cột với bảng chỉ số, công thức, bảng biểu và khối hành động trực tiếp.
+     - **Câu hỏi thường gặp & Kịch bản (`faqs`):** 42 Câu hỏi thường gặp và 15 Kịch bản đàm phán xử lý tình huống thực chiến có nút sao chép nhanh 1-chạm.
+     - **Bảng chuẩn SLA & Khung lương (`tables`):** Tra cứu nhanh 22 SLA khẩn cấp, 9 bậc lương KL1–KL7, 8 biểu mẫu pháp lý và công cụ quy đổi Gross/Net.
+     - **Hỏi đáp quy trình B2C (`qa`):** Khung hỏi đáp tương tác trực tiếp với 16 gợi ý câu hỏi theo vai trò, trích dẫn SOP và nhận diện thực thể.
+  2. Bổ sung **Thanh tìm kiếm tức thời toàn diện (Hero Search)** ở vị trí trên cùng, cho phép tìm kiếm đồng thời trên cả 4 miền dữ liệu và nhảy thẳng đến kết quả.
+  3. Tuân thủ tuyệt đối quy chuẩn `GEMINI.md`: Loại bỏ toàn bộ từ ngữ quảng cáo/AI buzzwords, cấm dòng phụ đề xám dưới tiêu đề, đảm bảo giao diện gọn gàng, trực quan và tốc độ cao.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đảm bảo toàn bộ các liên kết, bộ lọc và luồng tính toán tương thích 100% với hệ thống phân quyền RBAC và cấu hình API tập trung.
+
+---
+
+
+### BUG-056 — Nâng Cấp Hub Tri Thức Thành Trung Tâm Học Tập & Khảo Thí Nghiệp Vụ B2C Gắn Liền Dữ Liệu Nhãn Hàng
+- **Ngày phát hiện:** 26/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/views/MarketingAcademySection.tsx`, `web-admin/src/lib/marketingLearningEngine.ts`, `web-admin/src/components/views/MarketingKnowledgeQaView.tsx`, `web-admin/src/lib/apiKeyConfig.ts`, `web-admin/src/app/api/integrations/llm/route.ts`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. Người dùng yêu cầu mở rộng sổ câu hỏi và hub tri thức thành một Trung tâm học tập (Learning & Assessment Hub) thực thụ: không chỉ đọc và hỏi đáp thụ động mà nhân viên có thể tham gia các khóa học thực chiến theo lộ trình, làm bài thi sát hạch có tính điểm, và tự động khởi tạo các bộ đề/khóa học mới dựa trên dữ liệu thật của các nhãn hàng (Cathy Doll, ClubClio, Rejuran...).
+  2. Cần quản lý cấu hình mô hình cho tính năng này theo đúng `RULE-API-01` (tập trung tại Trung tâm cấu hình API, không lộ prompt trên giao diện người dùng) và `RULE-API-02` (chỉ gọi API khi bấm nút rõ ràng, có luồng xử lý dự phòng `INTERNAL` bám sát dữ liệu thật).
+- **Cách khắc phục:**
+  1. Xây dựng động cơ `marketingLearningEngine.ts` cung cấp 6 khóa học thực chiến chuẩn (`CRS-PLAN-01`, `CRS-QC-01`, `CRS-LEGAL-01`, `CRS-BRAND-CATHYDOLL`, `CRS-BRAND-CLUBCLIO`, `CRS-NEGOTIATE-01`) và 4 bộ đề sát hạch năng lực có câu hỏi trắc nghiệm & tình huống thực tế bám sát số liệu thật tháng 10/2026 (ngân sách, vi phạm từ cấm, tính thuế Net/Gross).
+  2. Phát triển phân hệ `MarketingAcademySection.tsx` tích hợp vào Hub với 3 phân khu: Khóa đào tạo, Ngân hàng đề thi sát hạch và Sổ theo dõi kết quả làm bài.
+  3. Xây dựng trình làm bài thi tương tác thời gian thực: chọn đáp án A/B/C/D, nộp bài chấm điểm ngay, hiển thị xếp loại Đạt chuẩn (ngưỡng 80%), giải thích cặn kẽ logic nghiệp vụ và trích dẫn ngược về điều khoản SOP tương ứng.
+  4. Đăng ký mục đích nghiệp vụ `TRAINING_EXAM_GENERATION` tại `apiKeyConfig.ts` và bổ sung luồng dự phòng nội bộ tại `/api/integrations/llm/route.ts`, hỗ trợ khởi tạo khóa học & đề thi theo yêu cầu của từng nhãn hàng mà không làm phát sinh lỗi khi máy chủ ngoài quá tải.
+  5. Tuân thủ tuyệt đối quy chuẩn giao diện `GEMINI.md`: dùng từ ngữ nghiệp vụ đời thực ("Khởi tạo khóa học", "Bộ đề sát hạch", "Đề thi nghiệp vụ"), loại bỏ hoàn toàn các từ quảng cáo/AI buzzword và cấm dòng phụ đề xám dưới tiêu đề.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đảm bảo toàn bộ các liên kết SOP, biểu mẫu hợp đồng và chính sách thuế trong các câu hỏi sát hạch khớp 100% với dữ liệu quy chuẩn tại `marketingKnowledgeBase.ts` và các hồ sơ nhãn hàng trong `realB2cBrandsData.ts`.
+
+---
+
+### BUG-057 — Bổ Sung Phụ Lục Hợp Đồng & SOW, Tối Ưu Khoảng Trắng Giao Diện Và Chuẩn Hóa Khung Xem Văn Bản Hợp Đồng Như Mở Trên Microsoft Word
+- **Ngày phát hiện:** 26/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/contracts/ContractCatalogView.tsx`, `web-admin/src/components/contracts/ContractDocumentViewer.tsx`, `web-admin/src/components/views/ContractManagementView.tsx`, `web-admin/src/lib/contracts/templates.ts`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. Thiếu nhãn phân loại Phụ lục SOW trên thanh lọc biểu mẫu chuẩn, khiến các biểu mẫu SOW (`IND-SOW`, `HKD-SOW`, `COM-SOW`) bị lẫn hoặc khó lọc riêng.
+  2. Thanh lọc `FilterBar` lồng nhiều khối tìm kiếm, bộ chọn và nhãn danh mục tạo ra các khoảng trống dọc (whitespace) quá lớn, đẩy nội dung tài liệu xuống thấp.
+  3. Khung hiển thị văn bản hợp đồng chưa mô phỏng trung thực giao diện trang in Microsoft Word (thiếu nền canvas màu ghi chuẩn Word, trang giấy bo góc tròn, thiếu gạch chân Quốc hiệu - Tiêu ngữ, định dạng bảng và chế độ hiển thị bản in).
+- **Cách khắc phục:**
+  1. Đăng ký nhãn `LIVESTREAM_APPENDIX` là `"Phụ lục hợp đồng & SOW"` trong `CATEGORY_LABELS` và `categoryChips`. Chuẩn hóa hàm `getTemplateCategory` nhận diện đúng các mẫu SOW. Thêm khối liên kết hai chiều tự động chuyển nhanh giữa HĐNT (`IND-HDNT`, `HKD-HDNT`, `COM-HDNT`) và Phụ lục SOW tương ứng (`IND-SOW`, `HKD-SOW`, `COM-SOW`).
+  2. Tái cấu trúc thanh công cụ quản lý biểu mẫu thành 2 hàng gọn gàng: Hàng 1 (Tìm kiếm nhanh + Lọc nguồn + Nút tải mẫu/thêm mẫu), Hàng 2 (Nhãn lọc danh mục), triệt tiêu hoàn toàn khoảng trắng chết. Giảm khoảng cách bao quanh trong `ContractManagementView.tsx`.
+  3. Nâng cấp toàn diện `ContractDocumentViewer.tsx` theo chuẩn Microsoft Word:
+     - Nền canvas làm việc màu ghi xám `#eaedf1` đặc trưng của Microsoft Word desktop.
+     - Khổ giấy chuẩn tỷ lệ A4 (`max-w-[816px]`, `min-h-[1056px]`), góc vuông sắc nét (`rounded-none`), đổ bóng drop shadow và đường viền trang giấy 1px thanh mảnh chuẩn Word.
+     - Tiêu chuẩn văn bản hành chính Việt Nam: Font chữ Times New Roman, cỡ chữ chuẩn, line-height 1.6, Quốc hiệu in hoa đậm, Tiêu ngữ có đường gạch chân đen dài 144px (`w-36 h-[1.5px] bg-black mx-auto mt-1 mb-5`), tiêu đề hợp đồng/phụ lục in hoa canh giữa.
+     - Đường chỉ tóc (hairline) ngăn cách vùng Đầu trang (Header) và Chân trang (Footer) theo chuẩn hiển thị Word.
+     - Bảng thông tin các bên không viền, căn lề 2 chấm (`:`) thẳng hàng; bảng dịch vụ có viền đen sắc nét, nền tiêu đề xám nhạt `#f2f2f2`; khối ký tên 2 cột cách đáy 72px chừa chỗ ký tay/đóng dấu.
+     - Nút chuyển chế độ xem: "Đang đánh dấu chỗ điền" (highlight bút dạ quang màu vàng `#fff7b2` chuẩn Word) và "Bản in Word chuẩn" (văn bản sạch để in/xuất PDF với dấu chấm chừa chỗ).
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã đối soát trên cả chế độ xem nhanh danh sách (`Xem HĐ`), chế độ xem mẫu catalog (`Văn bản A4`) và chế độ in trực tiếp (`handlePrint`), đảm bảo hiển thị đồng nhất. Kiểm tra biên dịch `tsc --noEmit` và `npm run build` thành công 100%.
+
+---
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

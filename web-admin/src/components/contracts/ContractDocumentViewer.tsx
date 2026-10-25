@@ -272,12 +272,12 @@ export function ContractDocumentViewer({
               ? `${fieldTitle} · Đổi từ "${prevVal || 'Trống'}" sang "${val}"`
               : `${fieldTitle}: ${val}${onSelectField ? ' (Bấm để sửa ô này)' : ''}`
           }
-          className={`field-mark inline rounded px-1 py-0.5 font-medium transition-colors ${
+          className={`field-mark inline px-1 py-0.5 font-medium text-black transition-colors ${
             changed
               ? 'bg-blue-100 text-blue-950 border-b-2 border-blue-600'
-              : 'bg-emerald-50/95 text-emerald-950 border-b-2 border-emerald-600/70'
-          } ${isSelected ? 'ring-2 ring-accent bg-amber-100/90' : ''} ${
-            onSelectField ? 'cursor-pointer hover:bg-emerald-100' : ''
+              : 'bg-[#fff2a8] border-b border-[#eab308]'
+          } ${isSelected ? 'ring-2 ring-accent bg-amber-200' : ''} ${
+            onSelectField ? 'cursor-pointer hover:bg-amber-100' : ''
           }`}
         >
           {val}
@@ -313,9 +313,9 @@ export function ContractDocumentViewer({
       if (!trimmed && !hasField) {
         return <div key={idx} className="h-2" />;
       }
-      const isMainTitle = /^(HỢP ĐỒNG|BIÊN BẢN NGHIỆM THU)/i.test(trimmed);
+      const isMainTitle = /^(HỢP ĐỒNG|BIÊN BẢN NGHIỆM THU|PHỤ LỤC|SOW|BẢNG KÊ NỘI DUNG)/i.test(trimmed);
       const isMotto = /^Độc lập\s*-\s*Tự do\s*-\s*Hạnh phúc/i.test(trimmed);
-      const isClause = /^ĐIỀU\s+\d+/i.test(trimmed);
+      const isClause = /^(ĐIỀU|Điều|MỤC|Mục|PHẦN|Phần)\s+\d+/i.test(trimmed);
       const alignClass =
         block.align === 'center'
           ? 'text-center'
@@ -326,20 +326,24 @@ export function ContractDocumentViewer({
               : 'text-left';
 
       return (
-        <p
-          key={idx}
-          className={`${alignClass} ${block.bold ? 'font-semibold' : ''} ${block.italic ? 'italic' : ''} ${
-            isMainTitle
-              ? 'text-[17px] uppercase tracking-wide mt-4 mb-1 text-[#111]'
-              : isClause
-                ? 'mt-3.5 mb-1 text-[14.5px] text-[#111]'
-                : 'my-1'
-          }`}
-        >
-          <span className={isMotto ? 'inline-block border-b border-[#222] pb-1 px-4' : undefined}>
-            {renderParagraphContent(block)}
-          </span>
-        </p>
+        <React.Fragment key={idx}>
+          <p
+            className={`${alignClass} ${block.bold ? 'font-bold' : ''} ${block.italic ? 'italic' : ''} ${
+              isMainTitle
+                ? 'text-[17px] sm:text-[18px] uppercase tracking-wide font-bold mt-4 mb-1 text-black'
+                : isClause
+                  ? 'mt-4 mb-1 text-[15px] font-bold text-black'
+                  : 'my-1 text-black'
+            }`}
+          >
+            <span className={isMotto ? 'inline-block font-semibold' : undefined}>
+              {renderParagraphContent(block)}
+            </span>
+          </p>
+          {isMotto && (
+            <div className="w-36 h-[1.5px] bg-black mx-auto mt-1 mb-5" />
+          )}
+        </React.Fragment>
       );
     }
 
@@ -535,26 +539,28 @@ export function ContractDocumentViewer({
       <div
         ref={inModal ? undefined : containerRef}
         style={inModal ? undefined : { maxHeight }}
-        className="overflow-auto bg-sunken/80 p-3 sm:p-6 rounded-b-xl"
+        className="overflow-auto bg-[#eaedf1] p-3 sm:p-5 lg:p-6 rounded-b-xl"
       >
         <div
           ref={inModal ? undefined : printRef}
           style={{
-            fontFamily: '"Times New Roman", Times, serif',
-            fontSize: `${Math.round(14.5 * (zoom / 100))}px`,
+            fontFamily: '"Times New Roman", Times, "Liberation Serif", serif',
+            fontSize: `${Math.round(14 * (zoom / 100))}px`,
             lineHeight: 1.6,
           }}
-          className="mx-auto w-full max-w-[810px] bg-white text-[#141413] shadow-[0_2px_14px_rgba(0,0,0,0.07)] border border-[#d8d5ce] rounded-sm px-6 py-8 sm:px-14 sm:py-11 selection:bg-amber-200/70"
+          className="mx-auto w-full max-w-[816px] min-h-[1056px] bg-white text-black shadow-[0_1px_3px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.08)] border border-[#d0d4d9] rounded-none px-6 py-8 sm:px-14 sm:py-12 selection:bg-[#fff2a8]"
         >
-          {/* Header biểu mẫu pháp chế */}
-          {headerBlocks.length > 0 && (
-            <div className="doc-header mb-5 pb-2 border-b border-[#e2dfd8] text-[12px] text-[#575653] flex items-center justify-between gap-2">
-              <span>Biểu mẫu Pháp chế Upbase</span>
-              <div className="text-right font-mono">
-                {headerBlocks.map((b, i) => renderBlock(b, `hdr-${i}`))}
-              </div>
+          {/* Header biểu mẫu chuẩn Microsoft Word */}
+          <div className="doc-header mb-6 pb-2 border-b border-[#d8d8d8] text-[11px] text-[#555] flex items-center justify-between gap-2">
+            <span className="font-sans font-medium uppercase tracking-wider text-[#666]">Phòng Pháp chế · Upbase B2C</span>
+            <div className="text-right font-mono text-[#333]">
+              {headerBlocks.length > 0 ? (
+                headerBlocks.map((b, i) => renderBlock(b, `hdr-${i}`))
+              ) : (
+                <span>{templateName || title || 'Hồ sơ pháp lý B2C'}</span>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Nội dung chính của hợp đồng */}
           {bodyBlocks.length > 0 ? (
@@ -570,14 +576,17 @@ export function ContractDocumentViewer({
             </div>
           )}
 
-          {/* Footer số hiệu & trang */}
-          {footerBlocks.length > 0 && (
-            <div className="doc-footer mt-8 pt-3 border-t border-[#e2dfd8] text-[12px] text-[#575653] flex flex-wrap items-center justify-between gap-2">
-              {footerBlocks.map((b, i) => (
+          {/* Footer biểu mẫu chuẩn Microsoft Word */}
+          <div className="doc-footer mt-10 pt-2 border-t border-[#d8d8d8] text-[11px] text-[#666] flex flex-wrap items-center justify-between gap-2">
+            {footerBlocks.length > 0 ? (
+              footerBlocks.map((b, i) => (
                 <div key={`ftr-${i}`}>{renderBlock(b, `ftr-${i}`)}</div>
-              ))}
-            </div>
-          )}
+              ))
+            ) : (
+              <span>Hệ thống Quản lý Hợp đồng B2C Upbase</span>
+            )}
+            <span className="font-mono">Trang 1 / 1</span>
+          </div>
         </div>
       </div>
     );
@@ -646,7 +655,7 @@ export function ContractDocumentViewer({
             title="Bật/tắt tô màu các vị trí điền dữ liệu trên mặt hợp đồng"
           >
             {highlight ? <Highlighter className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            {highlight ? 'Đang đánh dấu chỗ điền' : 'Bản in chuẩn'}
+            {highlight ? 'Đang đánh dấu chỗ điền' : 'Bản in Word chuẩn'}
           </button>
 
           {!compactToolbar && (

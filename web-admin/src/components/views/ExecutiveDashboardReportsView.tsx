@@ -46,6 +46,7 @@ import {
 } from '../../lib/types';
 import { formatNumber, formatVndShort } from '../../lib/format';
 import { REAL_B2C_69_STORES } from '../../lib/realB2cPlanData';
+import { filterScopedStores, isStaffGlobalAdminOrManager, isStaffLeader } from '../../lib/rbacScope';
 import {
   TIKTOK_SELLER_ADS_SUMMARY,
   TIKTOK_SELLER_CAMPAIGNS,
@@ -111,19 +112,32 @@ const KL_ORDER = ['TAP UpAffiliate', 'KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', '
 export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsViewProps> = ({
   currentUser,
   deals = [],
+  brands = [],
   kocs = [],
   storePortfolios,
   activeSidebarTab,
   onNotify,
   onNavigateToTab
 }) => {
-  // Nguồn 69 gian hàng B2C chuẩn (B2C phụ trách = 1)
+  const isGlobalViewer = useMemo(() => isStaffGlobalAdminOrManager(currentUser), [currentUser]);
+  const isLeaderViewer = useMemo(() => isStaffLeader(currentUser), [currentUser]);
+
+  // Nguồn gian hàng B2C chuẩn đã phân quyền theo phạm vi nhân sự đang đăng nhập
   const stores = useMemo<StorePortfolioItem[]>(() => {
-    if (storePortfolios && storePortfolios.length >= 69) {
-      return storePortfolios;
+    if (storePortfolios && storePortfolios.length > 0) {
+      return isGlobalViewer ? storePortfolios : filterScopedStores(storePortfolios, currentUser);
     }
-    return REAL_B2C_69_STORES;
-  }, [storePortfolios]);
+    return filterScopedStores(REAL_B2C_69_STORES, currentUser);
+  }, [storePortfolios, currentUser, isGlobalViewer]);
+
+  const totalTiktokStores = useMemo(
+    () => stores.filter((s) => s.platform === 'TikTok Shop').length,
+    [stores]
+  );
+  const totalShopeeStores = useMemo(
+    () => stores.filter((s) => s.platform !== 'TikTok Shop').length,
+    [stores]
+  );
 
   // State bộ lọc chung đồng bộ 2 chiều với Sidebar "Dashboard Quản Trị B2C" (đồng bộ trực tiếp trong render, 0ms lag)
   const [activeTab, setActiveTab] = useState<DashboardMainTab>(() => {
@@ -327,22 +341,50 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       else quadSlowBoth++;
     });
 
-    const totalBookedOrders = B2C_VIDEO_PIPELINE_BREAKDOWN.reduce((sum, st) => sum + st.count, 0) || 786;
-    const settledStages = B2C_VIDEO_PIPELINE_BREAKDOWN.filter(
-      (st) => st.pipeline === 'Done' || st.pipeline === 'Làm ĐNTT'
-    );
-    const settledOrdersCount = settledStages.reduce((sum, st) => sum + st.count, 0);
-    const settledOrdersCost = settledStages.reduce((sum, st) => sum + st.totalCost, 0);
-    const pendingStages = B2C_VIDEO_PIPELINE_BREAKDOWN.filter(
-      (st) => st.pipeline === 'Tạm ứng' || st.pipeline === 'Chưa làm ĐNTT'
-    );
-    const pendingOrdersCount = pendingStages.reduce((sum, st) => sum + st.count, 0);
-    const pendingOrdersCost = pendingStages.reduce((sum, st) => sum + st.totalCost, 0);
+    const filteredStoreNames = new Set(filteredStores.map((s) => s.storeName.toLowerCase()));
+    const filteredBrandNames = new Set(filteredStores.map((s) => s.brandName.toLowerCase()));
+    const isFullCompanyView = isGlobalViewer && filteredStores.length >= REAL_B2C_69_STORES.length;
+
+    let totalBookedOrders = 0;
+    let settledOrdersCount = 0;
+    let settledOrdersCost = 0;
+    let pendingOrdersCount = 0;
+    let pendingOrdersCost = 0;
+
+    if (isFullCompanyView) {
+      totalBookedOrders = B2C_VIDEO_PIPELINE_BREAKDOWN.reduce((sum, st) => sum + st.count, 0) || 786;
+      const settledStages = B2C_VIDEO_PIPELINE_BREAKDOWN.filter(
+        (st) => st.pipeline === 'Done' || st.pipeline === 'Làm ĐNTT'
+      );
+      settledOrdersCount = settledStages.reduce((sum, st) => sum + st.count, 0);
+      settledOrdersCost = settledStages.reduce((sum, st) => sum + st.totalCost, 0);
+      const pendingStages = B2C_VIDEO_PIPELINE_BREAKDOWN.filter(
+        (st) => st.pipeline === 'Tạm ứng' || st.pipeline === 'Chưa làm ĐNTT'
+      );
+      pendingOrdersCount = pendingStages.reduce((sum, st) => sum + st.count, 0);
+      pendingOrdersCost = pendingStages.reduce((sum, st) => sum + st.totalCost, 0);
+    } else {
+      const scopedVids = B2C_BOOKED_VIDEOS_OCT_2026.filter(
+        (v) =>
+          filteredStoreNames.has(v.storeName.toLowerCase()) ||
+          filteredBrandNames.has(v.brandName.toLowerCase())
+      );
+      totalBookedOrders = scopedVids.length;
+      for (const v of scopedVids) {
+        if (v.pipeline === 'Done' || v.pipeline === 'Làm ĐNTT') {
+          settledOrdersCount += 1;
+          settledOrdersCost += v.cost || 0;
+        } else if (v.pipeline === 'Tạm ứng' || v.pipeline === 'Chưa làm ĐNTT') {
+          pendingOrdersCount += 1;
+          pendingOrdersCost += v.cost || 0;
+        }
+      }
+    }
 
     const pacingNetPct = totalBudgetNet > 0 ? Math.round((totalActualSpentNet / totalBudgetNet) * 1000) / 10 : 0;
     const pacingGrossPct = totalBudgetGross > 0 ? Math.round((totalActualSpentNet / totalBudgetGross) * 1000) / 10 : 0;
     const airedVsPaidPct = totalTargetPaidVideos > 0 ? Math.round((totalActualAiredVideos / totalTargetPaidVideos) * 1000) / 10 : 0;
-    const airedVsBookedPct = Math.round((totalActualAiredVideos / totalBookedOrders) * 1000) / 10;
+    const airedVsBookedPct = totalBookedOrders > 0 ? Math.round((totalActualAiredVideos / totalBookedOrders) * 1000) / 10 : 0;
     const taxAndFeeDiff = Math.max(0, totalBudgetGross - totalBudgetNet);
 
     return {
@@ -384,7 +426,98 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       overbudgetCount,
       slowBurnCount
     };
+  }, [filteredStores, isGlobalViewer]);
+
+  // Phạm vi Quảng cáo TikTok Seller (PGM/LGM) theo tập gian hàng đang lọc
+  const scopedSellerCampaigns = useMemo(() => {
+    const storeNames = new Set(filteredStores.map((s) => s.storeName.toLowerCase()));
+    const brandNames = new Set(filteredStores.map((s) => s.brandName.toLowerCase()));
+    return TIKTOK_SELLER_CAMPAIGNS.filter((c) => {
+      const sName = c.storeName.toLowerCase();
+      if (storeNames.has(sName)) return true;
+      for (const b of brandNames) {
+        if (b && sName.includes(b)) return true;
+      }
+      return false;
+    });
   }, [filteredStores]);
+
+  const scopedSellerCreatives = useMemo(() => {
+    const storeNames = new Set(filteredStores.map((s) => s.storeName.toLowerCase()));
+    const brandNames = new Set(filteredStores.map((s) => s.brandName.toLowerCase()));
+    return TIKTOK_SELLER_TOP_CREATIVES.filter((c) => {
+      const sName = c.storeName.toLowerCase();
+      if (storeNames.has(sName)) return true;
+      for (const b of brandNames) {
+        if (b && sName.includes(b)) return true;
+      }
+      return false;
+    });
+  }, [filteredStores]);
+
+  const scopedSellerAdsSummary = useMemo(() => {
+    if (isGlobalViewer && filteredStores.length >= REAL_B2C_69_STORES.length) {
+      return {
+        ...TIKTOK_SELLER_ADS_SUMMARY,
+        avgCtr: 3.18,
+        avgCvr: 4.62,
+        avgHook2s: 34.8,
+        avgView6s: 16.4,
+      };
+    }
+    const totalSpend = scopedSellerCampaigns.reduce((acc, c) => acc + c.cost, 0);
+    const totalGmv = scopedSellerCampaigns.reduce((acc, c) => acc + c.gmv, 0);
+    const totalOrders = scopedSellerCampaigns.reduce((acc, c) => acc + c.orders, 0);
+    const totalImpressions = scopedSellerCampaigns.reduce((acc, c) => acc + c.impressions, 0);
+    const totalClicks = scopedSellerCampaigns.reduce((acc, c) => acc + c.clicks, 0);
+    const overallRoas = totalSpend > 0 ? Number((totalGmv / totalSpend).toFixed(2)) : 0;
+    const avgCtr =
+      scopedSellerCampaigns.length > 0
+        ? Number((scopedSellerCampaigns.reduce((acc, c) => acc + c.ctr, 0) / scopedSellerCampaigns.length).toFixed(2))
+        : 0;
+    const avgCvr =
+      scopedSellerCampaigns.length > 0
+        ? Number((scopedSellerCampaigns.reduce((acc, c) => acc + c.cvr, 0) / scopedSellerCampaigns.length).toFixed(2))
+        : 0;
+    const avgHook2s =
+      scopedSellerCreatives.length > 0
+        ? Number((scopedSellerCreatives.reduce((acc, c) => acc + c.hookRate2s, 0) / scopedSellerCreatives.length).toFixed(1))
+        : 0;
+    const avgView6s =
+      scopedSellerCreatives.length > 0
+        ? Number((scopedSellerCreatives.reduce((acc, c) => acc + c.viewRate6s, 0) / scopedSellerCreatives.length).toFixed(1))
+        : 0;
+    return {
+      totalCampaignRows: scopedSellerCampaigns.length,
+      totalCreativeRows: scopedSellerCreatives.length,
+      totalSpend,
+      totalGmv,
+      overallRoas,
+      totalOrders,
+      totalImpressions,
+      totalClicks,
+      avgCtr,
+      avgCvr,
+      avgHook2s,
+      avgView6s,
+    };
+  }, [isGlobalViewer, filteredStores.length, scopedSellerCampaigns, scopedSellerCreatives]);
+
+  const governanceStats = useMemo(() => {
+    const leaderStores = stores.filter((s) => s.hasBookingLeader);
+    const directStores = stores.filter((s) => !s.hasBookingLeader);
+    const calcBurn = (list: StorePortfolioItem[]) => {
+      const net = list.reduce((sum, s) => sum + (s.budgetNet || s.monthlyBudget || 0), 0);
+      const spent = list.reduce((sum, s) => sum + (s.actualSpentNet || 0), 0);
+      return net > 0 ? Math.round((spent / net) * 1000) / 10 : 0;
+    };
+    return {
+      leaderCount: leaderStores.length,
+      directCount: directStores.length,
+      leaderBurnPct: calcBurn(leaderStores),
+      directBurnPct: calcBurn(directStores),
+    };
+  }, [stores]);
 
   // Tổng hợp cấp Thương hiệu (Brand) cho biểu đồ Gross vs Net vs Thực chi & Số lượng Video Air
   const brandAggregation = useMemo(() => {
@@ -511,9 +644,25 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       });
   }, [stores]);
 
+  // Phạm vi Video Booking (File 3.2) theo gian hàng của người dùng
+  const scopedBookedVideos = useMemo(() => {
+    if (isGlobalViewer && stores.length >= REAL_B2C_69_STORES.length) {
+      return B2C_BOOKED_VIDEOS_OCT_2026;
+    }
+    const storeNames = new Set(stores.map((s) => s.storeName.toLowerCase()));
+    const brandNames = new Set(stores.map((s) => s.brandName.toLowerCase()));
+    const userLower = (currentUser?.name || '').toLowerCase();
+    return B2C_BOOKED_VIDEOS_OCT_2026.filter(
+      (v) =>
+        storeNames.has(v.storeName.toLowerCase()) ||
+        brandNames.has(v.brandName.toLowerCase()) ||
+        (userLower && v.pic.toLowerCase().includes(userLower))
+    );
+  }, [isGlobalViewer, stores, currentUser]);
+
   // Lọc danh sách Video Booking (File 3.2)
   const filteredBookedVideos = useMemo(() => {
-    return B2C_BOOKED_VIDEOS_OCT_2026.filter((v) => {
+    return scopedBookedVideos.filter((v) => {
       if (selectedBrand !== 'ALL' && v.brandName !== selectedBrand) return false;
       if (selectedPlatform !== 'ALL' && v.platform !== selectedPlatform) return false;
       if (videoFormatFilter !== 'ALL' && v.format !== videoFormatFilter) return false;
@@ -529,7 +678,51 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       }
       return true;
     });
-  }, [selectedBrand, selectedPlatform, videoFormatFilter, videoKlFilter, deferredVideoSearch]);
+  }, [scopedBookedVideos, selectedBrand, selectedPlatform, videoFormatFilter, videoKlFilter, deferredVideoSearch]);
+
+  const videoKpiSummary = useMemo(() => {
+    if (
+      isGlobalViewer &&
+      stores.length >= REAL_B2C_69_STORES.length &&
+      selectedBrand === 'ALL' &&
+      selectedPlatform === 'ALL' &&
+      videoFormatFilter === 'ALL' &&
+      videoKlFilter === 'ALL' &&
+      !deferredVideoSearch.trim()
+    ) {
+      return {
+        totalOrders: 786,
+        totalBudget: 2632749226,
+        pendingOrders: 40,
+        tierCount: 8,
+        focCount: 212,
+        paidCount: 574,
+      };
+    }
+    const totalOrders = filteredBookedVideos.length;
+    const totalBudget = filteredBookedVideos.reduce((sum, v) => sum + (v.cost || 0), 0);
+    const pendingOrders = filteredBookedVideos.filter((v) => !v.linkAir || v.pipeline === 'Chưa làm ĐNTT').length;
+    const tiers = new Set(filteredBookedVideos.map((v) => v.kl).filter(Boolean));
+    const focCount = filteredBookedVideos.filter((v) => v.kl === 'TAP UpAffiliate' || (v.cost || 0) === 0).length;
+    const paidCount = Math.max(0, totalOrders - focCount);
+    return {
+      totalOrders,
+      totalBudget,
+      pendingOrders,
+      tierCount: tiers.size,
+      focCount,
+      paidCount,
+    };
+  }, [
+    isGlobalViewer,
+    stores.length,
+    selectedBrand,
+    selectedPlatform,
+    videoFormatFilter,
+    videoKlFilter,
+    deferredVideoSearch,
+    filteredBookedVideos,
+  ]);
 
   // Tổng hợp Hiệu quả theo Chiều Sản phẩm & Combo (Đảm bảo tổng chi phí & GMV không bị nhân đôi)
   const productComboAnalytics = useMemo(() => {
@@ -598,14 +791,68 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
     };
   }, [filteredBookedVideos]);
 
-  // Sắp xếp bậc Khung lương (KL) chuẩn từ TAP 0đ -> KL1..KL7
+  // Sắp xếp bậc Khung lương (KL) chuẩn từ TAP 0đ -> KL1..KL7 theo phạm vi gian hàng
   const sortedKlBreakdown = useMemo(() => {
-    return [...B2C_VIDEO_KL_BREAKDOWN].sort((a, b) => {
+    if (isGlobalViewer && stores.length >= REAL_B2C_69_STORES.length && selectedBrand === 'ALL' && selectedPlatform === 'ALL') {
+      return [...B2C_VIDEO_KL_BREAKDOWN].sort((a, b) => {
+        const idxA = KL_ORDER.indexOf(a.kl);
+        const idxB = KL_ORDER.indexOf(b.kl);
+        return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+      });
+    }
+    const map = new Map<string, { kl: string; count: number; totalCost: number; airedCount: number }>();
+    for (const v of scopedBookedVideos) {
+      if (selectedBrand !== 'ALL' && v.brandName !== selectedBrand) continue;
+      if (selectedPlatform !== 'ALL' && v.platform !== selectedPlatform) continue;
+      const key = v.kl || 'KL1';
+      const cur = map.get(key) || { kl: key, count: 0, totalCost: 0, airedCount: 0 };
+      cur.count += 1;
+      cur.totalCost += v.cost || 0;
+      if (v.linkAir) cur.airedCount += 1;
+      map.set(key, cur);
+    }
+    return Array.from(map.values()).sort((a, b) => {
       const idxA = KL_ORDER.indexOf(a.kl);
       const idxB = KL_ORDER.indexOf(b.kl);
       return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
     });
-  }, []);
+  }, [isGlobalViewer, stores.length, scopedBookedVideos, selectedBrand, selectedPlatform]);
+
+  const scopedFormatBreakdown = useMemo(() => {
+    if (isGlobalViewer && stores.length >= REAL_B2C_69_STORES.length && selectedBrand === 'ALL' && selectedPlatform === 'ALL') {
+      return B2C_VIDEO_FORMAT_BREAKDOWN;
+    }
+    const map = new Map<string, { format: string; count: number; totalCost: number; airedCount: number }>();
+    for (const v of scopedBookedVideos) {
+      if (selectedBrand !== 'ALL' && v.brandName !== selectedBrand) continue;
+      if (selectedPlatform !== 'ALL' && v.platform !== selectedPlatform) continue;
+      const key = v.format || 'Review';
+      const cur = map.get(key) || { format: key, count: 0, totalCost: 0, airedCount: 0 };
+      cur.count += 1;
+      cur.totalCost += v.cost || 0;
+      if (v.linkAir) cur.airedCount += 1;
+      map.set(key, cur);
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [isGlobalViewer, stores.length, scopedBookedVideos, selectedBrand, selectedPlatform]);
+
+  const scopedVideoTypeBreakdown = useMemo(() => {
+    if (isGlobalViewer && stores.length >= REAL_B2C_69_STORES.length && selectedBrand === 'ALL' && selectedPlatform === 'ALL') {
+      return B2C_VIDEO_TYPE_BREAKDOWN;
+    }
+    const map = new Map<string, { videoType: string; count: number; totalCost: number; airedCount: number }>();
+    for (const v of scopedBookedVideos) {
+      if (selectedBrand !== 'ALL' && v.brandName !== selectedBrand) continue;
+      if (selectedPlatform !== 'ALL' && v.platform !== selectedPlatform) continue;
+      const key = v.videoType || 'Video Affiliate';
+      const cur = map.get(key) || { videoType: key, count: 0, totalCost: 0, airedCount: 0 };
+      cur.count += 1;
+      cur.totalCost += v.cost || 0;
+      if (v.linkAir) cur.airedCount += 1;
+      map.set(key, cur);
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [isGlobalViewer, stores.length, scopedBookedVideos, selectedBrand, selectedPlatform]);
 
   // Bóc tách toàn diện Hiệu suất (Sản lượng Video Air, % Spend) & Hiệu quả (GMV, ROAS, CIR, Đơn giá/Video, Điểm KPI) từng nhân viên
   const enrichedStaffList = useMemo(() => {
@@ -623,7 +870,18 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       sList.push(v);
     }
 
-    return B2C_STAFF_ANALYTICS_LIST.map((st) => {
+    const storeNamesSet = new Set(stores.map((s) => s.storeName.toLowerCase()));
+    const userLower = (currentUser?.name || '').toLowerCase();
+    const scopedStaffInput = isGlobalViewer
+      ? B2C_STAFF_ANALYTICS_LIST
+      : B2C_STAFF_ANALYTICS_LIST.filter((st) => {
+          if (userLower && st.name.toLowerCase().includes(userLower)) return true;
+          if (isLeaderViewer && st.storesList.some((sn) => storeNamesSet.has(sn.toLowerCase()))) return true;
+          return false;
+        });
+    const baseStaffRecords = scopedStaffInput.length > 0 ? scopedStaffInput : B2C_STAFF_ANALYTICS_LIST;
+
+    return baseStaffRecords.map((st) => {
       const staffStores =
         st.roleLevel === 'HEAD'
           ? stores
@@ -821,7 +1079,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         staffQuadrant
       };
     });
-  }, [stores]);
+  }, [stores, currentUser, isGlobalViewer, isLeaderViewer]);
 
   // Thống kê số lượng nhân sự theo 4 góc phần tư Hiệu suất & Hiệu quả
   const staffQuadrantCounts = useMemo(() => {
@@ -1249,9 +1507,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
     const purposeId = isStaffTab ? ('STAFF_REVIEW' as const) : ('PLAN_ADS_ANALYSIS' as const);
     const tabTitleMap: Record<DashboardMainTab, string> = {
       OVERVIEW_FINANCE: 'Dashboard B2C — Thương hiệu, Ngân sách & Đối soát Kế toán (Gross/Net)',
-      STORE_PIPELINE: 'Dashboard B2C — Tiến độ Phễu Vận Hành 69 Gian Hàng (0 → 18)',
+      STORE_PIPELINE: `Dashboard B2C — Tiến độ Phễu Vận Hành ${stores.length} Gian Hàng (0 → 18)`,
       PLAN_ACTUAL: 'Dashboard B2C — Kế hoạch tháng vs Thực tế theo gian hàng (KL, đợt, tuần)',
-      STORE_SELLER: 'Dashboard B2C — 69 Gian hàng & TikTok Seller',
+      STORE_SELLER: `Dashboard B2C — ${stores.length} Gian hàng & TikTok Seller`,
       VIDEO_CREATIVE: 'Dashboard B2C — Hiệu quả Video Booking (Paid/FOC) & Ads Creative',
       TEAM_SLA: 'Dashboard B2C — Lịch Air Tuần (W40–W45), Độ Đồng Loạt & Tiến Độ Video',
       STAFF_EFFICIENCY: `Dashboard B2C — Hiệu suất & Hiệu quả Nhân sự (${selectedFocusStaffName})`,
@@ -1267,8 +1525,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
     const contextLines = [
       `[DỮ LIỆU PHÂN HỆ: ${tabTitleMap[activeTab]}]`,
-      `- Phạm vi đang lọc: ${filteredStores.length} / 69 gian hàng B2C (B2C phụ trách = 1), thuộc ${allBrands.length} Thương hiệu.`,
-      `- Cơ cấu quản trị: 8 gian hàng có Trưởng nhóm (Nguyễn Thị Ngọc Tâm), 61 gian hàng trình trực tiếp Giám đốc Marketing B2C (Đặng Thị Yến Nhi).`,
+      `- Phạm vi đang lọc: ${filteredStores.length} / ${stores.length} gian hàng B2C (B2C phụ trách = 1), thuộc ${allBrands.length} Thương hiệu.`,
+      `- Cơ cấu quản trị: ${governanceStats.leaderCount} gian hàng có Trưởng nhóm (Nguyễn Thị Ngọc Tâm), ${governanceStats.directCount} gian hàng trình trực tiếp Giám đốc Marketing B2C (Đặng Thị Yến Nhi).`,
       `- Hạn mức Order Gross: ${formatVndShort(kpiSummary.totalBudgetGross)} | Hạn mức Order Net: ${formatVndShort(kpiSummary.totalBudgetNet)}.`,
       `- Thực tế duyệt chi lũy kế: ${formatVndShort(kpiSummary.totalActualSpentNet)} (Đạt ${kpiSummary.pacingNetPct}% trần Net).`,
       `- Sản lượng Video: Đã lên sóng ${kpiSummary.totalActualAiredVideos} video / Chỉ tiêu ${kpiSummary.totalTargetPaidVideos} Video Paid KOC + ${kpiSummary.totalTargetFocVideos} suất gửi mẫu miễn phí 0đ (FOC) + ${kpiSummary.totalTargetSelfVideos} video kênh Brand.`,
@@ -1282,7 +1540,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       moduleTitle: tabTitleMap[activeTab],
       contextDataText: contextLines.join('\n'),
     };
-  }, [activeTab, filteredStores.length, allBrands.length, kpiSummary, riskStores, selectedFocusStaffName]);
+  }, [activeTab, filteredStores.length, stores.length, governanceStats, allBrands.length, kpiSummary, riskStores, selectedFocusStaffName]);
 
   return (
     <div className="space-y-5 pb-12 text-ink">
@@ -1308,7 +1566,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       <Tabs<DashboardMainTab>
         items={[
           { key: 'OVERVIEW_FINANCE', label: 'Ngân sách & PnL' },
-          { key: 'STORE_PIPELINE', label: 'Tiến độ 69 gian hàng' },
+          { key: 'STORE_PIPELINE', label: `Tiến độ ${stores.length} gian hàng` },
           { key: 'PLAN_ACTUAL', label: 'Kế hoạch vs thực tế' },
           { key: 'STORE_SELLER', label: 'Gian hàng & Sàn' },
           { key: 'VIDEO_CREATIVE', label: 'Hiệu quả video' },
@@ -1320,7 +1578,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       />
 
       {/* ========================================================================= */}
-      {/* TAB TIẾN ĐỘ PHỄU 69 GIAN HÀNG (QUY TRÌNH 0 → 18)                           */}
+      {/* TAB TIẾN ĐỘ PHỄU GIAN HÀNG (QUY TRÌNH 0 → 18)                             */}
       {/* ========================================================================= */}
       {activeTab === 'STORE_PIPELINE' && (
         <StorePipelineFunnelOverview
@@ -1333,7 +1591,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         />
       )}
 
-      {activeTab === 'PLAN_ACTUAL' && <PlanActualReportView onNotify={onNotify} />}
+      {activeTab === 'PLAN_ACTUAL' && (
+        <PlanActualReportView
+          onNotify={onNotify}
+        />
+      )}
 
       {/* ========================================================================= */}
       {/* TAB 1: BÁO CÁO NGÂN SÁCH & PNL (THƯƠNG HIỆU, DÒNG TIỀN ĐNTT & KIỂM SOÁT)  */}
@@ -1369,9 +1631,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               onChange={(e) => setSelectedPlatform(e.target.value as typeof selectedPlatform)}
               className="w-auto"
             >
-              <option value="ALL">Tất cả sàn (69 gian)</option>
-              <option value="TikTok Shop">TikTok Shop (39 gian)</option>
-              <option value="Shopee Mall">Shopee Mall (30 gian)</option>
+              <option value="ALL">Tất cả sàn ({stores.length} gian)</option>
+              <option value="TikTok Shop">TikTok Shop ({totalTiktokStores} gian)</option>
+              <option value="Shopee Mall">Shopee Mall ({totalShopeeStores} gian)</option>
             </Select>
 
             <Select
@@ -1380,9 +1642,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               onChange={(e) => setSelectedGovernance(e.target.value as typeof selectedGovernance)}
               className="w-auto"
             >
-              <option value="ALL">Cơ cấu duyệt: tất cả</option>
-              <option value="WITH_LEADER">Có Leader Ngọc Tâm (8 gian)</option>
-              <option value="DIRECT_HEAD">Trình trực tiếp Yến Nhi (61 gian)</option>
+              <option value="ALL">Cơ cấu duyệt: tất cả ({stores.length} gian)</option>
+              <option value="WITH_LEADER">Có Leader Ngọc Tâm ({governanceStats.leaderCount} gian)</option>
+              <option value="DIRECT_HEAD">Trình trực tiếp Yến Nhi ({governanceStats.directCount} gian)</option>
             </Select>
 
             <Select
@@ -1934,7 +2196,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     handleSelectDashboardSection('STORE_SELLER');
                   }}
                 >
-                  Mở tab 69 Gian hàng
+                  Mở tab Gian hàng &amp; Sàn
                 </Button>
               </div>
 
@@ -2012,14 +2274,14 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
             <div className="bg-surface rounded-xl border border-line p-4">
               <div className="flex items-center justify-between text-xs text-ink-3 font-medium mb-1">
-                <span>Quy Mô 69 Gian Hàng B2C</span>
+                <span>Quy Mô {stores.length} Gian Hàng B2C</span>
                 <Store className="w-4 h-4 text-accent" />
               </div>
               <div className="text-xl font-semibold text-ink font-mono">
-                {filteredStores.length} / 69 Gian hàng
+                {filteredStores.length} / {stores.length} Gian hàng
               </div>
               <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
-                <span className="text-ink-3">39 TikTok · 30 Shopee</span>
+                <span className="text-ink-3">{kpiSummary.tiktokCount} TikTok · {kpiSummary.shopeeCount} Shopee</span>
                 <span className="font-semibold text-ink font-mono">
                   Target NMV: {formatVndShort(kpiSummary.totalTargetGmv)}
                 </span>
@@ -2073,25 +2335,25 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-xl font-semibold text-ink font-mono">
-                  {formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalGmv)}
+                  {formatVndShort(scopedSellerAdsSummary.totalGmv)}
                 </span>
                 <span className="text-xs font-semibold text-positive px-1.5 py-0.5 rounded bg-positive-soft font-mono">
-                  ROAS {TIKTOK_SELLER_ADS_SUMMARY.overallRoas}x
+                  ROAS {scopedSellerAdsSummary.overallRoas}x
                 </span>
               </div>
               <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
-                <span className="text-ink-3">Chi Ads: {formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalSpend)}</span>
-                <span className="font-semibold text-ink">{TIKTOK_SELLER_ADS_SUMMARY.totalOrders} đơn hàng</span>
+                <span className="text-ink-3">Chi Ads: {formatVndShort(scopedSellerAdsSummary.totalSpend)}</span>
+                <span className="font-semibold text-ink">{scopedSellerAdsSummary.totalOrders} đơn hàng</span>
               </div>
             </div>
           </div>
 
-          {/* THANH LỌC NHANH TƯƠNG QUAN KÉP: % SPEND CHI PHÍ vs SỐ LƯỢNG VIDEO AIR TRÊN 69 GIAN HÀNG */}
+          {/* THANH LỌC NHANH TƯƠNG QUAN KÉP: % SPEND CHI PHÍ vs SỐ LƯỢNG VIDEO AIR */}
           <div className="bg-surface rounded-xl border border-line p-3.5 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-xs font-semibold text-ink">
                 <Filter className="w-4 h-4 text-accent" />
-                <span>Phân nhóm 69 gian hàng theo tương quan % Spend Chi Phí &amp; Số lượng Video Air:</span>
+                <span>Phân nhóm {stores.length} gian hàng theo tương quan % Spend Chi Phí &amp; Số lượng Video Air:</span>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 {[
@@ -2171,9 +2433,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 onChange={(e) => setSelectedPlatform(e.target.value as typeof selectedPlatform)}
                 className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
               >
-                <option value="ALL">Tất cả Sàn (39 TikTok · 30 Shopee)</option>
-                <option value="TikTok Shop">TikTok Shop (39 gian hàng)</option>
-                <option value="Shopee Mall">Shopee Mall (30 gian hàng)</option>
+                <option value="ALL">Tất cả Sàn ({totalTiktokStores} TikTok · {totalShopeeStores} Shopee)</option>
+                <option value="TikTok Shop">TikTok Shop ({totalTiktokStores} gian hàng)</option>
+                <option value="Shopee Mall">Shopee Mall ({totalShopeeStores} gian hàng)</option>
               </select>
 
               <select
@@ -2181,9 +2443,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 onChange={(e) => setSelectedGovernance(e.target.value as typeof selectedGovernance)}
                 className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
               >
-                <option value="ALL">Cơ cấu duyệt: Tất cả 69 gian hàng</option>
-                <option value="WITH_LEADER">Nhóm có Leader Nguyễn Thị Ngọc Tâm (8 gian)</option>
-                <option value="DIRECT_HEAD">Không có Leader — Trình trực tiếp Yến Nhi (61 gian)</option>
+                <option value="ALL">Cơ cấu duyệt: Tất cả {stores.length} gian hàng</option>
+                <option value="WITH_LEADER">Nhóm có Leader Nguyễn Thị Ngọc Tâm ({governanceStats.leaderCount} gian)</option>
+                <option value="DIRECT_HEAD">Không có Leader — Trình trực tiếp Yến Nhi ({governanceStats.directCount} gian)</option>
               </select>
 
               <select
@@ -2215,20 +2477,25 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 </div>
               <div className="flex items-center gap-4 text-xs font-mono">
                 <div className="bg-canvas px-3 py-1.5 rounded-lg border border-line">
-                  Chi phí Ads: <strong className="text-ink">{formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalSpend)}</strong>
+                  Chi phí Ads: <strong className="text-ink">{formatVndShort(scopedSellerAdsSummary.totalSpend)}</strong>
                 </div>
                 <div className="bg-accent-soft px-3 py-1.5 rounded-lg border border-accent/20">
-                  Doanh thu GMV Ads: <strong className="text-accent">{formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalGmv)}</strong>
+                  Doanh thu GMV Ads: <strong className="text-accent">{formatVndShort(scopedSellerAdsSummary.totalGmv)}</strong>
                 </div>
                 <div className="bg-positive-soft px-3 py-1.5 rounded-lg border border-positive/20">
-                  ROAS TB: <strong className="text-positive">{TIKTOK_SELLER_ADS_SUMMARY.overallRoas}x</strong> ({TIKTOK_SELLER_ADS_SUMMARY.totalOrders} đơn)
+                  ROAS TB: <strong className="text-positive">{scopedSellerAdsSummary.overallRoas}x</strong> ({scopedSellerAdsSummary.totalOrders} đơn)
                 </div>
               </div>
             </div>
 
+            {scopedSellerCampaigns.length === 0 ? (
+              <div className="p-6 text-center text-xs text-ink-3 bg-canvas rounded-xl border border-line">
+                Chưa có chiến dịch PGM/LGM chạy trên các gian hàng trong phạm vi đang lọc.
+              </div>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              {TIKTOK_SELLER_CAMPAIGNS.map((camp) => {
-                const maxGmv = Math.max(...TIKTOK_SELLER_CAMPAIGNS.map((c) => c.gmv), 1);
+              {scopedSellerCampaigns.map((camp) => {
+                const maxGmv = Math.max(...scopedSellerCampaigns.map((c) => c.gmv), 1);
                 const gmvBarPct = Math.round((camp.gmv / maxGmv) * 100);
                 const costBarPct = Math.round((camp.cost / maxGmv) * 100);
                 return (
@@ -2310,14 +2577,15 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 );
               })}
             </div>
+            )}
           </div>
 
-          {/* KHỐI 2: BẢNG ĐỐI SOÁT CHI TIẾT 69 GIAN HÀNG B2C (TRỌNG TÂM % SPEND CHI PHÍ & SỐ LƯỢNG VIDEO ĐÃ AIR) */}
+          {/* KHỐI 2: BẢNG ĐỐI SOÁT CHI TIẾT GIAN HÀNG B2C (TRỌNG TÂM % SPEND CHI PHÍ & SỐ LƯỢNG VIDEO ĐÃ AIR) */}
           <div className="bg-surface rounded-xl border border-line overflow-hidden">
             <div className="px-5 py-4 border-b border-line flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-ink">
-                  Bảng Đối Soát Toàn Bộ {filteredStores.length} / 69 Gian Hàng B2C — Trọng Tâm % Spend Chi Phí &amp; Số Lượng Video Đã Air
+                  Bảng Đối Soát Toàn Bộ {filteredStores.length} / {stores.length} Gian Hàng B2C — Trọng Tâm % Spend Chi Phí &amp; Số Lượng Video Đã Air
                 </h3>
                 </div>
               <Select
@@ -2487,11 +2755,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <PlaySquare className="w-4 h-4 text-accent" />
               </div>
               <div className="text-xl font-semibold text-ink font-mono">
-                786 Đơn Video
+                {videoKpiSummary.totalOrders} Đơn Video
               </div>
               <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
                 <span className="text-ink-3">Tổng ngân sách book:</span>
-                <span className="font-semibold text-accent font-mono">2,63 Tỷ VNĐ</span>
+                <span className="font-semibold text-accent font-mono">{formatVndShort(videoKpiSummary.totalBudget)}</span>
               </div>
             </div>
 
@@ -2510,7 +2778,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               </div>
               <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
                 <span className="text-ink-3">Đang chờ Air / gửi mẫu:</span>
-                <span className="font-semibold text-warning font-mono">40 đơn</span>
+                <span className="font-semibold text-warning font-mono">{videoKpiSummary.pendingOrders} đơn</span>
               </div>
             </div>
 
@@ -2520,11 +2788,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <Layers className="w-4 h-4 text-accent" />
               </div>
               <div className="text-xl font-semibold text-ink font-mono">
-                8 Bậc Đơn Giá
+                {videoKpiSummary.tierCount} Bậc Đơn Giá
               </div>
               <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
-                <span className="text-ink-3">TAP FOC (0đ): <strong>212 đơn</strong></span>
-                <span className="font-semibold text-accent">Paid KL1–KL7: 574 đơn</span>
+                <span className="text-ink-3">TAP FOC (0đ): <strong>{videoKpiSummary.focCount} đơn</strong></span>
+                <span className="font-semibold text-accent">Paid KL1–KL7: {videoKpiSummary.paidCount} đơn</span>
               </div>
             </div>
 
@@ -2535,15 +2803,15 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-xl font-semibold text-ink font-mono">
-                  34,8% Hook 2s
+                  {scopedSellerAdsSummary.avgHook2s}% Hook 2s
                 </span>
                 <span className="text-xs font-semibold text-accent px-1.5 py-0.5 rounded bg-accent-soft">
-                  CVR 4,62%
+                  CVR {scopedSellerAdsSummary.avgCvr}%
                 </span>
               </div>
               <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
-                <span className="text-ink-3">4.211 dòng Creative</span>
-                <span className="font-semibold text-positive font-mono">ROAS {TIKTOK_SELLER_ADS_SUMMARY.overallRoas}x</span>
+                <span className="text-ink-3">{scopedSellerAdsSummary.totalCreativeRows.toLocaleString('vi-VN')} dòng Creative</span>
+                <span className="font-semibold text-positive font-mono">ROAS {scopedSellerAdsSummary.overallRoas}x</span>
               </div>
             </div>
           </div>
@@ -2580,7 +2848,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
             >
               <option value="ALL">Tất cả Định dạng sản xuất Video</option>
-              {B2C_VIDEO_FORMAT_BREAKDOWN.map((f) => (
+              {scopedFormatBreakdown.map((f) => (
                 <option key={f.format} value={f.format}>
                   Định dạng: {f.format} ({f.count} đơn)
                 </option>
@@ -2612,7 +2880,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   </h3>
                   </div>
                 <span className="px-2 py-0.5 rounded bg-accent-soft text-xs font-semibold text-accent">
-                  786 Đơn Book · 2,63 Tỷ
+                  {videoKpiSummary.totalOrders} Đơn Book · {formatVndShort(videoKpiSummary.totalBudget)}
                 </span>
               </div>
 
@@ -2662,7 +2930,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         <div>
                           <div className="flex justify-between text-2xs text-ink-3 mb-0.5">
                             <span>Tỷ trọng số lượng video</span>
-                            <span>{Math.round((item.count / 786) * 100)}%</span>
+                            <span>{Math.round((item.count / Math.max(1, videoKpiSummary.totalOrders)) * 100)}%</span>
                           </div>
                           <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
                             <div
@@ -2674,7 +2942,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         <div>
                           <div className="flex justify-between text-2xs text-ink-3 mb-0.5">
                             <span>Tỷ trọng ngân sách giải ngân</span>
-                            <span>{Math.round((item.totalCost / 2632749226) * 100)}%</span>
+                            <span>{Math.round((item.totalCost / Math.max(1, videoKpiSummary.totalBudget)) * 100)}%</span>
                           </div>
                           <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
                             <div
@@ -2695,44 +2963,44 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               {/* Phễu giữ chân người xem TikTok Seller Creative */}
               <div className="bg-surface rounded-xl border border-line p-5">
                 <h3 className="text-sm font-semibold text-ink mb-1">
-                  Phễu Hiệu Suất Video Quảng Cáo TikTok Seller (4.211 Dòng Creative)
+                  Phễu Hiệu Suất Video Quảng Cáo TikTok Seller ({scopedSellerAdsSummary.totalCreativeRows.toLocaleString('vi-VN')} Dòng Creative)
                 </h3>
                 <div className="space-y-2.5">
                   {[
                     {
                       stage: '1. Tỷ lệ giữ chân 2 giây đầu (2s Hook Rate TB)',
-                      val: '34,8%',
-                      pct: 82,
+                      val: `${scopedSellerAdsSummary.avgHook2s}%`,
+                      pct: scopedSellerAdsSummary.avgHook2s > 0 ? 82 : 0,
                       color: 'bg-accent',
                       note: 'Ngưỡng chuẩn ngành Beauty: 28,0%'
                     },
                     {
                       stage: '2. Tỷ lệ xem qua 6 giây (6s View Rate TB)',
-                      val: '16,4%',
-                      pct: 58,
+                      val: `${scopedSellerAdsSummary.avgView6s}%`,
+                      pct: scopedSellerAdsSummary.avgView6s > 0 ? 58 : 0,
                       color: 'bg-accent',
                       note: 'Ngưỡng chuẩn ngành: 12,5%'
                     },
                     {
                       stage: '3. Tỷ lệ xem hết 100% thời lượng video',
-                      val: '5,2%',
-                      pct: 36,
+                      val: scopedSellerAdsSummary.totalCreativeRows > 0 ? '5,2%' : '0%',
+                      pct: scopedSellerAdsSummary.totalCreativeRows > 0 ? 36 : 0,
                       color: 'bg-accent',
                       note: 'Cao nhất ở định dạng Review Voice & Unbox'
                     },
                     {
                       stage: '4. Tỷ lệ nhấp vào sản phẩm (CTR TB)',
-                      val: '3,18%',
-                      pct: 28,
+                      val: `${scopedSellerAdsSummary.avgCtr}%`,
+                      pct: scopedSellerAdsSummary.avgCtr > 0 ? 28 : 0,
                       color: 'bg-positive',
-                      note: `Tổng lượt nhấp: ${TIKTOK_SELLER_ADS_SUMMARY.totalClicks.toLocaleString('vi-VN')} clicks`
+                      note: `Tổng lượt nhấp: ${scopedSellerAdsSummary.totalClicks.toLocaleString('vi-VN')} clicks`
                     },
                     {
                       stage: '5. Tỷ lệ chuyển đổi ra đơn hàng (CVR TB)',
-                      val: '4,62%',
-                      pct: 22,
+                      val: `${scopedSellerAdsSummary.avgCvr}%`,
+                      pct: scopedSellerAdsSummary.avgCvr > 0 ? 22 : 0,
                       color: 'bg-warning',
-                      note: `${TIKTOK_SELLER_ADS_SUMMARY.totalOrders.toLocaleString('vi-VN')} đơn hàng thực thu`
+                      note: `${scopedSellerAdsSummary.totalOrders.toLocaleString('vi-VN')} đơn hàng thực thu`
                     }
                   ].map((f) => (
                     <div key={f.stage} className="p-2 rounded-lg bg-canvas border border-line">
@@ -2755,7 +3023,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   Hiệu Quả Theo Định Dạng Sản Xuất Video & Loại Hình Booking
                 </h3>
                 <div className="grid grid-cols-2 gap-2 mb-3">
-                  {B2C_VIDEO_FORMAT_BREAKDOWN.map((fmt) => (
+                  {scopedFormatBreakdown.map((fmt) => (
                     <div
                       key={fmt.format}
                       onClick={() => setVideoFormatFilter(videoFormatFilter === fmt.format ? 'ALL' : fmt.format)}
@@ -2779,7 +3047,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 </div>
 
                 <div className="space-y-1.5 pt-2 border-t border-line">
-                  {B2C_VIDEO_TYPE_BREAKDOWN.slice(0, 5).map((vt) => (
+                  {scopedVideoTypeBreakdown.slice(0, 5).map((vt) => (
                     <div key={vt.videoType} className="flex items-center justify-between text-xs py-1">
                       <span className="font-medium text-ink-2">{vt.videoType}</span>
                       <div className="flex items-center gap-3 font-mono text-2xs">
@@ -3005,6 +3273,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         <div className="space-y-5">
           {/* TRỌNG TÂM 1: LỊCH AIR KẾ HOẠCH THEO TUẦN (W40–W45) & ĐỘ ĐỒNG LOẠT CHIẾN DỊCH */}
           <WeeklyAirSyncDashboardSection
+            allowedStoreNames={isGlobalViewer ? undefined : stores.map((s) => s.storeName)}
             selectedBrandGlobal={selectedBrand}
             selectedPlatformGlobal={selectedPlatform}
             selectedGovernanceGlobal={selectedGovernance}
@@ -3032,16 +3301,16 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   <span className="text-xs font-medium text-ink">
                     Luồng 1: Qua Trưởng nhóm Nguyễn Thị Ngọc Tâm
                   </span>
-                  <span className="text-xs font-mono text-ink-3">8 gian hàng</span>
+                  <span className="text-xs font-mono text-ink-3">{governanceStats.leaderCount} gian hàng</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-line text-center font-mono">
                   <div>
                     <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>
-                    <strong className="text-xs text-ink">91,4%</strong>
+                    <strong className="text-xs text-ink">{governanceStats.leaderCount > 0 ? '91,4%' : '—'}</strong>
                   </div>
                   <div>
                     <span className="text-2xs text-ink-3 block">Giải ngân Net</span>
-                    <strong className="text-xs text-ink">51,2%</strong>
+                    <strong className="text-xs text-ink">{governanceStats.leaderBurnPct}%</strong>
                   </div>
                   <div>
                     <span className="text-2xs text-ink-3 block">Sơ duyệt kịch bản</span>
@@ -3055,16 +3324,16 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   <span className="text-xs font-medium text-ink">
                     Luồng 2: Trình trực tiếp GĐ Đặng Thị Yến Nhi
                   </span>
-                  <span className="text-xs font-mono text-ink-3">61 gian hàng</span>
+                  <span className="text-xs font-mono text-ink-3">{governanceStats.directCount} gian hàng</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-line text-center font-mono">
                   <div>
                     <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>
-                    <strong className="text-xs text-ink">86,8%</strong>
+                    <strong className="text-xs text-ink">{governanceStats.directCount > 0 ? '86,8%' : '—'}</strong>
                   </div>
                   <div>
                     <span className="text-2xs text-ink-3 block">Giải ngân Net</span>
-                    <strong className="text-xs text-ink">51,0%</strong>
+                    <strong className="text-xs text-ink">{governanceStats.directBurnPct}%</strong>
                   </div>
                   <div>
                     <span className="text-2xs text-ink-3 block">Duyệt trực tiếp</span>

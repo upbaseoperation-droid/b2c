@@ -44,7 +44,10 @@ const monthLabel = (m: string) => {
 
 type DetailSection = 'tiers' | 'batches' | 'weeks';
 
-export const PlanActualReportView: React.FC<{ onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void }> = ({ onNotify }) => {
+export const PlanActualReportView: React.FC<{
+  onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+  allowedStoreNames?: string[];
+}> = ({ onNotify, allowedStoreNames }) => {
   const [data, setData] = useState<ReportResponse | null>(null);
   const [month, setMonth] = useState('');
   const [loading, setLoading] = useState(true);
@@ -92,7 +95,11 @@ export const PlanActualReportView: React.FC<{ onNotify?: (msg: string, type?: 's
     void fetchReport(m);
   };
 
-  const reports = useMemo(() => data?.reports ?? [], [data]);
+  const reports = useMemo(() => {
+    const list = data?.reports ?? [];
+    if (!allowedStoreNames || allowedStoreNames.length === 0) return list;
+    return list.filter(r => allowedStoreNames.includes(r.storeName));
+  }, [data, allowedStoreNames]);
   const totals = useMemo(() => {
     const t = { planQty: 0, aired: 0, planBudget: 0, committed: 0, paid: 0, dueQty: 0, dueAired: 0, weeklyStores: 0, overdue: 0 };
     for (const r of reports) {

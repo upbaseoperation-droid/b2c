@@ -32,6 +32,7 @@ import {
 } from '../../lib/b2cWeeklyAirSyncDataset';
 
 interface WeeklyAirSyncDashboardSectionProps {
+  allowedStoreNames?: string[];
   selectedBrandGlobal?: string;
   selectedPlatformGlobal?: 'ALL' | 'TikTok Shop' | 'Shopee Mall';
   selectedGovernanceGlobal?: 'ALL' | 'WITH_LEADER' | 'DIRECT_HEAD';
@@ -105,10 +106,28 @@ function renderDealTimingBadge(status: DealAirTimingStatus, dayDelta: number | n
 }
 
 export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSectionProps> = ({
+  allowedStoreNames,
   selectedBrandGlobal = 'ALL',
   selectedPlatformGlobal = 'ALL',
   selectedGovernanceGlobal = 'ALL',
 }) => {
+  const scopedAirSyncStores = useMemo(() => {
+    if (!allowedStoreNames || allowedStoreNames.length === 0) {
+      return B2C_STORE_WEEKLY_AIR_SYNC_LIST;
+    }
+    const allowedSet = new Set(allowedStoreNames.map((n) => n.toLowerCase()));
+    return B2C_STORE_WEEKLY_AIR_SYNC_LIST.filter((st) => allowedSet.has(st.storeName.toLowerCase()));
+  }, [allowedStoreNames]);
+
+  const totalLeaderCount = useMemo(
+    () => scopedAirSyncStores.filter((st) => st.hasLeader).length,
+    [scopedAirSyncStores]
+  );
+  const totalDirectCount = useMemo(
+    () => scopedAirSyncStores.filter((st) => !st.hasLeader).length,
+    [scopedAirSyncStores]
+  );
+
   const [baselineMode, setBaselineMode] = useState<PlanBaselineMode>('CORE_PAID_SELF');
   const [selectedWeekFilter, setSelectedWeekFilter] = useState<string>('ALL');
   const [selectedSyncStatus, setSelectedSyncStatus] = useState<'ALL' | StoreAirSyncStatus>('ALL');
@@ -124,16 +143,16 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
 
   const allBrands = useMemo(() => {
     const s = new Set<string>();
-    B2C_STORE_WEEKLY_AIR_SYNC_LIST.forEach((item) => {
+    scopedAirSyncStores.forEach((item) => {
       if (item.brandName) s.add(item.brandName);
     });
     return Array.from(s).sort((a, b) => a.localeCompare(b, 'vi'));
-  }, []);
+  }, [scopedAirSyncStores]);
 
   // Lọc danh sách gian hàng theo bộ lọc chung (trước khi lọc theo chip syncStatus)
   const baseFilteredStores = useMemo(() => {
     const q = deferredSearch.trim().toLowerCase();
-    return B2C_STORE_WEEKLY_AIR_SYNC_LIST.filter((st) => {
+    return scopedAirSyncStores.filter((st) => {
       if (brandFilter !== 'ALL' && st.brandName !== brandFilter) return false;
       if (platformFilter !== 'ALL' && st.platform !== platformFilter) return false;
       if (governanceFilter === 'WITH_LEADER' && !st.hasLeader) return false;
@@ -159,7 +178,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
       }
       return true;
     });
-  }, [brandFilter, platformFilter, governanceFilter, selectedWeekFilter, deferredSearch]);
+  }, [scopedAirSyncStores, brandFilter, platformFilter, governanceFilter, selectedWeekFilter, deferredSearch]);
 
   // Đếm số lượng theo từng trạng thái đồng loạt trên tập đang lọc
   const statusChipCounts = useMemo(() => {
@@ -365,7 +384,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
           note="Tập trung trong 5 ngày cao điểm 06/10 – 10/10 · Đỉnh sóng 09/10 nổ 137 video/ngày"
         />
         <Stat
-          label="Phân loại 69 gian hàng theo độ đồng loạt"
+          label={`Phân loại ${scopedAirSyncStores.length} gian hàng theo độ đồng loạt`}
           value={`${statusChipCounts.AIR_SYNCHRONIZED} chuẩn · ${statusChipCounts.AIR_FRAGMENTED_LATE + statusChipCounts.AIR_BOTTLENECK_PENDING} lệch/nghẽn`}
           tone={statusChipCounts.AIR_BOTTLENECK_PENDING > 0 ? 'warning' : 'positive'}
           note={`${statusChipCounts.AIR_BURST_UNSCHEDULED} gian gom cụm thiếu ngày KH · ${statusChipCounts.AIR_BOTTLENECK_PENDING} gian kẹt chưa air`}
@@ -771,9 +790,9 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
               }
               className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink focus:outline-hidden focus:border-accent"
             >
-              <option value="ALL">Mọi luồng duyệt (69 gian hàng)</option>
-              <option value="WITH_LEADER">Có Trưởng nhóm Ngọc Tâm (8 gian)</option>
-              <option value="DIRECT_HEAD">Trình trực tiếp Giám đốc MKT (61 gian)</option>
+              <option value="ALL">Mọi luồng duyệt ({scopedAirSyncStores.length} gian hàng)</option>
+              <option value="WITH_LEADER">Có Trưởng nhóm Ngọc Tâm ({totalLeaderCount} gian)</option>
+              <option value="DIRECT_HEAD">Trình trực tiếp Giám đốc MKT ({totalDirectCount} gian)</option>
             </select>
           </div>
 

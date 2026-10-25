@@ -14,6 +14,7 @@ import {
   type LiveAutoScrapedBrandIntelligence,
 } from '@/lib/liveBrandWebScraper';
 import { formatVnd } from '@/lib/format';
+import { generateTrainingCourseAndQuizInternal } from '@/lib/marketingLearningEngine';
 
 interface LlmApiRequestBody {
   action: 'TEST_CONNECTION' | 'EXECUTE_PURPOSE';
@@ -1172,10 +1173,40 @@ function buildInternalPurposeOutput(
           '  • Bắt buộc ghi rõ cam kết cấp mã Spark Ads tối thiểu 30–60 ngày và giữ link giỏ hàng trước khi trình duyệt chi.',
         ].join('\n');
 
+            case 'TRAINING_EXAM_GENERATION': {
+        const brandMatch = cleanInput.match(/Nhãn hàng:\s*([^\n·|]+)/i) || cleanInput.match(/Thương hiệu:\s*([^\n·|]+)/i);
+        const topicMatch = cleanInput.match(/Chủ đề:\s*([^\n·|]+)/i);
+        const roleMatch = cleanInput.match(/Vai trò:\s*([^\n·|]+)/i);
+        const targetBrand = (brandMatch?.[1] || '').trim();
+        const targetTopic = (topicMatch?.[1] || 'Quy trình Vận hành & Phân bổ Ngân sách B2C').trim();
+        const targetRole = (roleMatch?.[1] || 'Chuyên viên Booking').trim();
+        const genResult = generateTrainingCourseAndQuizInternal({
+          topic: targetTopic,
+          brandName: targetBrand,
+          targetRole: targetRole,
+        });
+        return JSON.stringify(genResult, null, 2);
+      }
+
       case 'BRAND_MARKET_RESEARCH':
         return buildBrandMarketResearchInternalReport(cleanInput, cleanPrompt, liveWebIntel);
 
-      case 'KOC_MATCHING':
+          case 'TRAINING_EXAM_GENERATION': {
+      const brandMatch = cleanInput.match(/Nhãn hàng:\s*([^\n·|]+)/i) || cleanInput.match(/Thương hiệu:\s*([^\n·|]+)/i);
+      const topicMatch = cleanInput.match(/Chủ đề:\s*([^\n·|]+)/i);
+      const roleMatch = cleanInput.match(/Vai trò:\s*([^\n·|]+)/i);
+      const targetBrand = (brandMatch?.[1] || '').trim();
+      const targetTopic = (topicMatch?.[1] || 'Quy trình Vận hành & Phân bổ Ngân sách B2C').trim();
+      const targetRole = (roleMatch?.[1] || 'Chuyên viên Booking').trim();
+      const genResult = generateTrainingCourseAndQuizInternal({
+        topic: targetTopic,
+        brandName: targetBrand,
+        targetRole: targetRole,
+      });
+      return JSON.stringify(genResult, null, 2);
+    }
+
+    case 'KOC_MATCHING':
       default:
         return [
           `BÁO CÁO ĐỀ XUẤT CƠ CẤU KOC & ĐỢT LISTING 10-20-30 — ${headerLine.replace(/^\[|\]$/g, '')}`,

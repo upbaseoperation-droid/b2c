@@ -41,6 +41,14 @@ export function isStaffGlobalAdminOrManager(user: UserProfile | null | undefined
   return false;
 }
 
+
+export function isStaffLeader(user: UserProfile | null | undefined): boolean {
+  if (!user) return false;
+  if (user.role === 'LEADER') return true;
+  if (user.name && user.name.toLowerCase().includes('ngọc tâm')) return true;
+  return false;
+}
+
 interface UserScopeBase {
   key: string;
   user: UserProfile;

@@ -21,6 +21,7 @@ import {
   InputPlanBreakdownState,
 } from '../../lib/types';
 import { REAL_B2C_69_STORES } from '../../lib/realB2cPlanData';
+import { filterScopedStores } from '../../lib/rbacScope';
 import { REAL_MONTHLY_PLANS_OCT_2026 } from '../../lib/realLarkPlans202610';
 import {
   evaluatePlanValiditySummary,
@@ -85,14 +86,32 @@ const normalize = (v: string) =>
     .toLowerCase();
 
 export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewProps> = ({
+  currentUser,
   storePortfolios,
   deals = [],
   onNavigateToTab,
 }) => {
   const stores = useMemo<StorePortfolioItem[]>(() => {
-    if (storePortfolios && storePortfolios.length >= 69) return storePortfolios;
-    return REAL_B2C_69_STORES;
-  }, [storePortfolios]);
+    if (storePortfolios && storePortfolios.length > 0) return storePortfolios;
+    return filterScopedStores(REAL_B2C_69_STORES, currentUser);
+  }, [storePortfolios, currentUser]);
+
+  const totalTiktokCount = useMemo(
+    () => stores.filter((s) => s.platform === 'TikTok Shop').length,
+    [stores]
+  );
+  const totalShopeeCount = useMemo(
+    () => stores.filter((s) => s.platform !== 'TikTok Shop').length,
+    [stores]
+  );
+  const totalLeaderCount = useMemo(
+    () => stores.filter((s) => s.hasBookingLeader).length,
+    [stores]
+  );
+  const totalDirectCount = useMemo(
+    () => stores.filter((s) => !s.hasBookingLeader).length,
+    [stores]
+  );
 
   // Tải danh sách kế hoạch 4.1.1 từ server (fallback dữ liệu gốc tháng 10/2026)
   const [plans, setPlans] = useState<InputPlanBreakdownState[]>(
@@ -635,9 +654,9 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
             onChange={(e) => setPlatformFilter(e.target.value as typeof platformFilter)}
             className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden"
           >
-            <option value="ALL">Tất cả Sàn (39 TikTok · 30 Shopee)</option>
-            <option value="TikTok Shop">TikTok Shop (39 gian hàng)</option>
-            <option value="Shopee Mall">Shopee Mall (30 gian hàng)</option>
+            <option value="ALL">Tất cả Sàn ({totalTiktokCount} TikTok · {totalShopeeCount} Shopee)</option>
+            <option value="TikTok Shop">TikTok Shop ({totalTiktokCount} gian hàng)</option>
+            <option value="Shopee Mall">Shopee Mall ({totalShopeeCount} gian hàng)</option>
           </select>
 
           <select
@@ -645,9 +664,9 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
             onChange={(e) => setGovernanceFilter(e.target.value as typeof governanceFilter)}
             className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden"
           >
-            <option value="ALL">Cơ cấu duyệt: Tất cả 69 gian hàng</option>
-            <option value="WITH_LEADER">Nhóm có Leader Nguyễn Thị Ngọc Tâm (8 gian)</option>
-            <option value="DIRECT_HEAD">Không có Leader — Trình trực tiếp Yến Nhi (61 gian)</option>
+            <option value="ALL">Cơ cấu duyệt: Tất cả {stores.length} gian hàng</option>
+            <option value="WITH_LEADER">Nhóm có Leader Nguyễn Thị Ngọc Tâm ({totalLeaderCount} gian)</option>
+            <option value="DIRECT_HEAD">Không có Leader — Trình trực tiếp Yến Nhi ({totalDirectCount} gian)</option>
           </select>
         </div>
 
@@ -689,11 +708,11 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
         )}
       </div>
 
-      {/* BẢNG TIẾN ĐỘ PHỄU 69 GIAN HÀNG (0 → 18) */}
+      {/* BẢNG TIẾN ĐỘ PHỄU GIAN HÀNG (0 → 18) */}
       <div className="bg-surface rounded-xl border border-line overflow-hidden">
         <div className="px-5 py-4 border-b border-line flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h3 className="text-sm font-semibold text-ink">
-            Bảng Theo Dõi Phễu Vận Hành {filteredList.length} / 69 Gian Hàng B2C (Quy Trình 0 → 18)
+            Bảng Theo Dõi Phễu Vận Hành {filteredList.length} / {stores.length} Gian Hàng B2C (Quy Trình 0 → 18)
           </h3>
         </div>
 

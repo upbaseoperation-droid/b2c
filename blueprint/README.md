@@ -33,7 +33,7 @@ Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự á
 | HUB-GOV-01 | [Decision log](governance/DECISION_LOG.md) | Đang dùng |
 | HUB-GOV-02 | [Open issues](governance/OPEN_ISSUES.md) | Đang xử lý |
 | **HUB-GOV-03** | [**Ma trận truy vết (RTM)**](governance/TRACEABILITY.md) | **Đã hoàn thiện (`BR` → `FR` → `US` → `TC`)** |
-| **HUB-GOV-04** | [**Sổ đăng ký lỗi & Quy tắc phòng ngừa tái phát**](governance/KNOWN_BUGS_AND_LESSONS.md) | **Đang dùng (Bắt buộc đối chiếu chéo toàn hệ thống — đã cập nhật tới `BUG-049` & `RULE-PERF-01`)** |
+| **HUB-GOV-04** | [**Sổ đăng ký lỗi & Quy tắc phòng ngừa tái phát**](governance/KNOWN_BUGS_AND_LESSONS.md) | **Đang dùng (Bắt buộc đối chiếu chéo toàn hệ thống — đã cập nhật tới `BUG-056` & `FR-065`)** |
 | HUB-AUDIT-01 | [Audit Giao diện & Design System](audits/2026-10-14-ui-design-system-audit.md) | Đã hoàn thành toàn diện (Gộp nhóm điều hướng NAV_GROUPS, khử trùng lặp tab chéo, chuẩn hóa Modal & loại bỏ phụ đề giải thích thừa) |
 
 ## Giai đoạn 1 — Yêu cầu
@@ -64,6 +64,7 @@ Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự á
 | **HUB-2.8** | [**Chiến lược kiểm thử & Danh mục Test Cases**](2-design/2.8_TEST_STRATEGY.md) | **Đã hoàn thành** | 23 nhóm kịch bản kiểm thử tự động (`TC-001` → `TC-023`, 99/99 pass) phủ 100% yêu cầu chức năng mức Must |
 | **HUB-2.9** | [**Dự toán chi phí API & Định hướng Báo cáo, Phân tích dữ liệu và Hỗ trợ nhập liệu**](2-design/2.9_API_COST_AND_WORKFLOW_ACCELERATION_BACKLOG.md) | **Đã lưu trữ** | Tập trung 2 trụ cột: (1) Hỗ trợ nhập liệu nhanh & chuẩn hóa (`ENTRY-01`..`ENTRY-04`), (2) Báo cáo điều hành & phân tích đối soát dữ liệu (`REPORT-01`..`REPORT-04`) kèm dự toán chi phí cho 69 gian hàng B2C |
 | **HUB-2.18** | [**Bản đồ Kiến trúc Quy trình Phân cấp (Process → Sub-process Swimlanes) & 7 Thực thể Dữ liệu Cốt lõi B2C**](2-design/2.18_BPMN_SWIMLANE_AND_ENTITY_MAP.md) | **Đã hoàn thành** | Chuẩn hóa ITBA theo cấu trúc Cha – Con: Sơ đồ Cấp 0 (Master Process & 5 Sub-processes), 5 Sơ đồ Cấp 1 (`SP-01` → `SP-05` chia làn Swimlane & 3 nhánh song hành trên `DealJob`) và Phân tầng 7 Thực thể dữ liệu (`E1` → `E7`) |
+| **HUB-2.19** | [**Đặc tả Động cơ Suy diễn Pipeline KOC 19 Chặng & Cơ chế Tự động hóa Ghi nhận Trạng thái Chi tiết**](2-design/2.19_KOC_PIPELINE_STATE_MACHINE_SPEC.md) | **Đã hoàn thành** | Phân tầng 2 cấp (Macro 5 mốc quản trị vs Micro 19 chặng & 52 trạng thái), 100% Zero-Data-Entry Heuristics theo dấu vết nghiệp vụ, cơ chế Fast-forward, Ball-in-court & Danh mục 12 lý do từ chối kèm Playbook cứu deal |
 
 ## Giai đoạn 4 — Kiểm thử & Nghiệm thu (UAT — Cổng G4)
 
