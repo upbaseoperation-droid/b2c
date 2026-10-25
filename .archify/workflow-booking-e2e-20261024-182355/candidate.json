@@ -8,7 +8,7 @@
     "output": ".archify/workflow-booking-e2e-20261024-182355/booking-e2e.html",
     "repository": {
       "url": "https://github.com/upbaseoperation-droid/b2c.git",
-      "revision": "f98d644c381328dc1aa95c8d903a9f20c0016d4b"
+      "revision": "360f4951cc79607991dd99e7c296e73cba72bebc"
     },
     "legend": {
       "entries": {
@@ -191,8 +191,8 @@
       "lane": "master",
       "col": 1,
       "type": "external",
-      "label": "Tải Plan tổng 4.1",
-      "sublabel": "chỉ Quản lý · đến sau",
+      "label": "Plan tổng 4.1",
+      "sublabel": "đồng bộ Larkbase · tải file",
       "sources": [
         {
           "path": "web-admin/src/app/api/monthly-plans/upload/route.ts",
@@ -205,24 +205,25 @@
           "line": 93,
           "end_line": 109,
           "label": "gắn reference41"
+        },
+        {
+          "path": "web-admin/src/app/api/integrations/larkbase/booking-plans/route.ts",
+          "line": 39,
+          "end_line": 40,
+          "label": "nhận 4.1 từ Larkbase"
         }
-      ]
+      ],
+      "tag": "bản lệch chờ Quản lý áp"
     },
     {
       "id": "plan_split",
       "lane": "planning",
       "col": 0,
       "type": "frontend",
-      "label": "Phân chia plan nháp",
-      "sublabel": "chỉ tiêu · KL1–KL7 · slot team",
-      "tag": "trước khi có 4.1",
+      "label": "Phân rã plan 4.1.1",
+      "sublabel": "tuần W1–W4 · KL1–KL7 · FOC · Self",
+      "tag": "được lập trước 4.1",
       "sources": [
-        {
-          "path": "web-admin/src/components/views/InputPlanBreakdownView.tsx",
-          "line": 677,
-          "end_line": 720,
-          "label": "chốt chỉ tiêu"
-        },
         {
           "path": "web-admin/src/components/views/InputPlanBreakdownView.tsx",
           "line": 1022,
@@ -234,6 +235,11 @@
           "line": 17,
           "end_line": 23,
           "label": "nháp trước 4.1"
+        },
+        {
+          "path": "web-admin/src/lib/planBreakdownRules.ts",
+          "line": 603,
+          "label": "đánh giá hợp lệ 4.1 vs 4.1.1"
         }
       ]
     },
@@ -272,8 +278,8 @@
       "col": 1,
       "type": "frontend",
       "label": "Brand plan · Brief",
-      "sublabel": "chọn SKU · USP · BR-xx",
-      "tag": "sản phẩm",
+      "sublabel": "chọn SKU / Combo · USP · BR-xx",
+      "tag": "định hướng · khung KL6–7",
       "sources": [
         {
           "path": "web-admin/src/lib/contentPlanRules.ts",
@@ -282,16 +288,14 @@
           "label": "dòng plan → Brief + SP"
         },
         {
-          "path": "web-admin/src/app/api/brand-plan/route.ts",
-          "line": 37,
-          "end_line": 40,
-          "label": "Leader/QL duyệt"
+          "path": "web-admin/src/lib/dealBoardRules.ts",
+          "line": 294,
+          "label": "briefMode"
         },
         {
-          "path": "web-admin/src/lib/bookingList.ts",
-          "line": 53,
-          "end_line": 90,
-          "label": "KOC × Mã Brief lên Sheet"
+          "path": "web-admin/src/lib/productCatalog.ts",
+          "line": 346,
+          "label": "link giỏ hàng · affiliate của Combo"
         }
       ]
     },
@@ -301,26 +305,26 @@
       "col": 1,
       "type": "security",
       "label": "Duyệt plan & Brief",
-      "sublabel": "Growth/Leader → TP",
-      "tag": "LEAD_APPROVED",
+      "sublabel": "Leader sơ duyệt → Giám đốc",
+      "tag": "chặn nếu 4.1.1 lỗi / lệch",
       "sources": [
-        {
-          "path": "web-admin/src/lib/types.ts",
-          "line": 2737,
-          "end_line": 2749,
-          "label": "trạng thái plan"
-        },
-        {
-          "path": "web-admin/src/components/views/InputPlanBreakdownView.tsx",
-          "line": 3460,
-          "end_line": 3470,
-          "label": "TP phê duyệt"
-        },
         {
           "path": "web-admin/src/app/api/brand-plan/route.ts",
           "line": 38,
           "end_line": 40,
           "label": "Leader/QL duyệt Brief"
+        },
+        {
+          "path": "web-admin/src/lib/planBreakdownRules.ts",
+          "line": 520,
+          "end_line": 538,
+          "label": "cổng gửi duyệt"
+        },
+        {
+          "path": "web-admin/src/lib/server/monthlyPlanStore.ts",
+          "line": 459,
+          "end_line": 478,
+          "label": "Leader sơ duyệt trước GĐ"
         }
       ]
     },
@@ -444,7 +448,7 @@
       "col": 3,
       "type": "backend",
       "label": "Hồ sơ HĐ / SOW",
-      "sublabel": "7.1 thu thập TT",
+      "sublabel": "HĐNT khung · Phụ lục SOW/Job",
       "sources": [
         {
           "path": "web-admin/src/lib/dealBoardRules.ts",
@@ -456,8 +460,15 @@
           "path": "web-admin/src/app/api/contracts/route.ts",
           "line": 74,
           "label": "POST contracts"
+        },
+        {
+          "path": "web-admin/src/lib/contracts/types.ts",
+          "line": 68,
+          "end_line": 81,
+          "label": "HĐNT → SOW → BBNT"
         }
-      ]
+      ],
+      "tag": "7.1 thu thập TT"
     },
     {
       "id": "legal",
@@ -487,13 +498,18 @@
       "col": 3,
       "type": "external",
       "label": "KOC ký HĐ/SOW",
-      "sublabel": "7.6 → 7.9 bản cứng",
+      "sublabel": "weSign · 7.6 → 7.9 bản cứng",
       "sources": [
         {
           "path": "web-admin/src/lib/dealBoardRules.ts",
           "line": 1243,
           "end_line": 1256,
           "label": "7.6 / 7.9"
+        },
+        {
+          "path": "web-admin/src/lib/contracts/wesign.ts",
+          "line": 36,
+          "label": "tiến độ từng người ký"
         }
       ]
     },
@@ -518,16 +534,29 @@
       "lane": "booking",
       "col": 4,
       "type": "frontend",
-      "label": "Mẫu · Brief · Demo",
-      "sublabel": "9.x · 10.x · 12.1",
+      "label": "Mẫu · KB · Demo",
+      "sublabel": "9.x · KB 10.2 · Demo 12.1",
       "sources": [
         {
           "path": "web-admin/src/lib/dealBoardRules.ts",
-          "line": 1269,
-          "end_line": 1328,
-          "label": "track 9–12 song song"
+          "line": 1305,
+          "end_line": 1310,
+          "label": "track 9.x gửi mẫu"
+        },
+        {
+          "path": "web-admin/src/lib/dealBoardRules.ts",
+          "line": 1323,
+          "end_line": 1336,
+          "label": "KB vòng 1 nội bộ"
+        },
+        {
+          "path": "web-admin/src/lib/dealBoardRules.ts",
+          "line": 1354,
+          "end_line": 1361,
+          "label": "Demo vòng 1 nội bộ"
         }
-      ]
+      ],
+      "tag": "B2C duyệt vòng 1 · 24h"
     },
     {
       "id": "brand_demo",
@@ -535,15 +564,22 @@
       "col": 4,
       "type": "external",
       "label": "Brand duyệt KB/Demo",
-      "sublabel": "10.4 · 12.2 → 12.4",
+      "sublabel": "vòng 2 · 10.4 · 12.2 → 12.4",
       "sources": [
         {
           "path": "web-admin/src/lib/dealBoardRules.ts",
-          "line": 1289,
-          "end_line": 1316,
-          "label": "10.4 / 12.2"
+          "line": 1337,
+          "end_line": 1347,
+          "label": "KB vòng 2 · tự Air"
+        },
+        {
+          "path": "web-admin/src/lib/dealBoardRules.ts",
+          "line": 1362,
+          "end_line": 1373,
+          "label": "Demo vòng 2"
         }
-      ]
+      ],
+      "tag": "quá 72h → đề xuất tự Air"
     },
     {
       "id": "air",
@@ -686,7 +722,7 @@
       "col": 2,
       "type": "security",
       "label": "Rớt / Thay KOC",
-      "sublabel": "DROPPED · 19.5–19.7",
+      "sublabel": "DROPPED · 19.5 · 19.7",
       "sources": [
         {
           "path": "web-admin/src/lib/listingBoardRules.ts",
@@ -699,6 +735,34 @@
           "line": 1183,
           "end_line": 1216,
           "label": "19.5 / 19.6 / 19.7"
+        }
+      ]
+    },
+    {
+      "id": "rollover",
+      "lane": "exception",
+      "col": 5,
+      "type": "backend",
+      "label": "Kéo Job tồn",
+      "sublabel": "sang plan tháng sau · 19.6",
+      "tag": "ngân sách giữ tháng cũ",
+      "sources": [
+        {
+          "path": "web-admin/src/app/api/deal-board/route.ts",
+          "line": 73,
+          "end_line": 120,
+          "label": "Job còn treo tháng trước"
+        },
+        {
+          "path": "web-admin/src/app/api/deal-board/route.ts",
+          "line": 379,
+          "label": "PULL_HANGING_JOBS"
+        },
+        {
+          "path": "web-admin/src/lib/dealBoardRules.ts",
+          "line": 1234,
+          "end_line": 1236,
+          "label": "19.6 bảo lưu"
         }
       ]
     }
@@ -841,14 +905,14 @@
       "id": "e_prod_brand",
       "from": "production",
       "to": "brand_demo",
-      "label": "gửi Demo",
+      "label": "Đạt vòng 1",
       "variant": "default"
     },
     {
       "id": "e_brand_air",
       "from": "brand_demo",
       "to": "air",
-      "label": "Demo đạt",
+      "label": "Brand duyệt / tự Air",
       "variant": "emphasis"
     },
     {
@@ -916,6 +980,14 @@
       "label": "KOC từ chối",
       "variant": "security",
       "role": "error"
+    },
+    {
+      "id": "e_accept_rollover",
+      "from": "accept",
+      "to": "rollover",
+      "label": "chưa xong hết tháng",
+      "variant": "dashed",
+      "role": "async"
     }
   ],
   "cards": [
@@ -923,25 +995,30 @@
       "dot": "cyan",
       "title": "Đọc sơ đồ",
       "items": [
-        "PIC lập và phân chia plan nháp, list KOC, đẩy Sheet trước khi có Plan tổng 4.1; 4.1 tải lên sau chỉ để đối chiếu, gian chưa có plan thì tạo mới",
-        "Sản phẩm chốt ở Brand plan/Brief: mỗi dòng BR-xx chọn Nhóm SP + SKU từ Danh mục SP, kế thừa USP và claim cấm; KOC gán vào Brief và lên Sheet theo ID kênh + Mã Brief",
-        "Hồ sơ thương hiệu (định vị, tone, từ cấm, hashtag) hiện chỉ dùng khi soát brief/kịch bản; Brand plan và Brief chưa lấy từ đây, USP và claim cấm của Brief lấy từ Danh mục SP",
+        "PIC lập và phân rã plan tuần 4.1.1 được cả trước khi có 4.1; 4.1 đồng bộ từ Larkbase hoặc tải file, bản mới lệch chờ Quản lý áp",
+        "Gửi duyệt bị chặn khi 4.1 chưa chốt, 4.1.1 còn lỗi hoặc lệch 4.1 chưa giải trình; gian có Leader thì Leader sơ duyệt trước Giám đốc",
+        "Sản phẩm chốt ở Brand plan/Brief: mỗi dòng BR-xx chọn SKU hoặc Combo từ Danh mục SP, kế thừa USP, claim cấm, Link giỏ hàng và Link Affiliate xuống Job",
+        "Brief theo bậc: FOC và KL1–KL5 định hướng kịch bản chi tiết; KL6–KL7 chỉ đưa khung kiểm duyệt (cảnh bắt buộc, bản quyền, Spark Ads)",
         "PIC gian/nhãn ở Dữ liệu gốc quyết định ai thấy và sửa plan, listing, deal của gian đó",
         "Gợi ý KOC dựa trên Danh bạ KOC và lịch sử deal: rebook cùng Brand, winner từ Brand khác, KOC đang làm cho đối thủ, KOC FOC; có thể tự nhặt KOC điểm cao cho đủ số thiếu",
         "Sau khi chốt Deal, Hợp đồng (7.x), Gửi mẫu (9.x) và Kịch bản/Demo (10–12) chạy song song; HĐ chỉ chặn ở bước thanh toán",
+        "Hợp đồng 3 giai đoạn: HĐNT khung theo KOC → Phụ lục SOW theo Job → BBNT theo Job; KOC ký qua MISA weSign",
+        "Kịch bản và Demo duyệt 2 vòng: B2C kiểm nội bộ trước (SLA 24h) rồi mới gửi Brand; Brand quá 72h chưa duyệt thì đề xuất KOC tự Air",
         "Chốt thẳng chỉ cho KOC FOC 0đ hoặc KOL Brand chỉ định; Job FOC miễn HĐ và kết thúc ở nghiệm thu 14.2",
         "Pháp chế + TCKT chỉ duyệt khi HĐ ≥50tr hoặc sửa điều khoản; ký sau ngày Air cần giải trình có Lead xác nhận",
-        "Gian có Booking Leader thì ĐNTT qua Leader trước, không có thì trình thẳng Giám đốc",
+        "Job chưa xong hết tháng được kéo sang plan tháng sau xử lý tiếp; ngân sách vẫn tính ở tháng cũ, tiến độ ghi ngược về tháng cũ",
+        "Gian có Booking Leader thì ĐNTT qua Leader trước, không có thì trình thẳng Giám đốc; tất toán trừ phần đã tạm ứng",
         "UpAffiliate trả số daily theo Video ID; hệ thống tự cộng D14/D30/D60 từ ngày air, ghi độ phủ ngày, và là lịch sử ROI cho bước Gợi ý KOC",
-        "Job Livestream đi cùng luồng (11.1 chờ phiên Live); sơ đồ không vẽ riêng quy trình Live"
+        "Job Livestream đi cùng luồng (11.1 chờ phiên Live); video kênh tự sở hữu (CTV) chạy luồng 6 bước riêng, không vẽ ở đây"
       ]
     },
     {
       "dot": "rose",
-      "title": "Rủi ro đã ghi nhận (audit 24/10)",
+      "title": "Rủi ro đã ghi nhận (audit 25/10)",
       "items": [
-        "Các bước duyệt (Pháp chế, nghiệm thu, PAID) chủ yếu chặn ở UI, server chưa kiểm vai trò",
-        "Tất toán chưa trừ tạm ứng; Lark lỗi vẫn báo đồng bộ thành công"
+        "Deal-board kiểm vai trò bằng mã DIRECTOR không tồn tại, nên Giám đốc bị chặn ở bước Pháp chế, tài chính; chưa chặn theo người phụ trách deal",
+        "Duyệt KB ở màn Content gửi lưu thiếu revision nên không vào được Job, và đánh dấu Đạt cả 2 vòng cùng lúc",
+        "Kéo Job tồn ghi ngược về tháng cũ không kiểm quyền và khoá sổ tháng cũ"
       ]
     }
   ]

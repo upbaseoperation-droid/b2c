@@ -107,7 +107,7 @@ export const TAB_ALIASES: Partial<Record<TabKey, TabKey>> = {
   'approved-booking-list': 'koc-listing',
   'sample-tracker': 'koc-listing',
   'store-air-plan-report': 'dashboard-bi',
-  'push-products': 'content',
+  'push-products': 'brand-knowledge',
   stores: 'master-data',
   'ctv-master': 'self-channel-hub',
   'workload-3d': 'manager',

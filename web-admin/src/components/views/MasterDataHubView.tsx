@@ -41,6 +41,7 @@ import {
 import { UserProfile, BrandDetail, StorePortfolioItem, KocItem, MasterContentPillar, Contributor, BookingDealItem } from '../../lib/types';
 import { INITIAL_KOCS, INITIAL_BRANDS } from '../../lib/mockData';
 import { INITIAL_CONTRIBUTORS } from '../../lib/selfChannelData';
+import { useBrandProfiles, findBrandProfile } from '../../lib/brands/useBrandProfiles';
 import { 
   UPBASE_STAFF_MASTER,
   UPBASE_MASTER_PILLARS
@@ -173,8 +174,27 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const [selectedBrandCategory, setSelectedBrandCategory] = useState('ALL');
   const [selectedBrandStatus, setSelectedBrandStatus] = useState('ALL');
   const [selectedBrandPic, setSelectedBrandPic] = useState('ALL');
+  const [selectedBrandProfileFilter, setSelectedBrandProfileFilter] = useState<'ALL' | 'READY' | 'MISSING'>('ALL');
   const [brandPage, setBrandPage] = useState(1);
   const BRAND_PAGE_SIZE = 25;
+  const { profiles: savedBrandProfiles } = useBrandProfiles();
+
+  const isBrandProfileReady = useCallback(
+    (b: BrandDetail) => {
+      const matched = findBrandProfile(savedBrandProfiles, b.name);
+      if (matched) {
+        return Boolean(
+          matched.positioning?.slogan ||
+          matched.positioning?.story ||
+          matched.entity?.companyName ||
+          (matched.products && matched.products.length > 0) ||
+          (matched.documents && matched.documents.length > 0)
+        );
+      }
+      return Boolean(b.brandGuideline && b.brandGuideline.length > 5);
+    },
+    [savedBrandProfiles],
+  );
 
   // Dynamic Brand Categories
   const brandCategories = useMemo(() => {
@@ -286,6 +306,8 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     return brandList.filter(b => {
       if (selectedBrandCategory !== 'ALL' && b.category !== selectedBrandCategory) return false;
       if (selectedBrandStatus !== 'ALL' && b.status !== selectedBrandStatus) return false;
+      if (selectedBrandProfileFilter === 'READY' && !isBrandProfileReady(b)) return false;
+      if (selectedBrandProfileFilter === 'MISSING' && isBrandProfileReady(b)) return false;
       if (selectedBrandPic !== 'ALL') {
         const matchPic = (b.accountPic && b.accountPic.includes(selectedBrandPic)) ||
                          (b.bookingPicLead && b.bookingPicLead.includes(selectedBrandPic));
@@ -304,9 +326,9 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       }
       return true;
     });
-  }, [brandList, selectedBrandCategory, selectedBrandStatus, selectedBrandPic, brandSearch]);
+  }, [brandList, selectedBrandCategory, selectedBrandStatus, selectedBrandProfileFilter, isBrandProfileReady, selectedBrandPic, brandSearch]);
 
-  const isBrandFiltered = brandSearch.trim() !== '' || selectedBrandCategory !== 'ALL' || selectedBrandStatus !== 'ALL' || selectedBrandPic !== 'ALL';
+  const isBrandFiltered = brandSearch.trim() !== '' || selectedBrandCategory !== 'ALL' || selectedBrandStatus !== 'ALL' || selectedBrandProfileFilter !== 'ALL' || selectedBrandPic !== 'ALL';
 
   const handleResetBrandFilters = () => {
     setBrandSearch('');
@@ -971,6 +993,13 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                     <span className="font-semibold text-ink block truncate group-hover:text-primary transition-colors text-xs">
                       {b.name}
                     </span>
+                    {(() => {
+                      const matched = findBrandProfile(savedBrandProfiles, b.name);
+                      const legalCompany = matched?.entity?.companyName || (b.companyName && !/cập nhật/i.test(b.companyName) ? b.companyName : '');
+                      return legalCompany ? (
+                        <span className="text-2xs text-ink-3 block truncate mt-0.5">{legalCompany}</span>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
               );
@@ -1072,7 +1101,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             header: 'Hồ sơ thương hiệu',
             width: 130,
             render: (b) => {
-              const hasProfile = Boolean(b.brandGuideline && b.brandGuideline.length > 5);
+              const hasProfile = isBrandProfileReady(b);
               return (
                 <span className={`text-xs font-medium ${hasProfile ? 'text-positive' : 'text-warning'}`}>
                   {hasProfile ? 'Đã có hồ sơ' : 'Chưa thiết lập'}
@@ -1252,18 +1281,26 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                     label="Hồ sơ"
                     items={[
                       {
+                        key: 'ALL',
+                        label: 'Tất cả',
+                        count: brandList.length,
+                      },
+                      {
                         key: 'READY',
                         label: 'Đã có hồ sơ',
-                        count: brandList.filter((b) => Boolean(b.brandGuideline && b.brandGuideline.length > 5)).length,
+                        count: brandList.filter((b) => isBrandProfileReady(b)).length,
                       },
                       {
                         key: 'MISSING',
                         label: 'Chưa thiết lập',
-                        count: brandList.filter((b) => !Boolean(b.brandGuideline && b.brandGuideline.length > 5)).length,
+                        count: brandList.filter((b) => !isBrandProfileReady(b)).length,
                       },
                     ]}
-                    value={''}
-                    onChange={() => {}}
+                    value={selectedBrandProfileFilter}
+                    onChange={(val) => {
+                      setSelectedBrandProfileFilter(val as 'ALL' | 'READY' | 'MISSING');
+                      setBrandPage(1);
+                    }}
                   />
                 </div>
               </div>
@@ -1759,6 +1796,20 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         size="md"
         footer={
           <>
+            {editingBrand && onNavigateToBrandProfile && (
+              <Button
+                variant="secondary"
+                icon={ExternalLink}
+                onClick={() => {
+                  const targetName = editingBrand.name;
+                  setIsEditBrandModalOpen(false);
+                  setEditingBrand(null);
+                  onNavigateToBrandProfile(targetName);
+                }}
+              >
+                Mở Hồ sơ thương hiệu
+              </Button>
+            )}
             <Button
               variant="secondary"
               onClick={() => {

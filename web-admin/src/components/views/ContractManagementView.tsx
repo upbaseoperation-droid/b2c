@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, Eye, FileText, FolderKanban, Plus, Upload } from 'lucide-react';
+import { Download, Eye, FileText, FolderKanban, Plus, RefreshCw, Upload } from 'lucide-react';
 import type { BookingDealItem, KocItem } from '../../lib/types';
 import type { ContractField, ContractRecord, DocBlock, LegalTemplate } from '../../lib/contracts/types';
 import { formatDate } from '../../lib/format';
@@ -16,7 +16,7 @@ import { Button, Chips, DataTable, EmptyState, FilterBar, Modal, PageActions, Pa
 import type { Column } from '../ui';
 import { ApiError, contractApi, type ContractBootstrap } from '../contracts/api';
 import { browserDemoEnabled, downloadBrowserDemo, enableBrowserDemo } from '../contracts/browserDemo';
-import { contractStatus, isAcceptance, OFFICIAL_3STAGE_TEMPLATE_IDS } from '../contracts/contractUi';
+import { computeSigningProgress, contractStatus, isAcceptance, OFFICIAL_3STAGE_TEMPLATE_IDS, resolveActiveLegalProfile } from '../contracts/contractUi';
 import { ContractCatalogView, CATEGORY_LABELS } from '../contracts/ContractCatalogView';
 import { ContractDetail } from '../contracts/ContractDetail';
 import { ContractDocumentViewer } from '../contracts/ContractDocumentViewer';
@@ -25,11 +25,13 @@ import { OperationalReportDrawer } from '../OperationalReportDrawer';
 import { detectSubjectKind } from '../../lib/contracts/contractRules';
 import { documentOfTemplate, type ContractDocument } from '../../lib/planDealLink';
 
-/** Yêu cầu mở hồ sơ của một booking (từ màn Booking). `nonce` đổi mỗi lần bấm. */
+/** Yêu cầu mở hồ sơ của một booking hoặc KOC / Hồ sơ pháp lý (từ màn Booking hoặc Danh bạ KOC). `nonce` đổi mỗi lần bấm. */
 export interface ContractIntent {
-  dealId: string;
+  dealId?: string;
+  kocId?: string;
+  legalProfileId?: string;
   nonce: number;
-  /** Loại tài liệu cần mở hoặc soạn của deal trong kế hoạch: hợp đồng nguyên tắc, SOW hoặc biên bản nghiệm thu. */
+  /** Loại tài liệu cần mở hoặc soạn của deal/KOC: hợp đồng nguyên tắc, SOW hoặc biên bản nghiệm thu. */
   document?: ContractDocument;
 }
 
@@ -100,16 +102,40 @@ export function ContractManagementView({
     return () => { cancelled = true; };
   }, [quickViewRecord]);
 
-  // Mở theo booking khi được gọi từ màn Booking.
+  // Mở theo booking hoặc KOC / Hồ sơ pháp lý khi được gọi từ màn Booking hoặc Danh bạ KOC.
   const [handledIntent, setHandledIntent] = useState<number | null>(null);
   if (intent && data && handledIntent !== intent.nonce) {
     setHandledIntent(intent.nonce);
     const latest = (rs: ContractRecord[]) => [...rs].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
-    if (intent.document) {
+    if (intent.kocId && !intent.dealId) {
+      const koc = kocs.find(k => k.id === intent.kocId);
+      const activeProf = resolveActiveLegalProfile(koc, undefined, intent.legalProfileId);
+      const baseSubject = detectSubjectKind(koc);
+      const subject =
+        baseSubject === 'CTV'
+          ? 'CTV'
+          : activeProf?.legalType === 'COMPANY'
+            ? 'COM'
+            : activeProf?.legalType === 'HOUSEHOLD'
+              ? 'HKD'
+              : baseSubject;
+      const doc = intent.document || 'HDNT';
+      const templateId = doc === 'HDNT' ? `${subject}-HDNT` : doc === 'SOW' ? `${subject}-SOW` : `${subject}-VID-BBNT`;
+      setScreen({
+        mode: 'form',
+        init: {
+          kocId: intent.kocId,
+          legalProfileId: intent.legalProfileId || activeProf?.id,
+          kind: doc === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT',
+          docStage: doc,
+          templateId,
+        },
+      });
+    } else if (intent.document) {
       // Deal của kế hoạch: mở hồ sơ đã có của đúng loại tài liệu, chưa có thì mở form soạn theo mẫu bản mới
       const doc = intent.document;
       const deal = deals.find(d => d.id === intent.dealId);
-      const koc = kocs.find(k => k.id === deal?.kocId);
+      const koc = kocs.find(k => k.id === (intent.kocId || deal?.kocId));
       const subject = detectSubjectKind(koc, deal);
       const sameKocForDoc = (r: ContractRecord) => r.dealId === intent.dealId || Boolean(deal?.kocId && r.kocId === deal.kocId);
       const existing = latest(data.records.filter(r => documentOfTemplate(r.templateId) === doc && (doc === 'HDNT' ? sameKocForDoc(r) : r.dealId === intent.dealId)));
@@ -124,14 +150,14 @@ export function ContractManagementView({
           const framework = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && sameKoc(r)));
           const sow = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'SOW' && r.dealId === intent.dealId));
           const parentId = doc === 'SOW' ? framework?.id : doc === 'BBNT' ? sow?.id || framework?.id : undefined;
-          setScreen({ mode: 'form', init: { dealId: intent.dealId, kind: doc === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', docStage: doc, templateId, parentId } });
+          setScreen({ mode: 'form', init: { dealId: intent.dealId, kocId: intent.kocId || deal?.kocId, legalProfileId: intent.legalProfileId || deal?.legalProfileId, kind: doc === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', docStage: doc, templateId, parentId } });
         }
       }
     } else {
       const existing = latest(data.records.filter(r => r.dealId === intent.dealId && !isAcceptance(r.templateId)));
       const deal = deals.find(d => d.id === intent.dealId);
       const framework = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && (r.dealId === intent.dealId || Boolean(deal?.kocId && r.kocId === deal.kocId))));
-      setScreen(existing ? { mode: 'detail', id: existing.id } : { mode: 'form', init: { dealId: intent.dealId, kind: 'CONTRACT', docStage: framework ? 'SOW' : 'HDNT', parentId: framework?.id } });
+      setScreen(existing ? { mode: 'detail', id: existing.id } : { mode: 'form', init: { dealId: intent.dealId, kocId: intent.kocId || deal?.kocId, legalProfileId: intent.legalProfileId || deal?.legalProfileId, kind: 'CONTRACT', docStage: framework ? 'SOW' : 'HDNT', parentId: framework?.id } });
     }
   }
 
@@ -251,6 +277,53 @@ export function ContractManagementView({
         );
       },
     },
+    {
+      key: 'signing',
+      header: 'Tiến độ ký weSign',
+      width: 170,
+      render: r => {
+        const attempt = r.signing.at(-1);
+        const prog = computeSigningProgress(attempt);
+        if (!attempt || !prog) {
+          return (
+            <span className="text-2xs text-ink-3">
+              {r.approval === 'APPROVED' ? 'Sẵn sàng trình ký' : 'Chưa trình ký'}
+            </span>
+          );
+        }
+        return (
+          <div className="grid gap-1 min-w-[140px] max-w-[175px] leading-tight">
+            <div className="flex items-center justify-between gap-1 text-2xs">
+              <span className="font-semibold text-ink tabular-nums">
+                {prog.completedCount}/{prog.totalCount} bước
+              </span>
+              <span className="text-ink-2 tabular-nums">{prog.progressPercent}%</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-line overflow-hidden">
+              <div
+                className={`h-full ${
+                  attempt.status === 'COMPLETED'
+                    ? 'bg-positive'
+                    : attempt.status === 'REJECTED'
+                      ? 'bg-critical'
+                      : 'bg-accent'
+                }`}
+                style={{ width: `${Math.max(6, prog.progressPercent)}%` }}
+              />
+            </div>
+            {prog.currentSignerName ? (
+              <span className="text-2xs text-ink-3 truncate">
+                {attempt.status === 'REJECTED' ? `Từ chối: ${prog.currentSignerName}` : `Chờ: ${prog.currentSignerName}`}
+              </span>
+            ) : (
+              <span className="text-2xs text-positive truncate">
+                {attempt.status === 'COMPLETED' ? 'Đã ký đủ các bên' : prog.summaryText}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
     { key: 'owner', header: 'Người phụ trách', width: 130, render: r => <Person name={r.ownerName} size={20} /> },
     { key: 'updated', header: 'Cập nhật', width: 85, align: 'right', render: r => <span className="text-ink-2 tabular-nums text-xs">{formatDate(r.updatedAt)}</span> },
     {
@@ -300,6 +373,28 @@ export function ContractManagementView({
       {(screen.mode === 'list' || screen.mode === 'catalog') && (
         <>
           <PageActions>
+            {data.records.some(r => r.signing.length > 0 && r.signing.at(-1)!.provider !== 'DEMO' && !['COMPLETED', 'CANCELLED', 'REJECTED'].includes(r.signing.at(-1)!.status)) && (
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={RefreshCw}
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    const res = await contractApi<{ syncedCount?: number; changedCount?: number }>('/api/contracts/integrations/wesign/sync', {});
+                    await refresh();
+                    onNotify?.(`Đã đồng bộ ${res.syncedCount ?? 0} luồng ký weSign (${res.changedCount ?? 0} cập nhật mới).`, 'success');
+                  } catch (e) {
+                    onNotify?.((e as Error).message, 'error');
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Đồng bộ tiến độ weSign
+              </Button>
+            )}
             <Button size="sm" variant="secondary" icon={FileText} onClick={() => setIsContractReportOpen(true)}>
               Kiểm tra điều khoản & thuế
             </Button>
@@ -339,7 +434,7 @@ export function ContractManagementView({
         />
       ) : screen.mode === 'form' ? (
         <ContractForm
-          key={screen.editId || `new-${screen.init?.dealId || ''}-${screen.init?.kind || ''}-${screen.init?.parentId || ''}-${screen.init?.templateId || ''}-${screen.init?.isKocOwnForm ? 'koc' : 'std'}`}
+          key={screen.editId || `new-${screen.init?.dealId || ''}-${screen.init?.kocId || ''}-${screen.init?.legalProfileId || ''}-${screen.init?.kind || ''}-${screen.init?.parentId || ''}-${screen.init?.templateId || ''}-${screen.init?.isKocOwnForm ? 'koc' : 'std'}`}
           data={data}
           deals={deals}
           kocs={kocs}

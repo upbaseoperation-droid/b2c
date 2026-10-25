@@ -31,7 +31,7 @@ import {
   Video,
 } from 'lucide-react';
 import type { BookingDealItem, InputPlanBreakdownState, StorePortfolioItem, UserProfile } from '../../lib/types';
-import type { BrandDocCategory, BrandDocument, BrandPermissions, BrandProfile, BrandSection } from '../../lib/brands/types';
+import type { BrandDocCategory, BrandDocument, BrandPermissions, BrandProduct, BrandProfile, BrandSection } from '../../lib/brands/types';
 import { SECTION_LABEL } from '../../lib/brands/types';
 import { formatNumber, formatVnd, formatVndShort } from '../../lib/format';
 import { INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
@@ -76,6 +76,9 @@ import {
 } from './BrandEditors';
 import { StoreEditDialog } from '../stores/StoreEditDialog';
 import { ContentAngleSetupView } from '../views/ContentAngleSetupView';
+import { ProductCatalogView } from '../views/ProductCatalogView';
+import { INITIAL_MASTER_PRODUCTS } from '../../lib/masterCatalog';
+import { listAllCatalogProducts, type BrandProductCatalog } from '../../lib/productCatalog';
 import { CloudflareR2SetupModal } from './CloudflareR2SetupPanel';
 import { StandardBriefPreviewModal } from './StandardBriefPreviewModal';
 import {
@@ -219,6 +222,29 @@ export function BrandProfileDetail({
 
   const [activeTab, setActiveTab] = useState<BrandDetailTab>(initialTab || 'STORES');
   const [selectedAngleProductId, setSelectedAngleProductId] = useState<string>('ALL');
+  const [liveCatalog, setLiveCatalog] = useState<BrandProductCatalog | null>(null);
+
+  const mergedBrandProducts = useMemo<BrandProduct[]>(() => {
+    if (!liveCatalog) return p.products;
+    const fromCatalog: BrandProduct[] = listAllCatalogProducts(liveCatalog).map(({ group, product }) => ({
+      id: product.id,
+      skuCode: product.sku || product.id,
+      name: product.name,
+      size: '',
+      priceVnd: product.originalPrice ?? undefined,
+      dealPriceVnd: product.promoPrice ?? undefined,
+      commissionOrganicPct: product.affiliateLinks?.[0]?.commissionPct ?? undefined,
+      sampleStockStatus: product.status === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : 'IN_STOCK',
+      pdpUrl: product.cartLinks?.[0]?.url || '',
+      usps: group.usp ? [group.usp] : [],
+      mechanism: group.usp || '',
+      ingredients: [],
+      targetUser: '',
+      contraindications: group.forbiddenClaims || '',
+    }));
+    return fromCatalog.length > 0 ? fromCatalog : p.products;
+  }, [liveCatalog, p.products]);
+  const effectiveProductCount = mergedBrandProducts.length;
 
   const [prevInitialTab, setPrevInitialTab] = useState<BrandDetailTab | undefined>(initialTab);
   if (initialTab !== prevInitialTab) {
@@ -974,7 +1000,7 @@ export function BrandProfileDetail({
         />
         <Stat
           label="Hồ sơ tĩnh: Tài liệu & Pháp lý"
-          value={`${p.documents.length} tệp · ${p.products.length} SKU`}
+          value={`${p.documents.length} tệp · ${effectiveProductCount} SKU`}
           note={
             expiredLegalCount > 0
               ? `${expiredLegalCount} văn bản pháp lý hết hiệu lực`
@@ -1001,7 +1027,7 @@ export function BrandProfileDetail({
             count: p.workflowRules?.kocApprovalMode === 'KL4_PLUS_ONLY' ? 'Duyệt KL4+' : p.workflowRules?.kocApprovalMode === 'NONE_AUTO' ? 'Tự chủ' : 'Duyệt 100%',
           },
           { key: 'FILES', label: 'Tài liệu & Hợp đồng', count: p.documents.length },
-          { key: 'PRODUCTS', label: 'Sản phẩm, Góc nội dung & Trần thù lao', count: `${p.products.length} SKU` },
+          { key: 'PRODUCTS', label: 'Sản phẩm, Combo & Góc nội dung', count: `${effectiveProductCount} SKU` },
           {
             key: 'COMPLIANCE',
             label: 'Từ cấm, Pháp lý & Câu hỏi khó',
@@ -1181,8 +1207,22 @@ export function BrandProfileDetail({
               </dl>
             </Aside>
 
-            {/* Đội ngũ phụ trách theo cơ cấu 2 tầng B2C */}
-            <Aside title="Cơ cấu nhân sự phụ trách B2C">
+            {/* Đội ngũ phụ trách theo cơ cấu 2 tầng B2C + 3 vị trí cấp Brand */}
+            <Aside
+              title="Cơ cấu nhân sự phụ trách B2C"
+              action={
+                onDrilldownToPlan && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={FileSpreadsheet}
+                    onClick={() => onDrilldownToPlan({ brandName: row.name, month: activeMonth })}
+                  >
+                    Plan Brand
+                  </Button>
+                )
+              }
+            >
               <dl className="grid gap-3">
                 <Info label="Trưởng phòng B2C (Phê duyệt kế hoạch)">
                   <Person name={leadB2c} size={20} />
@@ -1196,6 +1236,24 @@ export function BrandProfileDetail({
                     <span className="text-2xs text-ink-3">Không có trưởng nhóm — Trình trực tiếp Trưởng phòng</span>
                   )}
                 </Info>
+                {currentBrandReport.brandPlan && (
+                  <Info label="3 vị trí phụ trách cấp Brand">
+                    <div className="grid gap-1.5 text-2xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-ink-3">1. Plan / Strategy:</span>
+                        <Person name={m?.planStrategyPic || currentBrandReport.brandPlan.planStrategyPic} size={18} />
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-ink-3">2. Content / Brand Main:</span>
+                        <Person name={m?.contentBrandMainPic || currentBrandReport.brandPlan.contentBrandMainPic} size={18} />
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-ink-3">3. Key Visual / SIS:</span>
+                        <Person name={m?.keyVisualSisPic || currentBrandReport.brandPlan.keyVisualSisPic} size={18} />
+                      </div>
+                    </div>
+                  </Info>
+                )}
                 <Info label="Chuyên viên thực thi Booking (PIC)">
                   <div className="grid gap-1.5">
                     {(specialistPics.length > 0 ? specialistPics : [primarySpecialist]).map(sp => (
@@ -1580,6 +1638,18 @@ export function BrandProfileDetail({
           {/* 1. BẢNG LỊCH SỬ HỒ SƠ PLAN & REPORT CỦA THƯƠNG HIỆU QUA CÁC THÁNG */}
           <Panel
             title={`Hồ sơ Tháng (Plan & Report) — ${row.name}`}
+            actions={
+              onDrilldownToPlan && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={FileSpreadsheet}
+                  onClick={() => onDrilldownToPlan({ brandName: row.name, month: activeMonth })}
+                >
+                  Mở Kế hoạch Tháng ({activeMonth})
+                </Button>
+              )
+            }
             flush
           >
             <DataTable
@@ -1590,70 +1660,7 @@ export function BrandProfileDetail({
             />
           </Panel>
 
-          {/* 2. KẾ HOẠCH & BÁO CÁO 3 VỊ TRÍ GẮN THEO THƯƠNG HIỆU TRONG KỲ THÁNG */}
-          {currentBrandReport.brandPlan && (
-            <Panel
-              title={`Kế hoạch & Báo cáo 3 vị trí gắn theo Thương hiệu — ${currentBrandReport.monthLabel}`}
-              actions={
-                onDrilldownToPlan && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={FileSpreadsheet}
-                    onClick={() => onDrilldownToPlan({ brandName: row.name, month: activeMonth })}
-                  >
-                    Mở Kế hoạch Tháng ({activeMonth})
-                  </Button>
-                )
-              }
-            >
-              <div className="grid gap-3 md:grid-cols-3 text-xs">
-                <div className="rounded-lg border border-line bg-canvas/60 p-3.5 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-ink-2 uppercase tracking-wide text-2xs">1. Plan / Strategy</span>
-                    <Status tone={currentBrandReport.brandPlan.status === 'APPROVED' || currentBrandReport.brandPlan.status === 'COMPLETED' ? 'positive' : 'info'}>
-                      {currentBrandReport.brandPlan.status === 'APPROVED' || currentBrandReport.brandPlan.status === 'COMPLETED' ? 'Đã duyệt' : 'Đang triển khai'}
-                    </Status>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-ink-3">Phụ trách:</span>
-                    <Person name={currentBrandReport.brandPlan.planStrategyPic} size={18} />
-                  </div>
-                  <p className="text-ink-2 leading-relaxed">{currentBrandReport.brandPlan.planStrategyPlan.bigIdeaAndKeyMessage}</p>
-                </div>
-
-                <div className="rounded-lg border border-line bg-canvas/60 p-3.5 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-ink-2 uppercase tracking-wide text-2xs">2. Content / Brand Main</span>
-                    <span className="text-2xs font-code font-semibold text-positive">
-                      {currentBrandReport.brandPlan.contentBrandMainPlan.deliveredCount}/{currentBrandReport.brandPlan.contentBrandMainPlan.heroScriptsTarget} tuyến
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-ink-3">Phụ trách:</span>
-                    <Person name={currentBrandReport.brandPlan.contentBrandMainPic} size={18} />
-                  </div>
-                  <p className="text-ink-2 leading-relaxed">{currentBrandReport.brandPlan.contentBrandMainPlan.focusPillars}</p>
-                </div>
-
-                <div className="rounded-lg border border-line bg-canvas/60 p-3.5 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-ink-2 uppercase tracking-wide text-2xs">3. Key Visual / SIS</span>
-                    <span className="text-2xs font-code font-semibold text-positive">
-                      {currentBrandReport.brandPlan.keyVisualSisPlan.deliveredCount}/{currentBrandReport.brandPlan.keyVisualSisPlan.kvDirectionCount + currentBrandReport.brandPlan.keyVisualSisPlan.sisBannerPackageCount} bộ KV
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-ink-3">Phụ trách:</span>
-                    <Person name={currentBrandReport.brandPlan.keyVisualSisPic} size={18} />
-                  </div>
-                  <p className="text-ink-2 leading-relaxed">{currentBrandReport.brandPlan.keyVisualSisPlan.designTheme}</p>
-                </div>
-              </div>
-            </Panel>
-          )}
-
-          {/* 3. ĐỐI SOÁT PLAN VS REPORT THEO TỪNG GIAN HÀNG TRỰC THUỘC TRONG KỲ */}
+          {/* 2. ĐỐI SOÁT PLAN VS REPORT THEO TỪNG GIAN HÀNG TRỰC THUỘC TRONG KỲ */}
           <Panel
             title={`Đối soát Plan & Report theo Gian hàng trực thuộc (${currentBrandReport.monthLabel} · ${brandStores.length} gian hàng)`}
             flush
@@ -1734,123 +1741,55 @@ export function BrandProfileDetail({
       )}
 
       {/* ===================================================================== */}
-      {/* TAB 4: SẢN PHẨM CHỦ LỰC, GÓC NỘI DUNG & TRẦN THÙ LAO KOC              */}
+      {/* TAB 4: SẢN PHẨM & COMBO 2 TẦNG, GÓC NỘI DUNG & TRẦN THÙ LAO KOC       */}
       {/* ===================================================================== */}
       {activeTab === 'PRODUCTS' && (
         <div className="space-y-6">
-          <div className="grid gap-6 items-start lg:grid-cols-[minmax(0,1fr)_360px]">
+          <Panel title={`Danh mục Nhóm Sản phẩm & Combo 2 tầng — ${row.name}`}>
+            <ProductCatalogView
+              brandNames={[row.name]}
+              initialBrand={row.name}
+              hideBrandSelector
+              legacyProducts={INITIAL_MASTER_PRODUCTS}
+              selectedAngleProductId={selectedAngleProductId}
+              onSelectProductForAngle={key => setSelectedAngleProductId(prev => (prev === key ? 'ALL' : key))}
+              onCatalogSaved={(_, cat) => setLiveCatalog(cat)}
+              onNotify={onNotify}
+            />
+          </Panel>
+
+          {!hideInternalRatecard && (
             <Panel
-              title={`Danh mục Sản phẩm chủ lực (${p.products.length} SKU)`}
-              actions={addBtn('products')}
-              flush
+              title={SECTION_LABEL.RATECARD}
+              actions={editBtn('RATECARD', () => setDialog('RATECARD'))}
             >
-              {p.products.length === 0 ? (
-                <EmptyState title="Chưa có sản phẩm chủ lực" />
-              ) : (
-                <ul className="divide-y divide-line">
-                  {p.products.map((x, i) => {
-                    const stockMeta = x.sampleStockStatus ? SAMPLE_STOCK_LABEL[x.sampleStockStatus] : SAMPLE_STOCK_LABEL.IN_STOCK;
-                    return (
-                      <li key={x.id} className="px-4 py-4 grid gap-2.5 text-[13px]">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-semibold text-ink text-sm">{x.name}</span>
-                              {x.skuCode && (
-                                <span className="text-2xs font-code text-ink-3">
-                                  · {x.skuCode}
-                                </span>
-                              )}
-                              {x.size && <span className="text-xs text-ink-3">· {x.size}</span>}
-                              {x.priceVnd && <span className="text-xs font-semibold text-ink tabular-nums">· Niêm yết {formatVnd(x.priceVnd)}</span>}
-                              {x.dealPriceVnd && <span className="text-xs font-semibold text-accent tabular-nums">· Giá deal {formatVnd(x.dealPriceVnd)}</span>}
-                              <Status tone={stockMeta.tone}>{stockMeta.label}</Status>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-ink-3 mt-1">
-                              {(x.commissionOrganicPct !== undefined || x.commissionAdsPct !== undefined) && (
-                                <span>
-                                  Hoa hồng KOC: <strong className="text-ink-2">{x.commissionOrganicPct ?? 10}% tự nhiên</strong>
-                                  {x.commissionAdsPct !== undefined ? ` / ${x.commissionAdsPct}% quảng cáo` : ''}
-                                </span>
-                              )}
-                              {x.sampleReturnRule && <span>· {SAMPLE_RETURN_LABEL[x.sampleReturnRule]}</span>}
-                              {x.pdpUrl && (
-                                <a href={x.pdpUrl} target="_blank" rel="noreferrer" className="text-accent hover:underline inline-flex items-center gap-1">
-                                  <span>Xem trang sản phẩm</span>
-                                  <ExternalLink className="w-3 h-3" />
-                                </a>
-                              )}
-                            </div>
+              {p.ratecard.some(r => r.maxBudget) ? (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {(() => {
+                    const maxVal = Math.max(...p.ratecard.map(r => r.maxBudget || 0), 1);
+                    return p.ratecard.map(r => {
+                      const pct = r.maxBudget ? Math.max(6, Math.round((r.maxBudget / maxVal) * 100)) : 0;
+                      return (
+                        <div key={r.grade} className="rounded-lg border border-line bg-canvas/50 p-3 space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-code font-semibold text-ink">{r.grade}</span>
+                            <span className="tabular-nums font-medium text-ink">
+                              {r.maxBudget ? formatVnd(r.maxBudget) : <span className="text-ink-3">Không đặt trần</span>}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <Button
-                              size="sm"
-                              variant={selectedAngleProductId === (x.skuCode || x.id) ? 'primary' : 'secondary'}
-                              icon={Layers}
-                              onClick={() => {
-                                const key = x.skuCode || x.id;
-                                setSelectedAngleProductId(prev => (prev === key ? 'ALL' : key));
-                              }}
-                            >
-                              {selectedAngleProductId === (x.skuCode || x.id) ? 'Đang lọc góc SP' : 'Góc nội dung'}
-                            </Button>
-                            {itemMenu('products', i)}
+                          <div className="h-1.5 w-full rounded-full bg-sunken overflow-hidden">
+                            <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
                           </div>
                         </div>
-                        {x.usps.length > 0 && (
-                          <div className="rounded-lg bg-canvas/70 border border-line p-3">
-                            <span className="block text-2xs font-medium text-ink-3 mb-1">Điểm nổi bật KOC cần nhắc:</span>
-                            <ul className="list-disc pl-5 text-ink-2 grid gap-1">
-                              {x.usps.map((u, k) => <li key={k}>{u}</li>)}
-                            </ul>
-                          </div>
-                        )}
-                        <dl className="grid gap-3 sm:grid-cols-2">
-                          {x.mechanism && <Info label="Cơ chế tác động &amp; góc quay">{x.mechanism}</Info>}
-                          {x.ingredients.length > 0 && <Info label="Thành phần chính">{x.ingredients.join('; ')}</Info>}
-                          {x.targetUser && <Info label="Đối tượng phù hợp">{x.targetUser}</Info>}
-                          {x.contraindications && <Info label="Chống chỉ định / Lưu ý">{x.contraindications}</Info>}
-                        </dl>
-                      </li>
-                    );
-                  })}
-                </ul>
+                      );
+                    });
+                  })()}
+                </div>
+              ) : (
+                <EmptyState title="Chưa đặt trần thù lao" description="Trưởng phòng B2C có thể cấu hình mức trần thù lao KOC cho nhãn hàng này." />
               )}
             </Panel>
-
-            {!hideInternalRatecard && (
-              <Panel
-                title={SECTION_LABEL.RATECARD}
-                actions={editBtn('RATECARD', () => setDialog('RATECARD'))}
-              >
-                {p.ratecard.some(r => r.maxBudget) ? (
-                  <div className="space-y-3">
-                    {(() => {
-                      const maxVal = Math.max(...p.ratecard.map(r => r.maxBudget || 0), 1);
-                      return p.ratecard.map(r => {
-                        const pct = r.maxBudget ? Math.max(6, Math.round((r.maxBudget / maxVal) * 100)) : 0;
-                        return (
-                          <div key={r.grade} className="space-y-1">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-code font-semibold text-ink">{r.grade}</span>
-                              <span className="tabular-nums font-medium text-ink">
-                                {r.maxBudget ? formatVnd(r.maxBudget) : <span className="text-ink-3">Không đặt trần</span>}
-                              </span>
-                            </div>
-                            <div className="h-1.5 w-full rounded-full bg-sunken overflow-hidden">
-                              <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                ) : (
-                  <EmptyState title="Chưa đặt trần thù lao" description="Trưởng phòng B2C có thể cấu hình mức trần thù lao KOC cho nhãn hàng này." />
-                )}
-              </Panel>
-            )}
-          </div>
+          )}
 
           <Panel
             title={`Góc nội dung & Ma trận kịch bản theo SKU — ${row.name}`}
@@ -1865,7 +1804,7 @@ export function BrandProfileDetail({
             <ContentAngleSetupView
               currentUser={currentUser}
               brandName={row.name}
-              brandProducts={p.products}
+              brandProducts={mergedBrandProducts}
               brandStores={brandStores}
               initialProductId={selectedAngleProductId}
               embedded

@@ -133,6 +133,7 @@ export interface KocProfileProps {
   onUpdateKoc?: (updatedKoc: KocItem, message?: string) => void;
   onOpenKocPortal?: (kocId: string) => void;
   onSelectDealForContract?: (deal: BookingDealItem) => void;
+  onCreateContractForKoc?: (koc: KocItem, legalProfileId?: string) => void;
   selectedBrand?: string;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
@@ -159,6 +160,7 @@ export function KocProfile({
   onSearchSocialChannels,
   onUpdateKoc,
   onSelectDealForContract,
+  onCreateContractForKoc,
 }: KocProfileProps) {
   const isPage = layout === 'page';
   const kocDeals = useMemo(
@@ -353,6 +355,11 @@ export function KocProfile({
               Mã QR VietQR
             </Button>
           )}
+          {onCreateContractForKoc && (
+            <Button variant="secondary" icon={FileText} onClick={() => onCreateContractForKoc(koc)}>
+              Ký hợp đồng
+            </Button>
+          )}
           {onCreateBooking && (
             <Button variant="primary" icon={Plus} onClick={() => onCreateBooking(koc)}>
               Tạo booking
@@ -494,6 +501,11 @@ export function KocProfile({
                   currentUser={currentUser}
                   onUpdateKoc={onUpdateKoc}
                   onScanDocs={onScanDocs}
+                  onCreateContractForProfile={
+                    onCreateContractForKoc
+                      ? (targetKoc, prof) => onCreateContractForKoc(targetKoc, prof.id)
+                      : undefined
+                  }
                 />
               )}
 
@@ -529,6 +541,7 @@ export function KocProfile({
             onUpdateKoc={onUpdateKoc}
             onOpenQr={() => setVietQrDeal(koc)}
             onOpenLegalTab={() => setActiveTab('LEGAL_PROFILES')}
+            onCreateContractForKoc={onCreateContractForKoc}
           />
           <OperationalNotesPanel koc={koc} />
         </aside>
@@ -1618,17 +1631,35 @@ function ShippingAndContactPanel({
   };
 
   const handleSaveFullContact = () => {
-    const updated: KocItem = {
+    const nextEmail = draftEmail.trim() || undefined;
+    const nextPhone = draftPhone.trim();
+    const baseUpdated: KocItem = {
       ...koc,
-      email: draftEmail.trim() || undefined,
-      phone: draftPhone.trim(),
-      zalo: draftZalo.trim() || draftPhone.trim(),
+      email: nextEmail,
+      phone: nextPhone,
+      zalo: draftZalo.trim() || nextPhone,
       location: draftLocation.trim() || 'Hà Nội',
       shippingRecipientName: draftRecipient.trim() || undefined,
       shippingPhone: draftShippingPhone.trim() || undefined,
       shippingAddress: draftShippingAddress.trim() || undefined,
       shippingNotes: draftShippingNotes.trim() || undefined,
     };
+    const existingProfiles = getKocLegalProfiles(baseUpdated);
+    const updated =
+      existingProfiles.length > 0
+        ? syncKocWithLegalProfiles(
+            baseUpdated,
+            existingProfiles.map((p) =>
+              p.isDefault
+                ? {
+                    ...p,
+                    contactPhone: p.contactPhone || nextPhone || undefined,
+                    contactEmail: p.contactEmail || nextEmail || undefined,
+                  }
+                : p,
+            ),
+          )
+        : baseUpdated;
     syncKocContactToStaffSheets(updated);
     onUpdateKoc?.(updated, `Đã cập nhật liên hệ & địa chỉ nhận mẫu cho ${koc.stageName}`);
     setIsEditingContact(false);
@@ -1966,6 +1997,7 @@ function LegalPaymentPanel({
   onUpdateKoc,
   onOpenQr,
   onOpenLegalTab,
+  onCreateContractForKoc,
 }: {
   koc: KocItem;
   currentUser?: UserProfile;
@@ -1973,12 +2005,28 @@ function LegalPaymentPanel({
   onUpdateKoc?: (updated: KocItem, message?: string) => void;
   onOpenQr?: () => void;
   onOpenLegalTab?: () => void;
+  onCreateContractForKoc?: (koc: KocItem, legalProfileId?: string) => void;
 }) {
   const [revealed, setRevealed] = useState(false);
   const allowed = canRevealSensitive(currentUser, koc);
-  const type = legalTypeOf(koc);
-  const legalId = legalIdOf(koc);
   const legalProfiles = useMemo(() => getKocLegalProfiles(koc), [koc]);
+  const defProfile = useMemo(
+    () => legalProfiles.find((p) => p.isDefault) || legalProfiles[0],
+    [legalProfiles],
+  );
+  const type = defProfile ? defProfile.legalType : legalTypeOf(koc);
+  const legalId = defProfile
+    ? (defProfile.legalType !== 'INDIVIDUAL'
+        ? defProfile.taxCode || defProfile.cccd
+        : defProfile.cccd || defProfile.taxCode) || legalIdOf(koc)
+    : legalIdOf(koc);
+  const activeHolder = defProfile
+    ? defProfile.holderName
+    : type === 'INDIVIDUAL'
+      ? koc.realName
+      : koc.companyName || koc.realName;
+  const activeBankAccount = defProfile?.bankAccount || defProfile?.bankAccountNumber || koc.bankAccount;
+  const activeBankName = defProfile?.bankName || koc.bankName;
   const show = (v: string) => (revealed ? v : mask(v));
 
   const scanButton = onScanDocs && (
@@ -2005,7 +2053,7 @@ function LegalPaymentPanel({
         </div>
       }
     >
-      {!legalId && !koc.bankAccount ? (
+      {!legalId && !activeBankAccount ? (
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             {scanButton}
@@ -2018,13 +2066,21 @@ function LegalPaymentPanel({
         </div>
       ) : (
         <dl className="grid gap-3 text-xs">
-          <InfoRow label="Loại hồ sơ">{LEGAL_TYPE_LABEL[type]}</InfoRow>
-          {koc.taxAccountType && (
-            <InfoRow label="Chế độ khấu trừ thuế">{koc.taxAccountType}</InfoRow>
+          <InfoRow label="Loại hồ sơ mặc định">{LEGAL_TYPE_LABEL[type]}</InfoRow>
+          {(defProfile?.taxAccountType || koc.taxAccountType) && (
+            <InfoRow label="Chế độ khấu trừ thuế">
+              {defProfile?.taxAccountType || koc.taxAccountType}
+            </InfoRow>
           )}
           <InfoRow label={type === 'INDIVIDUAL' ? 'Họ tên chủ TK' : 'Tên đơn vị thụ hưởng'}>
-            {type === 'INDIVIDUAL' ? koc.realName : koc.companyName || koc.realName}
+            {activeHolder}
           </InfoRow>
+          {defProfile?.representativeName && type !== 'INDIVIDUAL' && (
+            <InfoRow label="Người đại diện ký HĐ">
+              {defProfile.representativeName}
+              {defProfile.representativeTitle ? ` (${defProfile.representativeTitle})` : ''}
+            </InfoRow>
+          )}
           <InfoRow label={type === 'INDIVIDUAL' ? 'Số CCCD / ĐD' : 'Mã số thuế'}>
             {legalId ? (
               <SensitiveValue value={show(legalId)} copyValue={revealed ? legalId : undefined} />
@@ -2032,23 +2088,45 @@ function LegalPaymentPanel({
               <span className="text-warning font-medium">Chưa bổ sung</span>
             )}
           </InfoRow>
-          {type === 'INDIVIDUAL' && koc.taxCode && koc.taxCode !== 'Chưa có' && koc.taxCode !== legalId && (
-            <InfoRow label="Mã số thuế cá nhân">
-              <SensitiveValue value={show(koc.taxCode)} copyValue={revealed ? koc.taxCode : undefined} />
+          {type === 'INDIVIDUAL' &&
+            (defProfile?.taxCode || koc.taxCode) &&
+            (defProfile?.taxCode || koc.taxCode) !== 'Chưa có' &&
+            (defProfile?.taxCode || koc.taxCode) !== legalId && (
+              <InfoRow label="Mã số thuế cá nhân">
+                <SensitiveValue
+                  value={show((defProfile?.taxCode || koc.taxCode)!)}
+                  copyValue={revealed ? defProfile?.taxCode || koc.taxCode : undefined}
+                />
+              </InfoRow>
+            )}
+          {type === 'INDIVIDUAL' &&
+            (defProfile?.cccdIssueDate ||
+              koc.issueDate ||
+              defProfile?.cccdIssuePlace ||
+              koc.issuePlace) && (
+              <InfoRow label="Ngày cấp, nơi cấp">
+                {[
+                  defProfile?.cccdIssueDate || koc.issueDate,
+                  defProfile?.cccdIssuePlace || koc.issuePlace,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </InfoRow>
+            )}
+          {revealed && (defProfile?.registeredAddress || koc.permanentAddress) && (
+            <InfoRow label="Địa chỉ trên giấy tờ">
+              {defProfile?.registeredAddress || koc.permanentAddress}
             </InfoRow>
           )}
-          {type === 'INDIVIDUAL' && (koc.issueDate || koc.issuePlace) && (
-            <InfoRow label="Ngày cấp, nơi cấp">{[koc.issueDate, koc.issuePlace].filter(Boolean).join(' · ')}</InfoRow>
-          )}
-          {revealed && koc.permanentAddress && (
-            <InfoRow label="Địa chỉ trên giấy tờ">{koc.permanentAddress}</InfoRow>
-          )}
           <InfoRow label="Tài khoản nhận tiền">
-            {koc.bankAccount ? (
+            {activeBankAccount ? (
               <div className="grid gap-1">
                 <span className="inline-flex flex-wrap items-center gap-x-1.5">
-                  <SensitiveValue value={show(koc.bankAccount)} copyValue={revealed ? koc.bankAccount : undefined} />
-                  {koc.bankName && <span className="text-ink-3">· {koc.bankName}</span>}
+                  <SensitiveValue
+                    value={show(activeBankAccount)}
+                    copyValue={revealed ? activeBankAccount : undefined}
+                  />
+                  {activeBankName && <span className="text-ink-3">· {activeBankName}</span>}
                 </span>
                 {onOpenQr && (
                   <button
@@ -2082,7 +2160,7 @@ function LegalPaymentPanel({
                 {legalProfiles.map((p, idx) => (
                   <div
                     key={p.id || idx}
-                    className={`p-2 rounded border text-2xs space-y-0.5 ${
+                    className={`p-2 rounded border text-2xs space-y-1 ${
                       p.isDefault
                         ? 'border-accent/40 bg-accent-soft/20'
                         : 'border-line bg-sunken/30'
@@ -2092,34 +2170,47 @@ function LegalPaymentPanel({
                       <span className="truncate">
                         <b className="font-mono">{p.profileCode}</b> · {LEGAL_TYPE_LABEL[p.legalType]} · {p.holderName}
                       </span>
-                      {p.isDefault ? (
-                        <span className="text-accent font-semibold shrink-0">Mặc định</span>
-                      ) : onUpdateKoc ? (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {p.isDefault ? (
+                          <span className="text-accent font-semibold">Mặc định</span>
+                        ) : onUpdateKoc ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = legalProfiles.map((item) => ({
+                                ...item,
+                                isDefault: item.id === p.id,
+                              }));
+                              const updated = syncKocWithLegalProfiles(koc, next);
+                              syncKocContactToStaffSheets(updated);
+                              onUpdateKoc(
+                                updated,
+                                `Đã chuyển hồ sơ pháp lý mặc định sang ${p.profileCode} (${p.holderName})`,
+                              );
+                            }}
+                            className="text-accent hover:underline font-medium cursor-pointer"
+                          >
+                            Đặt mặc định
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 text-ink-2">
+                      <span className="truncate">
+                        {p.legalType === 'INDIVIDUAL' ? 'CCCD' : 'MST'}:{' '}
+                        <span className="num font-medium">{show(p.taxCode || p.cccd || '')}</span>
+                        {p.bankName ? ` · ${p.bankName}` : ''}
+                        {p.bankAccount ? ` (${show(p.bankAccount)})` : ''}
+                      </span>
+                      {onCreateContractForKoc && (
                         <button
                           type="button"
-                          onClick={() => {
-                            const next = legalProfiles.map((item) => ({
-                              ...item,
-                              isDefault: item.id === p.id,
-                            }));
-                            const updated = syncKocWithLegalProfiles(koc, next);
-                            syncKocContactToStaffSheets(updated);
-                            onUpdateKoc(
-                              updated,
-                              `Đã chuyển hồ sơ pháp lý mặc định sang ${p.profileCode} (${p.holderName})`,
-                            );
-                          }}
-                          className="text-accent hover:underline font-medium shrink-0 cursor-pointer"
+                          onClick={() => onCreateContractForKoc(koc, p.id)}
+                          className="text-primary hover:underline font-semibold shrink-0 cursor-pointer"
                         >
-                          Đặt mặc định
+                          Ký HĐ
                         </button>
-                      ) : null}
-                    </div>
-                    <div className="text-ink-2">
-                      {p.legalType === 'INDIVIDUAL' ? 'CCCD' : 'MST'}:{' '}
-                      <span className="num font-medium">{show(p.taxCode || p.cccd || '')}</span>
-                      {p.bankName ? ` · ${p.bankName}` : ''}
-                      {p.bankAccount ? ` (${show(p.bankAccount)})` : ''}
+                      )}
                     </div>
                   </div>
                 ))}

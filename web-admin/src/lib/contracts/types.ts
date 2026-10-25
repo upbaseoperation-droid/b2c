@@ -129,8 +129,36 @@ export interface LegalTemplate {
 export interface ReviewStep { role: 'LEGAL' | 'FINANCE' | 'LEAD'; reviewerId: string; reviewerName: string; status: 'PENDING' | 'APPROVED' | 'CHANGES' | 'REJECTED'; note: string; decidedAt?: string; version: number }
 export interface ContractFinding { severity: 'ERROR' | 'WARNING' | 'INFO'; message: string; evidence: string; fieldKey?: string }
 export interface AiCheck { version: number; at: string; provider: 'RULES' | 'AI'; findings: ContractFinding[] }
-export interface SigningPerson { name: string; email: string; action: number; status: string; at?: string }
-export interface SigningAttempt { documentId: string; version: number; linkedBy: string; linkedAt: string; status: string; sourceStatus: number; people: SigningPerson[]; syncedAt: string; error?: string; evidenceConfirmedBy: string; evidenceHash: string; provider?: 'MISA' | 'DEMO' }
+export interface SigningPerson {
+  name: string;
+  email: string;
+  action: number;
+  status: string;
+  at?: string;
+  role?: number;
+  roleLabel?: string;
+  level?: number;
+}
+export interface SigningAttempt {
+  documentId: string;
+  version: number;
+  linkedBy: string;
+  linkedAt: string;
+  status: string;
+  sourceStatus: number;
+  people: SigningPerson[];
+  syncedAt: string;
+  error?: string;
+  evidenceConfirmedBy: string;
+  evidenceHash: string;
+  provider?: 'MISA' | 'DEMO';
+  name?: string;
+  completedCount?: number;
+  totalCount?: number;
+  progressPercent?: number;
+  currentSignerName?: string;
+  currentSignerEmail?: string;
+}
 export interface ContractEvent { at: string; actorId: string; actorName: string; action: string; note: string; version: number }
 export interface VideoAcceptanceInspectionMeta {
   resolvedUrl: string;

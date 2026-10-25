@@ -5,7 +5,7 @@
  */
 
 import type { BookingDealItem, KocItem, KocLegalProfile } from '../../lib/types';
-import { OFFICIAL_3STAGE_TEMPLATE_IDS, type ContractField, type ContractRecord, type ContractRole, type FieldGroup, type LegalTemplate, type ReviewStep } from '../../lib/contracts/types';
+import { OFFICIAL_3STAGE_TEMPLATE_IDS, type ContractField, type ContractRecord, type ContractRole, type FieldGroup, type LegalTemplate, type ReviewStep, type SigningAttempt } from '../../lib/contracts/types';
 import type { StatusTone } from '../ui';
 import { formatNumber, getVietnamDateYmd } from '../../lib/format';
 import { getKocLegalProfiles, legalTypeOf } from '../koc/kocUtils';
@@ -56,6 +56,76 @@ export function signerStatus(action: number, raw: string): StatusView {
   if (action === 1) return { label: 'Chờ ký', tone: 'warning' };
   if (action === 0) return { label: 'Chưa đến lượt', tone: 'neutral' };
   return { label: raw, tone: 'neutral' };
+}
+
+export interface SigningProgressView {
+  completedCount: number;
+  totalCount: number;
+  progressPercent: number;
+  currentSignerName?: string;
+  currentSignerEmail?: string;
+  summaryText: string;
+  tone: StatusTone;
+}
+
+/** Tính toán tiến độ ký từ phản hồi của MISA AMIS weSign hoặc lượt ký hiện hành. */
+export function computeSigningProgress(attempt?: SigningAttempt): SigningProgressView | null {
+  if (!attempt) return null;
+  const activeSigners = attempt.people.filter(p => p.role !== 3);
+  const completedCount = attempt.completedCount ?? activeSigners.filter(p => p.action === 2).length;
+  const totalCount = attempt.totalCount ?? activeSigners.length;
+  const progressPercent =
+    attempt.progressPercent ??
+    (attempt.status === 'COMPLETED'
+      ? 100
+      : totalCount > 0
+        ? Math.round((completedCount / totalCount) * 100)
+        : 0);
+  const waitingPerson = activeSigners.find(p => p.action === 1) || attempt.people.find(p => p.action === 1);
+  const rejectedPerson = attempt.people.find(p => p.action === 3);
+  const currentSignerName = attempt.currentSignerName || waitingPerson?.name;
+  const currentSignerEmail = attempt.currentSignerEmail || waitingPerson?.email;
+
+  if (attempt.status === 'COMPLETED') {
+    return {
+      completedCount: totalCount || completedCount,
+      totalCount,
+      progressPercent: 100,
+      summaryText: `Đã ký hoàn tất ${totalCount}/${totalCount} bước (100%)`,
+      tone: 'positive',
+    };
+  }
+  if (attempt.status === 'REJECTED') {
+    return {
+      completedCount,
+      totalCount,
+      progressPercent,
+      currentSignerName: rejectedPerson?.name,
+      currentSignerEmail: rejectedPerson?.email,
+      summaryText: rejectedPerson ? `${rejectedPerson.name} từ chối ký` : 'Bên ký từ chối',
+      tone: 'critical',
+    };
+  }
+  if (attempt.status === 'CANCELLED') {
+    return {
+      completedCount,
+      totalCount,
+      progressPercent,
+      summaryText: 'Luồng ký đã hủy trên weSign',
+      tone: 'neutral',
+    };
+  }
+  return {
+    completedCount,
+    totalCount,
+    progressPercent,
+    currentSignerName,
+    currentSignerEmail,
+    summaryText: currentSignerName
+      ? `${completedCount}/${totalCount} đã ký (${progressPercent}%) · Chờ ${currentSignerName}`
+      : `${completedCount}/${totalCount} đã ký (${progressPercent}%)`,
+    tone: 'info',
+  };
 }
 
 /** Một trạng thái tổng cho hồ sơ: lượt ký (nếu có) quyết định, nếu chưa trình ký thì theo phê duyệt. */

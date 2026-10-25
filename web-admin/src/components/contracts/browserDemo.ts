@@ -470,6 +470,7 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       requireCondition(!attempt || ['REJECTED', 'CANCELLED'].includes(attempt.status), 'Đã có lượt ký hoạt động hoặc hoàn tất.');
       next.signing.push({
         documentId: crypto.randomUUID(),
+        name: record.title,
         version: record.version,
         linkedBy: actor.id,
         linkedAt: at,
@@ -477,11 +478,16 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
         provider: 'DEMO',
         status: 'WAITING',
         sourceStatus: -1,
+        completedCount: 0,
+        totalCount: 2,
+        progressPercent: 0,
+        currentSignerName: 'Upbase (Công ty CP Công nghệ UpBase)',
+        currentSignerEmail: 'hddt@upbase.asia',
         evidenceConfirmedBy: actor.id,
         evidenceHash: '',
         people: [
-          { name: 'Upbase (Công ty CP Công nghệ UpBase)', email: 'hddt@upbase.asia', action: 1, status: 'Chờ ký' },
-          { name: record.partner, email: record.values['word/document.xml:p48:cell'] || 'partner@booking.upbase.vn', action: 0, status: 'Chưa đến lượt' },
+          { name: 'Upbase (Công ty CP Công nghệ UpBase)', email: 'hddt@upbase.asia', role: 0, roleLabel: 'Người ký', level: 1, action: 1, status: 'Chờ ký' },
+          { name: record.partner, email: record.values['word/document.xml:p48:cell'] || 'partner@booking.upbase.vn', role: 0, roleLabel: 'Người ký', level: 2, action: 0, status: 'Chưa đến lượt' },
         ],
       });
     } else {
@@ -490,11 +496,13 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       if (body.action === 'DEMO_SIGN_REJECT') {
         person.action = 3;
         person.status = 'Từ chối';
+        person.at = at;
         attempt.status = 'REJECTED';
         attempt.sourceStatus = -4;
       } else {
         person.action = 2;
         person.status = 'Đã ký';
+        person.at = at;
         const following = attempt.people.find(p => p.action === 0);
         if (following) {
           following.action = 1;
@@ -506,6 +514,14 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
           attempt.sourceStatus = -3;
         }
       }
+      const completedCount = attempt.people.filter(p => p.action === 2).length;
+      const totalCount = attempt.people.length;
+      const currentWaiting = attempt.people.find(p => p.action === 1);
+      attempt.completedCount = completedCount;
+      attempt.totalCount = totalCount;
+      attempt.progressPercent = attempt.status === 'COMPLETED' ? 100 : totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+      attempt.currentSignerName = currentWaiting?.name;
+      attempt.currentSignerEmail = currentWaiting?.email;
       attempt.syncedAt = at;
     }
     event(next, actor, String(body.action), 'Ký số mô phỏng (giả lập WeSign)');

@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Camera, Columns2, FileScan, FileUp, Scale, Trash2, Upload } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Building2, Camera, CheckCircle2, Columns2, CreditCard, FileScan, FileUp, RefreshCw, Scale, Search, ShieldCheck, Trash2, Upload, UserCheck } from 'lucide-react';
 import type { BookingDealItem, KocItem, OcrExtractedFields } from '../../lib/types';
 import type { AcceptanceScreenshotItem, ContractField, ContractRecord, DocBlock, LegalTemplate, VideoAcceptanceInspectionMeta } from '../../lib/contracts/types';
 import { Button, Field, Input, Modal, Panel, Segmented, Select, Status, Textarea } from '../ui';
@@ -15,7 +15,11 @@ import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
-import { getKocLegalProfiles, LEGAL_TYPE_LABEL } from '../koc/kocUtils';
+import {
+  evaluateLegalProfileContractReadiness,
+  getKocLegalProfiles,
+  LEGAL_TYPE_LABEL,
+} from '../koc/kocUtils';
 import {
   GROUP_ORDER,
   OFFICIAL_3STAGE_TEMPLATE_IDS,
@@ -41,6 +45,8 @@ import { parseDocxInBrowser } from './docxClientParser';
 
 export interface ContractFormInit {
   dealId?: string;
+  kocId?: string;
+  legalProfileId?: string;
   kind?: 'CONTRACT' | 'ACCEPTANCE';
   docStage?: ContractDocStage;
   parentId?: string;
@@ -134,8 +140,14 @@ export function ContractForm({
 
   const initialDealLookup = deals.find(d => d.id === (record?.dealId || init?.dealId));
   const initialKocLookup =
+    (init?.kocId ? kocs.find(k => k.id === init.kocId) : undefined) ||
     findKoc(kocs, initialDealLookup) ||
     (record?.kocId ? kocs.find(k => k.id === record.kocId) : undefined);
+  const initialResolvedProfile = resolveActiveLegalProfile(
+    initialKocLookup,
+    initialDealLookup,
+    init?.legalProfileId || initialDealLookup?.legalProfileId,
+  );
 
   const initialDocStage: ContractDocStage = (() => {
     const tpl = record?.templateId || init?.templateId || '';
@@ -165,13 +177,34 @@ export function ContractForm({
         ? findFrameworkForKoc(initialKocLookup, initialDealLookup)
         : undefined);
   const initialDeal = deals.find(d => d.id === (record?.dealId || init?.dealId || initialParent?.dealId));
+  const initialSyntheticDealForTemplate: BookingDealItem | undefined =
+    initialDeal ||
+    (initialResolvedProfile
+      ? ({
+          id: '',
+          dealCode: '',
+          kocId: initialKocLookup?.id,
+          kocStageName: initialKocLookup?.stageName || '',
+          kocChannelId: initialKocLookup?.channelId || '',
+          brandName: 'UPBASE',
+          stage: 'CONTRACTING',
+          totalValue: 0,
+          legalProfileId: initialResolvedProfile.id,
+          vatRatePercent: initialResolvedProfile.vatRatePercent,
+          legalProfileSnapshot: {
+            legalType: initialResolvedProfile.legalType,
+            holderName: initialResolvedProfile.holderName,
+          },
+        } as unknown as BookingDealItem)
+      : undefined);
   const [dealId, setDealId] = useState(initialDeal?.id || '');
   const [selectedKocId, setSelectedKocId] = useState<string>(
-    initialDeal?.kocId || record?.kocId || initialParent?.kocId || initialKocLookup?.id || '',
+    init?.kocId || initialDeal?.kocId || record?.kocId || initialParent?.kocId || initialKocLookup?.id || '',
   );
   const [selectedLegalProfileId, setSelectedLegalProfileId] = useState<string>(
-    initialDeal?.legalProfileId || '',
+    init?.legalProfileId || initialDeal?.legalProfileId || initialResolvedProfile?.id || '',
   );
+  const [kocSearchQuery, setKocSearchQuery] = useState<string>('');
   const [docStage, setDocStage] = useState<ContractDocStage>(initialDocStage);
   const [kind, setKind] = useState<'CONTRACT' | 'ACCEPTANCE'>(
     initialDocStage === 'BBNT'
@@ -213,10 +246,10 @@ export function ContractForm({
     record?.templateId ||
       init?.templateId ||
       (initialDeal
-        ? templateFor(findKoc(kocs, initialDeal), initialDocStage === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', initialDeal, data.templates, initialDocStage)
+        ? templateFor(findKoc(kocs, initialDeal), initialDocStage === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', initialSyntheticDealForTemplate, data.templates, initialDocStage)
         : initialDocStage === 'BBNT' && initialParent
           ? inferAcceptanceTemplate(initialParent.templateId) || 'IND-VID-BBNT'
-          : templateFor(initialKocLookup, initialDocStage === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', undefined, data.templates, initialDocStage)),
+          : templateFor(initialKocLookup, initialDocStage === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', initialSyntheticDealForTemplate, data.templates, initialDocStage)),
   );
   const [title, setTitle] = useState(
     record?.title ||
@@ -237,7 +270,7 @@ export function ContractForm({
   const [partner, setPartner] = useState(
     record?.partner ||
       (initialDeal || initialKocLookup
-        ? partnerName(findKoc(kocs, initialDeal) || initialKocLookup, initialDeal, initialDeal?.legalProfileId)
+        ? partnerName(findKoc(kocs, initialDeal) || initialKocLookup, initialDeal, init?.legalProfileId || initialDeal?.legalProfileId)
         : initialParent?.partner || ''),
   );
   const [parentId, setParentId] = useState(record?.parentId || init?.parentId || initialParent?.id || '');
@@ -320,13 +353,14 @@ export function ContractForm({
       totalValue: 0,
     } as unknown as BookingDealItem);
     if (!activeLegalProfile) return base;
+    const bankAcc = activeLegalProfile.bankAccount || activeLegalProfile.bankAccountNumber || base.kocBankAccount;
     return {
       ...base,
       legalProfileId: activeLegalProfile.id,
       vatRatePercent: activeLegalProfile.vatRatePercent ?? base.vatRatePercent,
       kocIdCardNumber: activeLegalProfile.cccd || base.kocIdCardNumber,
       kocBankName: activeLegalProfile.bankName || base.kocBankName,
-      kocBankAccount: activeLegalProfile.bankAccountNumber || base.kocBankAccount,
+      kocBankAccount: bankAcc,
       kocBankHolder: activeLegalProfile.bankHolderName || activeLegalProfile.holderName || base.kocBankHolder,
       legalProfileSnapshot: {
         legalType: activeLegalProfile.legalType,
@@ -339,8 +373,9 @@ export function ContractForm({
         representativeTitle: activeLegalProfile.representativeTitle,
         registeredAddress: activeLegalProfile.registeredAddress,
         bankName: activeLegalProfile.bankName,
-        bankAccountNumber: activeLegalProfile.bankAccountNumber,
-        bankHolderName: activeLegalProfile.bankHolderName,
+        bankAccount: bankAcc,
+        bankAccountNumber: bankAcc,
+        bankHolderName: activeLegalProfile.bankHolderName || activeLegalProfile.holderName,
         taxRateLabel: activeLegalProfile.taxRateLabel,
         vatRatePercent: activeLegalProfile.vatRatePercent,
       },
@@ -354,7 +389,7 @@ export function ContractForm({
   }, [deals, targetKocId, deal]);
 
   const initialBreakdown = useMemo(
-    () => buildJobAcceptanceBreakdown(initialDeal, findKoc(kocs, initialDeal), initialParent),
+    () => buildJobAcceptanceBreakdown(initialDeal, findKoc(kocs, initialDeal) || initialKocLookup, initialParent),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
@@ -365,6 +400,27 @@ export function ContractForm({
     [dealWithActiveProfile, deal, koc, parentRecord, draftAddons, draftVideoFee],
   );
 
+  const latestPrefillCtxRef = useRef({
+    koc,
+    deal: dealWithActiveProfile || deal,
+    brand,
+    existingRecords: data.records,
+    parentRecord,
+    parentFields: parentTemplate ? uniqueFields(parentTemplate) : ([] as ContractField[]),
+    legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
+    ctvAcceptedDeals,
+  });
+  latestPrefillCtxRef.current = {
+    koc,
+    deal: dealWithActiveProfile || deal,
+    brand,
+    existingRecords: data.records,
+    parentRecord,
+    parentFields: parentTemplate ? uniqueFields(parentTemplate) : [],
+    legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
+    ctvAcceptedDeals,
+  };
+
   // Tải mẫu (kèm vị trí ô). Hồ sơ đang sửa dùng đúng bản mẫu đã khóa của hồ sơ.
   useEffect(() => {
     if (!templateId) return;
@@ -374,22 +430,13 @@ export function ContractForm({
         if (cancelled) return;
         setTemplate(r.template); setLoadError('');
         if (!record) {
-          const result = prefill(uniqueFields(r.template), {}, {
-            koc,
-            deal: dealWithActiveProfile || deal,
-            brand,
-            existingRecords: data.records,
-            parentRecord,
-            parentFields: parentTemplate ? uniqueFields(parentTemplate) : [],
-            legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
-            ctvAcceptedDeals,
-          });
+          const result = prefill(uniqueFields(r.template), {}, latestPrefillCtxRef.current);
           setValues(result.values); setPrefilled(new Set(result.filled));
         }
       })
       .catch(e => !cancelled && setLoadError((e as Error).message));
     return () => { cancelled = true; };
-    // Chỉ tải lại khi đổi mẫu; đổi booking được xử lý ở chooseDeal.
+    // Chỉ tải lại khi đổi mẫu; đổi booking/KOC được xử lý ở chooseDeal/chooseKocDirectly/chooseLegalProfile.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateId]);
 
@@ -500,32 +547,62 @@ export function ContractForm({
     setSelectedKocId(kId);
     const k = kocs.find(x => x.id === kId);
     if (!k) return;
+
+    const currentDealMatchesKoc =
+      deal &&
+      (deal.kocId === k.id ||
+        (deal.kocChannelId || '').replace(/^@/, '').toLowerCase() === k.channelId.replace(/^@/, '').toLowerCase());
+    const matchedDealForKoc = currentDealMatchesKoc
+      ? deal
+      : docStage === 'HDNT'
+        ? undefined
+        : deals.find(
+            d =>
+              d.kocId === k.id ||
+              (d.kocChannelId || '').replace(/^@/, '').toLowerCase() === k.channelId.replace(/^@/, '').toLowerCase(),
+          );
+    if ((matchedDealForKoc?.id || '') !== dealId) {
+      setDealId(matchedDealForKoc?.id || '');
+    }
+
     const profiles = getKocLegalProfiles(k);
     const defProf = profiles.find(p => p.isDefault) || profiles[0];
     const nextProfId = defProf?.id || '';
     setSelectedLegalProfileId(nextProfId);
-    const nextPartner = partnerName(k, deal, nextProfId);
+    const nextBrand = matchedDealForKoc?.brandName || (docStage === 'HDNT' ? 'UPBASE' : brand);
+    if (nextBrand && nextBrand !== brand) setBrand(nextBrand);
+    const nextPartner = partnerName(k, matchedDealForKoc, nextProfId);
     setPartner(nextPartner);
-    if (docStage === 'HDNT' && !brand.trim()) setBrand('UPBASE');
-    setTitle(formatStageTitle(docStage, k, deal, nextPartner, brand));
+    setTitle(formatStageTitle(docStage, k, matchedDealForKoc, nextPartner, nextBrand));
 
-    const existingFw = findFrameworkForKoc(k, deal);
-    if (docStage === 'SOW' && existingFw) setParentId(existingFw.id);
+    const existingFw = findFrameworkForKoc(k, matchedDealForKoc);
+    const nextParent =
+      docStage === 'BBNT'
+        ? findBestParentForAcceptance(matchedDealForKoc, k)
+        : docStage === 'SOW'
+          ? existingFw
+          : undefined;
+    setParentId(nextParent?.id || '');
 
+    const bankAcc = defProf?.bankAccount || defProf?.bankAccountNumber;
     const syntheticDeal: BookingDealItem | undefined = defProf
       ? ({
-          ...(deal || {
+          ...(matchedDealForKoc || {
             id: '',
             dealCode: '',
             kocId: k.id,
             kocStageName: k.stageName,
             kocChannelId: k.channelId,
-            brandName: brand || 'UPBASE',
+            brandName: nextBrand || 'UPBASE',
             stage: 'CONTRACTING',
             totalValue: 0,
           }),
           legalProfileId: defProf.id,
           vatRatePercent: defProf.vatRatePercent,
+          kocIdCardNumber: defProf.cccd,
+          kocBankName: defProf.bankName,
+          kocBankAccount: bankAcc,
+          kocBankHolder: defProf.bankHolderName || defProf.holderName,
           legalProfileSnapshot: {
             legalType: defProf.legalType,
             holderName: defProf.holderName,
@@ -537,13 +614,34 @@ export function ContractForm({
             representativeTitle: defProf.representativeTitle,
             registeredAddress: defProf.registeredAddress,
             bankName: defProf.bankName,
-            bankAccountNumber: defProf.bankAccountNumber,
-            bankHolderName: defProf.bankHolderName,
+            bankAccount: bankAcc,
+            bankAccountNumber: bankAcc,
+            bankHolderName: defProf.bankHolderName || defProf.holderName,
             taxRateLabel: defProf.taxRateLabel,
             vatRatePercent: defProf.vatRatePercent,
           },
         } as unknown as BookingDealItem)
-      : deal;
+      : matchedDealForKoc;
+
+    const freshBd = buildJobAcceptanceBreakdown(syntheticDeal, k, nextParent);
+    setDraftVideoFee(freshBd.videoItem.feeNetVnd);
+    setDraftAddons(freshBd.addonItems);
+
+    const nextParentTpl = nextParent ? data.templates.find(t => t.id === nextParent.templateId) : undefined;
+    const nextCtvDeals = deals
+      .filter(d => d.kocId === k.id && (d.tiktokVideoUrl || d.id === matchedDealForKoc?.id))
+      .slice(0, 5);
+    const nextCtx = {
+      koc: k,
+      deal: syntheticDeal,
+      brand: nextBrand,
+      existingRecords: data.records,
+      parentRecord: nextParent,
+      parentFields: nextParentTpl ? uniqueFields(nextParentTpl) : [],
+      legalProfileId: nextProfId,
+      ctvAcceptedDeals: nextCtvDeals.length > 0 ? nextCtvDeals : matchedDealForKoc ? [matchedDealForKoc] : [],
+    };
+    latestPrefillCtxRef.current = nextCtx;
 
     const nextTemplate = templateFor(k, kind, syntheticDeal, data.templates, docStage);
     if (nextTemplate !== templateId) {
@@ -551,16 +649,7 @@ export function ContractForm({
       setValues({});
       setTemplateId(nextTemplate);
     } else if (template) {
-      const result = prefill(fields, {}, {
-        koc: k,
-        deal: syntheticDeal,
-        brand,
-        existingRecords: data.records,
-        parentRecord,
-        parentFields: parentTemplate ? uniqueFields(parentTemplate) : [],
-        legalProfileId: nextProfId,
-        ctvAcceptedDeals,
-      });
+      const result = prefill(fields, {}, nextCtx);
       setValues(result.values);
       setPrefilled(new Set(result.filled));
     }
@@ -570,7 +659,11 @@ export function ContractForm({
     setSelectedLegalProfileId(profId);
     const prof = kocLegalProfiles.find(p => p.id === profId);
     const nextPartner = partnerName(koc, deal, profId);
-    if (nextPartner) setPartner(nextPartner);
+    if (nextPartner) {
+      setPartner(nextPartner);
+      setTitle(formatStageTitle(docStage, koc, deal, nextPartner, brand));
+    }
+    const bankAcc = prof?.bankAccount || prof?.bankAccountNumber;
     const syntheticDeal: BookingDealItem | undefined = prof
       ? ({
           ...(deal || {
@@ -585,6 +678,10 @@ export function ContractForm({
           }),
           legalProfileId: prof.id,
           vatRatePercent: prof.vatRatePercent,
+          kocIdCardNumber: prof.cccd,
+          kocBankName: prof.bankName,
+          kocBankAccount: bankAcc,
+          kocBankHolder: prof.bankHolderName || prof.holderName,
           legalProfileSnapshot: {
             legalType: prof.legalType,
             holderName: prof.holderName,
@@ -596,29 +693,32 @@ export function ContractForm({
             representativeTitle: prof.representativeTitle,
             registeredAddress: prof.registeredAddress,
             bankName: prof.bankName,
-            bankAccountNumber: prof.bankAccountNumber,
-            bankHolderName: prof.bankHolderName,
+            bankAccount: bankAcc,
+            bankAccountNumber: bankAcc,
+            bankHolderName: prof.bankHolderName || prof.holderName,
             taxRateLabel: prof.taxRateLabel,
             vatRatePercent: prof.vatRatePercent,
           },
         } as unknown as BookingDealItem)
       : deal;
+    const nextCtx = {
+      koc,
+      deal: syntheticDeal,
+      brand,
+      existingRecords: data.records,
+      parentRecord,
+      parentFields: parentTemplate ? uniqueFields(parentTemplate) : [],
+      legalProfileId: profId,
+      ctvAcceptedDeals,
+    };
+    latestPrefillCtxRef.current = nextCtx;
     const nextTemplate = templateFor(koc, kind, syntheticDeal, data.templates, docStage);
     if (nextTemplate !== templateId) {
       setTemplate(null);
       setValues({});
       setTemplateId(nextTemplate);
     } else if (template) {
-      const result = prefill(fields, {}, {
-        koc,
-        deal: syntheticDeal,
-        brand,
-        existingRecords: data.records,
-        parentRecord,
-        parentFields: parentTemplate ? uniqueFields(parentTemplate) : [],
-        legalProfileId: profId,
-        ctvAcceptedDeals,
-      });
+      const result = prefill(fields, {}, nextCtx);
       setValues(result.values);
       setPrefilled(new Set(result.filled));
     }
@@ -813,6 +913,45 @@ export function ContractForm({
       ? r.templateId.endsWith('-HDNT') && (!targetKocId || !r.kocId || r.kocId === targetKocId)
       : !dealId || !r.dealId || r.dealId === dealId || (targetKocId && r.kocId === targetKocId)),
   );
+  const filteredKocs = useMemo(() => {
+    const q = kocSearchQuery.trim().toLowerCase();
+    if (!q) return kocs;
+    const matched = kocs.filter(k => {
+      const profiles = getKocLegalProfiles(k);
+      const profileText = profiles
+        .map(p => `${p.holderName || ''} ${p.taxCode || ''} ${p.cccd || ''} ${p.bankAccount || ''} ${p.bankName || ''}`)
+        .join(' ')
+        .toLowerCase();
+      const hay = `${k.stageName} ${k.channelId} ${k.realName || ''} ${k.companyName || ''} ${k.cccd || ''} ${k.taxCode || ''} ${k.phone || ''} ${profileText}`.toLowerCase();
+      return hay.includes(q);
+    });
+    if (koc && !matched.some(x => x.id === koc.id)) {
+      return [koc, ...matched];
+    }
+    return matched;
+  }, [kocs, kocSearchQuery, koc]);
+
+  const quickPickKocs = useMemo(() => {
+    const sourceList = kocSearchQuery.trim() ? filteredKocs : kocs;
+    const sorted = [...sourceList].sort((a, b) => {
+      const aProfs = getKocLegalProfiles(a).length;
+      const bProfs = getKocLegalProfiles(b).length;
+      if (bProfs !== aProfs) return bProfs - aProfs;
+      return (b.totalPastDeals || 0) - (a.totalPastDeals || 0);
+    });
+    return sorted.slice(0, 6);
+  }, [kocs, filteredKocs, kocSearchQuery]);
+
+  const kocScopedDeals = useMemo(() => {
+    if (!koc) return [];
+    const cleanHandle = koc.channelId.replace(/^@/, '').toLowerCase();
+    return deals.filter(
+      d =>
+        d.kocId === koc.id ||
+        (cleanHandle && (d.kocChannelId || '').replace(/^@/, '').toLowerCase() === cleanHandle),
+    );
+  }, [deals, koc]);
+
   const dealOptions = useMemo(() => {
     const slice = deals.slice(0, 200);
     if (deal && !slice.some(d => d.id === deal.id)) {
@@ -1055,45 +1194,323 @@ export function ContractForm({
                     )}
                   </div>
                 </Field>
-                <Field label="Booking (Job)" htmlFor="ct-deal">
-                  <Select id="ct-deal" value={dealId} onChange={e => chooseDeal(e.target.value)} disabled={editing && !!record?.dealId}>
-                    <option value="">{docStage === 'HDNT' ? 'Không gắn booking (Ký HĐNT khung cho KOC)' : 'Chọn booking / Job...'}</option>
-                    {dealOptions.map(d => <option key={d.id} value={d.id}>{d.dealCode} · {d.kocStageName} · {d.brandName}</option>)}
-                  </Select>
-                </Field>
-                <Field label="KOC / Nhà sáng tạo" htmlFor="ct-koc">
-                  <Select
-                    id="ct-koc"
-                    value={koc?.id || selectedKocId}
-                    onChange={e => chooseKocDirectly(e.target.value)}
-                    disabled={editing && !!record?.kocId}
-                  >
-                    <option value="">Chọn KOC từ danh bạ...</option>
-                    {kocs.map(k => (
-                      <option key={k.id} value={k.id}>
-                        {k.stageName} ({k.channelId}) · {k.realName || k.companyName || 'Chưa rõ tên thật'}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                {kocLegalProfiles.length > 0 && (
-                  <Field label="Pháp nhân ký kết của KOC (Bên B)" htmlFor="ct-legal-profile" className="md:col-span-2">
-                    <Select
-                      id="ct-legal-profile"
-                      value={activeLegalProfile?.id || selectedLegalProfileId}
-                      onChange={e => chooseLegalProfile(e.target.value)}
-                    >
-                      {kocLegalProfiles.map(prof => (
-                        <option key={prof.id} value={prof.id}>
-                          [{LEGAL_TYPE_LABEL[prof.legalType]}] {prof.holderName}
-                          {prof.taxCode ? ` · MST: ${prof.taxCode}` : ''}
-                          {prof.cccd ? ` · CCCD: ${prof.cccd}` : ''}
-                          {prof.bankAccountNumber ? ` · STK: ${prof.bankAccountNumber} (${prof.bankName || ''})` : ''}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                )}
+                {/* Khối trung tâm: Xuất phát từ KOC -> Chọn Hồ sơ pháp lý (1 KOC - N Pháp nhân) -> Tự động điền hợp đồng */}
+                <div className="md:col-span-2 rounded-xl border border-accent/30 bg-accent-soft/15 p-3.5 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink">
+                        <UserCheck className="w-4 h-4 text-accent" />
+                        Chọn KOC &amp; Hồ sơ pháp lý để tự động điền thông tin (1 KOC – N Hồ sơ pháp lý)
+                      </span>
+                      {koc && (
+                        <Status tone="positive">
+                          Đã chọn: {koc.stageName} ({kocLegalProfiles.length} hồ sơ pháp lý)
+                        </Status>
+                      )}
+                    </div>
+                    {koc && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        icon={RefreshCw}
+                        onClick={refreshSystemPrefill}
+                      >
+                        Điền lại thông tin từ KOC
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <Field label="1. Chọn KOC / Nhà sáng tạo từ danh bạ" htmlFor="ct-koc">
+                      <div className="space-y-1.5">
+                        {!(editing && !!record?.kocId) && (
+                          <div className="relative">
+                            <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <Input
+                              value={kocSearchQuery}
+                              onChange={e => setKocSearchQuery(e.target.value)}
+                              placeholder="Tìm nhanh theo tên KOC, @channelId, tên thật/công ty, CCCD, MST, SĐT..."
+                              className="pl-8 text-xs"
+                            />
+                          </div>
+                        )}
+                        <Select
+                          id="ct-koc"
+                          value={koc?.id || selectedKocId}
+                          onChange={e => chooseKocDirectly(e.target.value)}
+                          disabled={editing && !!record?.kocId}
+                        >
+                          <option value="">
+                            Chọn KOC để tự động điền thông tin ({filteredKocs.length} KOC)...
+                          </option>
+                          {filteredKocs.slice(0, 300).map(k => {
+                            const profCount = getKocLegalProfiles(k).length;
+                            return (
+                              <option key={k.id} value={k.id}>
+                                {k.stageName} ({k.channelId}) · {k.realName || k.companyName || 'Chưa rõ tên thật'}
+                                {profCount > 0 ? ` · [${profCount} hồ sơ pháp lý]` : ''}
+                              </option>
+                            );
+                          })}
+                        </Select>
+                      </div>
+                    </Field>
+
+                    <Field label="2. Gắn Booking / Job (Nếu ký Phụ lục SOW hoặc BBNT)" htmlFor="ct-deal">
+                      <div className="space-y-1.5">
+                        {koc && kocScopedDeals.length > 0 && !(editing && !!record?.dealId) && (
+                          <div className="text-2xs text-ink-2 flex items-center justify-between">
+                            <span>
+                              KOC <b>{koc.stageName}</b> có <b>{kocScopedDeals.length}</b> Booking/Job trong hệ thống
+                            </span>
+                            {dealId && (
+                              <button
+                                type="button"
+                                onClick={() => setDealId('')}
+                                className="text-accent hover:underline font-medium"
+                              >
+                                Bỏ gắn Job (Ký HĐNT độc lập)
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        <Select id="ct-deal" value={dealId} onChange={e => chooseDeal(e.target.value)} disabled={editing && !!record?.dealId}>
+                          <option value="">{docStage === 'HDNT' ? 'Không gắn booking (Ký HĐNT khung cho KOC)' : 'Chọn booking / Job...'}</option>
+                          {koc && kocScopedDeals.length > 0 ? (
+                            <>
+                              <optgroup label={`Booking / Job của ${koc.stageName} (${kocScopedDeals.length})`}>
+                                {kocScopedDeals.map(d => (
+                                  <option key={d.id} value={d.id}>
+                                    {d.dealCode} · {d.kocStageName} · {d.brandName} ({formatNumber(d.totalValue || 0)}đ)
+                                  </option>
+                                ))}
+                              </optgroup>
+                              <optgroup label="Các Booking / Job khác">
+                                {dealOptions
+                                  .filter(d => !kocScopedDeals.some(kd => kd.id === d.id))
+                                  .map(d => (
+                                    <option key={d.id} value={d.id}>
+                                      {d.dealCode} · {d.kocStageName} · {d.brandName}
+                                    </option>
+                                  ))}
+                              </optgroup>
+                            </>
+                          ) : (
+                            dealOptions.map(d => (
+                              <option key={d.id} value={d.id}>
+                                {d.dealCode} · {d.kocStageName} · {d.brandName}
+                              </option>
+                            ))
+                          )}
+                        </Select>
+                      </div>
+                    </Field>
+                  </div>
+
+                  {/* Gợi ý chọn nhanh KOC khi chưa chọn hoặc đang gõ tìm kiếm */}
+                  {!(editing && !!record?.kocId) && (!koc || kocSearchQuery.trim()) && quickPickKocs.length > 0 && (
+                    <div className="pt-1 space-y-1.5">
+                      <span className="text-2xs font-medium text-ink-3 block">
+                        {kocSearchQuery.trim()
+                          ? `Kết quả khớp "${kocSearchQuery}" — bấm để chọn & tự điền:`
+                          : 'Chọn nhanh KOC tiêu biểu (ưu tiên KOC có nhiều hồ sơ pháp lý):'}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {quickPickKocs.map(item => {
+                          const itemProfs = getKocLegalProfiles(item);
+                          const isCurrent = koc?.id === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => {
+                                chooseKocDirectly(item.id);
+                                setKocSearchQuery('');
+                              }}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-2xs transition-colors ${
+                                isCurrent
+                                  ? 'border-accent bg-accent text-white font-semibold'
+                                  : 'border-line bg-surface hover:border-accent/50 text-ink'
+                              }`}
+                            >
+                              <span className="font-semibold">{item.stageName}</span>
+                              <span className={isCurrent ? 'text-white/80 font-mono' : 'text-ink-3 font-mono'}>
+                                {item.channelId}
+                              </span>
+                              <span
+                                className={`px-1.5 py-0.2 rounded text-3xs font-semibold ${
+                                  isCurrent
+                                    ? 'bg-white/20 text-white'
+                                    : itemProfs.length > 1
+                                      ? 'bg-accent/15 text-accent'
+                                      : 'bg-sunken text-ink-2'
+                                }`}
+                              >
+                                {itemProfs.length} pháp nhân
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Danh sách 1..N Hồ sơ pháp lý của KOC đang chọn */}
+                  {koc && kocLegalProfiles.length > 0 && (
+                    <div className="pt-2 border-t border-line space-y-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <label htmlFor="ct-legal-profile" className="text-xs font-semibold text-ink flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-accent" />
+                          <span>
+                            Pháp nhân ký kết của KOC (Bên B) — {koc.stageName} có {kocLegalProfiles.length} hồ sơ pháp lý:
+                          </span>
+                        </label>
+                        {kocLegalProfiles.length > 1 && (
+                          <span className="text-2xs text-accent font-medium">
+                            Bấm vào thẻ pháp nhân bên dưới để chuyển đổi mẫu (IND / HKD / COM) &amp; tự điền
+                          </span>
+                        )}
+                      </div>
+
+                      <Select
+                        id="ct-legal-profile"
+                        value={activeLegalProfile?.id || selectedLegalProfileId}
+                        onChange={e => chooseLegalProfile(e.target.value)}
+                      >
+                        {kocLegalProfiles.map(prof => {
+                          const bankAcc = prof.bankAccount || prof.bankAccountNumber;
+                          return (
+                            <option key={prof.id} value={prof.id}>
+                              [{prof.profileCode || 'HSPL'} · {LEGAL_TYPE_LABEL[prof.legalType]}] {prof.holderName}
+                              {prof.taxCode ? ` · MST: ${prof.taxCode}` : ''}
+                              {prof.cccd ? ` · CCCD: ${prof.cccd}` : ''}
+                              {bankAcc ? ` · STK: ${bankAcc} (${prof.bankName || ''})` : ''}
+                            </option>
+                          );
+                        })}
+                      </Select>
+
+                      <div className={`grid gap-2.5 ${kocLegalProfiles.length > 1 ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
+                        {kocLegalProfiles.map((prof, idx) => {
+                          const isSelected = (activeLegalProfile?.id || selectedLegalProfileId) === prof.id;
+                          const bankAcc = prof.bankAccount || prof.bankAccountNumber;
+                          const readiness = evaluateLegalProfileContractReadiness(prof, koc);
+                          return (
+                            <div
+                              key={prof.id || idx}
+                              onClick={() => chooseLegalProfile(prof.id)}
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  chooseLegalProfile(prof.id);
+                                }
+                              }}
+                              className={`p-3 rounded-xl border text-left transition-all cursor-pointer space-y-1.5 ${
+                                isSelected
+                                  ? 'border-accent bg-surface shadow-xs ring-1 ring-accent/30'
+                                  : 'border-line bg-surface/70 hover:border-accent/40 hover:bg-surface'
+                              }`}
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <span className="font-mono text-2xs font-semibold px-1.5 py-0.5 rounded bg-sunken border border-line text-ink">
+                                    {prof.profileCode || `HSPL-0${idx + 1}`}
+                                  </span>
+                                  <Status
+                                    tone={
+                                      prof.legalType === 'COMPANY'
+                                        ? 'info'
+                                        : prof.legalType === 'HOUSEHOLD'
+                                          ? 'warning'
+                                          : 'positive'
+                                    }
+                                  >
+                                    {LEGAL_TYPE_LABEL[prof.legalType]}
+                                  </Status>
+                                  {prof.isDefault && (
+                                    <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-3xs font-medium">
+                                      Mặc định
+                                    </span>
+                                  )}
+                                  {readiness.ready ? (
+                                    <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive text-3xs font-semibold border border-positive/25">
+                                      Đủ {readiness.filledCount}/{readiness.totalRequired} trường HĐ
+                                    </span>
+                                  ) : (
+                                    <span
+                                      className="px-1.5 py-0.5 rounded bg-warning-soft text-warning text-3xs font-semibold border border-warning/30"
+                                      title={`Thiếu trong Danh bạ KOC: ${readiness.missingFields.join(', ')}`}
+                                    >
+                                      Thiếu: {readiness.missingFields.slice(0, 2).join(', ')}
+                                      {readiness.missingFields.length > 2 ? '…' : ''}
+                                    </span>
+                                  )}
+                                </div>
+                                {isSelected ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent text-white text-2xs font-semibold">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    Đang điền vào HĐ
+                                  </span>
+                                ) : (
+                                  <span className="text-2xs text-accent font-medium">Chọn pháp nhân này</span>
+                                )}
+                              </div>
+
+                              <div className="font-semibold text-xs text-ink truncate" title={prof.holderName}>
+                                {prof.holderName}
+                              </div>
+
+                              <div className="grid gap-1 text-2xs text-ink-2 pt-0.5">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                                  {prof.cccd && (
+                                    <span>
+                                      CCCD: <strong className="font-mono text-ink">{prof.cccd}</strong>
+                                    </span>
+                                  )}
+                                  {prof.taxCode && (
+                                    <span>
+                                      MST: <strong className="font-mono text-ink">{prof.taxCode}</strong>
+                                    </span>
+                                  )}
+                                  {prof.representativeName && (
+                                    <span>
+                                      Đại diện: <strong className="text-ink">{prof.representativeName}</strong>
+                                      {prof.representativeTitle ? ` (${prof.representativeTitle})` : ''}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                                  <span className="inline-flex items-center gap-1">
+                                    <CreditCard className="w-3 h-3 text-positive shrink-0" />
+                                    {bankAcc ? (
+                                      <span>
+                                        STK: <strong className="font-mono text-ink">{bankAcc}</strong> ({prof.bankName || 'NH'}) ·{' '}
+                                        {prof.bankHolderName || prof.holderName}
+                                      </span>
+                                    ) : (
+                                      <span className="text-warning">Chưa có STK ngân hàng</span>
+                                    )}
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5 border-t border-line/60">
+                                  <span className="text-ink-3">{prof.taxAccountType}</span>
+                                  <span className="inline-flex items-center gap-1 font-medium text-ink-2">
+                                    <ShieldCheck className="w-3 h-3 text-accent" />
+                                    {prof.frameworkContractStatus === 'ĐÃ_KÝ'
+                                      ? `Đã ký HĐNT (${prof.frameworkContractCode || 'HĐNT'})`
+                                      : 'Chưa ký HĐNT'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <Field label={isKocOwnForm ? 'Phân loại pháp nhân / Mẫu đối chiếu' : 'Mẫu pháp chế (Bộ 11 mẫu chuẩn)'} htmlFor="ct-template">
                   <Select
                     id="ct-template"

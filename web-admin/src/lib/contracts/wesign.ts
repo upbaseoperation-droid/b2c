@@ -2,7 +2,22 @@ import { ContractError, requireCondition } from './domain';
 import type { SigningPerson } from './types';
 const base = () => process.env.WESIGN_ENV === 'test' ? 'https://testapiwesign.misa.vn' : process.env.WESIGN_ENV === 'demo' ? 'https://demoamisapp.misa.vn/wesign/api/public' : 'https://amisapp.misa.vn/wesign/api/public';
 const ACTIONS: Record<number, string> = { 0: 'Chưa đến lượt', 1: 'Chờ ký', 2: 'Đã ký', 3: 'Từ chối', 4: 'Chờ điều phối', 5: 'Đã điều phối', 6: 'Chờ phê duyệt trên weSign', 7: 'Đã phê duyệt trên weSign', 8: 'Đã ủy quyền', 9: 'Đã hủy ủy quyền' };
-interface MisaDetail { document: { id: string; name: string; status: number }; listDocumentParticipant: Array<{ participantName: string; participantEmail: string; action: number; role: number; level?: number }> }
+const ROLES: Record<number, string> = { 0: 'Người ký', 1: 'Điều phối', 2: 'Phê duyệt', 3: 'Nhận bản sao (CC)' };
+const DONE_ACTIONS = new Set([2, 5, 7, 8]);
+const WAITING_ACTIONS = new Set([1, 4, 6]);
+interface MisaParticipant {
+  participantName: string;
+  participantEmail: string;
+  action: number;
+  role: number;
+  level?: number;
+  actionDate?: string;
+  modifiedDate?: string;
+}
+interface MisaDetail {
+  document: { id: string; name: string; status: number };
+  listDocumentParticipant: MisaParticipant[];
+}
 let cached: { value: string; expires: number } | undefined;
 export function wesignConfigured() { return Boolean(process.env.WESIGN_ACCESS_TOKEN || (process.env.WESIGN_CLIENT_ID && process.env.WESIGN_CLIENT_SECRET && process.env.WESIGN_AMIS_SID)); }
 async function request(endpoint: string, init: RequestInit) {
@@ -20,13 +35,44 @@ async function token() {
 }
 export function normalizeDetail(detail: MisaDetail, id: string) {
   requireCondition(detail.document?.id?.toLowerCase() === id.toLowerCase() && Number.isInteger(detail.document.status) && Array.isArray(detail.listDocumentParticipant), 'Không tìm thấy đúng luồng ký hoặc dữ liệu weSign không hợp lệ.', 502);
-  const people: SigningPerson[] = [...detail.listDocumentParticipant].sort((a, b) => (a.level || 0) - (b.level || 0)).map(p => ({ name: p.participantName || 'Chưa có tên', email: p.participantEmail || '', action: p.action, status: ACTIONS[p.action] || `Trạng thái weSign ${p.action}` }));
+  const people: SigningPerson[] = detail.listDocumentParticipant
+    .map((p, idx) => ({ p, idx, sortKey: typeof p.level === 'number' && p.level > 0 ? p.level : idx + 1 }))
+    .sort((a, b) => a.sortKey - b.sortKey || a.idx - b.idx)
+    .map(({ p }, idx) => ({
+      name: p.participantName || 'Chưa có tên',
+      email: p.participantEmail || '',
+      action: p.action,
+      status: ACTIONS[p.action] || `Trạng thái weSign ${p.action}`,
+      role: Number.isInteger(p.role) ? p.role : undefined,
+      roleLabel: ROLES[p.role] || 'Người ký',
+      level: typeof p.level === 'number' && p.level > 0 ? p.level : idx + 1,
+      at: typeof p.actionDate === 'string' ? p.actionDate : typeof p.modifiedDate === 'string' ? p.modifiedDate : undefined,
+    }));
   // Mã document.status không có bảng nghĩa trong OpenAPI đã đọc. Chỉ dùng mapping do MISA xác nhận tại môi trường công ty.
   let mapping: Record<string, string> = {};
   try { mapping = JSON.parse(process.env.WESIGN_STATUS_MAP || '{}'); } catch { throw new ContractError('Cấu hình trạng thái weSign không hợp lệ.', 503); }
   const mapped = mapping[String(detail.document.status)];
   const status = ['WAITING', 'PARTIAL', 'COMPLETED', 'CANCELLED', 'REJECTED', 'DRAFT'].includes(mapped) ? mapped : 'UNKNOWN';
-  return { sourceStatus: detail.document.status, name: detail.document.name, status, people, syncedAt: new Date().toISOString() };
+
+  const activeSigners = people.filter(p => p.role !== 3);
+  const effectivePool = activeSigners.length > 0 ? activeSigners : people;
+  const totalCount = effectivePool.length;
+  const completedCount = effectivePool.filter(p => DONE_ACTIONS.has(p.action)).length;
+  const progressPercent = status === 'COMPLETED' ? 100 : totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const activeSigner = effectivePool.find(p => WAITING_ACTIONS.has(p.action)) || effectivePool.find(p => !DONE_ACTIONS.has(p.action) && p.action !== 3);
+
+  return {
+    sourceStatus: detail.document.status,
+    name: detail.document.name,
+    status,
+    people,
+    completedCount,
+    totalCount,
+    progressPercent,
+    currentSignerName: activeSigner?.name,
+    currentSignerEmail: activeSigner?.email,
+    syncedAt: new Date().toISOString(),
+  };
 }
 export async function wesignDetail(id: string) {
   requireCondition(/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(id), 'Mã tài liệu weSign phải là UUID.');

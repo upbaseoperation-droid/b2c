@@ -38,6 +38,7 @@ import {
   recordApiUsageLog,
   calculateExecutionCost,
 } from '../lib/apiKeyConfig';
+import { getKocLegalProfiles, syncKocWithLegalProfiles } from './koc/kocUtils';
 
 interface CreateKocModalProps {
   isOpen: boolean;
@@ -100,9 +101,14 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   const [companyName, setCompanyName] = useState('');
   const [taxCode, setTaxCode] = useState('');
   const [legalRepresentative, setLegalRepresentative] = useState('');
+  const [representativeTitle, setRepresentativeTitle] = useState('');
   const [cccd, setCccd] = useState('');
+  const [issueDate, setIssueDate] = useState('');
+  const [issuePlace, setIssuePlace] = useState('');
+  const [permanentAddress, setPermanentAddress] = useState('');
   const [bankName, setBankName] = useState('Techcombank');
   const [bankAccount, setBankAccount] = useState('');
+  const [bankHolderName, setBankHolderName] = useState('');
 
   // Tự động lấy dữ liệu kênh từ TikTok & Creator Marketplace
   const [tiktokLookupInput, setTiktokLookupInput] = useState('');
@@ -142,9 +148,14 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       setCompanyName('');
       setTaxCode('');
       setLegalRepresentative('');
+      setRepresentativeTitle('');
       setCccd('');
+      setIssueDate('');
+      setIssuePlace('');
+      setPermanentAddress('');
       setBankName('Techcombank');
       setBankAccount('');
+      setBankHolderName('');
       setTiktokLookupInput('');
       setScrapedCache(null);
     }
@@ -460,6 +471,9 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
 
       // Legal & Banking
       cccd: cccd.trim(),
+      issueDate: issueDate.trim() || undefined,
+      issuePlace: issuePlace.trim() || undefined,
+      permanentAddress: permanentAddress.trim() || shippingAddress.trim() || undefined,
       taxCode: taxCode.trim() || undefined,
       companyName: legalType !== 'INDIVIDUAL' ? companyName.trim() : undefined,
       legalRepresentative:
@@ -478,14 +492,76 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       brandApprovalStatus: 'ĐÃ_DUYỆT',
       statusKoc: 'SẴN_SÀNG',
       reliabilityScore: 10.0,
-      totalPastDeals: 0,
-      totalPastCost: 0,
-      totalPastGmv: 0,
-      historicalRoi: 0,
-      isWinnerTop20: false,
+      totalPastDeals: duplicateMatch?.koc.totalPastDeals || 0,
+      totalPastCost: duplicateMatch?.koc.totalPastCost || 0,
+      totalPastGmv: duplicateMatch?.koc.totalPastGmv || 0,
+      historicalRoi: duplicateMatch?.koc.historicalRoi || 0,
+      isWinnerTop20: duplicateMatch?.koc.isWinnerTop20 || false,
     };
 
-    onKocCreated(newKoc);
+    const mappedLegalType =
+      legalType === 'BUSINESS_COMPANY'
+        ? 'COMPANY'
+        : legalType === 'BUSINESS_HOUSEHOLD'
+          ? 'HOUSEHOLD'
+          : 'INDIVIDUAL';
+    const holder =
+      (legalType !== 'INDIVIDUAL' ? companyName.trim() : realName.trim()) || stageName.trim();
+    const existingProfiles = duplicateMatch?.koc ? getKocLegalProfiles(duplicateMatch.koc) : [];
+    const hasLegalInput = Boolean(cccd.trim() || taxCode.trim() || bankAccount.trim());
+    const nextProfiles = hasLegalInput
+      ? [
+          ...existingProfiles.map((p) => ({ ...p, isDefault: false })),
+          {
+            id: `${newKoc.id}-lp-${existingProfiles.length + 1}`,
+            profileCode: `HSPL-0${existingProfiles.length + 1}`,
+            legalType: mappedLegalType as 'INDIVIDUAL' | 'HOUSEHOLD' | 'COMPANY',
+            isDefault: true,
+            status: (cccd.trim() || taxCode.trim()) && bankAccount.trim() ? ('ACTIVE' as const) : ('PENDING_VERIFY' as const),
+            taxAccountType:
+              mappedLegalType === 'COMPANY'
+                ? '(VAT 8%) Tài khoản doanh nghiệp'
+                : mappedLegalType === 'HOUSEHOLD'
+                  ? 'HKD xuất hóa đơn'
+                  : '(Thuế TNCN 10%) Tài khoản cá nhân',
+            vatRatePercent: mappedLegalType === 'COMPANY' ? 8 : mappedLegalType === 'HOUSEHOLD' ? 5 : 0,
+            holderName: holder,
+            representativeName:
+              mappedLegalType !== 'INDIVIDUAL'
+                ? legalRepresentative.trim() || realName.trim() || undefined
+                : undefined,
+            representativeTitle:
+              representativeTitle.trim() ||
+              (mappedLegalType === 'COMPANY'
+                ? 'Giám đốc'
+                : mappedLegalType === 'HOUSEHOLD'
+                  ? 'Chủ hộ kinh doanh'
+                  : undefined),
+            relationshipNote:
+              mappedLegalType === 'COMPANY'
+                ? 'Pháp nhân Công ty / MCN đại diện'
+                : mappedLegalType === 'HOUSEHOLD'
+                  ? 'Hộ kinh doanh cá thể'
+                  : 'Chính chủ KOC',
+            cccd: cccd.trim() || undefined,
+            cccdIssueDate: issueDate.trim() || undefined,
+            cccdIssuePlace: issuePlace.trim() || undefined,
+            taxCode: taxCode.trim() || undefined,
+            registeredAddress: permanentAddress.trim() || shippingAddress.trim() || undefined,
+            contactPhone: phone.trim() || undefined,
+            contactEmail: email.trim() || undefined,
+            bankName: bankName,
+            bankAccount: bankAccount.trim() || undefined,
+            bankAccountNumber: bankAccount.trim() || undefined,
+            bankHolderName: bankHolderName.trim() || holder,
+            isOcrVerified: Boolean(cccd.trim() || taxCode.trim()),
+          },
+        ]
+      : existingProfiles;
+
+    const syncedKoc = nextProfiles.length > 0 ? syncKocWithLegalProfiles(newKoc, nextProfiles) : newKoc;
+
+    onKocCreated(syncedKoc);
     onClose();
   };
 
@@ -1233,7 +1309,44 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              <div>
+                <label className="text-ink-2 font-medium block mb-1">Ngày cấp CCCD:</label>
+                <input
+                  type="text"
+                  placeholder="VD: 15/06/2022"
+                  value={issueDate}
+                  onChange={(e) => setIssueDate(e.target.value)}
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="text-ink-2 font-medium block mb-1">Nơi cấp CCCD:</label>
+                <input
+                  type="text"
+                  placeholder="VD: Cục CS QLHC về TTXH"
+                  value={issuePlace}
+                  onChange={(e) => setIssuePlace(e.target.value)}
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="text-ink-2 font-medium block mb-1">
+                  Địa chỉ pháp lý (trên CCCD / ĐKKD):
+                </label>
+                <input
+                  type="text"
+                  placeholder="Địa chỉ thường trú hoặc trụ sở ĐKKD..."
+                  value={permanentAddress}
+                  onChange={(e) => setPermanentAddress(e.target.value)}
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
               <div>
                 <label className="text-ink-2 font-medium block mb-1">Ngân hàng thụ hưởng:</label>
                 <select
@@ -1260,6 +1373,17 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   value={bankAccount}
                   onChange={(e) => setBankAccount(e.target.value)}
                   className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-success font-mono font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="text-ink-2 font-medium block mb-1">Tên chủ tài khoản thụ hưởng:</label>
+                <input
+                  type="text"
+                  placeholder={companyName || realName || 'Tên chủ tài khoản...'}
+                  value={bankHolderName}
+                  onChange={(e) => setBankHolderName(e.target.value)}
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 />
               </div>
             </div>

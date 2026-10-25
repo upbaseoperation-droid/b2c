@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "workflow",
+  "quality": "showcase",
+  "specification": {
+    "path": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\candidate.json",
+    "sha256": "b4ab63102edd7ae367ceaed77610444a3abe2b756afc397bdf7c377414396cb7",
+    "bytes": 28254
+  },
+  "artifact": {
+    "path": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\booking-e2e.html",
+    "sha256": "56f59f728cb3aa8fa8cf1545d606f3717699fac18721ce6ae27576c3ec833359",
+    "bytes": 887312
+  },
+  "gates": {
+    "validate": "fail",
+    "deliver": "not-run",
+    "check": "not-run",
+    "browser-check": "not-run"
+  },
+  "failedStage": "validate",
+  "diagnostics": [
+    {
+      "code": "schema/maxItems",
+      "severity": "error",
+      "message": "/nodes/3/sources (id/label: \"plan_split\") must NOT have more than 3 items",
+      "subject": {
+        "diagramType": "workflow",
+        "path": "/nodes/3/sources",
+        "identity": "plan_split"
+      },
+      "evidence": {
+        "keyword": "maxItems",
+        "limit": 3
+      },
+      "supportedFixes": [
+        "provide at most 3 item(s)"
+      ]
+    },
+    {
+      "code": "schema/maxItems",
+      "severity": "error",
+      "message": "/nodes/5/sources (id/label: \"brief\") must NOT have more than 3 items",
+      "subject": {
+        "diagramType": "workflow",
+        "path": "/nodes/5/sources",
+        "identity": "brief"
+      },
+      "evidence": {
+        "keyword": "maxItems",
+        "limit": 3
+      },
+      "supportedFixes": [
+        "provide at most 3 item(s)"
+      ]
+    },
+    {
+      "code": "schema/maxItems",
+      "severity": "error",
+      "message": "/nodes/6/sources (id/label: \"plan_approve\") must NOT have more than 3 items",
+      "subject": {
+        "diagramType": "workflow",
+        "path": "/nodes/6/sources",
+        "identity": "plan_approve"
+      },
+      "evidence": {
+        "keyword": "maxItems",
+        "limit": 3
+      },
+      "supportedFixes": [
+        "provide at most 3 item(s)"
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 3,
+    "shown": 3,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\review-21\\booking-e2e.finalize.json",
+    "summaryReceipt": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\review-21\\booking-e2e.finalize-summary.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-25T09:43:05.053Z",
+    "source": "network",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 976,
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  },
+  "nextAction": {
+    "action": "edit-in-place",
+    "candidate": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\candidate.json",
+    "constraint": "Preserve unaffected semantics and geometry; apply each diagnostic's supportedFixes, or the fix its message names, and do not replace the whole candidate.",
+    "then": "finalize-once"
+  }
+}

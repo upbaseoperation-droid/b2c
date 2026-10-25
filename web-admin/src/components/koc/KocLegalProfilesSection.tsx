@@ -27,6 +27,7 @@ import { Button, Field, Input, Modal, Panel, Select, Stat, StatRow, Status, Text
 import {
   LEGAL_TYPE_LABEL,
   canRevealSensitive,
+  evaluateLegalProfileContractReadiness,
   getKocLegalProfiles,
   mask,
   syncKocWithLegalProfiles,
@@ -38,6 +39,7 @@ interface KocLegalProfilesSectionProps {
   currentUser?: UserProfile;
   onUpdateKoc?: (updated: KocItem, message?: string) => void;
   onScanDocs?: (koc: KocItem) => void;
+  onCreateContractForProfile?: (koc: KocItem, profile: KocLegalProfile) => void;
 }
 
 const TAX_ACCOUNT_OPTIONS: Record<LegalType, string[]> = {
@@ -63,6 +65,7 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
   currentUser,
   onUpdateKoc,
   onScanDocs,
+  onCreateContractForProfile,
 }) => {
   const profiles = getKocLegalProfiles(koc);
   const allowed = canRevealSensitive(currentUser, koc);
@@ -286,6 +289,7 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
           {profiles.map((p, idx) => {
             const isComp = p.legalType === 'COMPANY';
             const isHkd = p.legalType === 'HOUSEHOLD';
+            const readiness = evaluateLegalProfileContractReadiness(p, koc);
             return (
               <div
                 key={p.id || idx}
@@ -316,9 +320,41 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                         Mặc định hiện hành
                       </span>
                     )}
+                    {readiness.ready ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-positive-soft text-positive border border-positive/30 text-2xs font-semibold">
+                        <Check className="w-3 h-3" />
+                        Đủ trường ký HĐ ({readiness.filledCount}/{readiness.totalRequired})
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingProfile(p);
+                          setIsCreatingNew(false);
+                        }}
+                        title={`Thiếu: ${readiness.missingFields.join(', ')}`}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning-soft text-warning border border-warning/30 text-2xs font-semibold hover:bg-warning-soft/80 cursor-pointer"
+                      >
+                        <AlertTriangle className="w-3 h-3 shrink-0" />
+                        <span>
+                          Thiếu {readiness.missingFields.length} trường HĐ: {readiness.missingFields.slice(0, 2).join(', ')}
+                          {readiness.missingFields.length > 2 ? '…' : ''}
+                        </span>
+                      </button>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1.5">
+                    {onCreateContractForProfile && (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon={FileText}
+                        onClick={() => onCreateContractForProfile(koc, p)}
+                      >
+                        Ký HĐ theo pháp nhân này
+                      </Button>
+                    )}
                     {!p.isDefault && onUpdateKoc && (
                       <Button
                         size="sm"
@@ -425,6 +461,20 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                           </span>
                         </div>
                       )}
+                      {p.businessLicenseNo && (
+                        <div className="flex justify-between gap-2">
+                          <span className="text-ink-3">Số GP ĐKKD:</span>
+                          <span className="font-mono text-ink-2 text-right">{p.businessLicenseNo}</span>
+                        </div>
+                      )}
+                      {(p.contactPhone || p.contactEmail) && (
+                        <div className="flex justify-between gap-2">
+                          <span className="text-ink-3 shrink-0">SĐT / Email HĐ:</span>
+                          <span className="text-ink-2 text-right truncate max-w-[180px]" title={[p.contactPhone, p.contactEmail].filter(Boolean).join(' · ')}>
+                            {[p.contactPhone, p.contactEmail].filter(Boolean).join(' · ')}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -513,6 +563,20 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                             Mở thư mục Hợp đồng Drive
                             <ExternalLink className="w-2.5 h-2.5" />
                           </a>
+                        </div>
+                      )}
+                      {onCreateContractForProfile && (
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => onCreateContractForProfile(koc, p)}
+                            className="inline-flex items-center gap-1 text-accent hover:underline font-semibold text-2xs"
+                          >
+                            <FileText className="w-3 h-3" />
+                            {p.frameworkContractStatus === 'ĐÃ_KÝ'
+                              ? 'Mở / Tạo Phụ lục từ pháp nhân này'
+                              : 'Soạn Hợp đồng nguyên tắc (HĐNT) cho pháp nhân này'}
+                          </button>
                         </div>
                       )}
                     </div>
@@ -630,11 +694,32 @@ function LegalProfileFormModal({
   const [cccdIssueDate, setCccdIssueDate] = useState(initialProfile?.cccdIssueDate || '');
   const [cccdIssuePlace, setCccdIssuePlace] = useState(initialProfile?.cccdIssuePlace || '');
   const [taxCode, setTaxCode] = useState(initialProfile?.taxCode || '');
+  const [businessLicenseNo, setBusinessLicenseNo] = useState(
+    initialProfile?.businessLicenseNo || '',
+  );
+  const [vatRatePercent, setVatRatePercent] = useState<number>(
+    initialProfile?.vatRatePercent ??
+      (initialProfile?.legalType === 'COMPANY'
+        ? (initialProfile?.taxAccountType || '').includes('10%')
+          ? 10
+          : 8
+        : initialProfile?.legalType === 'HOUSEHOLD'
+          ? 5
+          : 0),
+  );
   const [registeredAddress, setRegisteredAddress] = useState(
     initialProfile?.registeredAddress || koc.permanentAddress || koc.shippingAddress || '',
   );
+  const [contactPhone, setContactPhone] = useState(
+    initialProfile?.contactPhone || koc.phone || '',
+  );
+  const [contactEmail, setContactEmail] = useState(
+    initialProfile?.contactEmail || koc.email || '',
+  );
   const [bankName, setBankName] = useState(initialProfile?.bankName || 'Techcombank');
-  const [bankAccount, setBankAccount] = useState(initialProfile?.bankAccount || '');
+  const [bankAccount, setBankAccount] = useState(
+    initialProfile?.bankAccount || initialProfile?.bankAccountNumber || '',
+  );
   const [bankHolderName, setBankHolderName] = useState(
     initialProfile?.bankHolderName || initialProfile?.holderName || '',
   );
@@ -657,15 +742,21 @@ function LegalProfileFormModal({
     setTaxAccountType(TAX_ACCOUNT_OPTIONS[next][0]);
     if (next === 'COMPANY') {
       setRelationshipNote('Pháp nhân Công ty / MCN đại diện');
+      setVatRatePercent(8);
+      if (!representativeTitle) setRepresentativeTitle('Giám đốc');
     } else if (next === 'HOUSEHOLD') {
       setRelationshipNote('Hộ kinh doanh cá thể');
+      setVatRatePercent(5);
+      if (!representativeTitle) setRepresentativeTitle('Chủ hộ kinh doanh');
     } else {
       setRelationshipNote('Chính chủ KOC');
+      setVatRatePercent(0);
     }
   };
 
   const handleSubmit = () => {
     const profileCode = initialProfile?.profileCode || `HSPL-0${nextIndex}`;
+    const cleanBankAcc = bankAccount.trim() || undefined;
     const saved: KocLegalProfile = {
       id: initialProfile?.id || `${koc.id}-lp-${Date.now()}`,
       profileCode,
@@ -673,6 +764,7 @@ function LegalProfileFormModal({
       isDefault,
       status: cccd.trim() || taxCode.trim() ? 'ACTIVE' : 'PENDING_VERIFY',
       taxAccountType: taxAccountType.trim(),
+      vatRatePercent,
       holderName: holderName.trim() || koc.stageName,
       representativeName: representativeName.trim() || undefined,
       representativeTitle: representativeTitle.trim() || undefined,
@@ -683,9 +775,13 @@ function LegalProfileFormModal({
       cccdIssueDate: cccdIssueDate.trim() || undefined,
       cccdIssuePlace: cccdIssuePlace.trim() || undefined,
       taxCode: taxCode.trim() || undefined,
+      businessLicenseNo: businessLicenseNo.trim() || undefined,
       registeredAddress: registeredAddress.trim() || undefined,
+      contactPhone: contactPhone.trim() || undefined,
+      contactEmail: contactEmail.trim() || undefined,
       bankName: bankName.trim() || undefined,
-      bankAccount: bankAccount.trim() || undefined,
+      bankAccount: cleanBankAcc,
+      bankAccountNumber: cleanBankAcc,
       bankHolderName: bankHolderName.trim() || holderName.trim() || undefined,
       isOcrVerified: Boolean(cccd.trim() || taxCode.trim() || initialProfile?.isOcrVerified),
       frameworkContractCode: frameworkContractCode.trim() || undefined,
@@ -828,12 +924,28 @@ function LegalProfileFormModal({
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <Field label="Số CCCD / CMND (9 hoặc 12 số)">
             <Input
               value={cccd}
               onChange={(e) => setCccd(e.target.value)}
               placeholder="001..."
+            />
+          </Field>
+
+          <Field label="Ngày cấp CCCD">
+            <Input
+              value={cccdIssueDate}
+              onChange={(e) => setCccdIssueDate(e.target.value)}
+              placeholder="VD: 12/05/2022"
+            />
+          </Field>
+
+          <Field label="Nơi cấp CCCD">
+            <Input
+              value={cccdIssuePlace}
+              onChange={(e) => setCccdIssuePlace(e.target.value)}
+              placeholder="VD: Cục CS QLHC về TTXH"
             />
           </Field>
 
@@ -844,27 +956,70 @@ function LegalProfileFormModal({
               placeholder="010... hoặc 854..."
             />
           </Field>
-
-          <Field label="Ngày cấp · Nơi cấp CCCD">
-            <Input
-              value={[cccdIssueDate, cccdIssuePlace].filter(Boolean).join(' · ')}
-              onChange={(e) => {
-                const parts = e.target.value.split('·').map((s) => s.trim());
-                setCccdIssueDate(parts[0] || '');
-                setCccdIssuePlace(parts.slice(1).join(' · ') || '');
-              }}
-              placeholder="VD: 12/05/2022 · Cục CS QLHC"
-            />
-          </Field>
         </div>
 
-        <Field label="Địa chỉ thường trú / Địa chỉ trụ sở đăng ký trên hợp đồng">
-          <Input
-            value={registeredAddress}
-            onChange={(e) => setRegisteredAddress(e.target.value)}
-            placeholder="Nhập địa chỉ đầy đủ ghi trên CCCD hoặc ĐKKD..."
-          />
-        </Field>
+        {legalType !== 'INDIVIDUAL' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Số Giấy phép ĐKKD / Đăng ký Hộ kinh doanh (nếu khác MST)">
+              <Input
+                value={businessLicenseNo}
+                onChange={(e) => setBusinessLicenseNo(e.target.value)}
+                placeholder="VD: 41A8045129 hoặc mã số DN..."
+              />
+            </Field>
+            <Field label="Thuế suất VAT áp dụng trên hợp đồng (%)">
+              <Select
+                value={String(vatRatePercent)}
+                onChange={(e) => setVatRatePercent(Number(e.target.value))}
+                className="w-full"
+              >
+                {legalType === 'COMPANY' ? (
+                  <>
+                    <option value="8">VAT 8% (Doanh nghiệp)</option>
+                    <option value="10">VAT 10% (Doanh nghiệp)</option>
+                    <option value="0">0% (Không chịu VAT)</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="5">HKD xuất hóa đơn (5% VAT + 2% TNCN)</option>
+                    <option value="0">HKD không xuất hóa đơn</option>
+                  </>
+                )}
+              </Select>
+            </Field>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="sm:col-span-1">
+            <Field label="Số điện thoại liên hệ trên Hợp đồng">
+              <Input
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                placeholder="VD: 0987654321"
+              />
+            </Field>
+          </div>
+          <div className="sm:col-span-1">
+            <Field label="Email nhận thông báo & Ký số WeSign">
+              <Input
+                type="email"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                placeholder="VD: legal@company.vn"
+              />
+            </Field>
+          </div>
+          <div className="sm:col-span-1">
+            <Field label="Địa chỉ thường trú / Trụ sở đăng ký trên HĐ">
+              <Input
+                value={registeredAddress}
+                onChange={(e) => setRegisteredAddress(e.target.value)}
+                placeholder="Địa chỉ ghi trên CCCD hoặc ĐKKD..."
+              />
+            </Field>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-line">
           <Field label="Ngân hàng thụ hưởng">

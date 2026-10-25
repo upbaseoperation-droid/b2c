@@ -53,6 +53,7 @@ import { usePlanRecord } from '../../lib/usePlanRecord';
 import { detectChannel, type BrandPlanData, type PlanChannel } from '../../lib/brandPlanRules';
 import { CreatorMatchModal } from './CreatorMatchModal';
 import { ContentCopilotModal } from '../content/ContentCopilotModal';
+import { INITIAL_CONTENT_ANGLES } from '../../lib/contentAngleData';
 import { BOOKING_LIST_COLUMNS, buildBookingListRows, defaultBookingTabName, resolveBrandBookingSheetUrl } from '../../lib/bookingList';
 
 interface ContentPlanBoardProps {
@@ -150,6 +151,14 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
     const parentBrand = (plan.parentBrand || plan.brandName || '').split('_')[0].trim();
     return findBrandProfile(brandProfiles, parentBrand) || findBrandProfile(brandProfiles, plan.brandName) || brandProfiles[0] || null;
   }, [plan, brandProfiles]);
+  const brandSavedAngles = useMemo(() => {
+    const bName = (plan?.parentBrand || plan?.brandName || '').split('_')[0].trim().toLowerCase();
+    if (!bName) return INITIAL_CONTENT_ANGLES;
+    const matched = INITIAL_CONTENT_ANGLES.filter(
+      a => a.brandName?.toLowerCase().includes(bName) || bName.includes(a.brandName?.toLowerCase() || '')
+    );
+    return matched.length > 0 ? matched : INITIAL_CONTENT_ANGLES;
+  }, [plan?.brandName, plan?.parentBrand]);
   const [standardBriefOpen, setStandardBriefOpen] = useState(false);
   const { data, status, update, saveNow } = usePlanRecord<ContentPlanData>('/api/content-plan', plan?.id ?? null, EMPTY, msg => notify(msg, 'warning'));
   const slots = useMemo(() => ensureSequentialBriefCodes(data.slots || []), [data.slots]);
@@ -1247,6 +1256,29 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
             </div>
           ) : (
             <>
+              <Field label="Chọn nhanh từ Kho Góc nội dung chuẩn của SKU (Hồ sơ thương hiệu)" className="col-span-2">
+                <Select
+                  value=""
+                  onChange={e => {
+                    const found = brandSavedAngles.find(a => a.id === e.target.value);
+                    if (!found) return;
+                    setAddForm(prev => ({
+                      ...prev,
+                      angle: found.name,
+                      hook: found.hookIdea || prev.hook,
+                      usp: prev.usp || found.solutionApproach || '',
+                      cta: prev.cta || found.callToAction || '',
+                    }));
+                  }}
+                >
+                  <option value="">— Chọn mẫu góc nội dung từ Hồ sơ thương hiệu —</option>
+                  {brandSavedAngles.map(a => (
+                    <option key={a.id} value={a.id}>
+                      [{a.pillarName}] {a.name} — {a.productName}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
               <Field label="Góc nội dung (Angle)" className="col-span-2">
                 <Input value={addForm.angle} onChange={e => setAddForm({ ...addForm, angle: e.target.value })} />
               </Field>
@@ -1547,6 +1579,29 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
             </div>
           ) : (
             <>
+              <Field label="Chọn nhanh từ Kho Góc nội dung chuẩn của SKU (Hồ sơ thương hiệu)" className="col-span-2">
+                <Select
+                  value=""
+                  onChange={e => {
+                    const found = brandSavedAngles.find(a => a.id === e.target.value);
+                    if (!found) return;
+                    setEditForm(prev => ({
+                      ...prev,
+                      angle: found.name,
+                      hook: found.hookIdea || prev.hook,
+                      usp: prev.usp || found.solutionApproach || '',
+                      cta: prev.cta || found.callToAction || '',
+                    }));
+                  }}
+                >
+                  <option value="">— Chọn mẫu góc nội dung từ Hồ sơ thương hiệu —</option>
+                  {brandSavedAngles.map(a => (
+                    <option key={a.id} value={a.id}>
+                      [{a.pillarName}] {a.name} — {a.productName}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
               <div className="col-span-2">
                 <div className="mb-1 flex items-center justify-between">
                   <span className="text-xs font-medium text-ink">Góc nội dung (Angle)</span>

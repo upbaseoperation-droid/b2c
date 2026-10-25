@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "workflow",
+  "quality": "showcase",
+  "startedAt": "2026-10-25T09:43:04.665Z",
+  "specification": {
+    "path": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\candidate.json",
+    "sha256": "b4ab63102edd7ae367ceaed77610444a3abe2b756afc397bdf7c377414396cb7",
+    "bytes": 28254
+  },
+  "artifact": {
+    "path": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\booking-e2e.html",
+    "sha256": "56f59f728cb3aa8fa8cf1545d606f3717699fac18721ce6ae27576c3ec833359",
+    "bytes": 887312
+  },
+  "stages": {
+    "validate": {
+      "status": "fail",
+      "exitCode": 1,
+      "durationMs": null,
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\Chienth\\.claude\\skills\\archify\\bin\\archify.mjs",
+        "deliver",
+        "workflow",
+        "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\candidate.json",
+        "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\booking-e2e.html",
+        "--quality",
+        "showcase",
+        "--repo-root",
+        "E:\\Upbase\\B2C",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": false,
+        "command": "deliver",
+        "receiptId": "c88598c3-745b-4398-9883-70d86172c81b",
+        "stage": "render",
+        "type": "workflow",
+        "input": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\candidate.json",
+        "output": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\booking-e2e.html",
+        "error": "workflow schema validation failed:\n  /nodes/3/sources (id/label: \"plan_split\") must NOT have more than 3 items {\"limit\":3}\n  /nodes/5/sources (id/label: \"brief\") must NOT have more than 3 items {\"limit\":3}\n  /nodes/6/sources (id/label: \"plan_approve\") must NOT have more than 3 items {\"limit\":3}",
+        "diagnostics": [
+          {
+            "code": "schema/maxItems",
+            "severity": "error",
+            "message": "/nodes/3/sources (id/label: \"plan_split\") must NOT have more than 3 items",
+            "subject": {
+              "diagramType": "workflow",
+              "path": "/nodes/3/sources",
+              "identity": "plan_split"
+            },
+            "evidence": {
+              "keyword": "maxItems",
+              "limit": 3
+            },
+            "supportedFixes": [
+              "provide at most 3 item(s)"
+            ]
+          },
+          {
+            "code": "schema/maxItems",
+            "severity": "error",
+            "message": "/nodes/5/sources (id/label: \"brief\") must NOT have more than 3 items",
+            "subject": {
+              "diagramType": "workflow",
+              "path": "/nodes/5/sources",
+              "identity": "brief"
+            },
+            "evidence": {
+              "keyword": "maxItems",
+              "limit": 3
+            },
+            "supportedFixes": [
+              "provide at most 3 item(s)"
+            ]
+          },
+          {
+            "code": "schema/maxItems",
+            "severity": "error",
+            "message": "/nodes/6/sources (id/label: \"plan_approve\") must NOT have more than 3 items",
+            "subject": {
+              "diagramType": "workflow",
+              "path": "/nodes/6/sources",
+              "identity": "plan_approve"
+            },
+            "evidence": {
+              "keyword": "maxItems",
+              "limit": 3
+            },
+            "supportedFixes": [
+              "provide at most 3 item(s)"
+            ]
+          }
+        ],
+        "provenance": "failed",
+        "update": {
+          "status": "unavailable",
+          "installedVersion": null,
+          "availableVersion": null,
+          "releaseNotes": null,
+          "checkedAt": null,
+          "source": null,
+          "noticeRequired": false,
+          "noticeText": null,
+          "reason": "disabled"
+        }
+      },
+      "execution": "embedded-in-deliver"
+    },
+    "deliver": {
+      "status": "not-run",
+      "execution": "blocked-by-validate"
+    }
+  },
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  },
+  "diagnostics": [
+    {
+      "code": "schema/maxItems",
+      "severity": "error",
+      "message": "/nodes/3/sources (id/label: \"plan_split\") must NOT have more than 3 items",
+      "subject": {
+        "diagramType": "workflow",
+        "path": "/nodes/3/sources",
+        "identity": "plan_split"
+      },
+      "evidence": {
+        "keyword": "maxItems",
+        "limit": 3
+      },
+      "supportedFixes": [
+        "provide at most 3 item(s)"
+      ]
+    },
+    {
+      "code": "schema/maxItems",
+      "severity": "error",
+      "message": "/nodes/5/sources (id/label: \"brief\") must NOT have more than 3 items",
+      "subject": {
+        "diagramType": "workflow",
+        "path": "/nodes/5/sources",
+        "identity": "brief"
+      },
+      "evidence": {
+        "keyword": "maxItems",
+        "limit": 3
+      },
+      "supportedFixes": [
+        "provide at most 3 item(s)"
+      ]
+    },
+    {
+      "code": "schema/maxItems",
+      "severity": "error",
+      "message": "/nodes/6/sources (id/label: \"plan_approve\") must NOT have more than 3 items",
+      "subject": {
+        "diagramType": "workflow",
+        "path": "/nodes/6/sources",
+        "identity": "plan_approve"
+      },
+      "evidence": {
+        "keyword": "maxItems",
+        "limit": 3
+      },
+      "supportedFixes": [
+        "provide at most 3 item(s)"
+      ]
+    }
+  ],
+  "evidence": {
+    "receipt": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\review-21\\booking-e2e.finalize.json",
+    "summaryReceipt": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\review-21\\booking-e2e.finalize-summary.json"
+  },
+  "visualReview": "not-requested",
+  "failedStage": "validate",
+  "finishedAt": "2026-10-25T09:43:05.642Z",
+  "durationMs": 976,
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-25T09:43:05.053Z",
+    "source": "network",
+    "noticeRequired": false,
+    "noticeText": null
+  }
+}

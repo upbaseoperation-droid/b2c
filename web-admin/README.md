@@ -89,11 +89,11 @@ Sau khi rà soát và ẩn 10 màn hình thừa / trùng lặp, hệ thống đ�
 
 ### Nhóm 4: Dữ liệu & Nghiên cứu
 10. **Danh bạ KOC (`koc-master` / `KocMasterDataView`):** Tra cứu 4.820 KOC và 16.024 dòng lịch sử video/deal, hồ sơ pháp lý CCCD/MST và lịch sử tài khoản thụ hưởng.
-11. **Hồ sơ thương hiệu (`brand-knowledge` / `BrandView`):** Hồ sơ định danh tĩnh của 42 nhãn hàng B2C (pháp nhân, guideline, ratecard, SKU và góc nội dung).
+11. **Hồ sơ thương hiệu (`brand-knowledge` / `BrandProfilesView` & `BrandProfileDetail`):** Hồ sơ định danh tĩnh của 42 nhãn hàng B2C (pháp nhân, guideline, ratecard, **Danh mục Nhóm Sản phẩm & Combo 2 tầng** `ProductCatalogView` và góc nội dung theo SKU).
 12. **Nghiên cứu & Đối thủ (`market-research` / `BrandMarketResearchHubView`):** Bóc tách định vị 4P, lập ma trận đối thủ trực diện và crawler video KOC TikTok đối thủ (`tiktok-crawler`).
 
 ### Nhóm 5: Hệ thống & Tiện ích
-13. **Dữ liệu gốc (`master-data` / `MasterDataHubView`):** Quản lý danh mục Thương hiệu, 69 Gian hàng B2C, Trụ cột nội dung, Bậc cast, Tệp kênh, Định dạng video, Danh bạ KOC, VJ/CTV, Nhân sự và Chuẩn SLA & KPI (đã gỡ bỏ các tab nhập liệu sản phẩm trùng lặp tại Dữ liệu gốc để tập trung 100% về `Kịch bản & Video › Sản phẩm & Combo của Brand`).
+13. **Dữ liệu gốc (`master-data` / `MasterDataHubView`):** Quản lý danh mục Thương hiệu, 69 Gian hàng B2C, Trụ cột nội dung, Bậc cast, Tệp kênh, Định dạng video, Danh bạ KOC, VJ/CTV, Nhân sự và Chuẩn SLA & KPI (đã gỡ bỏ các tab nhập liệu sản phẩm trùng lặp tại Dữ liệu gốc để tập trung 100% về `Hồ sơ thương hiệu › Sản phẩm, Combo & Góc nội dung`).
 14. **Phân quyền & Nhân sự (`partner-access` / `CentralizedRbacHubView`):** Quản trị tài khoản Lark SSO, phân quyền 14 vai trò và Data Scoping Engine.
 15. **Quản lý Cloudflare R2 (`cloudflare-admin` / `CloudflareAdminView`):** Quản lý bucket tệp đính kèm và tài liệu hợp đồng.
 16. **Bộ công cụ tiện ích (`work-toolkit` / `WorkToolkitHubView`):** Kho 10 công cụ tác nghiệp nhanh cho quản lý và chuyên viên nội bộ (Quy đổi Gross ↔ Net & bậc KL, tính ROAS/CIR hòa vốn, chia định mức KPI tuần, bóc tách hàng loạt link TikTok/Shopee đối chiếu danh bạ KOC, tạo mã QR VietQR chuẩn Bảng 3.2, tạo link UTM, kiểm tra từ hạn chế TikTok Shop, tính thời lượng đọc kịch bản, soạn Brief/Hashtag và đối soát 2 danh sách mã).

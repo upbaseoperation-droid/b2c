@@ -88,7 +88,40 @@ export const hasLegalId = (k: KocItem) => legalIdOf(k) !== '';
  */
 export function getKocLegalProfiles(k: KocItem): KocLegalProfile[] {
   if (k.legalProfiles && k.legalProfiles.length > 0) {
-    return k.legalProfiles;
+    return k.legalProfiles.map((p, idx) => {
+      const bankAcc = p.bankAccount || p.bankAccountNumber;
+      const vatDefault =
+        p.vatRatePercent ??
+        (p.legalType === 'COMPANY'
+          ? (p.taxAccountType || '').includes('10%')
+            ? 10
+            : 8
+          : p.legalType === 'HOUSEHOLD'
+            ? 5
+            : 0);
+      return {
+        ...p,
+        profileCode: p.profileCode || `HSPL-0${idx + 1}`,
+        bankAccount: bankAcc,
+        bankAccountNumber: p.bankAccountNumber || bankAcc,
+        bankHolderName: p.bankHolderName || p.holderName,
+        representativeName:
+          p.representativeName ||
+          (p.legalType !== 'INDIVIDUAL' && (p.isDefault || idx === 0)
+            ? k.legalRepresentative || k.realName
+            : undefined),
+        representativeTitle:
+          p.representativeTitle ||
+          (p.legalType === 'COMPANY'
+            ? 'Giám đốc'
+            : p.legalType === 'HOUSEHOLD'
+              ? 'Chủ hộ kinh doanh'
+              : undefined),
+        contactPhone: p.contactPhone || (p.isDefault || idx === 0 ? k.phone : undefined),
+        contactEmail: p.contactEmail || (p.isDefault || idx === 0 ? k.email : undefined),
+        vatRatePercent: vatDefault,
+      };
+    });
   }
 
   const profiles: KocLegalProfile[] = [];
@@ -125,6 +158,8 @@ export function getKocLegalProfiles(k: KocItem): KocLegalProfile[] {
 
       const hasSignedContract = Boolean(k.contractDriveUrl) && idx === 0;
       const numCode = k.id.replace(/\D/g, '') || '01';
+      const holder = p.holderName || k.companyName || k.realName || k.stageName;
+      const bankAcc = p.bankAccount || (idx === 0 ? k.bankAccount : undefined);
 
       profiles.push({
         id: `${k.id}-lp-${idx + 1}`,
@@ -133,16 +168,34 @@ export function getKocLegalProfiles(k: KocItem): KocLegalProfile[] {
         isDefault: idx === 0,
         status: idx === 0 ? 'ACTIVE' : 'ACTIVE',
         taxAccountType: defaultTaxLabel,
-        holderName: p.holderName || k.companyName || k.realName || k.stageName,
+        vatRatePercent:
+          lType === 'COMPANY'
+            ? defaultTaxLabel.includes('10%')
+              ? 10
+              : 8
+            : lType === 'HOUSEHOLD'
+              ? 5
+              : 0,
+        holderName: holder,
         representativeName: lType !== 'INDIVIDUAL' ? k.legalRepresentative || k.realName : undefined,
+        representativeTitle:
+          lType === 'COMPANY'
+            ? 'Giám đốc'
+            : lType === 'HOUSEHOLD'
+              ? 'Chủ hộ kinh doanh'
+              : undefined,
         relationshipNote,
         cccd: !isTaxCode ? cleanId : idx === 0 ? k.cccd : undefined,
         cccdIssueDate: idx === 0 ? k.issueDate : undefined,
         cccdIssuePlace: idx === 0 ? k.issuePlace : undefined,
         taxCode: isTaxCode ? cleanId : idx === 0 && k.taxCode !== 'Chưa có' ? k.taxCode : undefined,
         registeredAddress: idx === 0 ? k.permanentAddress || k.shippingAddress : undefined,
+        contactPhone: idx === 0 ? k.phone : undefined,
+        contactEmail: idx === 0 ? k.email : undefined,
         bankName: p.bankName || (idx === 0 ? k.bankName : undefined),
-        bankAccount: p.bankAccount || (idx === 0 ? k.bankAccount : undefined),
+        bankAccount: bankAcc,
+        bankAccountNumber: bankAcc,
+        bankHolderName: holder,
         isOcrVerified: idx === 0 ? Boolean(k.isOcrVerified) : true,
         frameworkContractCode:
           hasSignedContract || (p.dealsCount && p.dealsCount > 0)
@@ -175,6 +228,8 @@ export function getKocLegalProfiles(k: KocItem): KocLegalProfile[] {
           : '(Thuế TNCN 10%) Tài khoản cá nhân');
     const numCode = k.id.replace(/\D/g, '') || '01';
     const hasSigned = Boolean(k.contractDriveUrl || (k.totalPastDeals && k.totalPastDeals > 0 && primaryLegalId));
+    const holder =
+      (lType !== 'INDIVIDUAL' ? k.companyName || k.realName : k.realName) || k.stageName;
 
     profiles.push({
       id: `${k.id}-lp-1`,
@@ -183,9 +238,22 @@ export function getKocLegalProfiles(k: KocItem): KocLegalProfile[] {
       isDefault: true,
       status: primaryLegalId && hasBank ? 'ACTIVE' : 'PENDING_VERIFY',
       taxAccountType: defaultTaxLabel,
-      holderName:
-        (lType !== 'INDIVIDUAL' ? k.companyName || k.realName : k.realName) || k.stageName,
+      vatRatePercent:
+        lType === 'COMPANY'
+          ? defaultTaxLabel.includes('10%')
+            ? 10
+            : 8
+          : lType === 'HOUSEHOLD'
+            ? 5
+            : 0,
+      holderName: holder,
       representativeName: lType !== 'INDIVIDUAL' ? k.legalRepresentative || k.realName : undefined,
+      representativeTitle:
+        lType === 'COMPANY'
+          ? 'Giám đốc'
+          : lType === 'HOUSEHOLD'
+            ? 'Chủ hộ kinh doanh'
+            : undefined,
       relationshipNote:
         lType === 'COMPANY'
           ? 'Pháp nhân Công ty / MCN đại diện'
@@ -197,8 +265,12 @@ export function getKocLegalProfiles(k: KocItem): KocLegalProfile[] {
       cccdIssuePlace: k.issuePlace,
       taxCode: k.taxCode && k.taxCode !== 'Chưa có' ? k.taxCode : undefined,
       registeredAddress: k.permanentAddress || k.shippingAddress,
+      contactPhone: k.phone,
+      contactEmail: k.email,
       bankName: k.bankName,
       bankAccount: k.bankAccount,
+      bankAccountNumber: k.bankAccount,
+      bankHolderName: holder,
       isOcrVerified: Boolean(k.isOcrVerified),
       frameworkContractCode: hasSigned ? `HĐNT-2026-${numCode.padStart(4, '0')}-1` : undefined,
       frameworkContractStatus: hasSigned ? 'ĐÃ_KÝ' : 'CHƯA_KÝ',
@@ -209,6 +281,64 @@ export function getKocLegalProfiles(k: KocItem): KocLegalProfile[] {
   }
 
   return profiles;
+}
+
+export interface LegalProfileContractReadiness {
+  ready: boolean;
+  missingFields: string[];
+  filledCount: number;
+  totalRequired: number;
+}
+
+/**
+ * Kiểm tra xem một Hồ sơ pháp lý (`KocLegalProfile`) đã có đầy đủ các trường bắt buộc
+ * để tự động điền sang Hợp đồng (HĐNT / SOW / BBNT) hay chưa.
+ */
+export function evaluateLegalProfileContractReadiness(
+  p: KocLegalProfile,
+  koc?: KocItem,
+): LegalProfileContractReadiness {
+  const missing: string[] = [];
+  let total = 0;
+
+  const check = (ok: boolean, label: string) => {
+    total += 1;
+    if (!ok) missing.push(label);
+  };
+
+  check(Boolean(p.holderName && p.holderName.trim()), p.legalType === 'INDIVIDUAL' ? 'Họ tên pháp lý' : 'Tên đơn vị pháp nhân');
+
+  if (p.legalType === 'INDIVIDUAL') {
+    check(Boolean(p.cccd && p.cccd.trim().length >= 9), 'Số CCCD');
+    check(Boolean(p.cccdIssueDate && p.cccdIssueDate.trim()), 'Ngày cấp CCCD');
+    check(Boolean(p.cccdIssuePlace && p.cccdIssuePlace.trim()), 'Nơi cấp CCCD');
+  } else if (p.legalType === 'HOUSEHOLD') {
+    check(Boolean((p.taxCode && p.taxCode.trim()) || (p.businessLicenseNo && p.businessLicenseNo.trim())), 'Mã số thuế / ĐKKD HKD');
+    check(Boolean(p.representativeName && p.representativeName.trim()), 'Chủ hộ kinh doanh');
+    check(Boolean(p.cccd && p.cccd.trim().length >= 9), 'CCCD chủ hộ');
+  } else {
+    check(Boolean(p.taxCode && p.taxCode.trim().length >= 7), 'Mã số thuế Công ty');
+    check(Boolean(p.representativeName && p.representativeName.trim()), 'Người đại diện pháp luật');
+    check(Boolean(p.representativeTitle && p.representativeTitle.trim()), 'Chức vụ người đại diện');
+  }
+
+  check(
+    Boolean((p.registeredAddress && p.registeredAddress.trim()) || (koc?.permanentAddress && koc.permanentAddress.trim())),
+    'Địa chỉ pháp lý',
+  );
+  check(Boolean(p.bankName && p.bankName.trim()), 'Ngân hàng');
+  check(Boolean((p.bankAccount || p.bankAccountNumber || '').trim()), 'Số tài khoản');
+  check(
+    Boolean((p.contactPhone && p.contactPhone.trim()) || (koc?.phone && koc.phone.trim())),
+    'SĐT hợp đồng',
+  );
+
+  return {
+    ready: missing.length === 0,
+    missingFields: missing,
+    filledCount: total - missing.length,
+    totalRequired: total,
+  };
 }
 
 export function getDefaultLegalProfile(k: KocItem): KocLegalProfile | undefined {
@@ -237,13 +367,19 @@ export function syncKocWithLegalProfiles(
     };
   }
 
-  // Đảm bảo luôn có đúng 1 hồ sơ isDefault = true
+  // Đảm bảo luôn có đúng 1 hồ sơ isDefault = true và chuẩn hóa trường STK / chủ TK
   const hasDef = profiles.some((p) => p.isDefault);
-  const normalized = profiles.map((p, idx) => ({
-    ...p,
-    profileCode: p.profileCode || `HSPL-0${idx + 1}`,
-    isDefault: hasDef ? p.isDefault : idx === 0,
-  }));
+  const normalized = profiles.map((p, idx) => {
+    const bankAcc = p.bankAccount || p.bankAccountNumber;
+    return {
+      ...p,
+      profileCode: p.profileCode || `HSPL-0${idx + 1}`,
+      isDefault: hasDef ? p.isDefault : idx === 0,
+      bankAccount: bankAcc,
+      bankAccountNumber: p.bankAccountNumber || bankAcc,
+      bankHolderName: p.bankHolderName || p.holderName,
+    };
+  });
 
   // Đưa hồ sơ mặc định lên đầu danh sách alternatePayees để tương thích ngược
   const sorted = [...normalized].sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
@@ -253,7 +389,7 @@ export function syncKocWithLegalProfiles(
     legalId: (p.legalType !== 'INDIVIDUAL' ? p.taxCode || p.cccd : p.cccd || p.taxCode) || '',
     holderName: p.holderName,
     bankName: p.bankName,
-    bankAccount: p.bankAccount,
+    bankAccount: p.bankAccount || p.bankAccountNumber,
     taxAccountType: p.taxAccountType,
     dealsCount: p.dealsUsedCount,
     latestBrand: p.latestBrandUsed,
@@ -263,16 +399,25 @@ export function syncKocWithLegalProfiles(
     ...koc,
     legalProfiles: normalized,
     alternatePayees,
-    realName: def.legalType === 'INDIVIDUAL' ? def.holderName || koc.realName : def.representativeName || def.holderName || koc.realName,
+    realName:
+      def.legalType === 'INDIVIDUAL'
+        ? def.holderName || koc.realName
+        : def.representativeName || def.holderName || koc.realName,
     companyName: def.legalType !== 'INDIVIDUAL' ? def.holderName : undefined,
+    legalRepresentative:
+      def.legalType !== 'INDIVIDUAL'
+        ? def.representativeName || koc.legalRepresentative
+        : undefined,
     cccd: def.cccd || '',
     taxCode: def.taxCode || undefined,
     taxAccountType: def.taxAccountType || undefined,
     issueDate: def.cccdIssueDate || koc.issueDate,
     issuePlace: def.cccdIssuePlace || koc.issuePlace,
     permanentAddress: def.registeredAddress || koc.permanentAddress,
+    phone: def.contactPhone || koc.phone,
+    email: def.contactEmail || koc.email,
     bankName: def.bankName || undefined,
-    bankAccount: def.bankAccount || '',
+    bankAccount: def.bankAccount || def.bankAccountNumber || '',
     contractDriveUrl: def.frameworkContractDriveUrl || koc.contractDriveUrl,
     ocrDocumentType:
       def.legalType === 'COMPANY'

@@ -70,6 +70,7 @@ import { useKocChannelReviews } from '../../lib/kocChannelReviewService';
 import {
   LEGAL_TYPE_LABEL,
   READINESS_LABEL,
+  evaluateLegalProfileContractReadiness,
   findDuplicates,
   formatFollowers,
   getKocLegalProfiles,
@@ -127,6 +128,7 @@ interface KocMasterDataViewProps {
   onKocCreated?: (newKoc: KocItem) => void;
   onOpenKocPortal?: (kocId: string) => void;
   onSelectDealForContract?: (deal: BookingDealItem) => void;
+  onCreateContractForKoc?: (koc: KocItem, legalProfileId?: string) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
@@ -182,6 +184,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   onKocCreated,
   onOpenKocPortal,
   onSelectDealForContract,
+  onCreateContractForKoc,
   onNotify,
 }) => {
   const [localKocs, setLocalKocs] = useState<KocItem[]>(kocs);
@@ -606,40 +609,83 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         : r.documentType === 'BUSINESS_HOUSEHOLD'
           ? 'HOUSEHOLD'
           : 'INDIVIDUAL';
-    const newProfileId = `${ocrTarget.id}-lp-ocr-${Date.now()}`;
-    const nextProfiles = [
-      ...existingProfiles.map((p) => ({ ...p, isDefault: false })),
-      {
-        id: newProfileId,
-        profileCode: `HSPL-0${existingProfiles.length + 1}`,
-        legalType: lType,
-        isDefault: true,
-        status: 'ACTIVE' as const,
-        taxAccountType:
-          lType === 'COMPANY'
-            ? '(VAT 8%) Tài khoản doanh nghiệp'
-            : lType === 'HOUSEHOLD'
-              ? 'HKD xuất hóa đơn'
-              : '(Thuế TNCN 10%) Tài khoản cá nhân',
-        holderName:
-          f.companyName || f.householdBusinessName || f.fullName || ocrTarget.realName || ocrTarget.stageName,
-        representativeName: f.legalRepresentative || undefined,
-        relationshipNote:
-          lType === 'COMPANY'
-            ? 'Pháp nhân Công ty / MCN đại diện'
-            : lType === 'HOUSEHOLD'
-              ? 'Hộ kinh doanh cá thể'
-              : 'Chính chủ KOC',
-        cccd: f.idNumber || ocrTarget.cccd,
-        cccdIssueDate: f.issueDate || ocrTarget.issueDate,
-        cccdIssuePlace: f.issuePlace || ocrTarget.issuePlace,
-        taxCode: f.taxCode || ocrTarget.taxCode,
-        registeredAddress: f.permanentAddress || f.headquartersAddress || ocrTarget.permanentAddress,
-        bankName: ocrTarget.bankName,
-        bankAccount: ocrTarget.bankAccount,
-        isOcrVerified: true,
-      },
-    ];
+    const holder =
+      f.companyName || f.householdBusinessName || f.fullName || ocrTarget.realName || ocrTarget.stageName;
+    const scannedCccd = (f.idNumber || '').trim();
+    const scannedTax = (f.taxCode || '').trim();
+
+    // Kiểm tra xem hồ sơ quét OCR trùng khớp với hồ sơ đã có hoặc cập nhật hồ sơ chưa có CCCD/MST cùng loại
+    const matchIdx = existingProfiles.findIndex(
+      (p) =>
+        (scannedCccd && p.cccd && p.cccd.trim() === scannedCccd) ||
+        (scannedTax && p.taxCode && p.taxCode.trim() === scannedTax) ||
+        (existingProfiles.length === 1 && p.legalType === lType && !p.cccd && !p.taxCode),
+    );
+
+    const buildExtractedProfile = (baseId: string, code: string, prev?: (typeof existingProfiles)[number]) => ({
+      ...(prev || {}),
+      id: baseId,
+      profileCode: code,
+      legalType: lType,
+      isDefault: true,
+      status: 'ACTIVE' as const,
+      taxAccountType:
+        prev?.taxAccountType ||
+        (lType === 'COMPANY'
+          ? '(VAT 8%) Tài khoản doanh nghiệp'
+          : lType === 'HOUSEHOLD'
+            ? 'HKD xuất hóa đơn'
+            : '(Thuế TNCN 10%) Tài khoản cá nhân'),
+      vatRatePercent:
+        prev?.vatRatePercent ?? (lType === 'COMPANY' ? 8 : lType === 'HOUSEHOLD' ? 5 : 0),
+      holderName: holder,
+      representativeName:
+        f.legalRepresentative ||
+        prev?.representativeName ||
+        (lType !== 'INDIVIDUAL' ? ocrTarget.legalRepresentative || ocrTarget.realName : undefined),
+      representativeTitle:
+        prev?.representativeTitle ||
+        (lType === 'COMPANY' ? 'Giám đốc' : lType === 'HOUSEHOLD' ? 'Chủ hộ kinh doanh' : undefined),
+      relationshipNote:
+        prev?.relationshipNote ||
+        (lType === 'COMPANY'
+          ? 'Pháp nhân Công ty / MCN đại diện'
+          : lType === 'HOUSEHOLD'
+            ? 'Hộ kinh doanh cá thể'
+            : 'Chính chủ KOC'),
+      cccd: scannedCccd || prev?.cccd || ocrTarget.cccd,
+      cccdIssueDate: f.issueDate || prev?.cccdIssueDate || ocrTarget.issueDate,
+      cccdIssuePlace: f.issuePlace || prev?.cccdIssuePlace || ocrTarget.issuePlace,
+      taxCode: scannedTax || prev?.taxCode || ocrTarget.taxCode,
+      registeredAddress:
+        f.permanentAddress ||
+        f.headquartersAddress ||
+        prev?.registeredAddress ||
+        ocrTarget.permanentAddress,
+      contactPhone: prev?.contactPhone || ocrTarget.phone,
+      contactEmail: prev?.contactEmail || ocrTarget.email,
+      bankName: prev?.bankName || ocrTarget.bankName,
+      bankAccount: prev?.bankAccount || ocrTarget.bankAccount,
+      bankAccountNumber: prev?.bankAccountNumber || prev?.bankAccount || ocrTarget.bankAccount,
+      bankHolderName: prev?.bankHolderName || holder,
+      isOcrVerified: true,
+    });
+
+    const nextProfiles =
+      matchIdx >= 0
+        ? existingProfiles.map((p, idx) =>
+            idx === matchIdx
+              ? buildExtractedProfile(p.id, p.profileCode || `HSPL-0${idx + 1}`, p)
+              : { ...p, isDefault: false },
+          )
+        : [
+            ...existingProfiles.map((p) => ({ ...p, isDefault: false })),
+            buildExtractedProfile(
+              `${ocrTarget.id}-lp-ocr-${Date.now()}`,
+              `HSPL-0${existingProfiles.length + 1}`,
+            ),
+          ];
+
     const synced = syncKocWithLegalProfiles(
       {
         ...ocrTarget,
@@ -648,7 +694,12 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       },
       nextProfiles,
     );
-    applyUpdate(synced, `Đã đọc giấy tờ & thêm hồ sơ pháp lý cho ${ocrTarget.stageName}`);
+    applyUpdate(
+      synced,
+      matchIdx >= 0
+        ? `Đã cập nhật giấy tờ pháp lý (${holder}) cho ${ocrTarget.stageName}`
+        : `Đã đọc giấy tờ & thêm hồ sơ pháp lý mới (HSPL-0${nextProfiles.length}) cho ${ocrTarget.stageName}`,
+    );
     setOcrTarget(null);
   };
 
@@ -733,6 +784,15 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         : []),
       { label: 'Đánh giá lịch sử & rủi ro', icon: FileText, onSelect: () => setHistoryEvalTarget(k) },
       ...(onOpenKocPortal ? [{ label: 'Mở Cổng KOC', icon: UserCheck, onSelect: () => onOpenKocPortal(k.id) }] : []),
+      ...(onCreateContractForKoc
+        ? [
+            {
+              label: 'Ký hợp đồng (1 KOC – N Pháp nhân)',
+              icon: FileText,
+              onSelect: () => onCreateContractForKoc(k),
+            },
+          ]
+        : []),
       { label: 'Tạo booking', icon: Plus, onSelect: () => onOpenQuickBookWithKoc(k) },
       { label: 'Tìm kênh MXH', icon: Search, onSelect: () => setSocialTarget(k) },
       {
@@ -919,15 +979,16 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     {
       key: 'legalProfiles',
       header: 'Hồ sơ pháp lý (1–N)',
-      width: 190,
+      width: 205,
       render: (k) => {
         const profiles = getKocLegalProfiles(k);
         const dup = duplicates.get(k.id);
         const def = profiles.find((p) => p.isDefault) || profiles[0];
         const distinctTypes = Array.from(new Set(profiles.map((p) => LEGAL_TYPE_LABEL[p.legalType])));
+        const readiness = def ? evaluateLegalProfileContractReadiness(def, k) : null;
 
         return (
-          <div className="grid gap-1 justify-items-start min-w-0 max-w-[190px]">
+          <div className="grid gap-1 justify-items-start min-w-0 max-w-[205px]">
             <div className="flex flex-wrap items-center gap-1">
               {profiles.length === 0 ? (
                 <Status tone="warning">Thiếu giấy tờ</Status>
@@ -937,8 +998,14 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                 <span title={`Trùng ${dup.map((d) => `${d.stageName} (${d.fields.join(', ')})`).join('; ')}`}>
                   <Status tone="warning">Nghi trùng</Status>
                 </span>
+              ) : readiness && !readiness.ready ? (
+                <span title={`Thiếu trường ký HĐ: ${readiness.missingFields.join(', ')}`}>
+                  <Status tone="warning">
+                    1 Hồ sơ ({readiness.filledCount}/{readiness.totalRequired} trường HĐ)
+                  </Status>
+                </span>
               ) : (
-                <Status tone="positive">1 Hồ sơ chuẩn</Status>
+                <Status tone="positive">1 Hồ sơ chuẩn HĐ</Status>
               )}
               {def?.frameworkContractStatus === 'ĐÃ_KÝ' && (
                 <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive text-3xs font-semibold border border-positive/25">
@@ -947,9 +1014,27 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               )}
             </div>
             {profiles.length > 0 && (
-              <span className="text-2xs text-ink-2 truncate w-full" title={profiles.map((p) => `${p.profileCode}: ${p.holderName} (${p.taxAccountType})`).join(' | ')}>
-                {distinctTypes.join(' + ')} · {def?.holderName}
-              </span>
+              <div className="flex items-center justify-between gap-1.5 w-full min-w-0">
+                <span
+                  className="text-2xs text-ink-2 truncate"
+                  title={profiles.map((p) => `${p.profileCode}: ${p.holderName} (${p.taxAccountType})`).join(' | ')}
+                >
+                  {distinctTypes.join(' + ')} · {def?.holderName}
+                </span>
+                {onCreateContractForKoc && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onCreateContractForKoc(k, def?.id);
+                    }}
+                    className="text-2xs font-semibold text-primary hover:underline shrink-0 cursor-pointer"
+                    title="Mở màn Ký hợp đồng với KOC & Hồ sơ pháp lý này"
+                  >
+                    Ký HĐ
+                  </button>
+                )}
+              </div>
             )}
           </div>
         );
@@ -1252,6 +1337,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           }
           onOpenKocPortal={onOpenKocPortal}
           onSelectDealForContract={onSelectDealForContract}
+          onCreateContractForKoc={onCreateContractForKoc}
         />
       ) : (
         <>

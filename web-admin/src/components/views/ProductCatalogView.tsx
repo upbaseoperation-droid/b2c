@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Layers, Plus, Trash2 } from 'lucide-react';
 import { Button, ConfirmDialog, Input, Select } from '../ui';
 import { usePlanRecord } from '../../lib/usePlanRecord';
 import {
@@ -40,6 +40,9 @@ interface ProductCatalogViewProps {
   brandNames: string[];
   legacyProducts: LegacyProductLike[];
   initialBrand?: string;
+  hideBrandSelector?: boolean;
+  selectedAngleProductId?: string;
+  onSelectProductForAngle?: (skuOrId: string) => void;
   onCatalogSaved?: (brandName: string, catalog: BrandProductCatalog) => void;
   onNotify?: (message: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
@@ -52,6 +55,9 @@ export const ProductCatalogView: React.FC<ProductCatalogViewProps> = ({
   brandNames,
   legacyProducts,
   initialBrand,
+  hideBrandSelector = false,
+  selectedAngleProductId,
+  onSelectProductForAngle,
   onCatalogSaved,
   onNotify,
 }) => {
@@ -203,6 +209,16 @@ export const ProductCatalogView: React.FC<ProductCatalogViewProps> = ({
             <option value="OUT_OF_STOCK">Tạm hết hàng (Dừng SLA)</option>
             <option value="STOPPED">Ngừng bán</option>
           </Select>
+          {onSelectProductForAngle && (
+            <Button
+              size="sm"
+              variant={selectedAngleProductId === (p.sku || p.id) ? 'primary' : 'secondary'}
+              icon={Layers}
+              onClick={() => onSelectProductForAngle(p.sku || p.id)}
+            >
+              {selectedAngleProductId === (p.sku || p.id) ? 'Đang lọc góc SP' : 'Góc nội dung'}
+            </Button>
+          )}
           <button type="button" aria-label="Xóa sản phẩm" className="rounded p-1.5 text-ink-3 hover:bg-sunken hover:text-critical" onClick={() => removeProduct(p)}>
             <Trash2 className="h-4 w-4" />
           </button>
@@ -592,14 +608,16 @@ export const ProductCatalogView: React.FC<ProductCatalogViewProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Select value={activeBrand} onChange={e => setBrand(e.target.value)} className="w-[240px]">
-          {brands.length === 0 && <option value="">Chưa có thương hiệu</option>}
-          {brands.map(b => (
-            <option key={b} value={b}>
-              {b}
-            </option>
-          ))}
-        </Select>
+        {!hideBrandSelector && (
+          <Select value={activeBrand} onChange={e => setBrand(e.target.value)} className="w-[240px]">
+            {brands.length === 0 && <option value="">Chưa có thương hiệu</option>}
+            {brands.map(b => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </Select>
+        )}
         <Select value={filterType} onChange={e => setFilterType(e.target.value as 'ALL' | 'SINGLE' | 'COMBO')} className="w-[160px]">
           <option value="ALL">Tất cả loại SP</option>
           <option value="SINGLE">Chỉ SKU đơn lẻ</option>

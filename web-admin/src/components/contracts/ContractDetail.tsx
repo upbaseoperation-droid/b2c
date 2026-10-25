@@ -16,7 +16,7 @@ import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
-import { HISTORY_LABEL, ROLE_LABEL, contractStatus, dateTime, isAcceptance, signerStatus, stepStatus } from './contractUi';
+import { HISTORY_LABEL, ROLE_LABEL, computeSigningProgress, contractStatus, dateTime, isAcceptance, signerStatus, stepStatus } from './contractUi';
 import { evaluateContractRules } from '../../lib/contracts/contractRules';
 
 type Action = (payload: Record<string, unknown>, done?: string) => Promise<ContractRecord | undefined>;
@@ -62,6 +62,7 @@ export function ContractDetail({
   );
   const legalNotes = template?.legalNotes || kocTemplate?.legalNotes || record.internalNotes;
   const signing = record.signing.at(-1);
+  const signingProgress = computeSigningProgress(signing);
   const activeSigning = record.signing.some(s => !['CANCELLED', 'REJECTED'].includes(s.status));
   const isOwner = record.ownerId === me.id;
   const editable = isOwner && record.approval !== 'IN_REVIEW' && !activeSigning;
@@ -227,46 +228,169 @@ export function ContractDetail({
                   <Step key={`${s.reviewerId}-${i}`} title={ROLE_LABEL[s.role]} who={s.reviewerName} status={stepStatus(s)} meta={s.decidedAt ? dateTime(s.decidedAt) : undefined} note={s.note} />
                 ))
               )}
-              <li className="px-4 py-3 grid gap-3">
+              <li className="px-4 py-3.5 grid gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[13px] font-medium text-ink">Ký điện tử</span>
-                    {signing ? <Status tone={contractStatus(record).tone}>{signing.status === 'COMPLETED' ? 'Hoàn tất' : contractStatus(record).label}</Status> : <Status>Chưa trình ký</Status>}
-                    {signing?.provider === 'DEMO' && <span className="text-2xs text-warning">Ký thử, không có giá trị pháp lý</span>}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[13px] font-medium text-ink">Ký điện tử · MISA AMIS weSign</span>
+                    {signing ? (
+                      <Status tone={signingProgress?.tone || contractStatus(record).tone}>
+                        {signing.status === 'COMPLETED' ? 'Đã ký hoàn tất' : contractStatus(record).label}
+                      </Status>
+                    ) : (
+                      <Status>Chưa trình ký</Status>
+                    )}
+                    {signingProgress && (
+                      <span className="text-2xs font-semibold px-2 py-0.5 rounded-md border border-line bg-sunken text-ink tabular-nums">
+                        {signingProgress.completedCount}/{signingProgress.totalCount} bước ký ({signingProgress.progressPercent}%)
+                      </span>
+                    )}
+                    {signing?.provider === 'DEMO' && (
+                      <span className="text-2xs text-warning">Chế độ ký thử (Chưa gửi MISA)</span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    {signing && signing.provider !== 'DEMO' && data.config.wesign && (
-                      <Button size="sm" icon={RefreshCw} disabled={busy} onClick={() => onAction({ action: 'SYNC_WESIGN' }, 'Đã cập nhật tiến độ ký')}>Cập nhật</Button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {canStartSigning && (
+                      <Button size="sm" variant="secondary" disabled={busy} onClick={() => setDialog('link')}>
+                        Gắn mã luồng ký weSign
+                      </Button>
+                    )}
+                    {signing && signing.provider !== 'DEMO' && (
+                      <Button
+                        size="sm"
+                        icon={RefreshCw}
+                        disabled={busy}
+                        onClick={() => onAction({ action: 'SYNC_WESIGN' }, 'Đã đồng bộ tiến độ ký từ MISA weSign')}
+                      >
+                        Đồng bộ weSign
+                      </Button>
                     )}
                     {signing?.provider === 'DEMO' && coordinator && ['WAITING', 'PARTIAL'].includes(signing.status) && (
                       <>
-                        <Button size="sm" disabled={busy} onClick={() => onAction({ action: 'DEMO_SIGN_NEXT' })}>Ký thử người tiếp theo</Button>
-                        <Button size="sm" variant="ghost" disabled={busy} onClick={() => onAction({ action: 'DEMO_SIGN_REJECT' })}>Từ chối thử</Button>
+                        <Button size="sm" disabled={busy} onClick={() => onAction({ action: 'DEMO_SIGN_NEXT' })}>
+                          Ký thử người tiếp theo
+                        </Button>
+                        <Button size="sm" variant="ghost" disabled={busy} onClick={() => onAction({ action: 'DEMO_SIGN_REJECT' })}>
+                          Từ chối thử
+                        </Button>
                       </>
                     )}
                     {signing?.status === 'COMPLETED' && signing.provider !== 'DEMO' && (
-                      <a href={`/api/contracts/${record.id}/document?signed=1`} className="text-[13px] text-accent hover:underline">Tải bản đã ký</a>
+                      <a
+                        href={`/api/contracts/${record.id}/document?signed=1`}
+                        className="inline-flex items-center gap-1 rounded-md border border-positive/40 bg-positive-soft px-2.5 py-1 text-xs font-medium text-positive hover:underline"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Tải bản đã ký weSign (.pdf)
+                      </a>
                     )}
                   </div>
                 </div>
-                {!signing && record.approval !== 'APPROVED' && <p className="text-[13px] text-ink-3">Trình ký sau khi phiên bản hiện tại được duyệt đủ.</p>}
-                {!signing && record.approval === 'APPROVED' && !data.config.wesign && !demo && (
-                  <p className="text-[13px] text-ink-3">Chưa kết nối weSign. Cần quản trị viên cấu hình tài khoản tích hợp.</p>
+
+                {!signing && record.approval !== 'APPROVED' && (
+                  <p className="text-[13px] text-ink-3">
+                    Luồng ký weSign sẽ mở khóa ngay sau khi phiên bản v{record.version} hoàn tất phê duyệt nội bộ.
+                  </p>
                 )}
-                {signing && (
-                  <ul className="grid gap-2">
-                    {signing.people.map((p, i) => {
-                      const s = signerStatus(p.action, p.status);
-                      return (
-                        <li key={i} className="flex items-center justify-between gap-3">
-                          <Person name={p.name} sub={p.email} size={24} />
-                          <Status tone={s.tone}>{s.label}</Status>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                {!signing && record.approval === 'APPROVED' && (
+                  <div className="rounded-lg border border-line bg-sunken/40 p-3 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-2">
+                    <span>
+                      Hồ sơ đã đủ phê duyệt. Nhập <strong>Mã tài liệu (UUID)</strong> từ MISA AMIS weSign để hệ thống tự động theo dõi tiến độ từng bước ký và tải bản PDF hoàn tất.
+                    </span>
+                    {!data.config.wesign && (
+                      <span className="text-2xs text-warning-strong font-medium">
+                        Cần cấu hình biến môi trường WESIGN_ACCESS_TOKEN để đồng bộ trực tiếp với máy chủ MISA
+                      </span>
+                    )}
+                  </div>
                 )}
-                {signing && <p className="text-2xs text-ink-3">Cập nhật {dateTime(signing.syncedAt)} · bản duyệt phiên bản {signing.version}</p>}
+
+                {signing && signingProgress && (
+                  <div className="rounded-xl border border-line bg-sunken/30 p-3.5 space-y-3">
+                    {/* Thanh tiến độ ký tổng thể */}
+                    <div className="space-y-1.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <span className="font-semibold text-ink">
+                          Tiến độ luồng ký: {signingProgress.summaryText}
+                        </span>
+                        <span className="text-2xs text-ink-3 font-code">
+                          UUID: {signing.documentId}
+                        </span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-line overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${
+                            signing.status === 'COMPLETED'
+                              ? 'bg-positive'
+                              : signing.status === 'REJECTED'
+                                ? 'bg-critical'
+                                : 'bg-accent'
+                          }`}
+                          style={{ width: `${Math.max(4, signingProgress.progressPercent)}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Cảnh báo người đang giữ lượt ký hiện tại */}
+                    {['WAITING', 'PARTIAL'].includes(signing.status) && signingProgress.currentSignerName && (
+                      <div className="rounded-lg border border-accent/30 bg-accent-soft/40 px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <span className="text-ink">
+                          Đang chờ ký tại lượt hiện hành:{' '}
+                          <strong className="text-accent">{signingProgress.currentSignerName}</strong>
+                          {signingProgress.currentSignerEmail && (
+                            <span className="text-ink-2"> ({signingProgress.currentSignerEmail})</span>
+                          )}
+                        </span>
+                        <Status tone="warning">Đang giữ lượt ký</Status>
+                      </div>
+                    )}
+
+                    {/* Danh sách từng bước ký trả về từ weSign */}
+                    <ul className="divide-y divide-line rounded-lg border border-line bg-surface">
+                      {signing.people.map((p, i) => {
+                        const s = signerStatus(p.action, p.status);
+                        const stepNum = p.level ?? i + 1;
+                        const roleText = p.roleLabel || 'Người ký';
+                        return (
+                          <li key={i} className="px-3 py-2.5 flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span
+                                className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-2xs font-bold shrink-0 ${
+                                  p.action === 2
+                                    ? 'bg-positive-soft text-positive border border-positive/30'
+                                    : p.action === 1
+                                      ? 'bg-warning-soft text-warning-strong border border-warning/40'
+                                      : p.action === 3
+                                        ? 'bg-critical-soft text-critical border border-critical/30'
+                                        : 'bg-sunken text-ink-3 border border-line'
+                                }`}
+                              >
+                                {stepNum}
+                              </span>
+                              <Person name={p.name} sub={p.email} size={24} />
+                              <span className="text-2xs px-1.5 py-0.5 rounded bg-sunken border border-line text-ink-2">
+                                {roleText}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {p.at && <span className="text-2xs text-ink-3 tabular-nums">{dateTime(p.at)}</span>}
+                              <Status tone={s.tone}>{s.label}</Status>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-2xs text-ink-3">
+                      <span>
+                        Đồng bộ gần nhất: {dateTime(signing.syncedAt)} · Đối chiếu bản duyệt v{signing.version}
+                        {signing.name ? ` · Tên trên weSign: ${signing.name}` : ''}
+                      </span>
+                      {signing.provider !== 'DEMO' && ['WAITING', 'PARTIAL'].includes(signing.status) && (
+                        <span>Tự động đọc tiến độ mỗi 2 phút hoặc nhận qua Webhook weSign</span>
+                      )}
+                    </div>
+                  </div>
+                )}
                 {signing?.error && <p role="alert" className="text-[13px] text-critical">{signing.error}</p>}
               </li>
             </ol>

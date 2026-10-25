@@ -982,10 +982,14 @@ export default function App() {
   // Modals
   const [isQuickBookOpen, setIsQuickBookOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
-  // Mở hồ sơ hợp đồng của một deal (từ Booking, Tổng quan, Việc của tôi).
+  // Mở hồ sơ hợp đồng của một deal hoặc từ một KOC / Hồ sơ pháp lý (từ Booking, Danh bạ KOC, Tổng quan, Việc của tôi).
   const [contractIntent, setContractIntent] = useState<ContractIntent | null>(null);
   const openContractForDeal = (deal: BookingDealItem) => {
     setContractIntent({ dealId: deal.id, nonce: Date.now() });
+    setActiveTab('contracts');
+  };
+  const openContractForKoc = (koc: KocItem, legalProfileId?: string) => {
+    setContractIntent({ kocId: koc.id, legalProfileId, nonce: Date.now(), document: 'HDNT' });
     setActiveTab('contracts');
   };
   // Deal/Job của kế hoạch: đưa bản Job vào danh sách rồi mở hồ sơ hợp đồng nguyên tắc, SOW hoặc biên bản nghiệm thu của Job đó.
@@ -1954,6 +1958,7 @@ export default function App() {
                 handleSelectTab('koc-hub');
               }}
               onSelectDealForContract={openContractForDeal}
+              onCreateContractForKoc={openContractForKoc}
               onNotify={showToast}
             />
           </KeepAliveTab>

@@ -6,8 +6,6 @@ import { ActionMenu, Button, ConfirmDialog, Field, Input, Modal, PageActions, Pa
 import { ContentPlanBoard } from './ContentPlanBoard';
 import { PlanSelfChannelBoard } from './PlanSelfChannelBoard';
 import { BrandMonthlyPlanForm } from './BrandMonthlyPlanForm';
-import { ProductCatalogView } from './ProductCatalogView';
-import { INITIAL_MASTER_PRODUCTS } from '../../lib/masterCatalog';
 import {
   CheckCircle,
   Clock,
@@ -54,7 +52,7 @@ interface ContentViewProps {
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
-type ContentSubTab = 'BRAND_PLAN' | 'PRODUCT_CATALOG' | 'CONTENT_PLAN' | 'SELF_CHANNEL_BOARD' | 'CONTENT_ITEMS' | 'SCRIPTS' | 'DRAFT_VIDEOS' | 'PUBLICATIONS';
+type ContentSubTab = 'BRAND_PLAN' | 'CONTENT_PLAN' | 'SELF_CHANNEL_BOARD' | 'CONTENT_ITEMS' | 'SCRIPTS' | 'DRAFT_VIDEOS' | 'PUBLICATIONS';
 
 const PILLAR_OPTIONS = [
   'Nỗi đau - Giải pháp',
@@ -670,7 +668,6 @@ export const ContentView: React.FC<ContentViewProps> = ({
         onChange={setActiveSubTab}
         items={[
           { key: 'BRAND_PLAN', label: 'Plan tháng của Brand' },
-          { key: 'PRODUCT_CATALOG', label: 'Sản phẩm & Combo của Brand' },
           { key: 'CONTENT_PLAN', label: 'Kế hoạch content' },
           { key: 'SELF_CHANNEL_BOARD', label: 'Sản xuất & Nghiệm thu Self-channel' },
           { key: 'CONTENT_ITEMS', label: 'Kho nội dung', count: contentItems.length },
@@ -684,19 +681,6 @@ export const ContentView: React.FC<ContentViewProps> = ({
         <BrandMonthlyPlanForm
           currentUserName={currentUserName}
           currentUserRole={currentUserRole}
-          onNotify={onNotify}
-        />
-      )}
-
-      {activeSubTab === 'PRODUCT_CATALOG' && (
-        <ProductCatalogView
-          brandNames={Array.from(
-            new Set([
-              ...profiles.map(p => p.brandName),
-              ...INITIAL_MASTER_PRODUCTS.map(p => p.brandName),
-            ].filter(Boolean))
-          )}
-          legacyProducts={INITIAL_MASTER_PRODUCTS}
           onNotify={onNotify}
         />
       )}
