@@ -122,6 +122,7 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
   const [searchQuery, setSearchQuery] = useState('');
   const [platformFilter, setPlatformFilter] = useState<'ALL' | 'TikTok Shop' | 'Shopee Mall'>('ALL');
   const [governanceFilter, setGovernanceFilter] = useState<'ALL' | 'WITH_LEADER' | 'DIRECT_HEAD'>('ALL');
+  const [picFilter, setPicFilter] = useState<string>('ALL');
 
   // Modal chi tiết tiến trình phễu của 1 gian hàng
   const [selectedProgress, setSelectedProgress] = useState<StoreFunnelProgress | null>(null);
@@ -369,6 +370,36 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
     };
   }, [funnelProgressList]);
 
+  // Tổng hợp tiến độ & điểm nghẽn theo từng Chuyên viên PIC
+  const picSummaryList = useMemo(() => {
+    const byPic = new Map<
+      string,
+      {
+        name: string;
+        total: number;
+        valid411: number;
+        invalid411: number;
+        approved: number;
+      }
+    >();
+    for (const item of funnelProgressList) {
+      const pic = item.store.primaryPic || item.store.b2cOwners?.[0] || item.store.b2cOwnerName || 'Chưa phân công';
+      const cur = byPic.get(pic) || {
+        name: pic,
+        total: 0,
+        valid411: 0,
+        invalid411: 0,
+        approved: 0,
+      };
+      cur.total += 1;
+      if (item.planValidity.isValidForSubmit) cur.valid411 += 1;
+      else cur.invalid411 += 1;
+      if (item.plan411Status === 'APPROVED') cur.approved += 1;
+      byPic.set(pic, cur);
+    }
+    return Array.from(byPic.values()).sort((a, b) => b.invalid411 - a.invalid411 || b.total - a.total);
+  }, [funnelProgressList]);
+
   // Lọc danh sách hiển thị
   const filteredList = useMemo(() => {
     return funnelProgressList.filter((item) => {
@@ -421,6 +452,12 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
         return false;
       }
 
+      // 3b. Lọc theo Chuyên viên PIC
+      if (picFilter !== 'ALL') {
+        const pic = item.store.primaryPic || item.store.b2cOwners?.[0] || item.store.b2cOwnerName || 'Chưa phân công';
+        if (pic !== picFilter) return false;
+      }
+
       // 4. Tìm kiếm từ khóa
       if (searchQuery.trim()) {
         const q = normalize(searchQuery);
@@ -433,7 +470,7 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
 
       return true;
     });
-  }, [funnelProgressList, filterKey, platformFilter, governanceFilter, searchQuery]);
+  }, [funnelProgressList, filterKey, platformFilter, governanceFilter, picFilter, searchQuery]);
 
   return (
     <div className="space-y-5">
@@ -613,6 +650,43 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
             <option value="DIRECT_HEAD">Không có Leader — Trình trực tiếp Yến Nhi (61 gian)</option>
           </select>
         </div>
+
+        {/* LỌC NHANH THEO CHUYÊN VIÊN PIC */}
+        {picSummaryList.length > 0 && (
+          <div className="pt-2.5 border-t border-line flex items-center gap-1.5 flex-wrap">
+            <span className="text-2xs font-semibold text-ink-3 mr-1">Chuyên viên PIC:</span>
+            <button
+              type="button"
+              onClick={() => setPicFilter('ALL')}
+              className={`px-2 py-1 rounded-md text-2xs font-medium transition cursor-pointer ${
+                picFilter === 'ALL' ? 'bg-accent text-white' : 'bg-sunken text-ink-2 hover:bg-line'
+              }`}
+            >
+              Tất cả PIC
+            </button>
+            {picSummaryList.map((pic) => {
+              const isSelected = picFilter === pic.name;
+              const shortName = pic.name.trim().split(/\s+/).slice(-2).join(' ');
+              return (
+                <button
+                  key={pic.name}
+                  type="button"
+                  onClick={() => setPicFilter(isSelected ? 'ALL' : pic.name)}
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-2xs font-medium transition cursor-pointer ${
+                    isSelected
+                      ? 'bg-accent text-white border-accent'
+                      : pic.invalid411 > 0
+                        ? 'bg-surface border-warning/40 text-ink hover:border-warning'
+                        : 'bg-surface border-line text-ink-2 hover:bg-sunken'
+                  }`}
+                >
+                  <span>{shortName}</span>
+                  <span className="font-mono text-[10px] opacity-80">({pic.valid411}/{pic.total})</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* BẢNG TIẾN ĐỘ PHỄU 69 GIAN HÀNG (0 → 18) */}

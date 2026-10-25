@@ -1552,6 +1552,7 @@ export default function App() {
             tabKey="dashboard-bi"
             currentTab={
               [
+                'overview',
                 'dashboard-bi',
                 'dashboard-brand',
                 'dashboard-air-sync',
@@ -1586,6 +1587,7 @@ export default function App() {
               onCampaignsChange={setCampaigns}
               onNotify={showToast}
               planDrilldownIntent={planDrilldownIntent}
+              onOpenGovernanceDashboard={() => handleSelectTab('overview')}
               onGenerateDealsFromPlan={(newSlots) => {
                 setDetailedPlans(prev => [...newSlots, ...prev]);
                 showToast(`Đã tạo ${newSlots.length} slot KOC trong Booking`);

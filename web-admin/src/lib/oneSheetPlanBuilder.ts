@@ -51,11 +51,29 @@ export function buildBrandOneSheetPlanData(params: {
 
   // Nếu có sẵn oneSheetPlanData đã lưu trong BrandPlan hoặc StorePlan thì ưu tiên trả về
   if (brandPlan?.oneSheetPlanData && brandPlan.oneSheetPlanData.month === month) {
-    return brandPlan.oneSheetPlanData;
+    return {
+      ...brandPlan.oneSheetPlanData,
+      keyVisual: {
+        ...brandPlan.oneSheetPlanData.keyVisual,
+        kvImages:
+          brandPlan.oneSheetPlanData.keyVisual?.kvImages ??
+          brandPlan.keyVisualSisPlan?.kvImages ??
+          [],
+      },
+    };
   }
   const savedFromStore = matchingStorePlans.find((p) => p.oneSheetPlanData)?.oneSheetPlanData;
   if (savedFromStore) {
-    return savedFromStore;
+    return {
+      ...savedFromStore,
+      keyVisual: {
+        ...savedFromStore.keyVisual,
+        kvImages:
+          savedFromStore.keyVisual?.kvImages ??
+          brandPlan?.keyVisualSisPlan?.kvImages ??
+          [],
+      },
+    };
   }
 
   const explicitCampaignId = brandPlan?.campaignId || matchingStorePlans.find((p) => p.campaignId)?.campaignId;
@@ -243,6 +261,10 @@ export function buildBrandOneSheetPlanData(params: {
       activeCampaign?.keyVisualSpec?.refDate ||
       `Ref master 13 tháng trước (9 ngày trước order). Dùng proposal hiện có, bổ sung packshot SKU đúng.`,
     kvPic,
+    kvImages:
+      brandPlan?.keyVisualSisPlan?.kvImages ||
+      activeCampaign?.keyVisualSpec?.kvImages ||
+      [],
   };
 
   // Section 04: 5 tuần TikTok KOC & Booking

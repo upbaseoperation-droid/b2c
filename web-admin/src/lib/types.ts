@@ -1296,6 +1296,21 @@ export interface CampaignMonthlyPhase {
   kvAdaptNotes?: string; // Ghi chú adapt Key Visual / Frame / Banner cho tháng này
 }
 
+export type KeyVisualAssetCategory = 'MASTER_KV' | 'SIS_BANNER' | 'PDP_FRAME' | 'MOODBOARD';
+
+export interface KeyVisualAssetItem {
+  id: string;
+  url: string;
+  fileName: string;
+  fileKey?: string;
+  fileSize?: number;
+  mimeType?: string;
+  storage?: 'R2' | 'LOCAL' | 'INLINE';
+  category?: KeyVisualAssetCategory;
+  note?: string;
+  uploadedAt: string;
+}
+
 export interface CampaignKeyVisualSpec {
   theme: string; // Chủ đề Key Visual (VD: 'Bọt mịn dịu nhẹ - Dịu êm ngày nhạy cảm')
   fonts?: string; // Font chữ chủ đạo (VD: 'Montserrat Bold / Nunito Sans Regular')
@@ -1306,6 +1321,7 @@ export interface CampaignKeyVisualSpec {
   orderDate?: string; // Ngày order thiết kế (YYYY-MM-DD)
   hangDate?: string; // Ngày treo KV lên gian hàng (YYYY-MM-DD)
   kvPic?: string; // Nhân sự Key Visual / SIS phụ trách
+  kvImages?: KeyVisualAssetItem[]; // Danh sách ảnh Key Visual / Moodboard / SIS / PDP tải lên
 }
 
 export interface CampaignItem {
@@ -3927,6 +3943,7 @@ export interface BrandMonthlyPlanItem {
     deliveredCount: number;         // Đã nghiệm thu trong tháng
     designTheme: string;            // Chủ đề hình ảnh & SIS tháng
     notes: string;
+    kvImages?: KeyVisualAssetItem[]; // Danh sách ảnh Key Visual / SIS / PDP đã tải lên
   };
 
   // Liên kết với thực thể Chiến dịch (Campaign) của Brand trong tháng

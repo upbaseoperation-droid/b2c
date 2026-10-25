@@ -3,7 +3,7 @@
  * Bỏ qua chữ giữ chỗ của Dữ liệu gốc (“Bộ quy chuẩn nội dung…”, “Đại diện Nhãn hàng”).
  */
 
-import type { BrandDetail } from '../../lib/types';
+import type { BrandDetail, KeyVisualAssetCategory, KeyVisualAssetItem } from '../../lib/types';
 import type {
   BrandDocCategory,
   BrandOperatingModel,
@@ -209,4 +209,95 @@ export async function uploadBrandFileClient(params: {
     throw new Error(data.error || 'Không tải được tệp lên hệ thống.');
   }
   return data.file as UploadedBrandFileResult;
+}
+
+export const KEY_VISUAL_CATEGORY_LABEL: Record<KeyVisualAssetCategory, string> = {
+  MASTER_KV: 'Master KV',
+  SIS_BANNER: 'SIS / Banner',
+  PDP_FRAME: 'Khung PDP / SEO',
+  MOODBOARD: 'Moodboard / Ref',
+};
+
+async function readAndCompressImageDataUrl(file: File, maxDim = 1280): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Không đọc được tệp ảnh.'));
+    reader.onload = () => {
+      const rawUrl = String(reader.result || '');
+      if (typeof window === 'undefined' || typeof document === 'undefined') {
+        resolve(rawUrl);
+        return;
+      }
+      const img = new Image();
+      img.onerror = () => resolve(rawUrl);
+      img.onload = () => {
+        try {
+          const w = img.naturalWidth || img.width;
+          const h = img.naturalHeight || img.height;
+          if (!w || !h || (w <= maxDim && h <= maxDim && file.size <= 350_000)) {
+            resolve(rawUrl);
+            return;
+          }
+          const scale = Math.min(1, maxDim / Math.max(w, h));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(w * scale));
+          canvas.height = Math.max(1, Math.round(h * scale));
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(rawUrl);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const outMime = file.type === 'image/png' ? 'image/webp' : 'image/jpeg';
+          const compressed = canvas.toDataURL(outMime, 0.84);
+          resolve(compressed || rawUrl);
+        } catch {
+          resolve(rawUrl);
+        }
+      };
+      img.src = rawUrl;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function uploadKeyVisualImageClient(params: {
+  file: File;
+  brandName: string;
+  category?: KeyVisualAssetCategory;
+  note?: string;
+}): Promise<KeyVisualAssetItem> {
+  const { file, brandName, category = 'MASTER_KV', note = '' } = params;
+  const inlineDataUrl = await readAndCompressImageDataUrl(file);
+  try {
+    const stored = await uploadBrandFileClient({
+      file,
+      brandName: brandName || 'Brand',
+      section: 'DOCUMENTS',
+    });
+    return {
+      id: `kv-img-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      url: stored.storage === 'R2' ? stored.url : inlineDataUrl,
+      fileName: stored.fileName || file.name,
+      fileKey: stored.fileKey,
+      fileSize: stored.fileSize || file.size,
+      mimeType: stored.mimeType || file.type,
+      storage: stored.storage,
+      category,
+      note,
+      uploadedAt: new Date().toISOString(),
+    };
+  } catch {
+    return {
+      id: `kv-img-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      url: inlineDataUrl,
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.type || 'image/jpeg',
+      storage: 'INLINE',
+      category,
+      note,
+      uploadedAt: new Date().toISOString(),
+    };
+  }
 }

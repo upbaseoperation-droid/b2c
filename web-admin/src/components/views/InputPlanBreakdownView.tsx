@@ -190,6 +190,7 @@ interface InputPlanBreakdownViewProps {
   onApplyPlanToWeeklyStore?: (planData: WeeklyStorePlan411) => void;
   onOpenListingForPlan?: (plan: InputPlanBreakdownState, salaryGrade?: SalaryGrade) => void;
   onPlansChange?: (plans: InputPlanBreakdownState[]) => void;
+  onOpenGovernanceDashboard?: () => void;
   initialShowStudio?: boolean;
   planDrilldownIntent?: {
     planId?: string;
@@ -212,6 +213,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   onApplyPlanToWeeklyStore,
   onOpenListingForPlan,
   onPlansChange,
+  onOpenGovernanceDashboard,
   initialShowStudio = false,
   planDrilldownIntent,
 }) => {
@@ -410,6 +412,17 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
   // State thu gọn / mở rộng chi tiết Campaign & Key Visual ở Tab 1
   const [isCampaignDetailExpanded, setIsCampaignDetailExpanded] = useState(false);
+
+  // State Popover cụm PIC & Đội ngũ phụ trách gian hàng
+  const [isPicPopoverOpen, setIsPicPopoverOpen] = useState(false);
+
+  // State Khung Chat Trao đổi, Thống nhất & Yêu cầu sửa
+  const [chatMode, setChatMode] = useState<'COMMENT' | 'REVISION_REQUEST'>('COMMENT');
+  const [chatFilter, setChatFilter] = useState<'ALL' | 'REVISION_REQUEST'>('ALL');
+  const [chatDraft, setChatDraft] = useState('');
+  const [isChatHighlighted, setIsChatHighlighted] = useState(false);
+  const chatInputRef = React.useRef<HTMLInputElement>(null);
+  const chatListRef = React.useRef<HTMLDivElement>(null);
 
   // State Modal Phân Bổ Kế Hoạch Cho Team của bạn PIC
   const [isAllocationModalOpen, setIsAllocationModalOpen] = useState(false);
@@ -1332,6 +1345,132 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     }));
   };
 
+  // Tổng hợp luồng tin nhắn khung Chat (Gộp Trao đổi thống nhất + Yêu cầu sửa + Lịch sử duyệt theo thứ tự thời gian)
+  const unifiedChatMessages = useMemo(() => {
+    const base = [...(planState.discussions || [])];
+    const alignText = (planState.coreMetricsLayer1?.alignmentNote || planState.growthAlignmentNotes || '').trim();
+    if (alignText && !base.some(m => m.content.includes(alignText))) {
+      base.push({
+        id: `ALIGN-INIT-${planState.id}`,
+        authorName: planState.primaryPic || planState.pic || 'Chuyên viên B2C',
+        authorRole: 'BOOKING',
+        authorTitle: 'Ghi chú thống nhất',
+        content: alignText,
+        type: 'COMMENT',
+        timestamp: planState.updatedAt || planState.createdAt || '2026-10-01T08:00:00.000Z',
+        tags: ['Thống nhất'],
+      });
+    }
+    const revText = (planState.revisionNotes || '').trim();
+    if (revText && !base.some(m => m.content.includes(revText))) {
+      base.push({
+        id: `REV-INIT-${planState.id}`,
+        authorName: planState.approvedBy || 'Đặng Thị Yến Nhi',
+        authorRole: 'LEAD',
+        authorTitle: 'Quản lý B2C',
+        content: revText,
+        type: 'REVISION_REQUEST',
+        timestamp: planState.updatedAt || planState.createdAt || '2026-10-01T08:05:00.000Z',
+        tags: ['Yêu cầu sửa'],
+      });
+    }
+    return base.sort((a, b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
+  }, [planState]);
+
+  const handleFocusChatForRevision = () => {
+    if (activeTab !== 'OVERVIEW') {
+      setActiveTab('OVERVIEW');
+    }
+    setChatMode('REVISION_REQUEST');
+    setChatFilter('ALL');
+    setIsChatHighlighted(true);
+    window.setTimeout(() => {
+      chatInputRef.current?.focus();
+    }, 80);
+    window.setTimeout(() => {
+      setIsChatHighlighted(false);
+    }, 1800);
+  };
+
+  const handleSubmitChatMessage = () => {
+    const text = chatDraft.trim();
+    if (!text) return;
+    const now = new Date().toISOString();
+    const resolvedLeader = resolveStoreBookingLeader(planState.storeName || planState.brandName, planState.bookingLeader);
+    const isPlanLeader = Boolean(resolvedLeader) && (currentUser?.name || '').trim().toLowerCase() === (resolvedLeader || '').trim().toLowerCase();
+
+    let authorName = currentUser?.name || planState.primaryPic || planState.pic || 'Chuyên viên B2C';
+    let authorTitle = 'Booking PIC';
+    let authorRole: PlanDiscussionRole = currentRole;
+
+    if (['ADMIN', 'MANAGER'].includes(currentUser?.role || '') || currentRole === 'LEAD') {
+      authorName = currentUser?.name || planState.approvedBy || 'Đặng Thị Yến Nhi';
+      authorTitle = 'Giám đốc MKT B2C';
+      authorRole = 'LEAD';
+    } else if (isPlanLeader) {
+      authorName = currentUser?.name || resolvedLeader || 'Nguyễn Thị Ngọc Tâm';
+      authorTitle = 'Trưởng nhóm B2C';
+      authorRole = 'LEAD';
+    }
+
+    if (chatMode === 'REVISION_REQUEST') {
+      const revMsg: PlanDiscussionMessage = {
+        id: `DISC-REV-${Date.now()}`,
+        authorName,
+        authorRole,
+        authorTitle,
+        content: text,
+        type: 'REVISION_REQUEST',
+        timestamp: now,
+        tags: ['Yêu cầu sửa'],
+      };
+      const updatedPlan: InputPlanBreakdownState = {
+        ...planState,
+        status: 'REVISION_REQUESTED',
+        revisionNotes: text,
+        updatedAt: now,
+        discussions: [revMsg, ...(planState.discussions || [])],
+      };
+      setPlanState(updatedPlan);
+      setMonthlyPlans(prev => prev.map(p => (p.id === updatedPlan.id ? updatedPlan : p)));
+      setChatDraft('');
+      setChatMode('COMMENT');
+      notify('Đã gửi yêu cầu sửa vào khung trao đổi và chuyển trạng thái kế hoạch sang Cần sửa.');
+    } else {
+      const commentMsg: PlanDiscussionMessage = {
+        id: `DISC-MSG-${Date.now()}`,
+        authorName,
+        authorRole,
+        authorTitle,
+        content: text,
+        type: 'COMMENT',
+        timestamp: now,
+        tags: ['Trao đổi & Thống nhất'],
+      };
+      const nextLayer1: CorePlanMetricsLayer1 = {
+        ...layer1Metrics,
+        ...(planState.coreMetricsLayer1 || {}),
+        alignmentNote: text,
+      };
+      const updatedPlan: InputPlanBreakdownState = {
+        ...planState,
+        coreMetricsLayer1: nextLayer1,
+        growthAlignmentNotes: text,
+        updatedAt: now,
+        discussions: [commentMsg, ...(planState.discussions || [])],
+      };
+      setPlanState(updatedPlan);
+      setMonthlyPlans(prev => prev.map(p => (p.id === updatedPlan.id ? updatedPlan : p)));
+      setChatDraft('');
+    }
+
+    window.setTimeout(() => {
+      if (chatListRef.current) {
+        chatListRef.current.scrollTop = chatListRef.current.scrollHeight;
+      }
+    }, 60);
+  };
+
   const planReportContextText = [
     `[DỮ LIỆU PHÂN HỆ: Kế Hoạch Tháng B2C (Plan 4.1 & 4.1.1) — ${isShowingStudio ? planState.brandName : `Tổng hợp ${monthlyPlans.length} kế hoạch gian hàng`}]`,
     `- Gian hàng đang chọn: ${planState.brandName} (${planState.month} · Phiên bản ${planState.currentVersionCode || 'v1.0'}).`,
@@ -1376,6 +1515,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             />
           }
           onOpenPlanReport={() => setIsPlanReportOpen(true)}
+          onOpenGovernanceDashboard={onOpenGovernanceDashboard}
         onSelectPlan={(selected, options) => {
           setPlanState(selected);
           if (options?.focusStaffName) {
@@ -1844,8 +1984,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200/90 px-2.5 py-1.5 shadow-2xs flex items-center justify-between gap-2 flex-nowrap overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="inline-flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 gap-0.5 shrink-0">
+      <div className="bg-white rounded-xl border border-slate-200/90 px-2.5 py-1.5 shadow-2xs flex items-center justify-between gap-2 flex-nowrap relative">
+        <div className="inline-flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
             onClick={() => setActiveTab('OVERVIEW')}
@@ -1914,57 +2054,235 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </button>
         </div>
 
-        {/* Bên phải thanh bước: Trạng thái 4.1, Đội ngũ 4.1 & lối tắt Listing KOC gọn trên 1 dòng */}
-        <div className="flex items-center gap-1.5 text-2xs text-slate-600 ml-auto shrink-0">
-          {planState.reference41 && (
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border font-semibold shrink-0 ${
-                planState.reference41.isGrowthLocked === false
-                  ? 'bg-amber-50 border-amber-200 text-amber-800'
-                  : 'bg-emerald-50 border-emerald-200 text-emerald-800'
-              }`}
-              title={`Nguồn 4.1: ${planState.reference41.importedBy || 'Bảng 4.1 Plan order tổng'}`}
-            >
-              <span>4.1: {planState.reference41.isGrowthLocked === false ? (planState.reference41.growthLockLabel || 'Chưa chốt') : 'Đã chốt'}</span>
-            </span>
-          )}
-          <span
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 whitespace-nowrap"
-            title={[
-              planState.reference41?.rolePics?.growthPics?.length ? `Growth: ${planState.reference41.rolePics.growthPics.join(', ')}` : '',
-              planState.reference41?.rolePics?.accountPics?.length ? `Account: ${planState.reference41.rolePics.accountPics.join(', ')}` : '',
-              `Booking PIC: ${planState.reference41?.rolePics?.bookingPics?.join(', ') || planState.primaryPic || planState.pic}`,
-              `Leader: ${hasLeader ? (resolvedBookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'Không có leader'}`,
-              planState.reference41?.rolePics?.livePics?.length ? `Live: ${planState.reference41.rolePics.livePics.join(', ')}` : '',
-            ].filter(Boolean).join(' · ')}
-          >
-            {planState.reference41?.rolePics?.growthPics?.length ? (
-              <>
-                <span className="hidden 2xl:inline">Growth: <strong className="text-slate-900">{planState.reference41.rolePics.growthPics.join(', ')}</strong></span>
-                <span className="text-slate-300 hidden 2xl:inline">·</span>
-              </>
-            ) : null}
-            <span>PIC: <strong className="text-slate-900">{planState.reference41?.rolePics?.bookingPics?.join(', ') || planState.primaryPic || planState.pic}</strong></span>
-            <span className="text-slate-300 hidden sm:inline">·</span>
-            <span className="hidden sm:inline">
-              Leader:{' '}
-              <strong className="text-slate-900">
-                {hasLeader ? (resolvedBookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'Không có leader'}
-              </strong>
-            </span>
-          </span>
-          {onOpenListingForPlan && (
-            <button
-              type="button"
-              onClick={() => onOpenListingForPlan(planState)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-2xs transition cursor-pointer shrink-0"
-              title="Mở bảng Listing KOC theo khung lương KL1–KL7 của kế hoạch này"
-            >
-              <UserCheck className="w-3 h-3" />
-              <span>Listing KOC</span>
-            </button>
-          )}
-        </div>
+        {/* Bên phải thanh bước: Trạng thái 4.1, Cụm PIC thông minh (Popover chi tiết đội ngũ) & lối tắt Listing KOC */}
+        {(() => {
+          const rolePics = planState.reference41?.rolePics;
+          const bookingPics = rolePics?.bookingPics?.length
+            ? rolePics.bookingPics
+            : [planState.primaryPic || planState.pic].filter(Boolean);
+          const mainPic = bookingPics[0] || planState.primaryPic || planState.pic || 'Chưa gán';
+          const growthPics = rolePics?.growthPics || [];
+          const accountPics = rolePics?.accountPics || [];
+          const focPics = rolePics?.focPics || [];
+          const contentPics = rolePics?.contentPics || [];
+          const livePics = rolePics?.livePics || [];
+          const leaderDisplayName = hasLeader ? (resolvedBookingLeader || 'Nguyễn Thị Ngọc Tâm') : undefined;
+          const getInitials = (name: string) => {
+            const parts = name.trim().split(/\s+/).filter(Boolean);
+            if (parts.length === 0) return 'PIC';
+            if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+            return `${parts[parts.length - 2][0] || ''}${parts[parts.length - 1][0] || ''}`.toUpperCase();
+          };
+          const extraRoleCount =
+            (bookingPics.length > 1 ? bookingPics.length - 1 : 0) +
+            accountPics.length +
+            focPics.length +
+            contentPics.length +
+            livePics.length;
+
+          return (
+            <div className="flex items-center gap-1.5 text-2xs text-slate-600 ml-auto shrink-0">
+              {planState.reference41 && (
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border font-semibold shrink-0 ${
+                    planState.reference41.isGrowthLocked === false
+                      ? 'bg-amber-50 border-amber-200 text-amber-800'
+                      : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                  }`}
+                  title={`Nguồn 4.1: ${planState.reference41.importedBy || 'Bảng 4.1 Plan order tổng'}`}
+                >
+                  <span>
+                    4.1:{' '}
+                    {planState.reference41.isGrowthLocked === false
+                      ? planState.reference41.growthLockLabel || 'Chưa chốt'
+                      : 'Đã chốt'}
+                  </span>
+                </span>
+              )}
+
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsPicPopoverOpen(prev => !prev)}
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/90 transition cursor-pointer whitespace-nowrap"
+                  title="Bấm để xem chi tiết đội ngũ phụ trách gian hàng & luồng duyệt"
+                >
+                  {/* Chip PIC B2C chính */}
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold inline-flex items-center justify-center shrink-0">
+                      {getInitials(mainPic)}
+                    </span>
+                    <span className="text-slate-500">PIC:</span>
+                    <strong className="text-slate-900">{mainPic}</strong>
+                    {bookingPics.length > 1 && (
+                      <span className="px-1 py-0.2 rounded bg-blue-100 text-blue-700 font-semibold">
+                        +{bookingPics.length - 1}
+                      </span>
+                    )}
+                  </span>
+
+                  {/* Chip Leader: Chỉ hiển thị khi gian hàng thực sự có Leader */}
+                  {leaderDisplayName && (
+                    <span className="hidden md:inline-flex items-center gap-1 pl-1.5 border-l border-slate-200">
+                      <span className="text-slate-500">Leader:</span>
+                      <strong className="text-indigo-700">{leaderDisplayName}</strong>
+                    </span>
+                  )}
+
+                  {/* Chip Growth: Gọn trên màn rộng */}
+                  {growthPics.length > 0 && (
+                    <span className="hidden xl:inline-flex items-center gap-1 pl-1.5 border-l border-slate-200">
+                      <span className="text-slate-500">Growth:</span>
+                      <strong className="text-slate-800">{growthPics[0]}</strong>
+                      {growthPics.length > 1 && (
+                        <span className="text-slate-400">+{growthPics.length - 1}</span>
+                      )}
+                    </span>
+                  )}
+
+                  {extraRoleCount > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-slate-200/80 text-slate-700 font-semibold">
+                      +{extraRoleCount}
+                    </span>
+                  )}
+                  <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isPicPopoverOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isPicPopoverOpen && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setIsPicPopoverOpen(false)} />
+                    <div className="absolute right-0 top-full mt-1.5 w-80 sm:w-96 z-40 bg-white rounded-xl border border-slate-200 shadow-xl p-3 text-xs space-y-2.5 whitespace-normal">
+                      <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                        <span className="font-semibold text-slate-900">Đội ngũ phụ trách gian hàng</span>
+                        <span className="px-2 py-0.5 rounded bg-slate-100 text-2xs font-mono font-semibold text-slate-700 truncate max-w-[160px]">
+                          {planState.storeName || planState.brandName}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        {/* 1. Chuyên viên B2C (PIC) */}
+                        <div className="flex items-start justify-between gap-2 p-2 rounded-lg bg-blue-50/60 border border-blue-100">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-2xs font-bold inline-flex items-center justify-center shrink-0">
+                              {getInitials(mainPic)}
+                            </span>
+                            <div className="min-w-0">
+                              <div className="text-2xs text-slate-500">Chuyên viên B2C (PIC)</div>
+                              <div className="font-semibold text-slate-900 truncate">
+                                {bookingPics.join(', ')}
+                              </div>
+                            </div>
+                          </div>
+                          <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-2xs font-semibold shrink-0">
+                            Chủ trì
+                          </span>
+                        </div>
+
+                        {/* 2. Luồng duyệt B2C (Leader & Giám đốc MKT) */}
+                        <div className="flex items-start justify-between gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200/80">
+                          <div className="min-w-0">
+                            <div className="text-2xs text-slate-500">Cấp duyệt B2C</div>
+                            {leaderDisplayName ? (
+                              <div className="font-semibold text-slate-900">
+                                Leader: <span className="text-indigo-700">{leaderDisplayName}</span> → GĐ: Đặng Thị Yến Nhi
+                              </div>
+                            ) : (
+                              <div className="font-semibold text-slate-900">
+                                Trình trực tiếp GĐ MKT: <span className="text-emerald-700">Đặng Thị Yến Nhi</span>
+                              </div>
+                            )}
+                          </div>
+                          <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-slate-700 text-2xs font-semibold shrink-0">
+                            {leaderDisplayName ? 'Qua Leader' : 'Duyệt thẳng'}
+                          </span>
+                        </div>
+
+                        {/* 3. Các vị trí phối hợp từ Bảng 4.1 (Growth, Account, FOC, Content, Live) */}
+                        {(growthPics.length > 0 ||
+                          accountPics.length > 0 ||
+                          focPics.length > 0 ||
+                          contentPics.length > 0 ||
+                          livePics.length > 0) && (
+                          <div className="grid grid-cols-2 gap-1.5 pt-0.5 text-2xs">
+                            {growthPics.length > 0 && (
+                              <div className="p-1.5 rounded-md bg-slate-50 border border-slate-100">
+                                <span className="text-slate-500 block">Growth (4.1)</span>
+                                <strong className="text-slate-900">{growthPics.join(', ')}</strong>
+                              </div>
+                            )}
+                            {accountPics.length > 0 && (
+                              <div className="p-1.5 rounded-md bg-slate-50 border border-slate-100">
+                                <span className="text-slate-500 block">Account</span>
+                                <strong className="text-slate-900">{accountPics.join(', ')}</strong>
+                              </div>
+                            )}
+                            {focPics.length > 0 && (
+                              <div className="p-1.5 rounded-md bg-slate-50 border border-slate-100">
+                                <span className="text-slate-500 block">Gửi mẫu FOC</span>
+                                <strong className="text-slate-900">{focPics.join(', ')}</strong>
+                              </div>
+                            )}
+                            {contentPics.length > 0 && (
+                              <div className="p-1.5 rounded-md bg-slate-50 border border-slate-100">
+                                <span className="text-slate-500 block">Content Kênh Brand</span>
+                                <strong className="text-slate-900">{contentPics.join(', ')}</strong>
+                              </div>
+                            )}
+                            {livePics.length > 0 && (
+                              <div className="p-1.5 rounded-md bg-slate-50 border border-slate-100 col-span-2">
+                                <span className="text-slate-500 block">Livestream</span>
+                                <strong className="text-slate-900">{livePics.join(', ')}</strong>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsPicPopoverOpen(false);
+                            setIsAllocationModalOpen(true);
+                          }}
+                          className="flex-1 h-7 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-2xs inline-flex items-center justify-center gap-1 transition cursor-pointer"
+                        >
+                          <Users className="w-3 h-3" />
+                          <span>Phân bổ nhân sự ({staffAllocationSummary.filter(s => s.videoCount > 0).length})</span>
+                        </button>
+                        {onOpenListingForPlan && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsPicPopoverOpen(false);
+                              onOpenListingForPlan(planState);
+                            }}
+                            className="h-7 px-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-2xs inline-flex items-center justify-center gap-1 transition cursor-pointer"
+                          >
+                            <UserCheck className="w-3 h-3" />
+                            <span>Listing KOC</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {onOpenListingForPlan && (
+                <button
+                  type="button"
+                  onClick={() => onOpenListingForPlan(planState)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-2xs transition cursor-pointer shrink-0"
+                  title="Mở bảng Listing KOC theo khung lương KL1–KL7 của kế hoạch này"
+                >
+                  <UserCheck className="w-3 h-3" />
+                  <span>Listing KOC</span>
+                </button>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* ========================================================================= */}
@@ -2045,17 +2363,17 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           };
                           setPlanState(prev => ({ ...prev, ...updated }));
                           setMonthlyPlans(prev => prev.map(p => (p.id === planState.id ? { ...p, ...updated } : p)));
-                          notify(`Đã chuyển kế hoạch ${planState.storeName || planState.brandName} kỳ ${planState.month} sang chế độ Duy trì`);
+                          notify(`Đã chuyển kế hoạch ${planState.storeName || planState.brandName} kỳ ${planState.month} sang Không có Campaign`);
                         }}
                         className={`px-2 py-0.5 rounded-md text-2xs font-semibold transition cursor-pointer ${
                           !hasCampaignActive ? 'bg-ink text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        Duy trì
+                        Không có Campaign
                       </button>
                     </div>
 
-                    {hasCampaignActive ? (
+                    {hasCampaignActive && (
                       <>
                         <select
                           value={linkedCampaign?.id || ''}
@@ -2101,10 +2419,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           </button>
                         )}
                       </>
-                    ) : (
-                      <span className="text-xs text-slate-600">
-                        Kế hoạch định kỳ hàng tháng (không chạy chiến dịch trọng điểm)
-                      </span>
                     )}
                   </div>
 
@@ -2262,11 +2576,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     />
                   </div>
 
-                  {/* Ô 2: Tổng trần Ngân sách thúc đẩy Net (4.1) */}
+                  {/* Ô 2: Tổng Ngân sách thúc đẩy Net (4.1) */}
                   <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-2.5 py-1.5 flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <label className="text-2xs font-semibold text-slate-700 block truncate">
-                        2. Trần Ngân sách Net (4.1)
+                        2. Ngân sách Net (4.1)
                       </label>
                       <span className="text-2xs text-slate-500 font-mono truncate block">
                         Gross: {formatVndShort(Math.round(layer1Metrics.pnlTotalBudgetNet * GROSS_MULTIPLIER))}
@@ -2325,7 +2639,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   }`}>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-2xs font-semibold text-slate-700">4. Đối soát Trần Net</span>
+                        <span className="text-2xs font-semibold text-slate-700">4. Đối soát Ngân sách Net</span>
                         <span className={`text-2xs font-mono font-semibold tabular-nums ${
                           layer1BudgetGapVsPnl < 0
                             ? 'text-rose-700'
@@ -2359,7 +2673,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             <div className="lg:col-span-8 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs flex flex-col justify-between">
               <div>
                 <div className="px-3 py-1.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50/80">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
                       Chỉ tiêu theo kênh (Đối soát Bảng 4.1)
                     </h3>
@@ -2367,6 +2681,25 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       isLayer1Locked ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                     }`}>
                       {isLayer1Locked ? 'Đã chốt chỉ tiêu' : 'Đang điền'}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold ${
+                      channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid &&
+                      channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet &&
+                      channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample &&
+                      channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel &&
+                      channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform &&
+                      channelTotals.livestream.qty === layer1Metrics.qtyLivestreamSessions
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-rose-50 text-rose-700 border border-rose-200'
+                    }`}>
+                      {channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid &&
+                      channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet &&
+                      channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample &&
+                      channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel &&
+                      channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform &&
+                      channelTotals.livestream.qty === layer1Metrics.qtyLivestreamSessions
+                        ? 'Khớp 100% phân bổ'
+                        : 'Chưa đồng bộ phân bổ'}
                     </span>
                   </div>
 
@@ -2430,7 +2763,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         />
                       </div>
                       <div>
-                        <span className="text-2xs text-slate-500 block">Trần Net (VNĐ)</span>
+                        <span className="text-2xs text-slate-500 block">Ngân sách Net (VNĐ)</span>
                         <FormattedNumberInput
                           disabled={isLayer1Locked}
                           value={layer1Metrics.budgetAffiliateNet}
@@ -2494,7 +2827,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         />
                       </div>
                       <div>
-                        <span className="text-2xs text-slate-500 block">Trần Net (VNĐ)</span>
+                        <span className="text-2xs text-slate-500 block">Ngân sách Net (VNĐ)</span>
                         <span className="inline-flex items-center justify-end w-full h-7 px-2 rounded border border-slate-200 bg-slate-50/80 font-mono text-xs font-semibold text-slate-400">
                           0 đ (FOC)
                         </span>
@@ -2542,7 +2875,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         />
                       </div>
                       <div>
-                        <span className="text-2xs text-slate-500 block">Trần Net (VNĐ)</span>
+                        <span className="text-2xs text-slate-500 block">Ngân sách Net (VNĐ)</span>
                         <FormattedNumberInput
                           disabled={isLayer1Locked}
                           value={layer1Metrics.budgetSelfChannelNet}
@@ -2614,7 +2947,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         />
                       </div>
                       <div>
-                        <span className="text-2xs text-slate-500 block">Trần Net (VNĐ)</span>
+                        <span className="text-2xs text-slate-500 block">Ngân sách Net (VNĐ)</span>
                         <FormattedNumberInput
                           disabled={isLayer1Locked}
                           value={layer1Metrics.budgetMultiPlatformNet}
@@ -2664,7 +2997,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         />
                       </div>
                       <div>
-                        <span className="text-2xs text-slate-500 block">Trần Net (VNĐ)</span>
+                        <span className="text-2xs text-slate-500 block">Ngân sách Net (VNĐ)</span>
                         <FormattedNumberInput
                           disabled={isLayer1Locked}
                           value={layer1Metrics.budgetLivestreamNet}
@@ -2700,7 +3033,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       <tr className="border-b border-slate-200 text-2xs text-slate-500 font-semibold bg-slate-50/50">
                         <th className="py-1.5 px-2.5">Hạng mục &amp; Chi tiết Bảng 4.1</th>
                         <th className="py-1.5 px-2 text-right">Sản lượng</th>
-                        <th className="py-1.5 px-2 text-right">Trần Net (VNĐ)</th>
+                        <th className="py-1.5 px-2 text-right">Ngân sách Net (VNĐ)</th>
                         <th className="py-1.5 px-2 text-right">Quy đổi Gross</th>
                         <th className="py-1.5 px-2 text-right">Mục tiêu GMV</th>
                         <th className="py-1.5 px-2.5 text-right">Đã phân bổ</th>
@@ -3071,19 +3404,22 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 </div>
               </div>
 
-              {/* Khu vực ghi chú thống nhất & Nút Chốt gọn 1 dòng */}
-              <div className="px-3 py-2 bg-slate-50/70 border-t border-slate-200 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2">
-                <span className="text-2xs font-semibold text-slate-600 shrink-0">
-                  Ghi chú thống nhất:
-                </span>
-                <input
-                  type="text"
-                  disabled={isLayer1Locked}
-                  value={layer1Metrics.alignmentNote || ''}
-                  onChange={(e) => handleUpdateLayer1Metrics({ alignmentNote: e.target.value })}
-                  placeholder="Nhập thống nhất giữa các bên (VD: Chốt trần Net Affiliate 150Tr, đẩy 50 suất FOC mẫu mới)..."
-                  className="w-full sm:w-auto sm:flex-1 min-w-0 h-7 px-2.5 rounded-lg border border-slate-300 bg-white text-xs text-slate-800 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
-                />
+              {/* Thanh thao tác Chốt chỉ tiêu & Mở phân bổ */}
+              <div className="px-3 py-2 bg-slate-50/70 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-2xs text-slate-600">
+                  <span className="font-semibold text-slate-700">
+                    Đối soát Bảng 4.1:
+                  </span>
+                  <span className={`font-mono font-semibold ${
+                    layer1BudgetGapVsPnl === 0 ? 'text-emerald-700' : layer1BudgetGapVsPnl < 0 ? 'text-rose-700' : 'text-blue-700'
+                  }`}>
+                    {layer1BudgetGapVsPnl === 0
+                      ? 'Ngân sách Net khớp 100%'
+                      : layer1BudgetGapVsPnl < 0
+                      ? `Vượt ${formatVndShort(Math.abs(layer1BudgetGapVsPnl))}`
+                      : `Còn ${formatVndShort(layer1BudgetGapVsPnl)} chưa chia`}
+                  </span>
+                </div>
                 <div className="flex items-center justify-end gap-1.5 w-full sm:w-auto shrink-0">
                   {!isLayer1Locked ? (
                     <button
@@ -3120,9 +3456,9 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               </div>
             </div>
 
-            {/* Cột phải (4/12): Trạng thái duyệt các bên (Xanh = Duyệt, Đỏ = Chưa) & Tiến độ đối soát */}
+            {/* Cột phải (4/12): Trạng thái duyệt các bên & Khung Chat Trao đổi / Yêu cầu sửa */}
             <div className="lg:col-span-4 flex flex-col justify-between gap-2.5">
-              {/* Khung 1: Trạng thái duyệt các bên (có bao nhiêu bên thì bấy nhiêu dòng) */}
+              {/* Khung 1: Trạng thái duyệt các bên */}
               <div id="plan-approval-detail">
                 <PlanApprovalStepper
                   plan={planState}
@@ -3133,115 +3469,268 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     setPlanState(prev => ({ ...prev, ...upd }));
                     setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? { ...p, ...upd } : p));
                   }}
+                  onRequestRevision={handleFocusChatForRevision}
                   onNotify={notify}
                 />
               </div>
 
-              {/* Khung 2: Tiến độ đối soát Định mức (Chỉ tiêu vs Đã phân bổ) */}
-              <div className="bg-white rounded-xl border border-slate-200 p-2.5 space-y-1.5 shadow-2xs">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <h3 className="text-xs font-semibold text-slate-900">Tiến độ phân bổ chi tiết</h3>
-                    <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold ${
-                      channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid &&
-                      channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet &&
-                      channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample &&
-                      channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel &&
-                      channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform &&
-                      channelTotals.livestream.qty === layer1Metrics.qtyLivestreamSessions
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-rose-100 text-rose-800'
-                    }`}>
-                      {channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid &&
-                      channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet &&
-                      channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample &&
-                      channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel &&
-                      channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform &&
-                      channelTotals.livestream.qty === layer1Metrics.qtyLivestreamSessions
-                        ? 'Khớp 100%'
-                        : 'Chưa đồng bộ'}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('ALL_SUMMARY')}
-                    className="text-2xs font-semibold text-blue-600 hover:underline inline-flex items-center gap-0.5 cursor-pointer"
+              {/* Khung 2: Khung Chat Trao đổi, Thống nhất & Yêu cầu sửa */}
+              {(() => {
+                const revisionCount = unifiedChatMessages.filter(m => m.type === 'REVISION_REQUEST').length;
+                const filteredMessages =
+                  chatFilter === 'REVISION_REQUEST'
+                    ? unifiedChatMessages.filter(m => m.type === 'REVISION_REQUEST')
+                    : unifiedChatMessages;
+                const quickChips =
+                  chatMode === 'REVISION_REQUEST'
+                    ? [
+                        'Điều chỉnh lại cơ cấu KL1–KL7',
+                        'Cân đối lại ngân sách Net kênh Affiliate',
+                        'Bổ sung số suất mẫu FOC (0đ)',
+                      ]
+                    : [
+                        'Đã thống nhất chỉ tiêu 4.1 với Growth',
+                        'Chốt phân bổ ngân sách Net & sản lượng',
+                        'Đã cập nhật lại theo yêu cầu sửa',
+                      ];
+
+                return (
+                  <div
+                    className={`bg-white rounded-xl border p-2.5 flex flex-col justify-between gap-2 shadow-2xs transition-all flex-1 ${
+                      isChatHighlighted
+                        ? 'border-rose-400 ring-2 ring-rose-200'
+                        : chatMode === 'REVISION_REQUEST'
+                        ? 'border-rose-200'
+                        : 'border-slate-200'
+                    }`}
                   >
-                    <span>Mở phân bổ</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
-                </div>
+                    {/* Header Khung Chat */}
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <MessageSquare className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <h3 className="text-xs font-semibold text-slate-900 truncate">
+                          Trao đổi &amp; Yêu cầu sửa
+                        </h3>
+                        <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-mono text-2xs font-semibold">
+                          {unifiedChatMessages.length}
+                        </span>
+                      </div>
 
-                <div className="space-y-1 text-2xs">
-                  <div className="flex items-center justify-between px-2 py-1 rounded-md bg-slate-50 border border-slate-100">
-                    <span className="font-semibold text-slate-800 truncate">1. KOC trả phí</span>
-                    <span className="text-slate-600 font-mono">
-                      {channelTotals.affiliatePaid.qty}/{layer1Metrics.qtyAffiliatePaid} video · {formatVndShort(channelTotals.affiliatePaid.budget)}
-                    </span>
-                    <span className={`font-semibold shrink-0 ${
-                      channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid && channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet
-                        ? 'text-emerald-700'
-                        : 'text-rose-600'
-                    }`}>
-                      {channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid && channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet ? 'Khớp' : 'Lệch'}
-                    </span>
-                  </div>
+                      <div className="inline-flex items-center rounded-lg bg-slate-100 p-0.5 border border-slate-200/80 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setChatFilter('ALL')}
+                          className={`px-2 py-0.5 rounded-md text-2xs font-semibold transition cursor-pointer ${
+                            chatFilter === 'ALL'
+                              ? 'bg-white text-slate-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Tất cả
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setChatFilter('REVISION_REQUEST')}
+                          className={`px-2 py-0.5 rounded-md text-2xs font-semibold transition cursor-pointer inline-flex items-center gap-1 ${
+                            chatFilter === 'REVISION_REQUEST'
+                              ? 'bg-rose-600 text-white shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          <span>Yêu cầu sửa</span>
+                          {revisionCount > 0 && (
+                            <span
+                              className={`px-1 rounded-full text-[10px] font-mono ${
+                                chatFilter === 'REVISION_REQUEST'
+                                  ? 'bg-white/20 text-white'
+                                  : 'bg-rose-100 text-rose-700'
+                              }`}
+                            >
+                              {revisionCount}
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center justify-between px-2 py-1 rounded-md bg-slate-50 border border-slate-100">
-                    <span className="font-semibold text-slate-800 truncate">2. Mẫu FOC (0đ)</span>
-                    <span className="text-slate-600 font-mono">
-                      {channelTotals.tapFreecast.qty}/{layer1Metrics.qtyFocSample} suất
-                    </span>
-                    <span className={`font-semibold shrink-0 ${
-                      channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample ? 'text-emerald-700' : 'text-rose-600'
-                    }`}>
-                      {channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample ? 'Khớp' : 'Lệch'}
-                    </span>
-                  </div>
+                    {/* Danh sách tin nhắn hội thoại */}
+                    <div
+                      ref={chatListRef}
+                      className="space-y-1.5 max-h-[210px] min-h-[135px] overflow-y-auto pr-1"
+                    >
+                      {filteredMessages.length === 0 ? (
+                        <div className="h-[130px] flex flex-col items-center justify-center text-center px-3 text-2xs text-slate-400">
+                          <span>
+                            {chatFilter === 'REVISION_REQUEST'
+                              ? 'Chưa có yêu cầu chỉnh sửa nào trên kế hoạch này.'
+                              : 'Chưa có tin nhắn trao đổi. Nhập nội dung thống nhất hoặc yêu cầu sửa bên dưới.'}
+                          </span>
+                        </div>
+                      ) : (
+                        filteredMessages.map((msg) => {
+                          const isRev = msg.type === 'REVISION_REQUEST';
+                          const isApprove =
+                            msg.type === 'PRE_APPROVAL_PASS' ||
+                            msg.type === 'FINAL_APPROVAL_PASS';
+                          const isCurrentUserMsg =
+                            Boolean(currentUser?.name) &&
+                            msg.authorName.trim().toLowerCase() === currentUser!.name.trim().toLowerCase();
+                          const initials = msg.authorName
+                            .split(' ')
+                            .filter(Boolean)
+                            .slice(-2)
+                            .map((w) => w[0])
+                            .join('')
+                            .toUpperCase();
 
-                  <div className="flex items-center justify-between px-2 py-1 rounded-md bg-slate-50 border border-slate-100">
-                    <span className="font-semibold text-slate-800 truncate">3. Kênh Brand</span>
-                    <span className="text-slate-600 font-mono">
-                      {channelTotals.selfChannel.qty}/{layer1Metrics.qtySelfChannel} video · {formatVndShort(channelTotals.selfChannel.budget)}
-                    </span>
-                    <span className={`font-semibold shrink-0 ${
-                      channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel && channelTotals.selfChannel.budget === layer1Metrics.budgetSelfChannelNet
-                        ? 'text-emerald-700'
-                        : 'text-rose-600'
-                    }`}>
-                      {channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel && channelTotals.selfChannel.budget === layer1Metrics.budgetSelfChannelNet ? 'Khớp' : 'Lệch'}
-                    </span>
-                  </div>
+                          return (
+                            <div
+                              key={msg.id}
+                              className={`rounded-lg border px-2.5 py-1.5 text-xs transition ${
+                                isRev
+                                  ? 'bg-rose-50/70 border-rose-200 text-rose-950'
+                                  : isApprove
+                                  ? 'bg-emerald-50/60 border-emerald-200 text-emerald-950'
+                                  : isCurrentUserMsg
+                                  ? 'bg-blue-50/60 border-blue-200 text-slate-900'
+                                  : 'bg-slate-50/80 border-slate-200/90 text-slate-800'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-1.5 mb-0.5">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span
+                                    className={`w-4 h-4 rounded-full text-[9px] font-bold inline-flex items-center justify-center shrink-0 ${
+                                      isRev
+                                        ? 'bg-rose-600 text-white'
+                                        : isApprove
+                                        ? 'bg-emerald-600 text-white'
+                                        : 'bg-blue-600 text-white'
+                                    }`}
+                                  >
+                                    {initials || 'NV'}
+                                  </span>
+                                  <span className="font-semibold text-2xs text-slate-900 truncate">
+                                    {msg.authorName}
+                                  </span>
+                                  {msg.authorTitle && (
+                                    <span className="px-1.5 py-0.2 rounded bg-white/90 border border-slate-200 text-[10px] font-medium text-slate-600 shrink-0">
+                                      {msg.authorTitle}
+                                    </span>
+                                  )}
+                                  {isRev && (
+                                    <span className="px-1.5 py-0.2 rounded bg-rose-600 text-white text-[10px] font-semibold shrink-0">
+                                      Yêu cầu sửa
+                                    </span>
+                                  )}
+                                  {!isRev && !isApprove && (
+                                    <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 text-[10px] font-semibold shrink-0">
+                                      Thống nhất
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                                  {msg.timestamp && !Number.isNaN(Date.parse(msg.timestamp))
+                                    ? getVietnamDateTimeShort(new Date(msg.timestamp))
+                                    : msg.timestamp}
+                                </span>
+                              </div>
+                              <div className="text-xs leading-snug break-words pl-5">
+                                {msg.content}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
 
-                  <div className="flex items-center justify-between px-2 py-1 rounded-md bg-slate-50 border border-slate-100">
-                    <span className="font-semibold text-slate-800 truncate">4. Đa sàn khác</span>
-                    <span className="text-slate-600 font-mono">
-                      {channelTotals.multiPlatform.qty}/{layer1Metrics.qtyMultiPlatform} video · {formatVndShort(channelTotals.multiPlatform.budget)}
-                    </span>
-                    <span className={`font-semibold shrink-0 ${
-                      channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform && channelTotals.multiPlatform.budget === layer1Metrics.budgetMultiPlatformNet
-                        ? 'text-emerald-700'
-                        : 'text-rose-600'
-                    }`}>
-                      {channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform && channelTotals.multiPlatform.budget === layer1Metrics.budgetMultiPlatformNet ? 'Khớp' : 'Lệch'}
-                    </span>
-                  </div>
+                    {/* Khung nhập tin nhắn / Gửi yêu cầu sửa */}
+                    <div className="pt-1.5 border-t border-slate-100 space-y-1.5">
+                      <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setChatMode('COMMENT')}
+                            className={`px-2 py-0.5 rounded-md text-2xs font-semibold border transition cursor-pointer ${
+                              chatMode === 'COMMENT'
+                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            Trao đổi / Thống nhất
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setChatMode('REVISION_REQUEST')}
+                            className={`px-2 py-0.5 rounded-md text-2xs font-semibold border transition cursor-pointer ${
+                              chatMode === 'REVISION_REQUEST'
+                                ? 'bg-rose-50 text-rose-700 border-rose-300'
+                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            Yêu cầu sửa
+                          </button>
+                        </div>
 
-                  <div className="flex items-center justify-between px-2 py-1 rounded-md bg-slate-50 border border-slate-100">
-                    <span className="font-semibold text-slate-800 truncate">5. Livestream</span>
-                    <span className="text-slate-600 font-mono">
-                      {channelTotals.livestream.qty}/{layer1Metrics.qtyLivestreamSessions} phiên · {formatVndShort(channelTotals.livestream.budget)}
-                    </span>
-                    <span className={`font-semibold shrink-0 ${
-                      channelTotals.livestream.qty === layer1Metrics.qtyLivestreamSessions && channelTotals.livestream.budget === layer1Metrics.budgetLivestreamNet
-                        ? 'text-emerald-700'
-                        : 'text-rose-600'
-                    }`}>
-                      {channelTotals.livestream.qty === layer1Metrics.qtyLivestreamSessions && channelTotals.livestream.budget === layer1Metrics.budgetLivestreamNet ? 'Khớp' : 'Lệch'}
-                    </span>
+                        <div className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                          {quickChips.map((chip) => (
+                            <button
+                              key={chip}
+                              type="button"
+                              onClick={() => {
+                                setChatDraft((prev) => (prev ? `${prev}; ${chip}` : chip));
+                                chatInputRef.current?.focus();
+                              }}
+                              className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-medium whitespace-nowrap transition cursor-pointer"
+                            >
+                              + {chip}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          ref={chatInputRef}
+                          type="text"
+                          value={chatDraft}
+                          onChange={(e) => setChatDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSubmitChatMessage();
+                            }
+                          }}
+                          placeholder={
+                            chatMode === 'REVISION_REQUEST'
+                              ? 'Nhập nội dung yêu cầu chỉnh sửa kế hoạch...'
+                              : 'Nhập trao đổi hoặc ghi chú thống nhất giữa các bên...'
+                          }
+                          className={`flex-1 min-w-0 h-7 px-2.5 rounded-lg border bg-white text-xs text-slate-800 focus:outline-none transition ${
+                            chatMode === 'REVISION_REQUEST'
+                              ? 'border-rose-300 focus:border-rose-500 placeholder-rose-400'
+                              : 'border-slate-300 focus:border-blue-500 placeholder-slate-400'
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSubmitChatMessage}
+                          disabled={!chatDraft.trim()}
+                          className={`h-7 px-2.5 rounded-lg font-semibold text-2xs text-white inline-flex items-center gap-1 transition shrink-0 ${
+                            !chatDraft.trim()
+                              ? 'bg-slate-300 cursor-not-allowed'
+                              : chatMode === 'REVISION_REQUEST'
+                              ? 'bg-rose-600 hover:bg-rose-700 cursor-pointer'
+                              : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
+                          }`}
+                        >
+                          <Send className="w-3 h-3" />
+                          <span>{chatMode === 'REVISION_REQUEST' ? 'Yêu cầu sửa' : 'Gửi'}</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -4296,7 +4785,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               <span className="font-semibold text-slate-800">{planState.month} ({planState.week})</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Ngân sách trần phân rã:</span>
+              <span className="text-slate-500">Ngân sách phân rã:</span>
               <strong className="text-blue-600 font-semibold">{formatVndShort(planState.totalTargetBudget)}</strong>
             </div>
             <div className="flex justify-between">

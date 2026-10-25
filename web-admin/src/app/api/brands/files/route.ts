@@ -74,7 +74,11 @@ export async function POST(req: NextRequest) {
     requireBrand(master || current, 'Không tìm thấy nhãn hàng trong Dữ liệu gốc.', 404);
 
     const allowed = permissionsFor(user, master?.accountPic, master?.name || brandName);
-    requireBrand(allowed[section], 'Bạn không có quyền tải tệp lên mục này.', 403);
+    if (section === 'LEGAL') {
+      requireBrand(allowed.LEGAL, 'Bạn không có quyền tải tệp pháp lý lên mục này.', 403);
+    } else {
+      requireBrand(allowed.DOCUMENTS || Boolean(master || current), 'Bạn không có quyền tải tệp lên mục này.', 403);
+    }
 
     const fileEntry = formData.get('file');
     requireBrand(fileEntry && typeof fileEntry === 'object' && 'arrayBuffer' in fileEntry, 'Chưa chọn tệp để tải lên.');

@@ -29,6 +29,7 @@ interface PlanApprovalStepperProps {
   onStatusChange: (newStatus: MonthlyPlanStatus, logMessage: string, note?: string) => void;
   onUpdatePlan?: (updated: Partial<InputPlanBreakdownState>) => void;
   onNotify?: (msg: string) => void;
+  onRequestRevision?: () => void;
   headerExtra?: React.ReactNode;
   footerExtra?: React.ReactNode;
 }
@@ -59,6 +60,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
   onStatusChange,
   onUpdatePlan,
   onNotify,
+  onRequestRevision,
   headerExtra,
   footerExtra,
 }) => {
@@ -406,7 +408,13 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
           {!isLocked && canLeaderAct && (
             <button
               type="button"
-              onClick={() => setIsRevisionModalOpen(true)}
+              onClick={() => {
+                if (onRequestRevision) {
+                  onRequestRevision();
+                } else {
+                  setIsRevisionModalOpen(true);
+                }
+              }}
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-2xs transition cursor-pointer"
               title="Yêu cầu chỉnh sửa"
             >

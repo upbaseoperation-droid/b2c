@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   Download,
   Save,
@@ -11,6 +11,9 @@ import {
   ExternalLink,
   Calendar,
   RotateCcw,
+  Upload,
+  Image as ImageIcon,
+  Loader2,
 } from 'lucide-react';
 import {
   BrandOneSheetPlanData,
@@ -21,10 +24,14 @@ import {
   CampaignItem,
   InputPlanBreakdownState,
   StorePortfolioItem,
+  KeyVisualAssetCategory,
+  KeyVisualAssetItem,
 } from '../../lib/types';
 import { buildBrandOneSheetPlanData } from '../../lib/oneSheetPlanBuilder';
 import { exportBrandMonthlyOneSheetToExcel } from '../../lib/excelExport';
 import { formatVndShort } from '../../lib/format';
+import { KEY_VISUAL_CATEGORY_LABEL, uploadKeyVisualImageClient, formatFileSize } from '../brands/brandUi';
+import { Modal } from '../ui';
 
 interface BrandOneSheetPlanViewProps {
   brandName: string;
@@ -86,6 +93,47 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
   const [sectionFilter, setSectionFilter] = useState<
     'ALL' | 'SEC_01' | 'SEC_02' | 'SEC_03' | 'SEC_04' | 'SEC_05'
   >('ALL');
+  const kvFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingKv, setUploadingKv] = useState<boolean>(false);
+  const [kvUploadCategory, setKvUploadCategory] = useState<KeyVisualAssetCategory>('MASTER_KV');
+  const [previewKvImg, setPreviewKvImg] = useState<KeyVisualAssetItem | null>(null);
+
+  const handleUploadKvFiles = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList);
+    setUploadingKv(true);
+    try {
+      const uploadedItems: KeyVisualAssetItem[] = [];
+      for (const file of files) {
+        const item = await uploadKeyVisualImageClient({
+          file,
+          brandName: formData.brandName || brandName,
+          category: kvUploadCategory,
+        });
+        uploadedItems.push(item);
+      }
+      updateFormData((prev) => {
+        const nextKvImages = [...(prev.keyVisual.kvImages || []), ...uploadedItems];
+        const next = {
+          ...prev,
+          keyVisual: {
+            ...prev.keyVisual,
+            kvImages: nextKvImages,
+          },
+        };
+        onSaveOneSheetData?.(next);
+        return next;
+      });
+      onNotify?.(`Đã tải lên ${uploadedItems.length} ảnh Key Visual cho ${formData.brandName}.`);
+    } catch (err) {
+      onNotify?.(err instanceof Error ? err.message : 'Không tải được ảnh Key Visual lên.');
+    } finally {
+      setUploadingKv(false);
+      if (kvFileInputRef.current) {
+        kvFileInputRef.current.value = '';
+      }
+    }
+  };
 
   const sp = formData.shopeeKpi;
   const tt = formData.tiktokKpi;
@@ -677,9 +725,47 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {/* ===================================================================== */}
       {showSec03 && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
-          <div className="px-4 py-3 bg-canvas border-b border-line flex items-center gap-2">
-            <span className="font-mono text-xs font-semibold text-accent">03.</span>
-            <h3 className="text-xs font-semibold text-ink uppercase">KEY VISUAL CHUNG CỦA THÁNG</h3>
+          <div className="px-4 py-3 bg-canvas border-b border-line flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-semibold text-accent">03.</span>
+              <h3 className="text-xs font-semibold text-ink uppercase">KEY VISUAL CHUNG CỦA THÁNG</h3>
+              {(formData.keyVisual.kvImages?.length || 0) > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-accent-soft text-accent text-2xs font-semibold">
+                  {formData.keyVisual.kvImages?.length} ảnh KV
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <input
+                ref={kvFileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                multiple
+                className="hidden"
+                onChange={(e) => void handleUploadKvFiles(e.target.files)}
+              />
+              <select
+                value={kvUploadCategory}
+                onChange={(e) => setKvUploadCategory(e.target.value as KeyVisualAssetCategory)}
+                className="h-7 px-2 rounded-lg border border-line bg-surface text-ink text-xs font-medium focus:outline-none"
+                title="Phân loại ảnh Key Visual tải lên"
+              >
+                <option value="MASTER_KV">Master KV</option>
+                <option value="SIS_BANNER">SIS / Banner</option>
+                <option value="PDP_FRAME">Khung PDP / SEO</option>
+                <option value="MOODBOARD">Moodboard / Ref</option>
+              </select>
+              <button
+                type="button"
+                disabled={uploadingKv}
+                onClick={() => kvFileInputRef.current?.click()}
+                className="h-7 px-2.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer disabled:opacity-60"
+              >
+                {uploadingKv ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                <span>{uploadingKv ? 'Đang tải ảnh…' : 'Tải ảnh Key Visual'}</span>
+              </button>
+            </div>
           </div>
 
           <div className="divide-y divide-slate-200 text-xs">
@@ -731,6 +817,155 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                 </div>
               </div>
             ))}
+
+            {/* DÒNG ẢNH KEY VISUAL / SIS / BANNER / KHUNG PDP */}
+            <div className="grid grid-cols-1 md:grid-cols-12 items-stretch">
+              <div className="md:col-span-3 px-4 py-3 bg-slate-50 font-semibold text-slate-800 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span>Hình ảnh Key Visual &amp; SIS</span>
+                </div>
+                <button
+                  type="button"
+                  disabled={uploadingKv}
+                  onClick={() => kvFileInputRef.current?.click()}
+                  className="px-2.5 py-1.5 rounded-lg border border-line bg-white hover:bg-slate-100 text-ink text-2xs font-semibold inline-flex items-center justify-center gap-1.5 cursor-pointer transition w-fit"
+                >
+                  {uploadingKv ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3 text-accent" />}
+                  <span>Thêm ảnh KV / Banner</span>
+                </button>
+              </div>
+
+              <div className="md:col-span-9 p-4">
+                {(formData.keyVisual.kvImages || []).length === 0 ? (
+                  <div
+                    onClick={() => !uploadingKv && kvFileInputRef.current?.click()}
+                    className="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-6 text-center cursor-pointer transition bg-slate-50/50 hover:bg-blue-50/30"
+                  >
+                    <ImageIcon className="w-7 h-7 text-slate-400 mx-auto mb-2" />
+                    <div className="text-xs font-semibold text-slate-700">
+                      Bấm để tải ảnh Key Visual, Banner SIS, Khung PDP hoặc Moodboard lên
+                    </div>
+                    <div className="text-2xs text-slate-500 mt-1">
+                      Hỗ trợ PNG, JPG, WebP, GIF (chọn được nhiều ảnh cùng lúc)
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    {(formData.keyVisual.kvImages || []).map((imgItem, imgIdx) => (
+                      <div
+                        key={imgItem.id}
+                        className="group rounded-xl border border-slate-200 bg-white overflow-hidden shadow-2xs flex flex-col justify-between"
+                      >
+                        <div
+                          onClick={() => setPreviewKvImg(imgItem)}
+                          className="relative aspect-[16/10] bg-slate-100 overflow-hidden cursor-pointer"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={imgItem.url}
+                            alt={imgItem.fileName}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                          />
+                          <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/75 text-white text-3xs font-semibold">
+                            {KEY_VISUAL_CATEGORY_LABEL[imgItem.category || 'MASTER_KV'] || 'Master KV'}
+                          </span>
+                        </div>
+
+                        <div className="p-2.5 space-y-1.5 text-2xs">
+                          <div className="flex items-center justify-between gap-1.5">
+                            <span className="font-semibold text-slate-800 truncate" title={imgItem.fileName}>
+                              {imgItem.fileName}
+                            </span>
+                            {imgItem.fileSize ? (
+                              <span className="text-3xs text-slate-400 shrink-0">
+                                {formatFileSize(imgItem.fileSize)}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          {isEditMode ? (
+                            <div className="space-y-1.5 pt-1">
+                              <select
+                                value={imgItem.category || 'MASTER_KV'}
+                                onChange={(e) => {
+                                  const nextCat = e.target.value as KeyVisualAssetCategory;
+                                  updateFormData((prev) => ({
+                                    ...prev,
+                                    keyVisual: {
+                                      ...prev.keyVisual,
+                                      kvImages: (prev.keyVisual.kvImages || []).map((it, i) =>
+                                        i === imgIdx ? { ...it, category: nextCat } : it
+                                      ),
+                                    },
+                                  }));
+                                }}
+                                className="w-full px-2 py-1 rounded border border-slate-300 bg-white text-2xs text-slate-800"
+                              >
+                                <option value="MASTER_KV">Master KV</option>
+                                <option value="SIS_BANNER">SIS / Banner</option>
+                                <option value="PDP_FRAME">Khung PDP / SEO</option>
+                                <option value="MOODBOARD">Moodboard / Ref</option>
+                              </select>
+                              <input
+                                type="text"
+                                placeholder="Ghi chú hạng mục KV..."
+                                value={imgItem.note || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  updateFormData((prev) => ({
+                                    ...prev,
+                                    keyVisual: {
+                                      ...prev.keyVisual,
+                                      kvImages: (prev.keyVisual.kvImages || []).map((it, i) =>
+                                        i === imgIdx ? { ...it, note: val } : it
+                                      ),
+                                    },
+                                  }));
+                                }}
+                                className="w-full px-2 py-1 rounded border border-slate-300 bg-white text-2xs text-slate-800"
+                              />
+                            </div>
+                          ) : imgItem.note ? (
+                            <div className="text-slate-600 line-clamp-2">{imgItem.note}</div>
+                          ) : null}
+
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewKvImg(imgItem)}
+                              className="text-blue-600 hover:underline font-medium cursor-pointer"
+                            >
+                              Xem ảnh lớn
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                updateFormData((prev) => {
+                                  const next = {
+                                    ...prev,
+                                    keyVisual: {
+                                      ...prev.keyVisual,
+                                      kvImages: (prev.keyVisual.kvImages || []).filter((_, i) => i !== imgIdx),
+                                    },
+                                  };
+                                  onSaveOneSheetData?.(next);
+                                  return next;
+                                });
+                              }}
+                              className="text-rose-600 hover:text-rose-700 inline-flex items-center gap-1 font-medium cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Xóa</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1891,6 +2126,30 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
           </div>
         </div>
       )}
+      <Modal
+        open={!!previewKvImg}
+        onClose={() => setPreviewKvImg(null)}
+        title={previewKvImg ? `${KEY_VISUAL_CATEGORY_LABEL[previewKvImg.category || 'MASTER_KV']} — ${previewKvImg.fileName}` : 'Xem ảnh Key Visual'}
+        size="lg"
+      >
+        {previewKvImg && (
+          <div className="space-y-3">
+            <div className="rounded-xl overflow-hidden bg-slate-950/5 border border-line flex items-center justify-center max-h-[75vh]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewKvImg.url}
+                alt={previewKvImg.fileName}
+                className="max-w-full max-h-[72vh] object-contain"
+              />
+            </div>
+            {previewKvImg.note && (
+              <div className="text-xs text-ink-2 bg-sunken p-3 rounded-lg border border-line">
+                {previewKvImg.note}
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

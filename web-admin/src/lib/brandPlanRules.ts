@@ -1,4 +1,4 @@
-import type { InputPlanBreakdownState, PlanTierKey, PlanWeekRow } from './types';
+import type { InputPlanBreakdownState, KeyVisualAssetItem, PlanTierKey, PlanWeekRow } from './types';
 import { SELF_TYPES, TIER_KEYS, resolveWeekRows, weekLabelsForMonth } from './planBreakdownRules';
 
 /**
@@ -303,6 +303,7 @@ export interface BrandPlanData {
   kpi: KpiInputs;
   kpiNote: string;
   keyVisual: Record<string, string>;
+  kvImages?: KeyVisualAssetItem[];
   milestones: KeyVisualMilestone[];
   overview: OverviewInputs;
   overviewNotes: Record<string, string>;
@@ -320,6 +321,7 @@ export const EMPTY_BRAND_PLAN: BrandPlanData = {
   kpi: {},
   kpiNote: '',
   keyVisual: {},
+  kvImages: [],
   milestones: [],
   overview: {},
   overviewNotes: {},

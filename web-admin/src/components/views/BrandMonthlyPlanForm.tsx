@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Copy, Plus, Search, Trash2 } from 'lucide-react';
-import type { InputPlanBreakdownState, StorePortfolioItem } from '../../lib/types';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Copy, Image as ImageIcon, Loader2, Plus, Search, Trash2, Upload } from 'lucide-react';
+import type { InputPlanBreakdownState, KeyVisualAssetCategory, KeyVisualAssetItem, StorePortfolioItem } from '../../lib/types';
+import { KEY_VISUAL_CATEGORY_LABEL, uploadKeyVisualImageClient } from '../brands/brandUi';
 import { Button, ConfirmDialog, Field, Input, Modal, Select, Textarea } from '../ui';
 import { CONTENT_PILLARS } from '../../lib/contentPillars';
 import { weekLabelsForMonth } from '../../lib/planBreakdownRules';
@@ -114,6 +115,10 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<PlanTab>('DIRECTION');
+  const kvUploadRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingKv, setUploadingKv] = useState(false);
+  const [kvCategory, setKvCategory] = useState<KeyVisualAssetCategory>('MASTER_KV');
+  const [previewKvImg, setPreviewKvImg] = useState<KeyVisualAssetItem | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -439,6 +444,117 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
               <Textarea rows={3} value={data.keyVisual[f.key] || ''} onChange={e => patch({ keyVisual: { ...data.keyVisual, [f.key]: e.target.value } })} />
             </Field>
           ))}
+        </div>
+
+        {/* Tải ảnh Key Visual / SIS / Banner */}
+        <div className="space-y-2.5 rounded-xl border border-line bg-surface p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4 text-accent" />
+              <span className="text-sm font-semibold text-ink">Hình ảnh Key Visual &amp; Banner ({(data.kvImages || []).length})</span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <input
+                ref={kvUploadRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                multiple
+                className="hidden"
+                onChange={async (e) => {
+                  const files = e.target.files ? Array.from(e.target.files) : [];
+                  if (files.length === 0) return;
+                  setUploadingKv(true);
+                  try {
+                    const uploaded: KeyVisualAssetItem[] = [];
+                    for (const f of files) {
+                      const item = await uploadKeyVisualImageClient({
+                        file: f,
+                        brandName: plan?.brandName || plan?.storeName || 'Brand',
+                        category: kvCategory,
+                      });
+                      uploaded.push(item);
+                    }
+                    patch({ kvImages: [...(data.kvImages || []), ...uploaded] });
+                    notify(`Đã tải lên ${uploaded.length} ảnh Key Visual.`, 'success');
+                  } catch (err) {
+                    notify(err instanceof Error ? err.message : 'Không tải được ảnh lên.', 'error');
+                  } finally {
+                    setUploadingKv(false);
+                    if (kvUploadRef.current) kvUploadRef.current.value = '';
+                  }
+                }}
+              />
+              <select
+                value={kvCategory}
+                onChange={e => setKvCategory(e.target.value as KeyVisualAssetCategory)}
+                className="h-8 px-2.5 rounded-lg border border-line bg-canvas text-xs font-medium text-ink"
+              >
+                <option value="MASTER_KV">Master KV</option>
+                <option value="SIS_BANNER">SIS / Banner</option>
+                <option value="PDP_FRAME">Khung PDP / SEO</option>
+                <option value="MOODBOARD">Moodboard / Ref</option>
+              </select>
+              <Button
+                size="sm"
+                variant="primary"
+                icon={uploadingKv ? Loader2 : Upload}
+                disabled={uploadingKv}
+                onClick={() => kvUploadRef.current?.click()}
+              >
+                {uploadingKv ? 'Đang tải…' : 'Tải ảnh Key Visual'}
+              </Button>
+            </div>
+          </div>
+
+          {(data.kvImages || []).length === 0 ? (
+            <div
+              onClick={() => !uploadingKv && kvUploadRef.current?.click()}
+              className="cursor-pointer rounded-xl border-2 border-dashed border-line hover:border-accent bg-canvas/40 p-5 text-center text-xs text-ink-3"
+            >
+              Bấm để tải ảnh Key Visual, Banner SIS, Khung PDP hoặc Moodboard (PNG, JPG, WebP)
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+              {(data.kvImages || []).map((img, idx) => (
+                <div key={img.id} className="rounded-xl border border-line bg-canvas overflow-hidden flex flex-col justify-between">
+                  <div
+                    onClick={() => setPreviewKvImg(img)}
+                    className="relative aspect-[16/10] bg-sunken cursor-pointer overflow-hidden"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={img.url} alt={img.fileName} className="w-full h-full object-cover" />
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/75 text-white text-3xs font-semibold">
+                      {KEY_VISUAL_CATEGORY_LABEL[img.category || 'MASTER_KV']}
+                    </span>
+                  </div>
+                  <div className="p-2 flex items-center justify-between gap-2 text-2xs">
+                    <span className="font-medium text-ink truncate" title={img.fileName}>{img.fileName}</span>
+                    <button
+                      type="button"
+                      onClick={() => patch({ kvImages: (data.kvImages || []).filter((_, i) => i !== idx) })}
+                      className="text-critical hover:underline shrink-0 cursor-pointer"
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Modal
+            open={!!previewKvImg}
+            onClose={() => setPreviewKvImg(null)}
+            title={previewKvImg ? `${KEY_VISUAL_CATEGORY_LABEL[previewKvImg.category || 'MASTER_KV']} — ${previewKvImg.fileName}` : 'Xem ảnh Key Visual'}
+            size="lg"
+          >
+            {previewKvImg && (
+              <div className="rounded-xl overflow-hidden bg-slate-950/5 border border-line flex items-center justify-center max-h-[75vh]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={previewKvImg.url} alt={previewKvImg.fileName} className="max-w-full max-h-[72vh] object-contain" />
+              </div>
+            )}
+          </Modal>
         </div>
 
         <div className="space-y-2">
