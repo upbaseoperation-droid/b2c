@@ -5,6 +5,7 @@ import { Search, X, Check, ChevronDown } from 'lucide-react';
 import { StaffMasterMember } from '../../../lib/types';
 import { UPBASE_STAFF_MASTER } from '../../../lib/importedMasterData';
 import { STAFF_MASTER_DIRECTORY } from '../../../lib/mockData';
+import { staffCodeOf } from '../../../lib/staffIdentity';
 
 export interface StaffSearchSelectProps {
   label: string;
@@ -12,8 +13,11 @@ export interface StaffSearchSelectProps {
   badgeColorClass?: string;
   placeholder?: string;
   value: string;
-  onChange: (value: string) => void;
+  /** code: mã nhân sự khi chọn từ danh bạ; gõ tay thì không có mã */
+  onChange: (value: string, code?: string) => void;
   departmentHint?: 'ACCOUNT' | 'BOOKING' | 'CONTENT' | string;
+  /** Mã nhân sự đang chọn (để đánh dấu đúng người khi trùng tên) */
+  selectedCode?: string;
   className?: string;
 }
 
@@ -35,6 +39,7 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
   value,
   onChange,
   departmentHint,
+  selectedCode,
   className = ''
 }) => {
   const listboxId = React.useId();
@@ -52,21 +57,19 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
 
   // Merge and deduplicate all staff members across datasets
   const allStaff = useMemo(() => {
+    // Gộp theo mã nhân sự (không theo tên) để người trùng tên vẫn chọn được đúng người
     const map = new Map<string, StaffMasterMember>();
+    const keyOf = (s: StaffMasterMember) => staffCodeOf(s).toLowerCase() || (s.name || '').trim().toLowerCase();
 
     // Priority 1: Core active staff directory
     STAFF_MASTER_DIRECTORY.forEach(s => {
-      if (s.name) {
-        map.set(s.name.trim().toLowerCase(), s);
-      }
+      if (s.name) map.set(keyOf(s), s);
     });
 
     // Priority 2: Full Enterprise Master Data (1011 members)
     UPBASE_STAFF_MASTER.forEach(s => {
-      const key = (s.name || '').trim().toLowerCase();
-      if (key && !map.has(key)) {
-        map.set(key, s);
-      }
+      const key = keyOf(s);
+      if (s.name && key && !map.has(key)) map.set(key, s);
     });
 
     return Array.from(map.values());
@@ -173,7 +176,7 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
 
   const handleSelectStaff = (staff: StaffMasterMember) => {
     setQuery(staff.name);
-    onChange(staff.name);
+    onChange(staff.name, staffCodeOf(staff) || undefined);
     setIsOpen(false);
   };
 
@@ -278,7 +281,9 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
               </div>
 
               {filteredStaff.map((staff, idx) => {
-                const isSelected = value && value.trim().toLowerCase() === staff.name.trim().toLowerCase();
+                const isSelected = selectedCode
+                  ? staffCodeOf(staff).toLowerCase() === selectedCode.toLowerCase()
+                  : value && value.trim().toLowerCase() === staff.name.trim().toLowerCase();
                 const isHighlighted = idx === highlightedIndex;
 
                 return (
@@ -313,9 +318,9 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
                       <div className="min-w-0 truncate">
                         <div className="font-semibold text-xs text-ink flex items-center gap-1.5 truncate">
                           <span className="truncate">{staff.name}</span>
-                          {staff.staffCode && (
+                          {staffCodeOf(staff) && (
                             <span className="font-code text-3xs text-ink-3 font-normal shrink-0">
-                              ({staff.staffCode})
+                              ({staffCodeOf(staff)})
                             </span>
                           )}
                         </div>

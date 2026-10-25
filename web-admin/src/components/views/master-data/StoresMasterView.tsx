@@ -1,6 +1,10 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
+import { codeForName, withStaffCode } from '../../../lib/staffIdentity';
+import { storeCoBookings } from '../../../lib/storePositions';
+import { AssignmentLogList } from './AssignmentLogList';
+import { AssignmentIssuesPanel } from './AssignmentIssuesPanel';
 import { 
   Plus, 
   ExternalLink, 
@@ -137,6 +141,9 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     backupOwnerName: '',
     isBackupActive: false,
     backupReason: '',
+    backupFrom: '',
+    backupTo: '',
+    staffCodes: {} as Record<string, string>,
     isB2cManaged: true,
     requiresB2cPlan: true,
     storeUrl: '',
@@ -401,6 +408,9 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       backupOwnerName: s.backupOwnerName || '',
       isBackupActive: s.isBackupActive || false,
       backupReason: s.backupReason || '',
+      backupFrom: s.backupFrom || '',
+      backupTo: s.backupTo || '',
+      staffCodes: { ...(s.staffCodes || {}) },
       isB2cManaged: s.isB2cManaged !== false,
       requiresB2cPlan: s.requiresB2cPlan !== false,
       storeUrl: s.storeUrl || '',
@@ -425,6 +435,10 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
 
     const opStatus = form.operationStatus;
     const accStatus = opStatus === 'Live' ? 'ACTIVE' : (opStatus === 'Off' ? 'OFFBOARDED' : 'MAINTENANCE');
+    if (form.backupFrom && form.backupTo && form.backupTo < form.backupFrom) {
+      onNotify?.('Ngày kết thúc dự phòng phải sau ngày bắt đầu.', 'warning');
+      return;
+    }
     const isLeaderSet = !!(form.bookingLeader && form.bookingLeader.trim() !== '');
 
     const prevAssign = resolveStoreStaffAssignment(editingStore, '');
@@ -449,13 +463,17 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       assignedMembers: nextOwners,
       bookingLeader: isLeaderSet ? form.bookingLeader.trim() : undefined,
       hasBookingLeader: isLeaderSet,
-      contentPic: form.contentPic.trim() || editingStore.contentPic,
       // Bỏ trống thì gỡ người phụ trách
-      planStrategyPic: form.planStrategyPic.trim() || undefined,
-      keyVisualSisPic: form.keyVisualSisPic.trim() || undefined,
+      contentPic: form.contentPic.trim() || undefined,
+      // PIC Plan / Strategy và Key Visual / SIS gán ở cấp nhãn; giá trị cũ trên gian giữ nguyên để đối chiếu
+      planStrategyPic: editingStore.planStrategyPic,
+      keyVisualSisPic: editingStore.keyVisualSisPic,
       backupOwnerName: form.backupOwnerName.trim() || undefined,
-      isBackupActive: form.isBackupActive,
+      isBackupActive: !!form.backupOwnerName.trim() && form.isBackupActive,
       backupReason: form.backupReason.trim() || undefined,
+      backupFrom: form.backupFrom || undefined,
+      backupTo: form.backupTo || undefined,
+      staffCodes: form.staffCodes,
       isB2cManaged: form.isB2cManaged,
       requiresB2cPlan: form.requiresB2cPlan,
       storeUrl: form.storeUrl.trim() || editingStore.storeUrl,
@@ -725,6 +743,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
 
   return (
     <div className="space-y-6">
+      {canEdit && <AssignmentIssuesPanel />}
       <PageActions>
         <Button variant="primary" icon={Plus} onClick={handleOpenAdd}>
           Thêm gian hàng
@@ -1256,36 +1275,26 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <StaffSearchSelect
-                    label="Chuyên viên Booking chính (Specialist PIC) *"
-                    sublabel="(Trực tiếp chạy deal và chịu trách nhiệm nghiệm thu)"
+                    label="Booking chính *"
+                    sublabel="(sửa plan, mọi deal)"
                     badgeColorClass="text-accent"
                     placeholder="Chọn chuyên viên B2C..."
                     value={form.b2cOwnerName}
+                    selectedCode={codeForName(form.staffCodes, form.b2cOwnerName) || undefined}
                     departmentHint="BOOKING"
-                    onChange={(name) => setForm(prev => ({ ...prev, b2cOwnerName: name }))}
+                    onChange={(name, code) => setForm(prev => ({ ...prev, b2cOwnerName: name, staffCodes: withStaffCode(prev.staffCodes, name, code) }))}
                   />
 
-                  <div>
-                    <label className="block text-ink-2 font-medium mb-1 text-2xs">
-                      Trưởng nhóm Booking (Leader phụ trách)
-                    </label>
-                    <select
-                      value={form.bookingLeader}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setForm(prev => ({
-                          ...prev,
-                          bookingLeader: val,
-                          hasBookingLeader: val !== ''
-                        }));
-                      }}
-                      className="w-full px-2.5 py-1.5 border border-line rounded-lg text-xs bg-white focus:outline-none focus:border-line-strong"
-                    >
-                      <option value="">Không có leader (Chuyên viên làm việc trực tiếp Trưởng phòng)</option>
-                      <option value="Nguyễn Thị Ngọc Tâm">Nguyễn Thị Ngọc Tâm (Trưởng nhóm 8 gian)</option>
-                    </select>
-                  </div>
-
+                  <StaffSearchSelect
+                    label="Leader Booking"
+                    sublabel="(trống: trình thẳng GĐ)"
+                    badgeColorClass="text-accent"
+                    placeholder="Không có leader"
+                    value={form.bookingLeader}
+                    selectedCode={codeForName(form.staffCodes, form.bookingLeader) || undefined}
+                    departmentHint="BOOKING"
+                    onChange={(name, code) => setForm(prev => ({ ...prev, bookingLeader: name, hasBookingLeader: !!name.trim(), staffCodes: withStaffCode(prev.staffCodes, name, code) }))}
+                  />
 
                   <StaffSearchSelect
                     label="Account PIC (Quan hệ Brand)"
@@ -1293,28 +1302,90 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     badgeColorClass="text-accent"
                     placeholder="Chọn Account PIC..."
                     value={form.accountOwnerName}
+                    selectedCode={codeForName(form.staffCodes, form.accountOwnerName) || undefined}
                     departmentHint="ACCOUNT"
-                    onChange={(name) => setForm(prev => ({ ...prev, accountOwnerName: name }))}
+                    onChange={(name, code) => setForm(prev => ({ ...prev, accountOwnerName: name, staffCodes: withStaffCode(prev.staffCodes, name, code) }))}
                   />
 
                   <StaffSearchSelect
-                    label="PIC Plan / Strategy"
-                    sublabel="(Chỉ nhập phần Định hướng của Plan tháng của Brand)"
+                    label="PIC Kênh tự sở hữu"
+                    sublabel="(video kênh Brand)"
                     badgeColorClass="text-accent"
-                    placeholder="Chọn PIC Plan / Strategy..."
-                    value={form.planStrategyPic}
-                    onChange={(name) => setForm(prev => ({ ...prev, planStrategyPic: name }))}
-                  />
-
-                  <StaffSearchSelect
-                    label="PIC Key Visual / SIS"
-                    sublabel="(Chỉ nhập phần Key Visual của Plan tháng của Brand)"
-                    badgeColorClass="text-accent"
-                    placeholder="Chọn PIC Key Visual / SIS..."
-                    value={form.keyVisualSisPic}
-                    onChange={(name) => setForm(prev => ({ ...prev, keyVisualSisPic: name }))}
+                    placeholder="Chọn PIC Kênh tự sở hữu..."
+                    value={form.contentPic}
+                    selectedCode={codeForName(form.staffCodes, form.contentPic) || undefined}
+                    departmentHint="CONTENT"
+                    onChange={(name, code) => setForm(prev => ({ ...prev, contentPic: name, staffCodes: withStaffCode(prev.staffCodes, name, code) }))}
                   />
                 </div>
+
+                {editingStore && (
+                  <div className="text-2xs text-ink-2 bg-canvas border border-line rounded-lg px-2.5 py-2 space-y-1">
+                    <div>
+                      <span className="font-medium text-ink">Booking cùng làm: </span>
+                      {storeCoBookings({ ...editingStore, backupOwnerName: form.backupOwnerName, primaryPic: form.b2cOwnerName }).join(', ') || 'Chưa có'}
+                      <span className="text-ink-3"> · thêm, gỡ ở Phân công nhân sự</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-ink">PIC Plan / Strategy, PIC Key Visual / SIS: </span>
+                      gán theo nhãn, sửa ở Dữ liệu gốc › Thương hiệu › Sửa
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <StaffSearchSelect
+                    label="Dự phòng"
+                    sublabel="(trong thời gian hiệu lực)"
+                    badgeColorClass="text-accent"
+                    placeholder="Chọn người dự phòng..."
+                    value={form.backupOwnerName}
+                    selectedCode={codeForName(form.staffCodes, form.backupOwnerName) || undefined}
+                    departmentHint="BOOKING"
+                    onChange={(name, code) => setForm(prev => ({ ...prev, backupOwnerName: name, staffCodes: withStaffCode(prev.staffCodes, name, code) }))}
+                  />
+                  <div>
+                    <label className="block text-ink-2 font-medium mb-1 text-2xs">Lý do dự phòng</label>
+                    <input
+                      type="text"
+                      value={form.backupReason}
+                      placeholder="Nghỉ phép, công tác, quá tải..."
+                      onChange={(e) => setForm(prev => ({ ...prev, backupReason: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 border border-line rounded-lg text-xs bg-surface focus:outline-none focus:border-line-strong"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-ink-2 font-medium mb-1 text-2xs">Hiệu lực từ ngày</label>
+                    <input
+                      type="date"
+                      value={form.backupFrom}
+                      onChange={(e) => setForm(prev => ({ ...prev, backupFrom: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 border border-line rounded-lg text-xs bg-surface focus:outline-none focus:border-line-strong"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-ink-2 font-medium mb-1 text-2xs">Đến ngày</label>
+                    <input
+                      type="date"
+                      value={form.backupTo}
+                      min={form.backupFrom || undefined}
+                      onChange={(e) => setForm(prev => ({ ...prev, backupTo: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 border border-line rounded-lg text-xs bg-surface focus:outline-none focus:border-line-strong"
+                    />
+                  </div>
+                  <label className="flex items-center gap-2 text-2xs text-ink-2 cursor-pointer sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={form.isBackupActive}
+                      disabled={!form.backupOwnerName.trim()}
+                      onChange={(e) => setForm(prev => ({ ...prev, isBackupActive: e.target.checked }))}
+                      className="rounded border-line-strong text-accent focus:ring-accent/20"
+                    />
+                    Bật dự phòng (chỉ có hiệu lực trong khoảng ngày trên, nếu có ghi ngày)
+                  </label>
+                </div>
+
+                {editingStore && <AssignmentLogList entityId={editingStore.id} />}
               </div>
 
               {/* Group 6: Scope */}

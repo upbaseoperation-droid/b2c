@@ -6,7 +6,26 @@ import { INITIAL_MONTHLY_PLANS } from '../monthlyPlanData';
 import { INITIAL_DEALS } from '../mockData';
 import { brandKey } from '../brands/types';
 import { readPolicy } from './accessPolicy';
-export const readMasterCatalog = () => readRecord('master-catalog', DEFAULT_MASTER_CATALOG, { clone: false });
+import { normalizeAssignments, type AssignmentIssue } from '../assignmentNormalize';
+import { staffIndex } from './staffDirectory';
+
+let normalizedCache: { revision: number; source: MasterCatalog; data: MasterCatalog; issues: AssignmentIssue[] } | null = null;
+
+/** Dữ liệu gốc đã quy người phụ trách về mã nhân sự và đưa PIC Plan / KV lên cấp nhãn. */
+export async function readMasterCatalogWithIssues() {
+  const record = await readRecord('master-catalog', DEFAULT_MASTER_CATALOG, { clone: false });
+  if (normalizedCache && normalizedCache.revision === record.revision && normalizedCache.source === record.data) {
+    return { ...record, data: normalizedCache.data, issues: normalizedCache.issues };
+  }
+  const { catalog, issues } = normalizeAssignments(record.data, await staffIndex());
+  normalizedCache = { revision: record.revision, source: record.data, data: catalog, issues };
+  return { ...record, data: catalog, issues };
+}
+
+export async function readMasterCatalog() {
+  const { issues: _issues, ...record } = await readMasterCatalogWithIssues();
+  return record;
+}
 
 export async function validateCatalog(next: MasterCatalog, previous: MasterCatalog) {
   if (!next || typeof next !== 'object') throw new RecordError('Thiếu danh mục cần lưu.');

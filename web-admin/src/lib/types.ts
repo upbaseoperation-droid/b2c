@@ -1996,7 +1996,9 @@ export interface BrandDetail {
   contentBrandMainPic?: string; // Content / Brand main [theo brand]
   planStrategyPic?: string;     // Plan / Strategy [theo brand]
   keyVisualSisPic?: string;     // Key Visual / SIS [theo brand]
-  
+  staffCodes?: Record<string, string>; // Tên (viết thường) → mã nhân sự của các PIC cấp nhãn
+  selfAirAllowed?: boolean; // Brand đã đồng ý: kịch bản gửi quá 72h chưa duyệt thì được đề xuất KOC tự Air
+
   // Tiêu chí & Guidelines
   brandGuideline: string;
   kocCriteria: string;
@@ -2510,6 +2512,9 @@ export interface StorePortfolioItem {
   backupOwnerName?: string; // Tên nhân sự dự phòng
   isBackupActive?: boolean; // Trạng thái kích hoạt chuyển quyền backup
   backupReason?: string; // Lý do chuyển giao: Nghỉ phép, Đi công tác, Quá tải
+  backupFrom?: string; // Ngày bắt đầu hiệu lực dự phòng (YYYY-MM-DD)
+  backupTo?: string; // Ngày kết thúc hiệu lực dự phòng (YYYY-MM-DD)
+  staffCodes?: Record<string, string>; // Tên (viết thường) → mã nhân sự của mọi người ghi trên gian; nhận người theo mã khi tên trùng / đổi tên
 
   // Trường kiểm toán (Audit Fields) theo BRD
   createdBy?: string;

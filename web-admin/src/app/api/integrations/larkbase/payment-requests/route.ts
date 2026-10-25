@@ -9,11 +9,11 @@ import {
   type PaymentRequestType,
 } from '@/lib/larkPaymentRequestEngine';
 import type { BookingDealItem, KocItem } from '@/lib/types';
+import { ledgerByDealCode, listPaymentSlips, mutatePaymentSlips } from '@/lib/server/paymentSlipStore';
+import { RecordError } from '@/lib/server/sharedRecords';
 
 export const dynamic = 'force-dynamic';
 
-// Kho lưu trữ các phiếu ĐNTT / Tạm ứng đã đẩy sang Lark Approval & Larkbase trong phiên
-const memoryPaymentRequestSlips = new Map<string, LarkPaymentRequestSlip>();
 
 function maskSensitiveCode(val?: string): string {
   const s = (val || '').trim();
@@ -21,8 +21,10 @@ function maskSensitiveCode(val?: string): string {
   return `${'*'.repeat(Math.max(3, s.length - 4))}${s.slice(-4)}`;
 }
 
-function seedInitialPaymentSlips() {
-  if (memoryPaymentRequestSlips.size > 0 || process.env.NODE_ENV === 'production') return;
+/** Môi trường thử: kho phiếu trống thì nạp 1 phiếu mẫu để màn hình có dữ liệu xem. */
+async function seedInitialPaymentSlips() {
+  if (process.env.NODE_ENV === 'production') return;
+  if ((await listPaymentSlips()).length > 0) return;
   const sampleSlip: LarkPaymentRequestSlip = {
     id: 'SLIP-202610-001',
     slipCode: 'DNTT-202610-001',
@@ -115,20 +117,7 @@ function seedInitialPaymentSlips() {
       syncedAt: '2026-10-18T09:15:02.000Z',
     },
   };
-  memoryPaymentRequestSlips.set(sampleSlip.id, sampleSlip);
-}
-
-/** Tổng hợp các phiếu đã lập theo mã đơn để chặn lập trùng và trừ tạm ứng khi tất toán. */
-function paymentLedgerByDealCode(): Record<string, DealPaymentLedgerEntry> {
-  const ledger: Record<string, DealPaymentLedgerEntry> = {};
-  for (const slip of memoryPaymentRequestSlips.values()) {
-    for (const item of slip.lineItems) {
-      const entry = (ledger[item.dealCode] ??= { advanceRequestedAmount: 0, settlementRequested: false });
-      if (slip.requestType === 'ADVANCE') entry.advanceRequestedAmount += item.requestBaseNetAmount;
-      else entry.settlementRequested = true;
-    }
-  }
-  return ledger;
+  await mutatePaymentSlips(list => (list.length > 0 ? list : [sampleSlip]));
 }
 
 type ApprovalStatus = LarkPaymentRequestSlip['larkSync']['approvalStatus'];
@@ -179,13 +168,14 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  seedInitialPaymentSlips();
+  await seedInitialPaymentSlips();
   const config = getLarkPaymentIntegrationConfig();
   const canSeeFullPayee =
     isStaffGlobalAdminOrManager(user) ||
     ['FINANCE', 'LEADER'].includes(user.role) ||
     Boolean(user.permissions?.includes('canApprovePayment'));
-  const slips = Array.from(memoryPaymentRequestSlips.values())
+  const slips = (await listPaymentSlips())
+    .slice()
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map(slip => {
       if (canSeeFullPayee || slip.createdBy.trim().toLowerCase() === (user.name || '').trim().toLowerCase()) {
@@ -242,7 +232,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    seedInitialPaymentSlips();
+    await seedInitialPaymentSlips();
+    const existingSlips = await listPaymentSlips();
     const body = (await request.json()) as {
       mode?: 'SYNC_LARK_32_BOOKING_LIST';
       jobs?: Array<{
@@ -360,7 +351,7 @@ export async function POST(request: NextRequest) {
       createdBy: actorName,
       note: body.note,
       month,
-      ledgerByDealCode: paymentLedgerByDealCode(),
+      ledgerByDealCode: ledgerByDealCode(existingSlips),
     });
 
     if (!built.canSubmit) {
@@ -390,7 +381,7 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       );
     }
-    const seq = String(memoryPaymentRequestSlips.size + 1).padStart(3, '0');
+    const seq = String(existingSlips.length + 1).padStart(3, '0');
     const prefix = requestType === 'ADVANCE' ? 'TU' : 'DNTT';
     const monthCompact = month.replace(/\D/g, '');
     const slipCode = `${prefix}-${monthCompact}-${seq}`;
@@ -648,7 +639,26 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    memoryPaymentRequestSlips.set(slip.id, slip);
+    // Ghi bền và kiểm trùng lần cuối trên sổ mới nhất (2 người bấm cùng lúc chỉ 1 phiếu tất toán được ghi)
+    try {
+      await mutatePaymentSlips(list => {
+        if (requestType !== 'ADVANCE') {
+          const ledger = ledgerByDealCode(list);
+          const dup = built.lineItems.find(item => ledger[item.dealCode]?.settlementRequested);
+          if (dup) throw new RecordError(`Mã đơn ${dup.dealCode} đã có phiếu tất toán. Không lập trùng.`, 409);
+        }
+        let code = slip.slipCode;
+        let n = list.length + 1;
+        while (list.some(x => x.slipCode === code)) code = `${prefix}-${monthCompact}-${String(++n).padStart(3, '0')}`;
+        slip.slipCode = code;
+        return [...list.filter(x => x.id !== slip.id), slip];
+      });
+    } catch (e) {
+      if (e instanceof RecordError) {
+        return NextResponse.json({ success: false, error: 'DUPLICATE_OR_CONFLICT', message: e.message, slip }, { status: e.status });
+      }
+      throw e;
+    }
 
     return NextResponse.json(
       {
@@ -699,13 +709,13 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    seedInitialPaymentSlips();
+    await seedInitialPaymentSlips();
     const body = (await request.json()) as {
       slipId?: string;
       approvalInstanceCode?: string;
     };
 
-    const target = Array.from(memoryPaymentRequestSlips.values()).find(
+    const target = (await listPaymentSlips()).find(
       s =>
         (body.slipId && s.id === body.slipId) ||
         (body.approvalInstanceCode &&
@@ -755,7 +765,18 @@ export async function PATCH(request: NextRequest) {
       },
     };
 
-    memoryPaymentRequestSlips.set(updatedSlip.id, updatedSlip);
+    try {
+      await mutatePaymentSlips(list => {
+        const latest = list.find(x => x.id === updatedSlip.id);
+        if (!latest || latest.larkSync.approvalStatus !== currentStatus) {
+          throw new RecordError('Phiếu vừa được người khác cập nhật. Tải lại để xem bước hiện tại.', 409);
+        }
+        return list.map(x => (x.id === updatedSlip.id ? updatedSlip : x));
+      });
+    } catch (e) {
+      if (e instanceof RecordError) return NextResponse.json({ success: false, error: 'CONFLICT', message: e.message }, { status: e.status });
+      throw e;
+    }
 
     return NextResponse.json({
       success: true,

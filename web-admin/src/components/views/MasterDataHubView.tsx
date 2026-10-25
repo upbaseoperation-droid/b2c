@@ -62,8 +62,11 @@ import {
   VideoFormatsMasterView, 
   StoresMasterView, 
   StaffMasterView,
-  ContributorsMasterView
+  ContributorsMasterView,
+  StaffSearchSelect
 } from './master-data';
+import { AssignmentLogList } from './master-data/AssignmentLogList';
+import { codeForName, withStaffCode } from '../../lib/staffIdentity';
 import {
   UPBASE_MASTER_SLA_CONFIG,
   UPBASE_MASTER_KPI_DEFINITIONS
@@ -223,6 +226,8 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const [editBrandCode, setEditBrandCode] = useState('');
   const [editBrandCategory, setEditBrandCategory] = useState('Mỹ phẩm & Làm đẹp');
   const [editBrandStatus, setEditBrandStatus] = useState<'ACTIVE' | 'PAUSED' | 'UPCOMING'>('ACTIVE');
+  // Vị trí cấp nhãn: PIC Plan / Strategy, PIC Key Visual / SIS và thỏa thuận tự Air với Brand
+  const [editBrandPositions, setEditBrandPositions] = useState({ planStrategyPic: '', keyVisualSisPic: '', staffCodes: {} as Record<string, string>, selfAirAllowed: false });
 
   const [deletingBrand, setDeletingBrand] = useState<BrandDetail | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -578,6 +583,10 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       code: brandCode,
       category: editBrandCategory,
       status: editBrandStatus,
+      planStrategyPic: editBrandPositions.planStrategyPic.trim() || undefined,
+      keyVisualSisPic: editBrandPositions.keyVisualSisPic.trim() || undefined,
+      staffCodes: editBrandPositions.staffCodes,
+      selfAirAllowed: editBrandPositions.selfAirAllowed,
       companyName: b.companyName === oldName ? cleanName : b.companyName
     } : b));
 
@@ -1145,6 +1154,12 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                       setEditBrandCode(b.code || '');
                       setEditBrandCategory(b.category || 'Mỹ phẩm & Làm đẹp');
                       setEditBrandStatus(b.status || 'ACTIVE');
+                      setEditBrandPositions({
+                        planStrategyPic: b.planStrategyPic || '',
+                        keyVisualSisPic: b.keyVisualSisPic || '',
+                        staffCodes: { ...(b.staffCodes || {}) },
+                        selfAirAllowed: !!b.selfAirAllowed,
+                      });
                       setIsEditBrandModalOpen(true);
                     },
                   },
@@ -1886,6 +1901,41 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 <option value="UPCOMING">Sắp triển khai (Upcoming)</option>
                 <option value="PAUSED">Tạm dừng (Paused)</option>
               </select>
+            </div>
+
+            <div className="pt-2 border-t border-line space-y-2.5">
+              <div className="text-ink font-semibold">Vị trí phụ trách theo nhãn</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <StaffSearchSelect
+                  label="PIC Plan / Strategy"
+                  sublabel="(phần Định hướng)"
+                  placeholder="Chọn PIC Plan / Strategy..."
+                  value={editBrandPositions.planStrategyPic}
+                  selectedCode={codeForName(editBrandPositions.staffCodes, editBrandPositions.planStrategyPic) || undefined}
+                  onChange={(name, code) => setEditBrandPositions(prev => ({ ...prev, planStrategyPic: name, staffCodes: withStaffCode(prev.staffCodes, name, code) }))}
+                />
+                <StaffSearchSelect
+                  label="PIC Key Visual / SIS"
+                  sublabel="(phần Key Visual)"
+                  placeholder="Chọn PIC Key Visual / SIS..."
+                  value={editBrandPositions.keyVisualSisPic}
+                  selectedCode={codeForName(editBrandPositions.staffCodes, editBrandPositions.keyVisualSisPic) || undefined}
+                  onChange={(name, code) => setEditBrandPositions(prev => ({ ...prev, keyVisualSisPic: name, staffCodes: withStaffCode(prev.staffCodes, name, code) }))}
+                />
+              </div>
+              <label className="flex items-start gap-2 text-ink-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editBrandPositions.selfAirAllowed}
+                  onChange={(e) => setEditBrandPositions(prev => ({ ...prev, selfAirAllowed: e.target.checked }))}
+                  className="mt-0.5 rounded border-line-strong text-accent focus:ring-accent/20"
+                />
+                <span>
+                  <span className="font-medium text-ink">Brand đồng ý cơ chế tự Air</span>
+                  <span className="block text-2xs text-ink-3">Kịch bản đã gửi Brand quá 72 giờ chưa duyệt thì được đề xuất KOC tự sản xuất và lên sóng. Không bật thì Job phải chờ Brand duyệt.</span>
+                </span>
+              </label>
+              {editingBrand && <AssignmentLogList entityId={editingBrand.id} />}
             </div>
           </form>
         )}
