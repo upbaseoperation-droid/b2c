@@ -5,7 +5,7 @@
 | Mã tài liệu | HUB-REG |
 | Dự án | B2C Ops Hub — Quản trị & Điều hành phòng Marketing B2C |
 | Giai đoạn hiện tại | **2 — Phân tích & Thiết kế kỹ thuật (Sẵn sàng duyệt G2 → G4)** |
-| Cập nhật | 24/10/2026 |
+| Cập nhật | 25/10/2026 |
 
 Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự án. Cập nhật bảng này mỗi khi tạo tài liệu hoặc đổi trạng thái.
 
@@ -14,7 +14,7 @@ Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự á
 | Cổng | Trạng thái | Điều kiện & Tiến độ |
 | --- | --- | --- |
 | G1 (Yêu cầu) | **Đã hoàn thành sơ bộ** | Đã xác lập phạm vi 69 gian hàng B2C, phân cấp quản trị Brand → Gian hàng, bóc tách chỉ tiêu Paid/FOC, Gross/Net. |
-| G2 (Thiết kế kỹ thuật) | **Đã hoàn thành bộ đặc tả** | Đã hoàn thành toàn bộ đặc tả thiết kế kỹ thuật cốt lõi: HUB-2.1 (SRS), HUB-2.2 (24 User Stories & State Machines), HUB-2.4 (ERD & Data Dictionary), HUB-2.5 (Tích hợp API), HUB-2.6 (RBAC) và HUB-2.8 (99/99 test pass) đồng bộ trực tiếp với mã nguồn `web-admin`. |
+| G2 (Thiết kế kỹ thuật) | **Đã hoàn thành bộ đặc tả** | Đã hoàn thành toàn bộ đặc tả thiết kế kỹ thuật cốt lõi: HUB-2.1 (SRS), HUB-2.2 (24 User Stories & State Machines), HUB-2.4 (ERD & Data Dictionary), HUB-2.5 (Tích hợp API), HUB-2.6 (RBAC) và HUB-2.8 (116/116 test pass) đồng bộ trực tiếp với mã nguồn `web-admin`. |
 | G3–G5 | Đang triển khai & Nghiệm thu | Triển khai mã nguồn sản phẩm thực tế và sẵn sàng kịch bản nghiệm thu UAT cổng G4 (`HUB-4.1`). |
 
 ## Dùng chung
