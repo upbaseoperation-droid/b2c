@@ -28,11 +28,13 @@ import {
   DEFAULT_KL67_RIGHTS_GUARDRAILS,
   formatBriefCode,
   isBriefReady,
+  isVettingGuardrailRow,
   resolveBriefMode,
   slotKocHandles,
   type ContentBriefMode,
   type ContentPlanData,
 } from '../../lib/contentPlanRules';
+import { syncDealSummaryFields, type DealBoardData } from '../../lib/dealBoardRules';
 import { generateAiAngleSuggestions } from '../../lib/contentAngleData';
 import { analyzeScriptWithAi } from '../../lib/aiScriptAnalyzer';
 import { executeOperationalReport } from '../../lib/operationalReportService';
@@ -107,13 +109,146 @@ export const ContentView: React.FC<ContentViewProps> = ({
       const targetPlans = filterBrand !== 'ALL' ? allPlans.filter(p => p.brandName === filterBrand) : allPlans.slice(0, 8);
       const addedItems: ContentItemModel[] = [];
       const addedScripts: ScriptReviewItem[] = [];
+      const addedPublications: PublicationItemModel[] = [];
       const existingContentIds = new Set(contentItems.map(c => c.id));
       const existingScriptIds = new Set(scripts.map(s => s.id));
+      const existingPubIds = new Set(publications.map(pb => pb.id));
 
       for (const p of targetPlans) {
-        const cpRes = await fetch(`/api/content-plan?planId=${encodeURIComponent(p.id)}`, { cache: 'no-store' });
+        const [cpRes, dbRes] = await Promise.all([
+          fetch(`/api/content-plan?planId=${encodeURIComponent(p.id)}`, { cache: 'no-store' }),
+          fetch(`/api/deal-board?planId=${encodeURIComponent(p.id)}`, { cache: 'no-store' }),
+        ]);
         const cpBody = await cpRes.json().catch(() => null);
+        const dbBody = await dbRes.json().catch(() => null);
         const cpData = (cpBody?.data as ContentPlanData) || { slots: [] };
+        const dbData = (dbBody?.data as DealBoardData) || { frameworks: {}, deals: [] };
+
+        // 1. Đọc từ DealJob (Thực thể Bài làm của từng KOC — Single Source of Truth)
+        for (const deal of dbData.deals || []) {
+          for (const job of deal.jobs || []) {
+            const jobCntId = `cnt-job-${p.id}__${deal.id}__${job.id}`;
+            const jobScrId = `scr-job-${p.id}__${deal.id}__${job.id}`;
+            const jobPubId = `pub-job-${p.id}__${deal.id}__${job.id}`;
+            const effMode: ContentBriefMode =
+              job.briefMode || (isVettingGuardrailRow(String(deal.grade)) ? 'VETTING_GUARDRAILS' : 'DIRECTIVE');
+            const isVetting = effMode === 'VETTING_GUARDRAILS';
+            const prodLabel = job.productName || job.productGroupName || 'Sản phẩm đẩy';
+            const campTitle = `${p.brandName} (${p.storeName || p.title}) — ${prodLabel}`;
+            const mappedScriptStatus =
+              job.script.status === 'APPROVED'
+                ? 'APPROVED'
+                : job.script.status === 'CHANGES' || job.script.internalScriptAuditStatus === 'CHANGES'
+                  ? 'REVISION_REQUESTED'
+                  : 'PENDING';
+
+            if (!existingContentIds.has(jobCntId)) {
+              existingContentIds.add(jobCntId);
+              addedItems.push({
+                id: jobCntId,
+                contentCode: job.code,
+                bookingDealId: deal.id,
+                dealCode: job.code,
+                campaignTitle: campTitle,
+                creatorName: `@${deal.kocHandle} (${deal.kocName || deal.kocHandle})`,
+                pillar: job.pillar || 'Theo kế hoạch',
+                angle: isVetting
+                  ? job.angle || 'KOL tự đề xuất kịch bản theo chất kênh (Kiểm duyệt theo khung tham số)'
+                  : job.angle || prodLabel,
+                format: job.isLivestreamJob ? 'LIVESTREAM_SESSION' : 'VIDEO_SHORT_60S',
+                channel: 'TIKTOK',
+                scriptHook: isVetting
+                  ? job.hook || 'KOL tự do sáng tạo mở đầu (Không áp đặt Hook mẫu)'
+                  : job.hook || `Mở đầu 3s cho ${prodLabel}`,
+                scriptPainPoint: job.forbiddenClaims ? `Tránh từ cấm: ${job.forbiddenClaims}` : 'Tình huống thực tế khách hàng',
+                scriptUsp: job.usp || prodLabel,
+                scriptCta: job.cta || (job.cartUrl ? `Bấm giỏ hàng chính hãng (${job.cartUrl})` : 'Nhấn vào giỏ hàng góc trái'),
+                scriptStatus: mappedScriptStatus,
+                revisionCount: mappedScriptStatus === 'REVISION_REQUESTED' ? 1 : 0,
+                demoVideoUrl: job.script.demoUrl || undefined,
+                demoStatus:
+                  job.script.demoStatus === 'APPROVED'
+                    ? 'APPROVED'
+                    : job.script.demoStatus === 'CHANGES'
+                      ? 'REJECTED'
+                      : job.script.demoUrl
+                        ? 'SUBMITTED'
+                        : 'NOT_SUBMITTED',
+                qcStatus: job.acceptance.status === 'PASSED' ? 'PASS' : job.acceptance.status === 'FAILED' ? 'REVISION_REQUIRED' : 'PENDING',
+                reviewMode: effMode,
+                klCode: deal.grade,
+                mandatoryShots: job.mandatoryShots,
+                forbiddenClaims: job.forbiddenClaims,
+                rightsGuardrails: job.rightsGuardrails,
+                qcChecklistNotes: [
+                  job.briefCode ? `Đề bài: ${job.briefCode}` : '',
+                  job.productName ? `SKU: ${job.productName}` : '',
+                  typeof job.commissionPct === 'number' ? `Hoa hồng: ${job.commissionPct}%` : '',
+                ]
+                  .filter(Boolean)
+                  .join(' · ') || undefined,
+              });
+            }
+
+            if (!existingScriptIds.has(jobScrId)) {
+              existingScriptIds.add(jobScrId);
+              addedScripts.push({
+                id: jobScrId,
+                dealCode: job.code,
+                kocId: deal.kocHandle,
+                kocName: `@${deal.kocHandle}`,
+                kocTier: deal.grade === 'KL7' ? 'TIER_1_CELEB' : deal.grade === 'KL6' ? 'TIER_2_MACRO' : 'TIER_3_MICRO',
+                campaignTitle: campTitle,
+                pillar: job.pillar || 'Theo kế hoạch',
+                videoDuration: '45s - 60s',
+                hook: isVetting ? job.hook || 'KOL tự đề xuất mở đầu theo phong cách kênh' : job.hook || job.angle || prodLabel,
+                painPoint: job.forbiddenClaims ? `Từ cấm & Ranh giới Brand: ${job.forbiddenClaims}` : 'Tình huống khách hàng mục tiêu',
+                solutionAndUsp: job.usp || prodLabel,
+                callToAction: job.cta || 'Nhấn vào giỏ hàng góc trái mua chính hãng',
+                status: mappedScriptStatus,
+                remainingHours: mappedScriptStatus === 'APPROVED' ? 0 : 24,
+                submittedBy: job.pic || deal.pic || currentUserName || 'Booking PIC',
+                submittedAt: job.script.at || `Job ${job.code}`,
+                feedbackNotes: job.script.note || undefined,
+                reviewMode: effMode,
+                klCode: deal.grade,
+                mandatoryShots: job.mandatoryShots,
+                forbiddenClaims: job.forbiddenClaims,
+                rightsGuardrails: job.rightsGuardrails,
+              });
+            }
+
+            if (job.airLink.trim() && !existingPubIds.has(jobPubId)) {
+              existingPubIds.add(jobPubId);
+              const views = job.acceptance.views ?? job.performance.d14.views ?? 0;
+              const gmv = job.performance.d14.gmv ?? 0;
+              const cost = job.videoFee > 0 ? job.videoFee : deal.fee || 0;
+              addedPublications.push({
+                id: jobPubId,
+                publicationCode: `PUB-${job.code}`,
+                contentItemId: jobCntId,
+                contentCode: job.code,
+                dealCode: job.code,
+                creatorName: `@${deal.kocHandle}`,
+                platform: 'TIKTOK',
+                platformPostUrl: job.airLink,
+                publishedAt: job.airedAt || 'Đã lên sóng',
+                sparkAdsCode: job.sparkAdsCode || undefined,
+                sparkAdsExpiryDays: job.sparkAdsCode ? 30 : undefined,
+                isMediaHandedOff: Boolean(job.sparkAdsCode),
+                viewsCount: views,
+                likesCount: Math.round(views * 0.045),
+                affiliateGmv: gmv,
+                itemsSold: job.performance.d14.orders ?? 0,
+                costAttributed: cost,
+                roi: cost > 0 ? Number((gmv / cost).toFixed(1)) : 0,
+                verificationStatus: job.acceptance.status === 'PASSED' ? 'VERIFIED' : 'PENDING_AUDIT',
+              });
+            }
+          }
+        }
+
+        // 2. Đọc các Đề bài gốc ContentSlot (BR-xx) chưa sinh DealJob hoặc đã gán KOC dự kiến
         for (const s of cpData.slots || []) {
           const handles = slotKocHandles(s);
           if (!isBriefReady(s) && handles.length === 0) continue;
@@ -121,8 +256,8 @@ export const ContentView: React.FC<ContentViewProps> = ({
           const effMode = resolveBriefMode(s);
           const isVetting = effMode === 'VETTING_GUARDRAILS';
           const cntId = `cnt-plan-${p.id}-${s.id}`;
-          const creatorLabel = handles.length > 0 ? handles.map(h => `@${h}`).join(', ') : s.pic || p.pic || 'KOC Kế hoạch';
-          const campTitle = `${p.brandName} (${p.storeName || p.title}) — ${s.product || 'Sản phẩm đẩy'}`;
+          const creatorLabel = handles.length > 0 ? handles.map(h => `@${h}`).join(', ') : s.pic || p.pic || 'Đề bài chưa gán KOC';
+          const campTitle = `${p.brandName} (${p.storeName || p.title}) — ${s.sku || s.product || 'Sản phẩm đẩy'}`;
           if (!existingContentIds.has(cntId)) {
             existingContentIds.add(cntId);
             addedItems.push({
@@ -191,13 +326,17 @@ export const ContentView: React.FC<ContentViewProps> = ({
         }
       }
 
-      if (addedItems.length === 0 && addedScripts.length === 0) {
-        onNotify?.('Chưa có dòng Brief mới nào (đã điền sản phẩm/góc quay hoặc đã gán KOC) trong Kế hoạch Content cần đồng bộ thêm.', 'info');
+      if (addedItems.length === 0 && addedScripts.length === 0 && addedPublications.length === 0) {
+        onNotify?.('Chưa có Đề bài (BR-xx) hoặc Bài làm KOC (DealJob) mới nào cần đồng bộ thêm.', 'info');
         return;
       }
       if (addedItems.length > 0) setContentItems(prev => [...addedItems, ...prev]);
       if (addedScripts.length > 0) setScripts(prev => [...addedScripts, ...prev]);
-      onNotify?.(`Đã đồng bộ ${addedItems.length} Brief nội dung và ${addedScripts.length} kịch bản KOC từ Kế hoạch Content.`, 'success');
+      if (addedPublications.length > 0) setPublications(prev => [...addedPublications, ...prev]);
+      onNotify?.(
+        `Đã đồng bộ ${addedItems.length} hồ sơ nội dung, ${addedScripts.length} kịch bản và ${addedPublications.length} bài đăng trực tiếp từ DealJob & Kho Brief.`,
+        'success',
+      );
     } catch {
       onNotify?.('Lỗi khi đồng bộ từ Kế hoạch Content.', 'error');
     } finally {
@@ -419,8 +558,55 @@ export const ContentView: React.FC<ContentViewProps> = ({
     setIsCreateScriptOpen(false);
   };
 
+  const syncScriptDecisionToDealJob = async (
+    scriptId: string,
+    decision: 'APPROVED' | 'REVISION_REQUESTED',
+    notes?: string,
+  ) => {
+    if (!scriptId.startsWith('scr-job-')) return;
+    const rawKey = scriptId.slice('scr-job-'.length);
+    const [planId, dealId, jobId] = rawKey.split('__');
+    if (!planId || !dealId || !jobId) return;
+    try {
+      const dbRes = await fetch(`/api/deal-board?planId=${encodeURIComponent(planId)}`, { cache: 'no-store' });
+      const dbBody = await dbRes.json().catch(() => null);
+      const dbData = (dbBody?.data as DealBoardData) || null;
+      if (!dbData || !Array.isArray(dbData.deals)) return;
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const nextDeals = dbData.deals.map(d => {
+        if (d.id !== dealId) return d;
+        const nextJobs = (d.jobs || []).map(j => {
+          if (j.id !== jobId) return j;
+          return {
+            ...j,
+            script: {
+              ...j.script,
+              internalScriptAuditStatus: decision === 'APPROVED' ? ('PASSED' as const) : ('CHANGES' as const),
+              status: decision === 'APPROVED' ? ('APPROVED' as const) : ('CHANGES' as const),
+              note: notes !== undefined ? notes : j.script.note,
+              at: todayStr,
+            },
+          };
+        });
+        return syncDealSummaryFields({ ...d, jobs: nextJobs });
+      });
+      await fetch('/api/deal-board', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, data: { ...dbData, deals: nextDeals } }),
+      });
+    } catch {
+      // Ignore network errors while keeping UI responsive
+    }
+  };
+
   const handleApprove = (scriptId: string) => {
-    setScripts(prev => prev.map(item => item.id === scriptId ? { ...item, status: 'APPROVED', remainingHours: 0 } : item));
+    setScripts(prev => prev.map(item => (item.id === scriptId ? { ...item, status: 'APPROVED', remainingHours: 0 } : item)));
+    if (scriptId.startsWith('scr-job-')) {
+      const cntId = `cnt-job-${scriptId.slice('scr-job-'.length)}`;
+      setContentItems(prev => prev.map(c => (c.id === cntId ? { ...c, scriptStatus: 'APPROVED' } : c)));
+      void syncScriptDecisionToDealJob(scriptId, 'APPROVED');
+    }
     const targetScript = scripts.find(s => s.id === scriptId);
     if (onScriptApprovedNotification && targetScript) {
       onScriptApprovedNotification(targetScript.dealCode);
@@ -428,11 +614,24 @@ export const ContentView: React.FC<ContentViewProps> = ({
   };
 
   const handleRequestRevision = (scriptId: string, notes: string) => {
-    setScripts(prev => prev.map(item => item.id === scriptId ? {
-      ...item,
-      status: 'REVISION_REQUESTED',
-      feedbackNotes: notes,
-    } : item));
+    setScripts(prev =>
+      prev.map(item =>
+        item.id === scriptId
+          ? {
+              ...item,
+              status: 'REVISION_REQUESTED',
+              feedbackNotes: notes,
+            }
+          : item,
+      ),
+    );
+    if (scriptId.startsWith('scr-job-')) {
+      const cntId = `cnt-job-${scriptId.slice('scr-job-'.length)}`;
+      setContentItems(prev =>
+        prev.map(c => (c.id === cntId ? { ...c, scriptStatus: 'REVISION_REQUESTED', revisionCount: c.revisionCount + 1 } : c)),
+      );
+      void syncScriptDecisionToDealJob(scriptId, 'REVISION_REQUESTED', notes);
+    }
   };
 
   return (

@@ -260,6 +260,13 @@ function seedFromMock(kb: BrandKnowledgeBase, master?: BrandDetail): BrandProfil
       toneTag: TONE_FROM_MOCK[kb.toneTag] || fallback.positioning!.toneTag,
       toneOfVoice: kb.toneOfVoice || fallback.positioning!.toneOfVoice,
       targetAudience: kb.targetPersonaSummary || fallback.positioning!.targetAudience,
+      brandSays: fallback.positioning!.brandSays,
+      consumerSays: fallback.positioning!.consumerSays,
+      communicationGap: fallback.positioning!.communicationGap,
+      bigIdea: fallback.positioning!.bigIdea,
+      keyMessage: fallback.positioning!.keyMessage,
+      keyVisualDirection: fallback.positioning!.keyVisualDirection,
+      achievements: fallback.positioning!.achievements,
       painPoints: fallback.positioning!.painPoints,
       barriersToTrial: fallback.positioning!.barriersToTrial,
       rtbs: (kb.skus || []).map(s => s.clinicalTrials).filter(Boolean).length > 0
@@ -267,6 +274,7 @@ function seedFromMock(kb: BrandKnowledgeBase, master?: BrandDetail): BrandProfil
         : fallback.positioning!.rtbs,
       contentPillars: fallback.positioning!.contentPillars,
       competitors: fallback.positioning!.competitors,
+      competitorTiers: fallback.positioning!.competitorTiers,
     },
     entity: {
       companyName: kb.companyName || master?.companyName || fallback.entity!.companyName,
@@ -461,6 +469,33 @@ function seedFromMasterBrand(m: BrandDetail, index: number): BrandProfile {
       toneTag,
       toneOfVoice: 'Chia sẻ tự nhiên, nói đúng công dụng theo giấy công bố và quay trải nghiệm dùng thật.',
       targetAudience: `Khách hàng mua ${m.category.toLowerCase()} trên ${(m.platforms || ['TikTok Shop', 'Shopee Mall']).join(' và ')}.`,
+      brandSays: isMomBaby
+        ? `${m.name} định vị là thương hiệu ${m.category.toLowerCase()} lành tính, chuẩn kiểm định an toàn cho mẹ bầu và trẻ sơ sinh.`
+        : isHealth
+          ? `${m.name} định vị là giải pháp chăm sóc sức khỏe chủ động với công thức chuẩn dược phẩm và nguồn gốc minh bạch.`
+          : `${m.name} định vị là thương hiệu ${m.category.toLowerCase()} chuyên sâu, công thức hiệu quả cao phù hợp làn da châu Á.`,
+      consumerSays: isMomBaby
+        ? `Khách hàng biết đến ${m.name} qua review của hội mẹ bỉm nhưng còn phân vân về tốc độ thấm, mùi hương và giá khi dùng lâu dài.`
+        : isHealth
+          ? `Khách hàng quan tâm công dụng của ${m.name} nhưng còn e ngại mùi vị khi uống và cần xem phản hồi thực tế sau 2–4 tuần sử dụng.`
+          : `Khách hàng thấy ${m.name} xuất hiện nhiều trên TikTok nhưng cần kiểm chứng chất kem thực tế trên da dầu/nhạy cảm và độ bền màu/hiệu quả thật.`,
+      communicationGap: `Cần dịch chuyển nhận thức từ "nghe tên qua quảng cáo" sang "tin tưởng nhờ trải nghiệm kiểm chứng thực tế trên tình huống đời thường" trước khi tung ưu đãi chuyển đổi.`,
+      bigIdea: isMomBaby
+        ? `Cùng ${m.name} chăm con dịu lành, mẹ nhàn tênh mỗi ngày`
+        : isHealth
+          ? `Chủ động chăm sóc cơ thể khỏe đẹp từ gốc cùng ${m.name}`
+          : `Trạm chăm sóc chuẩn chuyên gia từ ${m.name} — Đúng hoạt chất, thật hiệu quả`,
+      keyMessage: isMomBaby
+        ? `Dịu lành chuẩn kiểm định cho bé — Mẹ an tâm chọn đúng ngay từ đầu`
+        : isHealth
+          ? `Bổ sung chuẩn khoa học mỗi ngày — Cơ thể nhẹ nhàng, rạng rỡ từ bên trong`
+          : `Chăm da đúng trọng tâm — Mềm mịn để chạm, khỏe khoắn để tự tin`,
+      keyVisualDirection: `Bối cảnh phòng ngủ/phòng tắm/bàn trang điểm sáng sạch tự nhiên (Indoor tone trắng/be/pastel hoặc Outdoor nhiều cây xanh); quay cận cảnh (close-up) kết cấu sản phẩm trên da thật dưới ánh sáng tự nhiên, hạn chế filter làm lệch màu.`,
+      achievements: [
+        `Thương hiệu chính hãng thuộc nhóm tăng trưởng trọng điểm ngành ${m.category} trên ${(m.platforms || ['TikTok Shop', 'Shopee Mall']).join(' & ')}`,
+        `Đạt đánh giá trung bình 4.9/5 sao từ hàng chục nghìn lượt mua thực tế tại gian hàng Official Mall`,
+        `Được hàng trăm KOC, Dược sĩ, Bác sĩ chuyên khoa và Beauty Creator uy tín trải nghiệm, đánh giá tích cực`,
+      ],
       painPoints: isMomBaby
         ? ['Lo ngại sản phẩm gây kích ứng cho làn da nhạy cảm của bé', 'Đã thử nhiều dòng trên thị trường nhưng hiệu quả chậm, tốn kém']
         : isHealth
@@ -482,6 +517,15 @@ function seedFromMasterBrand(m: BrandDetail, index: number): BrandProfile {
         'Conversion: Bằng chứng mua lại lần 2–3 + Tung ưu đãi combo/quà tặng độc quyền phiên Mega/Payday',
       ],
       competitors: ['Các thương hiệu cùng phân khúc chưa có giấy phép công bố hoặc hàng xách tay trôi nổi'],
+      competitorTiers: {
+        tierA: isMomBaby
+          ? ['Các thương hiệu Mẹ & Bé cùng phân khúc giá và cùng tệp mẹ bầu/mẹ bỉm trên TikTok Shop']
+          : isHealth
+            ? ['Các nhãn Thực phẩm bảo vệ sức khỏe / Dược mỹ phẩm cạnh tranh trực tiếp cùng công dụng']
+            : ['Các thương hiệu Skincare / Makeup cùng phân khúc giá (Mass/Masstige) và cùng tệp khách 18–30 tuổi'],
+        tierB: ['Các thương hiệu đa ngành hàng có giao thoa 1–2 dòng sản phẩm phụ trong mùa chiến dịch'],
+        tierC: ['Các thương hiệu đầu ngành toàn cầu (Benchmark về cách kể câu chuyện nguyên liệu và đồng bộ Key Visual)'],
+      },
     },
     entity: {
       companyName: m.companyName || `Công ty TNHH Phân phối Chính hãng ${m.name} Việt Nam`,
@@ -620,16 +664,24 @@ function enrichExistingProfile(cur: BrandProfile, seed: BrandProfile): { profile
     next = { ...next, workflowRules: seed.workflowRules };
     upgraded = true;
   }
-  if (cur.positioning && seed.positioning && !cur.positioning.painPoints?.length) {
+  if (cur.positioning && seed.positioning && (!cur.positioning.painPoints?.length || !cur.positioning.brandSays || !cur.positioning.bigIdea)) {
     next = {
       ...next,
       positioning: {
         ...cur.positioning,
+        brandSays: cur.positioning.brandSays || seed.positioning.brandSays,
+        consumerSays: cur.positioning.consumerSays || seed.positioning.consumerSays,
+        communicationGap: cur.positioning.communicationGap || seed.positioning.communicationGap,
+        bigIdea: cur.positioning.bigIdea || seed.positioning.bigIdea,
+        keyMessage: cur.positioning.keyMessage || seed.positioning.keyMessage,
+        keyVisualDirection: cur.positioning.keyVisualDirection || seed.positioning.keyVisualDirection,
+        achievements: cur.positioning.achievements?.length ? cur.positioning.achievements : seed.positioning.achievements,
         painPoints: cur.positioning.painPoints?.length ? cur.positioning.painPoints : seed.positioning.painPoints,
         barriersToTrial: cur.positioning.barriersToTrial?.length ? cur.positioning.barriersToTrial : seed.positioning.barriersToTrial,
         rtbs: cur.positioning.rtbs?.length ? cur.positioning.rtbs : seed.positioning.rtbs,
         contentPillars: cur.positioning.contentPillars?.length ? cur.positioning.contentPillars : seed.positioning.contentPillars,
         competitors: cur.positioning.competitors?.length ? cur.positioning.competitors : seed.positioning.competitors,
+        competitorTiers: cur.positioning.competitorTiers || seed.positioning.competitorTiers,
       },
     };
     upgraded = true;

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Copy, Download, Lightbulb, Plus, Search, Send, Trash2, UserPlus } from 'lucide-react';
+import { Copy, Download, FileText, Lightbulb, Plus, Search, Send, Trash2, UserPlus } from 'lucide-react';
 import type { BookingDealItem, InputPlanBreakdownState, KocItem, StorePortfolioItem } from '../../lib/types';
 import { Button, ConfirmDialog, Field, Input, Modal, Select, Status, Textarea } from '../ui';
 import { CONTENT_PILLARS, pillarGroupOf } from '../../lib/contentPillars';
@@ -14,7 +14,9 @@ import {
   diagnoseContentPlan,
   ensureSequentialBriefCodes,
   formatBriefCode,
+  FUNNEL_STAGE_OPTIONS,
   generateMissingSlotsFromBreakdown,
+  inferSlotFunnelStage,
   isBriefReady,
   isPlaced,
   isVettingGuardrailRow,
@@ -28,10 +30,13 @@ import {
   slotTargetQty,
   syncSlotsFromBrandPlan,
   type ContentBriefMode,
+  type ContentFunnelStage,
   type ContentPlanData,
   type ContentRowKey,
   type ContentSlot,
 } from '../../lib/contentPlanRules';
+import { useBrandProfiles, findBrandProfile } from '../../lib/brands/useBrandProfiles';
+import { StandardBriefPreviewModal } from '../brands/StandardBriefPreviewModal';
 import { buildBrandOneSheetPlanData } from '../../lib/oneSheetPlanBuilder';
 import type { BrandMonthlyPlanItem, BrandOneSheetPlanData } from '../../lib/types';
 import {
@@ -125,6 +130,13 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
   }, [selectedId, visiblePlans]);
 
   const plan = useMemo(() => plans.find(p => p.id === activePlanId) || null, [plans, activePlanId]);
+  const { profiles: brandProfiles } = useBrandProfiles();
+  const activeBrandProfile = useMemo(() => {
+    if (!plan) return null;
+    const parentBrand = (plan.parentBrand || plan.brandName || '').split('_')[0].trim();
+    return findBrandProfile(brandProfiles, parentBrand) || findBrandProfile(brandProfiles, plan.brandName) || brandProfiles[0] || null;
+  }, [plan, brandProfiles]);
+  const [standardBriefOpen, setStandardBriefOpen] = useState(false);
   const { data, status, update, saveNow } = usePlanRecord<ContentPlanData>('/api/content-plan', plan?.id ?? null, EMPTY, msg => notify(msg, 'warning'));
   const slots = useMemo(() => ensureSequentialBriefCodes(data.slots || []), [data.slots]);
 
@@ -227,6 +239,8 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
   const [addOpen, setAddOpen] = useState(false);
   const [addForm, setAddForm] = useState({
     pillar: CONTENT_PILLARS[0].name,
+    funnelStage: 'CONSIDERATION' as ContentFunnelStage,
+    communicationObjective: '',
     qty: 5,
     briefMode: 'DIRECTIVE' as ContentBriefMode,
     productGroupId: '',
@@ -263,6 +277,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
       qty: defaultQty,
       week: week || '',
       row: row || '',
+      funnelStage: inferSlotFunnelStage(row, f.pillar),
       briefMode: isVetting ? 'VETTING_GUARDRAILS' : 'DIRECTIVE',
       mandatoryShots: isVetting ? f.mandatoryShots || DEFAULT_KL67_MANDATORY_SHOTS : f.mandatoryShots,
       rightsGuardrails: isVetting ? f.rightsGuardrails || DEFAULT_KL67_RIGHTS_GUARDRAILS : f.rightsGuardrails,
@@ -277,6 +292,8 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
     const created = newSlot({
       targetQty: qty,
       pillar: addForm.pillar,
+      funnelStage: addForm.funnelStage,
+      communicationObjective: addForm.communicationObjective || undefined,
       angle: addForm.angle,
       product: addForm.product,
       productGroupId: addForm.productGroupId || undefined,
@@ -312,6 +329,8 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
     targetQty: 1,
     briefMode: 'DIRECTIVE' as ContentBriefMode,
     pillar: '',
+    funnelStage: 'CONSIDERATION' as ContentFunnelStage,
+    communicationObjective: '',
     productGroupId: '',
     productId: '',
     sku: '',
@@ -342,6 +361,8 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
       targetQty: slotTargetQty(s),
       briefMode: effMode,
       pillar: s.pillar,
+      funnelStage: s.funnelStage || inferSlotFunnelStage(s.row, s.pillar),
+      communicationObjective: s.communicationObjective || '',
       productGroupId: s.productGroupId || matched?.group.id || '',
       productId: s.productId || matched?.product.id || '',
       sku: s.sku || matched?.product.sku || '',
@@ -377,6 +398,8 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
               targetQty: Math.max(1, Math.min(500, Math.floor(editForm.targetQty) || 1)),
               briefMode: editForm.briefMode,
               pillar: editForm.pillar,
+              funnelStage: editForm.funnelStage,
+              communicationObjective: editForm.communicationObjective.trim() || undefined,
               productGroupId: editForm.productGroupId || undefined,
               productId: editForm.productId || undefined,
               sku: editForm.sku.trim() || undefined,
@@ -662,6 +685,8 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
     const code = formatBriefCode(s);
     const qty = slotTargetQty(s);
     const handles = slotKocHandles(s);
+    const effStage = s.funnelStage || inferSlotFunnelStage(s.row, s.pillar);
+    const stageShort = FUNNEL_STAGE_OPTIONS.find(f => f.value === effStage)?.shortLabel || effStage;
     return (
       <div
         key={s.id}
@@ -679,6 +704,9 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
             {code} · {qty} video
           </button>
           <div className="flex items-center gap-1 shrink-0">
+            <span className="rounded bg-sunken px-1 py-0.5 text-3xs font-medium text-ink-2">
+              {stageShort}
+            </span>
             {vetting && (
               <span className="rounded bg-accent-soft px-1 py-0.5 text-3xs font-semibold text-accent">
                 Khung duyệt
@@ -784,6 +812,16 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
                 <Button size="sm" variant="secondary" onClick={pullFromBrandPlan} disabled={pulling}>
                   {pulling ? 'Đang lấy…' : 'Lấy từ plan Brand'}
                 </Button>
+                {activeBrandProfile && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={FileText}
+                    onClick={() => setStandardBriefOpen(true)}
+                  >
+                    Brief chuẩn 5 phần
+                  </Button>
+                )}
                 <Button size="sm" variant="secondary" icon={Send} onClick={openSend} disabled={bookingRows.length === 0}>
                   Gửi Brand
                 </Button>
@@ -1019,10 +1057,31 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
       >
         <div className="grid grid-cols-2 gap-3">
           <Field label="Content pillar">
-            <Select value={addForm.pillar} onChange={e => setAddForm({ ...addForm, pillar: e.target.value })}>
+            <Select
+              value={addForm.pillar}
+              onChange={e =>
+                setAddForm({
+                  ...addForm,
+                  pillar: e.target.value,
+                  funnelStage: inferSlotFunnelStage(addForm.row || undefined, e.target.value),
+                })
+              }
+            >
               {CONTENT_PILLARS.map(p => (
                 <option key={p.name} value={p.name}>
                   {p.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Giai đoạn Phễu truyền thông">
+            <Select
+              value={addForm.funnelStage}
+              onChange={e => setAddForm({ ...addForm, funnelStage: e.target.value as ContentFunnelStage })}
+            >
+              {FUNNEL_STAGE_OPTIONS.map(f => (
+                <option key={f.value} value={f.value}>
+                  {f.label}
                 </option>
               ))}
             </Select>
@@ -1372,6 +1431,25 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
               ))}
             </Select>
           </Field>
+          <Field label="Giai đoạn Phễu truyền thông">
+            <Select
+              value={editForm.funnelStage}
+              onChange={e => setEditForm({ ...editForm, funnelStage: e.target.value as ContentFunnelStage })}
+            >
+              {FUNNEL_STAGE_OPTIONS.map(f => (
+                <option key={f.value} value={f.value}>
+                  {f.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Mục tiêu dịch chuyển nhận thức (Communication Objective)" className="col-span-2">
+            <Input
+              value={editForm.communicationObjective}
+              placeholder="VD: Chuyển từ nghi ngờ chất sản phẩm sang tin tưởng kiểm nghiệm da liễu..."
+              onChange={e => setEditForm({ ...editForm, communicationObjective: e.target.value })}
+            />
+          </Field>
           <Field label="Tên sản phẩm hiển thị trên Brief">
             <Input value={editForm.product} onChange={e => setEditForm({ ...editForm, product: e.target.value })} />
           </Field>
@@ -1592,6 +1670,18 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
           </div>
         </div>
       </Modal>
+
+      {activeBrandProfile && (
+        <StandardBriefPreviewModal
+          open={standardBriefOpen}
+          onClose={() => setStandardBriefOpen(false)}
+          profile={activeBrandProfile}
+          slots={slots}
+          cycleMonth={plan?.month || activeMonth}
+          storeName={plan?.storeName || plan?.title}
+          onNotify={onNotify}
+        />
+      )}
     </div>
   );
 };

@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "workflow",
+  "quality": "showcase",
+  "specification": {
+    "path": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\candidate.json",
+    "sha256": "0351474ec3afb95c6ba07d4f7649a2d1574e68dccc6872a0ea0522a7ccb5ea41",
+    "bytes": 15262
+  },
+  "artifact": {
+    "path": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\booking-e2e.html",
+    "sha256": "67e83600715dc36bb93a8608ac95f95fd27957bd4996d23befb6d7e151ffe330",
+    "bytes": 861129
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [
+    {
+      "code": "i18n/locale-fallback",
+      "severity": "warning",
+      "message": "meta.locale \"vi\" has no bundled catalog and no usable meta.translations; the Viewer chrome and <html lang> fall back to English.",
+      "subject": {
+        "diagramType": "workflow",
+        "path": "/meta/locale"
+      },
+      "evidence": {
+        "locale": "vi",
+        "bundledLocales": [
+          "en",
+          "zh-CN",
+          "zh-TW",
+          "es",
+          "ko",
+          "ar"
+        ]
+      },
+      "supportedFixes": [
+        "Supply meta.translations for this locale.",
+        "Use a bundled locale: en, zh-CN, zh-TW, es, ko, ar."
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\review-3\\booking-e2e.finalize.json",
+    "summaryReceipt": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\review-3\\booking-e2e.finalize-summary.json",
+    "browserCheckReceipt": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\review-3\\booking-e2e.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-24T11:24:36.843Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 11055,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  }
+}

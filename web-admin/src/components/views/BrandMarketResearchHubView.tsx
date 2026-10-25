@@ -826,13 +826,34 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     try {
       const matchedProfile = findProfileForBrand(dossier.brandName);
       const currentRevision = matchedProfile?.revision ?? 0;
+      const existingPos = matchedProfile?.positioning;
+      const compNames = dossier.competitors.map((c) => c.competitorName);
 
       await saveBrandProfileSectionShared({
         brandName: dossier.brandName,
         revision: currentRevision,
         section: 'POSITIONING',
-        data: dossier.positioning,
-        summary: `Cập nhật định vị, nỗi đau khách hàng & danh sách đối thủ từ Nghiên cứu thị trường`,
+        data: {
+          ...existingPos,
+          ...dossier.positioning,
+          brandSays:
+            existingPos?.brandSays ||
+            `${dossier.brandName} định vị là thương hiệu ${dossier.category.toLowerCase()} chính hãng (${dossier.originCountry}), tập trung vào ${(dossier.positioning.rtbs || [])[0] || 'chất lượng và hiệu quả thực tế'}.`,
+          consumerSays:
+            existingPos?.consumerSays ||
+            `Khách hàng trên sàn quan tâm nhiều tới hiệu quả thật khi sử dụng nhưng còn cân nhắc về ${(dossier.positioning.barriersToTrial || [])[0] || 'giá bán so với các lựa chọn phổ thông'}.`,
+          communicationGap:
+            existingPos?.communicationGap ||
+            `Chuyển dịch nhận thức từ so sánh giá đơn thuần sang tin tưởng bằng chứng kiểm nghiệm và trải nghiệm thực tế qua hệ thống KOC/KOL.`,
+          competitorTiers: existingPos?.competitorTiers || {
+            tierA: compNames.slice(0, 2),
+            tierB: compNames.slice(2, 4),
+            tierC: ['La Roche-Posay', 'Bioderma', 'Anessa'].filter(
+              (n) => n.toLowerCase() !== dossier.brandName.toLowerCase()
+            ),
+          },
+        },
+        summary: `Cập nhật định vị, Brand Says vs Consumer Says & phân tầng đối thủ Tier A/B/C từ Nghiên cứu thị trường`,
       });
 
       onNotify?.(
@@ -2410,6 +2431,42 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                   </ul>
                 </div>
               </div>
+
+              {(() => {
+                const matchedProfile = findProfileForBrand(dossier.brandName);
+                const pos = matchedProfile?.positioning;
+                const brandSays =
+                  pos?.brandSays ||
+                  `${dossier.brandName} định vị là thương hiệu ${dossier.category.toLowerCase()} chính hãng (${dossier.originCountry}), tập trung vào ${(dossier.positioning.rtbs || [])[0] || 'chất lượng và hiệu quả thực tế'}.`;
+                const consumerSays =
+                  pos?.consumerSays ||
+                  `Khách hàng trên sàn quan tâm nhiều tới hiệu quả thật khi lên da/sử dụng nhưng còn cân nhắc về ${(dossier.positioning.barriersToTrial || [])[0] || 'giá bán so với các lựa chọn phổ thông'}.`;
+                const commGap =
+                  pos?.communicationGap ||
+                  `Chuyển dịch nhận thức từ so sánh giá đơn thuần sang tin tưởng bằng chứng kiểm nghiệm và trải nghiệm thực tế qua hệ thống KOC/KOL.`;
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="p-3.5 rounded-lg bg-canvas border border-line space-y-1">
+                      <div className="text-2xs font-semibold text-accent">
+                        Brand Says (Định vị theo Brand Guideline)
+                      </div>
+                      <p className="text-xs text-ink leading-relaxed">{brandSays}</p>
+                    </div>
+                    <div className="p-3.5 rounded-lg bg-canvas border border-line space-y-1">
+                      <div className="text-2xs font-semibold text-ink-2">
+                        Consumer Says (Nhận thức hiện tại của người mua)
+                      </div>
+                      <p className="text-xs text-ink leading-relaxed">{consumerSays}</p>
+                    </div>
+                    <div className="p-3.5 rounded-lg bg-warning-soft/20 border border-warning/30 space-y-1">
+                      <div className="text-2xs font-semibold text-warning">
+                        Khoảng lệch nhận thức &amp; Mục tiêu truyền thông
+                      </div>
+                      <p className="text-xs text-ink leading-relaxed">{commGap}</p>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </Panel>
 
@@ -2796,6 +2853,70 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
               </Button>
             </div>
           </div>
+
+          {(() => {
+            const matchedProfile = findProfileForBrand(dossier.brandName);
+            const tiers = matchedProfile?.positioning?.competitorTiers;
+            const compNames = dossier.competitors.map((c) => c.competitorName);
+            const tierA = tiers?.tierA?.length ? tiers.tierA : compNames.slice(0, 2);
+            const tierB = tiers?.tierB?.length ? tiers.tierB : compNames.slice(2, 4);
+            const tierC = tiers?.tierC?.length
+              ? tiers.tierC
+              : ['La Roche-Posay', 'Bioderma', 'Anessa'].filter(
+                  (n) => n.toLowerCase() !== dossier.brandName.toLowerCase()
+                );
+            return (
+              <Panel title="Phân tầng Đối thủ 3 Cấp chuẩn B2C (Tier A · Tier B · Tier C)">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                  <div className="p-3.5 rounded-lg border border-critical/30 bg-critical-soft/15 space-y-1.5">
+                    <div className="font-semibold text-critical">
+                      Tier A · Đối thủ Trực tiếp (Cùng phân khúc giá &amp; tệp khách)
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {tierA.map((c) => (
+                        <span
+                          key={c}
+                          className="px-2 py-0.5 rounded bg-surface border border-line font-medium text-ink"
+                        >
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-lg border border-warning/30 bg-warning-soft/15 space-y-1.5">
+                    <div className="font-semibold text-warning">
+                      Tier B · Đối thủ Thứ cấp / Thay thế gián tiếp
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {tierB.map((c) => (
+                        <span
+                          key={c}
+                          className="px-2 py-0.5 rounded bg-surface border border-line font-medium text-ink"
+                        >
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-lg border border-accent/30 bg-accent-soft/15 space-y-1.5">
+                    <div className="font-semibold text-accent">
+                      Tier C · Thương hiệu Dẫn đầu tham chiếu (Aspirational Benchmark)
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {tierC.map((c) => (
+                        <span
+                          key={c}
+                          className="px-2 py-0.5 rounded bg-surface border border-line font-medium text-ink"
+                        >
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Panel>
+            );
+          })()}
 
           <Panel
             flush

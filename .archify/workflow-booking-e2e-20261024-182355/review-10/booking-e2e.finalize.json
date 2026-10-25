@@ -1,0 +1,1107 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "workflow",
+  "quality": "showcase",
+  "startedAt": "2026-10-24T11:39:13.504Z",
+  "specification": {
+    "path": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\candidate.json",
+    "sha256": "30d965c7545f8f8375e9f94b2088ae39bc655a787d81b5cbd0a69cf92a4aa3db",
+    "bytes": 20368
+  },
+  "artifact": {
+    "path": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\booking-e2e.html",
+    "sha256": "80d917afc728cca07e00de1ff0e27839cc3a8eca0734ee86850042ffa16683ae",
+    "bytes": 871993
+  },
+  "stages": {
+    "validate": {
+      "status": "fail",
+      "exitCode": 1,
+      "durationMs": null,
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\Chienth\\.claude\\skills\\archify\\bin\\archify.mjs",
+        "deliver",
+        "workflow",
+        "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\candidate.json",
+        "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\booking-e2e.html",
+        "--quality",
+        "showcase",
+        "--repo-root",
+        "E:\\Upbase\\B2C",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": false,
+        "command": "deliver",
+        "receiptId": "597cd584-a5e7-4a11-a415-0d95d67e5766",
+        "stage": "render",
+        "type": "workflow",
+        "input": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\candidate.json",
+        "output": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\booking-e2e.html",
+        "error": "Workflow layout validation failed",
+        "diagnostics": [
+          {
+            "code": "i18n/locale-fallback",
+            "severity": "warning",
+            "message": "meta.locale \"vi\" has no bundled catalog and no usable meta.translations; the Viewer chrome and <html lang> fall back to English.",
+            "subject": {
+              "diagramType": "workflow",
+              "path": "/meta/locale"
+            },
+            "evidence": {
+              "locale": "vi",
+              "bundledLocales": [
+                "en",
+                "zh-CN",
+                "zh-TW",
+                "es",
+                "ko",
+                "ar"
+              ]
+            },
+            "supportedFixes": [
+              "Supply meta.translations for this locale.",
+              "Use a bundled locale: en, zh-CN, zh-TW, es, ko, ar."
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"Brand · Gian · KOC · Nhân sự\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "master_setup",
+              "path": "/nodes/0/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 136.07999999999998,
+              "availableTextWidthPx": 136
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"chỉ Quản lý · đến sau\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "plan41",
+              "path": "/nodes/2/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 102.05999999999999,
+              "availableTextWidthPx": 104
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"PIC theo gian / nhãn\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "store_acl",
+              "path": "/nodes/1/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 97.2,
+              "availableTextWidthPx": 124
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"lệch 4.1 → Growth → TP\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "plan_approve",
+              "path": "/nodes/4/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 106.91999999999999,
+              "availableTextWidthPx": 136
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"chỉ tiêu · KL1–KL7 · slot team\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "plan_split",
+              "path": "/nodes/3/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 145.79999999999998,
+              "availableTextWidthPx": 156
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"chấm điểm · lấp chỗ thiếu KL\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "suggest",
+              "path": "/nodes/5/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 136.07999999999998,
+              "availableTextWidthPx": 136
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"DRAFT → Submit Brand\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "listing",
+              "path": "/nodes/6/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 97.2,
+              "availableTextWidthPx": 96
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"FINAL_APPROVED\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "deal",
+              "path": "/nodes/9/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 68.03999999999999,
+              "availableTextWidthPx": 116
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"7.1 thu thập TT\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "contract",
+              "path": "/nodes/10/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 72.89999999999999,
+              "availableTextWidthPx": 84
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"9.x · 10.x · 12.1\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "production",
+              "path": "/nodes/14/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 82.61999999999999,
+              "availableTextWidthPx": 112
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"17.1 · chặn: SOW, nghiệm thu\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "dntt",
+              "path": "/nodes/19/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 136.07999999999998,
+              "availableTextWidthPx": 136
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"push / pull · Yes / No\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "brand_ok",
+              "path": "/nodes/7/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 106.91999999999999,
+              "availableTextWidthPx": 136
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"10.4 · 12.2 → 12.4\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "brand_demo",
+              "path": "/nodes/15/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 87.47999999999999,
+              "availableTextWidthPx": 116
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"NEGOTIATING · finalFee\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "nego",
+              "path": "/nodes/8/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 106.91999999999999,
+              "availableTextWidthPx": 108
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"7.6 → 7.9 bản cứng\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "sign",
+              "path": "/nodes/12/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 87.47999999999999,
+              "availableTextWidthPx": 88
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"11.1 · link air · mã Ads\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "air",
+              "path": "/nodes/16/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 116.63999999999999,
+              "availableTextWidthPx": 116
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"16.1 → 16.5\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "invoice",
+              "path": "/nodes/18/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 53.459999999999994,
+              "availableTextWidthPx": 84
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"≥50tr / sửa ĐK · 7.3 → 7.4\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "legal",
+              "path": "/nodes/11/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 126.35999999999999,
+              "availableTextWidthPx": 128
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"14.1 · BBNT\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "accept",
+              "path": "/nodes/17/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 53.459999999999994,
+              "availableTextWidthPx": 84
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"18.1 → 18.2 (7 ngày)\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "paid",
+              "path": "/nodes/21/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 97.2,
+              "availableTextWidthPx": 96
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"8.1 → 8.4\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "advance",
+              "path": "/nodes/13/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 43.739999999999995,
+              "availableTextWidthPx": 84
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"(Leader) → GĐ → Kế toán\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "lark_flow",
+              "path": "/nodes/20/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 111.77999999999999,
+              "availableTextWidthPx": 112
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          },
+          {
+            "code": "workflow/sublabel-readability",
+            "severity": "error",
+            "message": "Sublabel \"DROPPED · 19.5–19.7\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+            "subject": {
+              "diagramType": "workflow",
+              "node": "dropped",
+              "path": "/nodes/22/sublabel"
+            },
+            "evidence": {
+              "requiredFontPx": 8.1,
+              "maximumSlotFontPx": 8,
+              "canvasWidthPx": 1244,
+              "maximumCanvasWidthPx": 1240,
+              "requiredTextWidthPx": 92.34,
+              "availableTextWidthPx": 92
+            },
+            "supportedFixes": [
+              "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+            ]
+          }
+        ],
+        "provenance": "failed",
+        "update": {
+          "status": "unavailable",
+          "installedVersion": null,
+          "availableVersion": null,
+          "releaseNotes": null,
+          "checkedAt": null,
+          "source": null,
+          "noticeRequired": false,
+          "noticeText": null,
+          "reason": "disabled"
+        }
+      },
+      "execution": "embedded-in-deliver"
+    },
+    "deliver": {
+      "status": "not-run",
+      "execution": "blocked-by-validate"
+    }
+  },
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  },
+  "diagnostics": [
+    {
+      "code": "i18n/locale-fallback",
+      "severity": "warning",
+      "message": "meta.locale \"vi\" has no bundled catalog and no usable meta.translations; the Viewer chrome and <html lang> fall back to English.",
+      "subject": {
+        "diagramType": "workflow",
+        "path": "/meta/locale"
+      },
+      "evidence": {
+        "locale": "vi",
+        "bundledLocales": [
+          "en",
+          "zh-CN",
+          "zh-TW",
+          "es",
+          "ko",
+          "ar"
+        ]
+      },
+      "supportedFixes": [
+        "Supply meta.translations for this locale.",
+        "Use a bundled locale: en, zh-CN, zh-TW, es, ko, ar."
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"Brand · Gian · KOC · Nhân sự\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "master_setup",
+        "path": "/nodes/0/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 136.07999999999998,
+        "availableTextWidthPx": 136
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"chỉ Quản lý · đến sau\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "plan41",
+        "path": "/nodes/2/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 102.05999999999999,
+        "availableTextWidthPx": 104
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"PIC theo gian / nhãn\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "store_acl",
+        "path": "/nodes/1/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 97.2,
+        "availableTextWidthPx": 124
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"lệch 4.1 → Growth → TP\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "plan_approve",
+        "path": "/nodes/4/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 106.91999999999999,
+        "availableTextWidthPx": 136
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"chỉ tiêu · KL1–KL7 · slot team\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "plan_split",
+        "path": "/nodes/3/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 145.79999999999998,
+        "availableTextWidthPx": 156
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"chấm điểm · lấp chỗ thiếu KL\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "suggest",
+        "path": "/nodes/5/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 136.07999999999998,
+        "availableTextWidthPx": 136
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"DRAFT → Submit Brand\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "listing",
+        "path": "/nodes/6/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 97.2,
+        "availableTextWidthPx": 96
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"FINAL_APPROVED\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "deal",
+        "path": "/nodes/9/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 68.03999999999999,
+        "availableTextWidthPx": 116
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"7.1 thu thập TT\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "contract",
+        "path": "/nodes/10/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 72.89999999999999,
+        "availableTextWidthPx": 84
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"9.x · 10.x · 12.1\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "production",
+        "path": "/nodes/14/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 82.61999999999999,
+        "availableTextWidthPx": 112
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"17.1 · chặn: SOW, nghiệm thu\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "dntt",
+        "path": "/nodes/19/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 136.07999999999998,
+        "availableTextWidthPx": 136
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"push / pull · Yes / No\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "brand_ok",
+        "path": "/nodes/7/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 106.91999999999999,
+        "availableTextWidthPx": 136
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"10.4 · 12.2 → 12.4\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "brand_demo",
+        "path": "/nodes/15/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 87.47999999999999,
+        "availableTextWidthPx": 116
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"NEGOTIATING · finalFee\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "nego",
+        "path": "/nodes/8/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 106.91999999999999,
+        "availableTextWidthPx": 108
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"7.6 → 7.9 bản cứng\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "sign",
+        "path": "/nodes/12/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 87.47999999999999,
+        "availableTextWidthPx": 88
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"11.1 · link air · mã Ads\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "air",
+        "path": "/nodes/16/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 116.63999999999999,
+        "availableTextWidthPx": 116
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"16.1 → 16.5\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "invoice",
+        "path": "/nodes/18/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 53.459999999999994,
+        "availableTextWidthPx": 84
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"≥50tr / sửa ĐK · 7.3 → 7.4\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "legal",
+        "path": "/nodes/11/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 126.35999999999999,
+        "availableTextWidthPx": 128
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"14.1 · BBNT\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "accept",
+        "path": "/nodes/17/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 53.459999999999994,
+        "availableTextWidthPx": 84
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"18.1 → 18.2 (7 ngày)\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "paid",
+        "path": "/nodes/21/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 97.2,
+        "availableTextWidthPx": 96
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"8.1 → 8.4\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "advance",
+        "path": "/nodes/13/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 43.739999999999995,
+        "availableTextWidthPx": 84
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"(Leader) → GĐ → Kế toán\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "lark_flow",
+        "path": "/nodes/20/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 111.77999999999999,
+        "availableTextWidthPx": 112
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    },
+    {
+      "code": "workflow/sublabel-readability",
+      "severity": "error",
+      "message": "Sublabel \"DROPPED · 19.5–19.7\" needs a 8.1px minimum that stays readable on this 1244px canvas, above the supported 8px text row — compact the column spacing or node widths so the canvas is at most 1240px wide; preserve the sublabel's role or protocol.",
+      "subject": {
+        "diagramType": "workflow",
+        "node": "dropped",
+        "path": "/nodes/22/sublabel"
+      },
+      "evidence": {
+        "requiredFontPx": 8.1,
+        "maximumSlotFontPx": 8,
+        "canvasWidthPx": 1244,
+        "maximumCanvasWidthPx": 1240,
+        "requiredTextWidthPx": 92.34,
+        "availableTextWidthPx": 92
+      },
+      "supportedFixes": [
+        "compact column spacing or node widths until the implicit canvas is at most 1240px wide, preserving every node and relationship"
+      ]
+    }
+  ],
+  "evidence": {
+    "receipt": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\review-10\\booking-e2e.finalize.json",
+    "summaryReceipt": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\review-10\\booking-e2e.finalize-summary.json"
+  },
+  "visualReview": "not-requested",
+  "failedStage": "validate",
+  "finishedAt": "2026-10-24T11:39:16.887Z",
+  "durationMs": 3383,
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-24T11:24:36.843Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  }
+}

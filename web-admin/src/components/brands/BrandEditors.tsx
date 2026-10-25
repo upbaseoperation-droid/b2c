@@ -54,59 +54,103 @@ function Footer({ busy, onClose, onSave, label = 'Lưu' }: { busy: boolean; onCl
 
 export function PositioningDialog({ open, value, busy, onClose, onSave }: { open: boolean; value?: BrandPositioning; busy: boolean; onClose: () => void; onSave: (v: BrandPositioning) => void }) {
   const [v, setV] = useState<BrandPositioning>(value || { slogan: '', story: '', toneOfVoice: '', targetAudience: '' });
+  const [achievementsText, setAchievementsText] = useState((value?.achievements || []).join('\n'));
   const [painPointsText, setPainPointsText] = useState((value?.painPoints || []).join('\n'));
   const [barriersText, setBarriersText] = useState((value?.barriersToTrial || []).join('\n'));
   const [rtbsText, setRtbsText] = useState((value?.rtbs || []).join('\n'));
   const [pillarsText, setPillarsText] = useState((value?.contentPillars || []).join('\n'));
   const [competitorsText, setCompetitorsText] = useState((value?.competitors || []).join('\n'));
+  const [tierAText, setTierAText] = useState((value?.competitorTiers?.tierA || []).join('\n'));
+  const [tierBText, setTierBText] = useState((value?.competitorTiers?.tierB || []).join('\n'));
+  const [tierCText, setTierCText] = useState((value?.competitorTiers?.tierC || []).join('\n'));
 
   const set = <K extends keyof BrandPositioning>(k: K, x: BrandPositioning[K]) => setV(p => ({ ...p, [k]: x }));
   const handleSave = () => {
     onSave({
       ...v,
+      achievements: toLines(achievementsText),
       painPoints: toLines(painPointsText),
       barriersToTrial: toLines(barriersText),
       rtbs: toLines(rtbsText),
       contentPillars: toLines(pillarsText),
       competitors: toLines(competitorsText),
+      competitorTiers: {
+        tierA: toLines(tierAText),
+        tierB: toLines(tierBText),
+        tierC: toLines(tierCText),
+      },
     });
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Sửa định vị & chiến lược nội dung" size="lg" footer={<Footer busy={busy} onClose={onClose} onSave={handleSave} />}>
-      <Field label="Khẩu hiệu chủ đạo (Slogan)" htmlFor="bp-slogan"><Input id="bp-slogan" maxLength={200} value={v.slogan} onChange={e => set('slogan', e.target.value)} /></Field>
-      <div className="grid gap-4 md:grid-cols-[200px_1fr]">
-        <Field label="Phong cách" htmlFor="bp-tone">
-          <Select id="bp-tone" value={v.toneTag || ''} onChange={e => set('toneTag', (e.target.value || undefined) as ToneTag | undefined)}>
-            <option value="">Chưa chọn</option>
-            {(Object.keys(TONE_LABEL) as ToneTag[]).map(t => <option key={t} value={t}>{TONE_LABEL[t]}</option>)}
-          </Select>
+    <Modal open={open} onClose={onClose} title="Sửa định vị & chiến lược nội dung" size="xl" footer={<Footer busy={busy} onClose={onClose} onSave={handleSave} />}>
+      <div className="space-y-4">
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Khẩu hiệu chủ đạo (Slogan)" htmlFor="bp-slogan"><Input id="bp-slogan" maxLength={200} value={v.slogan} onChange={e => set('slogan', e.target.value)} /></Field>
+          <Field label="Ý tưởng lớn xuyên suốt (Master Big Idea)" htmlFor="bp-bigidea"><Input id="bp-bigidea" maxLength={300} value={v.bigIdea || ''} onChange={e => set('bigIdea', e.target.value)} /></Field>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Thông điệp trọng tâm (Key Message)" htmlFor="bp-keymsg"><Input id="bp-keymsg" maxLength={300} value={v.keyMessage || ''} onChange={e => set('keyMessage', e.target.value)} /></Field>
+          <Field label="Định hướng hình ảnh chủ đạo (Key Visual Direction)" htmlFor="bp-kv"><Input id="bp-kv" maxLength={500} value={v.keyVisualDirection || ''} onChange={e => set('keyVisualDirection', e.target.value)} /></Field>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <Field label="Brand Says (Định vị theo Brand Guideline)" htmlFor="bp-brandsays">
+            <Textarea id="bp-brandsays" rows={2} value={v.brandSays || ''} onChange={e => set('brandSays', e.target.value)} />
+          </Field>
+          <Field label="Consumer Says (Nhận thức thực tế trên sàn)" htmlFor="bp-consumersays">
+            <Textarea id="bp-consumersays" rows={2} value={v.consumerSays || ''} onChange={e => set('consumerSays', e.target.value)} />
+          </Field>
+          <Field label="Communication Objective (Dịch chuyển nhận thức)" htmlFor="bp-commgap">
+            <Textarea id="bp-commgap" rows={2} value={v.communicationGap || ''} onChange={e => set('communicationGap', e.target.value)} />
+          </Field>
+        </div>
+        <div className="grid gap-4 md:grid-cols-[200px_1fr]">
+          <Field label="Phong cách" htmlFor="bp-tone">
+            <Select id="bp-tone" value={v.toneTag || ''} onChange={e => set('toneTag', (e.target.value || undefined) as ToneTag | undefined)}>
+              <option value="">Chưa chọn</option>
+              {(Object.keys(TONE_LABEL) as ToneTag[]).map(t => <option key={t} value={t}>{TONE_LABEL[t]}</option>)}
+            </Select>
+          </Field>
+          <Field label="Giọng văn (Tone & Voice)" htmlFor="bp-voice">
+            <Textarea id="bp-voice" rows={2} maxLength={1000} value={v.toneOfVoice} onChange={e => set('toneOfVoice', e.target.value)} />
+          </Field>
+        </div>
+        <Field label="Khách hàng mục tiêu (Target Audience)" htmlFor="bp-aud"><Textarea id="bp-aud" rows={2} maxLength={1500} value={v.targetAudience} onChange={e => set('targetAudience', e.target.value)} /></Field>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Nỗi đau khách hàng (Pain Points)" htmlFor="bp-pains">
+            <Textarea id="bp-pains" rows={3} value={painPointsText} onChange={e => setPainPointsText(e.target.value)} />
+          </Field>
+          <Field label="Rào cản mua hàng (Barriers to Trial)" htmlFor="bp-barriers">
+            <Textarea id="bp-barriers" rows={3} value={barriersText} onChange={e => setBarriersText(e.target.value)} />
+          </Field>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Bằng chứng tin cậy (RTB — Reason to Believe)" htmlFor="bp-rtbs">
+            <Textarea id="bp-rtbs" rows={3} value={rtbsText} onChange={e => setRtbsText(e.target.value)} />
+          </Field>
+          <Field label="Tuyến nội dung chủ đạo theo Phễu (Content Pillars)" htmlFor="bp-pillars">
+            <Textarea id="bp-pillars" rows={3} value={pillarsText} onChange={e => setPillarsText(e.target.value)} />
+          </Field>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <Field label="Đối thủ Tier A (Trực tiếp — cần thắng)" htmlFor="bp-tiera">
+            <Textarea id="bp-tiera" rows={2} value={tierAText} onChange={e => setTierAText(e.target.value)} />
+          </Field>
+          <Field label="Đối thủ Tier B (Giao thoa — cần theo dõi)" htmlFor="bp-tierb">
+            <Textarea id="bp-tierb" rows={2} value={tierBText} onChange={e => setTierBText(e.target.value)} />
+          </Field>
+          <Field label="Đối thủ Tier C (Hình mẫu học hỏi — Benchmark)" htmlFor="bp-tierc">
+            <Textarea id="bp-tierc" rows={2} value={tierCText} onChange={e => setTierCText(e.target.value)} />
+          </Field>
+        </div>
+        <Field label="Đối thủ cạnh tranh không được nhắc tên trong video KOC" htmlFor="bp-comp">
+          <Textarea id="bp-comp" rows={2} value={competitorsText} onChange={e => setCompetitorsText(e.target.value)} />
         </Field>
-        <Field label="Giọng văn (Tone & Voice)" htmlFor="bp-voice">
-          <Textarea id="bp-voice" rows={2} maxLength={1000} value={v.toneOfVoice} onChange={e => set('toneOfVoice', e.target.value)} />
-        </Field>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Câu chuyện thương hiệu (200–300 từ cho Slide 3 Brief)" htmlFor="bp-story"><Textarea id="bp-story" rows={3} maxLength={3000} value={v.story} onChange={e => set('story', e.target.value)} /></Field>
+          <Field label="Giải thưởng, thành tựu & báo chí/KOL tiêu biểu (Mỗi dòng 1 ý)" htmlFor="bp-ach"><Textarea id="bp-ach" rows={3} value={achievementsText} onChange={e => setAchievementsText(e.target.value)} /></Field>
+        </div>
       </div>
-      <Field label="Khách hàng mục tiêu (Target Audience)" htmlFor="bp-aud"><Textarea id="bp-aud" rows={2} maxLength={1500} value={v.targetAudience} onChange={e => set('targetAudience', e.target.value)} /></Field>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Nỗi đau khách hàng (Pain Points)" htmlFor="bp-pains">
-          <Textarea id="bp-pains" rows={3} value={painPointsText} onChange={e => setPainPointsText(e.target.value)} />
-        </Field>
-        <Field label="Rào cản mua hàng (Barriers to Trial)" htmlFor="bp-barriers">
-          <Textarea id="bp-barriers" rows={3} value={barriersText} onChange={e => setBarriersText(e.target.value)} />
-        </Field>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Bằng chứng tin cậy (RTB — Reason to Believe)" htmlFor="bp-rtbs">
-          <Textarea id="bp-rtbs" rows={3} value={rtbsText} onChange={e => setRtbsText(e.target.value)} />
-        </Field>
-        <Field label="Tuyến nội dung chủ đạo (Content Pillars & Angles)" htmlFor="bp-pillars">
-          <Textarea id="bp-pillars" rows={3} value={pillarsText} onChange={e => setPillarsText(e.target.value)} />
-        </Field>
-      </div>
-      <Field label="Đối thủ cạnh tranh trực tiếp (Không nhắc tên / Không xuất hiện cùng)" htmlFor="bp-comp">
-        <Textarea id="bp-comp" rows={2} value={competitorsText} onChange={e => setCompetitorsText(e.target.value)} />
-      </Field>
-      <Field label="Câu chuyện thương hiệu & Bối cảnh ngành hàng" htmlFor="bp-story"><Textarea id="bp-story" rows={3} maxLength={3000} value={v.story} onChange={e => set('story', e.target.value)} /></Field>
     </Modal>
   );
 }

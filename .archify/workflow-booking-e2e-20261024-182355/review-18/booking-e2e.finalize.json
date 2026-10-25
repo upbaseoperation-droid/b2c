@@ -1,0 +1,235 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "workflow",
+  "quality": "showcase",
+  "startedAt": "2026-10-24T13:39:22.190Z",
+  "specification": {
+    "path": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\candidate.json",
+    "sha256": "0fd053823274d8df1965eba1722b2e9519716a996021e741939eeb3d2fc3e661",
+    "bytes": 24310
+  },
+  "artifact": {
+    "path": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\booking-e2e.html",
+    "sha256": "aec14f5233267b376f3a991d9569e4c53c90036b9c1e717081027058a1f6f8a4",
+    "bytes": 884399
+  },
+  "stages": {
+    "validate": {
+      "status": "fail",
+      "exitCode": 1,
+      "durationMs": null,
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\Chienth\\.claude\\skills\\archify\\bin\\archify.mjs",
+        "deliver",
+        "workflow",
+        "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\candidate.json",
+        "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\booking-e2e.html",
+        "--quality",
+        "showcase",
+        "--repo-root",
+        "E:\\Upbase\\B2C",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": false,
+        "command": "deliver",
+        "receiptId": "15c7edf5-ecb0-4110-b823-5ba706bd9760",
+        "stage": "render",
+        "type": "workflow",
+        "input": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\candidate.json",
+        "output": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\booking-e2e.html",
+        "error": "Workflow edge \"e_plan_listing\" cannot satisfy route preset \"return-left\": candidate violates edge-label node clearance: its label intersects node \"plan_split\".",
+        "diagnostics": [
+          {
+            "code": "i18n/locale-fallback",
+            "severity": "warning",
+            "message": "meta.locale \"vi\" has no bundled catalog and no usable meta.translations; the Viewer chrome and <html lang> fall back to English.",
+            "subject": {
+              "diagramType": "workflow",
+              "path": "/meta/locale"
+            },
+            "evidence": {
+              "locale": "vi",
+              "bundledLocales": [
+                "en",
+                "zh-CN",
+                "zh-TW",
+                "es",
+                "ko",
+                "ar"
+              ]
+            },
+            "supportedFixes": [
+              "Supply meta.translations for this locale.",
+              "Use a bundled locale: en, zh-CN, zh-TW, es, ko, ar."
+            ]
+          },
+          {
+            "code": "workflow/route-preset-conflict",
+            "severity": "error",
+            "message": "Workflow edge \"e_plan_listing\" cannot satisfy route preset \"return-left\": candidate violates edge-label node clearance: its label intersects node \"plan_split\".",
+            "subject": {
+              "diagramType": "workflow",
+              "edge": "e_plan_listing",
+              "from": "plan_split",
+              "to": "suggest",
+              "route": "return-left"
+            },
+            "evidence": {
+              "invariant": "edge-label node clearance",
+              "labelRect": {
+                "x": 7.600000000000001,
+                "y": 352,
+                "width": 62.8,
+                "height": 14
+              },
+              "obstacleNode": "plan_split",
+              "attemptedCandidateFamily": "return-left",
+              "points": [
+                [
+                  58,
+                  372
+                ],
+                [
+                  20,
+                  372
+                ],
+                [
+                  20,
+                  624
+                ],
+                [
+                  48,
+                  624
+                ]
+              ],
+              "fromSide": "left",
+              "toSide": "left",
+              "requiredEndpointStubPx": 8,
+              "requiredInteriorSegmentPx": 16,
+              "requiredDirectClearancePx": 28
+            },
+            "supportedFixes": []
+          }
+        ],
+        "provenance": "failed",
+        "update": {
+          "status": "unavailable",
+          "installedVersion": null,
+          "availableVersion": null,
+          "releaseNotes": null,
+          "checkedAt": null,
+          "source": null,
+          "noticeRequired": false,
+          "noticeText": null,
+          "reason": "disabled"
+        }
+      },
+      "execution": "embedded-in-deliver"
+    },
+    "deliver": {
+      "status": "not-run",
+      "execution": "blocked-by-validate"
+    }
+  },
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  },
+  "diagnostics": [
+    {
+      "code": "i18n/locale-fallback",
+      "severity": "warning",
+      "message": "meta.locale \"vi\" has no bundled catalog and no usable meta.translations; the Viewer chrome and <html lang> fall back to English.",
+      "subject": {
+        "diagramType": "workflow",
+        "path": "/meta/locale"
+      },
+      "evidence": {
+        "locale": "vi",
+        "bundledLocales": [
+          "en",
+          "zh-CN",
+          "zh-TW",
+          "es",
+          "ko",
+          "ar"
+        ]
+      },
+      "supportedFixes": [
+        "Supply meta.translations for this locale.",
+        "Use a bundled locale: en, zh-CN, zh-TW, es, ko, ar."
+      ]
+    },
+    {
+      "code": "workflow/route-preset-conflict",
+      "severity": "error",
+      "message": "Workflow edge \"e_plan_listing\" cannot satisfy route preset \"return-left\": candidate violates edge-label node clearance: its label intersects node \"plan_split\".",
+      "subject": {
+        "diagramType": "workflow",
+        "edge": "e_plan_listing",
+        "from": "plan_split",
+        "to": "suggest",
+        "route": "return-left"
+      },
+      "evidence": {
+        "invariant": "edge-label node clearance",
+        "labelRect": {
+          "x": 7.600000000000001,
+          "y": 352,
+          "width": 62.8,
+          "height": 14
+        },
+        "obstacleNode": "plan_split",
+        "attemptedCandidateFamily": "return-left",
+        "points": [
+          [
+            58,
+            372
+          ],
+          [
+            20,
+            372
+          ],
+          [
+            20,
+            624
+          ],
+          [
+            48,
+            624
+          ]
+        ],
+        "fromSide": "left",
+        "toSide": "left",
+        "requiredEndpointStubPx": 8,
+        "requiredInteriorSegmentPx": 16,
+        "requiredDirectClearancePx": 28
+      },
+      "supportedFixes": []
+    }
+  ],
+  "evidence": {
+    "receipt": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\review-18\\booking-e2e.finalize.json",
+    "summaryReceipt": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\review-18\\booking-e2e.finalize-summary.json"
+  },
+  "visualReview": "not-requested",
+  "failedStage": "validate",
+  "finishedAt": "2026-10-24T13:39:27.392Z",
+  "durationMs": 5201,
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-24T11:24:36.843Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  }
+}

@@ -77,6 +77,7 @@ import {
 import { StoreEditDialog } from '../stores/StoreEditDialog';
 import { ContentAngleSetupView } from '../views/ContentAngleSetupView';
 import { CloudflareR2SetupModal } from './CloudflareR2SetupPanel';
+import { StandardBriefPreviewModal } from './StandardBriefPreviewModal';
 import {
   DOC_CATEGORY_LABEL,
   KOC_APPROVAL_MODE_LABEL,
@@ -232,6 +233,7 @@ export function BrandProfileDetail({
   const [editingStore, setEditingStore] = useState<StorePortfolioItem | null>(null);
   const [inspectingBooking, setInspectingBooking] = useState<StoreMonthlyBookingRecord | null>(null);
   const [showTaxCode, setShowTaxCode] = useState(false);
+  const [showStandardBrief, setShowStandardBrief] = useState(false);
 
   // Kho tệp R2 state
   const [quickUploading, setQuickUploading] = useState(false);
@@ -830,6 +832,14 @@ export function BrandProfileDetail({
               {quickUploading ? 'Đang tải tệp…' : 'Tải tệp thương hiệu'}
             </Button>
           )}
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={FileText}
+            onClick={() => setShowStandardBrief(true)}
+          >
+            Brief chuẩn 5 phần
+          </Button>
           {onDrilldownToPlan && (
             <Button
               size="sm"
@@ -1073,14 +1083,51 @@ export function BrandProfileDetail({
             {/* Định vị & thông điệp 4P / Insight */}
             <Panel
               title={SECTION_LABEL.POSITIONING}
-              actions={editBtn('POSITIONING', () => setDialog('POSITIONING'), p.positioning ? 'Sửa' : 'Thêm')}
+              actions={
+                <div className="flex items-center gap-1.5">
+                  <Button size="sm" variant="secondary" icon={FileText} onClick={() => setShowStandardBrief(true)}>
+                    Xuất Brief 5 phần
+                  </Button>
+                  {editBtn('POSITIONING', () => setDialog('POSITIONING'), p.positioning ? 'Sửa' : 'Thêm')}
+                </div>
+              }
             >
               {p.positioning && (p.positioning.slogan || p.positioning.toneOfVoice || p.positioning.story) ? (
                 <div className="grid gap-4 text-[13px]">
-                  {p.positioning.slogan && (
+                  <div className="grid gap-3 sm:grid-cols-3">
                     <div className="rounded-lg bg-canvas border border-line px-3.5 py-2.5">
                       <span className="block text-2xs text-ink-3 mb-0.5">Khẩu hiệu chủ đạo (Slogan)</span>
-                      <p className="text-[14.5px] font-medium text-ink">“{p.positioning.slogan}”</p>
+                      <p className="text-[13.5px] font-medium text-ink">“{p.positioning.slogan || '—'}”</p>
+                    </div>
+                    <div className="rounded-lg bg-primary-soft/20 border border-primary/20 px-3.5 py-2.5">
+                      <span className="block text-2xs font-semibold text-primary mb-0.5">Master Big Idea</span>
+                      <p className="text-[13px] font-semibold text-ink">{p.positioning.bigIdea || p.positioning.slogan || '—'}</p>
+                    </div>
+                    <div className="rounded-lg bg-primary-soft/20 border border-primary/20 px-3.5 py-2.5">
+                      <span className="block text-2xs font-semibold text-primary mb-0.5">Key Message trọng tâm</span>
+                      <p className="text-[13px] font-semibold text-ink">{p.positioning.keyMessage || '—'}</p>
+                    </div>
+                  </div>
+                  {p.positioning.keyVisualDirection && (
+                    <div className="rounded-lg bg-canvas/70 border border-line px-3.5 py-2">
+                      <span className="block text-2xs font-medium text-ink-3 mb-0.5">Định hướng hình ảnh chủ đạo (Key Visual Direction)</span>
+                      <p className="text-xs text-ink">{p.positioning.keyVisualDirection}</p>
+                    </div>
+                  )}
+                  {(p.positioning.brandSays || p.positioning.consumerSays || p.positioning.communicationGap) && (
+                    <div className="grid gap-3 sm:grid-cols-3 pt-1">
+                      <div className="rounded-lg bg-canvas/60 border border-line p-3">
+                        <span className="block text-2xs font-semibold text-ink-2 mb-1">Brand Says (Brand Guideline)</span>
+                        <p className="text-xs text-ink-2 leading-relaxed">{p.positioning.brandSays || '—'}</p>
+                      </div>
+                      <div className="rounded-lg bg-canvas/60 border border-line p-3">
+                        <span className="block text-2xs font-semibold text-ink-2 mb-1">Consumer Says (Nhận thức thực tế)</span>
+                        <p className="text-xs text-ink-2 leading-relaxed">{p.positioning.consumerSays || '—'}</p>
+                      </div>
+                      <div className="rounded-lg bg-warning-soft/20 border border-warning/30 p-3">
+                        <span className="block text-2xs font-semibold text-warning mb-1">Communication Objective (Khoảng trống)</span>
+                        <p className="text-xs text-ink leading-relaxed">{p.positioning.communicationGap || '—'}</p>
+                      </div>
                     </div>
                   )}
                   <dl className="grid gap-4 sm:grid-cols-2">
@@ -1090,9 +1137,17 @@ export function BrandProfileDetail({
                     <Info label="Khách hàng mục tiêu">{p.positioning.targetAudience}</Info>
                   </dl>
                   {p.positioning.story && (
-                    <Info label="Câu chuyện thương hiệu & Bối cảnh ngành hàng">
+                    <Info label="Câu chuyện thương hiệu & Bối cảnh ngành hàng (Slide 3 Brief)">
                       <span className="whitespace-pre-line text-ink-2 leading-relaxed">{p.positioning.story}</span>
                     </Info>
+                  )}
+                  {(p.positioning.achievements?.length || 0) > 0 && (
+                    <div className="rounded-lg bg-canvas/60 border border-line p-3">
+                      <span className="block text-2xs font-medium text-ink-3 mb-1">Giải thưởng, thành tựu &amp; KOL/Báo chí tiêu biểu:</span>
+                      <ul className="list-disc pl-4 text-xs text-ink-2 grid gap-1">
+                        {p.positioning.achievements!.map((ac, idx) => <li key={idx}>{ac}</li>)}
+                      </ul>
+                    </div>
                   )}
                   {((p.positioning.painPoints?.length || 0) > 0 || (p.positioning.barriersToTrial?.length || 0) > 0) && (
                     <div className="grid gap-3 sm:grid-cols-2 pt-2 border-t border-line">
@@ -1114,6 +1169,26 @@ export function BrandProfileDetail({
                       )}
                     </div>
                   )}
+                  {p.positioning.competitorTiers && (
+                    (p.positioning.competitorTiers.tierA?.length || 0) > 0 ||
+                    (p.positioning.competitorTiers.tierB?.length || 0) > 0 ||
+                    (p.positioning.competitorTiers.tierC?.length || 0) > 0
+                  ) && (
+                    <div className="grid gap-2.5 sm:grid-cols-3 pt-1">
+                      <div className="rounded-lg border border-line bg-canvas/50 p-2.5 text-xs">
+                        <span className="block text-[11px] font-semibold text-danger">Tier A · Đối thủ trực tiếp (Cần thắng)</span>
+                        <span className="text-ink-2 mt-0.5 block">{(p.positioning.competitorTiers.tierA || []).join('; ') || '—'}</span>
+                      </div>
+                      <div className="rounded-lg border border-line bg-canvas/50 p-2.5 text-xs">
+                        <span className="block text-[11px] font-semibold text-warning">Tier B · Đối thủ giao thoa (Cần theo dõi)</span>
+                        <span className="text-ink-2 mt-0.5 block">{(p.positioning.competitorTiers.tierB || []).join('; ') || '—'}</span>
+                      </div>
+                      <div className="rounded-lg border border-line bg-canvas/50 p-2.5 text-xs">
+                        <span className="block text-[11px] font-semibold text-primary">Tier C · Hình mẫu học hỏi (Benchmark)</span>
+                        <span className="text-ink-2 mt-0.5 block">{(p.positioning.competitorTiers.tierC || []).join('; ') || '—'}</span>
+                      </div>
+                    </div>
+                  )}
                   {((p.positioning.rtbs?.length || 0) > 0 || (p.positioning.contentPillars?.length || 0) > 0 || (p.positioning.competitors?.length || 0) > 0) && (
                     <dl className="grid gap-3 sm:grid-cols-2 pt-1">
                       {(p.positioning.rtbs?.length || 0) > 0 && (
@@ -1122,7 +1197,7 @@ export function BrandProfileDetail({
                         </Info>
                       )}
                       {(p.positioning.contentPillars?.length || 0) > 0 && (
-                        <Info label="Trụ cột tuyến nội dung">
+                        <Info label="Trụ cột tuyến nội dung theo Phễu">
                           {p.positioning.contentPillars!.join(' · ')}
                         </Info>
                       )}
@@ -2649,6 +2724,14 @@ export function BrandProfileDetail({
       <CloudflareR2SetupModal
         open={r2SetupOpen}
         onClose={() => setR2SetupOpen(false)}
+        onNotify={onNotify}
+      />
+
+      <StandardBriefPreviewModal
+        open={showStandardBrief}
+        onClose={() => setShowStandardBrief(false)}
+        profile={p}
+        cycleMonth={activeMonth}
         onNotify={onNotify}
       />
     </div>

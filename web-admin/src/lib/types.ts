@@ -1670,7 +1670,7 @@ export interface AiAnalysisDimension {
 
 export interface AiDetectedIssue {
   id: string;
-  type: 'BLACKLIST_WORD' | 'MISSING_DISCLAIMER' | 'WEAK_HOOK' | 'TONE_MISMATCH' | 'MISSING_USP';
+  type: 'BLACKLIST_WORD' | 'MISSING_DISCLAIMER' | 'WEAK_HOOK' | 'TONE_MISMATCH' | 'MISSING_USP' | 'FUNNEL_MISMATCH' | 'HOOK_BODY_DISCONNECT' | 'COMPETITOR_ATTACK' | 'VAGUE_CLAIM';
   title: string;
   detectedText?: string;
   severity: 'CRITICAL' | 'WARNING' | 'SUGGESTION';
@@ -1688,6 +1688,26 @@ export interface AiScriptAnalysisResult {
   totalUspsCount: number;
   toneAlignmentScore: number; // %
   hasMandatoryDisclaimer: boolean;
+  funnelStage?: 'AWARENESS' | 'CONSIDERATION' | 'CONVERSION' | 'LOYALTY';
+  sevenStageAudit?: {
+    stageNumber: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+    stageName: string;
+    status: 'PASS' | 'WARNING' | 'FAIL';
+    ruleApplied: string;
+    finding: string;
+    actionableFix?: string;
+  }[];
+  hookStarTAnalysis?: {
+    detectedHookType: string;
+    starTDrivers: {
+      driver: 'S_DREAM' | 'T_CURIOSITY' | 'A_FAMILIAR' | 'R_COMFORT' | 'T_CONTRAST';
+      label: string;
+      matched: boolean;
+      evidence: string;
+    }[];
+    hasLongGreetingIssue: boolean;
+    hasPrematureSaleIssue: boolean;
+  };
   rewrittenScript: {
     hook: string;
     painPoint: string;
@@ -1719,6 +1739,7 @@ export interface ScriptReviewItem {
   feedbackNotes?: string;
   draftVideoUrl?: string;
   reviewMode?: 'DIRECTIVE' | 'VETTING_GUARDRAILS';
+  funnelStage?: 'AWARENESS' | 'CONSIDERATION' | 'CONVERSION' | 'LOYALTY';
   klCode?: string;
   mandatoryShots?: string;
   forbiddenClaims?: string;
@@ -2110,6 +2131,7 @@ export interface BrandScriptItem {
   brandFeedback?: string;
   draftVideoUrl?: string;
   reviewMode?: 'DIRECTIVE' | 'VETTING_GUARDRAILS';
+  funnelStage?: 'AWARENESS' | 'CONSIDERATION' | 'CONVERSION' | 'LOYALTY';
   klCode?: string;
   mandatoryShots?: string;
   forbiddenClaims?: string;
@@ -2561,6 +2583,7 @@ export interface ContentItemModel {
   publicationsCount?: number;
   publications?: PublicationItemModel[];
   reviewMode?: 'DIRECTIVE' | 'VETTING_GUARDRAILS';
+  funnelStage?: 'AWARENESS' | 'CONSIDERATION' | 'CONVERSION' | 'LOYALTY';
   klCode?: string;
   mandatoryShots?: string;
   forbiddenClaims?: string;
@@ -3502,6 +3525,7 @@ export interface SelfChannelVideoTask {
     currentVersion: number;
     draftVideoUrl?: string;
   reviewMode?: 'DIRECTIVE' | 'VETTING_GUARDRAILS';
+  funnelStage?: 'AWARENESS' | 'CONSIDERATION' | 'CONVERSION' | 'LOYALTY';
   klCode?: string;
   mandatoryShots?: string;
   forbiddenClaims?: string;

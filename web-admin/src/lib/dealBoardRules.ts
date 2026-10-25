@@ -1320,10 +1320,30 @@ export function computeJobPipelineState(job: DealJob, framework?: FrameworkContr
     ballLabel = 'Chờ Brand xử lý hàng mẫu';
   }
 
-  if (job.script.status === 'SUBMITTED') {
-    mainTrack = { code: '10.4', label: 'Chờ Brand duyệt kịch bản' };
-    ballInCourt = 'BRAND';
-    ballLabel = 'Chờ Brand duyệt KB';
+  if (job.script.status === 'NONE' && job.script.scriptUrl?.trim()) {
+    if (job.script.internalScriptAuditStatus === 'CHANGES') {
+      mainTrack = { code: '10.3', label: 'KB chưa đạt nội bộ Vòng 1 · KOC sửa' };
+      ballInCourt = 'KOC';
+      ballLabel = 'Chờ KOC sửa KB (Vòng 1)';
+    } else if (job.script.internalScriptAuditStatus === 'PASSED') {
+      mainTrack = { code: '10.3', label: 'Đạt Vòng 1 · Chờ gửi Brand duyệt KB' };
+      ballInCourt = 'B2C_STAFF';
+      ballLabel = 'Chờ B2C gửi KB cho Brand';
+    } else {
+      mainTrack = { code: '10.2', label: 'Chờ B2C duyệt KB nội bộ Vòng 1 (SLA 24h)' };
+      ballInCourt = 'B2C_STAFF';
+      ballLabel = 'Chờ B2C duyệt KB V1';
+    }
+  } else if (job.script.status === 'SUBMITTED') {
+    if (job.selfAirProposed) {
+      mainTrack = { code: '10.4', label: 'Quá 72h Brand chưa duyệt · Đề xuất tự Air' };
+      ballInCourt = 'KOC';
+      ballLabel = 'Cho phép KOC tự sản xuất / tự Air';
+    } else {
+      mainTrack = { code: '10.4', label: 'Chờ Brand duyệt kịch bản (Vòng 2)' };
+      ballInCourt = 'BRAND';
+      ballLabel = 'Chờ Brand duyệt KB';
+    }
   } else if (job.script.status === 'CHANGES') {
     mainTrack = { code: '10.5', label: 'Kịch bản cần sửa' };
     ballInCourt = 'KOC';

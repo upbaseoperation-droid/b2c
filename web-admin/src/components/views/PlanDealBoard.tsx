@@ -2703,7 +2703,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-3 border-t border-line pt-3 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 border-t border-line pt-3 md:grid-cols-5">
             <Field label="Hàng mẫu (SLA gửi ≤ 2 ngày)">
               <Select
                 value={job.sample.status}
@@ -2736,7 +2736,28 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
             <Field label="Mã vận đơn">
               <Input value={job.sample.trackingNo} onChange={e => setJob(x => ({ ...x, sample: { ...x.sample, trackingNo: e.target.value } }))} />
             </Field>
-            <Field label="Duyệt Kịch bản">
+            <Field label="Duyệt Kịch bản nội bộ Vòng 1 (SLA 24h)">
+              <Select
+                value={job.script.internalScriptAuditStatus || 'NONE'}
+                onChange={e =>
+                  setJob(
+                    x => ({
+                      ...x,
+                      script: {
+                        ...x.script,
+                        internalScriptAuditStatus: e.target.value as 'NONE' | 'PASSED' | 'CHANGES',
+                      },
+                    }),
+                    `Duyệt Kịch bản nội bộ Vòng 1 ${job.code}: ${e.target.value}`
+                  )
+                }
+              >
+                <option value="NONE">Chưa rà soát nội bộ Vòng 1</option>
+                <option value="PASSED">Đạt Vòng 1 (Cho phép gửi Brand)</option>
+                <option value="CHANGES">Cần sửa lại trước khi gửi Brand</option>
+              </Select>
+            </Field>
+            <Field label="Brand duyệt Kịch bản / Khung tham số (Vòng 2)">
               <Select
                 value={job.script.status}
                 onChange={e =>
@@ -2755,7 +2776,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
             </Field>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-6">
             <Field label="Link Kịch bản KOC gửi">
               <Input
                 value={job.script.scriptUrl || ''}
@@ -2806,6 +2827,20 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                     {SCRIPT_LABEL[k]}
                   </option>
                 ))}
+              </Select>
+            </Field>
+            <Field label="SLA 72h Brand chậm duyệt">
+              <Select
+                value={job.selfAirProposed ? 'SELF_AIR' : 'NORMAL'}
+                onChange={e =>
+                  setJob(
+                    x => ({ ...x, selfAirProposed: e.target.value === 'SELF_AIR' }),
+                    `${e.target.value === 'SELF_AIR' ? 'Bật' : 'Tắt'} đề xuất tự sản xuất / tự Air quá hạn 72h cho ${job.code}`
+                  )
+                }
+              >
+                <option value="NORMAL">Theo tiến độ duyệt bình thường</option>
+                <option value="SELF_AIR">Quá 72h Brand chưa duyệt · Đề xuất tự Air</option>
               </Select>
             </Field>
             <Field label="Ghi chú góp ý Kịch bản / Video Demo">

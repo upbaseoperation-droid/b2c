@@ -9,6 +9,11 @@ import { useBrandProfiles, brandProfileToKnowledgeBase, findBrandProfile } from 
 import { executeOperationalReport } from '../../lib/operationalReportService';
 import type { ContentAngleItem } from '../../lib/types';
 import { CONTENT_PILLARS } from '../../lib/contentPillars';
+import {
+  ContentFunnelStage,
+  FUNNEL_STAGE_OPTIONS,
+  inferSlotFunnelStage,
+} from '../../lib/contentPlanRules';
 
 export interface AppliedAngleData {
   angleName: string;
@@ -49,6 +54,9 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
   const [selectedBrand, setSelectedBrand] = useState(brandName);
   const [selectedProduct, setSelectedProduct] = useState(productName);
   const [selectedPillar, setSelectedPillar] = useState(initialPillar);
+  const [selectedFunnel, setSelectedFunnel] = useState<ContentFunnelStage>(() =>
+    inferSlotFunnelStage(undefined, initialPillar),
+  );
 
   // Script Precheck state
   const [scriptInput, setScriptInput] = useState(initialScript);
@@ -98,8 +106,11 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
   const scriptAudit = useMemo(() => {
     if (!brandProfile || !scriptInput.trim()) return null;
     const kb = brandProfileToKnowledgeBase(brandProfile);
-    return analyzeScriptWithAi(scriptInput, kb);
-  }, [brandProfile, scriptInput]);
+    return analyzeScriptWithAi(scriptInput, kb, undefined, {
+      funnelStage: selectedFunnel,
+      pillar: selectedPillar,
+    });
+  }, [brandProfile, scriptInput, selectedFunnel, selectedPillar]);
 
   const handleApply = (angle: Partial<ContentAngleItem>) => {
     if (!onApplyAngle) return;
@@ -239,12 +250,18 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
             </Select>
           </Field>
 
-          <div className="flex flex-col justify-end">
-            <div className="text-2xs text-ink-3 mb-1">Quy tắc nhãn hàng:</div>
-            <div className="text-2xs text-ink-2">
-              {(brandProfile?.contentRules?.banned?.length || 0)} từ cấm · {(brandProfile?.legal?.length || 0)} khuyến cáo pháp lý
-            </div>
-          </div>
+          <Field label="Giai đoạn Phễu truyền thông">
+            <Select
+              value={selectedFunnel}
+              onChange={e => setSelectedFunnel(e.target.value as ContentFunnelStage)}
+            >
+              {FUNNEL_STAGE_OPTIONS.map(f => (
+                <option key={f.value} value={f.value}>
+                  {f.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
         </div>
 
         {/* TAB 1: GỢI Ý GÓC TIẾP CẬN & HOOK 3S */}
@@ -381,6 +398,68 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
                         {scriptAudit.issues.length} vấn đề cần lưu ý
                       </span>
                     </div>
+
+                    {scriptAudit.hookStarTAnalysis && (
+                      <div className="rounded border border-line bg-canvas/50 p-2 text-2xs space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-ink">
+                            Hook STAR-T ({scriptAudit.hookStarTAnalysis.detectedHookType})
+                          </span>
+                          <span className="font-mono font-semibold text-accent">
+                            {scriptAudit.hookStarTAnalysis.starTDrivers.filter(d => d.matched).length}/5 động lực
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {scriptAudit.hookStarTAnalysis.starTDrivers.map(drv => (
+                            <span
+                              key={drv.driver}
+                              title={drv.evidence}
+                              className={`px-1.5 py-0.5 rounded border text-3xs ${
+                                drv.matched
+                                  ? 'border-positive/30 bg-positive-soft/30 text-positive'
+                                  : 'border-line bg-surface text-ink-3'
+                              }`}
+                            >
+                              {drv.matched ? '✓' : '○'} {drv.label}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {scriptAudit.sevenStageAudit && scriptAudit.sevenStageAudit.length > 0 && (
+                      <div className="rounded border border-line bg-canvas/40 p-2 text-2xs space-y-1">
+                        <div className="flex items-center justify-between font-semibold text-ink">
+                          <span>Kiểm định 7 Chặng B2C</span>
+                          <span className="text-ink-3">
+                            {scriptAudit.sevenStageAudit.filter(s => s.status === 'PASS').length}/7 đạt
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 gap-1 max-h-36 overflow-y-auto pr-1">
+                          {scriptAudit.sevenStageAudit.map(st => (
+                            <div
+                              key={st.stageNumber}
+                              className="flex items-center justify-between gap-2 rounded bg-surface px-2 py-1 border border-line"
+                            >
+                              <span className="truncate text-ink">
+                                <strong>{st.stageNumber}. {st.stageName}:</strong> {st.finding}
+                              </span>
+                              <span
+                                className={`shrink-0 text-3xs font-bold ${
+                                  st.status === 'PASS'
+                                    ? 'text-positive'
+                                    : st.status === 'FAIL'
+                                      ? 'text-critical'
+                                      : 'text-warning'
+                                }`}
+                              >
+                                {st.status === 'PASS' ? 'ĐẠT' : st.status === 'FAIL' ? 'LỖI' : 'LƯU Ý'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Danh sách lỗi phát hiện */}
                     <div className="max-h-[38vh] space-y-2 overflow-y-auto pr-1">

@@ -16,6 +16,64 @@ import {
 
 export type ContentRowKey = KlCode | 'FOC' | 'SELF' | 'LIVE_AFF';
 export type ContentBriefStatus = 'DRAFT' | 'READY';
+/** Giai đoạn phễu truyền thông theo Brand Marketing Tactics Master Framework (Lark). */
+export type ContentFunnelStage = 'AWARENESS' | 'CONSIDERATION' | 'CONVERSION' | 'LOYALTY';
+
+export const FUNNEL_STAGE_OPTIONS: {
+  value: ContentFunnelStage;
+  label: string;
+  shortLabel: string;
+  roleDesc: string;
+}[] = [
+  {
+    value: 'AWARENESS',
+    label: 'Awareness (Tạo nhận biết & Điểm nổ)',
+    shortLabel: 'Awareness',
+    roleDesc: 'KOL/Creator mở vấn đề, khơi gợi thảo luận, giáo dục nhận thức — không tập trung đọc deal',
+  },
+  {
+    value: 'CONSIDERATION',
+    label: 'Consideration (Kiểm chứng & Giải đáp)',
+    shortLabel: 'Consideration',
+    roleDesc: 'KOC/Kênh Brand review chất sản phẩm, giải quyết rào cản mua hàng, so sánh khách quan',
+  },
+  {
+    value: 'CONVERSION',
+    label: 'Conversion (Thúc đẩy chốt đơn & Deal)',
+    shortLabel: 'Conversion',
+    roleDesc: 'Livestream, Teasing deal, bằng chứng mua lại kết hợp ưu đãi/khan hiếm và CTA giỏ hàng',
+  },
+  {
+    value: 'LOYALTY',
+    label: 'Loyalty / Advocacy (Trải nghiệm thật & Mua lại)',
+    shortLabel: 'Loyalty',
+    roleDesc: 'Người mua thật, TAP/FOC chia sẻ kết quả sau thời gian sử dụng để giữ chân dài hạn',
+  },
+];
+
+/** Suy luận giai đoạn Funnel mặc định từ hàng bậc KOC (`row`) và `pillar` theo đúng Master Framework Lark. */
+export function inferSlotFunnelStage(row?: ContentRowKey | null | string, pillar?: string): ContentFunnelStage {
+  const p = (pillar || '').toLowerCase();
+  if (row === 'LIVE_AFF' || p.includes('promotion') || p.includes('teasing') || p.includes('livestream')) {
+    return 'CONVERSION';
+  }
+  if (row === 'FOC' || p.includes('feedback') || p.includes('unboxing')) {
+    return 'LOYALTY';
+  }
+  if (
+    row === 'KL6' ||
+    row === 'KL7' ||
+    p.includes('tranh cãi') ||
+    p.includes('pr ') ||
+    p.includes('doanh nghiệp') ||
+    p.includes('entertainment') ||
+    p.includes('storytelling')
+  ) {
+    return 'AWARENESS';
+  }
+  return 'CONSIDERATION';
+}
+
 /**
  * Chế độ làm việc với KOC theo phân khúc:
  * - DIRECTIVE: Định hướng kịch bản chi tiết (Pillar + Angle + Hook 3s + Format) cho FOC, SELF, KL1..KL5.
@@ -60,6 +118,16 @@ export interface ContentSlot {
   product: string;
   productName?: string;
   kocFee?: number;
+  /** Giai đoạn phễu truyền thông (Awareness / Consideration / Conversion / Loyalty) theo Master Framework. */
+  funnelStage?: ContentFunnelStage;
+  /** Mục tiêu truyền thông (Communication Objective: chuyển tệp khách từ nhận thức/rào cản nào sang hành động nào). */
+  communicationObjective?: string;
+  /** Big Idea chiến dịch áp dụng cho dòng nội dung này. */
+  bigIdea?: string;
+  /** Thông điệp trọng tâm (Key Message) của dòng nội dung. */
+  keyMessage?: string;
+  /** Định hướng hình ảnh (Key Visual / Moodboard) gửi KOC/VJ. */
+  keyVisualDirection?: string;
   /** Câu mở đầu 3 giây đầu (Hook 3s) trong Brief gửi KOC. */
   hook?: string;
   /** Điểm nhấn sản phẩm / Thông điệp USP bắt buộc trong video. */
@@ -239,6 +307,11 @@ export function newSlot(input: {
   pillar: string;
   angle?: string;
   product?: string;
+  funnelStage?: ContentFunnelStage;
+  communicationObjective?: string;
+  bigIdea?: string;
+  keyMessage?: string;
+  keyVisualDirection?: string;
   hook?: string;
   usp?: string;
   forbiddenClaims?: string;
@@ -275,6 +348,7 @@ export function newSlot(input: {
   const rightsGuardrails =
     input.rightsGuardrails?.trim() || (isVetting ? DEFAULT_KL67_RIGHTS_GUARDRAILS : '');
   const targetQty = Math.max(1, Math.floor(input.targetQty || 1));
+  const funnelStage = input.funnelStage || inferSlotFunnelStage(input.row, input.pillar);
   const ready = isVetting
     ? Boolean(product && (usp || forbiddenClaims || mandatoryShots))
     : Boolean(product && (angle || hook || usp));
@@ -285,6 +359,11 @@ export function newSlot(input: {
     pillar: input.pillar,
     angle,
     product,
+    funnelStage,
+    communicationObjective: input.communicationObjective?.trim() || undefined,
+    bigIdea: input.bigIdea?.trim() || undefined,
+    keyMessage: input.keyMessage?.trim() || undefined,
+    keyVisualDirection: input.keyVisualDirection?.trim() || undefined,
     hook: hook || undefined,
     usp: usp || undefined,
     forbiddenClaims: forbiddenClaims || undefined,

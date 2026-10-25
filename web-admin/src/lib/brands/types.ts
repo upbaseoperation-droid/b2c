@@ -5,12 +5,35 @@
 
 export type ToneTag = 'EXPERT' | 'MOM' | 'GENZ' | 'PREMIUM';
 
+export interface BrandCompetitorTiers {
+  /** Tier A — Đối thủ trực tiếp (Primary Direct Competitor: cùng ngành hàng, tệp khách, định vị & kênh bán — cần thắng) */
+  tierA?: string[];
+  /** Tier B — Đối thủ giao thoa một phần danh mục (Secondary / Near Competitor — cần theo dõi) */
+  tierB?: string[];
+  /** Tier C — Hình mẫu tham khảo (Aspirational Benchmark — học cách xây thương hiệu/kể chuyện, không đối đầu trực diện) */
+  tierC?: string[];
+}
+
 export interface BrandPositioning {
   slogan: string;
   story: string;
   toneTag?: ToneTag;
   toneOfVoice: string;
   targetAudience: string;
+  /** Định vị theo Brand Guideline (Brand Says — Thương hiệu tự nói mình là ai) */
+  brandSays?: string;
+  /** Nhận thức thực tế của người mua trên sàn (Consumer Says / Brand Current State — Khách hàng thực sự nhớ gì) */
+  consumerSays?: string;
+  /** Khoảng trống truyền thông & Mục tiêu dịch chuyển nhận thức (Communication Gap & Objective) */
+  communicationGap?: string;
+  /** Ý tưởng lớn xuyên suốt (Master Big Idea) */
+  bigIdea?: string;
+  /** Thông điệp trọng tâm (Key Message) */
+  keyMessage?: string;
+  /** Định hướng hình ảnh chủ đạo (Key Visual Direction: nhân vật, bối cảnh, tone màu, mood & feel) */
+  keyVisualDirection?: string;
+  /** Thành tựu, giải thưởng, báo chí & KOL lớn đã hợp tác (200–300 từ phục vụ Slide 3 Brief chuẩn) */
+  achievements?: string[];
   /** Nỗi đau chính của khách hàng mục tiêu (Pain points) */
   painPoints?: string[];
   /** Rào cản khiến khách hàng ngần ngại chưa mua (Barriers to trial: giá, sợ kích ứng, nghi ngờ hiệu quả...) */
@@ -21,6 +44,8 @@ export interface BrandPositioning {
   contentPillars?: string[];
   /** Đối thủ cạnh tranh trực tiếp (không nhắc tên / không xuất hiện cùng khung hình) */
   competitors?: string[];
+  /** Phân tầng đối thủ theo khung Brand Communication Strategy (Tier A / Tier B / Tier C) */
+  competitorTiers?: BrandCompetitorTiers;
 }
 
 export interface BrandEntity {

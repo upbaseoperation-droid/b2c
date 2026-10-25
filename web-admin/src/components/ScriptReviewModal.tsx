@@ -16,6 +16,11 @@ import {
 import { ScriptReviewItem } from '../lib/types';
 import { analyzeScriptWithAi } from '../lib/aiScriptAnalyzer';
 import {
+  ContentFunnelStage,
+  FUNNEL_STAGE_OPTIONS,
+  inferSlotFunnelStage,
+} from '../lib/contentPlanRules';
+import {
   brandProfileToKnowledgeBase,
   findBrandProfile,
   useBrandProfiles,
@@ -47,6 +52,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
   const [revisionRound, setRevisionRound] = useState<number>(1);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [selectedBrandName, setSelectedBrandName] = useState<string>('');
+  const [selectedFunnelStage, setSelectedFunnelStage] = useState<ContentFunnelStage>('CONSIDERATION');
 
   // Thiết lập câu lệnh (Prompt) & Nhận xét kịch bản (SCRIPT_REVIEW)
   const [scriptPrompt, setScriptPrompt] = useState<string>(() => {
@@ -81,13 +87,16 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
   const maxFreeRevisions = workflowRules?.maxFreeRevisions ?? 2;
   const isOverFreeRevisionLimit = revisionRound > maxFreeRevisions;
 
-  // Chạy đối soát tự động với Từ cấm, Điểm nổi bật & Pháp lý trong Hồ sơ thương hiệu
+  // Chạy đối soát tự động với Từ cấm, Điểm nổi bật, Pháp lý, 7 Chặng B2C & STAR-T Hook trong Hồ sơ thương hiệu
   const complianceResult = useMemo(() => {
     if (!script || !detectedBrandProfile) return null;
     const kb = brandProfileToKnowledgeBase(detectedBrandProfile);
     const fullText = `${script.hook}\n${script.painPoint}\n${script.solutionAndUsp}\n${script.callToAction}`;
-    return analyzeScriptWithAi(fullText, kb);
-  }, [script, detectedBrandProfile]);
+    return analyzeScriptWithAi(fullText, kb, undefined, {
+      funnelStage: selectedFunnelStage,
+      pillar: script.pillar,
+    });
+  }, [script, detectedBrandProfile, selectedFunnelStage]);
 
   const bannedIssues = useMemo(
     () => (complianceResult?.issues || []).filter(i => i.type === 'BLACKLIST_WORD' || i.type === 'MISSING_DISCLAIMER'),
@@ -101,6 +110,9 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
     setPrevOpenSyncKey(openSyncKey);
     if (isOpen && script) {
       setSelectedBrandName('');
+      setSelectedFunnelStage(
+        script.funnelStage || inferSlotFunnelStage(script.klCode as never, script.pillar),
+      );
       setIsRevisionMode(false);
       setRevisionRound(1);
       setFeedbackNotes('');
@@ -158,6 +170,13 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
         lines.push(`- Bổ sung câu cảnh báo pháp lý bắt buộc: "${iss.replacementSuggestion || ''}"`);
       } else if (iss.type === 'MISSING_USP') {
         lines.push(`- Nhấn mạnh rõ điểm nổi bật sản phẩm (${iss.replacementSuggestion || ''})`);
+      }
+    }
+    if (complianceResult.sevenStageAudit) {
+      for (const st of complianceResult.sevenStageAudit) {
+        if (st.status !== 'PASS') {
+          lines.push(`- [Chặng ${st.stageNumber} · ${st.stageName}]: ${st.actionableFix || st.finding}`);
+        }
       }
     }
     if (detectedBrandProfile.contentRules?.mandatoryHashtags?.length) {
@@ -255,6 +274,20 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                     {profiles.map(p => (
                       <option key={p.key} value={p.brandName}>
                         {p.brandName} ({p.contentRules?.banned.length || 0} từ cấm)
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <span className="text-slate-500">Giai đoạn Phễu:</span>
+                  <select
+                    value={selectedFunnelStage}
+                    onChange={(e) => setSelectedFunnelStage(e.target.value as ContentFunnelStage)}
+                    className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
+                  >
+                    {FUNNEL_STAGE_OPTIONS.map(f => (
+                      <option key={f.value} value={f.value}>
+                        {f.label}
                       </option>
                     ))}
                   </select>
@@ -382,6 +415,80 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                         )}
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Kiểm định Kịch bản 7 Chặng chuẩn B2C & Phân tích Hook STAR-T */}
+                {complianceResult.hookStarTAnalysis && (
+                  <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-1.5 text-2xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-semibold text-slate-900">
+                        Phân tích Hook 3–5 giây theo mô hình STAR-T ({complianceResult.hookStarTAnalysis.detectedHookType})
+                      </span>
+                      <span className="font-mono font-semibold text-blue-700">
+                        Đạt {complianceResult.hookStarTAnalysis.starTDrivers.filter(d => d.matched).length}/5 động lực STAR-T
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {complianceResult.hookStarTAnalysis.starTDrivers.map(drv => (
+                        <span
+                          key={drv.driver}
+                          title={drv.evidence}
+                          className={`px-2 py-0.5 rounded border font-medium ${
+                            drv.matched
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-slate-50 text-slate-500 border-slate-200'
+                          }`}
+                        >
+                          {drv.matched ? '✓' : '○'} {drv.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {complianceResult.sevenStageAudit && complianceResult.sevenStageAudit.length > 0 && (
+                  <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-1.5 text-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-900">
+                        Kiểm định Kịch bản 7 Chặng chuẩn B2C (Phễu: {FUNNEL_STAGE_OPTIONS.find(f => f.value === selectedFunnelStage)?.shortLabel || selectedFunnelStage})
+                      </span>
+                      <span className="text-slate-500">
+                        {complianceResult.sevenStageAudit.filter(s => s.status === 'PASS').length}/7 chặng đạt
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      {complianceResult.sevenStageAudit.map(st => (
+                        <div
+                          key={st.stageNumber}
+                          className={`px-2.5 py-1.5 rounded border flex items-start justify-between gap-2 ${
+                            st.status === 'PASS'
+                              ? 'bg-emerald-50/50 border-emerald-200 text-slate-800'
+                              : st.status === 'FAIL'
+                                ? 'bg-rose-50/70 border-rose-200 text-rose-900'
+                                : 'bg-amber-50/60 border-amber-200 text-amber-900'
+                          }`}
+                        >
+                          <div className="space-y-0.5 min-w-0">
+                            <div className="font-semibold truncate">
+                              Chặng {st.stageNumber}: {st.stageName}
+                            </div>
+                            <div className="text-[11px] text-slate-600 leading-snug">{st.finding}</div>
+                          </div>
+                          <span
+                            className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                              st.status === 'PASS'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : st.status === 'FAIL'
+                                  ? 'bg-rose-100 text-rose-800'
+                                  : 'bg-amber-100 text-amber-800'
+                            }`}
+                          >
+                            {st.status === 'PASS' ? 'ĐẠT' : st.status === 'FAIL' ? 'LỖI' : 'LƯU Ý'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
