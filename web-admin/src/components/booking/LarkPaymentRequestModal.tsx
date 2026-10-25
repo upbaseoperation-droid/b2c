@@ -68,6 +68,8 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
   const [historySlips, setHistorySlips] = useState<LarkPaymentRequestSlip[]>([]);
   const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
   const [showQrPreview, setShowQrPreview] = useState<boolean>(false);
+  const [editingDealIds, setEditingDealIds] = useState<Record<string, boolean>>({});
+  const [isEditingPayee, setIsEditingPayee] = useState<boolean>(false);
 
   // Đồng bộ deal khởi tạo khi mở hộp thoại
   const initKey = open ? `${initialDeal?.id || 'NONE'}` : 'CLOSED';
@@ -80,6 +82,8 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
       setCreatedSlipResult(null);
       setOverridesByDealId({});
       setSharedPayeeOverride({});
+      setEditingDealIds({});
+      setIsEditingPayee(false);
       setLoadingHistory(true);
       if (initialDeal) {
         setSelectedDealIds([initialDeal.id]);
@@ -195,6 +199,8 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
       }),
     [requestType, selectedDeals, kocs, overridesByDealId, sharedPayeeOverride, currentUserName, slipNote]
   );
+
+  const hasPayeeInfo = Boolean(evaluation.payee.bankAccount && evaluation.payee.legalId);
 
   const updateDealOverride = (dealId: string, patch: Partial<DealPaymentOverrides>) => {
     setOverridesByDealId(prev => ({
@@ -764,89 +770,186 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                           </div>
                         )}
 
-                        {/* Khung nhập/sửa trực tiếp thông tin Nghiệm thu & Chứng từ của từng BO */}
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
-                          {requestType === 'SETTLEMENT' && (
-                            <>
-                              <Field label="Link bài đăng dài (có Video ID)" noWrap>
-                                <Input
-                                  value={line.linkAir}
-                                  onChange={e =>
-                                    updateDealOverride(line.dealId, { linkAir: e.target.value })
-                                  }
-                                  placeholder="https://www.tiktok.com/@koc/video/742..."
-                                />
-                              </Field>
-                              <Field label="Ngày lên sóng thực tế" noWrap>
-                                <Input
-                                  type="date"
-                                  value={line.postedDate}
-                                  onChange={e =>
-                                    updateDealOverride(line.dealId, { postedDate: e.target.value })
-                                  }
-                                />
-                              </Field>
-                              <Field label="Mã quảng cáo Spark Ads" noWrap>
-                                <Input
-                                  className="font-code"
-                                  value={line.sparkAdsCode}
-                                  onChange={e =>
-                                    updateDealOverride(line.dealId, {
-                                      sparkAdsCode: e.target.value,
-                                      adsCodeStatus: e.target.value.trim()
-                                        ? 'ĐÃ_NGHIỆM_THU'
-                                        : 'KHÔNG_DÙNG',
-                                    })
-                                  }
-                                  placeholder="SPARK-TT-... (hoặc Không dùng)"
-                                />
-                              </Field>
-                            </>
-                          )}
-                          <Field
-                            label={
-                              line.isContractMandatory
-                                ? 'Link Hợp đồng đã ký 2 bên (Bắt buộc BR-03)'
-                                : 'Link Hợp đồng (Miễn ký theo BR-03)'
-                            }
-                          >
-                            <Input
-                              value={line.contractUrl}
-                              onChange={e =>
-                                updateDealOverride(line.dealId, { contractUrl: e.target.value })
+                        {/* Khung chứng từ của từng BO: tóm tắt chỉ đọc khi đủ điều kiện, mở sửa khi cần hoặc thiếu */}
+                        {line.isEligible && !editingDealIds[line.dealId] ? (
+                          <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg border border-line bg-surface text-2xs">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-ink-2">
+                              {requestType === 'SETTLEMENT' && (
+                                <>
+                                  <span>
+                                    Bài đăng:{' '}
+                                    {line.linkAir ? (
+                                      <a
+                                        href={line.linkAir}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-accent hover:underline inline-flex items-center gap-1 font-mono"
+                                      >
+                                        Xem bài <ExternalLink className="w-3 h-3" />
+                                      </a>
+                                    ) : (
+                                      <span className="text-ink-3">Chưa có</span>
+                                    )}
+                                  </span>
+                                  <span>•</span>
+                                  <span>
+                                    Lên sóng: <strong className="text-ink">{line.postedDate || '—'}</strong>
+                                  </span>
+                                  <span>•</span>
+                                  <span>
+                                    Spark Ads: <code className="font-mono text-ink">{line.sparkAdsCode || 'Không dùng'}</code>
+                                  </span>
+                                  <span>•</span>
+                                </>
+                              )}
+                              <span>
+                                Hợp đồng:{' '}
+                                {line.contractUrl ? (
+                                  <a
+                                    href={line.contractUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-accent hover:underline inline-flex items-center gap-1"
+                                  >
+                                    Xem hợp đồng <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                ) : line.isContractMandatory ? (
+                                  <span className="text-warning font-semibold">Chưa có</span>
+                                ) : (
+                                  <span className="text-ink-3">Miễn ký</span>
+                                )}
+                              </span>
+                              {requestType === 'SETTLEMENT' && line.isBbntMandatory && (
+                                <>
+                                  <span>•</span>
+                                  <span>
+                                    BBNT:{' '}
+                                    {line.bbntUrl && !line.bbntUrl.startsWith('Miễn BBNT') ? (
+                                      <strong className="text-ink">{line.bbntUrl}</strong>
+                                    ) : (
+                                      <span className="text-ink-3">Miễn BBNT</span>
+                                    )}
+                                  </span>
+                                </>
+                              )}
+                              {requestType === 'SETTLEMENT' && evaluation.payee.subjectKind === 'COM' && (
+                                <>
+                                  <span>•</span>
+                                  <span>
+                                    Hóa đơn: <strong className="text-ink">{line.invoiceNumber || 'Chưa có'}</strong>
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                setEditingDealIds(prev => ({ ...prev, [line.dealId]: true }))
                               }
-                              placeholder="https://drive.google.com/drive/folders/..."
-                            />
-                          </Field>
-                          {requestType === 'SETTLEMENT' && line.isBbntMandatory && (
-                            <Field label="Mã / Link BBNT đã ký (Bắt buộc BR-04)" noWrap>
-                              <Input
-                                value={
-                                  overridesByDealId[line.dealId]?.bbntUrl ??
-                                  (line.bbntUrl.startsWith('Miễn BBNT') ? '' : line.bbntUrl)
+                            >
+                              Sửa chứng từ
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="space-y-2 pt-1">
+                            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                              {requestType === 'SETTLEMENT' && (
+                                <>
+                                  <Field label="Link bài đăng dài (có Video ID)" noWrap>
+                                    <Input
+                                      value={line.linkAir}
+                                      onChange={e =>
+                                        updateDealOverride(line.dealId, { linkAir: e.target.value })
+                                      }
+                                      placeholder="https://www.tiktok.com/@koc/video/742..."
+                                    />
+                                  </Field>
+                                  <Field label="Ngày lên sóng thực tế" noWrap>
+                                    <Input
+                                      type="date"
+                                      value={line.postedDate}
+                                      onChange={e =>
+                                        updateDealOverride(line.dealId, { postedDate: e.target.value })
+                                      }
+                                    />
+                                  </Field>
+                                  <Field label="Mã quảng cáo Spark Ads" noWrap>
+                                    <Input
+                                      className="font-code"
+                                      value={line.sparkAdsCode}
+                                      onChange={e =>
+                                        updateDealOverride(line.dealId, {
+                                          sparkAdsCode: e.target.value,
+                                          adsCodeStatus: e.target.value.trim()
+                                            ? 'ĐÃ_NGHIỆM_THU'
+                                            : 'KHÔNG_DÙNG',
+                                        })
+                                      }
+                                      placeholder="SPARK-TT-... (hoặc Không dùng)"
+                                    />
+                                  </Field>
+                                </>
+                              )}
+                              <Field
+                                label={
+                                  line.isContractMandatory
+                                    ? 'Link Hợp đồng đã ký 2 bên (Bắt buộc BR-03)'
+                                    : 'Link Hợp đồng (Miễn ký theo BR-03)'
                                 }
-                                onChange={e =>
-                                  updateDealOverride(line.dealId, { bbntUrl: e.target.value })
-                                }
-                                placeholder="BBNT-202610-..."
-                              />
-                            </Field>
-                          )}
-                          {requestType === 'SETTLEMENT' &&
-                            evaluation.payee.subjectKind === 'COM' && (
-                              <Field label="Số Hóa đơn GTGT (Bắt buộc Công ty)" noWrap>
+                              >
                                 <Input
-                                  value={line.invoiceNumber}
+                                  value={line.contractUrl}
                                   onChange={e =>
-                                    updateDealOverride(line.dealId, {
-                                      invoiceNumber: e.target.value,
-                                    })
+                                    updateDealOverride(line.dealId, { contractUrl: e.target.value })
                                   }
-                                  placeholder="HD-001284..."
+                                  placeholder="https://drive.google.com/drive/folders/..."
                                 />
                               </Field>
+                              {requestType === 'SETTLEMENT' && line.isBbntMandatory && (
+                                <Field label="Mã / Link BBNT đã ký (Bắt buộc BR-04)" noWrap>
+                                  <Input
+                                    value={
+                                      overridesByDealId[line.dealId]?.bbntUrl ??
+                                      (line.bbntUrl.startsWith('Miễn BBNT') ? '' : line.bbntUrl)
+                                    }
+                                    onChange={e =>
+                                      updateDealOverride(line.dealId, { bbntUrl: e.target.value })
+                                    }
+                                    placeholder="BBNT-202610-..."
+                                  />
+                                </Field>
+                              )}
+                              {requestType === 'SETTLEMENT' &&
+                                evaluation.payee.subjectKind === 'COM' && (
+                                  <Field label="Số Hóa đơn GTGT (Bắt buộc Công ty)" noWrap>
+                                    <Input
+                                      value={line.invoiceNumber}
+                                      onChange={e =>
+                                        updateDealOverride(line.dealId, {
+                                          invoiceNumber: e.target.value,
+                                        })
+                                      }
+                                      placeholder="HD-001284..."
+                                    />
+                                  </Field>
+                                )}
+                            </div>
+                            {line.isEligible && editingDealIds[line.dealId] && (
+                              <div className="flex justify-end">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() =>
+                                    setEditingDealIds(prev => ({ ...prev, [line.dealId]: false }))
+                                  }
+                                >
+                                  Đóng sửa
+                                </Button>
+                              </div>
                             )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -858,83 +961,133 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
             <Panel
               title="2. Thông tin thụ hưởng, Pháp lý (CCCD / MST) & Thuế (BR-09)"
               actions={
-                evaluation.payee.vietQrUrl ? (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={QrCode}
-                    onClick={() => setShowQrPreview(v => !v)}
-                  >
-                    {showQrPreview ? 'Ẩn Mã QR' : 'Xem Mã QR'}
-                  </Button>
-                ) : undefined
+                <div className="flex items-center gap-1.5">
+                  {hasPayeeInfo && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setIsEditingPayee(v => !v)}
+                    >
+                      {isEditingPayee ? 'Đóng sửa' : 'Sửa thông tin thụ hưởng'}
+                    </Button>
+                  )}
+                  {evaluation.payee.vietQrUrl && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={QrCode}
+                      onClick={() => setShowQrPreview(v => !v)}
+                    >
+                      {showQrPreview ? 'Ẩn Mã QR' : 'Xem Mã QR'}
+                    </Button>
+                  )}
+                </div>
               }
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
-                <Field label="Loại chủ thể thuế" className="lg:col-span-3" noWrap>
-                  <Select
-                    value={sharedPayeeOverride.taxAccountType || evaluation.payee.subjectKind}
-                    onChange={e =>
-                      setSharedPayeeOverride(prev => ({
-                        ...prev,
-                        taxAccountType: e.target.value as DealPaymentOverrides['taxAccountType'],
-                      }))
+              {!isEditingPayee && hasPayeeInfo ? (
+                <div className="p-3 rounded-lg border border-line bg-surface/50 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
+                  <div>
+                    <span className="text-ink-3 block text-2xs">Chủ thể thuế</span>
+                    <span className="font-medium text-ink">
+                      {evaluation.payee.subjectLabel || evaluation.payee.subjectKind}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-ink-3 block text-2xs">
+                      {evaluation.payee.subjectKind === 'COM' || evaluation.payee.subjectKind === 'HKD'
+                        ? 'Mã số thuế'
+                        : 'Số CCCD'}
+                    </span>
+                    <span className="font-mono font-medium text-ink">
+                      {evaluation.payee.legalId}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-ink-3 block text-2xs">Ngân hàng</span>
+                    <span className="font-medium text-ink">
+                      {evaluation.payee.bankName || '—'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-ink-3 block text-2xs">Số tài khoản</span>
+                    <span className="font-mono font-semibold text-ink">
+                      {evaluation.payee.bankAccount}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-ink-3 block text-2xs">Chủ tài khoản</span>
+                    <span className="font-medium text-ink uppercase">
+                      {evaluation.payee.bankHolder || '—'}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+                  <Field label="Loại chủ thể thuế" className="lg:col-span-3" noWrap>
+                    <Select
+                      value={sharedPayeeOverride.taxAccountType || evaluation.payee.subjectKind}
+                      onChange={e =>
+                        setSharedPayeeOverride(prev => ({
+                          ...prev,
+                          taxAccountType: e.target.value as DealPaymentOverrides['taxAccountType'],
+                        }))
+                      }
+                    >
+                      <option value="IND">Cá nhân (TNCN 10% khi ≥ 2M)</option>
+                      <option value="HKD">Hộ kinh doanh (Trọn gói thuế)</option>
+                      <option value="COM">Công ty / MCN (VAT 8%)</option>
+                      <option value="CTV">Cộng tác viên (TNCN 10%)</option>
+                    </Select>
+                  </Field>
+                  <Field
+                    className="lg:col-span-2"
+                    noWrap
+                    label={
+                      evaluation.payee.subjectKind === 'COM' ||
+                      evaluation.payee.subjectKind === 'HKD'
+                        ? 'Mã số thuế (Bắt buộc)'
+                        : 'Số CCCD 12 số (Bắt buộc)'
                     }
                   >
-                    <option value="IND">Cá nhân (TNCN 10% khi ≥ 2M)</option>
-                    <option value="HKD">Hộ kinh doanh (Trọn gói thuế)</option>
-                    <option value="COM">Công ty / MCN (VAT 8%)</option>
-                    <option value="CTV">Cộng tác viên (TNCN 10%)</option>
-                  </Select>
-                </Field>
-                <Field
-                  className="lg:col-span-2"
-                  noWrap
-                  label={
-                    evaluation.payee.subjectKind === 'COM' ||
-                    evaluation.payee.subjectKind === 'HKD'
-                      ? 'Mã số thuế (Bắt buộc)'
-                      : 'Số CCCD 12 số (Bắt buộc)'
-                  }
-                >
-                  <Input
-                    className="font-code"
-                    value={sharedPayeeOverride.legalId ?? evaluation.payee.legalId}
-                    onChange={e =>
-                      setSharedPayeeOverride(prev => ({ ...prev, legalId: e.target.value }))
-                    }
-                    placeholder="001195018294"
-                  />
-                </Field>
-                <Field label="Ngân hàng nhận thanh toán" className="lg:col-span-2" noWrap>
-                  <Input
-                    value={sharedPayeeOverride.bankName ?? evaluation.payee.bankName}
-                    onChange={e =>
-                      setSharedPayeeOverride(prev => ({ ...prev, bankName: e.target.value }))
-                    }
-                    placeholder="Techcombank, Vietcombank, MB..."
-                  />
-                </Field>
-                <Field label="Số tài khoản" className="lg:col-span-2" noWrap>
-                  <Input
-                    className="font-code"
-                    value={sharedPayeeOverride.bankAccount ?? evaluation.payee.bankAccount}
-                    onChange={e =>
-                      setSharedPayeeOverride(prev => ({ ...prev, bankAccount: e.target.value }))
-                    }
-                    placeholder="19036829104..."
-                  />
-                </Field>
-                <Field label="Tên chủ tài khoản (Khớp CCCD/HĐ)" className="lg:col-span-3" noWrap>
-                  <Input
-                    value={sharedPayeeOverride.bankHolder ?? evaluation.payee.bankHolder}
-                    onChange={e =>
-                      setSharedPayeeOverride(prev => ({ ...prev, bankHolder: e.target.value }))
-                    }
-                    placeholder="NGUYEN VAN A"
-                  />
-                </Field>
-              </div>
+                    <Input
+                      className="font-code"
+                      value={sharedPayeeOverride.legalId ?? evaluation.payee.legalId}
+                      onChange={e =>
+                        setSharedPayeeOverride(prev => ({ ...prev, legalId: e.target.value }))
+                      }
+                      placeholder="001195018294"
+                    />
+                  </Field>
+                  <Field label="Ngân hàng nhận thanh toán" className="lg:col-span-2" noWrap>
+                    <Input
+                      value={sharedPayeeOverride.bankName ?? evaluation.payee.bankName}
+                      onChange={e =>
+                        setSharedPayeeOverride(prev => ({ ...prev, bankName: e.target.value }))
+                      }
+                      placeholder="Techcombank, Vietcombank, MB..."
+                    />
+                  </Field>
+                  <Field label="Số tài khoản" className="lg:col-span-2" noWrap>
+                    <Input
+                      className="font-code"
+                      value={sharedPayeeOverride.bankAccount ?? evaluation.payee.bankAccount}
+                      onChange={e =>
+                        setSharedPayeeOverride(prev => ({ ...prev, bankAccount: e.target.value }))
+                      }
+                      placeholder="19036829104..."
+                    />
+                  </Field>
+                  <Field label="Tên chủ tài khoản (Khớp CCCD/HĐ)" className="lg:col-span-3" noWrap>
+                    <Input
+                      value={sharedPayeeOverride.bankHolder ?? evaluation.payee.bankHolder}
+                      onChange={e =>
+                        setSharedPayeeOverride(prev => ({ ...prev, bankHolder: e.target.value }))
+                      }
+                      placeholder="NGUYEN VAN A"
+                    />
+                  </Field>
+                </div>
+              )}
 
               {showQrPreview && evaluation.payee.vietQrUrl && (
                 <div className="mt-3 p-3 rounded-lg border border-line bg-sunken flex flex-wrap items-center gap-4">

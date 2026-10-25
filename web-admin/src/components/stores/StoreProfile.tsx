@@ -739,16 +739,6 @@ export function StoreProfile({
                 Mở link sàn
               </Button>
             )}
-            {onOpenEdit && (
-              <Button variant="secondary" size="sm" icon={Pencil} onClick={() => onOpenEdit(store)}>
-                Thông số tĩnh
-              </Button>
-            )}
-            {onOpenHandover && (
-              <Button variant="secondary" size="sm" icon={UserCheck} onClick={() => onOpenHandover(store)}>
-                Bàn giao PIC
-              </Button>
-            )}
           </div>
         </div>
 
@@ -805,16 +795,6 @@ export function StoreProfile({
                 </span>
                 <span className="bg-sunken px-2 py-0.5 rounded border border-line whitespace-nowrap text-ink-2">
                   Mã SO: <strong className="font-mono text-ink">{store.storeOperationId || store.id}</strong>
-                </span>
-                <span className="bg-sunken px-2 py-0.5 rounded border border-line whitespace-nowrap text-ink-2">
-                  Gói: <strong className="text-ink font-medium">{store.servicePackage || 'E2E-S'}</strong>
-                </span>
-                <span className="bg-sunken px-2 py-0.5 rounded border border-line whitespace-nowrap text-ink-2">
-                  Hoa hồng: <strong className="font-mono text-ink">{store.affiliateRate || 15}%</strong>
-                </span>
-                <span className="bg-sunken px-2 py-0.5 rounded border border-line inline-flex items-center gap-1.5 whitespace-nowrap text-ink-2">
-                  <span className="text-ink-3">PIC:</span>
-                  <strong className="text-ink font-medium">{specialistPic}</strong>
                 </span>
               </div>
             </div>

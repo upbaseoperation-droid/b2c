@@ -9,9 +9,437 @@ import {
   CampaignItem,
   InputPlanBreakdownState,
   StorePortfolioItem,
+  KeyVisualScheduleRow,
+  PlanTierKey,
+  PlanWeekRow,
   isCampaignActiveInMonth,
   getCampaignPhaseForMonth,
 } from './types';
+import {
+  resolveWeekRows,
+  hasBreakdownData,
+  distributeItemsToWeeks,
+  distributeReference41ToWeeks,
+  TIER_KEYS,
+  SELF_TYPES,
+} from './planBreakdownRules';
+
+export interface Brand411WeekData {
+  week: 'W1' | 'W2' | 'W3' | 'W4' | 'W5';
+  dateRange: string;
+  tapCount: number;
+  kl1Count: number;
+  kl2Count: number;
+  kl3Count: number;
+  kl4Count: number;
+  kl5Count: number;
+  kl6Count: number;
+  kl7Count: number;
+  kl1Budget: number;
+  kl2Budget: number;
+  kl3Budget: number;
+  kl4Budget: number;
+  kl5Budget: number;
+  kl6Budget: number;
+  kl7Budget: number;
+  ttSelfQty: number;
+  ttSelfBudget: number;
+  ttLiveAffSessions: number;
+  ttLiveAffBudget: number;
+  ttLiveSelfSessions: number;
+  ttLiveSelfBudget: number;
+  spVideos: number;
+  spBudget: number;
+  spLiveSessions: number;
+  spLiveBudget: number;
+}
+
+export interface Brand411Summary {
+  matchingStorePlans: InputPlanBreakdownState[];
+  tiktokPlans: InputPlanBreakdownState[];
+  shopeePlans: InputPlanBreakdownState[];
+  has411Plan: boolean;
+  weeks: Brand411WeekData[];
+  ttCastQty: number;
+  ttCastBudget: number;
+  ttFocQty: number;
+  ttSelfQty: number;
+  ttSelfBudget: number;
+  ttLiveAffSessions: number;
+  ttLiveAffBudget: number;
+  ttLiveSelfSessions: number;
+  ttLiveSelfBudget: number;
+  ttAdsBudget: number;
+  ttTargetGmv: number;
+  spVideos: number;
+  spBudget: number;
+  spLiveSessions: number;
+  spLiveBudget: number;
+  spAdsBudget: number;
+  spTargetGmv: number;
+  totalNetBudget411: number;
+  totalVideos411: number;
+}
+
+function getEffectiveWeekRowsForPlan(plan: InputPlanBreakdownState): PlanWeekRow[] {
+  const rows = resolveWeekRows(plan);
+  if (hasBreakdownData(rows)) {
+    return rows;
+  }
+  const hasItems = (plan.items || []).some((it) => (it.qty || 0) > 0 || (it.totalBudget || 0) > 0);
+  if (plan.reference41 && !hasItems) {
+    return distributeReference41ToWeeks(plan, 'EVEN').weeklyBreakdown;
+  }
+  if (hasItems) {
+    return distributeItemsToWeeks(plan, 'EVEN');
+  }
+  if (plan.reference41) {
+    return distributeReference41ToWeeks(plan, 'EVEN').weeklyBreakdown;
+  }
+  return rows;
+}
+
+function splitTo4Weeks(total: number): number[] {
+  const clean = Math.max(0, Math.round(total));
+  const base = Math.floor(clean / 4);
+  const rem = clean - base * 4;
+  return [0, 1, 2, 3].map((i) => base + (i < rem ? 1 : 0));
+}
+
+export function extractBrand411Summary(params: {
+  brandName: string;
+  month: string;
+  storePlans?: InputPlanBreakdownState[];
+  storePortfolios?: StorePortfolioItem[];
+}): Brand411Summary {
+  const { brandName, month, storePlans = [], storePortfolios = [] } = params;
+  const cleanBrand = (brandName || '').split('_')[0].trim() || 'pH Care';
+  const normBrand = cleanBrand.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const monthNum = (month.split('/')[1] || '10').padStart(2, '0');
+
+  const brandStores = storePortfolios.filter((s) => {
+    const sb = (s.brandName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return sb.length >= 2 && normBrand.length >= 2 && (sb === normBrand || sb.includes(normBrand) || normBrand.includes(sb));
+  });
+  const brandStoreIds = new Set(brandStores.map((s) => s.id));
+  const brandStoreSlugs = new Set(
+    brandStores.map((s) => (s.storeName || '').toLowerCase().replace(/[^a-z0-9]/g, '')).filter(Boolean)
+  );
+
+  const matchingStorePlans = storePlans.filter((p) => {
+    if (month !== 'ALL' && p.month !== month) return false;
+    if (p.storeId && brandStoreIds.has(p.storeId)) return true;
+    const pStoreSlug = (p.storeName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (pStoreSlug && brandStoreSlugs.has(pStoreSlug)) return true;
+    const pb = (p.parentBrand || p.brandName || '').split('_')[0].trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    return pb.length >= 2 && normBrand.length >= 2 && (pb === normBrand || pb.includes(normBrand) || normBrand.includes(pb));
+  });
+
+  const isShopeePlan = (p: InputPlanBreakdownState) => {
+    const st = brandStores.find((s) => s.id === p.storeId);
+    const label = `${st?.platform || ''} ${p.storeName || ''} ${p.brandName || ''}`.toLowerCase();
+    return label.includes('shopee');
+  };
+
+  const tiktokPlans = matchingStorePlans.filter((p) => !isShopeePlan(p));
+  const shopeePlans = matchingStorePlans.filter((p) => isShopeePlan(p));
+
+  const weekRanges: Array<{ week: 'W1' | 'W2' | 'W3' | 'W4' | 'W5'; range: string }> = [
+    { week: 'W1', range: `01–07/${monthNum}` },
+    { week: 'W2', range: `08–14/${monthNum}` },
+    { week: 'W3', range: `15–21/${monthNum}` },
+    { week: 'W4', range: `22–28/${monthNum}` },
+    { week: 'W5', range: `29–30/${monthNum}` },
+  ];
+
+  const weeks: Brand411WeekData[] = weekRanges.map((w) => ({
+    week: w.week,
+    dateRange: w.range,
+    tapCount: 0,
+    kl1Count: 0,
+    kl2Count: 0,
+    kl3Count: 0,
+    kl4Count: 0,
+    kl5Count: 0,
+    kl6Count: 0,
+    kl7Count: 0,
+    kl1Budget: 0,
+    kl2Budget: 0,
+    kl3Budget: 0,
+    kl4Budget: 0,
+    kl5Budget: 0,
+    kl6Budget: 0,
+    kl7Budget: 0,
+    ttSelfQty: 0,
+    ttSelfBudget: 0,
+    ttLiveAffSessions: 0,
+    ttLiveAffBudget: 0,
+    ttLiveSelfSessions: 0,
+    ttLiveSelfBudget: 0,
+    spVideos: 0,
+    spBudget: 0,
+    spLiveSessions: 0,
+    spLiveBudget: 0,
+  }));
+
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+
+  // 1. Cộng dữ liệu từ các bản 4.1.1 của gian hàng TikTok
+  for (const p of tiktokPlans) {
+    const effRows = getEffectiveWeekRowsForPlan(p);
+    effRows.slice(0, 5).forEach((r, wi) => {
+      const target = weeks[wi];
+      if (!target) return;
+      target.tapCount += num(r.foc?.tapBrand) + num(r.foc?.tap) + num(r.foc?.tapUp);
+      target.kl1Count += num(r.tiers?.KL1?.qty);
+      target.kl2Count += num(r.tiers?.KL2?.qty);
+      target.kl3Count += num(r.tiers?.KL3?.qty);
+      target.kl4Count += num(r.tiers?.KL4?.qty);
+      target.kl5Count += num(r.tiers?.KL5?.qty);
+      target.kl6Count += num(r.tiers?.KL6?.qty);
+      target.kl7Count += num(r.tiers?.KL7?.qty);
+
+      target.kl1Budget += num(r.tiers?.KL1?.budgetNet);
+      target.kl2Budget += num(r.tiers?.KL2?.budgetNet);
+      target.kl3Budget += num(r.tiers?.KL3?.budgetNet);
+      target.kl4Budget += num(r.tiers?.KL4?.budgetNet);
+      target.kl5Budget += num(r.tiers?.KL5?.budgetNet);
+      target.kl6Budget += num(r.tiers?.KL6?.budgetNet);
+      target.kl7Budget += num(r.tiers?.KL7?.budgetNet);
+
+      const weekSelf = SELF_TYPES.reduce((s, t) => s + num(r.self?.[t.key]), 0);
+      target.ttSelfQty += weekSelf;
+      target.ttSelfBudget += num(r.self?.budgetNet);
+
+      target.ttLiveAffSessions += num(r.live?.sessions);
+      target.ttLiveAffBudget += num(r.live?.budgetNet);
+
+      target.ttLiveSelfSessions +=
+        num(r.liveSelf?.inhouse3h) + num(r.liveSelf?.ctv2h) + num(r.liveSelf?.brand2h);
+      target.ttLiveSelfBudget += num(r.liveSelf?.budgetNet);
+
+      // Nếu bản 4.1.1 TikTok có chia Đa sàn Shopee và Brand không có bản Shopee riêng
+      if (shopeePlans.length === 0) {
+        target.spVideos += num(r.multiPlatform?.shopee?.affQty) + num(r.multiPlatform?.shopee?.reupQty);
+        target.spBudget += num(r.multiPlatform?.shopee?.budgetNet);
+      }
+    });
+
+    // Nếu weeklyBreakdown chưa có self/live nhưng trong items hoặc reference41 của p có self/live
+    const sumPlanWeekSelf = effRows.reduce(
+      (s, r) => s + SELF_TYPES.reduce((acc, t) => acc + num(r.self?.[t.key]), 0),
+      0
+    );
+    const sumPlanWeekSelfBud = effRows.reduce((s, r) => s + num(r.self?.budgetNet), 0);
+    const itemsSelf = (p.items || []).filter((it) => it.channel === 'SELF_CHANNEL');
+    const fallbackSelfQty =
+      itemsSelf.reduce((s, it) => s + num(it.qty), 0) || num(p.reference41?.selfVideos);
+    const fallbackSelfBud =
+      itemsSelf.reduce((s, it) => s + num(it.totalBudget), 0) || num(p.reference41?.selfCostNet);
+    if (sumPlanWeekSelf === 0 && fallbackSelfQty > 0) {
+      const q4 = splitTo4Weeks(fallbackSelfQty);
+      q4.forEach((v, idx) => {
+        weeks[idx].ttSelfQty += v;
+      });
+    }
+    if (sumPlanWeekSelfBud === 0 && fallbackSelfBud > 0) {
+      const b4 = splitTo4Weeks(fallbackSelfBud);
+      b4.forEach((v, idx) => {
+        weeks[idx].ttSelfBudget += v;
+      });
+    }
+
+    const sumPlanWeekLive = effRows.reduce((s, r) => s + num(r.live?.sessions), 0);
+    const sumPlanWeekLiveBud = effRows.reduce((s, r) => s + num(r.live?.budgetNet), 0);
+    const itemsLive = (p.items || []).filter((it) => it.channel === 'LIVESTREAM');
+    const fallbackLiveQty =
+      itemsLive.reduce((s, it) => s + num(it.qty), 0) || num(p.reference41?.liveSessions);
+    const fallbackLiveBud =
+      itemsLive.reduce((s, it) => s + num(it.totalBudget), 0) || num(p.reference41?.liveCostNet);
+    if (sumPlanWeekLive === 0 && fallbackLiveQty > 0) {
+      const q4 = splitTo4Weeks(fallbackLiveQty);
+      q4.forEach((v, idx) => {
+        weeks[idx].ttLiveAffSessions += v;
+      });
+    }
+    if (sumPlanWeekLiveBud === 0 && fallbackLiveBud > 0) {
+      const b4 = splitTo4Weeks(fallbackLiveBud);
+      b4.forEach((v, idx) => {
+        weeks[idx].ttLiveAffBudget += v;
+      });
+    }
+  }
+
+  // 2. Cộng dữ liệu từ các bản 4.1.1 của gian hàng Shopee
+  for (const p of shopeePlans) {
+    const effRows = getEffectiveWeekRowsForPlan(p);
+    let planSpVideosFromWeeks = 0;
+    let planSpBudgetFromWeeks = 0;
+    effRows.slice(0, 5).forEach((r, wi) => {
+      const target = weeks[wi];
+      if (!target) return;
+      const wCast = TIER_KEYS.reduce((s, k: PlanTierKey) => s + num(r.tiers?.[k]?.qty), 0);
+      const wCastBud = TIER_KEYS.reduce((s, k: PlanTierKey) => s + num(r.tiers?.[k]?.budgetNet), 0);
+      const wFoc = num(r.foc?.tapBrand) + num(r.foc?.tap) + num(r.foc?.tapUp);
+      const wSelf = SELF_TYPES.reduce((s, t) => s + num(r.self?.[t.key]), 0);
+      const wSelfBud = num(r.self?.budgetNet);
+      const wMpSp = num(r.multiPlatform?.shopee?.affQty) + num(r.multiPlatform?.shopee?.reupQty);
+      const wMpSpBud = num(r.multiPlatform?.shopee?.budgetNet);
+
+      const vTotal = wCast + wFoc + wSelf + wMpSp;
+      const bTotal = wCastBud + wSelfBud + wMpSpBud;
+      target.spVideos += vTotal;
+      target.spBudget += bTotal;
+      target.spLiveSessions +=
+        num(r.live?.sessions) +
+        num(r.liveSelf?.inhouse3h) +
+        num(r.liveSelf?.ctv2h) +
+        num(r.liveSelf?.brand2h);
+      target.spLiveBudget += num(r.live?.budgetNet) + num(r.liveSelf?.budgetNet);
+
+      planSpVideosFromWeeks += vTotal;
+      planSpBudgetFromWeeks += bTotal;
+    });
+
+    // Fallback nếu bản Shopee để số ở items SHOPEE / SHOPEE_LAZADA hoặc totalTargetContents
+    if (planSpVideosFromWeeks === 0 && planSpBudgetFromWeeks === 0) {
+      const spItems = (p.items || []).filter((it) => !it.id.startsWith('WB-'));
+      const itemQty =
+        spItems.reduce((s, it) => s + num(it.qty), 0) ||
+        num(p.reference41?.cast) + num(p.reference41?.foc) + num(p.reference41?.selfVideos) ||
+        num(p.totalTargetContents);
+      const itemBud =
+        spItems.reduce((s, it) => s + num(it.totalBudget), 0) ||
+        num(p.reference41?.affCostNet) + num(p.reference41?.selfCostNet) ||
+        num(p.totalTargetBudget);
+      const q4 = splitTo4Weeks(itemQty);
+      const b4 = splitTo4Weeks(itemBud);
+      q4.forEach((v, idx) => {
+        weeks[idx].spVideos += v;
+      });
+      b4.forEach((v, idx) => {
+        weeks[idx].spBudget += v;
+      });
+    }
+  }
+
+  const ttCastQty = weeks.reduce(
+    (s, w) => s + w.kl1Count + w.kl2Count + w.kl3Count + w.kl4Count + w.kl5Count + w.kl6Count + w.kl7Count,
+    0
+  );
+  const ttCastBudget = weeks.reduce(
+    (s, w) =>
+      s + w.kl1Budget + w.kl2Budget + w.kl3Budget + w.kl4Budget + w.kl5Budget + w.kl6Budget + w.kl7Budget,
+    0
+  );
+  const ttFocQty = weeks.reduce((s, w) => s + w.tapCount, 0);
+  const ttSelfQty = weeks.reduce((s, w) => s + w.ttSelfQty, 0);
+  const ttSelfBudget = weeks.reduce((s, w) => s + w.ttSelfBudget, 0);
+  const ttLiveAffSessions = weeks.reduce((s, w) => s + w.ttLiveAffSessions, 0);
+  const ttLiveAffBudget = weeks.reduce((s, w) => s + w.ttLiveAffBudget, 0);
+  const ttLiveSelfSessions = weeks.reduce((s, w) => s + w.ttLiveSelfSessions, 0);
+  const ttLiveSelfBudget = weeks.reduce((s, w) => s + w.ttLiveSelfBudget, 0);
+
+  const spVideos = weeks.reduce((s, w) => s + w.spVideos, 0);
+  const spBudget = weeks.reduce((s, w) => s + w.spBudget, 0);
+  const spLiveSessions = weeks.reduce((s, w) => s + w.spLiveSessions, 0);
+  const spLiveBudget = weeks.reduce((s, w) => s + w.spLiveBudget, 0);
+
+  const tiktokStores = brandStores.filter((s) => !s.platform.toLowerCase().includes('shopee'));
+  const shopeeStores = brandStores.filter((s) => s.platform.toLowerCase().includes('shopee'));
+
+  const ttTargetGmv =
+    tiktokPlans.reduce((s, p) => s + num(p.targetGmv), 0) ||
+    tiktokStores.reduce((s, st) => s + num(st.monthlyTargetGmv), 0);
+  const spTargetGmv =
+    shopeePlans.reduce((s, p) => s + num(p.targetGmv), 0) ||
+    shopeeStores.reduce((s, st) => s + num(st.monthlyTargetGmv), 0);
+
+  const ttAdsBudget = tiktokPlans.reduce((s, p) => s + num(p.budgetAdsTotal), 0);
+  const spAdsBudget = shopeePlans.reduce((s, p) => s + num(p.budgetAdsTotal), 0);
+
+  const totalNetBudget411 =
+    ttCastBudget + ttSelfBudget + ttLiveAffBudget + ttLiveSelfBudget + spBudget + spLiveBudget;
+  const totalVideos411 =
+    ttCastQty + ttFocQty + ttSelfQty + ttLiveAffSessions + ttLiveSelfSessions + spVideos + spLiveSessions;
+
+  return {
+    matchingStorePlans,
+    tiktokPlans,
+    shopeePlans,
+    has411Plan: matchingStorePlans.length > 0,
+    weeks,
+    ttCastQty,
+    ttCastBudget,
+    ttFocQty,
+    ttSelfQty,
+    ttSelfBudget,
+    ttLiveAffSessions,
+    ttLiveAffBudget,
+    ttLiveSelfSessions,
+    ttLiveSelfBudget,
+    ttAdsBudget,
+    ttTargetGmv,
+    spVideos,
+    spBudget,
+    spLiveSessions,
+    spLiveBudget,
+    spAdsBudget,
+    spTargetGmv,
+    totalNetBudget411,
+    totalVideos411,
+  };
+}
+
+export function buildDefaultKvScheduleRows(month: string, kvPic = 'Lê Thanh Hải'): KeyVisualScheduleRow[] {
+  const monthNum = (month.split('/')[1] || '10').padStart(2, '0');
+  const yearNum = month.split('/')[0] || '2026';
+  const mInt = parseInt(monthNum, 10) || 10;
+  const yInt = parseInt(yearNum, 10) || 2026;
+  const prevMonthInt = mInt === 1 ? 12 : mInt - 1;
+  const prevYearInt = mInt === 1 ? yInt - 1 : yInt;
+  const prevMonthStr = String(prevMonthInt).padStart(2, '0');
+  const prevYearStr = String(prevYearInt);
+
+  return [
+    {
+      id: `kv-sched-master-${yearNum}${monthNum}`,
+      phaseName: 'Master KV đầu tháng',
+      deliverables: 'Master KV + Bộ Banner SIS + Khung ảnh PDP',
+      refDate: `${prevYearStr}-${prevMonthStr}-13`,
+      orderDate: `${prevYearStr}-${prevMonthStr}-22`,
+      draftDate: `${prevYearStr}-${prevMonthStr}-25`,
+      approveDate: `${prevYearStr}-${prevMonthStr}-28`,
+      hangDate: `${yearNum}-${monthNum}-01`,
+      pic: kvPic,
+      note: 'Dùng proposal hiện có, bổ sung packshot SKU đúng quy chuẩn',
+    },
+    {
+      id: `kv-sched-mega-${yearNum}${monthNum}`,
+      phaseName: `Adapt Sale Đôi ${monthNum}.${monthNum}`,
+      deliverables: 'Banner Campaign + Khung giá Sale Đôi + Sticker Deal',
+      refDate: `${prevYearStr}-${prevMonthStr}-28`,
+      orderDate: `${yearNum}-${monthNum}-01`,
+      draftDate: `${yearNum}-${monthNum}-05`,
+      approveDate: `${yearNum}-${monthNum}-08`,
+      hangDate: `${yearNum}-${monthNum}-10`,
+      pic: kvPic,
+      note: `Cập nhật voucher & ưu đãi đợt Sale Đôi ${monthNum}.${monthNum}`,
+    },
+    {
+      id: `kv-sched-payday-${yearNum}${monthNum}`,
+      phaseName: 'Adapt Cuối tháng & Payday',
+      deliverables: 'Banner Payday + Khung ảnh Deal cuối tháng',
+      refDate: `${yearNum}-${monthNum}-14`,
+      orderDate: `${yearNum}-${monthNum}-17`,
+      draftDate: `${yearNum}-${monthNum}-21`,
+      approveDate: `${yearNum}-${monthNum}-24`,
+      hangDate: `${yearNum}-${monthNum}-26`,
+      pic: kvPic,
+      note: 'Đồng bộ CTKM cuối tháng & Payday trên 2 sàn',
+    },
+  ];
+}
 
 /**
  * Xây dựng dữ liệu chuẩn 1-Sheet Monthly Content & Key Visual Plan trình Brand
@@ -43,38 +471,14 @@ export function buildBrandOneSheetPlanData(params: {
   const normBrand = cleanBrand.toLowerCase().replace(/[^a-z0-9]/g, '');
   const isPhCare = normBrand.includes('phcare');
 
-  // 1. Tìm Campaign đang hoạt động của Brand trong tháng (nếu có)
-  const matchingStorePlans = storePlans.filter((p) => {
-    const pb = (p.parentBrand || p.brandName || '').split('_')[0].trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-    return p.month === month && (pb === normBrand || pb.includes(normBrand) || normBrand.includes(pb));
+  // 1. Tổng hợp dữ liệu chuẩn từ 4.1.1 (storePlans)
+  const s411 = extractBrand411Summary({
+    brandName,
+    month,
+    storePlans,
+    storePortfolios,
   });
-
-  // Nếu có sẵn oneSheetPlanData đã lưu trong BrandPlan hoặc StorePlan thì ưu tiên trả về
-  if (brandPlan?.oneSheetPlanData && brandPlan.oneSheetPlanData.month === month) {
-    return {
-      ...brandPlan.oneSheetPlanData,
-      keyVisual: {
-        ...brandPlan.oneSheetPlanData.keyVisual,
-        kvImages:
-          brandPlan.oneSheetPlanData.keyVisual?.kvImages ??
-          brandPlan.keyVisualSisPlan?.kvImages ??
-          [],
-      },
-    };
-  }
-  const savedFromStore = matchingStorePlans.find((p) => p.oneSheetPlanData)?.oneSheetPlanData;
-  if (savedFromStore) {
-    return {
-      ...savedFromStore,
-      keyVisual: {
-        ...savedFromStore.keyVisual,
-        kvImages:
-          savedFromStore.keyVisual?.kvImages ??
-          brandPlan?.keyVisualSisPlan?.kvImages ??
-          [],
-      },
-    };
-  }
+  const { matchingStorePlans, tiktokPlans, shopeePlans, weeks: w411 } = s411;
 
   const explicitCampaignId = brandPlan?.campaignId || matchingStorePlans.find((p) => p.campaignId)?.campaignId;
   const activeCampaign =
@@ -93,86 +497,37 @@ export function buildBrandOneSheetPlanData(params: {
 
   const activePhase = activeCampaign ? getCampaignPhaseForMonth(activeCampaign, month) : undefined;
 
-  const monthNum = month.split('/')[1] || '11';
+  const monthNum = (month.split('/')[1] || '10').padStart(2, '0');
   const yearNum = month.split('/')[0] || '2026';
 
-  // 2. Lọc gian hàng TikTok vs Shopee của Brand
-  const brandStores = storePortfolios.filter((s) => {
-    const sb = (s.brandName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    return sb === normBrand || sb.includes(normBrand) || normBrand.includes(sb);
-  });
+  const tiktokPlan = tiktokPlans[0];
+  const shopeePlan = shopeePlans[0];
 
-  const tiktokPlan = matchingStorePlans.find(
-    (p) =>
-      (p.storeName || p.brandName || '').toLowerCase().includes('tiktok') ||
-      !((p.storeName || p.brandName || '').toLowerCase().includes('shopee'))
-  );
-  const shopeePlan = matchingStorePlans.find((p) =>
-    (p.storeName || p.brandName || '').toLowerCase().includes('shopee')
-  );
-
-  const tiktokStore = brandStores.find((s) => s.platform === 'TikTok Shop');
-  const shopeeStore = brandStores.find((s) => s.platform === 'Shopee Mall' || s.platform.toLowerCase().includes('shopee'));
-
-  // Lấy số liệu các dòng KL1-KL7 từ tiktokPlan
-  const getItemQty = (plan: InputPlanBreakdownState | undefined, id: string, fallback: number) =>
-    plan?.items.find((i) => i.id === id)?.qty ?? fallback;
-  const getItemBudget = (plan: InputPlanBreakdownState | undefined, id: string, fallback: number) =>
-    plan?.items.find((i) => i.id === id)?.totalBudget ?? fallback;
-
-  const tapTotal = isPhCare ? 25 : getItemQty(tiktokPlan, 'row-tt-tap', 25);
-  const kl1Total = isPhCare ? 0 : getItemQty(tiktokPlan, 'row-tt-kl1', 0);
-  const kl2Total = isPhCare ? 20 : getItemQty(tiktokPlan, 'row-tt-kl2', 20);
-  const kl3Total = isPhCare ? 0 : getItemQty(tiktokPlan, 'row-tt-kl3', 0);
-  const kl4Total = isPhCare ? 0 : getItemQty(tiktokPlan, 'row-tt-kl4', 0);
-  const kl5Total = isPhCare ? 10 : getItemQty(tiktokPlan, 'row-tt-kl5', 10);
-  const kl6Total = isPhCare ? 5 : getItemQty(tiktokPlan, 'row-tt-kl6', 5);
-  const kl7Total = isPhCare ? 0 : getItemQty(tiktokPlan, 'row-tt-kl7', 0);
-
-  const kl1BudgetTotal = isPhCare ? 0 : getItemBudget(tiktokPlan, 'row-tt-kl1', 0);
-  const kl2BudgetTotal = isPhCare ? 10000000 : getItemBudget(tiktokPlan, 'row-tt-kl2', 10000000);
-  const kl3BudgetTotal = isPhCare ? 0 : getItemBudget(tiktokPlan, 'row-tt-kl3', 0);
-  const kl4BudgetTotal = isPhCare ? 0 : getItemBudget(tiktokPlan, 'row-tt-kl4', 0);
-  const kl5BudgetTotal = isPhCare ? 40000000 : getItemBudget(tiktokPlan, 'row-tt-kl5', 40000000);
-  const kl6BudgetTotal = isPhCare ? 50000000 : getItemBudget(tiktokPlan, 'row-tt-kl6', 50000000);
-  const kl7BudgetTotal = isPhCare ? 0 : getItemBudget(tiktokPlan, 'row-tt-kl7', 0);
-
-  const totalBookingVideoBudget =
-    kl1BudgetTotal +
-    kl2BudgetTotal +
-    kl3BudgetTotal +
-    kl4BudgetTotal +
-    kl5BudgetTotal +
-    kl6BudgetTotal +
-    kl7BudgetTotal || 100000000;
-
-  const tiktokGmvSeller = isPhCare
-    ? 5000000000
-    : tiktokPlan?.targetGmv || tiktokStore?.monthlyTargetGmv || 2500000000;
-  const tiktokCancelRate = isPhCare ? 0.1 : tiktokPlan?.cancellationRate || 0.1;
+  const totalBookingVideoBudget = s411.ttCastBudget;
+  const tiktokGmvSeller = s411.ttTargetGmv || brandPlan?.planStrategyPlan?.targetBrandGmv || 0;
+  const tiktokCancelRate = tiktokPlan?.cancellationRate ?? 0.1;
   const tiktokNmvSeller = Math.round(tiktokGmvSeller * (1 - tiktokCancelRate));
   const tiktokAov = 200000;
-  const tiktokOrders = Math.round(tiktokGmvSeller / tiktokAov);
+  const tiktokOrders = tiktokGmvSeller > 0 ? Math.round(tiktokGmvSeller / tiktokAov) : 0;
   const tiktokCr = 0.05;
-  const tiktokTraffic = Math.round(tiktokOrders / tiktokCr);
+  const tiktokTraffic = tiktokOrders > 0 ? Math.round(tiktokOrders / tiktokCr) : 0;
 
-  const shopeeGmvSeller = isPhCare
-    ? 1000000000
-    : shopeePlan?.targetGmv || shopeeStore?.monthlyTargetGmv || Math.round(tiktokGmvSeller * 0.35);
-  const shopeeCancelRate = 0.05;
+  const shopeeGmvSeller = s411.spTargetGmv || 0;
+  const shopeeCancelRate = shopeePlan?.cancellationRate ?? 0.05;
   const shopeeNmvSeller = Math.round(shopeeGmvSeller * (1 - shopeeCancelRate));
   const shopeeAov = 200000;
-  const shopeeOrders = Math.round(shopeeGmvSeller / shopeeAov);
+  const shopeeOrders = shopeeGmvSeller > 0 ? Math.round(shopeeGmvSeller / shopeeAov) : 0;
   const shopeeCr = 0.05;
-  const shopeeTraffic = Math.round(shopeeOrders / shopeeCr);
+  const shopeeTraffic = shopeeOrders > 0 ? Math.round(shopeeOrders / shopeeCr) : 0;
 
   // Doanh thu theo hoạt động
-  const tiktokGmvVideo = isPhCare ? 1400000000 : Math.round(tiktokGmvSeller * 0.28);
-  const tiktokGmvLive = isPhCare ? 500000000 : Math.round(tiktokGmvSeller * 0.1);
+  const tiktokGmvVideo = Math.round(tiktokGmvSeller * 0.55);
+  const tiktokGmvLive =
+    s411.ttLiveAffSessions + s411.ttLiveSelfSessions > 0 ? Math.round(tiktokGmvSeller * 0.2) : 0;
   const tiktokGmvCard = Math.max(0, tiktokGmvSeller - tiktokGmvVideo - tiktokGmvLive);
 
-  const shopeeGmvVideo = isPhCare ? 600000000 : Math.round(shopeeGmvSeller * 0.6);
-  const shopeeGmvLive = isPhCare ? 300000000 : Math.round(shopeeGmvSeller * 0.3);
+  const shopeeGmvVideo = s411.spVideos > 0 ? Math.round(shopeeGmvSeller * 0.4) : 0;
+  const shopeeGmvLive = s411.spLiveSessions > 0 ? Math.round(shopeeGmvSeller * 0.2) : 0;
   const shopeeGmvCard = Math.max(0, shopeeGmvSeller - shopeeGmvVideo - shopeeGmvLive);
 
   const preparedBy =
@@ -184,6 +539,7 @@ export function buildBrandOneSheetPlanData(params: {
   const contentMainPic =
     brandPlan?.contentBrandMainPic ||
     shopeePlan?.pic ||
+    tiktokPlan?.pic ||
     'Bích Liên';
 
   const kvPic =
@@ -265,215 +621,195 @@ export function buildBrandOneSheetPlanData(params: {
       brandPlan?.keyVisualSisPlan?.kvImages ||
       activeCampaign?.keyVisualSpec?.kvImages ||
       [],
+    kvScheduleRows:
+      activeCampaign?.keyVisualSpec?.kvScheduleRows && activeCampaign.keyVisualSpec.kvScheduleRows.length > 0
+        ? activeCampaign.keyVisualSpec.kvScheduleRows
+        : buildDefaultKvScheduleRows(month, kvPic),
   };
 
-  // Section 04: 5 tuần TikTok KOC & Booking
-  const weekRanges = [
-    { week: 'W1' as const, range: `01–07/${monthNum}` },
-    { week: 'W2' as const, range: `08–14/${monthNum}` },
-    { week: 'W3' as const, range: `15–21/${monthNum}` },
-    { week: 'W4' as const, range: `22–28/${monthNum}` },
-    { week: 'W5' as const, range: `29–30/${monthNum}` },
-  ];
-
-  const split5 = (total: number) => {
-    const base = Math.floor(total / 5);
-    const rem = total - base * 5;
-    return [0, 1, 2, 3, 4].map((idx) => base + (idx < rem ? 1 : 0));
-  };
-
-  const tapW = split5(tapTotal);
-  const kl1W = split5(kl1Total);
-  const kl2W = split5(kl2Total);
-  const kl3W = split5(kl3Total);
-  const kl4W = split5(kl4Total);
-  const kl5W = split5(kl5Total);
-  const kl6W = split5(kl6Total);
-  const kl7W = split5(kl7Total);
-
-  const kl1BW = split5(kl1BudgetTotal);
-  const kl2BW = split5(kl2BudgetTotal);
-  const kl3BW = split5(kl3BudgetTotal);
-  const kl4BW = split5(kl4BudgetTotal);
-  const kl5BW = split5(kl5BudgetTotal);
-  const kl6BW = split5(kl6BudgetTotal);
-  const kl7BW = split5(kl7BudgetTotal);
-
-  const tiktokWeeklyRows: BrandOneSheetTikTokWeeklyRow[] = weekRanges.map((w, idx) => {
+  // Section 04: 5 tuần TikTok KOC & Booking lấy trực tiếp từ 4.1.1 (`w411`)
+  const tiktokWeeklyRows: BrandOneSheetTikTokWeeklyRow[] = w411.map((w) => {
     const weekVideos =
-      tapW[idx] + kl1W[idx] + kl2W[idx] + kl3W[idx] + kl4W[idx] + kl5W[idx] + kl6W[idx] + kl7W[idx];
+      w.tapCount +
+      w.kl1Count +
+      w.kl2Count +
+      w.kl3Count +
+      w.kl4Count +
+      w.kl5Count +
+      w.kl6Count +
+      w.kl7Count;
     const weekBudget =
-      kl1BW[idx] + kl2BW[idx] + kl3BW[idx] + kl4BW[idx] + kl5BW[idx] + kl6BW[idx] + kl7BW[idx];
+      w.kl1Budget +
+      w.kl2Budget +
+      w.kl3Budget +
+      w.kl4Budget +
+      w.kl5Budget +
+      w.kl6Budget +
+      w.kl7Budget;
     return {
       week: w.week,
-      dateRange: w.range,
-      tapCount: tapW[idx],
-      kl1Count: kl1W[idx],
-      kl2Count: kl2W[idx],
-      kl3Count: kl3W[idx],
-      kl4Count: kl4W[idx],
-      kl5Count: kl5W[idx],
-      kl6Count: kl6W[idx],
-      kl7Count: kl7W[idx],
+      dateRange: w.dateRange,
+      tapCount: w.tapCount,
+      kl1Count: w.kl1Count,
+      kl2Count: w.kl2Count,
+      kl3Count: w.kl3Count,
+      kl4Count: w.kl4Count,
+      kl5Count: w.kl5Count,
+      kl6Count: w.kl6Count,
+      kl7Count: w.kl7Count,
       tapBudget: 0,
-      kl1Budget: kl1BW[idx],
-      kl2Budget: kl2BW[idx],
-      kl3Budget: kl3BW[idx],
-      kl4Budget: kl4BW[idx],
-      kl5Budget: kl5BW[idx],
-      kl6Budget: kl6BW[idx],
-      kl7Budget: kl7BW[idx],
-      targetBookingGmv: weekBudget > 0 ? weekBudget * 10 : 200000000,
-      ownerActionNote: `Booking + BM: review view/click/đơn; điều chỉnh angle ${w.week} (${weekVideos} video)`,
+      kl1Budget: w.kl1Budget,
+      kl2Budget: w.kl2Budget,
+      kl3Budget: w.kl3Budget,
+      kl4Budget: w.kl4Budget,
+      kl5Budget: w.kl5Budget,
+      kl6Budget: w.kl6Budget,
+      kl7Budget: w.kl7Budget,
+      targetBookingGmv:
+        weekBudget > 0
+          ? Math.round(weekBudget * 5.5)
+          : s411.ttCastBudget > 0
+          ? 0
+          : Math.round((tiktokGmvVideo / 4) * (w.week === 'W5' ? 0 : 1)),
+      ownerActionNote: `4.1.1 ${w.week}: ${weekVideos} video AFF (${w.tapCount} FOC) · NS Net ${weekBudget.toLocaleString('vi-VN')}đ`,
     };
   });
 
-  // Section 04: Chi tiết Content TikTok (5 dòng Video affiliate + 5 dòng Video self / Ảnh trượt)
-  const tiktokContentRows: BrandOneSheetTikTokContentRow[] = [
+  const buildTierMixLabel = (w: BrandOneSheetTikTokWeeklyRow) => {
+    const parts: string[] = [];
+    if (w.tapCount > 0) parts.push(`TAP×${w.tapCount}`);
+    if (w.kl1Count > 0) parts.push(`KL1×${w.kl1Count}`);
+    if (w.kl2Count > 0) parts.push(`KL2×${w.kl2Count}`);
+    if (w.kl3Count > 0) parts.push(`KL3×${w.kl3Count}`);
+    if (w.kl4Count > 0) parts.push(`KL4×${w.kl4Count}`);
+    if (w.kl5Count > 0) parts.push(`KL5×${w.kl5Count}`);
+    if (w.kl6Count > 0) parts.push(`KL6×${w.kl6Count}`);
+    if (w.kl7Count > 0) parts.push(`KL7×${w.kl7Count}`);
+    return parts.length > 0 ? parts.join(', ') : 'Theo phân rã 4.1.1';
+  };
+
+  const affWeekMeta = [
     {
-      id: 'tt-cnt-1',
-      weekAndAirDate: `W1 | 01–07/${monthNum}`,
-      skuOrCombo: isPhCare ? 'Natural / combo 2 Natural' : `${cleanBrand} Hero SKU / Combo 2`,
-      touchpointSource: 'Video affiliate',
-      klGroup: 'Mix KL / TAP',
-      kocCriteria: `Nữ beauty/lifestyle 22–35; đã trải nghiệm; mix TAP${tapW[0]}, KL2×${kl2W[0]}, KL5×${kl5W[0]}, KL6×${kl6W[0]}`,
+      sku: isPhCare ? 'Natural / combo 2 Natural' : `${cleanBrand} Hero SKU / Combo 2`,
       pillar: 'Product education: hiểu SKU/RTB',
-      angleAndBrief: 'Trước khi mua: đọc nhãn và chọn routine phù hợp; tránh nói quá claim.',
-      contentType: 'Video',
-      qty: tiktokWeeklyRows[0].tapCount + tiktokWeeklyRows[0].kl1Count + tiktokWeeklyRows[0].kl2Count + tiktokWeeklyRows[0].kl3Count + tiktokWeeklyRows[0].kl4Count + tiktokWeeklyRows[0].kl5Count + tiktokWeeklyRows[0].kl6Count + tiktokWeeklyRows[0].kl7Count,
-      budgetVnd: 0,
-      pic: preparedBy,
+      angle: 'Trước khi mua: đọc nhãn và chọn routine phù hợp; tránh nói quá claim.',
     },
     {
-      id: 'tt-cnt-2',
-      weekAndAirDate: `W2 | 08–14/${monthNum}`,
-      skuOrCombo: isPhCare ? 'Natural + Delicate/Cooling (tùy tồn)' : `${cleanBrand} Combo Sale Đôi ${monthNum}.${monthNum}`,
-      touchpointSource: 'Video affiliate',
-      klGroup: 'Mix KL / TAP',
-      kocCriteria: `Nữ beauty/lifestyle 22–35; đã trải nghiệm; mix TAP${tapW[1]}, KL2×${kl2W[1]}, KL5×${kl5W[1]}, KL6×${kl6W[1]}`,
+      sku: isPhCare ? 'Natural + Delicate/Cooling (tùy tồn)' : `${cleanBrand} Combo Sale Đôi ${monthNum}.${monthNum}`,
       pillar: 'Promotion: hiểu deal & combo',
-      angleAndBrief: 'Đọc deal combo 2 sản phẩm: giá, voucher và điều kiện áp dụng thật rõ.',
-      contentType: 'Video',
-      qty: tiktokWeeklyRows[1].tapCount + tiktokWeeklyRows[1].kl1Count + tiktokWeeklyRows[1].kl2Count + tiktokWeeklyRows[1].kl3Count + tiktokWeeklyRows[1].kl4Count + tiktokWeeklyRows[1].kl5Count + tiktokWeeklyRows[1].kl6Count + tiktokWeeklyRows[1].kl7Count,
-      budgetVnd: 0,
-      pic: preparedBy,
+      angle: 'Đọc deal combo 2 sản phẩm: giá, voucher và điều kiện áp dụng thật rõ.',
     },
     {
-      id: 'tt-cnt-3',
-      weekAndAirDate: `W3 | 15–21/${monthNum}`,
-      skuOrCombo: isPhCare ? 'Natural / Delicate (tùy tồn)' : `${cleanBrand} Hero SKU chủ lực`,
-      touchpointSource: 'Video affiliate',
-      klGroup: 'Mix KL / TAP',
-      kocCriteria: `Nữ beauty/lifestyle 22–35; đã trải nghiệm; mix TAP${tapW[2]}, KL2×${kl2W[2]}, KL5×${kl5W[2]}, KL6×${kl6W[2]}`,
+      sku: isPhCare ? 'Natural / Delicate (tùy tồn)' : `${cleanBrand} Hero SKU chủ lực`,
       pillar: 'Social proof: trải nghiệm thật',
-      angleAndBrief: 'Review trải nghiệm có thật: thao tác dùng/bao bì; không dựng kết quả điều trị.',
-      contentType: 'Video',
-      qty: tiktokWeeklyRows[2].tapCount + tiktokWeeklyRows[2].kl1Count + tiktokWeeklyRows[2].kl2Count + tiktokWeeklyRows[2].kl3Count + tiktokWeeklyRows[2].kl4Count + tiktokWeeklyRows[2].kl5Count + tiktokWeeklyRows[2].kl6Count + tiktokWeeklyRows[2].kl7Count,
-      budgetVnd: 0,
-      pic: preparedBy,
+      angle: 'Review trải nghiệm có thật: thao tác dùng/bao bì; không dựng kết quả điều trị.',
     },
     {
-      id: 'tt-cnt-4',
-      weekAndAirDate: `W4 | 22–28/${monthNum}`,
-      skuOrCombo: isPhCare ? 'Natural + Cooling (tùy tồn)' : `${cleanBrand} Combo Cuối Tháng`,
-      touchpointSource: 'Video affiliate',
-      klGroup: 'Mix KL / TAP',
-      kocCriteria: `Nữ beauty/lifestyle 22–35; đã trải nghiệm; mix TAP${tapW[3]}, KL2×${kl2W[3]}, KL5×${kl5W[3]}, KL6×${kl6W[3]}`,
+      sku: isPhCare ? 'Natural + Cooling (tùy tồn)' : `${cleanBrand} Combo Cuối Tháng`,
       pillar: 'Promotion: chọn mua trong đợt sale',
-      angleAndBrief: `Chọn đơn lẻ hay combo, giải thích giá/voucher; nhắc đợt sale cuối tháng 27/${monthNum} theo CTKM đã duyệt.`,
-      contentType: 'Video',
-      qty: tiktokWeeklyRows[3].tapCount + tiktokWeeklyRows[3].kl1Count + tiktokWeeklyRows[3].kl2Count + tiktokWeeklyRows[3].kl3Count + tiktokWeeklyRows[3].kl4Count + tiktokWeeklyRows[3].kl5Count + tiktokWeeklyRows[3].kl6Count + tiktokWeeklyRows[3].kl7Count,
-      budgetVnd: 0,
-      pic: preparedBy,
+      angle: `Chọn đơn lẻ hay combo, giải thích giá/voucher; nhắc đợt sale cuối tháng theo CTKM đã duyệt.`,
     },
     {
-      id: 'tt-cnt-5',
-      weekAndAirDate: `W5 | 29–30/${monthNum}`,
-      skuOrCombo: isPhCare ? 'Natural / combo mua lại' : `${cleanBrand} Combo Mua Lại`,
-      touchpointSource: 'Video affiliate',
-      klGroup: 'Mix KL / TAP',
-      kocCriteria: `Nữ beauty/lifestyle 22–35; đã trải nghiệm; mix TAP${tapW[4]}, KL2×${kl2W[4]}, KL5×${kl5W[4]}, KL6×${kl6W[4]}`,
+      sku: isPhCare ? 'Natural / combo mua lại' : `${cleanBrand} Combo Mua Lại`,
       pillar: 'Usage: chọn mua lại',
-      angleAndBrief: 'Routine cuối tháng: nhắc xem thông tin SKU trước khi mua lại.',
-      contentType: 'Video',
-      qty: tiktokWeeklyRows[4].tapCount + tiktokWeeklyRows[4].kl1Count + tiktokWeeklyRows[4].kl2Count + tiktokWeeklyRows[4].kl3Count + tiktokWeeklyRows[4].kl4Count + tiktokWeeklyRows[4].kl5Count + tiktokWeeklyRows[4].kl6Count + tiktokWeeklyRows[4].kl7Count,
-      budgetVnd: 0,
-      pic: preparedBy,
-    },
-    // 5 dòng Video self / Ảnh trượt
-    {
-      id: 'tt-cnt-6',
-      weekAndAirDate: `W1 | 01–07/${monthNum}`,
-      skuOrCombo: isPhCare ? 'Natural / combo 2 Natural' : `${cleanBrand} Hero SKU`,
-      touchpointSource: 'Video self',
-      klGroup: 'Không áp dụng',
-      kocCriteria: 'Không dùng KOC; Content + VJ nội bộ',
-      pillar: 'Problem / tình huống',
-      angleAndBrief: 'Carousel 4 bài: đọc nhãn sản phẩm, chọn SKU theo nhu cầu và FAQ. Mỗi bài 4–6 slide; theo hướng dẫn nhãn.',
-      contentType: 'Ảnh trượt',
-      qty: 4,
-      budgetVnd: 4000000,
-      pic: preparedBy,
-    },
-    {
-      id: 'tt-cnt-7',
-      weekAndAirDate: `W2 | 08–14/${monthNum}`,
-      skuOrCombo: isPhCare ? 'Natural + Delicate/Cooling (tùy tồn)' : `${cleanBrand} Combo Sale Đôi`,
-      touchpointSource: 'Video self',
-      klGroup: 'Không áp dụng',
-      kocCriteria: 'Không dùng KOC; Content + VJ nội bộ',
-      pillar: 'Promotion',
-      angleAndBrief: `Carousel 4 bài: giải thích giá đơn lẻ/combo, điều kiện voucher ${monthNum}.${monthNum}; 4–6 slide/bài.`,
-      contentType: 'Ảnh trượt',
-      qty: 4,
-      budgetVnd: 4000000,
-      pic: contentMainPic,
-    },
-    {
-      id: 'tt-cnt-8',
-      weekAndAirDate: `W3 | 15–21/${monthNum}`,
-      skuOrCombo: isPhCare ? 'Natural / Delicate (tùy tồn)' : `${cleanBrand} Hero SKU`,
-      touchpointSource: 'Video self',
-      klGroup: 'Không áp dụng',
-      kocCriteria: 'Không dùng KOC; Content + VJ nội bộ',
-      pillar: 'Product education',
-      angleAndBrief: 'Carousel 4 bài FAQ chăm sóc hằng ngày; giới thiệu phân loại SKU theo tồn kho; không nêu claim chưa duyệt.',
-      contentType: 'Ảnh trượt',
-      qty: 4,
-      budgetVnd: 4000000,
-      pic: contentMainPic,
-    },
-    {
-      id: 'tt-cnt-9',
-      weekAndAirDate: `W4 | 22–28/${monthNum}`,
-      skuOrCombo: isPhCare ? 'Natural + Cooling (tùy tồn)' : `${cleanBrand} Combo Cuối Tháng`,
-      touchpointSource: 'Video self',
-      klGroup: 'Không áp dụng',
-      kocCriteria: 'Không dùng KOC; Content + VJ nội bộ',
-      pillar: 'Usage / routine',
-      angleAndBrief: `Carousel 4 bài: routine khi bận + checklist mua hàng 27/${monthNum}; giá/điều kiện đúng CTKM.`,
-      contentType: 'Ảnh trượt',
-      qty: 4,
-      budgetVnd: 4000000,
-      pic: contentMainPic,
-    },
-    {
-      id: 'tt-cnt-10',
-      weekAndAirDate: `W5 | 29–30/${monthNum}`,
-      skuOrCombo: isPhCare ? 'Natural / combo mua lại' : `${cleanBrand} Combo Mua Lại`,
-      touchpointSource: 'Video self',
-      klGroup: 'Không áp dụng',
-      kocCriteria: 'Không dùng KOC; Content + VJ nội bộ',
-      pillar: 'Usage / mua lại',
-      angleAndBrief: 'Carousel 4 bài: recap cách chọn SKU/mua lại; 4–6 slide/bài, không tạo khan hiếm giả.',
-      contentType: 'Ảnh trượt',
-      qty: 4,
-      budgetVnd: 4000000,
-      pic: contentMainPic,
+      angle: 'Routine cuối tháng: nhắc xem thông tin SKU trước khi mua lại.',
     },
   ];
 
-  // Section 05: 5 Chiến lược Pillar P01 -> P05
+  const selfWeekMeta = [
+    {
+      sku: isPhCare ? 'Natural / combo 2 Natural' : `${cleanBrand} Hero SKU`,
+      pillar: 'Problem / tình huống',
+      angle: 'Video Kênh Brand (Self-channel): đọc nhãn sản phẩm, chọn SKU theo nhu cầu và FAQ.',
+    },
+    {
+      sku: isPhCare ? 'Natural + Delicate/Cooling (tùy tồn)' : `${cleanBrand} Combo Sale Đôi`,
+      pillar: 'Promotion',
+      angle: `Video Kênh Brand (Self-channel): giải thích giá đơn lẻ/combo, điều kiện voucher ${monthNum}.${monthNum}.`,
+    },
+    {
+      sku: isPhCare ? 'Natural / Delicate (tùy tồn)' : `${cleanBrand} Hero SKU`,
+      pillar: 'Product education',
+      angle: 'Video Kênh Brand (Self-channel): FAQ chăm sóc hằng ngày; giới thiệu phân loại SKU theo tồn kho.',
+    },
+    {
+      sku: isPhCare ? 'Natural + Cooling (tùy tồn)' : `${cleanBrand} Combo Cuối Tháng`,
+      pillar: 'Usage / routine',
+      angle: `Video Kênh Brand (Self-channel): routine khi bận + checklist mua hàng cuối tháng ${monthNum}.`,
+    },
+    {
+      sku: isPhCare ? 'Natural / combo mua lại' : `${cleanBrand} Combo Mua Lại`,
+      pillar: 'Usage / mua lại',
+      angle: 'Video Kênh Brand (Self-channel): recap cách chọn SKU/mua lại, không tạo khan hiếm giả.',
+    },
+  ];
+
+  // Section 04.3: Chi tiết Content TikTok khớp 100% số lượng & ngân sách với 4.1.1
+  const tiktokContentRows: BrandOneSheetTikTokContentRow[] = [];
+  tiktokWeeklyRows.forEach((w, idx) => {
+    const affQty =
+      w.tapCount +
+      w.kl1Count +
+      w.kl2Count +
+      w.kl3Count +
+      w.kl4Count +
+      w.kl5Count +
+      w.kl6Count +
+      w.kl7Count;
+    const affBud =
+      w.kl1Budget +
+      w.kl2Budget +
+      w.kl3Budget +
+      w.kl4Budget +
+      w.kl5Budget +
+      w.kl6Budget +
+      w.kl7Budget;
+    if (idx < 4 || affQty > 0 || affBud > 0) {
+      const meta = affWeekMeta[idx] || affWeekMeta[0];
+      tiktokContentRows.push({
+        id: `tt-cnt-aff-${idx + 1}`,
+        weekAndAirDate: `${w.week} | ${w.dateRange}`,
+        skuOrCombo: meta.sku,
+        touchpointSource: 'Video affiliate',
+        klGroup: 'Mix KL / TAP',
+        kocCriteria: `Theo phân rã 4.1.1 (${buildTierMixLabel(w)})`,
+        pillar: meta.pillar,
+        angleAndBrief: meta.angle,
+        contentType: 'Video',
+        qty: affQty,
+        budgetVnd: affBud,
+        pic: tiktokPlan?.pic || preparedBy,
+      });
+    }
+  });
+
+  w411.forEach((w, idx) => {
+    if (idx < 4 || w.ttSelfQty > 0 || w.ttSelfBudget > 0) {
+      const meta = selfWeekMeta[idx] || selfWeekMeta[0];
+      tiktokContentRows.push({
+        id: `tt-cnt-self-${idx + 1}`,
+        weekAndAirDate: `${w.week} | ${w.dateRange}`,
+        skuOrCombo: meta.sku,
+        touchpointSource: 'Video self',
+        klGroup: 'Không áp dụng',
+        kocCriteria: 'Kênh Brand tự xây (Self-channel 4.1.1)',
+        pillar: meta.pillar,
+        angleAndBrief: meta.angle,
+        contentType: 'Video',
+        qty: w.ttSelfQty,
+        budgetVnd: w.ttSelfBudget,
+        pic: contentMainPic,
+      });
+    }
+  });
+
+  // Section 05: 5 Chiến lược Pillar P01 -> P05 (tỷ trọng nhân với tổng video thực tế 4.1.1)
+  const totalBrandVideos = s411.ttCastQty + s411.ttFocQty + s411.ttSelfQty + s411.spVideos;
+  const pillarCounts = [0, 1, 2, 3, 4].map((i) => {
+    const base = Math.floor(totalBrandVideos / 5);
+    const rem = totalBrandVideos - base * 5;
+    return base + (i < rem ? 1 : 0);
+  });
   const contentPillars: BrandOneSheetPillarRow[] = [
     {
       pillarId: 'P01',
@@ -484,7 +820,7 @@ export function buildBrandOneSheetPlanData(params: {
       priorityAngle: 'FAQ từ tình huống đời sống',
       suitableFormat: 'FAQ / POV',
       videoWeightRatio: 0.2,
-      monthlyVideoCount: 6,
+      monthlyVideoCount: pillarCounts[0],
     },
     {
       pillarId: 'P02',
@@ -495,7 +831,7 @@ export function buildBrandOneSheetPlanData(params: {
       priorityAngle: 'Demo thao tác, đọc nhãn',
       suitableFormat: 'Demo / tutorial',
       videoWeightRatio: 0.2,
-      monthlyVideoCount: 6,
+      monthlyVideoCount: pillarCounts[1],
     },
     {
       pillarId: 'P03',
@@ -506,7 +842,7 @@ export function buildBrandOneSheetPlanData(params: {
       priorityAngle: 'Unbox/texture/bao bì; không giả kết quả',
       suitableFormat: 'Review / unbox',
       videoWeightRatio: 0.2,
-      monthlyVideoCount: 6,
+      monthlyVideoCount: pillarCounts[2],
     },
     {
       pillarId: 'P04',
@@ -517,7 +853,7 @@ export function buildBrandOneSheetPlanData(params: {
       priorityAngle: 'Chai đơn vs combo; đọc điều kiện',
       suitableFormat: 'Deal explainer',
       videoWeightRatio: 0.2,
-      monthlyVideoCount: 6,
+      monthlyVideoCount: pillarCounts[3],
     },
     {
       pillarId: 'P05',
@@ -528,177 +864,168 @@ export function buildBrandOneSheetPlanData(params: {
       priorityAngle: 'Checklist lựa chọn/mua lại',
       suitableFormat: 'Routine / checklist',
       videoWeightRatio: 0.2,
-      monthlyVideoCount: 6,
+      monthlyVideoCount: pillarCounts[4],
     },
   ];
 
-  // Section 05: Target tuần Content Shopee (W1 -> W5)
-  const shopeeWeeklyTargets: BrandOneSheetShopeeWeeklyTarget[] = weekRanges.map((w) => ({
+  // Section 05.2: Target tuần Content Shopee (W1 -> W5) lấy trực tiếp từ 4.1.1
+  const shopeeWeeklyTargets: BrandOneSheetShopeeWeeklyTarget[] = w411.map((w) => ({
     week: w.week,
-    airDateRange: w.range,
-    plannedVideos: 6,
-    contentBudget: 4000000,
-    targetViews: 120000,
-    targetVideoGmv: 60000000,
-    ownerAction: `Content Shopee: 6 video; test hook/CTA ${w.week}`,
+    airDateRange: w.dateRange,
+    plannedVideos: w.spVideos,
+    contentBudget: w.spBudget,
+    targetViews: w.spVideos * 15000,
+    targetVideoGmv:
+      w.spBudget > 0
+        ? Math.round(w.spBudget * 5.5)
+        : w.spVideos > 0
+        ? Math.round((shopeeGmvVideo / Math.max(1, s411.spVideos)) * w.spVideos)
+        : 0,
+    ownerAction: `4.1.1 Shopee ${w.week}: ${w.spVideos} video · NS Net ${w.spBudget.toLocaleString('vi-VN')}đ`,
   }));
 
-  // Section 05: Lịch sản xuất & air Content Shopee (10 dòng W1 -> W5)
+  // Section 05.3: Lịch sản xuất & air Content Shopee khớp 100% số lượng & ngân sách với 4.1.1
   const kvCode = `KV${monthNum}-${cleanBrand.slice(0, 2).toUpperCase()}`;
-  const shopeeContentRows: BrandOneSheetShopeeContentRow[] = [
+  const spTemplates = [
     {
-      id: 'sp-cnt-1',
-      week: 'W1',
-      skuOrCombo: isPhCare ? 'Natural / combo 2 Natural' : `${cleanBrand} Hero SKU / Combo 2`,
-      touchpointSource: 'Video self',
-      airOrHandoverDate: `03/${monthNum}/${yearNum}`,
-      behaviorObjective: 'Awareness',
+      weekIdx: 0,
+      day: '03',
+      objective: 'Awareness',
       pillarId: 'P01',
-      angleAndBrief: '3 điều cần đọc trên nhãn trước khi chọn sản phẩm',
+      angle: '3 điều cần đọc trên nhãn trước khi chọn sản phẩm',
       format: 'FAQ',
-      productionMethod: 'VJ',
-      qty: 3,
-      budgetVnd: 2000000,
-      ownerDeadlineKvNote: `Content Shopee; draft trước air 2 ngày; ${kvCode}; final chưa tạo`,
+      method: 'VJ',
     },
     {
-      id: 'sp-cnt-2',
-      week: 'W1',
-      skuOrCombo: isPhCare ? 'Natural / combo 2 Natural' : `${cleanBrand} Hero SKU / Combo 2`,
-      touchpointSource: 'Video self',
-      airOrHandoverDate: `06/${monthNum}/${yearNum}`,
-      behaviorObjective: 'Consideration',
+      weekIdx: 0,
+      day: '06',
+      objective: 'Consideration',
       pillarId: 'P02',
-      angleAndBrief: 'Routine ở nhà: đọc hướng dẫn và chọn thao tác phù hợp',
+      angle: 'Routine ở nhà: đọc hướng dẫn và chọn thao tác phù hợp',
       format: 'Demo',
-      productionMethod: 'Remix',
-      qty: 3,
-      budgetVnd: 2000000,
-      ownerDeadlineKvNote: `Content Shopee; draft trước air 2 ngày; ${kvCode}; final chưa tạo`,
+      method: 'Remix',
     },
     {
-      id: 'sp-cnt-3',
-      week: 'W2',
-      skuOrCombo: isPhCare ? 'Natural + Delicate/Cooling (tùy tồn)' : `${cleanBrand} Combo Sale Đôi`,
-      touchpointSource: 'Video self',
-      airOrHandoverDate: `10/${monthNum}/${yearNum}`,
-      behaviorObjective: 'Consideration',
+      weekIdx: 1,
+      day: '10',
+      objective: 'Consideration',
       pillarId: 'P03',
-      angleAndBrief: 'Review từ người đã dùng: đọc nhãn, bao bì và cảm nhận thật; không dựng kết quả.',
+      angle: 'Review từ người đã dùng: đọc nhãn, bao bì và cảm nhận thật; không dựng kết quả.',
       format: 'Review / unbox',
-      productionMethod: 'VJ',
-      qty: 3,
-      budgetVnd: 2000000,
-      ownerDeadlineKvNote: `Content Shopee; draft trước air 2 ngày; ${kvCode}; final chưa tạo`,
+      method: 'VJ',
     },
     {
-      id: 'sp-cnt-4',
-      week: 'W2',
-      skuOrCombo: isPhCare ? 'Natural + Delicate/Cooling (tùy tồn)' : `${cleanBrand} Combo Sale Đôi`,
-      touchpointSource: 'Video self',
-      airOrHandoverDate: `12/${monthNum}/${yearNum}`,
-      behaviorObjective: 'Conversion',
+      weekIdx: 1,
+      day: '12',
+      objective: 'Conversion',
       pillarId: 'P04',
-      angleAndBrief: `Chai đơn hay combo: giải thích giá/voucher và điều kiện đợt ${monthNum}.${monthNum}.`,
+      angle: `Chai đơn hay combo: giải thích giá/voucher và điều kiện đợt ${monthNum}.${monthNum}.`,
       format: 'Deal explainer',
-      productionMethod: 'Remix',
-      qty: 3,
-      budgetVnd: 2000000,
-      ownerDeadlineKvNote: `Content Shopee; draft trước air 2 ngày; ${kvCode}; final chưa tạo`,
+      method: 'Remix',
     },
     {
-      id: 'sp-cnt-5',
-      week: 'W3',
-      skuOrCombo: isPhCare ? 'Natural / Delicate (tùy tồn)' : `${cleanBrand} Hero SKU`,
-      touchpointSource: 'Video self',
-      airOrHandoverDate: `16/${monthNum}/${yearNum}`,
-      behaviorObjective: 'Loyalty',
+      weekIdx: 2,
+      day: '16',
+      objective: 'Loyalty',
       pillarId: 'P05',
-      angleAndBrief: 'Checklist routine cá nhân cuối ngày; CTA xem hướng dẫn và lựa chọn SKU.',
+      angle: 'Checklist routine cá nhân cuối ngày; CTA xem hướng dẫn và lựa chọn SKU.',
       format: 'Routine',
-      productionMethod: 'VJ',
-      qty: 3,
-      budgetVnd: 2000000,
-      ownerDeadlineKvNote: `Content Shopee; draft trước air 2 ngày; ${kvCode}; final chưa tạo`,
+      method: 'VJ',
     },
     {
-      id: 'sp-cnt-6',
-      week: 'W3',
-      skuOrCombo: isPhCare ? 'Natural / Delicate (tùy tồn)' : `${cleanBrand} Hero SKU`,
-      touchpointSource: 'Video self',
-      airOrHandoverDate: `19/${monthNum}/${yearNum}`,
-      behaviorObjective: 'Awareness',
+      weekIdx: 2,
+      day: '19',
+      objective: 'Awareness',
       pillarId: 'P01',
-      angleAndBrief: 'FAQ ngại hỏi: 3 điều nên đọc trên nhãn trước khi chọn sản phẩm.',
+      angle: 'FAQ ngại hỏi: 3 điều nên đọc trên nhãn trước khi chọn sản phẩm.',
       format: 'FAQ',
-      productionMethod: 'Remix',
-      qty: 3,
-      budgetVnd: 2000000,
-      ownerDeadlineKvNote: `Content Shopee; draft trước air 2 ngày; ${kvCode}; final chưa tạo`,
+      method: 'Remix',
     },
     {
-      id: 'sp-cnt-7',
-      week: 'W4',
-      skuOrCombo: isPhCare ? 'Natural + Cooling (tùy tồn)' : `${cleanBrand} Combo Cuối Tháng`,
-      touchpointSource: 'Video self',
-      airOrHandoverDate: `24/${monthNum}/${yearNum}`,
-      behaviorObjective: 'Consideration',
+      weekIdx: 3,
+      day: '24',
+      objective: 'Consideration',
       pillarId: 'P02',
-      angleAndBrief: 'Demo dùng theo nhãn; quay cận thao tác.',
+      angle: 'Demo dùng theo nhãn; quay cận thao tác.',
       format: 'Demo',
-      productionMethod: 'VJ',
-      qty: 3,
-      budgetVnd: 2000000,
-      ownerDeadlineKvNote: `Content Shopee; draft trước air 2 ngày; ${kvCode}; final chưa tạo`,
+      method: 'VJ',
     },
     {
-      id: 'sp-cnt-8',
-      week: 'W4',
-      skuOrCombo: isPhCare ? 'Natural + Cooling (tùy tồn)' : `${cleanBrand} Combo Cuối Tháng`,
-      touchpointSource: 'Video self',
-      airOrHandoverDate: `27/${monthNum}/${yearNum}`,
-      behaviorObjective: 'Consideration',
+      weekIdx: 3,
+      day: '27',
+      objective: 'Consideration',
       pillarId: 'P03',
-      angleAndBrief: `Unbox/review cảm nhận thật, source có quyền sử dụng. Kết thúc CTA xem deal 27/${monthNum}.`,
+      angle: `Unbox/review cảm nhận thật, source có quyền sử dụng. Kết thúc CTA xem deal 27/${monthNum}.`,
       format: 'Review / unbox',
-      productionMethod: 'Remix',
-      qty: 3,
-      budgetVnd: 2000000,
-      ownerDeadlineKvNote: `Content Shopee; draft trước air 2 ngày; ${kvCode}; final chưa tạo`,
+      method: 'Remix',
     },
     {
-      id: 'sp-cnt-9',
-      week: 'W5',
-      skuOrCombo: isPhCare ? 'Natural / combo mua lại' : `${cleanBrand} Combo Mua Lại`,
-      touchpointSource: 'Video self',
-      airOrHandoverDate: `29/${monthNum}/${yearNum}`,
-      behaviorObjective: 'Conversion',
+      weekIdx: 4,
+      day: '29',
+      objective: 'Conversion',
       pillarId: 'P04',
-      angleAndBrief: 'Deal cuối tháng: giá, điều kiện, thời hạn; không tạo khan hiếm giả.',
+      angle: 'Deal cuối tháng: giá, điều kiện, thời hạn; không tạo khan hiếm giả.',
       format: 'Deal explainer',
-      productionMethod: 'VJ',
-      qty: 3,
-      budgetVnd: 2000000,
-      ownerDeadlineKvNote: `Content Shopee; draft trước air 2 ngày; ${kvCode}; final chưa tạo`,
+      method: 'VJ',
     },
     {
-      id: 'sp-cnt-10',
-      week: 'W5',
-      skuOrCombo: isPhCare ? 'Natural / combo mua lại' : `${cleanBrand} Combo Mua Lại`,
-      touchpointSource: 'Video self',
-      airOrHandoverDate: `30/${monthNum}/${yearNum}`,
-      behaviorObjective: 'Loyalty',
+      weekIdx: 4,
+      day: '30',
+      objective: 'Loyalty',
       pillarId: 'P05',
-      angleAndBrief: 'Recap routine và cách chọn mua lại theo nhu cầu; không cam kết điều trị.',
+      angle: 'Recap routine và cách chọn mua lại theo nhu cầu; không cam kết điều trị.',
       format: 'Routine',
-      productionMethod: 'Remix',
-      qty: 3,
-      budgetVnd: 2000000,
-      ownerDeadlineKvNote: `Content Shopee; draft trước air 2 ngày; ${kvCode}; final chưa tạo`,
+      method: 'Remix',
     },
   ];
 
-  return {
+  const shopeeContentRows: BrandOneSheetShopeeContentRow[] = [];
+  for (let wIdx = 0; wIdx < 5; wIdx++) {
+    const wData = w411[wIdx];
+    if (wIdx === 4 && wData.spVideos === 0 && wData.spBudget === 0) continue;
+    const t1 = spTemplates[wIdx * 2];
+    const t2 = spTemplates[wIdx * 2 + 1];
+    const q1 = Math.ceil(wData.spVideos / 2);
+    const q2 = Math.max(0, wData.spVideos - q1);
+    const b1 = wData.spVideos > 0 ? Math.round((wData.spBudget * q1) / wData.spVideos) : Math.round(wData.spBudget / 2);
+    const b2 = Math.max(0, wData.spBudget - b1);
+
+    shopeeContentRows.push({
+      id: `sp-cnt-${wIdx * 2 + 1}`,
+      week: wData.week,
+      skuOrCombo: isPhCare ? 'Natural / combo 2 Natural' : `${cleanBrand} Hero SKU / Combo`,
+      touchpointSource: 'Video self',
+      airOrHandoverDate: `${t1.day}/${monthNum}/${yearNum}`,
+      behaviorObjective: t1.objective,
+      pillarId: t1.pillarId,
+      angleAndBrief: t1.angle,
+      format: t1.format,
+      productionMethod: t1.method,
+      qty: q1,
+      budgetVnd: b1,
+      ownerDeadlineKvNote: `${contentMainPic}; draft trước air 2 ngày; ${kvCode}`,
+    });
+    if (q2 > 0 || b2 > 0 || wData.spVideos === 0) {
+      shopeeContentRows.push({
+        id: `sp-cnt-${wIdx * 2 + 2}`,
+        week: wData.week,
+        skuOrCombo: isPhCare ? 'Natural + Delicate/Cooling' : `${cleanBrand} Combo Chiến Dịch`,
+        touchpointSource: 'Video self',
+        airOrHandoverDate: `${t2.day}/${monthNum}/${yearNum}`,
+        behaviorObjective: t2.objective,
+        pillarId: t2.pillarId,
+        angleAndBrief: t2.angle,
+        format: t2.format,
+        productionMethod: t2.method,
+        qty: q2,
+        budgetVnd: b2,
+        ownerDeadlineKvNote: `${contentMainPic}; draft trước air 2 ngày; ${kvCode}`,
+      });
+    }
+  }
+
+  const totalAffVideos = s411.ttCastQty + s411.ttFocQty;
+  const freshData: BrandOneSheetPlanData = {
     brandName: cleanBrand,
     month,
     preparedBy,
@@ -725,14 +1052,14 @@ export function buildBrandOneSheetPlanData(params: {
       gmvLivestream: shopeeGmvLive,
       gmvProductCard: shopeeGmvCard,
       costBookingVideoAff: 0,
-      costVideoSelfChannel: 20000000,
-      costAds: 100000000,
-      costBookingLiveAff: 0,
-      costLiveSelfChannel: 30000000,
-      costDisplayPackage: 10000000,
-      costOtherNet: 5000000,
-      costAffiliateCommission: 10000000,
-      costAffiliateAdsCommission: 5000000,
+      costVideoSelfChannel: s411.spBudget,
+      costAds: s411.spAdsBudget,
+      costBookingLiveAff: s411.spLiveBudget,
+      costLiveSelfChannel: 0,
+      costDisplayPackage: 0,
+      costOtherNet: 0,
+      costAffiliateCommission: 0,
+      costAffiliateAdsCommission: 0,
     },
     tiktokKpi: {
       gmvSeller: tiktokGmvSeller,
@@ -746,29 +1073,29 @@ export function buildBrandOneSheetPlanData(params: {
       gmvLivestream: tiktokGmvLive,
       gmvProductCard: tiktokGmvCard,
       costBookingVideoAff: totalBookingVideoBudget,
-      costVideoSelfChannel: 20000000,
-      costAds: isPhCare ? 500000000 : tiktokPlan?.budgetAdsTotal || 500000000,
-      costBookingLiveAff: 0,
-      costLiveSelfChannel: 100000000,
+      costVideoSelfChannel: s411.ttSelfBudget,
+      costAds: s411.ttAdsBudget,
+      costBookingLiveAff: s411.ttLiveAffBudget,
+      costLiveSelfChannel: s411.ttLiveSelfBudget,
       costDisplayPackage: 0,
-      costOtherNet: 10000000,
-      costAffiliateCommission: 175000000,
-      costAffiliateAdsCommission: 25000000,
+      costOtherNet: 0,
+      costAffiliateCommission: 0,
+      costAffiliateAdsCommission: 0,
     },
     kpiBalanceNote:
-      'Lưu ý: GMV thẻ sản phẩm đang là phần cân đối = GMV nhà bán − GMV video − GMV live; Growth xác nhận cơ cấu nguồn trước duyệt. Ngân sách Marketing thúc đẩy (-VAT) chưa gồm chi phí hoa hồng tiếp thị liên kết ghi nhận chung với phí sàn.',
+      'Lưu ý: Số liệu Chi phí Booking Video Affiliate, Video Self-channel, Livestream và Số lượng Video tuần được đồng bộ trực tiếp từ Bản phân rã 4.1.1 của các gian hàng thuộc Brand.',
     keyVisual,
     tiktokOverviewExtra: {
-      selfRevenueTarget: 400000000,
-      selfContentCount: 20,
-      selfCostNet: 20000000,
-      affRevenueTarget: 1000000000,
-      awarenessVideoTagCount: 20,
-      brandingVideoTagCount: 10,
-      liveSelfOrders: 2500,
-      liveSelfSessions2h: 50,
-      liveAffOrders: 0,
-      liveAffSessions: 0,
+      selfRevenueTarget: s411.ttSelfBudget > 0 ? Math.round(s411.ttSelfBudget * 6) : Math.round(tiktokGmvVideo * 0.25),
+      selfContentCount: s411.ttSelfQty,
+      selfCostNet: s411.ttSelfBudget,
+      affRevenueTarget: totalBookingVideoBudget > 0 ? Math.round(totalBookingVideoBudget * 5.5) : Math.round(tiktokGmvVideo * 0.75),
+      awarenessVideoTagCount: Math.round(totalAffVideos * 0.35),
+      brandingVideoTagCount: Math.round(totalAffVideos * 0.15),
+      liveSelfOrders: s411.ttLiveSelfSessions * 30,
+      liveSelfSessions2h: s411.ttLiveSelfSessions,
+      liveAffOrders: s411.ttLiveAffSessions * 40,
+      liveAffSessions: s411.ttLiveAffSessions,
     },
     tiktokWeeklyRows,
     tiktokContentRows,
@@ -776,4 +1103,52 @@ export function buildBrandOneSheetPlanData(params: {
     shopeeWeeklyTargets,
     shopeeContentRows,
   };
+
+  // Nếu đã có oneSheetPlanData lưu trước đó, giữ lại nội dung định hướng/KV/Pillar do người dùng nhập
+  // nhưng tự động đồng bộ các bảng số liệu 4.1.1 (02 KPI, 4.1, 4.2, 5.2) và thay thế các dòng mẫu cố định cũ
+  const savedOneSheet =
+    (brandPlan?.oneSheetPlanData && brandPlan.oneSheetPlanData.month === month
+      ? brandPlan.oneSheetPlanData
+      : undefined) || matchingStorePlans.find((p) => p.oneSheetPlanData)?.oneSheetPlanData;
+
+  if (savedOneSheet) {
+    const existingKv = savedOneSheet.keyVisual;
+    const isLegacyTikTokContent =
+      (savedOneSheet.tiktokContentRows || []).length === 10 &&
+      savedOneSheet.tiktokContentRows.slice(0, 5).every((r) => r.budgetVnd === 0) &&
+      savedOneSheet.tiktokContentRows.slice(5, 10).every((r) => r.qty === 4 && r.budgetVnd === 4000000);
+    const isLegacyShopeeContent =
+      (savedOneSheet.shopeeContentRows || []).length === 10 &&
+      savedOneSheet.shopeeContentRows.every((r) => r.qty === 3 && r.budgetVnd === 2000000);
+
+    return {
+      ...savedOneSheet,
+      shopeeKpi: s411.has411Plan ? freshData.shopeeKpi : savedOneSheet.shopeeKpi,
+      tiktokKpi: s411.has411Plan ? freshData.tiktokKpi : savedOneSheet.tiktokKpi,
+      tiktokOverviewExtra: s411.has411Plan ? freshData.tiktokOverviewExtra : savedOneSheet.tiktokOverviewExtra,
+      tiktokWeeklyRows: s411.has411Plan ? freshData.tiktokWeeklyRows : savedOneSheet.tiktokWeeklyRows,
+      shopeeWeeklyTargets: s411.has411Plan ? freshData.shopeeWeeklyTargets : savedOneSheet.shopeeWeeklyTargets,
+      tiktokContentRows:
+        isLegacyTikTokContent || !savedOneSheet.tiktokContentRows?.length
+          ? freshData.tiktokContentRows
+          : savedOneSheet.tiktokContentRows,
+      shopeeContentRows:
+        isLegacyShopeeContent || !savedOneSheet.shopeeContentRows?.length
+          ? freshData.shopeeContentRows
+          : savedOneSheet.shopeeContentRows,
+      keyVisual: {
+        ...existingKv,
+        kvImages:
+          existingKv?.kvImages ??
+          brandPlan?.keyVisualSisPlan?.kvImages ??
+          [],
+        kvScheduleRows:
+          existingKv?.kvScheduleRows && existingKv.kvScheduleRows.length > 0
+            ? existingKv.kvScheduleRows
+            : buildDefaultKvScheduleRows(month, existingKv?.kvPic || kvPic),
+      },
+    };
+  }
+
+  return freshData;
 }

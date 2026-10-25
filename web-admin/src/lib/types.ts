@@ -1311,6 +1311,19 @@ export interface KeyVisualAssetItem {
   uploadedAt: string;
 }
 
+export interface KeyVisualScheduleRow {
+  id: string;
+  phaseName: string;       // Phiên bản / Đợt ảnh KV (VD: 'Master KV đầu tháng', 'Adapt Sale Đôi 10.10', 'Adapt Cuối tháng & Payday')
+  deliverables: string;    // Hạng mục thiết kế (VD: 'Master KV + Bộ Banner SIS + Khung PDP', 'Banner Campaign + Khung giá Sale Đôi')
+  refDate: string;         // Ngày cần lên Ref (YYYY-MM-DD)
+  orderDate: string;       // Ngày order thiết kế (YYYY-MM-DD)
+  draftDate: string;       // Ngày nộp bản Draft (YYYY-MM-DD)
+  approveDate: string;     // Ngày duyệt Final (YYYY-MM-DD)
+  hangDate: string;        // Ngày treo KV lên gian hàng (YYYY-MM-DD)
+  pic?: string;            // Nhân sự phụ trách
+  note?: string;           // Ghi chú (packshot, CTKM, lưu ý...)
+}
+
 export interface CampaignKeyVisualSpec {
   theme: string; // Chủ đề Key Visual (VD: 'Bọt mịn dịu nhẹ - Dịu êm ngày nhạy cảm')
   fonts?: string; // Font chữ chủ đạo (VD: 'Montserrat Bold / Nunito Sans Regular')
@@ -1322,6 +1335,7 @@ export interface CampaignKeyVisualSpec {
   hangDate?: string; // Ngày treo KV lên gian hàng (YYYY-MM-DD)
   kvPic?: string; // Nhân sự Key Visual / SIS phụ trách
   kvImages?: KeyVisualAssetItem[]; // Danh sách ảnh Key Visual / Moodboard / SIS / PDP tải lên
+  kvScheduleRows?: KeyVisualScheduleRow[]; // Bảng kế hoạch & mốc thời gian lên các đợt ảnh Key Visual trong tháng
 }
 
 export interface CampaignItem {

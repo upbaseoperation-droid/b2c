@@ -16,6 +16,8 @@ import { contractApi } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
 import {
+  SOW_TASKS_META_KEY,
+  SOW_TASK_DELIVERABLE_INFO,
   buildJobAcceptanceBreakdown,
   formatMoneyInput,
   isAcceptance,
@@ -355,111 +357,146 @@ export function DraftBbntPreviewModal({
               </div>
             </div>
 
-            {/* Hạng mục 2..N: Các dịch vụ đi kèm */}
+            {/* Task #2..N: Các Task đi kèm trong Phụ lục SOW của Job */}
             <div className="p-2.5 rounded-lg border border-line bg-surface space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-semibold text-ink">
-                  2. Các dịch vụ đi kèm trong Phụ lục Job ({draftAddons.length} hạng mục)
+                  Các Task đi kèm trong Phụ lục SOW ({draftAddons.filter(a => a.includedInSow !== false).length}/{draftAddons.length} Task áp dụng cho Job này)
                 </span>
                 <span className="text-2xs font-mono text-ink-2">
-                  Phí dịch vụ đi kèm đạt nghiệm thu: {formatNumber(breakdown.financials.activeAddonsNet)}đ
+                  Phí Task đi kèm đạt nghiệm thu: {formatNumber(breakdown.financials.activeAddonsNet)}đ
                   {breakdown.financials.droppedDeduction > 0
-                    ? ` · Khấu trừ hủy: -${formatNumber(breakdown.financials.droppedDeduction)}đ`
+                    ? ` · Khấu trừ hủy Task: -${formatNumber(breakdown.financials.droppedDeduction)}đ`
                     : ''}
                 </span>
               </div>
 
               <div className="space-y-1.5">
-                {draftAddons.map((addon, idx) => (
-                  <div
-                    key={addon.id || idx}
-                    className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center p-2 rounded border border-line bg-sunken/30"
-                  >
-                    <div className="md:col-span-4">
-                      <Input
-                        value={addon.termLabel}
-                        onChange={e => {
-                          const nextList = draftAddons.map((a, i) =>
-                            i === idx ? { ...a, termLabel: e.target.value } : a,
-                          );
-                          handleUpdateBreakdown(draftVideoFee, nextList);
-                        }}
-                      />
-                    </div>
-                    <div className="md:col-span-2 flex items-center gap-1">
-                      <Input
-                        type="number"
-                        min={1}
-                        value={addon.durationDays}
-                        onChange={e => {
-                          const days = Math.max(1, Number(e.target.value) || 30);
-                          const nextList = draftAddons.map((a, i) =>
-                            i === idx ? { ...a, durationDays: days } : a,
-                          );
-                          handleUpdateBreakdown(draftVideoFee, nextList);
-                        }}
-                        className="font-mono text-right"
-                      />
-                      <span className="text-2xs text-ink-3 shrink-0">ngày</span>
-                    </div>
-                    <div className="md:col-span-2">
-                      <Input
-                        value={addon.evidenceCodeOrUrl}
-                        onChange={e => {
-                          const nextList = draftAddons.map((a, i) =>
-                            i === idx ? { ...a, evidenceCodeOrUrl: e.target.value } : a,
-                          );
-                          handleUpdateBreakdown(draftVideoFee, nextList);
-                        }}
-                        placeholder="Mã Spark Ads / Link..."
-                        className="font-mono"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Input
-                        inputMode="numeric"
-                        value={addon.allocatedCostVnd > 0 ? formatMoneyInput(String(addon.allocatedCostVnd)) : '0'}
-                        onChange={e => {
-                          const cost = Number(e.target.value.replace(/\D/g, '')) || 0;
-                          const nextList = draftAddons.map((a, i) =>
-                            i === idx ? { ...a, allocatedCostVnd: cost } : a,
-                          );
-                          handleUpdateBreakdown(draftVideoFee, nextList);
-                        }}
-                        className="font-mono text-right"
-                      />
-                    </div>
-                    <div className="md:col-span-2 flex items-center gap-1">
-                      <Select
-                        value={addon.acceptanceStatus}
-                        onChange={e => {
-                          const st = e.target.value as JobAcceptanceAddonRow['acceptanceStatus'];
-                          const nextList = draftAddons.map((a, i) =>
-                            i === idx ? { ...a, acceptanceStatus: st } : a,
-                          );
-                          handleUpdateBreakdown(draftVideoFee, nextList);
-                        }}
-                      >
-                        <option value="VERIFIED">Hoàn thành</option>
-                        <option value="PENDING_ACCEPTANCE">Chờ bàn giao</option>
-                        <option value="DROPPED">Hủy - Khấu trừ</option>
-                      </Select>
-                      {draftAddons.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const nextList = draftAddons.filter((_, i) => i !== idx);
-                            handleUpdateBreakdown(draftVideoFee, nextList);
-                          }}
-                          className="text-ink-3 hover:text-critical p-1 shrink-0"
-                          title="Xóa dịch vụ"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                {draftAddons.map((addon, idx) => {
+                  const isIncluded = addon.includedInSow !== false;
+                  const info = SOW_TASK_DELIVERABLE_INFO[addon.termType] || SOW_TASK_DELIVERABLE_INFO.ADS_CODE;
+                  const taskNo = idx + 2;
+                  return (
+                    <div
+                      key={addon.id || idx}
+                      className={`p-2 rounded border space-y-1.5 ${
+                        isIncluded ? 'border-line bg-sunken/30' : 'border-dashed border-line bg-sunken/15 opacity-70'
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <label className="inline-flex items-center gap-2 cursor-pointer font-semibold text-ink">
+                          <input
+                            type="checkbox"
+                            checked={isIncluded}
+                            onChange={e => {
+                              const checked = e.target.checked;
+                              const nextList = draftAddons.map((a, i) =>
+                                i === idx ? { ...a, includedInSow: checked } : a,
+                              );
+                              handleUpdateBreakdown(draftVideoFee, nextList);
+                            }}
+                            className="rounded border-line text-accent focus:ring-accent"
+                          />
+                          <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-mono text-2xs">
+                            Task #{taskNo} · {addon.taskCode || `${breakdown.jobCode}-T0${taskNo}`}
+                          </span>
+                          <span>{addon.termLabel}</span>
+                        </label>
+                        <span className="px-2 py-0.5 rounded bg-surface border border-line text-2xs text-ink-2">
+                          {isIncluded ? (addon.deliverableLabel || info.deliverableLabel) : 'Không có trong SOW của Job này'}
+                        </span>
+                      </div>
+
+                      {isIncluded && (
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+                          <div className="md:col-span-4">
+                            <Input
+                              value={addon.termLabel}
+                              onChange={e => {
+                                const nextList = draftAddons.map((a, i) =>
+                                  i === idx ? { ...a, termLabel: e.target.value } : a,
+                                );
+                                handleUpdateBreakdown(draftVideoFee, nextList);
+                              }}
+                            />
+                          </div>
+                          <div className="md:col-span-2 flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min={1}
+                              value={addon.durationDays}
+                              onChange={e => {
+                                const days = Math.max(1, Number(e.target.value) || 30);
+                                const nextList = draftAddons.map((a, i) =>
+                                  i === idx ? { ...a, durationDays: days } : a,
+                                );
+                                handleUpdateBreakdown(draftVideoFee, nextList);
+                              }}
+                              className="font-mono text-right"
+                            />
+                            <span className="text-2xs text-ink-3 shrink-0">ngày</span>
+                          </div>
+                          <div className="md:col-span-2">
+                            <Input
+                              value={addon.evidenceCodeOrUrl}
+                              onChange={e => {
+                                const nextList = draftAddons.map((a, i) =>
+                                  i === idx ? { ...a, evidenceCodeOrUrl: e.target.value } : a,
+                                );
+                                handleUpdateBreakdown(draftVideoFee, nextList);
+                              }}
+                              placeholder={info.evidencePlaceholder}
+                              className="font-mono"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <Input
+                              inputMode="numeric"
+                              value={addon.allocatedCostVnd > 0 ? formatMoneyInput(String(addon.allocatedCostVnd)) : '0'}
+                              onChange={e => {
+                                const cost = Number(e.target.value.replace(/\D/g, '')) || 0;
+                                const nextList = draftAddons.map((a, i) =>
+                                  i === idx ? { ...a, allocatedCostVnd: cost } : a,
+                                );
+                                handleUpdateBreakdown(draftVideoFee, nextList);
+                              }}
+                              className="font-mono text-right"
+                            />
+                          </div>
+                          <div className="md:col-span-2 flex items-center gap-1">
+                            <Select
+                              value={addon.acceptanceStatus}
+                              onChange={e => {
+                                const st = e.target.value as JobAcceptanceAddonRow['acceptanceStatus'];
+                                const nextList = draftAddons.map((a, i) =>
+                                  i === idx ? { ...a, acceptanceStatus: st } : a,
+                                );
+                                handleUpdateBreakdown(draftVideoFee, nextList);
+                              }}
+                            >
+                              <option value="VERIFIED">Hoàn thành</option>
+                              <option value="PENDING_ACCEPTANCE">Chờ bàn giao</option>
+                              <option value="DROPPED">Hủy - Khấu trừ</option>
+                            </Select>
+                            {draftAddons.length > 2 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const nextList = draftAddons.filter((_, i) => i !== idx);
+                                  handleUpdateBreakdown(draftVideoFee, nextList);
+                                }}
+                                className="text-ink-3 hover:text-critical p-1 shrink-0"
+                                title="Xóa Task"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

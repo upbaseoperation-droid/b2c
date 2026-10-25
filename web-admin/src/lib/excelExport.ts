@@ -976,9 +976,6 @@ export async function exportBrandMonthlyOneSheetToExcel(data: BrandOneSheetPlanD
     ['Moodboard', data.keyVisual.moodboard || ''],
     ['Link proposal', data.keyVisual.proposalUrl || ''],
     ['CTKM', data.keyVisual.promoTextOnKv || ''],
-    ['Ngày treo', data.keyVisual.hangDate || ''],
-    ['Ngày order', data.keyVisual.orderDate || ''],
-    ['Ngày cần lên Ref', data.keyVisual.refDate || ''],
   ];
 
   kvRows.forEach(([k, v]) => {
@@ -993,6 +990,64 @@ export async function exportBrandMonthlyOneSheetToExcel(data: BrandOneSheetPlanD
     ws.getRow(r).height = 26;
     r += 1;
   });
+
+  if (data.keyVisual.kvScheduleRows && data.keyVisual.kvScheduleRows.length > 0) {
+    ws.mergeCells(r, 1, r, 12);
+    ws.getCell(r, 1).value = '3.1 Bảng Kế hoạch & Mốc thời gian lên Plan ảnh Key Visual';
+    ws.getCell(r, 1).font = labelFont;
+    r += 1;
+
+    const kvSchedHeaders = [
+      'STT',
+      'Đợt / Phiên bản ảnh KV',
+      'Hạng mục thiết kế',
+      'Ngày lên Ref',
+      'Ngày Order',
+      'Ngày nộp Draft',
+      'Ngày Duyệt',
+      'Ngày Treo KV',
+      'PIC',
+      'Ghi chú',
+    ];
+    kvSchedHeaders.forEach((h, idx) => {
+      const c = ws.getCell(r, idx + 1);
+      c.value = h;
+      c.fill = tableHeaderFill;
+      c.font = thFont;
+      c.alignment = { horizontal: 'center', vertical: 'middle' };
+      c.border = defaultBorder;
+    });
+    ws.getRow(r).height = 22;
+    r += 1;
+
+    data.keyVisual.kvScheduleRows.forEach((row, idx) => {
+      const vals = [
+        idx + 1,
+        row.phaseName || '',
+        row.deliverables || '',
+        row.refDate || '',
+        row.orderDate || '',
+        row.draftDate || '',
+        row.approveDate || '',
+        row.hangDate || '',
+        row.pic || data.keyVisual.kvPic || '',
+        row.note || '',
+      ];
+      vals.forEach((val, cIdx) => {
+        const cell = ws.getCell(r, cIdx + 1);
+        cell.value = val;
+        cell.font = bodyFont;
+        cell.alignment = {
+          horizontal: cIdx === 0 || (cIdx >= 3 && cIdx <= 7) ? 'center' : 'left',
+          vertical: 'middle',
+          wrapText: true,
+        };
+        cell.border = defaultBorder;
+      });
+      ws.getRow(r).height = 22;
+      r += 1;
+    });
+  }
   r += 1;
 
   // =========================================================================

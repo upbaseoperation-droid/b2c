@@ -957,6 +957,24 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 - **Phạm vi rà soát mở rộng sang phần khác:** Đã đối soát toàn bộ các bộ lọc tháng trên `MonthlyPlanHub.tsx` và kiểm tra `npm run build` đạt `0 errors`.
 
 ---
+
+### BUG-051 — Trùng Lặp Nhập Liệu Và Hiển Thị Ở Nhiều Nơi Trên Hồ Sơ Thương Hiệu, Hồ Sơ Gian Hàng, Hồ Sơ KOC Và Hộp Thoại Đề Nghị Thanh Toán Lark
+- **Ngày phát hiện:** 25/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/brands/BrandProfileDetail.tsx`, `web-admin/src/components/koc/KocProfile.tsx`, `web-admin/src/components/stores/StoreProfile.tsx`, `web-admin/src/components/booking/LarkPaymentRequestModal.tsx`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. Trong `BrandProfileDetail.tsx`, tab `OVERVIEW` lặp lại nguyên văn 6 khối nội dung kèm các nút Thêm/Sửa/Xóa vốn đã có tab riêng (`WORKFLOW`, `PRODUCTS`, `COMPLIANCE`, `FILES`, `RATECARD`).
+  2. Trong `KocProfile.tsx`, khung `LegalPaymentPanel` ở cột phải chứa form sửa Pháp lý & Ngân hàng (`isEditingLegal`) trùng hoàn toàn với tab `LEGAL_PROFILES` (`KocLegalProfilesSection`), khung `ShippingAndContactPanel` có 2 chế độ sửa Email trùng nhau (`isEditingContact` và `quickEmailEditing`), và `<header>` lặp lại SĐT/Email/Khu vực đã có ở cột phải.
+  3. Trong `StoreProfile.tsx`, thanh công cụ và `<header>` đầu trang lặp lại 2 nút `Thông số tĩnh`, `Bàn giao PIC` và các badge `Gói`, `Hoa hồng`, `PIC` vốn đã hiển thị ở 2 Panel cột phải.
+  4. Trong `LarkPaymentRequestModal.tsx`, các ô `<Input>` chứng từ của từng Deal đã đủ điều kiện và 5 ô thông tin thụ hưởng/pháp lý của KOC luôn mở sẵn ở chế độ sửa thay vì hiển thị tóm tắt chỉ đọc kế thừa từ Hồ sơ KOC/Deal.
+- **Cách khắc phục:**
+  1. Tại `BrandProfileDetail.tsx`: Đổi tên tab `OVERVIEW` thành `Định vị & Pháp nhân`, xóa bỏ toàn bộ 6 khối bị lặp khỏi tab này để mỗi nhóm thông tin chỉ hiển thị và chỉnh sửa tại đúng tab chuyên trách của nó.
+  2. Tại `KocProfile.tsx`: Chuyển `LegalPaymentPanel` ở cột phải thành khung tóm tắt chỉ đọc và điều hướng nút `Quản lý pháp lý & TK` về tab gốc `LEGAL_PROFILES`; gộp sửa Email về duy nhất form `Sửa liên hệ`; xóa thông tin liên hệ lặp trên `<header>`.
+  3. Tại `StoreProfile.tsx`: Xóa 2 nút và các badge thông số tĩnh bị lặp trên đầu trang, giữ đầu mối duy nhất tại 2 Panel cột phải.
+  4. Tại `LarkPaymentRequestModal.tsx`: Mặc định hiển thị tóm tắt chỉ đọc cho chứng từ Deal đã đạt điều kiện và thông tin thụ hưởng đã có từ Hồ sơ KOC; chỉ mở các ô `<Input>` khi thiếu dữ liệu hoặc khi người dùng chủ động bấm `Sửa chứng từ` / `Sửa thông tin thụ hưởng`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Áp dụng nguyên tắc `Single Source of Truth` trên toàn bộ 4 cụm màn hình Hồ sơ Thương hiệu, Gian hàng, KOC và Thanh toán.
+
+---
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

@@ -19,7 +19,10 @@ import { getKocLegalProfiles, LEGAL_TYPE_LABEL } from '../koc/kocUtils';
 import {
   GROUP_ORDER,
   OFFICIAL_3STAGE_TEMPLATE_IDS,
+  SOW_TASKS_META_KEY,
+  SOW_TASK_DELIVERABLE_INFO,
   buildJobAcceptanceBreakdown,
+  describeFieldDataSource,
   formatMoneyInput,
   inferAcceptanceTemplateId,
   isAcceptance,
@@ -31,6 +34,7 @@ import {
   uniqueFields,
   type ContractDocStage,
   type JobAcceptanceAddonRow,
+  type SowTaskTermType,
 } from './contractUi';
 import { evaluateContractRules } from '../../lib/contracts/contractRules';
 import { parseDocxInBrowser } from './docxClientParser';
@@ -390,12 +394,35 @@ export function ContractForm({
   }, [templateId]);
 
   const fields = uniqueFields(template);
+  const [fieldFilterMode, setFieldFilterMode] = useState<'ALL' | 'NEEDS_ATTENTION'>('ALL');
+  const [showOmittedSowTasks, setShowOmittedSowTasks] = useState(false);
   const groups = useMemo(
     () => GROUP_ORDER.map(g => ({ ...g, fields: fields.filter(f => (f.group || 'OTHER') === g.key) })).filter(g => g.fields.length),
     [fields],
   );
   const required = fields.filter(f => f.required);
   const requiredDone = required.filter(f => values[f.key]?.trim()).length;
+  const filledTotalCount = fields.filter(f => values[f.key]?.trim()).length;
+  const missingTotalCount = fields.length - filledTotalCount;
+  const needsAttentionCount = fields.filter(f => !values[f.key]?.trim() || !prefilled.has(f.key)).length;
+
+  const refreshSystemPrefill = () => {
+    if (!fields.length) return;
+    const result = prefill(fields, {}, {
+      koc,
+      deal: dealWithActiveProfile || deal,
+      brand,
+      existingRecords: data.records,
+      parentRecord,
+      parentFields: parentTemplate ? uniqueFields(parentTemplate) : [],
+      legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
+      ctvAcceptedDeals,
+    });
+    const nextBd = buildJobAcceptanceBreakdown(dealWithActiveProfile || deal, koc, parentRecord, draftAddons, draftVideoFee);
+    const synced = syncValuesFromJobAcceptanceBreakdown(fields, result.values, nextBd);
+    setValues(synced);
+    setPrefilled(new Set(result.filled));
+  };
 
   const applyJobBreakdownToDraftValues = (
     nextVideoFee: number,
@@ -865,9 +892,13 @@ export function ContractForm({
       className="space-y-4"
       onSubmit={e => {
         e.preventDefault();
+        const baseValues =
+          isSow || kind === 'ACCEPTANCE'
+            ? { ...values, [SOW_TASKS_META_KEY]: JSON.stringify(draftAddons) }
+            : values;
         const nextValues = isKocOwnForm && customContractValue.trim()
-          ? { ...values, 'token:[Tổng tiền trước thuế/sau thuế]': customContractValue.trim() }
-          : values;
+          ? { ...baseValues, 'token:[Tổng tiền trước thuế/sau thuế]': customContractValue.trim() }
+          : baseValues;
         onSave({
           title: title.trim(),
           brand: brand.trim() || 'UPBASE',
@@ -1277,8 +1308,8 @@ export function ContractForm({
             <Panel
               title={
                 isSow
-                  ? 'Phân bổ 3 hạng mục Phụ lục SOW (Video chính + Mã quảng cáo + Sử dụng hình ảnh)'
-                  : 'Kiểm tra Bản nháp Nghiệm thu theo Phụ lục Job (Video + Dịch vụ đi kèm)'
+                  ? 'Các Task trong Phụ lục SOW theo Job & Gắn đầu việc Nghiệm thu'
+                  : 'Nghiệm thu từng Task theo Phụ lục SOW của Job'
               }
               actions={
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -1286,13 +1317,53 @@ export function ContractForm({
                     size="sm"
                     variant="secondary"
                     onClick={() => {
+                      const nextList = draftAddons.map(a => ({ ...a, includedInSow: false }));
+                      applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                    }}
+                  >
+                    Chỉ 1 Task (Chỉ Video)
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      const nextList = draftAddons.map(a => ({
+                        ...a,
+                        includedInSow: a.termType === 'ADS_CODE',
+                      }));
+                      applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                    }}
+                  >
+                    2 Task (Video + Mã Ads)
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      const nextList = draftAddons.map(a => ({
+                        ...a,
+                        includedInSow: a.termType === 'ADS_CODE' || a.termType === 'IMAGE_USAGE' || Boolean(a.includedInSow),
+                      }));
+                      applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                    }}
+                  >
+                    Đủ 3 Task SOW
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      const info = SOW_TASK_DELIVERABLE_INFO.CROSS_POST_REUP;
                       const nextList: JobAcceptanceAddonRow[] = [
                         ...draftAddons,
                         {
                           id: `addon-${Date.now()}`,
+                          taskCode: `${jobAcceptanceBreakdown.jobCode}-T0${draftAddons.length + 2}`,
                           termType: 'CROSS_POST_REUP',
-                          termLabel: 'Đăng chéo kênh phụ / Dịch vụ bổ sung theo Phụ lục',
-                          durationDays: 30,
+                          termLabel: info.taskTitle,
+                          includedInSow: true,
+                          deliverableLabel: info.deliverableLabel,
+                          durationDays: info.defaultDays,
                           evidenceCodeOrUrl: '',
                           allocatedCostVnd: 0,
                           acceptanceStatus: 'VERIFIED',
@@ -1301,7 +1372,7 @@ export function ContractForm({
                       applyJobBreakdownToDraftValues(draftVideoFee, nextList);
                     }}
                   >
-                    + Thêm dịch vụ đi kèm
+                    + Thêm Task khác
                   </Button>
                   <Button
                     size="sm"
@@ -1327,34 +1398,47 @@ export function ContractForm({
                     </span>
                   </div>
                   <Status tone="positive">
-                    Nghiệm thu theo Phụ lục Job (1 Video + {draftAddons.length} dịch vụ đi kèm)
+                    Phạm vi Job: {1 + draftAddons.filter(a => a.includedInSow !== false).length} Task (1 Video +{' '}
+                    {draftAddons.filter(a => a.includedInSow !== false).length} Task đi kèm)
                   </Status>
                 </div>
 
-                {/* Hạng mục 1: Video chính */}
+                {/* Task #1: Sản xuất & đăng tải Video chính */}
                 <div className="p-3 rounded-lg border border-line bg-surface space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-semibold text-ink">
-                      1. Hạng mục Video chính: Sản xuất và đăng tải Video review ({jobAcceptanceBreakdown.videoItem.productName || brand || 'Sản phẩm chiến dịch'})
-                    </span>
-                    <Status tone="positive">Hoàn thành</Status>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-1.5 py-0.5 rounded bg-accent/15 text-accent font-mono text-2xs font-semibold">
+                        Task #1 · {jobAcceptanceBreakdown.videoItem.taskCode}
+                      </span>
+                      <span className="font-semibold text-ink">
+                        Sản xuất và đăng tải Video review ({jobAcceptanceBreakdown.videoItem.productName || brand || 'Sản phẩm chiến dịch'})
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded bg-sunken border border-line text-2xs text-ink-2">
+                        {jobAcceptanceBreakdown.videoItem.deliverableLabel}
+                      </span>
+                      <Status tone={jobAcceptanceBreakdown.videoItem.videoUrl ? 'positive' : 'warning'}>
+                        {jobAcceptanceBreakdown.videoItem.videoUrl ? 'Đã gắn Link Air' : 'Chờ Link Air'}
+                      </Status>
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 items-end">
-                    <Field label="Ngày đăng tải thực tế (Air Date)">
+                    <Field label="Ngày đăng tải (Tự lấy từ Job)">
                       <Input
                         value={jobAcceptanceBreakdown.videoItem.airDate || '—'}
                         readOnly
                         className="font-mono bg-sunken/40"
                       />
                     </Field>
-                    <Field label="Link bài đăng (Link Air)">
+                    <Field label="Đầu việc nghiệm thu: Link bài đăng (Link Air)">
                       <Input
-                        value={jobAcceptanceBreakdown.videoItem.videoUrl || 'Chưa điền link video'}
+                        value={jobAcceptanceBreakdown.videoItem.videoUrl || 'Chưa có link video trên Job'}
                         readOnly
                         className="font-mono bg-sunken/40"
                       />
                     </Field>
-                    <Field label="Thành tiền Video chính (VNĐ - Net)">
+                    <Field label="Thành tiền Task #1 (VNĐ - Net)">
                       <Input
                         inputMode="numeric"
                         className="font-mono tabular-nums font-semibold"
@@ -1368,124 +1452,223 @@ export function ContractForm({
                   </div>
                 </div>
 
-                {/* Hạng mục 2..N: Các dịch vụ đi kèm trong Phụ lục Job */}
-                <div className="p-3 rounded-lg border border-line bg-surface space-y-2">
+                {/* Task #2..N: Các Task đi kèm trong Phụ lục SOW (Bật/tắt tùy theo Job của từng KOC) */}
+                <div className="p-3 rounded-lg border border-line bg-surface space-y-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-semibold text-ink">
-                      2. Các dịch vụ đi kèm theo Phụ lục SOW ({draftAddons.length} hạng mục)
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-ink">
+                        Các Task đi kèm trong Phụ lục SOW ({draftAddons.filter(a => a.includedInSow !== false).length}/{draftAddons.length} Task áp dụng cho Job này)
+                      </span>
+                      {kind === 'ACCEPTANCE' && draftAddons.some(a => a.includedInSow === false) && (
+                        <button
+                          type="button"
+                          onClick={() => setShowOmittedSowTasks(v => !v)}
+                          className="text-2xs text-accent hover:underline font-medium"
+                        >
+                          {showOmittedSowTasks
+                            ? 'Ẩn các hạng mục không có trong SOW'
+                            : `Hiện ${draftAddons.filter(a => a.includedInSow === false).length} hạng mục không có trong SOW`}
+                        </button>
+                      )}
+                    </div>
                     <span className="text-2xs font-mono text-ink-2">
-                      Phí dịch vụ đạt nghiệm thu: {formatNumber(jobAcceptanceBreakdown.financials.activeAddonsNet)}đ
+                      Phí Task đi kèm đạt nghiệm thu: {formatNumber(jobAcceptanceBreakdown.financials.activeAddonsNet)}đ
                       {jobAcceptanceBreakdown.financials.droppedDeduction > 0
-                        ? ` · Khấu trừ hủy: -${formatNumber(jobAcceptanceBreakdown.financials.droppedDeduction)}đ`
+                        ? ` · Khấu trừ hủy Task: -${formatNumber(jobAcceptanceBreakdown.financials.droppedDeduction)}đ`
                         : ''}
                     </span>
                   </div>
 
                   <div className="space-y-2">
-                    {draftAddons.map((addon, idx) => (
-                      <div
-                        key={addon.id || idx}
-                        className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center p-2 rounded-lg border border-line bg-sunken/30"
-                      >
-                        <div className="md:col-span-4">
-                          <Input
-                            value={addon.termLabel}
-                            onChange={e => {
-                              const nextList = draftAddons.map((a, i) =>
-                                i === idx ? { ...a, termLabel: e.target.value } : a,
-                              );
-                              applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                            }}
-                            placeholder="Tên dịch vụ đi kèm..."
-                          />
-                        </div>
-                        <div className="md:col-span-2 flex items-center gap-1">
-                          <Input
-                            type="number"
-                            min={1}
-                            value={addon.durationDays}
-                            onChange={e => {
-                              const days = Math.max(1, Number(e.target.value) || 30);
-                              const nextList = draftAddons.map((a, i) =>
-                                i === idx ? { ...a, durationDays: days } : a,
-                              );
-                              applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                            }}
-                            className="font-mono text-right"
-                          />
-                          <span className="text-2xs text-ink-3 shrink-0">ngày</span>
-                        </div>
-                        <div className="md:col-span-2">
-                          <Input
-                            value={addon.evidenceCodeOrUrl}
-                            onChange={e => {
-                              const nextList = draftAddons.map((a, i) =>
-                                i === idx ? { ...a, evidenceCodeOrUrl: e.target.value } : a,
-                              );
-                              applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                            }}
-                            placeholder="Mã Spark Ads / Link..."
-                            className="font-mono"
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <Input
-                            inputMode="numeric"
-                            value={addon.allocatedCostVnd > 0 ? formatMoneyInput(String(addon.allocatedCostVnd)) : '0'}
-                            onChange={e => {
-                              const cost = Number(e.target.value.replace(/\D/g, '')) || 0;
-                              const nextList = draftAddons.map((a, i) =>
-                                i === idx ? { ...a, allocatedCostVnd: cost } : a,
-                              );
-                              applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                            }}
-                            placeholder="0 (Gộp gói)"
-                            className="font-mono text-right"
-                          />
-                        </div>
-                        <div className="md:col-span-2 flex items-center gap-1">
-                          <Select
-                            value={addon.acceptanceStatus}
-                            onChange={e => {
-                              const st = e.target.value as JobAcceptanceAddonRow['acceptanceStatus'];
-                              const nextList = draftAddons.map((a, i) =>
-                                i === idx ? { ...a, acceptanceStatus: st } : a,
-                              );
-                              applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                            }}
-                          >
-                            <option value="VERIFIED">Hoàn thành</option>
-                            <option value="PENDING_ACCEPTANCE">Chờ bàn giao</option>
-                            <option value="DROPPED">Hủy - Khấu trừ</option>
-                          </Select>
-                          {draftAddons.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const nextList = draftAddons.filter((_, i) => i !== idx);
-                                applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                              }}
-                              className="text-ink-3 hover:text-critical p-1 shrink-0"
-                              title="Xóa dịch vụ"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                    {draftAddons.map((addon, idx) => {
+                      const isIncluded = addon.includedInSow !== false;
+                      if (kind === 'ACCEPTANCE' && !isIncluded && !showOmittedSowTasks) {
+                        return null;
+                      }
+                      const info = SOW_TASK_DELIVERABLE_INFO[addon.termType] || SOW_TASK_DELIVERABLE_INFO.ADS_CODE;
+                      const taskNo = idx + 2;
+                      return (
+                        <div
+                          key={addon.id || idx}
+                          className={`p-2.5 rounded-lg border space-y-2 transition-colors ${
+                            isIncluded ? 'border-line bg-sunken/30' : 'border-dashed border-line bg-sunken/15 opacity-70'
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <label className="inline-flex items-center gap-2 cursor-pointer font-semibold text-ink">
+                              <input
+                                type="checkbox"
+                                checked={isIncluded}
+                                onChange={e => {
+                                  const checked = e.target.checked;
+                                  const nextList = draftAddons.map((a, i) =>
+                                    i === idx ? { ...a, includedInSow: checked } : a,
+                                  );
+                                  applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                                }}
+                                className="rounded border-line text-accent focus:ring-accent"
+                              />
+                              <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-mono text-2xs">
+                                Task #{taskNo} · {addon.taskCode || `${jobAcceptanceBreakdown.jobCode}-T0${taskNo}`}
+                              </span>
+                              <span>{addon.termLabel}</span>
+                            </label>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {isIncluded ? (
+                                <>
+                                  <span className="px-2 py-0.5 rounded bg-surface border border-line text-2xs text-ink-2">
+                                    {addon.deliverableLabel || info.deliverableLabel}
+                                  </span>
+                                  <Status
+                                    tone={
+                                      addon.acceptanceStatus === 'DROPPED'
+                                        ? 'critical'
+                                        : addon.acceptanceStatus === 'VERIFIED'
+                                          ? 'positive'
+                                          : 'warning'
+                                    }
+                                  >
+                                    {addon.acceptanceStatus === 'DROPPED'
+                                      ? 'Hủy - Khấu trừ'
+                                      : addon.acceptanceStatus === 'VERIFIED'
+                                        ? 'Đạt nghiệm thu'
+                                        : 'Chờ bàn giao đầu việc'}
+                                  </Status>
+                                </>
+                              ) : (
+                                <Status tone="neutral">Không có trong Job này (SOW ghi Không áp dụng)</Status>
+                              )}
+                            </div>
+                          </div>
+
+                          {isIncluded && (
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+                              <div className="md:col-span-3">
+                                <Select
+                                  value={addon.termType}
+                                  onChange={e => {
+                                    const nextType = e.target.value as SowTaskTermType;
+                                    const nextInfo = SOW_TASK_DELIVERABLE_INFO[nextType];
+                                    const nextList = draftAddons.map((a, i) =>
+                                      i === idx
+                                        ? {
+                                            ...a,
+                                            termType: nextType,
+                                            termLabel: nextInfo.taskTitle,
+                                            deliverableLabel: nextInfo.deliverableLabel,
+                                            durationDays: nextInfo.defaultDays,
+                                          }
+                                        : a,
+                                    );
+                                    applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                                  }}
+                                >
+                                  <option value="ADS_CODE">Cấp mã quảng cáo Spark Ads</option>
+                                  <option value="IMAGE_USAGE">Sử dụng hình ảnh &amp; video</option>
+                                  <option value="CROSS_POST_REUP">Đăng chéo / Reup kênh phụ</option>
+                                  <option value="LINK_BIO_CART">Gắn giỏ hàng / Link Bio</option>
+                                  <option value="EXCLUSIVITY">Độc quyền ngành hàng</option>
+                                </Select>
+                              </div>
+                              <div className="md:col-span-2 flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  value={addon.durationDays}
+                                  onChange={e => {
+                                    const days = Math.max(1, Number(e.target.value) || 30);
+                                    const nextList = draftAddons.map((a, i) =>
+                                      i === idx ? { ...a, durationDays: days } : a,
+                                    );
+                                    applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                                  }}
+                                  className="font-mono text-right"
+                                />
+                                <span className="text-2xs text-ink-3 shrink-0">ngày</span>
+                              </div>
+                              <div className="md:col-span-3">
+                                <Input
+                                  value={addon.evidenceCodeOrUrl}
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    const nextList = draftAddons.map((a, i) =>
+                                      i === idx
+                                        ? {
+                                            ...a,
+                                            evidenceCodeOrUrl: val,
+                                            acceptanceStatus:
+                                              val.trim() && a.acceptanceStatus === 'PENDING_ACCEPTANCE'
+                                                ? 'VERIFIED'
+                                                : a.acceptanceStatus,
+                                          }
+                                        : a,
+                                    );
+                                    applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                                  }}
+                                  placeholder={info.evidencePlaceholder}
+                                  className="font-mono"
+                                />
+                              </div>
+                              <div className="md:col-span-2">
+                                <Input
+                                  inputMode="numeric"
+                                  value={addon.allocatedCostVnd > 0 ? formatMoneyInput(String(addon.allocatedCostVnd)) : '0'}
+                                  onChange={e => {
+                                    const cost = Number(e.target.value.replace(/\D/g, '')) || 0;
+                                    const nextList = draftAddons.map((a, i) =>
+                                      i === idx ? { ...a, allocatedCostVnd: cost } : a,
+                                    );
+                                    applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                                  }}
+                                  placeholder="0 (Gộp gói)"
+                                  className="font-mono text-right"
+                                />
+                              </div>
+                              <div className="md:col-span-2 flex items-center gap-1">
+                                <Select
+                                  value={addon.acceptanceStatus}
+                                  onChange={e => {
+                                    const st = e.target.value as JobAcceptanceAddonRow['acceptanceStatus'];
+                                    const nextList = draftAddons.map((a, i) =>
+                                      i === idx ? { ...a, acceptanceStatus: st } : a,
+                                    );
+                                    applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                                  }}
+                                >
+                                  <option value="VERIFIED">Hoàn thành</option>
+                                  <option value="PENDING_ACCEPTANCE">Chờ bàn giao</option>
+                                  <option value="DROPPED">Hủy - Khấu trừ</option>
+                                </Select>
+                                {draftAddons.length > 2 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const nextList = draftAddons.filter((_, i) => i !== idx);
+                                      applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                                    }}
+                                    className="text-ink-3 hover:text-critical p-1 shrink-0"
+                                    title="Xóa Task"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Tóm tắt quyết toán nghiệm thu theo Phụ lục Job */}
+                {/* Tóm tắt quyết toán nghiệm thu theo các Task của Phụ lục Job */}
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-2.5 rounded-lg border border-line bg-sunken/60 font-mono">
                   <div>
                     <span className="text-2xs text-ink-3 block">Tổng Phụ lục SOW</span>
                     <strong className="text-ink">{formatNumber(jobAcceptanceBreakdown.financials.plannedTotalNet)}đ</strong>
                   </div>
                   <div>
-                    <span className="text-2xs text-ink-3 block">Khấu trừ hủy DV</span>
+                    <span className="text-2xs text-ink-3 block">Khấu trừ hủy Task</span>
                     <strong className={jobAcceptanceBreakdown.financials.droppedDeduction > 0 ? 'text-critical' : 'text-ink-2'}>
                       {jobAcceptanceBreakdown.financials.droppedDeduction > 0
                         ? `-${formatNumber(jobAcceptanceBreakdown.financials.droppedDeduction)}đ`
@@ -1523,41 +1706,78 @@ export function ContractForm({
             </Panel>
           )}
 
-          {!isKocOwnForm && template && groups.map(g => (
-            <Panel key={g.key} title={g.title}>
-              <div className="grid gap-3.5 md:grid-cols-2">
-                {g.fields.map(f => {
-                  const id = `ct-f-${f.key}`;
-                  const label = `${f.title || f.label}${f.required ? ' *' : ''}`;
-                  return (
-                    <Field key={f.key} label={label} htmlFor={id} className={f.kind === 'long' ? 'md:col-span-2' : undefined}>
-                      {f.kind === 'long' ? (
-                        <Textarea
-                          id={id}
-                          rows={2}
-                          maxLength={4000}
-                          value={values[f.key] || ''}
-                          onFocus={() => setActiveFieldKey(f.key)}
-                          onChange={e => setValue(f, e.target.value)}
-                        />
-                      ) : (
-                        <Input
-                          id={id}
-                          maxLength={4000}
-                          inputMode={f.kind === 'money' || f.kind === 'number' ? 'numeric' : undefined}
-                          placeholder={f.kind === 'date' ? 'dd/mm/yyyy' : f.kind === 'money' ? 'Số tiền (đ)' : undefined}
-                          className={f.kind === 'money' || f.kind === 'number' ? 'tabular-nums' : undefined}
-                          value={values[f.key] || ''}
-                          onFocus={() => setActiveFieldKey(f.key)}
-                          onChange={e => setValue(f, e.target.value)}
-                        />
-                      )}
-                    </Field>
-                  );
-                })}
+          {!isKocOwnForm && template && (
+            <div className="rounded-xl border border-line bg-surface p-3 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+              <div className="flex flex-wrap items-center gap-2">
+                <Status tone={missingTotalCount === 0 ? 'positive' : 'warning'}>
+                  Hệ thống tự điền: {filledTotalCount}/{fields.length} trường
+                </Status>
+                <span className="text-ink-2">
+                  {missingTotalCount === 0
+                    ? 'Đã kết nối đủ dữ liệu từ Hồ sơ KOC, Job & Hợp đồng gốc — Người dùng chỉ cần kiểm tra lại hoặc chỉnh sửa khi có ngoại lệ.'
+                    : `Còn ${missingTotalCount} trường trống (dòng dự phòng hoặc tùy chọn).`}
+                </span>
               </div>
-            </Panel>
-          ))}
+              <div className="flex flex-wrap items-center gap-2">
+                <Segmented
+                  value={fieldFilterMode}
+                  onChange={v => setFieldFilterMode(v as 'ALL' | 'NEEDS_ATTENTION')}
+                  items={[
+                    { key: 'ALL', label: `Tất cả trường (${fields.length})` },
+                    { key: 'NEEDS_ATTENTION', label: `Cần kiểm tra / Chỉnh tay (${needsAttentionCount})` },
+                  ]}
+                />
+                <Button size="sm" variant="secondary" onClick={refreshSystemPrefill}>
+                  Đồng bộ lại từ KOC &amp; Job
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!isKocOwnForm && template && groups.map(g => {
+            const visibleFields =
+              fieldFilterMode === 'NEEDS_ATTENTION'
+                ? g.fields.filter(f => !values[f.key]?.trim() || !prefilled.has(f.key))
+                : g.fields;
+            if (visibleFields.length === 0) return null;
+            return (
+              <Panel key={g.key} title={g.title}>
+                <div className="grid gap-3.5 md:grid-cols-2">
+                  {visibleFields.map(f => {
+                    const id = `ct-f-${f.key}`;
+                    const hasVal = Boolean(values[f.key]?.trim());
+                    const srcInfo = describeFieldDataSource(f, prefilled.has(f.key), hasVal, Boolean(parentRecord));
+                    const label = `${f.title || f.label}${f.required ? ' *' : ''} (${srcInfo.badgeLabel})`;
+                    return (
+                      <Field key={f.key} label={label} htmlFor={id} className={f.kind === 'long' ? 'md:col-span-2' : undefined}>
+                        {f.kind === 'long' ? (
+                          <Textarea
+                            id={id}
+                            rows={2}
+                            maxLength={4000}
+                            value={values[f.key] || ''}
+                            onFocus={() => setActiveFieldKey(f.key)}
+                            onChange={e => setValue(f, e.target.value)}
+                          />
+                        ) : (
+                          <Input
+                            id={id}
+                            maxLength={4000}
+                            inputMode={f.kind === 'money' || f.kind === 'number' ? 'numeric' : undefined}
+                            placeholder={f.kind === 'date' ? 'dd/mm/yyyy' : f.kind === 'money' ? 'Số tiền (đ)' : undefined}
+                            className={f.kind === 'money' || f.kind === 'number' ? 'tabular-nums' : undefined}
+                            value={values[f.key] || ''}
+                            onFocus={() => setActiveFieldKey(f.key)}
+                            onChange={e => setValue(f, e.target.value)}
+                          />
+                        )}
+                      </Field>
+                    );
+                  })}
+                </div>
+              </Panel>
+            );
+          })}
 
           {(kind === 'ACCEPTANCE' || acceptanceScreenshots.length > 0) && (
             <Panel

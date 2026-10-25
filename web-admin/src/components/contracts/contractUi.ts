@@ -164,10 +164,55 @@ export function templateFor(
   return `${subjectKind}-${kind === 'CONTRACT' ? 'HD' : 'BBNT'}`;
 }
 
+export const SOW_TASKS_META_KEY = 'meta:sowTasksJson';
+
+export type SowTaskTermType = 'ADS_CODE' | 'IMAGE_USAGE' | 'EXCLUSIVITY' | 'CROSS_POST_REUP' | 'LINK_BIO_CART';
+
+export const SOW_TASK_DELIVERABLE_INFO: Record<
+  SowTaskTermType,
+  { taskTitle: string; deliverableLabel: string; evidencePlaceholder: string; defaultDays: number }
+> = {
+  ADS_CODE: {
+    taskTitle: 'Cấp mã code chạy quảng cáo video (Spark Ads)',
+    deliverableLabel: 'Đầu việc nghiệm thu: Bàn giao Mã Spark Ads',
+    evidencePlaceholder: 'Nhập mã Spark Ads (#...)...',
+    defaultDays: 30,
+  },
+  IMAGE_USAGE: {
+    taskTitle: 'Sử dụng hình ảnh và video gốc kể từ ngày đăng tải',
+    deliverableLabel: 'Đầu việc nghiệm thu: Bàn giao File gốc / Quyền sử dụng HA',
+    evidencePlaceholder: 'Link Drive file gốc / Link video...',
+    defaultDays: 90,
+  },
+  CROSS_POST_REUP: {
+    taskTitle: 'Đăng chéo / Reup đa kênh (FB Reels, IG, Shopee Video)',
+    deliverableLabel: 'Đầu việc nghiệm thu: Link bài đăng chéo kênh phụ',
+    evidencePlaceholder: 'Dán link bài reup FB / IG / Shopee...',
+    defaultDays: 30,
+  },
+  EXCLUSIVITY: {
+    taskTitle: 'Cam kết độc quyền ngành hàng theo thời hạn',
+    deliverableLabel: 'Đầu việc nghiệm thu: Kiểm tra tuân thủ độc quyền',
+    evidencePlaceholder: 'Ghi chú kiểm tra kênh trong thời hạn...',
+    defaultDays: 30,
+  },
+  LINK_BIO_CART: {
+    taskTitle: 'Gắn giỏ hàng / Link Bio duy trì trên kênh',
+    deliverableLabel: 'Đầu việc nghiệm thu: Kiểm tra gắn giỏ hàng / Link Bio',
+    evidencePlaceholder: 'Link giỏ hàng / Ảnh chụp giỏ hàng...',
+    defaultDays: 30,
+  },
+};
+
 export interface JobAcceptanceAddonRow {
   id: string;
-  termType: 'ADS_CODE' | 'IMAGE_USAGE' | 'EXCLUSIVITY' | 'CROSS_POST_REUP' | 'LINK_BIO_CART';
+  taskCode?: string;
+  termType: SowTaskTermType;
   termLabel: string;
+  /** Có nằm trong phạm vi công việc (SOW) của Job này hay không. Nếu false -> KOC không phải làm hạng mục này. */
+  includedInSow?: boolean;
+  /** Tên đầu việc vận hành gắn trực tiếp để đối soát khi lập Biên bản nghiệm thu (BBNT). */
+  deliverableLabel?: string;
   durationDays: number;
   evidenceCodeOrUrl: string;
   allocatedCostVnd: number;
@@ -180,12 +225,16 @@ export interface JobAcceptanceBreakdown {
   masterContractCode: string;
   subjectKind: SubjectKind;
   videoItem: {
+    taskCode: string;
+    includedInSow: boolean;
+    deliverableLabel: string;
     productName: string;
     brandName: string;
     airDate: string;
     videoUrl: string;
     feeNetVnd: number;
     quantity: number;
+    acceptanceStatus: 'VERIFIED' | 'PENDING_ACCEPTANCE';
   };
   addonItems: JobAcceptanceAddonRow[];
   financials: {
@@ -217,8 +266,23 @@ const extractDocDateFromCode = (code?: string): string => {
   return '';
 };
 
+const parseSavedSowTasks = (rawJson?: string): JobAcceptanceAddonRow[] | null => {
+  if (!rawJson?.trim()) return null;
+  try {
+    const parsed = JSON.parse(rawJson);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed as JobAcceptanceAddonRow[];
+    }
+  } catch {
+    // ignore malformed json
+  }
+  return null;
+};
+
 /**
- * Tổng hợp bảng kê nghiệm thu theo Phụ lục của từng Job (gồm 1 Video chính + các Dịch vụ đi kèm).
+ * Tổng hợp bảng kê Phụ lục SOW & Nghiệm thu theo từng Task (Đầu việc) của Job:
+ * - Không ép mọi KOC phải có đủ 3 hạng mục nếu Job thực tế chỉ có 1 Video.
+ * - Mỗi Task trên SOW gắn trực tiếp với 1 đầu việc bàn giao để đối soát khi nghiệm thu BBNT.
  */
 export function buildJobAcceptanceBreakdown(
   deal?: BookingDealItem,
@@ -245,49 +309,133 @@ export function buildJobAcceptanceBreakdown(
       ? `${parentRecord.values['token:[Ngày HĐNT]']}/HĐNT/UPBASE-${parentKocToken}`
       : `HĐNT-${parentKocToken || 'KOC'}`);
 
-  const addonItems: JobAcceptanceAddonRow[] = customAddons
-    ? customAddons
-    : deal?.rightsTerms && deal.rightsTerms.length > 0
-      ? deal.rightsTerms.map((rt, idx) => ({
-          id: rt.id || `addon-${idx + 1}`,
+  const savedFromParent = parseSavedSowTasks(parentRecord?.values?.[SOW_TASKS_META_KEY]);
+  const hasExplicitDealRightsArray = Array.isArray(deal?.rightsTerms);
+  const dealRights = deal?.rightsTerms || [];
+
+  const rawAddonItems: JobAcceptanceAddonRow[] = (() => {
+    if (customAddons) return customAddons;
+    if (savedFromParent) {
+      // Kế thừa đúng các Task đã chốt trên Phụ lục SOW và cập nhật kết quả bàn giao mới nhất từ Job
+      return savedFromParent.map((item, idx) => {
+        const liveRight = dealRights.find(r => r.termType === item.termType);
+        const liveEvidence =
+          item.evidenceCodeOrUrl ||
+          liveRight?.evidenceCodeOrUrl ||
+          (item.termType === 'ADS_CODE' ? deal?.sparkAdsCode || '' : '') ||
+          (item.termType === 'IMAGE_USAGE' ? deal?.tiktokVideoUrl || '' : '');
+        const info = SOW_TASK_DELIVERABLE_INFO[item.termType] || SOW_TASK_DELIVERABLE_INFO.ADS_CODE;
+        return {
+          ...item,
+          taskCode: item.taskCode || `${jobCode}-T0${idx + 2}`,
+          includedInSow: item.includedInSow ?? true,
+          deliverableLabel: item.deliverableLabel || info.deliverableLabel,
+          evidenceCodeOrUrl: liveEvidence,
+          acceptanceStatus:
+            liveRight?.acceptanceStatus === 'DROPPED' || item.acceptanceStatus === 'DROPPED'
+              ? 'DROPPED'
+              : liveRight?.acceptanceStatus === 'VERIFIED' ||
+                  item.acceptanceStatus === 'VERIFIED' ||
+                  Boolean(liveEvidence)
+                ? 'VERIFIED'
+                : 'PENDING_ACCEPTANCE',
+        };
+      });
+    }
+
+    // Dựng danh sách Task từ Job (BookingDealItem):
+    // Kiểm tra xem trong Job thực tế có hạng mục ADS_CODE và IMAGE_USAGE hay không
+    const adsFromDeal = dealRights.find(r => r.termType === 'ADS_CODE');
+    const imgFromDeal = dealRights.find(r => r.termType === 'IMAGE_USAGE');
+    const otherFromDeal = dealRights.filter(r => r.termType !== 'ADS_CODE' && r.termType !== 'IMAGE_USAGE');
+
+    // Nếu Job có mảng rightsTerms tường minh từ Deal Board, chỉ bật những Task thực sự có trong Job
+    const adsIncluded = hasExplicitDealRightsArray
+      ? Boolean(adsFromDeal || deal?.sparkAdsCode)
+      : true;
+    const imgIncluded = hasExplicitDealRightsArray
+      ? Boolean(imgFromDeal)
+      : true;
+
+    const list: JobAcceptanceAddonRow[] = [
+      {
+        id: adsFromDeal?.id || 'task-ads-code',
+        taskCode: `${jobCode}-T02`,
+        termType: 'ADS_CODE',
+        termLabel: adsFromDeal?.termLabel || SOW_TASK_DELIVERABLE_INFO.ADS_CODE.taskTitle,
+        includedInSow: adsIncluded,
+        deliverableLabel: SOW_TASK_DELIVERABLE_INFO.ADS_CODE.deliverableLabel,
+        durationDays: adsFromDeal?.durationDays || deal?.sparkAdsExpiryDays || 30,
+        evidenceCodeOrUrl: adsFromDeal?.evidenceCodeOrUrl || deal?.sparkAdsCode || '',
+        allocatedCostVnd: Number(adsFromDeal?.allocatedCostVnd) || 0,
+        acceptanceStatus:
+          adsFromDeal?.acceptanceStatus === 'DROPPED'
+            ? 'DROPPED'
+            : adsFromDeal?.acceptanceStatus === 'VERIFIED' || Boolean(deal?.sparkAdsCode || adsFromDeal?.evidenceCodeOrUrl)
+              ? 'VERIFIED'
+              : hasExplicitDealRightsArray
+                ? 'PENDING_ACCEPTANCE'
+                : 'VERIFIED',
+      },
+      {
+        id: imgFromDeal?.id || 'task-image-usage',
+        taskCode: `${jobCode}-T03`,
+        termType: 'IMAGE_USAGE',
+        termLabel: imgFromDeal?.termLabel || SOW_TASK_DELIVERABLE_INFO.IMAGE_USAGE.taskTitle,
+        includedInSow: imgIncluded,
+        deliverableLabel: SOW_TASK_DELIVERABLE_INFO.IMAGE_USAGE.deliverableLabel,
+        durationDays: imgFromDeal?.durationDays || 90,
+        evidenceCodeOrUrl: imgFromDeal?.evidenceCodeOrUrl || deal?.tiktokVideoUrl || '',
+        allocatedCostVnd: Number(imgFromDeal?.allocatedCostVnd) || 0,
+        acceptanceStatus:
+          imgFromDeal?.acceptanceStatus === 'DROPPED'
+            ? 'DROPPED'
+            : imgFromDeal?.acceptanceStatus === 'VERIFIED' || Boolean(imgFromDeal?.evidenceCodeOrUrl || deal?.tiktokVideoUrl)
+              ? 'VERIFIED'
+              : hasExplicitDealRightsArray
+                ? 'PENDING_ACCEPTANCE'
+                : 'VERIFIED',
+      },
+      ...otherFromDeal.map((rt, i) => {
+        const info = SOW_TASK_DELIVERABLE_INFO[rt.termType] || SOW_TASK_DELIVERABLE_INFO.CROSS_POST_REUP;
+        return {
+          id: rt.id || `task-extra-${i + 4}`,
+          taskCode: `${jobCode}-T0${i + 4}`,
           termType: rt.termType,
-          termLabel: rt.termLabel,
-          durationDays: rt.durationDays || 30,
-          evidenceCodeOrUrl: rt.evidenceCodeOrUrl || (rt.termType === 'ADS_CODE' ? deal?.sparkAdsCode || '' : ''),
+          termLabel: rt.termLabel || info.taskTitle,
+          includedInSow: true,
+          deliverableLabel: info.deliverableLabel,
+          durationDays: rt.durationDays || info.defaultDays,
+          evidenceCodeOrUrl: rt.evidenceCodeOrUrl || '',
           allocatedCostVnd: Number(rt.allocatedCostVnd) || 0,
           acceptanceStatus:
             rt.acceptanceStatus === 'DROPPED'
-              ? 'DROPPED'
-              : rt.acceptanceStatus === 'VERIFIED' || (rt.termType === 'ADS_CODE' && Boolean(deal?.sparkAdsCode || rt.evidenceCodeOrUrl))
-                ? 'VERIFIED'
-                : 'PENDING_ACCEPTANCE',
-        }))
-      : [
-          {
-            id: 'default-ads-code',
-            termType: 'ADS_CODE',
-            termLabel: 'Cấp mã code chạy quảng cáo video (Spark Ads)',
-            durationDays: deal?.sparkAdsExpiryDays || 30,
-            evidenceCodeOrUrl: deal?.sparkAdsCode || '',
-            allocatedCostVnd: 0,
-            acceptanceStatus: deal?.sparkAdsCode ? 'VERIFIED' : 'VERIFIED',
-          },
-          {
-            id: 'default-image-usage',
-            termType: 'IMAGE_USAGE',
-            termLabel: 'Sử dụng hình ảnh và video gốc kể từ ngày đăng tải',
-            durationDays: 90,
-            evidenceCodeOrUrl: deal?.tiktokVideoUrl || '',
-            allocatedCostVnd: 0,
-            acceptanceStatus: 'VERIFIED',
-          },
-        ];
+              ? ('DROPPED' as const)
+              : rt.acceptanceStatus === 'VERIFIED' || Boolean(rt.evidenceCodeOrUrl)
+                ? ('VERIFIED' as const)
+                : ('PENDING_ACCEPTANCE' as const),
+        };
+      }),
+    ];
+    return list;
+  })();
 
-  const totalAddonsAllocated = addonItems.reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
-  const activeAddonsNet = addonItems
+  const addonItems = rawAddonItems.map((item, idx) => {
+    const info = SOW_TASK_DELIVERABLE_INFO[item.termType] || SOW_TASK_DELIVERABLE_INFO.ADS_CODE;
+    return {
+      ...item,
+      taskCode: item.taskCode || `${jobCode}-T0${idx + 2}`,
+      includedInSow: item.includedInSow ?? true,
+      deliverableLabel: item.deliverableLabel || info.deliverableLabel,
+    };
+  });
+
+  const includedAddons = addonItems.filter(a => a.includedInSow !== false);
+  const totalAddonsAllocated = includedAddons.reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+  const activeAddonsNet = includedAddons
     .filter(a => a.acceptanceStatus !== 'DROPPED')
     .reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
-  const droppedDeduction = addonItems
+  const droppedDeduction = includedAddons
     .filter(a => a.acceptanceStatus === 'DROPPED')
     .reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
 
@@ -315,18 +463,24 @@ export function buildJobAcceptanceBreakdown(
       ? Math.max(0, tax.grossTotalContract - advanceAmount)
       : Math.max(0, tax.netAmountToReceive - advanceAmount);
 
+  const airUrl = deal?.tiktokVideoUrl || '';
+
   return {
     jobCode,
     appendixCode,
     masterContractCode,
     subjectKind,
     videoItem: {
+      taskCode: `${jobCode}-T01`,
+      includedInSow: true,
+      deliverableLabel: 'Đầu việc nghiệm thu: Đăng tải Video (Link Air) & Ảnh chụp sản phẩm',
       productName: deal?.productName || deal?.brandName || '',
       brandName: deal?.brandName || parentRecord?.brand || '',
       airDate: formatYmdToVnDate(deal?.postedDate || deal?.deadlinePost || ''),
-      videoUrl: deal?.tiktokVideoUrl || '',
+      videoUrl: airUrl,
       feeNetVnd: videoNet,
       quantity: deal?.committedOutputsCount || 1,
+      acceptanceStatus: airUrl ? 'VERIFIED' : 'PENDING_ACCEPTANCE',
     },
     addonItems,
     financials: {
@@ -355,8 +509,10 @@ export function resolveActiveLegalProfile(
   legalProfileId?: string,
 ): KocLegalProfile | undefined {
   const profiles = koc ? getKocLegalProfiles(koc) : [];
+  const explicitMatched = legalProfileId ? profiles.find(p => p.id === legalProfileId) : undefined;
   const targetId = legalProfileId || deal?.legalProfileId;
   const matched =
+    explicitMatched ||
     (targetId ? profiles.find(p => p.id === targetId) : undefined) ||
     (deal?.legalProfileSnapshot?.legalType
       ? profiles.find(p => p.legalType === deal.legalProfileSnapshot?.legalType)
@@ -367,14 +523,55 @@ export function resolveActiveLegalProfile(
   const snap = deal?.legalProfileSnapshot;
   if (!matched && !snap) return undefined;
 
+  const matchedBankAccount = matched?.bankAccount || matched?.bankAccountNumber;
+  const snapBankAccount = snap?.bankAccount || snap?.bankAccountNumber;
+
+  if (explicitMatched) {
+    return {
+      ...explicitMatched,
+      id: explicitMatched.id,
+      profileCode: explicitMatched.profileCode || 'HSPL-01',
+      status: explicitMatched.status || 'ACTIVE',
+      legalType: explicitMatched.legalType,
+      holderName: explicitMatched.holderName || koc?.companyName || koc?.realName || koc?.stageName || '',
+      taxCode: explicitMatched.taxCode || (explicitMatched.legalType !== 'INDIVIDUAL' ? koc?.taxCode : undefined),
+      cccd: explicitMatched.cccd || koc?.cccd || deal?.kocIdCardNumber,
+      cccdIssueDate: explicitMatched.cccdIssueDate || koc?.issueDate,
+      cccdIssuePlace: explicitMatched.cccdIssuePlace || koc?.issuePlace,
+      representativeName: explicitMatched.representativeName || koc?.legalRepresentative,
+      representativeTitle: explicitMatched.representativeTitle,
+      authorizationNumber: explicitMatched.authorizationNumber,
+      authorizationDate: explicitMatched.authorizationDate,
+      registeredAddress: explicitMatched.registeredAddress || koc?.permanentAddress,
+      bankName: explicitMatched.bankName || koc?.bankName || deal?.kocBankName,
+      bankAccount: matchedBankAccount || koc?.bankAccount || deal?.kocBankAccount,
+      bankAccountNumber: matchedBankAccount || koc?.bankAccount || deal?.kocBankAccount,
+      bankHolderName: explicitMatched.bankHolderName || explicitMatched.holderName || deal?.kocBankHolder,
+      taxAccountType: explicitMatched.taxAccountType || koc?.taxAccountType || '',
+      relationshipNote: explicitMatched.relationshipNote || 'Chính chủ KOC',
+      contactPhone: explicitMatched.contactPhone || koc?.phone,
+      contactEmail: explicitMatched.contactEmail || koc?.email,
+      isDefault: explicitMatched.isDefault ?? false,
+    };
+  }
+
   return {
     id: matched?.id || targetId || 'snap-profile',
     profileCode: snap?.profileCode || matched?.profileCode || 'HSPL-01',
     status: matched?.status || 'ACTIVE',
     legalType: snap?.legalType || matched?.legalType || (koc ? legalTypeOf(koc) : 'INDIVIDUAL'),
     holderName: snap?.holderName || matched?.holderName || koc?.companyName || koc?.realName || koc?.stageName || '',
-    taxCode: (snap?.legalType !== 'INDIVIDUAL' ? snap?.legalId : undefined) || matched?.taxCode || koc?.taxCode,
-    cccd: deal?.kocIdCardNumber || (snap?.legalType === 'INDIVIDUAL' ? snap?.legalId : undefined) || matched?.cccd || koc?.cccd,
+    taxCode:
+      snap?.taxCode ||
+      (snap?.legalType !== 'INDIVIDUAL' ? snap?.legalId : undefined) ||
+      matched?.taxCode ||
+      koc?.taxCode,
+    cccd:
+      snap?.cccd ||
+      deal?.kocIdCardNumber ||
+      (snap?.legalType === 'INDIVIDUAL' ? snap?.legalId : undefined) ||
+      matched?.cccd ||
+      koc?.cccd,
     cccdIssueDate: snap?.cccdIssueDate || matched?.cccdIssueDate || koc?.issueDate,
     cccdIssuePlace: snap?.cccdIssuePlace || matched?.cccdIssuePlace || koc?.issuePlace,
     representativeName: snap?.representativeName || matched?.representativeName || koc?.legalRepresentative,
@@ -382,11 +579,21 @@ export function resolveActiveLegalProfile(
     authorizationNumber: matched?.authorizationNumber,
     authorizationDate: matched?.authorizationDate,
     registeredAddress: snap?.registeredAddress || matched?.registeredAddress || koc?.permanentAddress,
-    bankName: deal?.kocBankName || snap?.bankName || matched?.bankName || koc?.bankName,
-    bankAccount: deal?.kocBankAccount || snap?.bankAccount || matched?.bankAccount || koc?.bankAccount,
-    bankHolderName: deal?.kocBankHolder || snap?.bankHolderName || matched?.bankHolderName || snap?.holderName || matched?.holderName,
+    bankName: snap?.bankName || matched?.bankName || deal?.kocBankName || koc?.bankName,
+    bankAccount: snapBankAccount || matchedBankAccount || deal?.kocBankAccount || koc?.bankAccount,
+    bankAccountNumber: snapBankAccount || matchedBankAccount || deal?.kocBankAccount || koc?.bankAccount,
+    bankHolderName:
+      snap?.bankHolderName ||
+      matched?.bankHolderName ||
+      deal?.kocBankHolder ||
+      snap?.holderName ||
+      matched?.holderName,
     taxAccountType: snap?.taxAccountType || matched?.taxAccountType || koc?.taxAccountType || '',
     relationshipNote: matched?.relationshipNote || 'Chính chủ KOC',
+    contactPhone: matched?.contactPhone || koc?.phone,
+    contactEmail: matched?.contactEmail || koc?.email,
+    frameworkContractCode: matched?.frameworkContractCode || snap?.frameworkContractCode,
+    frameworkContractStatus: matched?.frameworkContractStatus,
     isDefault: matched?.isDefault ?? true,
   };
 }
@@ -528,7 +735,15 @@ export function prefill(
 
   const breakdown = buildJobAcceptanceBreakdown(deal, koc, effectiveParentRecord);
   const droppedDeduction = deal?.droppedCostVnd ?? breakdown.financials.droppedDeduction;
-  const totalAmount = Math.max(0, (deal?.totalValue || parentMoneyFallback || 0) - droppedDeduction);
+  const isMultiRowCtvBbnt =
+    Boolean(ctx.ctvAcceptedDeals && ctx.ctvAcceptedDeals.length > 1) &&
+    fields.some(x => /^dòng\s+2\s*·/i.test(x.title || x.label || ''));
+  const ctvMonthlySum = isMultiRowCtvBbnt
+    ? (ctx.ctvAcceptedDeals || []).slice(0, 5).reduce((s, cd) => s + Math.max(0, Number(cd.totalValue || 0) - Number(cd.droppedCostVnd || 0)), 0)
+    : 0;
+  const totalAmount = isMultiRowCtvBbnt && ctvMonthlySum > 0
+    ? ctvMonthlySum
+    : Math.max(0, (deal?.totalValue || parentMoneyFallback || 0) - droppedDeduction);
   const videoLineAmount =
     deal?.videoAssetCostVnd && deal.videoAssetCostVnd > 0
       ? deal.videoAssetCostVnd
@@ -651,9 +866,9 @@ export function prefill(
       case 'address':
         return activeProfile?.registeredAddress || koc?.permanentAddress || parentValueBySource('address') || '';
       case 'phone':
-        return koc?.phone || deal?.sampleRecipientPhone || parentValueBySource('phone') || '';
+        return activeProfile?.contactPhone || koc?.phone || deal?.sampleRecipientPhone || parentValueBySource('phone') || '';
       case 'email':
-        return koc?.email || parentValueBySource('email') || '';
+        return activeProfile?.contactEmail || koc?.email || parentValueBySource('email') || '';
       case 'channelLink': {
         const handle = (koc?.channelId || deal?.kocChannelId || '').replace(/^@/, '').trim();
         return (
@@ -666,9 +881,9 @@ export function prefill(
       }
       case 'bankAccountName':
         return (
-          deal?.kocBankHolder ||
           activeProfile?.bankHolderName ||
           activeProfile?.holderName ||
+          deal?.kocBankHolder ||
           effectiveParentRecord?.values['token:[Tên chủ tài khoản]'] ||
           frameworkRecord?.values['token:[Tên chủ tài khoản]'] ||
           parentValueBySource('bankAccountName') ||
@@ -678,8 +893,9 @@ export function prefill(
         );
       case 'bankAccountNumber':
         return (
-          deal?.kocBankAccount ||
           activeProfile?.bankAccount ||
+          activeProfile?.bankAccountNumber ||
+          deal?.kocBankAccount ||
           koc?.bankAccount ||
           effectiveParentRecord?.values['token:[Số tài khoản]'] ||
           frameworkRecord?.values['token:[Số tài khoản]'] ||
@@ -688,8 +904,8 @@ export function prefill(
         );
       case 'bankName':
         return (
-          deal?.kocBankName ||
           activeProfile?.bankName ||
+          deal?.kocBankName ||
           koc?.bankName ||
           effectiveParentRecord?.values['token:[Tại Ngân hàng]'] ||
           frameworkRecord?.values['token:[Tại Ngân hàng]'] ||
@@ -772,6 +988,7 @@ export function prefill(
     ) {
       const adsRight = breakdown.addonItems.find(rt => rt.termType === 'ADS_CODE');
       if (adsRight) {
+        if (adsRight.includedInSow === false) return 'Không áp dụng';
         if (adsRight.acceptanceStatus === 'DROPPED') return '0';
         if (adsRight.allocatedCostVnd > 0) return money(adsRight.allocatedCostVnd);
       }
@@ -785,6 +1002,7 @@ export function prefill(
     ) {
       const imgRight = breakdown.addonItems.find(rt => rt.termType === 'IMAGE_USAGE');
       if (imgRight) {
+        if (imgRight.includedInSow === false) return 'Không áp dụng';
         if (imgRight.acceptanceStatus === 'DROPPED') return '0';
         if (imgRight.allocatedCostVnd > 0) return money(imgRight.allocatedCostVnd);
       }
@@ -847,11 +1065,13 @@ export function prefill(
     // Mã quảng cáo (Spark Ads) - Số ngày
     if (title.includes('mã quảng cáo') || context.includes('mã code để chạy quảng cáo')) {
       const adsRight = breakdown.addonItems.find(rt => rt.termType === 'ADS_CODE');
+      if (adsRight && adsRight.includedInSow === false) return '0';
       return String(adsRight?.durationDays || deal?.sparkAdsExpiryDays || 30);
     }
     // Thời hạn sử dụng hình ảnh - Số ngày
     if (title.includes('sử dụng hình ảnh') && (title.includes('số ngày') || context.includes('ngày kể từ ngày') || context.includes('ngày từ ngày'))) {
       const imgRight = breakdown.addonItems.find(rt => rt.termType === 'IMAGE_USAGE');
+      if (imgRight && imgRight.includedInSow === false) return '0';
       return String(imgRight?.durationDays || 90);
     }
     // Thời hạn sử dụng hình ảnh livestream (tháng)
@@ -868,7 +1088,14 @@ export function prefill(
     if (title.includes('thời lượng lên hình tối thiểu')) {
       return '60';
     }
-    // Bảng nghiệm thu tháng CTV-VID-BBNT (Dòng 1..5)
+    // Điều khoản điều chỉnh / ngoại lệ áp dụng theo SOW (IND-SOW, HKD-SOW, COM-SOW)
+    if (title.includes('điều khoản điều chỉnh') || title.includes('ngoại lệ áp dụng theo sow')) {
+      if (title.includes('(2)')) {
+        return parentValueByTitleContains('điều khoản điều chỉnh', '(2)') || 'Áp dụng nguyên vẹn theo Hợp đồng nguyên tắc';
+      }
+      return parentValueByTitleContains('điều khoản điều chỉnh') || 'Không có';
+    }
+    // Bảng nghiệm thu tháng CTV-VID-BBNT & CTV-HDNT (Dòng 1..5)
     const ctvRowMatch = title.match(/^dòng\s+([1-5])\s*·\s*(.+)$/i);
     if (ctvRowMatch) {
       const rowIdx = Number(ctvRowMatch[1]) - 1;
@@ -877,6 +1104,9 @@ export function prefill(
       const rowDeal = ctvDeals[rowIdx];
       if (colName === 'dạng video' && rowIdx === 0) {
         return 'Video review / giới thiệu sản phẩm trên kênh TikTok';
+      }
+      if (colName === 'ghi chú' && rowIdx === 0) {
+        return rowDeal?.contentNote || 'Theo kịch bản nhãn hàng duyệt';
       }
       if (rowDeal) {
         const rowQty = rowDeal.committedOutputsCount || 1;
@@ -904,10 +1134,10 @@ export function prefill(
     }
     // Ủy quyền đại diện (COM-HDNT, COM-SOW)
     if (title.includes('số văn bản ủy quyền')) {
-      return activeProfile?.authorizationNumber || parentValueByTitleContains('số văn bản ủy quyền') || '';
+      return activeProfile?.authorizationNumber || parentValueByTitleContains('số văn bản ủy quyền') || 'Không có (Đại diện theo pháp luật)';
     }
     if (title.includes('ngày ủy quyền')) {
-      return formatYmdToVnDate(activeProfile?.authorizationDate) || parentValueByTitleContains('ngày ủy quyền') || '';
+      return formatYmdToVnDate(activeProfile?.authorizationDate) || parentValueByTitleContains('ngày ủy quyền') || '—';
     }
     // Tháng nghiệm thu
     if (title.includes('tháng nghiệm thu')) {
@@ -927,12 +1157,85 @@ export function prefill(
       filled.push(f.key);
     }
   }
+  if (!next[SOW_TASKS_META_KEY] && breakdown.addonItems.length > 0) {
+    next[SOW_TASKS_META_KEY] = JSON.stringify(breakdown.addonItems);
+  }
   return { values: next, filled };
 }
 
 /**
- * Đồng bộ ngược số liệu từ Bảng kiểm nghiệm thu theo Phụ lục Job (Video + Dịch vụ đi kèm)
- * vào các ô của bản nháp Biên bản nghiệm thu (A4).
+ * Xác định nhãn nguồn dữ liệu của 1 trường trên hợp đồng để hiển thị cho người dùng biết
+ * hệ thống tự động lấy từ đâu ra (tránh phải nhập tay lại).
+ */
+export function describeFieldDataSource(
+  f: ContractField,
+  isPrefilled: boolean,
+  hasValue: boolean,
+  hasParentRecord: boolean,
+): { badgeLabel: string; tone: 'positive' | 'info' | 'warning' | 'neutral' } {
+  if (!hasValue) {
+    return { badgeLabel: f.required ? 'Cần bổ sung' : 'Tùy chọn', tone: f.required ? 'warning' : 'neutral' };
+  }
+  if (!isPrefilled) {
+    return { badgeLabel: 'Đã chỉnh tay', tone: 'info' };
+  }
+  const title = (f.title || f.label || '').toLowerCase();
+  if (
+    f.source === 'partyName' ||
+    f.source === 'ownerName' ||
+    f.source === 'representative' ||
+    f.source === 'cccd' ||
+    f.source === 'taxCode' ||
+    f.source === 'address' ||
+    f.source === 'phone' ||
+    f.source === 'email' ||
+    f.source === 'channelLink' ||
+    f.source === 'bankAccountName' ||
+    f.source === 'bankAccountNumber' ||
+    f.source === 'bankName' ||
+    title.includes('chức vụ') ||
+    title.includes('ủy quyền')
+  ) {
+    return { badgeLabel: 'Tự lấy từ Hồ sơ KOC / Pháp nhân', tone: 'positive' };
+  }
+  if (f.source === 'parentContractDate' || f.source === 'parentSowDate') {
+    return { badgeLabel: 'Kế thừa số hiệu HĐNT / SOW', tone: 'positive' };
+  }
+  if (
+    f.source === 'pitAmount' ||
+    f.source === 'vatAmount' ||
+    f.source === 'grossTotal' ||
+    f.source === 'remainingAmount' ||
+    f.source === 'amountInWords'
+  ) {
+    return { badgeLabel: 'Tự tính Thuế & Quyết toán (BR-09)', tone: 'positive' };
+  }
+  if (
+    f.source === 'product' ||
+    f.source === 'brand' ||
+    f.source === 'airDate' ||
+    f.source === 'unitPrice' ||
+    f.source === 'quantity' ||
+    f.source === 'lineTotal' ||
+    f.source === 'netTotal' ||
+    f.source === 'advanceAmount' ||
+    f.source === 'adjustmentAmount' ||
+    title.includes('mã code') ||
+    title.includes('mã quảng cáo') ||
+    title.includes('sử dụng hình ảnh') ||
+    title.includes('hoa hồng')
+  ) {
+    return {
+      badgeLabel: hasParentRecord ? 'Đồng bộ từ Job & Phụ lục SOW' : 'Tự lấy từ Job Booking',
+      tone: 'positive',
+    };
+  }
+  return { badgeLabel: 'Hệ thống tự điền', tone: 'positive' };
+}
+
+/**
+ * Đồng bộ ngược số liệu từ Bảng kiểm Task Phụ lục SOW / Nghiệm thu (Video + Các Task đi kèm)
+ * vào các ô của bản nháp Hợp đồng / Phụ lục / Biên bản nghiệm thu (A4).
  */
 export function syncValuesFromJobAcceptanceBreakdown(
   fields: ContractField[],
@@ -940,6 +1243,7 @@ export function syncValuesFromJobAcceptanceBreakdown(
   breakdown: JobAcceptanceBreakdown,
 ): Record<string, string> {
   const next = { ...prevValues };
+  next[SOW_TASKS_META_KEY] = JSON.stringify(breakdown.addonItems);
   const adsRight = breakdown.addonItems.find(rt => rt.termType === 'ADS_CODE');
   const imgRight = breakdown.addonItems.find(rt => rt.termType === 'IMAGE_USAGE');
   const fin = breakdown.financials;
@@ -977,22 +1281,36 @@ export function syncValuesFromJobAcceptanceBreakdown(
       (title.includes('thành tiền') || f.kind === 'money')
     ) {
       if (adsRight) {
-        next[f.key] = adsRight.acceptanceStatus === 'DROPPED' ? '0' : (money(adsRight.allocatedCostVnd) || '0');
+        next[f.key] =
+          adsRight.includedInSow === false
+            ? 'Không áp dụng'
+            : adsRight.acceptanceStatus === 'DROPPED'
+              ? '0'
+              : money(adsRight.allocatedCostVnd) || '0';
       }
     } else if (
       (title.includes('sử dụng hình ảnh') || context.includes('sử dụng hình ảnh')) &&
       (title.includes('thành tiền') || f.kind === 'money')
     ) {
       if (imgRight) {
-        next[f.key] = imgRight.acceptanceStatus === 'DROPPED' ? '0' : (money(imgRight.allocatedCostVnd) || '0');
+        next[f.key] =
+          imgRight.includedInSow === false
+            ? 'Không áp dụng'
+            : imgRight.acceptanceStatus === 'DROPPED'
+              ? '0'
+              : money(imgRight.allocatedCostVnd) || '0';
       }
     } else if (title.includes('mã quảng cáo') || context.includes('mã code để chạy quảng cáo')) {
-      if (adsRight?.durationDays) next[f.key] = String(adsRight.durationDays);
+      if (adsRight) {
+        next[f.key] = adsRight.includedInSow === false ? '0' : String(adsRight.durationDays || 30);
+      }
     } else if (
       title.includes('sử dụng hình ảnh') &&
       (title.includes('số ngày') || context.includes('ngày kể từ ngày') || context.includes('ngày từ ngày'))
     ) {
-      if (imgRight?.durationDays) next[f.key] = String(imgRight.durationDays);
+      if (imgRight) {
+        next[f.key] = imgRight.includedInSow === false ? '0' : String(imgRight.durationDays || 90);
+      }
     } else if (title.includes('tổng giá trị nghiệm thu') && title.includes('thành tiền')) {
       next[f.key] = title.includes('vat') ? (money(fin.grossTotal) || '0') : (money(fin.acceptedTotalNet) || '0');
     }

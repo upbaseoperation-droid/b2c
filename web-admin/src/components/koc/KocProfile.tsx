@@ -158,7 +158,6 @@ export function KocProfile({
   onScanDocs,
   onSearchSocialChannels,
   onUpdateKoc,
-  onOpenKocPortal,
   onSelectDealForContract,
 }: KocProfileProps) {
   const isPage = layout === 'page';
@@ -307,32 +306,14 @@ export function KocProfile({
               </a>
               {isPage && <span className="text-ink-3"> · {classificationOf(koc)}</span>}
             </p>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-2">
-              {koc.phone && (
-                <span className="font-mono text-ink text-xs">
-                  SĐT: {koc.phone}
-                </span>
-              )}
-              {koc.email && (
-                <a
-                  href={`mailto:${koc.email}`}
-                  className="font-mono text-accent hover:underline text-xs"
-                >
-                  {koc.email}
-                </a>
-              )}
-              {koc.location && (
-                <span className="text-ink-3 text-xs">
-                  {koc.location}
-                </span>
-              )}
-              {stats.avgRatingScore > 0 && (
+            {stats.avgRatingScore > 0 && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-2">
                 <span className="inline-flex items-center gap-1 text-2xs font-medium text-warning">
                   <Star className="w-3 h-3 fill-current" />
                   {stats.avgRatingScore} / 5.0
                 </span>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -503,7 +484,6 @@ export function KocProfile({
                   stats={stats}
                   currentUser={currentUser}
                   onViewDetail={setSelectedCollabDetail}
-                  onSelectDealForContract={onSelectDealForContract}
                   onOpenHistoryEvaluation={() => setHistoryEvalModalOpen(true)}
                 />
               )}
@@ -529,7 +509,6 @@ export function KocProfile({
                 <ActiveDealsSection
                   deals={kocDeals.filter(isDealOpen)}
                   onViewDetail={setSelectedCollabDetail}
-                  onSelectDealForContract={onSelectDealForContract}
                 />
               )}
             </div>
@@ -1120,7 +1099,6 @@ function CollaborationHistorySection({
   stats,
   currentUser,
   onViewDetail,
-  onSelectDealForContract,
   onOpenHistoryEvaluation,
 }: {
   koc: KocItem;
@@ -1128,7 +1106,6 @@ function CollaborationHistorySection({
   stats: KocPerformanceSummary;
   currentUser?: UserProfile;
   onViewDetail: (d: BookingDealItem) => void;
-  onSelectDealForContract?: (deal: BookingDealItem) => void;
   onOpenHistoryEvaluation?: () => void;
 }) {
   const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>('ALL');
@@ -1496,11 +1473,9 @@ function CollaborationHistorySection({
 function ActiveDealsSection({
   deals,
   onViewDetail,
-  onSelectDealForContract,
 }: {
   deals: BookingDealItem[];
   onViewDetail: (d: BookingDealItem) => void;
-  onSelectDealForContract?: (deal: BookingDealItem) => void;
 }) {
   const columns: Column<BookingDealItem>[] = [
     {
@@ -1613,7 +1588,6 @@ function ShippingAndContactPanel({
   const tiktokHandle = koc.channelId.replace(/^@+/, '');
 
   const [isEditingContact, setIsEditingContact] = useState(false);
-  const [quickEmailEditing, setQuickEmailEditing] = useState(false);
   const [draftEmail, setDraftEmail] = useState(koc.email || '');
   const [draftPhone, setDraftPhone] = useState(koc.phone || '');
   const [draftZalo, setDraftZalo] = useState(koc.zalo || '');
@@ -1643,22 +1617,6 @@ function ShippingAndContactPanel({
     setIsEditingContact(true);
   };
 
-  const handleSaveQuickEmail = () => {
-    const cleanEmail = draftEmail.trim();
-    const updated: KocItem = {
-      ...koc,
-      email: cleanEmail || undefined,
-    };
-    syncKocContactToStaffSheets(updated);
-    onUpdateKoc?.(
-      updated,
-      cleanEmail
-        ? `Đã lưu email ${cleanEmail} cho KOC ${koc.stageName}`
-        : `Đã cập nhật email cho KOC ${koc.stageName}`
-    );
-    setQuickEmailEditing(false);
-  };
-
   const handleSaveFullContact = () => {
     const updated: KocItem = {
       ...koc,
@@ -1674,7 +1632,6 @@ function ShippingAndContactPanel({
     syncKocContactToStaffSheets(updated);
     onUpdateKoc?.(updated, `Đã cập nhật liên hệ & địa chỉ nhận mẫu cho ${koc.stageName}`);
     setIsEditingContact(false);
-    setQuickEmailEditing(false);
   };
 
   return (
@@ -1916,63 +1873,13 @@ function ShippingAndContactPanel({
               )}
             </InfoRow>
             <InfoRow label="Email làm việc">
-              {quickEmailEditing ? (
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="email"
-                    autoFocus
-                    placeholder="Điền email KOC (vd: ten@gmail.com)..."
-                    value={draftEmail}
-                    onChange={(e) => setDraftEmail(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleSaveQuickEmail();
-                      } else if (e.key === 'Escape') {
-                        setQuickEmailEditing(false);
-                      }
-                    }}
-                    className="flex-1 min-w-0 h-7 px-2 rounded border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
-                  />
-                  <Button size="sm" variant="primary" onClick={handleSaveQuickEmail}>
-                    Lưu
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setQuickEmailEditing(false)}>
-                    Hủy
-                  </Button>
-                </div>
-              ) : koc.email ? (
-                <div className="flex items-center justify-between gap-2">
-                  <a
-                    href={`mailto:${koc.email}`}
-                    className="font-mono text-accent hover:underline truncate"
-                  >
-                    {koc.email}
-                  </a>
-                  {onUpdateKoc && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDraftEmail(koc.email || '');
-                        setQuickEmailEditing(true);
-                      }}
-                      className="text-2xs text-ink-3 hover:text-ink underline shrink-0 cursor-pointer"
-                    >
-                      Sửa
-                    </button>
-                  )}
-                </div>
-              ) : onUpdateKoc ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDraftEmail('');
-                    setQuickEmailEditing(true);
-                  }}
-                  className="text-2xs font-medium text-accent hover:underline cursor-pointer"
+              {koc.email ? (
+                <a
+                  href={`mailto:${koc.email}`}
+                  className="font-mono text-accent hover:underline truncate"
                 >
-                  + Điền email KOC
-                </button>
+                  {koc.email}
+                </a>
               ) : (
                 '—'
               )}
@@ -2068,71 +1975,11 @@ function LegalPaymentPanel({
   onOpenLegalTab?: () => void;
 }) {
   const [revealed, setRevealed] = useState(false);
-  const [isEditingLegal, setIsEditingLegal] = useState(false);
   const allowed = canRevealSensitive(currentUser, koc);
   const type = legalTypeOf(koc);
   const legalId = legalIdOf(koc);
   const legalProfiles = useMemo(() => getKocLegalProfiles(koc), [koc]);
   const show = (v: string) => (revealed ? v : mask(v));
-
-  const [draftLegalType, setDraftLegalType] = useState<'INDIVIDUAL' | 'HOUSEHOLD' | 'COMPANY'>(type);
-  const [draftRealName, setDraftRealName] = useState(koc.realName || '');
-  const [draftCompanyName, setDraftCompanyName] = useState(koc.companyName || '');
-  const [draftCccd, setDraftCccd] = useState(koc.cccd || '');
-  const [draftTaxCode, setDraftTaxCode] = useState(koc.taxCode || '');
-  const [draftTaxAccountType, setDraftTaxAccountType] = useState(
-    koc.taxAccountType || '(Thuế TNCN 10%) Tài khoản cá nhân'
-  );
-  const [draftBankName, setDraftBankName] = useState(koc.bankName || 'Techcombank');
-  const [draftBankAccount, setDraftBankAccount] = useState(koc.bankAccount || '');
-  const [draftDriveUrl, setDraftDriveUrl] = useState(koc.contractDriveUrl || '');
-
-  const openLegalEdit = () => {
-    setDraftLegalType(type);
-    setDraftRealName(koc.realName || '');
-    setDraftCompanyName(koc.companyName || '');
-    setDraftCccd(koc.cccd || '');
-    setDraftTaxCode(koc.taxCode || '');
-    setDraftTaxAccountType(
-      koc.taxAccountType ||
-        (type === 'COMPANY'
-          ? '(VAT 8%) Tài khoản doanh nghiệp'
-          : type === 'HOUSEHOLD'
-            ? 'Hộ kinh doanh cá thể'
-            : '(Thuế TNCN 10%) Tài khoản cá nhân')
-    );
-    setDraftBankName(koc.bankName || 'Techcombank');
-    setDraftBankAccount(koc.bankAccount || '');
-    setDraftDriveUrl(koc.contractDriveUrl || '');
-    setIsEditingLegal(true);
-  };
-
-  const handleSaveLegal = () => {
-    const updated: KocItem = {
-      ...koc,
-      realName: draftRealName.trim() || koc.realName,
-      companyName:
-        draftLegalType !== 'INDIVIDUAL'
-          ? draftCompanyName.trim() || draftRealName.trim() || undefined
-          : undefined,
-      cccd: draftCccd.trim(),
-      taxCode: draftTaxCode.trim() || undefined,
-      taxAccountType: draftTaxAccountType.trim() || undefined,
-      ocrDocumentType:
-        draftLegalType === 'COMPANY'
-          ? 'BUSINESS_LICENSE'
-          : draftLegalType === 'HOUSEHOLD'
-            ? 'BUSINESS_HOUSEHOLD'
-            : 'CCCD',
-      isOcrVerified: Boolean(draftCccd.trim() || draftTaxCode.trim() || koc.isOcrVerified),
-      bankName: draftBankName.trim() || undefined,
-      bankAccount: draftBankAccount.trim(),
-      contractDriveUrl: draftDriveUrl.trim() || undefined,
-    };
-    syncKocContactToStaffSheets(updated);
-    onUpdateKoc?.(updated, `Đã cập nhật pháp lý & tài khoản thanh toán cho ${koc.stageName}`);
-    setIsEditingLegal(false);
-  };
 
   const scanButton = onScanDocs && (
     <Button size="sm" icon={FileScan} onClick={() => onScanDocs(koc)}>
@@ -2145,12 +1992,12 @@ function LegalPaymentPanel({
       title="Pháp lý & Thanh toán"
       actions={
         <div className="flex items-center gap-1.5">
-          {!isEditingLegal && onUpdateKoc && (
-            <Button size="sm" variant="ghost" onClick={openLegalEdit}>
-              Sửa pháp lý & TK
+          {onOpenLegalTab && (
+            <Button size="sm" variant="ghost" onClick={onOpenLegalTab}>
+              Quản lý pháp lý &amp; TK
             </Button>
           )}
-          {!isEditingLegal && allowed && legalId && (
+          {allowed && legalId && (
             <Button size="sm" variant="ghost" onClick={() => setRevealed((v) => !v)}>
               {revealed ? 'Ẩn số' : 'Hiện số'}
             </Button>
@@ -2158,127 +2005,13 @@ function LegalPaymentPanel({
         </div>
       }
     >
-      {isEditingLegal ? (
-        <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-2.5 text-xs">
-          <div className="grid grid-cols-2 gap-2">
-            <Field label="Loại hồ sơ pháp lý">
-              <select
-                value={draftLegalType}
-                onChange={(e) => {
-                  const next = e.target.value as 'INDIVIDUAL' | 'HOUSEHOLD' | 'COMPANY';
-                  setDraftLegalType(next);
-                  setDraftTaxAccountType(
-                    next === 'COMPANY'
-                      ? '(VAT 8%) Tài khoản doanh nghiệp'
-                      : next === 'HOUSEHOLD'
-                        ? 'Hộ kinh doanh cá thể'
-                        : '(Thuế TNCN 10%) Tài khoản cá nhân'
-                  );
-                }}
-                className="w-full h-8 px-2 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
-              >
-                <option value="INDIVIDUAL">Cá nhân (CCCD)</option>
-                <option value="HOUSEHOLD">Hộ kinh doanh</option>
-                <option value="COMPANY">Công ty / MCN</option>
-              </select>
-            </Field>
-            <Field label="Chế độ khấu trừ thuế">
-              <input
-                type="text"
-                value={draftTaxAccountType}
-                onChange={(e) => setDraftTaxAccountType(e.target.value)}
-                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
-              />
-            </Field>
-          </div>
-          {draftLegalType !== 'INDIVIDUAL' && (
-            <Field label="Tên công ty / Hộ kinh doanh">
-              <input
-                type="text"
-                placeholder="VD: CÔNG TY TNHH..."
-                value={draftCompanyName}
-                onChange={(e) => setDraftCompanyName(e.target.value)}
-                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
-              />
-            </Field>
-          )}
-          <Field label={draftLegalType === 'INDIVIDUAL' ? 'Họ tên thật (chủ TK)' : 'Người đại diện / Chủ TK'}>
-            <input
-              type="text"
-              placeholder="Họ và tên..."
-              value={draftRealName}
-              onChange={(e) => setDraftRealName(e.target.value)}
-              className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
-            />
-          </Field>
-          <div className="grid grid-cols-2 gap-2">
-            <Field label="Số CCCD (12 số)">
-              <input
-                type="text"
-                placeholder="001..."
-                value={draftCccd}
-                onChange={(e) => setDraftCccd(e.target.value)}
-                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
-              />
-            </Field>
-            <Field label="Mã số thuế (MST)">
-              <input
-                type="text"
-                placeholder="MST cá nhân / công ty..."
-                value={draftTaxCode}
-                onChange={(e) => setDraftTaxCode(e.target.value)}
-                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
-              />
-            </Field>
-          </div>
-          <div className="grid grid-cols-2 gap-2 border-t border-line pt-2">
-            <Field label="Ngân hàng">
-              <input
-                type="text"
-                placeholder="Techcombank, MB Bank, VCB..."
-                value={draftBankName}
-                onChange={(e) => setDraftBankName(e.target.value)}
-                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
-              />
-            </Field>
-            <Field label="Số tài khoản nhận tiền">
-              <input
-                type="text"
-                placeholder="Nhập số tài khoản..."
-                value={draftBankAccount}
-                onChange={(e) => setDraftBankAccount(e.target.value)}
-                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
-              />
-            </Field>
-          </div>
-          <Field label="Link thư mục hợp đồng (Google Drive)">
-            <input
-              type="url"
-              placeholder="https://drive.google.com/..."
-              value={draftDriveUrl}
-              onChange={(e) => setDraftDriveUrl(e.target.value)}
-              className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
-            />
-          </Field>
-          <div className="flex items-center justify-end gap-1.5 pt-1">
-            <Button size="sm" variant="ghost" onClick={() => setIsEditingLegal(false)}>
-              Hủy
-            </Button>
-            <Button size="sm" variant="primary" icon={Check} onClick={handleSaveLegal}>
-              Lưu pháp lý & TK
-            </Button>
-          </div>
-        </div>
-      ) : !legalId && !koc.bankAccount ? (
+      {!legalId && !koc.bankAccount ? (
         <div className="space-y-3">
-          <p className="text-xs text-ink-2 leading-relaxed">
-            Chưa có giấy tờ pháp lý và tài khoản ngân hàng. Bấm đọc ảnh giấy tờ hoặc nhập trực tiếp để lập hợp đồng và thanh toán.
-          </p>
           <div className="flex flex-wrap items-center gap-2">
             {scanButton}
-            {onUpdateKoc && (
-              <Button size="sm" variant="secondary" onClick={openLegalEdit}>
-                Nhập CCCD & Tài khoản
+            {onOpenLegalTab && (
+              <Button size="sm" variant="secondary" onClick={onOpenLegalTab}>
+                Quản lý pháp lý &amp; TK
               </Button>
             )}
           </div>
@@ -2328,13 +2061,13 @@ function LegalPaymentPanel({
                   </button>
                 )}
               </div>
-            ) : onUpdateKoc ? (
+            ) : onOpenLegalTab ? (
               <button
                 type="button"
-                onClick={openLegalEdit}
+                onClick={onOpenLegalTab}
                 className="text-2xs font-medium text-accent hover:underline cursor-pointer"
               >
-                + Bổ sung số tài khoản
+                + Quản lý pháp lý &amp; TK
               </button>
             ) : (
               '—'
@@ -2420,7 +2153,7 @@ function LegalPaymentPanel({
         </dl>
       )}
 
-      {!isEditingLegal && (legalId || koc.bankAccount) && (
+      {(legalId || koc.bankAccount) && (
         <div className="mt-4 pt-3 border-t border-line flex items-center justify-between gap-2">
           <span className="text-2xs text-ink-3">
             {allowed ? 'Số đầy đủ chỉ hiện khi bấm “Hiện số”.' : 'Quản lý, Kế toán, Pháp chế & PIC xem được số đầy đủ.'}

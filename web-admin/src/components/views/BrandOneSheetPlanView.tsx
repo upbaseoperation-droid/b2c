@@ -14,6 +14,8 @@ import {
   Upload,
   Image as ImageIcon,
   Loader2,
+  CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   BrandOneSheetPlanData,
@@ -26,8 +28,13 @@ import {
   StorePortfolioItem,
   KeyVisualAssetCategory,
   KeyVisualAssetItem,
+  KeyVisualScheduleRow,
 } from '../../lib/types';
-import { buildBrandOneSheetPlanData } from '../../lib/oneSheetPlanBuilder';
+import {
+  buildBrandOneSheetPlanData,
+  buildDefaultKvScheduleRows,
+  extractBrand411Summary,
+} from '../../lib/oneSheetPlanBuilder';
 import { exportBrandMonthlyOneSheetToExcel } from '../../lib/excelExport';
 import { formatVndShort } from '../../lib/format';
 import { KEY_VISUAL_CATEGORY_LABEL, uploadKeyVisualImageClient, formatFileSize } from '../brands/brandUi';
@@ -225,6 +232,95 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
     );
   }, [formData.tiktokWeeklyRows]);
 
+  const s411 = useMemo(
+    () =>
+      extractBrand411Summary({
+        brandName,
+        month,
+        storePlans,
+        storePortfolios,
+      }),
+    [brandName, month, storePlans, storePortfolios]
+  );
+
+  const reconciliation411 = useMemo(() => {
+    const planCastQty =
+      ttWeeklyTotals.kl1 +
+      ttWeeklyTotals.kl2 +
+      ttWeeklyTotals.kl3 +
+      ttWeeklyTotals.kl4 +
+      ttWeeklyTotals.kl5 +
+      ttWeeklyTotals.kl6 +
+      ttWeeklyTotals.kl7;
+    const planCastBudget =
+      ttWeeklyTotals.kl1B +
+      ttWeeklyTotals.kl2B +
+      ttWeeklyTotals.kl3B +
+      ttWeeklyTotals.kl4B +
+      ttWeeklyTotals.kl5B +
+      ttWeeklyTotals.kl6B +
+      ttWeeklyTotals.kl7B;
+    const planFocQty = ttWeeklyTotals.tap;
+    const planSelfQty = formData.tiktokOverviewExtra.selfContentCount;
+    const planSelfLiveBudget =
+      formData.tiktokOverviewExtra.selfCostNet +
+      tt.costBookingLiveAff +
+      tt.costLiveSelfChannel;
+    const s411LiveBudget = s411.ttLiveAffBudget + s411.ttLiveSelfBudget;
+    const planSpQty = formData.shopeeWeeklyTargets.reduce((sum, r) => sum + (r.plannedVideos || 0), 0);
+    const planSpBudget = sp.costVideoSelfChannel + sp.costBookingVideoAff;
+    const planTotalNet = totPromoCost;
+
+    const rows = [
+      {
+        id: 'tt-cast',
+        label: 'Video Cast (KL1–KL7)',
+        val411: `${s411.ttCastQty} vid · ${formatVndShort(s411.ttCastBudget)}`,
+        valPlan: `${planCastQty} vid · ${formatVndShort(planCastBudget)}`,
+        matched:
+          s411.ttCastQty === planCastQty &&
+          Math.abs(s411.ttCastBudget - planCastBudget) <= 1000,
+      },
+      {
+        id: 'tt-foc',
+        label: 'Suất FOC (0đ)',
+        val411: `${s411.ttFocQty} vid`,
+        valPlan: `${planFocQty} vid`,
+        matched: s411.ttFocQty === planFocQty,
+      },
+      {
+        id: 'tt-self-live',
+        label: 'Self-channel & Live',
+        val411: `${s411.ttSelfQty} vid · ${formatVndShort(s411.ttSelfBudget + s411LiveBudget)}`,
+        valPlan: `${planSelfQty} vid · ${formatVndShort(planSelfLiveBudget)}`,
+        matched:
+          s411.ttSelfQty === planSelfQty &&
+          Math.abs(s411.ttSelfBudget + s411LiveBudget - planSelfLiveBudget) <= 1000,
+      },
+      {
+        id: 'shopee',
+        label: 'Shopee Video',
+        val411: `${s411.spVideos} vid · ${formatVndShort(s411.spBudget)}`,
+        valPlan: `${planSpQty} vid · ${formatVndShort(planSpBudget)}`,
+        matched:
+          s411.spVideos === planSpQty &&
+          Math.abs(s411.spBudget - planSpBudget) <= 1000,
+      },
+      {
+        id: 'total-net',
+        label: 'Tổng Ngân sách Net',
+        val411: formatVndShort(s411.totalNetBudget411),
+        valPlan: formatVndShort(planTotalNet),
+        matched: Math.abs(s411.totalNetBudget411 - planTotalNet) <= 1000,
+      },
+    ];
+
+    const allMatched = rows.every((r) => r.matched);
+    const storeCount = s411.matchingStorePlans.length;
+    const storeNames = s411.matchingStorePlans.map((p) => p.storeName);
+    return { rows, allMatched, storeCount, storeNames };
+  }, [s411, ttWeeklyTotals, formData, tt, sp, spPromoCost, totPromoCost]);
+
   const handleSave = () => {
     onSaveOneSheetData?.(formData);
     setIsEditMode(false);
@@ -240,8 +336,16 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       storePortfolios,
       campaigns,
     });
-    updateFormData(() => fresh);
-    onNotify?.('Đã đồng bộ lại dữ liệu mới nhất từ Campaign, Content và Booking!');
+    const merged: BrandOneSheetPlanData = {
+      ...fresh,
+      orientation: formData.orientation,
+      keyVisual: formData.keyVisual,
+    };
+    updateFormData(() => merged);
+    onSaveOneSheetData?.(merged);
+    onNotify?.(
+      `Đã đồng bộ chuẩn dữ liệu 4.1.1 (${reconciliation411.storeCount} gian hàng) vào Plan Brand!`
+    );
   };
 
   const handleAddTikTokContentRow = () => {
@@ -308,6 +412,77 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
     }));
   };
 
+  const kvScheduleRows: KeyVisualScheduleRow[] = useMemo(() => {
+    if (formData.keyVisual.kvScheduleRows && formData.keyVisual.kvScheduleRows.length > 0) {
+      return formData.keyVisual.kvScheduleRows;
+    }
+    return buildDefaultKvScheduleRows(month, formData.keyVisual.kvPic || 'Lê Thanh Hải');
+  }, [formData.keyVisual.kvScheduleRows, formData.keyVisual.kvPic, month]);
+
+  const formatIsoDateVn = (iso?: string) => {
+    if (!iso) return '—';
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
+    if (!m) return iso;
+    return `${m[3]}/${m[2]}/${m[1]}`;
+  };
+
+  const calcDaysGap = (fromIso?: string, toIso?: string): number | null => {
+    if (!fromIso || !toIso) return null;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fromIso) || !/^\d{4}-\d{2}-\d{2}$/.test(toIso)) return null;
+    const t1 = Date.parse(`${fromIso}T00:00:00Z`);
+    const t2 = Date.parse(`${toIso}T00:00:00Z`);
+    if (!Number.isFinite(t1) || !Number.isFinite(t2)) return null;
+    return Math.round((t2 - t1) / 86400000);
+  };
+
+  const updateKvScheduleRows = (updater: (rows: KeyVisualScheduleRow[]) => KeyVisualScheduleRow[]) => {
+    updateFormData((prev) => {
+      const currentRows =
+        prev.keyVisual.kvScheduleRows && prev.keyVisual.kvScheduleRows.length > 0
+          ? prev.keyVisual.kvScheduleRows
+          : buildDefaultKvScheduleRows(month, prev.keyVisual.kvPic || 'Lê Thanh Hải');
+      const nextRows = updater(currentRows);
+      const summaryHang = nextRows
+        .map((r) => `${r.phaseName}: treo ${formatIsoDateVn(r.hangDate)}`)
+        .join(' | ');
+      const summaryOrder = nextRows
+        .map((r) => `${r.phaseName}: order ${formatIsoDateVn(r.orderDate)}`)
+        .join(' | ');
+      const summaryRef = nextRows
+        .map((r) => `${r.phaseName}: ref ${formatIsoDateVn(r.refDate)}`)
+        .join(' | ');
+      return {
+        ...prev,
+        keyVisual: {
+          ...prev.keyVisual,
+          kvScheduleRows: nextRows,
+          hangDate: summaryHang || prev.keyVisual.hangDate,
+          orderDate: summaryOrder || prev.keyVisual.orderDate,
+          refDate: summaryRef || prev.keyVisual.refDate,
+        },
+      };
+    });
+  };
+
+  const handleAddKvScheduleRow = () => {
+    const monthNum = (month.split('/')[1] || '10').padStart(2, '0');
+    const yearNum = month.split('/')[0] || '2026';
+    const newRow: KeyVisualScheduleRow = {
+      id: `kv-sched-${Date.now()}`,
+      phaseName: `Đợt KV bổ sung #${kvScheduleRows.length + 1}`,
+      deliverables: 'Banner chiến dịch / Khung ảnh sản phẩm PDP',
+      refDate: `${yearNum}-${monthNum}-05`,
+      orderDate: `${yearNum}-${monthNum}-08`,
+      draftDate: `${yearNum}-${monthNum}-11`,
+      approveDate: `${yearNum}-${monthNum}-13`,
+      hangDate: `${yearNum}-${monthNum}-15`,
+      pic: formData.keyVisual.kvPic || 'Lê Thanh Hải',
+      note: '',
+    };
+    if (!isEditMode) setIsEditMode(true);
+    updateKvScheduleRows((rows) => [...rows, newRow]);
+  };
+
   const showSec01 = sectionFilter === 'ALL' || sectionFilter === 'SEC_01';
   const showSec02 = sectionFilter === 'ALL' || sectionFilter === 'SEC_02';
   const showSec03 = sectionFilter === 'ALL' || sectionFilter === 'SEC_03';
@@ -352,10 +527,10 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               type="button"
               onClick={handleResetFromSystem}
               className="px-2.5 py-1.5 rounded-lg bg-canvas hover:bg-sunken border border-line text-ink-2 text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"
-              title="Lấy lại dữ liệu gốc từ Campaign và Kế hoạch Gian hàng"
+              title="Đồng bộ chuẩn số lượng và ngân sách từ Phân rã 4.1.1 của các gian hàng thuộc Brand"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Đồng bộ từ Plan Gian</span>
+              <span>Đồng bộ chuẩn từ 4.1.1</span>
             </button>
             <button
               type="button"
@@ -445,6 +620,73 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               )}
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* ===================================================================== */}
+      {/* ĐỐI SOÁT KHỚP NỐI DỮ LIỆU 4.1.1 (GIAN HÀNG) ↔ PLAN BRAND               */}
+      {/* ===================================================================== */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
+        <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-xs font-semibold text-slate-800 uppercase">
+              Đối Soát Khớp Nối 4.1.1 ({reconciliation411.storeCount} Gian Hàng:{' '}
+              {reconciliation411.storeNames.join(', ') || brandName})
+            </h3>
+            {reconciliation411.allMatched ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-2xs font-semibold">
+                <CheckCircle2 className="w-3 h-3" />
+                Khớp 100% với 4.1.1
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-2xs font-semibold">
+                <AlertTriangle className="w-3 h-3" />
+                Có chỉ tiêu lệch so với 4.1.1
+              </span>
+            )}
+          </div>
+          {!reconciliation411.allMatched && (
+            <button
+              type="button"
+              onClick={handleResetFromSystem}
+              className="px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-2xs font-semibold inline-flex items-center gap-1 cursor-pointer"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Cập nhật khớp 100% theo 4.1.1</span>
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 text-xs">
+          {reconciliation411.rows.map((item) => (
+            <div key={item.id} className="p-3 space-y-1">
+              <div className="flex items-center justify-between gap-1">
+                <span className="font-semibold text-slate-700">{item.label}</span>
+                <span
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                    item.matched
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : 'bg-amber-50 text-amber-700'
+                  }`}
+                >
+                  {item.matched ? 'Khớp' : 'Lệch'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-2xs text-slate-600">
+                <span>4.1.1:</span>
+                <strong className="font-mono text-slate-900">{item.val411}</strong>
+              </div>
+              <div className="flex items-center justify-between text-2xs text-slate-600">
+                <span>Plan Brand:</span>
+                <strong
+                  className={`font-mono ${
+                    item.matched ? 'text-emerald-700' : 'text-amber-700'
+                  }`}
+                >
+                  {item.valPlan}
+                </strong>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -776,9 +1018,6 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                 ['moodboard', 'Moodboard'],
                 ['proposalUrl', 'Link proposal'],
                 ['promoTextOnKv', 'CTKM trên KV'],
-                ['hangDate', 'Ngày treo'],
-                ['orderDate', 'Ngày order'],
-                ['refDate', 'Ngày cần lên Ref'],
               ] as const
             ).map(([fieldKey, label]) => (
               <div
@@ -817,6 +1056,276 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                 </div>
               </div>
             ))}
+
+            {/* BẢNG KẾ HOẠCH & MỐC THỜI GIAN LÊN PLAN ẢNH KEY VISUAL */}
+            <div className="p-4 space-y-3 bg-white">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
+                    3.1 Bảng Kế hoạch &amp; Mốc thời gian lên Plan ảnh Key Visual (Ref → Order → Draft → Duyệt → Treo)
+                  </h4>
+                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-2xs font-semibold">
+                    {kvScheduleRows.length} đợt
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddKvScheduleRow}
+                  className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Thêm đợt ảnh KV</span>
+                </button>
+              </div>
+
+              <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                <table className="w-full min-w-[1060px] text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-semibold">
+                      <th className="py-2.5 px-2.5 text-center border-r border-slate-200 w-10">#</th>
+                      <th className="py-2.5 px-3 text-left border-r border-slate-200 w-44">Đợt / Phiên bản ảnh KV</th>
+                      <th className="py-2.5 px-3 text-left border-r border-slate-200 w-52">Hạng mục thiết kế</th>
+                      <th className="py-2.5 px-2.5 text-center border-r border-slate-200 w-32 bg-slate-50">
+                        1. Ngày lên Ref
+                      </th>
+                      <th className="py-2.5 px-2.5 text-center border-r border-slate-200 w-32 bg-blue-50/60 text-blue-900">
+                        2. Ngày Order
+                      </th>
+                      <th className="py-2.5 px-2.5 text-center border-r border-slate-200 w-32 bg-amber-50/60 text-amber-900">
+                        3. Ngày nộp Draft
+                      </th>
+                      <th className="py-2.5 px-2.5 text-center border-r border-slate-200 w-32 bg-purple-50/60 text-purple-900">
+                        4. Ngày Duyệt
+                      </th>
+                      <th className="py-2.5 px-2.5 text-center border-r border-slate-200 w-32 bg-emerald-50/70 text-emerald-900">
+                        5. Ngày Treo KV
+                      </th>
+                      <th className="py-2.5 px-2.5 text-left border-r border-slate-200 w-28">PIC</th>
+                      <th className="py-2.5 px-3 text-left">Ghi chú</th>
+                      {isEditMode && <th className="py-2.5 px-2 text-center w-10">Xóa</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {kvScheduleRows.map((row, rIdx) => {
+                      const gapOrder = calcDaysGap(row.refDate, row.orderDate);
+                      const gapDraft = calcDaysGap(row.orderDate, row.draftDate);
+                      const gapApprove = calcDaysGap(row.draftDate, row.approveDate);
+                      const gapHang = calcDaysGap(row.approveDate, row.hangDate);
+
+                      const renderGapBadge = (gap: number | null, prevLabel: string) => {
+                        if (gap === null) return null;
+                        if (gap < 0) {
+                          return (
+                            <div className="mt-1 text-3xs font-semibold text-rose-600">
+                              Trước {prevLabel} {Math.abs(gap)} ngày
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="mt-1 text-3xs text-slate-500">
+                            +{gap} ngày từ {prevLabel}
+                          </div>
+                        );
+                      };
+
+                      return (
+                        <tr key={row.id} className="hover:bg-slate-50/80 align-top">
+                          <td className="p-2.5 text-center font-mono text-slate-500 border-r border-slate-200">
+                            {rIdx + 1}
+                          </td>
+                          <td className="p-2 border-r border-slate-200 font-semibold text-slate-900">
+                            {isEditMode ? (
+                              <input
+                                type="text"
+                                value={row.phaseName}
+                                placeholder="Master KV, Adapt 10.10..."
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  updateKvScheduleRows((rows) =>
+                                    rows.map((it, i) => (i === rIdx ? { ...it, phaseName: val } : it))
+                                  );
+                                }}
+                                className="w-full px-2 py-1 border border-slate-300 rounded text-xs font-semibold text-slate-900 bg-white"
+                              />
+                            ) : (
+                              <span>{row.phaseName}</span>
+                            )}
+                          </td>
+                          <td className="p-2 border-r border-slate-200 text-slate-700">
+                            {isEditMode ? (
+                              <input
+                                type="text"
+                                value={row.deliverables}
+                                placeholder="Master KV + Banner SIS..."
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  updateKvScheduleRows((rows) =>
+                                    rows.map((it, i) => (i === rIdx ? { ...it, deliverables: val } : it))
+                                  );
+                                }}
+                                className="w-full px-2 py-1 border border-slate-300 rounded text-xs text-slate-800 bg-white"
+                              />
+                            ) : (
+                              <span>{row.deliverables}</span>
+                            )}
+                          </td>
+                          <td className="p-2 border-r border-slate-200 text-center">
+                            {isEditMode ? (
+                              <input
+                                type="date"
+                                value={row.refDate || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  updateKvScheduleRows((rows) =>
+                                    rows.map((it, i) => (i === rIdx ? { ...it, refDate: val } : it))
+                                  );
+                                }}
+                                className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs font-mono bg-white"
+                              />
+                            ) : (
+                              <span className="font-mono font-medium text-slate-800">
+                                {formatIsoDateVn(row.refDate)}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-2 border-r border-slate-200 text-center bg-blue-50/20">
+                            {isEditMode ? (
+                              <input
+                                type="date"
+                                value={row.orderDate || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  updateKvScheduleRows((rows) =>
+                                    rows.map((it, i) => (i === rIdx ? { ...it, orderDate: val } : it))
+                                  );
+                                }}
+                                className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs font-mono bg-white"
+                              />
+                            ) : (
+                              <span className="font-mono font-semibold text-blue-900">
+                                {formatIsoDateVn(row.orderDate)}
+                              </span>
+                            )}
+                            {renderGapBadge(gapOrder, 'Ref')}
+                          </td>
+                          <td className="p-2 border-r border-slate-200 text-center bg-amber-50/20">
+                            {isEditMode ? (
+                              <input
+                                type="date"
+                                value={row.draftDate || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  updateKvScheduleRows((rows) =>
+                                    rows.map((it, i) => (i === rIdx ? { ...it, draftDate: val } : it))
+                                  );
+                                }}
+                                className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs font-mono bg-white"
+                              />
+                            ) : (
+                              <span className="font-mono font-medium text-amber-900">
+                                {formatIsoDateVn(row.draftDate)}
+                              </span>
+                            )}
+                            {renderGapBadge(gapDraft, 'Order')}
+                          </td>
+                          <td className="p-2 border-r border-slate-200 text-center bg-purple-50/20">
+                            {isEditMode ? (
+                              <input
+                                type="date"
+                                value={row.approveDate || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  updateKvScheduleRows((rows) =>
+                                    rows.map((it, i) => (i === rIdx ? { ...it, approveDate: val } : it))
+                                  );
+                                }}
+                                className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs font-mono bg-white"
+                              />
+                            ) : (
+                              <span className="font-mono font-medium text-purple-900">
+                                {formatIsoDateVn(row.approveDate)}
+                              </span>
+                            )}
+                            {renderGapBadge(gapApprove, 'Draft')}
+                          </td>
+                          <td className="p-2 border-r border-slate-200 text-center bg-emerald-50/30">
+                            {isEditMode ? (
+                              <input
+                                type="date"
+                                value={row.hangDate || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  updateKvScheduleRows((rows) =>
+                                    rows.map((it, i) => (i === rIdx ? { ...it, hangDate: val } : it))
+                                  );
+                                }}
+                                className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs font-mono bg-white"
+                              />
+                            ) : (
+                              <span className="font-mono font-semibold text-emerald-800">
+                                {formatIsoDateVn(row.hangDate)}
+                              </span>
+                            )}
+                            {renderGapBadge(gapHang, 'Duyệt')}
+                          </td>
+                          <td className="p-2 border-r border-slate-200 text-slate-700">
+                            {isEditMode ? (
+                              <input
+                                type="text"
+                                value={row.pic || ''}
+                                placeholder="PIC KV..."
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  updateKvScheduleRows((rows) =>
+                                    rows.map((it, i) => (i === rIdx ? { ...it, pic: val } : it))
+                                  );
+                                }}
+                                className="w-full px-2 py-1 border border-slate-300 rounded text-xs bg-white"
+                              />
+                            ) : (
+                              <span>{row.pic || formData.keyVisual.kvPic || '—'}</span>
+                            )}
+                          </td>
+                          <td className="p-2 text-slate-700">
+                            {isEditMode ? (
+                              <input
+                                type="text"
+                                value={row.note || ''}
+                                placeholder="Ghi chú packshot, ưu đãi..."
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  updateKvScheduleRows((rows) =>
+                                    rows.map((it, i) => (i === rIdx ? { ...it, note: val } : it))
+                                  );
+                                }}
+                                className="w-full px-2 py-1 border border-slate-300 rounded text-xs bg-white"
+                              />
+                            ) : (
+                              <span>{row.note || '—'}</span>
+                            )}
+                          </td>
+                          {isEditMode && (
+                            <td className="p-2 text-center border-l border-slate-200">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateKvScheduleRows((rows) => rows.filter((_, i) => i !== rIdx))
+                                }
+                                className="p-1 rounded text-rose-500 hover:bg-rose-50 cursor-pointer"
+                                title="Xóa đợt ảnh KV này"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
             {/* DÒNG ẢNH KEY VISUAL / SIS / BANNER / KHUNG PDP */}
             <div className="grid grid-cols-1 md:grid-cols-12 items-stretch">

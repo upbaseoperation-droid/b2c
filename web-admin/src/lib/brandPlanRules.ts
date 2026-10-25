@@ -633,7 +633,7 @@ export function diagnoseBrandPlan(plan: InputPlanBreakdownState, data: BrandPlan
     const groupIds = new Set(productGroups.map(g => g.id));
     const noGroup = data.rows.filter(r => !r.productGroupId).length;
     const badGroup = data.rows.filter(r => r.productGroupId && !groupIds.has(r.productGroupId)).length;
-    if (productGroups.length === 0 && data.rows.length > 0) issues.push({ level: 'warning', scope: 'Chi tiết Content', text: 'Brand chưa có nhóm sản phẩm trong Dữ liệu gốc › Danh mục sản phẩm.' });
+    if (productGroups.length === 0 && data.rows.length > 0) issues.push({ level: 'warning', scope: 'Chi tiết Content', text: 'Brand chưa có nhóm sản phẩm trong Kịch bản & Video › Sản phẩm & Combo của Brand.' });
     if (productGroups.length > 0 && noGroup) issues.push({ level: 'warning', scope: 'Chi tiết Content', text: `${noGroup} dòng chưa chọn nhóm sản phẩm.` });
     if (badGroup) issues.push({ level: 'error', scope: 'Chi tiết Content', text: `${badGroup} dòng dùng nhóm sản phẩm đã bị xóa khỏi danh mục.` });
   }

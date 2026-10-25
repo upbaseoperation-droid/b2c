@@ -10,7 +10,7 @@
 
 import type { BookingDealItem, KocItem } from '../types';
 import type { LegalTemplate } from './types';
-import { legalTypeOf, type LegalType } from '../../components/koc/kocUtils';
+import { getKocLegalProfiles, legalTypeOf, type LegalType } from '../../components/koc/kocUtils';
 
 export type SubjectKind = 'IND' | 'HKD' | 'COM' | 'CTV';
 
@@ -151,8 +151,9 @@ export function detectSubjectKind(koc?: KocItem, deal?: BookingDealItem): Subjec
   if (snapType === 'HOUSEHOLD') return 'HKD';
   if (snapType === 'INDIVIDUAL') return 'IND';
 
-  if (deal?.legalProfileId && koc?.legalProfiles?.length) {
-    const matchedProfile = koc.legalProfiles.find(lp => lp.id === deal.legalProfileId);
+  if (deal?.legalProfileId && koc) {
+    const profiles = getKocLegalProfiles(koc);
+    const matchedProfile = profiles.find(lp => lp.id === deal.legalProfileId);
     if (matchedProfile?.legalType === 'COMPANY') return 'COM';
     if (matchedProfile?.legalType === 'HOUSEHOLD') return 'HKD';
     if (matchedProfile?.legalType === 'INDIVIDUAL') return 'IND';
