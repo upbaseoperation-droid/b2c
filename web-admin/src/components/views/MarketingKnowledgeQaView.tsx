@@ -53,6 +53,7 @@ import {
   calculateExecutionCost,
 } from '../../lib/apiKeyConfig';
 import { BrandDetail, KocItem, StorePortfolioItem, TabKey, UserProfile } from '../../lib/types';
+import { pushSharedStateToDb } from '../../lib/sharedStateClient';
 import { formatVnd, formatVndShort } from '../../lib/format';
 
 interface MarketingKnowledgeQaViewProps {
@@ -237,6 +238,18 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
       return [];
     }
   });
+
+  // Lắng nghe sự kiện đồng bộ từ DB khi hydrate hoàn tất
+  useEffect(() => {
+    const handleArticlesUpdated = (evt: Event) => {
+      const customEvt = evt as CustomEvent<KnowledgeArticle[]>;
+      if (customEvt.detail && Array.isArray(customEvt.detail)) {
+        setCustomArticles(customEvt.detail);
+      }
+    };
+    window.addEventListener('upbase:custom-knowledge-articles-updated', handleArticlesUpdated);
+    return () => window.removeEventListener('upbase:custom-knowledge-articles-updated', handleArticlesUpdated);
+  }, []);
 
   const allArticles = useMemo(
     () => [...customArticles, ...MARKETING_KNOWLEDGE_ARTICLES],
@@ -603,6 +616,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
     setCustomArticles(nextList);
     if (typeof window !== 'undefined') {
       localStorage.setItem(CUSTOM_ARTICLES_STORAGE_KEY, JSON.stringify(nextList));
+      pushSharedStateToDb('custom-knowledge-articles-v1', nextList);
     }
     setSelectedArticleId(created.id);
     setIsAddArticleModalOpen(false);

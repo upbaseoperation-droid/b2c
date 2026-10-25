@@ -1,5 +1,5 @@
 /** Server-owned versioned records. Local sandbox uses atomic files; production uses PostgreSQL. */
-import { mkdir, readFile, writeFile, rename, open, unlink, stat } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, rename, open, unlink, stat, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import prisma from '../prisma';
@@ -20,17 +20,22 @@ const PG_CACHE_TTL_MS = 20_000;
 const pgRecordCache = new Map<string, { expiresAt: number; record: SharedRecord<unknown> }>();
 const pgInflightReads = new Map<string, Promise<SharedRecord<unknown>>>();
 
-export async function readRecord<T>(key: string, fallback: T): Promise<SharedRecord<T>> {
+export async function readRecord<T>(
+  key: string,
+  fallback: T,
+  options?: { clone?: boolean }
+): Promise<SharedRecord<T>> {
+  const shouldClone = options?.clone !== false;
   if (local()) {
     const filePath = file(key);
     try {
       const st = await stat(filePath);
       const cached = localRecordCache.get(filePath);
       if (cached && cached.mtimeMs === st.mtimeMs && cached.size === st.size) {
-        return structuredClone(cached.record) as SharedRecord<T>;
+        return (shouldClone ? structuredClone(cached.record) : cached.record) as SharedRecord<T>;
       }
       const parsed = JSON.parse(await readFile(filePath, 'utf8')) as SharedRecord<T>;
-      localRecordCache.set(filePath, { mtimeMs: st.mtimeMs, size: st.size, record: structuredClone(parsed) });
+      localRecordCache.set(filePath, { mtimeMs: st.mtimeMs, size: st.size, record: shouldClone ? structuredClone(parsed) : parsed });
       return parsed;
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -43,7 +48,7 @@ export async function readRecord<T>(key: string, fallback: T): Promise<SharedRec
   const now = Date.now();
   const cachedPg = pgRecordCache.get(key);
   if (cachedPg && now < cachedPg.expiresAt) {
-    return structuredClone(cachedPg.record) as SharedRecord<T>;
+    return (shouldClone ? structuredClone(cachedPg.record) : cachedPg.record) as SharedRecord<T>;
   }
   let inflight = pgInflightReads.get(key);
   if (!inflight) {
@@ -62,7 +67,81 @@ export async function readRecord<T>(key: string, fallback: T): Promise<SharedRec
     pgInflightReads.set(key, inflight);
   }
   const resolved = await inflight;
-  return structuredClone(resolved) as SharedRecord<T>;
+  return (shouldClone ? structuredClone(resolved) : resolved) as SharedRecord<T>;
+}
+
+/**
+ * Đọc hàng loạt bản ghi theo danh sách khóa trong 1 lượt (tránh N lần stat file hoặc N câu truy vấn SQL).
+ */
+export async function readRecordsBatch<T>(
+  keys: string[],
+  fallback: T,
+  options?: { clone?: boolean }
+): Promise<Map<string, SharedRecord<T>>> {
+  const shouldClone = options?.clone !== false;
+  const result = new Map<string, SharedRecord<T>>();
+  const uniqueKeys = Array.from(new Set(keys));
+  if (uniqueKeys.length === 0) return result;
+
+  if (local()) {
+    const dir = directory();
+    const existingFiles = new Set<string>(
+      await readdir(dir).catch(() => [] as string[])
+    );
+    await Promise.all(
+      uniqueKeys.map(async (key) => {
+        if (!existingFiles.has(`${key}.json`)) {
+          result.set(key, { revision: 0, data: fallback });
+          return;
+        }
+        try {
+          const rec = await readRecord<T>(key, fallback, { clone: shouldClone });
+          result.set(key, rec);
+        } catch {
+          result.set(key, { revision: 0, data: fallback });
+        }
+      })
+    );
+    return result;
+  }
+
+  const now = Date.now();
+  const missingKeys: string[] = [];
+  for (const key of uniqueKeys) {
+    const cachedPg = pgRecordCache.get(key);
+    if (cachedPg && now < cachedPg.expiresAt) {
+      result.set(
+        key,
+        (shouldClone ? structuredClone(cachedPg.record) : cachedPg.record) as SharedRecord<T>
+      );
+    } else {
+      missingKeys.push(key);
+    }
+  }
+
+  if (missingKeys.length > 0) {
+    const rows = await prisma.$queryRaw<Array<{ key: string; revision: number; data: T }>>`
+      SELECT key, revision, data FROM "AppSharedRecord" WHERE key = ANY(${missingKeys})
+    `;
+    const foundByKey = new Map<string, SharedRecord<T>>();
+    for (const row of rows) {
+      foundByKey.set(row.key, { revision: row.revision, data: row.data });
+    }
+    const expiresAt = Date.now() + PG_CACHE_TTL_MS;
+    for (const key of missingKeys) {
+      const record = foundByKey.get(key) || { revision: 0, data: fallback };
+      pgRecordCache.set(key, {
+        expiresAt,
+        record: structuredClone(record),
+      });
+      result.set(
+        key,
+        (shouldClone ? structuredClone(record) : record) as SharedRecord<T>
+      );
+    }
+  }
+
+  return result;
 }
 export async function updateRecord<T>(key: string, fallback: T, expected: number, transform: (data: T) => T | Promise<T>): Promise<SharedRecord<T>> {
   if (!Number.isInteger(expected) || expected < 0) throw new RecordError('Thiếu phiên bản dữ liệu.');
@@ -118,4 +197,25 @@ export async function updateRecord<T>(key: string, fallback: T, expected: number
     record: structuredClone(updated),
   });
   return updated;
+}
+
+export async function upsertRecord<T>(
+  key: string,
+  fallback: T,
+  transform: (data: T) => T | Promise<T>
+): Promise<SharedRecord<T>> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const current = await readRecord<T>(key, fallback);
+    try {
+      return await updateRecord<T>(key, fallback, current.revision, transform);
+    } catch (err) {
+      lastErr = err;
+      if (err instanceof RecordError && err.status === 409) {
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new RecordError('Không thể lưu dữ liệu do xung đột đồng thời.', 409);
 }

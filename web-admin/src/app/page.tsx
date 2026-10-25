@@ -77,6 +77,7 @@ const BrandMarketResearchHubView = dynamic(() => import('../components/views/Bra
 const WorkToolkitHubView = dynamic(() => import('../components/views/WorkToolkitHubView').then(m => m.WorkToolkitHubView), { loading: ViewLoading });
 
 import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
+import { hydrateAllSharedStatesFromDb, pushSharedStateToDb } from '../lib/sharedStateClient';
 import {
   autoMapVideoAcceptanceByKocChannel,
   extractTikTokChannelAndVideoFromInput,
@@ -715,7 +716,19 @@ export default function App() {
   const [contributors, setContributors] = useState<Contributor[]>(INITIAL_CONTRIBUTORS);
   const [selfChannelTasks, setSelfChannelTasks] = useState<SelfChannelVideoTask[]>(INITIAL_SELF_CHANNEL_TASKS);
   const [deals, setDeals] = useState<BookingDealItem[]>(INITIAL_DEALS);
-  const [tasks, setTasks] = useState<SlaTask[]>(INITIAL_TASKS);
+  const [tasks, setTasks] = useState<SlaTask[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_TASKS;
+    try {
+      const raw = localStorage.getItem('upbase_b2c_sla_tasks_v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // ignore
+    }
+    return INITIAL_TASKS;
+  });
   const [brands, setBrands] = useState<BrandDetail[]>(INITIAL_BRANDS);
   const [storePortfolios, setStorePortfolios] = useState<StorePortfolioItem[]>(() => {
     if (typeof window === 'undefined') return INITIAL_STORE_PORTFOLIOS;
@@ -728,6 +741,38 @@ export default function App() {
       return INITIAL_STORE_PORTFOLIOS;
     }
   });
+
+  // Đồng bộ hai chiều toàn bộ Shared State từ DB (PostgreSQL AppSharedRecord)
+  useEffect(() => {
+    void hydrateAllSharedStatesFromDb();
+  }, []);
+
+  // Lắng nghe sự kiện đồng bộ từ DB cho SLA Tasks và Store Overrides
+  useEffect(() => {
+    const handleSlaTasksUpdated = (evt: Event) => {
+      const customEvt = evt as CustomEvent<SlaTask[]>;
+      if (customEvt.detail && Array.isArray(customEvt.detail)) {
+        setTasks(customEvt.detail);
+      }
+    };
+
+    const handleStoreOverridesUpdated = (evt: Event) => {
+      const customEvt = evt as CustomEvent<Record<string, Partial<StorePortfolioItem>>>;
+      const overrides = customEvt.detail;
+      if (overrides && typeof overrides === 'object') {
+        setStorePortfolios(prev =>
+          prev.map(st => (overrides[st.id] ? { ...st, ...overrides[st.id] } : st))
+        );
+      }
+    };
+
+    window.addEventListener('upbase:sla-tasks-updated', handleSlaTasksUpdated);
+    window.addEventListener('upbase:store-overrides-updated', handleStoreOverridesUpdated);
+    return () => {
+      window.removeEventListener('upbase:sla-tasks-updated', handleSlaTasksUpdated);
+      window.removeEventListener('upbase:store-overrides-updated', handleStoreOverridesUpdated);
+    };
+  }, []);
   const currentUserId = currentUser?.id;
   const currentUserRole = currentUser?.role;
   useEffect(() => {
@@ -1204,17 +1249,50 @@ export default function App() {
   };
 
   const handleCompleteTask = (taskId: string) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, urgency: 'done', remainingText: 'Đạt SLA 100%' } : t));
+    setTasks(prev => {
+      const next: SlaTask[] = prev.map(t => t.id === taskId ? { ...t, urgency: 'done' as const, remainingText: 'Đạt SLA 100%' } : t);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('upbase_b2c_sla_tasks_v1', JSON.stringify(next));
+          pushSharedStateToDb('sla-tasks-v1', next);
+        } catch {
+          // ignore
+        }
+      }
+      return next;
+    });
     showToast('Đã hoàn thành việc. +5 điểm SLA');
   };
 
   const handleAddTask = (newTask: SlaTask) => {
-    setTasks(prev => [newTask, ...prev]);
+    setTasks(prev => {
+      const next = [newTask, ...prev];
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('upbase_b2c_sla_tasks_v1', JSON.stringify(next));
+          pushSharedStateToDb('sla-tasks-v1', next);
+        } catch {
+          // ignore
+        }
+      }
+      return next;
+    });
     showToast(`Đã giao việc cho ${newTask.pic}`);
   };
 
   const handleUpdateTask = (updatedTask: SlaTask) => {
-    setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+    setTasks(prev => {
+      const next = prev.map(t => t.id === updatedTask.id ? updatedTask : t);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('upbase_b2c_sla_tasks_v1', JSON.stringify(next));
+          pushSharedStateToDb('sla-tasks-v1', next);
+        } catch {
+          // ignore
+        }
+      }
+      return next;
+    });
   };
 
   const handleUpdateBrand = (updatedBrand: BrandDetail) => {
@@ -1233,6 +1311,7 @@ export default function App() {
       const overrides = raw ? (JSON.parse(raw) as Record<string, Partial<StorePortfolioItem>>) : {};
       overrides[updatedStore.id] = updatedStore;
       localStorage.setItem('upbase_store_overrides_v1', JSON.stringify(overrides));
+      pushSharedStateToDb('store-overrides-v1', overrides);
     } catch {
       // ignore storage errors
     }
@@ -1408,7 +1487,6 @@ export default function App() {
       <div className={`flex-1 flex flex-col min-w-0 transition-[padding] duration-200 ${isSidebarCollapsed ? 'lg:pl-0' : 'lg:pl-60'}`}>
         <TopHeader
           currentUser={currentUser}
-          onUserChange={handleUserChange}
           selectedBrand={selectedBrandContext}
           onBrandChange={setSelectedBrandContext}
           onOpenQuickBook={() => {
@@ -1427,33 +1505,6 @@ export default function App() {
           isLoggingOut={isLoggingOut}
           userScopeSummary={userScopeSummary}
         />
-
-        {isThirdPartyPartner(currentUser) && (
-          <div className="bg-accent-soft text-ink px-3 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 text-xs border-b border-line">
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
-              <span className="px-2 py-0.5 rounded bg-surface text-accent font-medium text-2xs border border-line shrink-0">
-                Đối tác: {currentUser.roleTitle}
-              </span>
-              <span className="text-ink-2 min-w-0 break-words">
-                Đang xem với tư cách: <strong className="text-ink font-semibold">{currentUser.name}</strong> ({currentUser.email})
-                {currentUser.linkedEntityName && (
-                  <span className="text-accent font-medium"> · Phạm vi: {currentUser.linkedEntityName}</span>
-                )}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                handleUserChange(USERS[0]);
-                setActiveTab('partner-access');
-                showToast('Đã quay lại tài khoản quản trị', 'info');
-              }}
-              className="h-7 px-2.5 rounded-md bg-surface hover:bg-sunken text-ink border border-line-strong font-medium transition text-2xs shrink-0"
-            >
-              Thoát chế độ đối tác
-            </button>
-          </div>
-        )}
 
         <main id="workspace" className={`px-3 sm:px-4 lg:px-6 py-4 sm:py-5 w-full mx-auto space-y-5 pb-20 lg:pb-5 min-w-0 max-w-full ${isSidebarCollapsed ? 'max-w-[1800px]' : 'max-w-[1600px]'}`}>
           {!isTabAllowedForRole(currentUser.role, activeTab) ? (
@@ -1827,12 +1878,6 @@ export default function App() {
               brands={brands}
               kocs={kocs}
               onNotify={showToast}
-              onImpersonateUser={(user) => {
-                handleUserChange(user);
-              }}
-              onImpersonatePartner={(partnerUser) => {
-                handleUserChange(partnerUser);
-              }}
             />
           </KeepAliveTab>
 
@@ -2023,6 +2068,7 @@ export default function App() {
                     const overrides = raw ? (JSON.parse(raw) as Record<string, Partial<StorePortfolioItem>>) : {};
                     overrides[storeId] = nextStore;
                     localStorage.setItem('upbase_store_overrides_v1', JSON.stringify(overrides));
+                    pushSharedStateToDb('store-overrides-v1', overrides);
                   } catch {
                     // ignore
                   }

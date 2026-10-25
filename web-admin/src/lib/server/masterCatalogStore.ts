@@ -6,7 +6,7 @@ import { INITIAL_MONTHLY_PLANS } from '../monthlyPlanData';
 import { INITIAL_DEALS } from '../mockData';
 import { brandKey } from '../brands/types';
 import { readPolicy } from './accessPolicy';
-export const readMasterCatalog = () => readRecord('master-catalog', DEFAULT_MASTER_CATALOG);
+export const readMasterCatalog = () => readRecord('master-catalog', DEFAULT_MASTER_CATALOG, { clone: false });
 
 export async function validateCatalog(next: MasterCatalog, previous: MasterCatalog) {
   if (!next || typeof next !== 'object') throw new RecordError('Thiếu danh mục cần lưu.');

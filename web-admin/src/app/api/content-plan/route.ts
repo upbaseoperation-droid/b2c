@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
+import { readRecord, readRecordsBatch, updateRecord, RecordError } from '@/lib/server/sharedRecords';
 import { assertPlanIdAccess, listMonthlyPlans } from '@/lib/server/monthlyPlanStore';
 import type { ContentPlanData, ContentSlot } from '@/lib/contentPlanRules';
 import { getPlanActor, handlePlanError, unauthorized } from '../monthly-plans/_shared';
@@ -26,9 +26,14 @@ export async function GET(request: NextRequest) {
         month: string;
         slot: ContentSlot;
       }> = [];
+      const records = await readRecordsBatch<ContentPlanData>(
+        plans.map(p => keyOf(p.plan.id)),
+        { slots: [] },
+        { clone: false }
+      );
       for (const p of plans) {
-        const rec = await readRecord<ContentPlanData>(keyOf(p.plan.id), { slots: [] });
-        const slots = (rec.data.slots || []).filter(s => s.row === 'SELF');
+        const rec = records.get(keyOf(p.plan.id));
+        const slots = (rec?.data?.slots || []).filter(s => s.row === 'SELF');
         for (const slot of slots) {
           selfSlots.push({
             planId: p.plan.id,

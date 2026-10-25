@@ -266,6 +266,26 @@ function getStoreDealsIndex(deals: BookingDealItem[]): StoreDealsIndex {
   return cached;
 }
 
+const plansByMonthCache = new WeakMap<InputPlanBreakdownState[], Map<string, InputPlanBreakdownState[]>>();
+
+function getPlansForMonth(allPlans: InputPlanBreakdownState[], month: string): InputPlanBreakdownState[] {
+  let byMonth = plansByMonthCache.get(allPlans);
+  if (!byMonth) {
+    byMonth = new Map<string, InputPlanBreakdownState[]>();
+    for (const p of allPlans) {
+      const m = p.month || '';
+      let list = byMonth.get(m);
+      if (!list) {
+        list = [];
+        byMonth.set(m, list);
+      }
+      list.push(p);
+    }
+    plansByMonthCache.set(allPlans, byMonth);
+  }
+  return byMonth.get(month) || [];
+}
+
 function matchStorePlan(
   store: StorePortfolioItem,
   month: string,
@@ -276,7 +296,7 @@ function matchStorePlan(
   const sName = norm(store.storeName);
   const bName = norm(store.brandName);
 
-  const monthPlans = allPlans.filter(p => p.month === month);
+  const monthPlans = getPlansForMonth(allPlans, month);
   // 1. Khớp chính xác theo storeId hoặc storeName
   const exactStore = monthPlans.find(
     p =>
@@ -427,6 +447,23 @@ function convertDealToMonthlyBooking(
   };
 }
 
+const FILE32_CONVERTED_BY_STORE_NAME = new Map<string, StoreMonthlyBookingRecord[]>();
+
+function getFile32ConvertedBookings(sNameNorm: string): StoreMonthlyBookingRecord[] {
+  let cached = FILE32_CONVERTED_BY_STORE_NAME.get(sNameNorm);
+  if (cached) return cached;
+  const raw = FILE32_BY_STORE_NAME.get(sNameNorm) || [];
+  cached = raw.map(r => convertBookedRecordToMonthlyBooking(r, '2026/10'));
+  FILE32_CONVERTED_BY_STORE_NAME.set(sNameNorm, cached);
+  return cached;
+}
+
+const EMPTY_DEALS_REF: BookingDealItem[] = [];
+const storeReportMemoCache = new WeakMap<
+  StorePortfolioItem,
+  Map<string, { plansRef: InputPlanBreakdownState[]; dealsRef: BookingDealItem[]; report: StoreMonthlyPlanReport }>
+>();
+
 /**
  * Xây dựng dữ liệu Hồ sơ Kế hoạch & Báo cáo (Plan & Report) cho 1 Gian hàng tại 1 kỳ tháng.
  */
@@ -439,7 +476,14 @@ export function buildStoreMonthlyPlanReport(
   }
 ): StoreMonthlyPlanReport {
   const allPlans = options?.plans?.length ? options.plans : INITIAL_MONTHLY_PLANS;
-  const allDeals = options?.deals || [];
+  const allDeals = options?.deals || EMPTY_DEALS_REF;
+
+  const byMonthCache = storeReportMemoCache.get(store);
+  const cachedEntry = byMonthCache?.get(month);
+  if (cachedEntry && cachedEntry.plansRef === allPlans && cachedEntry.dealsRef === allDeals) {
+    return cachedEntry.report;
+  }
+
   const monthMeta =
     PROFILE_MONTH_OPTIONS.find(m => m.value === month) || PROFILE_MONTH_OPTIONS[0];
 
@@ -515,7 +559,7 @@ export function buildStoreMonthlyPlanReport(
         : 0;
 
   // Lấy danh sách Booking Deals & Video thực tế (File 3.2) của gian hàng qua chỉ mục O(1)
-  const matchedFile32 = FILE32_BY_STORE_NAME.get(sNameNorm) || [];
+  const matchedFile32Bookings = getFile32ConvertedBookings(sNameNorm);
   const dealsIdx = getStoreDealsIndex(allDeals);
   const byNameDeals = dealsIdx.byStoreName.get(sNameNorm);
   const byIdDeals = store.id ? dealsIdx.byStoreId.get(store.id) : undefined;
@@ -537,14 +581,16 @@ export function buildStoreMonthlyPlanReport(
     }
   }
 
-  const appDealCodes = new Set(matchedAppDeals.map(d => d.dealCode));
-
-  const octBookings: StoreMonthlyBookingRecord[] = [
-    ...matchedAppDeals.map(d => convertDealToMonthlyBooking(d, '2026/10')),
-    ...matchedFile32
-      .filter(r => !appDealCodes.has(r.code))
-      .map(r => convertBookedRecordToMonthlyBooking(r, '2026/10')),
-  ];
+  const octBookings: StoreMonthlyBookingRecord[] =
+    matchedAppDeals.length === 0
+      ? matchedFile32Bookings
+      : (() => {
+          const appDealCodes = new Set(matchedAppDeals.map(d => d.dealCode));
+          return [
+            ...matchedAppDeals.map(d => convertDealToMonthlyBooking(d, '2026/10')),
+            ...matchedFile32Bookings.filter(b => !appDealCodes.has(b.dealCode)),
+          ];
+        })();
 
   // Với các tháng 08, 09, 11: tạo danh sách booking theo đúng kỳ tháng
   const bookings: StoreMonthlyBookingRecord[] =
@@ -672,7 +718,7 @@ export function buildStoreMonthlyPlanReport(
     directPlan?.pic ||
     'Lê Phương Thảo';
 
-  return {
+  const report: StoreMonthlyPlanReport = {
     storeId: store.id,
     storeName: store.storeName,
     brandName: store.brandName,
@@ -726,6 +772,14 @@ export function buildStoreMonthlyPlanReport(
     bookings,
     adsCampaigns,
   };
+
+  let nextByMonth = storeReportMemoCache.get(store);
+  if (!nextByMonth) {
+    nextByMonth = new Map();
+    storeReportMemoCache.set(store, nextByMonth);
+  }
+  nextByMonth.set(month, { plansRef: allPlans, dealsRef: allDeals, report });
+  return report;
 }
 
 /**

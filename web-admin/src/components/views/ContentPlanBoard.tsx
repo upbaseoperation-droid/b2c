@@ -5,6 +5,7 @@ import { Copy, Download, FileText, Lightbulb, Plus, Search, Send, Trash2, UserPl
 import type { BookingDealItem, InputPlanBreakdownState, KocItem, StorePortfolioItem } from '../../lib/types';
 import { Button, ConfirmDialog, Field, Input, Modal, Select, Status, Textarea } from '../ui';
 import { CONTENT_PILLARS, pillarGroupOf } from '../../lib/contentPillars';
+import { fetchClientMonthlyPlans, getCachedClientMonthlyPlans } from '../../lib/useMonthlyPlanSync';
 import {
   addKocToSlot,
   BRIEF_FORMAT_OPTIONS,
@@ -93,14 +94,17 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
   const [backlogGroup, setBacklogGroup] = useState('ALL');
 
   useEffect(() => {
+    const cached = getCachedClientMonthlyPlans();
+    if (cached && cached.length > 0) {
+      setPlans(cached);
+      setPlansState('ready');
+    }
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/monthly-plans', { cache: 'no-store' });
-        const body = await res.json().catch(() => null);
-        if (!res.ok) throw new Error(body?.error || `Lỗi ${res.status}`);
+        const stored = await fetchClientMonthlyPlans();
         if (cancelled) return;
-        setPlans((body.plans as { plan: InputPlanBreakdownState }[]).map(p => p.plan));
+        setPlans(stored.map(p => p.plan));
         setPlansState('ready');
       } catch (err) {
         if (cancelled) return;
@@ -112,6 +116,16 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Lắng nghe sự kiện cập nhật Brand Monthly Plans từ DB để tự động cập nhật
+  const [brandPlansRevision, setBrandPlansRevision] = useState(0);
+  useEffect(() => {
+    const handleBrandPlansUpdate = () => {
+      setBrandPlansRevision(v => v + 1);
+    };
+    window.addEventListener('upbase:brand-monthly-plans-updated', handleBrandPlansUpdate);
+    return () => window.removeEventListener('upbase:brand-monthly-plans-updated', handleBrandPlansUpdate);
   }, []);
 
   const months = useMemo(() => Array.from(new Set(plans.map(p => p.month))).sort().reverse(), [plans]);

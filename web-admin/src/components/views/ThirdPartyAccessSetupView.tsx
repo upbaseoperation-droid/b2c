@@ -34,6 +34,7 @@ import { ThirdPartyAccessAccount, UserProfile, BrandDetail, KocItem } from '../.
 import { INITIAL_THIRD_PARTY_ACCOUNTS, convertPartnerAccountToUserProfile } from '../../lib/thirdPartyAccessData';
 import { INITIAL_BRANDS, INITIAL_KOCS } from '../../lib/mockData';
 import { getVietnamDateYmd } from '../../lib/format';
+import { pushSharedStateToDb } from '../../lib/sharedStateClient';
 
 interface ThirdPartyAccessSetupViewProps {
   currentUser?: UserProfile;
@@ -75,6 +76,18 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
       // Ignore storage quota errors
     }
   }, [accounts]);
+
+  // Lắng nghe sự kiện đồng bộ từ DB khi hydrate xong
+  useEffect(() => {
+    const handleAccountsUpdated = (evt: Event) => {
+      const customEvt = evt as CustomEvent<ThirdPartyAccessAccount[]>;
+      if (customEvt.detail && Array.isArray(customEvt.detail)) {
+        setAccounts(customEvt.detail);
+      }
+    };
+    window.addEventListener('upbase:third-party-accounts-updated', handleAccountsUpdated);
+    return () => window.removeEventListener('upbase:third-party-accounts-updated', handleAccountsUpdated);
+  }, []);
   const [filterType, setFilterType] = useState<PartnerTypeFilter>('ALL');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
@@ -200,7 +213,11 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
         notes: formNotes.trim(),
       };
 
-      setAccounts((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+      setAccounts((prev) => {
+        const next = prev.map((a) => (a.id === updated.id ? updated : a));
+        pushSharedStateToDb('third-party-accounts-v1', next);
+        return next;
+      });
       onNotify?.(`Đã cập nhật phân quyền cho tài khoản ${updated.gmail}!`, 'success');
     } else {
       const newAcc: ThirdPartyAccessAccount = {
@@ -219,7 +236,11 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
         notes: formNotes.trim(),
       };
 
-      setAccounts((prev) => [newAcc, ...prev]);
+      setAccounts((prev) => {
+        const next = [newAcc, ...prev];
+        pushSharedStateToDb('third-party-accounts-v1', next);
+        return next;
+      });
       onNotify?.(`Đã cấp quyền truy cập Gmail cho ${newAcc.gmail}!`, 'success');
     }
 
@@ -228,8 +249,12 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
 
   // Toggle Suspend / Active
   const handleToggleStatus = (acc: ThirdPartyAccessAccount) => {
-    const nextStatus = acc.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
-    setAccounts((prev) => prev.map((a) => (a.id === acc.id ? { ...a, status: nextStatus } : a)));
+    const nextStatus: ThirdPartyAccessAccount['status'] = acc.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+    setAccounts((prev) => {
+      const next = prev.map((a) => (a.id === acc.id ? { ...a, status: nextStatus } : a));
+      pushSharedStateToDb('third-party-accounts-v1', next);
+      return next;
+    });
     onNotify?.(
       nextStatus === 'ACTIVE'
         ? `Đã kích hoạt lại tài khoản ${acc.gmail}`
@@ -839,7 +864,11 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
         variant="danger"
         onConfirm={() => {
           if (!deletingAccount) return;
-          setAccounts((prev) => prev.filter((a) => a.id !== deletingAccount.id));
+          setAccounts((prev) => {
+            const next = prev.filter((a) => a.id !== deletingAccount.id);
+            pushSharedStateToDb('third-party-accounts-v1', next);
+            return next;
+          });
           onNotify?.(`Đã thu hồi quyền truy cập Gmail của ${deletingAccount.gmail}`, 'info');
           setDeletingAccount(null);
         }}

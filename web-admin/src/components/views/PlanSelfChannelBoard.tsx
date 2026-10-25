@@ -27,6 +27,7 @@ import {
 import { Button, ConfirmDialog, Field, Input, Modal, Progress, Select, Status, Textarea } from '../ui';
 import { getVietnamDateYmd } from '../../lib/format';
 import { usePlanRecord } from '../../lib/usePlanRecord';
+import { fetchClientMonthlyPlans, getCachedClientMonthlyPlans } from '../../lib/useMonthlyPlanSync';
 import type { InputPlanBreakdownState, Contributor } from '../../lib/types';
 import { INITIAL_CONTRIBUTORS } from '../../lib/selfChannelData';
 import type { ContentSlot } from '../../lib/contentPlanRules';
@@ -103,8 +104,10 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
   );
 
   // 1. Quản lý danh sách Kế hoạch tháng
-  const [plans, setPlans] = useState<PlanLite[]>([]);
-  const [plansState, setPlansState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [plans, setPlans] = useState<PlanLite[]>(() => getCachedClientMonthlyPlans() || []);
+  const [plansState, setPlansState] = useState<'loading' | 'ready' | 'error'>(() =>
+    getCachedClientMonthlyPlans() ? 'ready' : 'loading'
+  );
   const [month, setMonth] = useState('');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -113,12 +116,9 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/monthly-plans', { cache: 'no-store' });
-        const body = await res.json().catch(() => null);
-        if (!res.ok) throw new Error(body?.error || `Lỗi ${res.status}`);
+        const stored = await fetchClientMonthlyPlans();
         if (cancelled) return;
-        const loadedPlans = (body.plans as { plan: InputPlanBreakdownState }[]).map(p => p.plan);
-        setPlans(loadedPlans);
+        setPlans(stored.map(p => p.plan));
         setPlansState('ready');
       } catch (err) {
         if (cancelled) return;

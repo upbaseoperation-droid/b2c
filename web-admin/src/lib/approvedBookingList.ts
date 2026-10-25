@@ -19,6 +19,7 @@ import {
   type StaffListingSheetRow,
 } from './staffBrandListingSheet';
 import { getVietnamDateYmd } from './format';
+import { pushSharedStateToDb } from './sharedStateClient';
 
 export const APPROVED_BOOKING_LIST_STORAGE_KEY = 'upbase_b2c_approved_booking_list_v2';
 export const APPROVED_BOOKING_LIST_UPDATED_EVENT = 'upbase-approved-booking-list-updated';
@@ -761,8 +762,12 @@ export function saveApprovedBookingList(
   try {
     window.localStorage.setItem(APPROVED_BOOKING_LIST_STORAGE_KEY, JSON.stringify(list));
     if (emitEvent) {
+      pushSharedStateToDb('approved-booking-list-v2', list);
       window.dispatchEvent(
         new CustomEvent(APPROVED_BOOKING_LIST_UPDATED_EVENT, { detail: list })
+      );
+      window.dispatchEvent(
+        new CustomEvent('upbase:approved-booking-list-updated', { detail: list })
       );
     }
   } catch {

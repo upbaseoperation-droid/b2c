@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
+import { readRecord, readRecordsBatch, updateRecord, RecordError } from '@/lib/server/sharedRecords';
 import { selfChannelBoardKey } from '@/lib/server/boardKeys';
 import { assertPlanIdAccess, listMonthlyPlans } from '@/lib/server/monthlyPlanStore';
 import {
@@ -27,26 +27,25 @@ export async function GET(request: NextRequest) {
     try {
       const storedPlans = await listMonthlyPlans(actor);
       const allJobs: Array<SelfChannelJob & { planId: string; storeName: string; brandName: string; month: string }> = [];
-
-      await Promise.all(
-        storedPlans.map(async ({ plan }) => {
-          try {
-            const rec = await readRecord<SelfChannelBoardData>(keyOf(plan.id), EMPTY_SELF_CHANNEL_BOARD);
-            const board = sanitizeSelfChannelBoard(rec.data);
-            for (const j of board.jobs) {
-              allJobs.push({
-                ...j,
-                planId: plan.id,
-                storeName: plan.storeName || plan.title,
-                brandName: plan.brandName,
-                month: plan.month,
-              });
-            }
-          } catch {
-            // Bỏ qua kế hoạch chưa có bảng hoặc lỗi đọc
-          }
-        })
+      const boardRecords = await readRecordsBatch<SelfChannelBoardData>(
+        storedPlans.map(({ plan }) => keyOf(plan.id)),
+        EMPTY_SELF_CHANNEL_BOARD,
+        { clone: false }
       );
+      for (const { plan } of storedPlans) {
+        const rec = boardRecords.get(keyOf(plan.id));
+        if (!rec || !rec.data?.jobs?.length) continue;
+        const board = sanitizeSelfChannelBoard(rec.data);
+        for (const j of board.jobs) {
+          allJobs.push({
+            ...j,
+            planId: plan.id,
+            storeName: plan.storeName || plan.title,
+            brandName: plan.brandName,
+            month: plan.month,
+          });
+        }
+      }
 
       return NextResponse.json({ jobs: allJobs, planCount: storedPlans.length });
     } catch (err) {

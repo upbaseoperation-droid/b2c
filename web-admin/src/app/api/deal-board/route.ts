@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
+import { readRecord, readRecordsBatch, updateRecord, RecordError } from '@/lib/server/sharedRecords';
 import { dealBoardKey } from '@/lib/server/boardKeys';
 import { assertPlanIdAccess, listMonthlyPlans } from '@/lib/server/monthlyPlanStore';
 import { planJobToBookingDeal } from '@/lib/planDealLink';
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     try {
       const [storedPlans, frameworks] = await Promise.all([
         listMonthlyPlans(actor),
-        readRecord<{ items: FrameworkContract[] }>('koc-framework-contracts', { items: [] }),
+        readRecord<{ items: FrameworkContract[] }>('koc-framework-contracts', { items: [] }, { clone: false }),
       ]);
       const fwById = new Map<string, FrameworkContract>();
       for (const item of frameworks.data.items || []) {
@@ -46,23 +46,23 @@ export async function GET(request: NextRequest) {
         }
       }
       const bookingDeals: BookingDealItem[] = [];
-      await Promise.all(
-        storedPlans.map(async ({ plan }) => {
-          try {
-            const rec = await readRecord<DealBoardData>(keyOf(plan.id), EMPTY_DEAL_BOARD);
-            const board = sanitizeDealBoard(rec.data);
-            for (const deal of board.deals) {
-              const fw = fwById.get(normHandle(deal.kocHandle));
-              for (const job of deal.jobs || []) {
-                if (job.sourcePlanId) continue;
-                bookingDeals.push(planJobToBookingDeal(deal, job, plan, undefined, fw?.contractNo));
-              }
-            }
-          } catch {
-            // Bỏ qua plan không có dữ liệu deal-board
-          }
-        })
+      const boardRecords = await readRecordsBatch<DealBoardData>(
+        storedPlans.map(({ plan }) => keyOf(plan.id)),
+        EMPTY_DEAL_BOARD,
+        { clone: false }
       );
+      for (const { plan } of storedPlans) {
+        const rec = boardRecords.get(keyOf(plan.id));
+        if (!rec || !rec.data?.deals?.length) continue;
+        const board = sanitizeDealBoard(rec.data);
+        for (const deal of board.deals) {
+          const fw = fwById.get(normHandle(deal.kocHandle));
+          for (const job of deal.jobs || []) {
+            if (job.sourcePlanId) continue;
+            bookingDeals.push(planJobToBookingDeal(deal, job, plan, undefined, fw?.contractNo));
+          }
+        }
+      }
       return NextResponse.json({ bookingDeals, planCount: storedPlans.length });
     } catch (err) {
       if (err instanceof RecordError) return NextResponse.json({ error: err.message }, { status: err.status });
@@ -126,8 +126,13 @@ export async function GET(request: NextRequest) {
         reasonLabel: string;
       }> = [];
 
+      const prevRecords = await readRecordsBatch<DealBoardData>(
+        prevPlans.map(p => keyOf(p.id)),
+        EMPTY_DEAL_BOARD,
+        { clone: false }
+      );
       for (const prevPlan of prevPlans) {
-        const rec = await readRecord<DealBoardData>(keyOf(prevPlan.id), EMPTY_DEAL_BOARD);
+        const rec = prevRecords.get(keyOf(prevPlan.id)) || { revision: 0, data: EMPTY_DEAL_BOARD };
         const board = sanitizeDealBoard(rec.data);
         for (const d of board.deals) {
           for (const j of d.jobs || []) {

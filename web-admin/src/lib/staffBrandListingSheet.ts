@@ -1,4 +1,5 @@
 import type { BookingDealItem, KocItem, StorePortfolioItem } from './types';
+import { pushSharedStateToDb } from './sharedStateClient';
 
 export type FillMode = 'AUTO_SYSTEM' | 'FORMULA' | 'MANUAL_STAFF';
 
@@ -582,7 +583,9 @@ export function saveStaffSheetCollection(
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(collection));
     if (emitEvent) {
+      pushSharedStateToDb('staff-brand-listing-sheets-v1', collection);
       window.dispatchEvent(new CustomEvent(STAFF_SHEET_UPDATED_EVENT, { detail: collection }));
+      window.dispatchEvent(new CustomEvent('upbase:staff-brand-listing-sheet-updated', { detail: collection }));
     }
   } catch {
     // ignore quota errors

@@ -9,6 +9,7 @@ import { mkdir, readdir, readFile, stat, unlink, writeFile } from 'node:fs/promi
 import path from 'node:path';
 import { BrandError, requireBrand } from './domain';
 import { brandKey } from './types';
+import { readRecord, upsertRecord } from '../server/sharedRecords';
 
 export const MAX_BRAND_FILE_BYTES = 25 * 1024 * 1024; // 25 MB
 
@@ -268,6 +269,13 @@ export async function saveRuntimeR2Config(
   await mkdir(baseDir, { recursive: true });
   await writeFile(r2ConfigFilePath(), JSON.stringify(record, null, 2), { mode: 0o600 });
   runtimeConfigCache = { dir: baseDir, record };
+
+  try {
+    await upsertRecord<PersistedR2ConfigRecord | null>('cloudflare-r2-config-v1', null, () => record);
+  } catch (err) {
+    console.warn('[r2] Không thể đồng bộ cấu hình R2 lên cơ sở dữ liệu:', err);
+  }
+
   return record;
 }
 
@@ -275,6 +283,41 @@ export async function clearRuntimeR2Config(): Promise<void> {
   const baseDir = brandDataBaseDir();
   runtimeConfigCache = { dir: baseDir, record: null };
   await unlink(r2ConfigFilePath()).catch(() => undefined);
+  try {
+    await upsertRecord<PersistedR2ConfigRecord | null>('cloudflare-r2-config-v1', null, () => null);
+  } catch (err) {
+    console.warn('[r2] Không thể xóa cấu hình R2 trên cơ sở dữ liệu:', err);
+  }
+}
+
+export const savePersistedR2Config = saveRuntimeR2Config;
+export const clearPersistedR2Config = clearRuntimeR2Config;
+
+/**
+ * Đọc cấu hình R2 từ DB (AppSharedRecord) nạp vào runtime cache nếu chưa có trong bộ nhớ
+ */
+export async function ensureR2ConfigHydratedFromDb(): Promise<void> {
+  if (runtimeConfigCache?.record) return;
+  try {
+    const rec = await readRecord<PersistedR2ConfigRecord | null>('cloudflare-r2-config-v1', null);
+    if (rec.data && typeof rec.data === 'object') {
+      const valid = normalizeR2ConnectionInput(rec.data);
+      if (valid) {
+        const baseDir = brandDataBaseDir();
+        runtimeConfigCache = {
+          dir: baseDir,
+          record: {
+            ...valid,
+            updatedAt: rec.data.updatedAt || new Date().toISOString(),
+            updatedBy: rec.data.updatedBy,
+            lastTest: rec.data.lastTest,
+          },
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('[r2] Không thể nạp cấu hình R2 từ cơ sở dữ liệu:', err);
+  }
 }
 
 /** Làm sạch tên tệp và kiểm tra định dạng được phép tải lên. */

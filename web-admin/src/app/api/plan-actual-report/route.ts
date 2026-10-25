@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readRecord } from '@/lib/server/sharedRecords';
+import { readRecordsBatch } from '@/lib/server/sharedRecords';
 import { listMonthlyPlans } from '@/lib/server/monthlyPlanStore';
 import { dealBoardKey, listingBoardKey, selfChannelBoardKey } from '@/lib/server/boardKeys';
 import { EMPTY_DEAL_BOARD, sanitizeDealBoard, type DealBoardData } from '@/lib/dealBoardRules';
@@ -29,24 +29,29 @@ export async function GET(request: NextRequest) {
     const requested = request.nextUrl.searchParams.get('month') || '';
     const month = months.includes(requested) ? requested : months.includes(currentMonth) ? currentMonth : months[0] || '';
 
-    const reports: PlanActualStoreReport[] = await Promise.all(
-      stored
-        .filter(({ plan }) => plan.month === month)
-        .map(async ({ plan }) => {
-          const [listing, board, selfBoard] = await Promise.all([
-            readRecord<{ items: KocListingItem[] }>(listingBoardKey(plan.id), { items: [] }),
-            readRecord<DealBoardData>(dealBoardKey(plan.id), EMPTY_DEAL_BOARD),
-            readRecord<SelfChannelBoardData>(selfChannelBoardKey(plan.id), EMPTY_SELF_CHANNEL_BOARD),
-          ]);
-          return buildPlanActualReport(
-            plan,
-            listing.data.items || [],
-            sanitizeDealBoard(board.data),
-            today,
-            sanitizeSelfChannelBoard(selfBoard.data)
-          );
-        })
-    );
+    const monthPlans = stored.filter(({ plan }) => plan.month === month);
+    const allBoardKeys: string[] = [];
+    for (const { plan } of monthPlans) {
+      allBoardKeys.push(
+        listingBoardKey(plan.id),
+        dealBoardKey(plan.id),
+        selfChannelBoardKey(plan.id)
+      );
+    }
+    const batchRecords = await readRecordsBatch<unknown>(allBoardKeys, null, { clone: false });
+
+    const reports: PlanActualStoreReport[] = monthPlans.map(({ plan }) => {
+      const listingData = (batchRecords.get(listingBoardKey(plan.id))?.data as { items?: KocListingItem[] } | null) || { items: [] };
+      const dealData = (batchRecords.get(dealBoardKey(plan.id))?.data as DealBoardData | null) || EMPTY_DEAL_BOARD;
+      const selfData = (batchRecords.get(selfChannelBoardKey(plan.id))?.data as SelfChannelBoardData | null) || EMPTY_SELF_CHANNEL_BOARD;
+      return buildPlanActualReport(
+        plan,
+        listingData.items || [],
+        sanitizeDealBoard(dealData),
+        today,
+        sanitizeSelfChannelBoard(selfData)
+      );
+    });
     reports.sort((a, b) => a.storeName.localeCompare(b.storeName, 'vi'));
     return NextResponse.json({ month, months, today, reports }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {

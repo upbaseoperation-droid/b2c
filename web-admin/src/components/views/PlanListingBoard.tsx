@@ -6,6 +6,7 @@ import type { InputPlanBreakdownState, KocItem, KocListingItem, ListingBatchCycl
 import { Button, Field, Input, Modal, Select, Status, Textarea } from '../ui';
 import { KL_TIERS, klBaseCost, type KlCode } from '../../lib/klTiers';
 import { useListingBoard } from '../../lib/useListingBoard';
+import { fetchClientMonthlyPlans, getCachedClientMonthlyPlans } from '../../lib/useMonthlyPlanSync';
 import type { ContentSlot } from '../../lib/contentPlanRules';
 import {
   BOOKING_LIST_COLUMNS,
@@ -62,8 +63,10 @@ const NEXT_ACTION: Partial<Record<BoardColumn, { to: BoardColumn; label: string 
 export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, currentUserName = 'Nhân viên', currentUserId = 'staff', onNotify }) => {
   const notify = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => onNotify?.(msg, type);
 
-  const [plans, setPlans] = useState<InputPlanBreakdownState[]>([]);
-  const [plansState, setPlansState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [plans, setPlans] = useState<InputPlanBreakdownState[]>(() => getCachedClientMonthlyPlans() || []);
+  const [plansState, setPlansState] = useState<'loading' | 'ready' | 'error'>(() =>
+    getCachedClientMonthlyPlans() ? 'ready' : 'loading'
+  );
   const [month, setMonth] = useState('');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -78,11 +81,9 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/monthly-plans', { cache: 'no-store' });
-        const body = await res.json().catch(() => null);
-        if (!res.ok) throw new Error(body?.error || `Lỗi ${res.status}`);
+        const stored = await fetchClientMonthlyPlans();
         if (cancelled) return;
-        setPlans((body.plans as { plan: InputPlanBreakdownState }[]).map(p => p.plan));
+        setPlans(stored.map(p => p.plan));
         setPlansState('ready');
       } catch (err) {
         if (cancelled) return;

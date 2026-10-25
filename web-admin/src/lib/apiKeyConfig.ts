@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { formatDateTimeVn, getVietnamIsoString } from './format';
+import { pushSharedStateToDb } from './sharedStateClient';
 
 export type ApiProviderId = 'GOOGLE' | 'OPENAI' | 'CLAUDE' | 'INTERNAL';
 
@@ -943,6 +944,7 @@ export function saveApiWorkspaceConfig(config: ApiWorkspaceConfigState): void {
       updatedAt: getVietnamIsoString(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    pushSharedStateToDb('api-workspace-config-v2', updated);
     window.dispatchEvent(new CustomEvent(API_CONFIG_UPDATED_EVENT, { detail: updated }));
   } catch (err) {
     console.warn('Could not save API workspace config to localStorage:', err);
@@ -1192,7 +1194,9 @@ export function loadApiUsageLogs(): ApiUsageLogItem[] {
 export function saveApiUsageLogs(logs: ApiUsageLogItem[]): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(API_USAGE_LOGS_KEY, JSON.stringify(logs.slice(0, 500))); // Giữ tối đa 500 logs gần nhất
+    const trimmed = logs.slice(0, 500);
+    localStorage.setItem(API_USAGE_LOGS_KEY, JSON.stringify(trimmed)); // Giữ tối đa 500 logs gần nhất
+    pushSharedStateToDb('api-usage-logs-v1', trimmed);
     window.dispatchEvent(new CustomEvent(API_USAGE_LOGGED_EVENT, { detail: logs }));
   } catch (err) {
     console.warn('Could not save API usage logs:', err);
@@ -1237,6 +1241,7 @@ export function clearApiUsageLogs(): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(API_USAGE_LOGS_KEY);
+    pushSharedStateToDb('api-usage-logs-v1', []);
     window.dispatchEvent(new CustomEvent(API_USAGE_LOGGED_EVENT, { detail: [] }));
   } catch (err) {
     console.warn('Could not clear API usage logs:', err);

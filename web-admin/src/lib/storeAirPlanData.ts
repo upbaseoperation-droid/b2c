@@ -1,6 +1,7 @@
 import type { SalaryGrade } from './types';
 import type { ApprovedBookingListItem } from './approvedBookingList';
 import type { KocListingItem } from './types';
+import { pushSharedStateToDb } from './sharedStateClient';
 
 export const STORE_AIR_PLAN_STORAGE_KEY = 'upbase_b2c_store_air_plans_v1';
 export const STORE_AIR_PLAN_UPDATED_EVENT = 'upbase-store-air-plan-updated';
@@ -272,7 +273,6 @@ export function loadStoreAirPlans(): StoreAirPlan[] {
   try {
     const raw = localStorage.getItem(STORE_AIR_PLAN_STORAGE_KEY);
     if (!raw) {
-      saveStoreAirPlans(INITIAL_STORE_AIR_PLANS);
       return INITIAL_STORE_AIR_PLANS;
     }
     const parsed = JSON.parse(raw);
@@ -291,7 +291,9 @@ export function saveStoreAirPlans(plans: StoreAirPlan[]): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(STORE_AIR_PLAN_STORAGE_KEY, JSON.stringify(plans));
+    pushSharedStateToDb('store-air-plans-v1', plans);
     window.dispatchEvent(new CustomEvent(STORE_AIR_PLAN_UPDATED_EVENT, { detail: plans }));
+    window.dispatchEvent(new CustomEvent('upbase_store_air_plans_updated', { detail: plans }));
   } catch (err) {
     console.error('Lỗi lưu StoreAirPlans vào localStorage:', err);
   }

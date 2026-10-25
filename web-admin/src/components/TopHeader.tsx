@@ -1,26 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Menu, Building2, PanelLeftOpen, PanelLeftClose, LogOut, Loader2, ChevronDown } from 'lucide-react';
+import { Menu, Building2, PanelLeftOpen, PanelLeftClose, LogOut, Loader2 } from 'lucide-react';
 import { UserProfile } from '../lib/types';
-import { USERS } from '../lib/mockData';
 import type { TabKey } from './Sidebar';
 import { resolveNavGroupTabKey } from '../lib/navGroups';
 import { PageActionsSlot, PageHeaderNavSlot, Segmented } from './ui';
 import type { UserScopeSummary } from '../lib/rbacScope';
-
-const ROLE_LABEL: Record<string, string> = {
-  ADMIN: 'Quản trị',
-  MANAGER: 'Trưởng phòng B2C',
-  LEADER: 'Trưởng nhóm',
-  MEMBER: 'Chuyên viên',
-  BRAND_MEMBER: 'Brand PIC',
-  CONTENT_MEMBER: 'Content',
-  BOOKING_MEMBER: 'Booking B2C',
-  BRAND_PARTNER: 'Đối tác Brand',
-  KOC_PARTNER: 'KOC / KOL',
-  CTV_PARTNER: 'Cộng tác viên',
-};
 
 interface TopHeaderProps {
   currentUser: UserProfile;
@@ -43,7 +29,6 @@ interface TopHeaderProps {
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
   currentUser,
-  onUserChange,
   title,
   activeTab,
   groupTabs,
@@ -56,9 +41,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   userScopeSummary,
 }) => {
   return (
-    <header className="app-header sticky top-0 z-20 min-h-12 bg-surface border-b border-line px-3 sm:px-5 lg:px-6 py-1.5 flex flex-wrap items-center justify-start gap-1.5 sm:gap-2 shrink-0">
-      {/* Khối 1: Nút menu di động / ẩn menu desktop & Tiêu đề trang */}
-      <div className="order-1 flex items-center gap-2 min-w-0 shrink-0">
+    <header className="app-header sticky top-0 z-20 min-h-12 bg-surface border-b border-line px-3 sm:px-5 lg:px-6 py-1.5 flex flex-wrap items-center justify-between gap-2 shrink-0">
+      {/* Khối trái: Nút menu, Tiêu đề trang, Tabs nhóm và Điều hướng ngữ cảnh trên cùng 1 hàng */}
+      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 max-w-full flex-1">
         {onToggleMobileSidebar && (
           <button
             type="button"
@@ -93,11 +78,22 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </button>
         )}
 
-        <h1 className="text-sm sm:text-lg font-semibold text-ink leading-6 tracking-tight truncate max-w-[180px] sm:max-w-none">{title}</h1>
+        <h1 className="text-sm sm:text-base font-semibold text-ink leading-6 tracking-tight whitespace-nowrap shrink-0">{title}</h1>
+
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden empty:hidden">
+          {groupTabs && groupTabs.length > 1 && activeTab && onNavigateTab && (
+            <Segmented<TabKey>
+              items={groupTabs}
+              value={resolveNavGroupTabKey(activeTab)}
+              onChange={onNavigateTab}
+            />
+          )}
+          <PageHeaderNavSlot />
+        </div>
       </div>
 
-      {/* Khối 2: Cụm thao tác trang & Đăng xuất (Mobile: cạnh tiêu đề; Desktop: phía cuối thanh) */}
-      <div className="order-2 sm:order-3 ml-auto flex flex-wrap items-center justify-end gap-1.5 shrink-0 max-w-full">
+      {/* Khối phải: Phạm vi phân quyền, Thao tác trang & Đăng xuất */}
+      <div className="flex items-center justify-end gap-1.5 shrink-0 ml-auto">
         {activeTab !== 'tiktok-crawler' && activeTab !== 'input-plan' && (
           currentUser.role === 'BRAND_PARTNER' ? (
             <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-positive-soft text-positive text-xs font-medium border border-positive/20 shrink-0">
@@ -125,48 +121,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
         <PageActionsSlot />
 
-        {onUserChange && (
-          <label className="hidden sm:inline-flex relative items-center h-8 pl-2 pr-6 rounded-md border border-line bg-surface hover:bg-sunken transition-colors text-xs text-ink cursor-pointer shrink-0">
-            <select
-              value={USERS.some(u => u.id === currentUser.id) ? currentUser.id : ''}
-              onChange={(e) => {
-                const u = USERS.find((item) => item.id === e.target.value);
-                if (u) onUserChange(u);
-              }}
-              className="appearance-none bg-transparent font-medium text-ink focus:outline-none cursor-pointer pr-1 max-w-[150px] xl:max-w-[185px] truncate"
-              aria-label="Chuyển tài khoản giả lập"
-            >
-              {!USERS.some(u => u.id === currentUser.id) && (
-                <option value="">
-                  {currentUser.name} · {ROLE_LABEL[currentUser.role] ?? currentUser.role}
-                </option>
-              )}
-              <optgroup label="Ban Điều Hành & Quản Trị">
-                {USERS.filter(u => ['ADMIN', 'MANAGER'].includes(u.role)).map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name} · {ROLE_LABEL[user.role] ?? user.role}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Trưởng Nhóm & Chuyên Viên Nội Bộ">
-                {USERS.filter(u => ['LEADER', 'BOOKING_MEMBER', 'CONTENT_MEMBER', 'BRAND_MEMBER', 'MEMBER'].includes(u.role)).map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name} · {user.id.startsWith('contract-demo-') ? user.roleTitle : (ROLE_LABEL[user.role] ?? user.role)}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Đối Tác Bên Thứ 3">
-                {USERS.filter(u => ['BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER'].includes(u.role)).map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name} · {ROLE_LABEL[user.role] ?? user.role}
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-ink-3 absolute right-2 pointer-events-none" />
-          </label>
-        )}
-
         {onLogout && (
           <button
             type="button"
@@ -183,18 +137,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             )}
           </button>
         )}
-      </div>
-
-      {/* Khối 3: Tabs nhóm & Điều hướng con (Mobile: dòng riêng cuộn ngang; Desktop: nằm cạnh tiêu đề, giữ nguyên kích thước tự nhiên) */}
-      <div className="order-3 sm:order-2 w-full sm:w-auto flex items-center gap-2 sm:gap-2.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pt-1 sm:pt-0 border-t border-line/60 sm:border-t-0 empty:hidden shrink-0 max-w-full">
-        {groupTabs && groupTabs.length > 1 && activeTab && onNavigateTab && (
-          <Segmented<TabKey>
-            items={groupTabs}
-            value={resolveNavGroupTabKey(activeTab)}
-            onChange={onNavigateTab}
-          />
-        )}
-        <PageHeaderNavSlot />
       </div>
     </header>
   );

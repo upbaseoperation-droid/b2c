@@ -8,6 +8,7 @@ import {
   StorePortfolioItem,
   normalizeStoreCoefficient,
 } from './types';
+import { pushSharedStateToDb } from './sharedStateClient';
 
 export { normalizeStoreCoefficient };
 
@@ -1264,6 +1265,8 @@ export function persistDifficultyConfigs(next: TaskCategoryDifficultyConfig[]): 
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(TASK_DIFFICULTY_STORAGE_KEY, JSON.stringify(next));
+      pushSharedStateToDb('task-difficulty-configs-v1', next);
+      window.dispatchEvent(new CustomEvent('upbase-task-difficulty-updated', { detail: next }));
     } catch (e) {
       console.warn('Failed to save task difficulty configs:', e);
     }
@@ -1273,7 +1276,7 @@ export function persistDifficultyConfigs(next: TaskCategoryDifficultyConfig[]): 
 export function loadSavedSowPolicies(): SowPointPolicyItem[] {
   if (typeof window === 'undefined') return DEFAULT_SOW_POINT_POLICIES;
   try {
-    const saved = localStorage.getItem(SOW_POINT_POLICY_STORAGE_KEY);
+    const saved = localStorage.getItem('upbase_b2c_sow_point_policies_v1') || localStorage.getItem(SOW_POINT_POLICY_STORAGE_KEY);
     if (!saved) return DEFAULT_SOW_POINT_POLICIES;
     const parsed = JSON.parse(saved);
     if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -1287,7 +1290,9 @@ export function persistSowPolicies(next: SowPointPolicyItem[]): void {
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(SOW_POINT_POLICY_STORAGE_KEY, JSON.stringify(next));
-      window.dispatchEvent(new CustomEvent('upbase-sow-policies-updated'));
+      localStorage.setItem('upbase_b2c_sow_point_policies_v1', JSON.stringify(next));
+      pushSharedStateToDb('sow-point-policies-v1', next);
+      window.dispatchEvent(new CustomEvent('upbase-sow-policies-updated', { detail: next }));
     } catch (e) {
       console.warn('Failed to save SOW policies:', e);
     }
@@ -1309,6 +1314,7 @@ export function persistManagerExceptions(next: Record<string, boolean>): void {
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(STAFF_WORKLOAD_EXCEPTIONS_KEY, JSON.stringify(next));
+      pushSharedStateToDb('staff-workload-exceptions-v1', next);
       window.dispatchEvent(new CustomEvent('upbase-workload-exceptions-updated', { detail: next }));
     } catch (e) {
       console.warn('Failed to save workload exceptions:', e);

@@ -19,9 +19,59 @@ export type PlanSyncStatus =
   | 'error'     // Lưu lỗi, sẽ thử lại khi bấm Lưu
   | 'offline';  // Không kết nối được database — đang dùng dữ liệu mẫu, không lưu
 
-interface StoredPlan {
+export interface StoredPlan {
   plan: InputPlanBreakdownState;
   revision: number;
+}
+
+const CLIENT_PLANS_TTL_MS = 20_000;
+let clientStoredPlansCache: { plans: StoredPlan[]; fetchedAt: number } | null = null;
+let clientInflightPlansFetch: Promise<StoredPlan[]> | null = null;
+
+export function getCachedClientMonthlyPlans(): InputPlanBreakdownState[] | null {
+  if (!clientStoredPlansCache || clientStoredPlansCache.plans.length === 0) return null;
+  return clientStoredPlansCache.plans.map(s => s.plan);
+}
+
+export function invalidateClientMonthlyPlansCache() {
+  clientStoredPlansCache = null;
+}
+
+function upsertClientCachedPlan(stored: StoredPlan) {
+  if (!clientStoredPlansCache) return;
+  const idx = clientStoredPlansCache.plans.findIndex(p => p.plan.id === stored.plan.id);
+  if (idx >= 0) {
+    const next = [...clientStoredPlansCache.plans];
+    next[idx] = stored;
+    clientStoredPlansCache = { plans: next, fetchedAt: Date.now() };
+  } else {
+    clientStoredPlansCache = { plans: [stored, ...clientStoredPlansCache.plans], fetchedAt: Date.now() };
+  }
+}
+
+export async function fetchClientMonthlyPlans(force = false): Promise<StoredPlan[]> {
+  if (!force && clientStoredPlansCache && Date.now() - clientStoredPlansCache.fetchedAt < CLIENT_PLANS_TTL_MS) {
+    return clientStoredPlansCache.plans;
+  }
+  if (!force && clientInflightPlansFetch) {
+    return clientInflightPlansFetch;
+  }
+  const promise = (async () => {
+    let res = await fetch('/api/monthly-plans', { cache: 'no-store' });
+    if (res.status === 401) {
+      await fetch('/api/auth/me', { cache: 'no-store' }).catch(() => null);
+      res = await fetch('/api/monthly-plans', { cache: 'no-store' });
+    }
+    if (!res.ok) throw new Error((await res.json().catch(() => null))?.error || `HTTP ${res.status}`);
+    const body = (await res.json()) as { plans: StoredPlan[] };
+    const plans = Array.isArray(body?.plans) ? body.plans : [];
+    clientStoredPlansCache = { plans, fetchedAt: Date.now() };
+    return plans;
+  })().finally(() => {
+    clientInflightPlansFetch = null;
+  });
+  clientInflightPlansFetch = promise;
+  return promise;
 }
 
 interface UseMonthlyPlanSyncOptions {
@@ -58,6 +108,7 @@ export function useMonthlyPlanSync({
 
   const revisionsRef = useRef<Map<string, number>>(new Map());
   const lastSavedRef = useRef<Map<string, string>>(new Map());
+  const lastSavedObjRef = useRef<Map<string, InputPlanBreakdownState>>(new Map());
   const latestPlansRef = useRef<InputPlanBreakdownState[]>(effectivePlans);
   const inFlightRef = useRef<Promise<boolean> | null>(null);
   const rerunRef = useRef(false);
@@ -76,7 +127,8 @@ export function useMonthlyPlanSync({
 
   const rememberStored = useCallback((stored: StoredPlan) => {
     revisionsRef.current.set(stored.plan.id, stored.revision);
-    lastSavedRef.current.set(stored.plan.id, serialize(stored.plan));
+    lastSavedObjRef.current.set(stored.plan.id, stored.plan);
+    lastSavedRef.current.delete(stored.plan.id);
   }, []);
 
   // 1. Tải dữ liệu lần đầu
@@ -84,19 +136,13 @@ export function useMonthlyPlanSync({
     let cancelled = false;
     (async () => {
       try {
-        let res = await fetch('/api/monthly-plans', { cache: 'no-store' });
-        if (res.status === 401) {
-          await fetch('/api/auth/me', { cache: 'no-store' }).catch(() => null);
-          res = await fetch('/api/monthly-plans', { cache: 'no-store' });
-        }
-        if (!res.ok) throw new Error((await res.json().catch(() => null))?.error || `HTTP ${res.status}`);
-        const body = (await res.json()) as { plans: StoredPlan[] };
+        const storedList = await fetchClientMonthlyPlans(reloadKey > 0);
         if (cancelled) return;
-        const loadedPlans = body.plans.map(p => p.plan);
+        const loadedPlans = storedList.map(p => p.plan);
         const maybeTransformed = callbacksRef.current.onLoaded(loadedPlans);
         const finalPlans = Array.isArray(maybeTransformed) ? maybeTransformed : loadedPlans;
         const byId = new Map(finalPlans.map(p => [p.id, p]));
-        body.plans.forEach(s => {
+        storedList.forEach(s => {
           rememberStored({
             revision: s.revision,
             plan: byId.get(s.plan.id) ?? s.plan
@@ -118,7 +164,23 @@ export function useMonthlyPlanSync({
   }, [rememberStored, reloadKey]);
 
   const getDirtyPlans = useCallback(
-    () => latestPlansRef.current.filter(p => lastSavedRef.current.get(p.id) !== serialize(p)),
+    () =>
+      latestPlansRef.current.filter(p => {
+        const savedObj = lastSavedObjRef.current.get(p.id);
+        if (savedObj === p) return false;
+        if (!savedObj && !lastSavedRef.current.has(p.id)) return true;
+        let savedJson = lastSavedRef.current.get(p.id);
+        if (savedJson === undefined && savedObj) {
+          savedJson = serialize(savedObj);
+          lastSavedRef.current.set(p.id, savedJson);
+        }
+        const curJson = serialize(p);
+        if (savedJson === curJson) {
+          lastSavedObjRef.current.set(p.id, p);
+          return false;
+        }
+        return true;
+      }),
     []
   );
 
@@ -151,8 +213,11 @@ export function useMonthlyPlanSync({
             const body = await res.json().catch(() => null);
 
             if (res.ok) {
-              revisionsRef.current.set(plan.id, (body as StoredPlan).revision);
+              const savedStored = body as StoredPlan;
+              revisionsRef.current.set(plan.id, savedStored.revision);
+              lastSavedObjRef.current.set(plan.id, plan);
               lastSavedRef.current.set(plan.id, sentJson);
+              upsertClientCachedPlan({ revision: savedStored.revision, plan });
               continue;
             }
 
@@ -160,10 +225,12 @@ export function useMonthlyPlanSync({
             if ((res.status === 409 || res.status === 423) && body?.current) {
               const current = body.current as StoredPlan;
               const replaced = callbacksRef.current.onReplacePlan(current.plan);
+              const nextPlan = replaced || current.plan;
               rememberStored({
                 revision: current.revision,
-                plan: replaced || current.plan
+                plan: nextPlan
               });
+              upsertClientCachedPlan({ revision: current.revision, plan: nextPlan });
               callbacksRef.current.onNotify?.(
                 `${body.error} Đã tải lại bản mới nhất của "${current.plan.title}", thay đổi vừa rồi chưa được lưu.`
               );

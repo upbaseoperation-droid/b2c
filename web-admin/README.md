@@ -13,7 +13,34 @@ Hệ thống điều hành và quản trị vận hành tập trung cho phòng M
   - **Prisma ORM & PostgreSQL trên Supabase** (AWS ap-southeast-1 Pooler / Direct).
   - Vận hành 100% dữ liệu thực tế thông qua các biến môi trường: `BRAND_STORAGE=postgres`, `CONTRACT_STORAGE=postgres`, `PARTNER_HUB_STORAGE=postgres`, `SHARED_STORAGE=postgres`.
   - Bộ kiểm tra & đối soát dữ liệu thực: `npx tsx scripts/verify-db.ts` (16 tài khoản nhân sự/lãnh đạo B2C, 69 gian hàng `StorePortfolio`, 42 thương hiệu trong `AppSharedRecord` & `BrandProfileRecord`, 25 mẫu Word pháp chế trong `ContractTemplateSnapshot`, 98 kế hoạch tháng `MonthlyPlan`, 4.820 KOC chuẩn hóa 100% danh bạ Master và 16.024 bản ghi video/deal lịch sử hợp tác thực tế).
-- **Quản lý dữ liệu & State:** Kiến trúc phân lớp, đồng bộ trạng thái thời gian thực giữa giao diện và các API nội bộ / bên thứ ba.
+- **Quản lý dữ liệu & Đồng bộ 2 chiều (PostgreSQL <-> `localStorage` Cache):**
+  - **API máy chủ `/api/shared-state` (`route.ts`):**
+    - Cung cấp 2 phương thức `GET` và `PUT`, quản lý dữ liệu tập trung trên bảng `AppSharedRecord` (PostgreSQL) thông qua `readRecord`, `readRecordsBatch` (đọc lô 1 truy vấn SQL / 1 lần quét thư mục kèm tùy chọn `{ clone: false }`) và `upsertRecord` kèm số hiệu phiên bản (`revision`) để chống ghi đè xung đột.
+    - Tối ưu hóa truy xuất kế hoạch tháng (`monthlyPlanStore.ts` & `useMonthlyPlanSync.ts`): bộ nhớ đệm kế hoạch phía máy chủ (`cachedPlansState` + gộp request đồng thời) và bộ nhớ đệm dùng chung phía trình duyệt (`fetchClientMonthlyPlans` / `getCachedClientMonthlyPlans` + kiểm tra tham chiếu `lastSavedObjRef` chống `JSON.stringify` thừa), kết hợp `WeakMap` memoization trên các hàm kiểm định/tổng hợp kế hoạch (`planBreakdownRules.ts`, `monthlyPlanData.ts`, `monthlyProfileMetrics.ts`).
+    - Hỗ trợ tham số: `?key=<mã>` (lấy 1 bộ dữ liệu), `?keys=<mã1,mã2>` (lấy nhiều bộ cụ thể), hoặc không truyền tham số để lấy toàn bộ 16 bộ dữ liệu trong danh sách `ALLOWED_SHARED_STATE_KEYS`.
+    - Hỗ trợ lưu bản ghi đơn qua `{ key, data }` hoặc cập nhật hàng loạt qua `{ updates: { [key]: data } }`.
+    - Tự động giới hạn số lượng bản ghi lịch sử để kiểm soát dung lượng: tối đa 100 ảnh nghiệm thu (`video-acceptance-screenshots-v1`) và 500 dòng nhật ký API (`api-usage-logs-v1`).
+    - Đồng bộ thực thể quan hệ: Khi cập nhật `store-overrides-v1`, API tự động trích xuất các trường ghi đè (`difficultyTier`, `difficultyMultiplier`, `b2cOwnerName`, `accountOwnerName`, `bookingLeader`, `hasBookingLeader`) và cập nhật trực tiếp vào bảng quan hệ `prisma.storePortfolio`.
+  - **Module client `src/lib/sharedStateClient.ts`:**
+    - `hydrateAllSharedStatesFromDb()`: Kích hoạt khi khởi tạo ứng dụng (`page.tsx`), tải dữ liệu mới nhất từ PostgreSQL về lưu vào `localStorage` và phát `CustomEvent` tương ứng để các màn hình cập nhật ngay lập tức. Nếu máy chủ chưa có dữ liệu (`revision === 0`) nhưng `localStorage` đã có sẵn dữ liệu cục bộ, hệ thống tự động gom backfill và đẩy lên máy chủ.
+    - `pushSharedStateToDb(key, data, debounceMs = 250)`: Tự động gom và đẩy dữ liệu lên `/api/shared-state` với độ trễ debounce 250ms khi có chỉnh sửa trên giao diện.
+  - **16 bộ dữ liệu vận hành B2C được đồng bộ:**
+    1. `brand-monthly-plans-v1` (`b2c_brand_monthly_plans_v1`): Kế hoạch tháng Brand.
+    2. `store-air-plans-v1` (`upbase_b2c_store_air_plans_v1`): Kế hoạch Air Gian hàng.
+    3. `approved-booking-list-v2` (`upbase_b2c_approved_booking_list_v2`): Danh sách Booking đã duyệt.
+    4. `staff-brand-listing-sheets-v1` (`upbase_b2c_staff_brand_listing_sheets_v1`): Sheet Listing KOC theo nhãn.
+    5. `video-acceptance-screenshots-v1` (`upbase_b2c_video_acceptance_screenshots_v1`): Kho ảnh nghiệm thu.
+    6. `store-overrides-v1` (`upbase_store_overrides_v1`): Ghi đè gian hàng (tự động đồng bộ sang `prisma.storePortfolio`).
+    7. `sla-tasks-v1` (`upbase_b2c_sla_tasks_v1`): Task SLA.
+    8. `task-difficulty-configs-v1` (`upbase_b2c_task_difficulty_configs_v1`): Cấu hình hệ số độ khó.
+    9. `sow-point-policies-v1` (`upbase_b2c_sow_point_policies_v1`): Điểm SOW.
+    10. `staff-workload-exceptions-v1` (`upbase_b2c_staff_workload_exceptions_v1`): Ngoại lệ tải công việc nhân sự.
+    11. `third-party-accounts-v1` (`upbase_b2c_third_party_accounts_v1`): Tài khoản đối tác bên thứ 3.
+    12. `api-workspace-config-v2` (`upbase_b2c_api_workspace_config_v2`): Cấu hình API & System Prompt tập trung.
+    13. `api-usage-logs-v1` (`upbase_b2c_api_usage_logs_v1`): Nhật ký sử dụng API.
+    14. `custom-knowledge-articles-v1` (`upbase_b2c_custom_knowledge_articles_v1`): Bài viết kiến thức Marketing.
+    15. `ads-reports-metadata-v1`: Metadata báo cáo Ads.
+    16. `cloudflare-r2-config-v1`: Cấu hình Cloudflare R2.
 - **Xác thực:** Hỗ trợ Lark Suite SSO (`/api/auth/lark/*`) cho nhân sự nội bộ và Cổng đối tác Partner Hub Token (`/api/auth/partner/*`) cho đại diện Brand.
 - **Xử lý tài liệu & Nhận diện:** Tích hợp OCR (`/api/ocr/extract-legal-doc`) bóc tách ảnh CCCD và giấy tờ pháp lý KOC.
 
@@ -27,7 +54,7 @@ Sau khi rà soát và ẩn 10 màn hình thừa / trùng lặp, hệ thống đ�
 1. **Việc của tôi (`cockpit` / `CockpitView`):** Bàn làm việc hàng ngày của nhân sự và quản lý: tổng hợp việc chờ xử lý (Action Items), theo dõi hạn chót SLA và cảnh báo quá hạn.
 2. **Báo cáo & Dashboard (`dashboard-bi` / `ExecutiveDashboardReportsView`):**
    - *1. Ngân sách & PnL:* Đối soát chi phí Gross/Net 42 Thương hiệu, dòng tiền ĐNTT & xuất file Excel 5 sheets.
-   - *2. Tiến độ 69 gian hàng (0 → 18):* Theo dõi 7 chặng phễu vận hành, phát hiện điểm nghẽn và hỗ trợ 1 chạm điều hướng trực tiếp sang màn hình tác nghiệp.
+   - *2. Tiến độ 69 gian hàng (0 → 18):* Theo dõi 7 chặng phễu vận hành, đồng bộ trực tiếp trạng thái hợp lệ Plan `4.1 vs 4.1.1` (`evaluatePlanValiditySummary`), phát hiện điểm nghẽn và hỗ trợ 1 chạm điều hướng trực tiếp sang màn hình tác nghiệp.
    - *3. Gian hàng & TikTok Seller:* 69 gian hàng B2C, doanh thu GMV Ads và hiệu suất chiến dịch PGM/LGM.
    - *4. Hiệu quả video:* Đánh giá sản lượng video Paid vs FOC, ROI và GMV 14d/30d.
    - *5. Lịch đăng video (W40–W45):* Ma trận nhịp độ lên sóng đồng loạt 31 ngày.
@@ -35,7 +62,10 @@ Sau khi rà soát và ẩn 10 màn hình thừa / trùng lặp, hệ thống đ�
    - *(Tab phụ: Báo cáo Ads TikTok `ads-report`).*
 
 ### Nhóm 2: Kế hoạch & Điều phối
-3. **Kế hoạch tháng (`input-plan` / `InputPlanBreakdownView`):** Tiếp nhận file 4.1 Plan order tổng (tích hợp cảnh báo 3 lớp: kiểm tra cột `Chốt plan` và chặn gửi duyệt khi 4.1 chưa chốt, cảnh báo chi tiết chỉ tiêu lệch trên bản Nháp, và bảo vệ bản Đã duyệt kèm cờ `Lệch 4.1 mới` để Quản lý chủ động mở khóa cập nhật), lập phân rã 4.1.1 theo tuần (hỗ trợ đồng bộ 2 chiều giữa Bước 2 *Phân bổ kênh & KOC* và Bước 3 *Phân rã tuần*, tự nhân đơn giá khi nhập số lượng tuần, chia nhanh theo kịch bản *Chia đều / Dồn Mega W2–W3 / Dồn đầu tháng / Khớp Bảng 4.1* và bảo toàn nhân sự `+Chia`), kiểm soát chỉ tiêu Paid/FOC, hạn mức Net/Gross và luồng phê duyệt (8 gian hàng có Trưởng nhóm `Nguyễn Thị Ngọc Tâm` sơ duyệt → Giám đốc `Đặng Thị Yến Nhi`; 61 gian hàng không có Leader trình thẳng Giám đốc `Đặng Thị Yến Nhi`).
+3. **Kế hoạch tháng (`input-plan` / `InputPlanBreakdownView` & `MonthlyPlanHub.tsx`):**
+   - **Bảng Điều Khiển Tiến Độ & Thẩm Định Hợp Lệ 4 Chặng (`STORE_GOVERNANCE`):** Hiển thị tổng quan cho Quản lý theo 4 chặng liên hoàn: (1) *Tiến độ Plan Tổng 4.1* (Đã chốt 4.1, Chưa chốt, Có bản 4.1 mới lệch, Chưa lập), (2) *Tiến độ Plan Chi tiết 4.1.1* (Đã chia tuần 4.1.1 vs Chưa chia tuần), (3) *Kiểm định Tính hợp lệ 4.1 vs 4.1.1* (`evaluatePlanValiditySummary`: Khớp 4.1, Hợp lệ có giải trình, Lệch 4.1 chưa giải trình, Lỗi cấu trúc 4.1.1, Cảnh báo đơn giá vượt trần Bảng 5.6), và (4) *Phê duyệt & Triển khai tiếp* (Chờ sơ duyệt Leader, Chờ GĐ duyệt, Cần sửa lại, Đã duyệt triển khai — kèm nút **Duyệt hàng loạt plan hợp lệ**).
+   - **Hộp thoại Thẩm định & Đối soát Nhanh Plan 4.1 vs 4.1.1:** Bấm vào nhãn hợp lệ trên từng gian hàng để xem bảng đối soát 7 chỉ tiêu (`Chi phí Gross`, `Chi phí Net`, `Tổng Video`, `Video Paid`, `Video FOC`, `Video Kênh Brand`, `Số giờ Live`), kiểm tra ghi chú giải trình (`breakdownNote`), tự động khớp 4.1 & chia đều tuần, yêu cầu sửa lại, sơ duyệt / phê duyệt trực tiếp hoặc chuyển sang điều phối Listing KOC.
+   - **Trình soạn thảo 5 bước 4.1.1:** Tiếp nhận file 4.1 Plan order tổng (cảnh báo 3 lớp: kiểm tra cột `Chốt plan` và chặn gửi duyệt khi 4.1 chưa chốt, cảnh báo chi tiết chỉ tiêu lệch trên bản Nháp, và bảo vệ bản Đã duyệt kèm cờ `Lệch 4.1 mới` để Quản lý chủ động mở khóa cập nhật), lập phân rã 4.1.1 theo tuần (đồng bộ 2 chiều giữa Bước 2 *Phân bổ kênh & KOC* và Bước 3 *Phân rã tuần*, tự nhân đơn giá khi nhập số lượng tuần, chia nhanh theo kịch bản *Chia đều / Dồn Mega W2–W3 / Dồn đầu tháng / Khớp Bảng 4.1* và bảo toàn nhân sự `+Chia`), kiểm soát chỉ tiêu Paid/FOC, hạn mức Net/Gross và luồng phê duyệt (8 gian hàng có Trưởng nhóm `Nguyễn Thị Ngọc Tâm` sơ duyệt → Giám đốc `Đặng Thị Yến Nhi`; 61 gian hàng không có Leader trình thẳng Giám đốc `Đặng Thị Yến Nhi`).
 4. **Kịch bản & Video (`content` / `ContentView`):**
    - *Plan tháng của Brand (`BrandMonthlyPlanForm.tsx`):* Nhập 5 phần (Định hướng, KPI, Key Visual, TikTok Shop, Shopee, Pillar riêng và Chi tiết Content). Hỗ trợ cơ chế **"1 Dự Án — 1 Strategy Owner"** (`BRAND_TEAM` cho Brand lớn ≥ 1 tỷ vs `CONTENT_TEAM` cho Brand vừa & nhỏ), phân vai Booking rõ theo bậc (`Content Team` book KOL `KL5–KL7` & Hero Content; `Booking Team` book KOC `KL1–KL4` & `FOC`), và móc trực tiếp **SKU đơn / Combo** từ chiều Sản phẩm của Brand.
    - *Sản phẩm & Combo của Brand (`ProductCatalogView.tsx` & `productCatalog.ts`):* Quản lý chiều Sản phẩm độc lập xuyên tháng theo cấu trúc **Brand → Nhóm sản phẩm (USP, Claim cấm) → Sản phẩm / Combo (`SINGLE` SKU đơn, `HARD_BUNDLE` Combo có link riêng trên sàn, `ROUTINE_COMBO` Combo ghép nhiều link lẻ) → Thành phần cấu thành Combo (`bundleComponents`: Số lượng, Vai trò Chính/Phụ/Quà tặng, Tỷ trọng phân bổ báo cáo %) → Link giỏ hàng theo Gian hàng & Link Affiliate hoa hồng riêng**, kèm kiểm soát tồn mẫu khả dụng (`resolveEffectiveSampleQuota`) và SKU thay thế khi hết hàng (`substituteProductId`).

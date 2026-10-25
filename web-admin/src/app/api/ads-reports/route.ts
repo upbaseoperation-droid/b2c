@@ -10,7 +10,8 @@ import { INITIAL_KOCS, INITIAL_DEALS } from '@/lib/mockData';
 import { getAuthenticatedUser } from '@/lib/larkAuth';
 import { persistParsedAdsReportToDb } from '@/lib/server/tiktokSellerStore';
 import { actionAllowed } from '@/lib/server/accessPolicy';
-import { readRecord, updateRecord } from '@/lib/server/sharedRecords';
+import { readRecord, updateRecord, upsertRecord } from '@/lib/server/sharedRecords';
+import type { WeeklyAdsReportMeta } from '@/lib/types';
 import {
   KOC_VIDEO_HISTORY_RECORD_KEY,
   buildInitialWeeklyHistoryStore,
@@ -119,7 +120,32 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const list = getStoredAdsReportsList();
+    const diskList = getStoredAdsReportsList();
+    let dbMetaList: WeeklyAdsReportMeta[] = [];
+    try {
+      const dbRec = await readRecord<WeeklyAdsReportMeta[]>('ads-reports-metadata-v1', []);
+      if (Array.isArray(dbRec.data)) {
+        dbMetaList = dbRec.data;
+      }
+    } catch {
+      // Bỏ qua lỗi đọc DB nếu môi trường offline
+    }
+
+    const mergedMap = new Map<string, WeeklyAdsReportMeta>();
+    // Nạp danh sách từ cơ sở dữ liệu trước
+    for (const item of dbMetaList) {
+      if (item && item.fileName) {
+        mergedMap.set(item.fileName, item);
+      }
+    }
+    // Gộp với danh sách từ thư mục ổ đĩa cục bộ
+    for (const item of diskList) {
+      if (item && item.fileName) {
+        mergedMap.set(item.fileName, item);
+      }
+    }
+
+    const list = Array.from(mergedMap.values());
     return NextResponse.json({
       success: true,
       reports: list
@@ -248,6 +274,23 @@ export async function POST(req: NextRequest) {
         storeName,
         actorName: user.name,
       });
+
+      if (result.meta) {
+        try {
+          await upsertRecord<WeeklyAdsReportMeta[]>('ads-reports-metadata-v1', [], (prevList) => {
+            const list = Array.isArray(prevList) ? [...prevList] : [];
+            const idx = list.findIndex(r => r.fileName === cleanBaseName);
+            if (idx >= 0) {
+              list[idx] = result.meta;
+            } else {
+              list.push(result.meta);
+            }
+            return list;
+          });
+        } catch (dbErr) {
+          console.warn('[ads-reports] Không thể lưu metadata vào cơ sở dữ liệu:', dbErr);
+        }
+      }
 
       return NextResponse.json({
         success: true,

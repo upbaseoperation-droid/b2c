@@ -591,6 +591,18 @@ export function enrichPlanWithMultiStaffWorkstreams(plan: InputPlanBreakdownStat
   };
 }
 
+interface CachedWorkstreamSummary {
+  items: unknown;
+  reference41: unknown;
+  pic: string | undefined;
+  primaryPic: string | undefined;
+  bookingLeader: string | undefined;
+  hasBookingLeader: boolean | undefined;
+  value: StorePlanWorkstreamSummary;
+}
+
+const workstreamSummaryCache = new WeakMap<InputPlanBreakdownState, CachedWorkstreamSummary>();
+
 export function getStorePlanWorkstreamSummary(plan: InputPlanBreakdownState | null): StorePlanWorkstreamSummary {
   const empty: StorePlanWorkstreamSummary = {
     affiliatePaid: { totalQty: 0, totalBudget: 0, leaderName: plan?.bookingLeader, assignees: [] },
@@ -607,6 +619,19 @@ export function getStorePlanWorkstreamSummary(plan: InputPlanBreakdownState | nu
     selfChannelBudget: 0,
   };
   if (!plan) return empty;
+
+  const cached = workstreamSummaryCache.get(plan);
+  if (
+    cached &&
+    cached.items === plan.items &&
+    cached.reference41 === plan.reference41 &&
+    cached.pic === plan.pic &&
+    cached.primaryPic === plan.primaryPic &&
+    cached.bookingLeader === plan.bookingLeader &&
+    cached.hasBookingLeader === plan.hasBookingLeader
+  ) {
+    return cached.value;
+  }
 
   const primaryPic = plan.primaryPic || plan.pic || 'Lê Phương Thảo';
   const bookingLeader = plan.hasBookingLeader ? (plan.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : undefined;
@@ -769,7 +794,7 @@ export function getStorePlanWorkstreamSummary(plan: InputPlanBreakdownState | nu
   const selfChannelTotalQty = sumQ(selfSlices);
   const selfChannelTotalBudget = sumB(selfSlices);
 
-  return {
+  const summary: StorePlanWorkstreamSummary = {
     affiliatePaid: { totalQty: sumQ(affSlices), totalBudget: sumB(affSlices), leaderName: bookingLeader, assignees: affSlices },
     focSample: { totalQty: sumQ(focSlices), totalBudget: sumB(focSlices), leaderName: bookingLeader, assignees: focSlices },
     selfChannel: { totalQty: selfChannelTotalQty, totalBudget: selfChannelTotalBudget, leaderName: 'Việt Hoàng', assignees: selfSlices },
@@ -783,6 +808,16 @@ export function getStorePlanWorkstreamSummary(plan: InputPlanBreakdownState | nu
     selfChannelVideos: selfChannelTotalQty,
     selfChannelBudget: selfChannelTotalBudget,
   };
+  workstreamSummaryCache.set(plan, {
+    items: plan.items,
+    reference41: plan.reference41,
+    pic: plan.pic,
+    primaryPic: plan.primaryPic,
+    bookingLeader: plan.bookingLeader,
+    hasBookingLeader: plan.hasBookingLeader,
+    value: summary,
+  });
+  return summary;
 }
 
 export function buildInitialBrandMonthlyPlans(
@@ -1056,14 +1091,18 @@ export function buildPersonalWorkPackages(
   return packages;
 }
 
+const enrichedPlanCache = new WeakMap<InputPlanBreakdownState, InputPlanBreakdownState>();
+
 export function enrichPlanWithVersions(rawPlan: InputPlanBreakdownState, idx: number = 0): InputPlanBreakdownState {
+  const cached = enrichedPlanCache.get(rawPlan);
+  if (cached) return cached;
   const resolvedLeader = resolveStoreBookingLeader(rawPlan.storeName || rawPlan.brandName, rawPlan.bookingLeader);
   if (rawPlan.reference41) {
     const matchedCamp41 = rawPlan.campaignId
       ? INITIAL_CAMPAIGNS.find(c => c.id === rawPlan.campaignId)
       : findActiveCampaignForBrandInMonth(rawPlan.brandName, rawPlan.month, INITIAL_CAMPAIGNS);
     const matchedPhase41 = matchedCamp41 ? getCampaignPhaseForMonth(matchedCamp41, rawPlan.month) : undefined;
-    return {
+    const out41: InputPlanBreakdownState = {
       ...rawPlan,
       hasBookingLeader: Boolean(resolvedLeader),
       bookingLeader: resolvedLeader,
@@ -1073,6 +1112,9 @@ export function enrichPlanWithVersions(rawPlan: InputPlanBreakdownState, idx: nu
       campaignTitle: rawPlan.campaignTitle ?? matchedCamp41?.title,
       campaignPhaseName: rawPlan.campaignPhaseName ?? matchedPhase41?.phaseName,
     };
+    enrichedPlanCache.set(rawPlan, out41);
+    enrichedPlanCache.set(out41, out41);
+    return out41;
   }
   const basePlan = enrichPlanWithMultiStaffWorkstreams({ ...rawPlan, hasBookingLeader: Boolean(resolvedLeader), bookingLeader: resolvedLeader }, idx);
   const matchedCamp = basePlan.campaignId
@@ -1088,6 +1130,8 @@ export function enrichPlanWithVersions(rawPlan: InputPlanBreakdownState, idx: nu
     campaignPhaseName: basePlan.campaignPhaseName ?? matchedPhase?.phaseName,
   };
   if (plan.versionSnapshots && plan.versionSnapshots.length > 0) {
+    enrichedPlanCache.set(rawPlan, plan);
+    enrichedPlanCache.set(plan, plan);
     return plan;
   }
 
@@ -1201,12 +1245,15 @@ export function enrichPlanWithVersions(rawPlan: InputPlanBreakdownState, idx: nu
       }
     ];
 
-    return {
+    const out3: InputPlanBreakdownState = {
       ...plan,
       currentVersionCode: 'v1.2',
       isVersionLocked: ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(plan.status || ''),
       versionSnapshots: snapshots
     };
+    enrichedPlanCache.set(rawPlan, out3);
+    enrichedPlanCache.set(out3, out3);
+    return out3;
   }
 
   if (hasTwoVersions && budget > 0) {
@@ -1254,15 +1301,18 @@ export function enrichPlanWithVersions(rawPlan: InputPlanBreakdownState, idx: nu
       }
     ];
 
-    return {
+    const out2: InputPlanBreakdownState = {
       ...plan,
       currentVersionCode: 'v1.1',
       isVersionLocked: ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(plan.status || ''),
       versionSnapshots: snapshots
     };
+    enrichedPlanCache.set(rawPlan, out2);
+    enrichedPlanCache.set(out2, out2);
+    return out2;
   }
 
-  return {
+  const out1: InputPlanBreakdownState = {
     ...plan,
     currentVersionCode: plan.currentVersionCode || 'v1.0',
     isVersionLocked: plan.isVersionLocked ?? ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(plan.status || ''),
@@ -1287,6 +1337,9 @@ export function enrichPlanWithVersions(rawPlan: InputPlanBreakdownState, idx: nu
       }
     ]
   };
+  enrichedPlanCache.set(rawPlan, out1);
+  enrichedPlanCache.set(out1, out1);
+  return out1;
 }
 
 export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = RAW_MONTHLY_PLANS.map(enrichPlanWithVersions);

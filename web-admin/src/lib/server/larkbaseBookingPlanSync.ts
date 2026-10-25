@@ -2,6 +2,7 @@
 import { Prisma } from '@prisma/client';
 import { klLabel, klBaseCost } from '../klTiers';
 import prisma from '../prisma';
+import { invalidateMonthlyPlansCache } from './monthlyPlanStore';
 import { fetchLarkAppAccessToken, getLarkConfig } from '../larkAuth';
 import type {
   InputPlanBreakdownState,
@@ -716,6 +717,7 @@ async function persistIngestedRecords(records: LarkbaseBookingPlanRecordItem[]):
     }
   }
 
+  invalidateMonthlyPlansCache();
   return plans;
 }
 

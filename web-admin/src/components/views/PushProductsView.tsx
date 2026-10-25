@@ -75,13 +75,11 @@ export const PushProductsView: React.FC<PushProductsViewProps> = ({
     return Array.from(map.values());
   }, [brands, products]);
 
-  // Active Role Switcher for Collaboration Simulation
-  const [activeRole, setActiveRole] = useState<PushProductRole>(
-    currentUser.role === 'BRAND_MEMBER' || currentUser.role === 'MANAGER' ? 'GROWTH' : 'B2C'
-  );
-  const [activeAuthorName, setActiveAuthorName] = useState<string>(
-    currentUser.name
-  );
+  const activeRole: PushProductRole =
+    currentUser.role === 'BRAND_MEMBER' || currentUser.role === 'MANAGER' || currentUser.role === 'ADMIN' || currentUser.role === 'BRAND_PARTNER'
+      ? 'GROWTH'
+      : 'B2C';
+  const activeAuthorName: string = currentUser.name;
 
   // Time Horizon View: Available (Hiện tại) | Future (Tương lai các tháng sau) | History (Lịch sử)
   const [timeHorizon, setTimeHorizon] = useState<TimeHorizon>('AVAILABLE');
@@ -909,44 +907,6 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
   return (
     <div className="space-y-6">
       <PageActions>
-        <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs max-w-full overflow-x-auto">
-          <span className="text-2xs text-slate-500 px-2 flex items-center gap-1 shrink-0">
-            Góc nhìn:
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveRole('GROWTH');
-              setActiveAuthorName(currentUser.name);
-              notify('Chuyển sang góc nhìn: Brand / Quản lý', 'info');
-            }}
-            className={`px-2.5 py-1 rounded text-xs transition-colors flex items-center gap-1.5 shrink-0 ${
-              activeRole === 'GROWTH'
-                ? 'bg-white text-slate-900 shadow-2xs font-semibold'
-                : 'text-slate-600 hover:text-slate-900 font-medium'
-            }`}
-          >
-            <TrendingUp className="w-3.5 h-3.5 text-slate-600" />
-            Brand / Quản lý
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveRole('B2C');
-              setActiveAuthorName('Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)');
-              notify('Chuyển sang góc nhìn: B2C Team', 'info');
-            }}
-            className={`px-2.5 py-1 rounded text-xs transition-colors flex items-center gap-1.5 shrink-0 ${
-              activeRole === 'B2C'
-                ? 'bg-white text-slate-900 shadow-2xs font-semibold'
-                : 'text-slate-600 hover:text-slate-900 font-medium'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5 text-slate-600" />
-            B2C Booking
-          </button>
-        </div>
-
         <Button
           variant="primary"
           icon={Plus}

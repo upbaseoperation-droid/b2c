@@ -21,6 +21,12 @@ import {
   InputPlanBreakdownState,
 } from '../../lib/types';
 import { REAL_B2C_69_STORES } from '../../lib/realB2cPlanData';
+import { REAL_MONTHLY_PLANS_OCT_2026 } from '../../lib/realLarkPlans202610';
+import {
+  evaluatePlanValiditySummary,
+  type PlanValidityEvaluation,
+} from '../../lib/planBreakdownRules';
+import { fetchClientMonthlyPlans, getCachedClientMonthlyPlans } from '../../lib/useMonthlyPlanSync';
 import { formatVndShort } from '../../lib/format';
 import { Modal, Button } from '../ui';
 
@@ -38,6 +44,7 @@ interface StorePipelineFunnelOverviewProps {
 type PipelineFilterKey =
   | 'ALL'
   | 'MISSING_PLAN_411'
+  | 'INVALID_PLAN_411'
   | 'PLAN_411_PENDING'
   | 'BRAND_PLAN_PENDING'
   | 'LISTING_INCOMPLETE'
@@ -48,6 +55,7 @@ type PipelineFilterKey =
 interface StoreFunnelProgress {
   store: StorePortfolioItem;
   plan411: InputPlanBreakdownState | null;
+  planValidity: PlanValidityEvaluation;
   plan411Status: 'NONE' | 'DRAFT' | 'PENDING' | 'APPROVED' | 'CHANGES';
   brandPlanStatus: 'NONE' | 'DRAFT' | 'PENDING' | 'APPROVED';
   listingCount: number;
@@ -86,18 +94,19 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
     return REAL_B2C_69_STORES;
   }, [storePortfolios]);
 
-  // Tải danh sách kế hoạch 4.1.1 từ server
-  const [plans, setPlans] = useState<InputPlanBreakdownState[]>([]);
+  // Tải danh sách kế hoạch 4.1.1 từ server (fallback dữ liệu gốc tháng 10/2026)
+  const [plans, setPlans] = useState<InputPlanBreakdownState[]>(
+    () => getCachedClientMonthlyPlans() || REAL_MONTHLY_PLANS_OCT_2026
+  );
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/monthly-plans', { cache: 'no-store' });
-        const body = await res.json().catch(() => null);
-        if (!res.ok || cancelled) return;
-        if (Array.isArray(body?.plans)) {
-          setPlans(body.plans.map((p: { plan: InputPlanBreakdownState }) => p.plan));
+        const stored = await fetchClientMonthlyPlans();
+        if (cancelled) return;
+        if (stored.length > 0) {
+          setPlans(stored.map(p => p.plan));
         }
       } catch {
         /* Bỏ qua nếu lỗi mạng, hệ thống dùng fallback */
@@ -117,19 +126,59 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
   // Modal chi tiết tiến trình phễu của 1 gian hàng
   const [selectedProgress, setSelectedProgress] = useState<StoreFunnelProgress | null>(null);
 
+  // Chỉ mục O(1) cho Kế hoạch và Booking Deals theo gian hàng / thương hiệu (tránh quét 69 × 16.000 dòng)
+  const plansLookup = useMemo(() => {
+    const byStoreId = new Map<string, InputPlanBreakdownState>();
+    const byStoreSlug = new Map<string, InputPlanBreakdownState>();
+    for (const p of plans) {
+      if (p.storeId && !byStoreId.has(p.storeId)) byStoreId.set(p.storeId, p);
+      if (p.storeName) {
+        const slug = normalize(p.storeName);
+        if (slug && !byStoreSlug.has(slug)) byStoreSlug.set(slug, p);
+      }
+    }
+    return { byStoreId, byStoreSlug };
+  }, [plans]);
+
+  const dealsLookup = useMemo(() => {
+    const byStoreSlug = new Map<string, BookingDealItem[]>();
+    const byBrandOnlySlug = new Map<string, BookingDealItem[]>();
+    for (const d of deals) {
+      const dStore = d.storeName ? normalize(d.storeName) : '';
+      if (dStore) {
+        let arr = byStoreSlug.get(dStore);
+        if (!arr) {
+          arr = [];
+          byStoreSlug.set(dStore, arr);
+        }
+        arr.push(d);
+      } else if (d.brandName) {
+        const dBrand = normalize(d.brandName);
+        if (dBrand) {
+          let arr = byBrandOnlySlug.get(dBrand);
+          if (!arr) {
+            arr = [];
+            byBrandOnlySlug.set(dBrand, arr);
+          }
+          arr.push(d);
+        }
+      }
+    }
+    return { byStoreSlug, byBrandOnlySlug };
+  }, [deals]);
+
   // Tính toán tiến độ từng gian hàng
   const funnelProgressList = useMemo<StoreFunnelProgress[]>(() => {
     return stores.map((st) => {
       const storeSlug = normalize(st.storeName);
       const brandSlug = normalize(st.brandName);
 
-      // 1. Tìm Kế hoạch 4.1.1
+      // 1. Tìm Kế hoạch 4.1.1 & thẩm định tính hợp lệ dùng chung nguồn (RULE-SYNC-01)
       const plan =
-        plans.find(
-          (p) =>
-            (p.storeId && p.storeId === st.id) ||
-            (p.storeName && normalize(p.storeName) === storeSlug)
-        ) || null;
+        (st.id ? plansLookup.byStoreId.get(st.id) : undefined) ||
+        (storeSlug ? plansLookup.byStoreSlug.get(storeSlug) : undefined) ||
+        null;
+      const planValidity = evaluatePlanValiditySummary(plan);
 
       let plan411Status: StoreFunnelProgress['plan411Status'] = 'NONE';
       if (plan) {
@@ -150,12 +199,11 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
         brandPlanStatus = 'DRAFT';
       }
 
-      // 3. Tương quan Booking Deals
-      const storeDeals = deals.filter((d) => {
-        const dStore = normalize(d.storeName || '');
-        const dBrand = normalize(d.brandName || '');
-        return (dStore && dStore === storeSlug) || (!dStore && dBrand === brandSlug);
-      });
+      // 3. Tương quan Booking Deals (tra cứu O(1) qua chỉ mục)
+      const byStore = storeSlug ? dealsLookup.byStoreSlug.get(storeSlug) : undefined;
+      const byBrand = brandSlug ? dealsLookup.byBrandOnlySlug.get(brandSlug) : undefined;
+      const storeDeals =
+        byStore && byBrand ? [...byStore, ...byBrand] : byStore || byBrand || [];
 
       const rawDeal = (d: BookingDealItem) => d as unknown as Record<string, unknown>;
       const isDealHdntSigned = (d: BookingDealItem) => {
@@ -207,9 +255,15 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
       if (!st.primaryPic || st.primaryPic === 'Chưa phân công') {
         bottleneckStep = 0;
         bottleneckLabel = 'Bước 0: Chưa phân công PIC';
-      } else if (plan411Status === 'NONE' || plan411Status === 'DRAFT') {
+      } else if (!planValidity.hasWeeklyBreakdown) {
         bottleneckStep = 2;
-        bottleneckLabel = 'Bước 2: Chưa lập Plan 4.1.1';
+        bottleneckLabel = `Bước 2: ${planValidity.badgeLabel}`;
+      } else if (!planValidity.isValidForSubmit) {
+        bottleneckStep = 2;
+        bottleneckLabel = `Bước 2: ${planValidity.badgeLabel}`;
+      } else if (plan411Status === 'NONE' || plan411Status === 'DRAFT' || plan411Status === 'CHANGES') {
+        bottleneckStep = 2;
+        bottleneckLabel = 'Bước 2: Nháp 4.1.1 (chưa gửi duyệt)';
       } else if (plan411Status === 'PENDING') {
         bottleneckStep = 3;
         bottleneckLabel = 'Bước 3: Chờ duyệt Plan 4.1.1';
@@ -242,6 +296,7 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
       return {
         store: st,
         plan411: plan,
+        planValidity,
         plan411Status,
         brandPlanStatus,
         listingCount,
@@ -267,11 +322,13 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
   // Bộ đếm phễu tổng hợp
   const metrics = useMemo(() => {
     const totalStores = funnelProgressList.length;
-    const hasPlan411 = funnelProgressList.filter((p) => p.plan411Status !== 'NONE').length;
+    const hasPlan411 = funnelProgressList.filter((p) => p.planValidity.hasWeeklyBreakdown).length;
+    const validPlan411 = funnelProgressList.filter((p) => p.planValidity.isValidForSubmit).length;
+    const invalidOrEmptyPlan411 = funnelProgressList.filter((p) => !p.planValidity.isValidForSubmit).length;
     const approvedPlan411 = funnelProgressList.filter((p) => p.plan411Status === 'APPROVED').length;
     const pendingPlan411 = funnelProgressList.filter((p) => p.plan411Status === 'PENDING').length;
     const missingPlan411 = funnelProgressList.filter(
-      (p) => p.plan411Status === 'NONE' || p.plan411Status === 'DRAFT'
+      (p) => !p.planValidity.hasWeeklyBreakdown
     ).length;
 
     const approvedBrandPlan = funnelProgressList.filter((p) => p.brandPlanStatus === 'APPROVED').length;
@@ -294,6 +351,8 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
     return {
       totalStores,
       hasPlan411,
+      validPlan411,
+      invalidOrEmptyPlan411,
       approvedPlan411,
       pendingPlan411,
       missingPlan411,
@@ -314,7 +373,10 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
   const filteredList = useMemo(() => {
     return funnelProgressList.filter((item) => {
       // 1. Lọc theo phễu
-      if (filterKey === 'MISSING_PLAN_411' && item.plan411Status !== 'NONE' && item.plan411Status !== 'DRAFT') {
+      if (filterKey === 'MISSING_PLAN_411' && item.planValidity.hasWeeklyBreakdown) {
+        return false;
+      }
+      if (filterKey === 'INVALID_PLAN_411' && item.planValidity.isValidForSubmit) {
         return false;
       }
       if (filterKey === 'PLAN_411_PENDING' && item.plan411Status !== 'PENDING') {
@@ -379,15 +441,20 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
         <div className="bg-surface rounded-xl border border-line p-4">
           <div className="flex items-center justify-between text-xs text-ink-3 font-medium mb-1">
-            <span>Mốc 0-3: Kế Hoạch 4.1.1</span>
+            <span>Mốc 0-3: Kế Hoạch 4.1.1 &amp; Hợp Lệ</span>
             <FileText className="w-4 h-4 text-accent" />
           </div>
-          <div className="text-xl font-semibold text-ink font-mono">
-            {metrics.approvedPlan411} / {metrics.totalStores} Đã Duyệt
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-semibold text-ink font-mono">
+              {metrics.validPlan411} / {metrics.totalStores} Hợp Lệ
+            </span>
+            <span className="text-2xs font-semibold text-positive px-1.5 py-0.5 rounded bg-positive-soft">
+              {metrics.approvedPlan411} Đã duyệt
+            </span>
           </div>
           <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
             <span className="text-warning font-semibold">{metrics.pendingPlan411} chờ duyệt</span>
-            <span className="text-critical font-semibold">{metrics.missingPlan411} chưa lập/nháp</span>
+            <span className="text-critical font-semibold">{metrics.missingPlan411} chưa chia 4.1.1</span>
           </div>
         </div>
 
@@ -470,9 +537,15 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
               },
               {
                 key: 'MISSING_PLAN_411',
-                label: `Chưa có Plan 4.1.1 (${metrics.missingPlan411} gian)`,
+                label: `Chưa chia 4.1.1 (${metrics.missingPlan411} gian)`,
                 activeClass: 'bg-critical text-white',
                 idleClass: 'bg-critical-soft text-critical border border-critical/20 hover:bg-critical-soft',
+              },
+              {
+                key: 'INVALID_PLAN_411',
+                label: `Chưa hợp lệ 4.1 vs 4.1.1 (${metrics.invalidOrEmptyPlan411} gian)`,
+                activeClass: 'bg-warning text-white',
+                idleClass: 'bg-warning-soft text-warning border border-warning/20 hover:bg-warning-soft',
               },
               {
                 key: 'PLAN_411_PENDING',
@@ -548,9 +621,6 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
           <h3 className="text-sm font-semibold text-ink">
             Bảng Theo Dõi Phễu Vận Hành {filteredList.length} / 69 Gian Hàng B2C (Quy Trình 0 → 18)
           </h3>
-          <span className="text-2xs text-ink-3">
-            Bấm vào dòng bất kỳ để xem chi tiết tiến trình phễu và hồ sơ chứng từ của gian hàng.
-          </span>
         </div>
 
         <div className="overflow-x-auto max-h-[660px]">
@@ -559,7 +629,7 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
               <tr>
                 <th className="py-3 px-4 font-semibold">Gian Hàng &amp; Brand</th>
                 <th className="py-3 px-3 font-semibold">Phụ Trách (PIC &amp; Leader)</th>
-                <th className="py-3 px-3 font-semibold text-center">Plan 4.1.1 (Mốc 1-3)</th>
+                <th className="py-3 px-3 font-semibold text-center">Plan 4.1 &amp; 4.1.1 (Mốc 1-3)</th>
                 <th className="py-3 px-3 font-semibold text-center">Plan Brand (Mốc 4)</th>
                 <th className="py-3 px-3 font-semibold text-center">Listing KOC (Mốc 5-9)</th>
                 <th className="py-3 px-3 font-semibold text-center">Hợp Đồng &amp; SOW (Mốc 10-11)</th>
@@ -608,33 +678,50 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
                       </div>
                     </td>
 
-                    {/* Mốc 1-3: Plan 4.1.1 */}
+                    {/* Mốc 1-3: Plan 4.1 & 4.1.1 */}
                     <td className="py-2.5 px-3 text-center">
-                      {item.plan411Status === 'APPROVED' && (
-                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-positive-soft text-positive">
-                          Đã duyệt
+                      <div className="flex flex-col items-center gap-1">
+                        {item.plan411Status === 'APPROVED' && (
+                          <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-positive-soft text-positive">
+                            Đã duyệt
+                          </span>
+                        )}
+                        {item.plan411Status === 'PENDING' && (
+                          <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-warning-soft text-warning">
+                            Chờ duyệt
+                          </span>
+                        )}
+                        {item.plan411Status === 'DRAFT' && (
+                          <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-sunken text-ink-2">
+                            Bản nháp
+                          </span>
+                        )}
+                        {item.plan411Status === 'CHANGES' && (
+                          <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-critical-soft text-critical">
+                            Cần sửa
+                          </span>
+                        )}
+                        {item.plan411Status === 'NONE' && (
+                          <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-critical-soft text-critical">
+                            Chưa lập
+                          </span>
+                        )}
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-2xs font-semibold ${
+                            item.planValidity.badgeTone === 'positive'
+                              ? 'bg-positive-soft text-positive'
+                              : item.planValidity.badgeTone === 'info'
+                              ? 'bg-accent-soft text-accent'
+                              : item.planValidity.badgeTone === 'warning'
+                              ? 'bg-warning-soft text-warning'
+                              : item.planValidity.badgeTone === 'critical'
+                              ? 'bg-critical-soft text-critical'
+                              : 'bg-sunken text-ink-3'
+                          }`}
+                        >
+                          {item.planValidity.badgeLabel}
                         </span>
-                      )}
-                      {item.plan411Status === 'PENDING' && (
-                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-warning-soft text-warning">
-                          Chờ duyệt
-                        </span>
-                      )}
-                      {item.plan411Status === 'DRAFT' && (
-                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-sunken text-ink-2">
-                          Bản nháp
-                        </span>
-                      )}
-                      {item.plan411Status === 'CHANGES' && (
-                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-critical-soft text-critical">
-                          Cần sửa
-                        </span>
-                      )}
-                      {item.plan411Status === 'NONE' && (
-                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-critical-soft text-critical">
-                          Chưa lập
-                        </span>
-                      )}
+                      </div>
                     </td>
 
                     {/* Mốc 4: Plan Brand */}
@@ -800,14 +887,16 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
                 {[
                   {
                     step: 'Mốc 0-3',
-                    title: 'Phân quyền & Lập Kế hoạch 4.1.1',
-                    status: selectedProgress.plan411Status === 'APPROVED' ? 'DONE' : selectedProgress.plan411Status === 'PENDING' ? 'PENDING' : 'TODO',
-                    detail:
-                      selectedProgress.plan411Status === 'APPROVED'
-                        ? 'Kế hoạch phân rã 4 trụ cột đã được phê duyệt hợp lệ.'
+                    title: 'Phân quyền & Đối soát Plan 4.1 vs 4.1.1',
+                    status:
+                      selectedProgress.plan411Status === 'APPROVED' && selectedProgress.planValidity.isValidForSubmit
+                        ? 'DONE'
+                        : !selectedProgress.planValidity.isValidForSubmit
+                        ? 'ALERT'
                         : selectedProgress.plan411Status === 'PENDING'
-                        ? 'Kế hoạch đã nộp, đang chờ cấp duyệt xử lý.'
-                        : 'Chưa lập hoặc đang là bản nháp nội bộ.',
+                        ? 'PENDING'
+                        : 'TODO',
+                    detail: `${selectedProgress.planValidity.badgeLabel}: ${selectedProgress.planValidity.shortDetail}`,
                     actionTab: 'input-plan',
                     actionLabel: 'Mở Kế hoạch 4.1.1',
                   },

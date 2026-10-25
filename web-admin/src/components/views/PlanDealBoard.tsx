@@ -12,6 +12,7 @@ import { PullHangingJobsModal } from './PullHangingJobsModal';
 import { getKocLegalProfiles } from '../koc/kocUtils';
 import { usePlanRecord } from '../../lib/usePlanRecord';
 import { useListingBoard } from '../../lib/useListingBoard';
+import { fetchClientMonthlyPlans, getCachedClientMonthlyPlans } from '../../lib/useMonthlyPlanSync';
 import { contractApi, type ContractBootstrap } from '../contracts/api';
 import type { ContractRecord } from '../../lib/contracts/types';
 import type { DealPaymentOverrides } from '../../lib/larkPaymentRequestEngine';
@@ -202,14 +203,17 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
   }>({ bankName: '', bankAccount: '', bankHolder: '', legalId: '' });
 
   useEffect(() => {
+    const cached = getCachedClientMonthlyPlans();
+    if (cached && cached.length > 0) {
+      setPlans(cached);
+      setPlansState('ready');
+    }
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/monthly-plans', { cache: 'no-store' });
-        const body = await res.json().catch(() => null);
-        if (!res.ok) throw new Error(body?.error || `Lỗi ${res.status}`);
+        const stored = await fetchClientMonthlyPlans();
         if (cancelled) return;
-        setPlans((body.plans as { plan: InputPlanBreakdownState }[]).map(p => p.plan));
+        setPlans(stored.map(p => p.plan));
         setPlansState('ready');
       } catch (err) {
         if (cancelled) return;
@@ -285,12 +289,17 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     setCatalog({ groups: [] });
   }
 
+  const activePlanId = plan?.id ?? null;
+  const activePlanBrandName = plan?.brandName ?? '';
   useEffect(() => {
-    if (!plan) return;
+    if (!activePlanId) return;
     let cancelled = false;
     (async () => {
       try {
-        const [cRes, pRes] = await Promise.all([fetch(`/api/content-plan?planId=${encodeURIComponent(plan.id)}`, { cache: 'no-store' }), fetch(`/api/product-catalog?brand=${encodeURIComponent(plan.brandName)}`, { cache: 'no-store' })]);
+        const [cRes, pRes] = await Promise.all([
+          fetch(`/api/content-plan?planId=${encodeURIComponent(activePlanId)}`, { cache: 'no-store' }),
+          fetch(`/api/product-catalog?brand=${encodeURIComponent(activePlanBrandName)}`, { cache: 'no-store' }),
+        ]);
         const cBody = await cRes.json().catch(() => null);
         const pBody = await pRes.json().catch(() => null);
         if (cancelled) return;
@@ -303,7 +312,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     return () => {
       cancelled = true;
     };
-  }, [plan]);
+  }, [activePlanId, activePlanBrandName]);
 
   // Hồ sơ trong mô-đun Hợp đồng: dùng để hiện trạng thái soạn, duyệt, ký của từng Job
   const [contractRecords, setContractRecords] = useState<ContractRecord[]>([]);
@@ -320,9 +329,17 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
   }, []);
   useEffect(() => {
     void Promise.resolve().then(() => loadContracts());
-  }, [loadContracts, selectedId]);
+  }, [loadContracts]);
 
-  const kocOfHandle = useCallback((handle: string) => kocs.find(k => normHandle(k.channelId || '') === normHandle(handle)), [kocs]);
+  const kocByHandleMap = useMemo(() => {
+    const m = new Map<string, KocItem>();
+    for (const k of kocs) {
+      const h = normHandle(k.channelId || '');
+      if (h && !m.has(h)) m.set(h, k);
+    }
+    return m;
+  }, [kocs]);
+  const kocOfHandle = useCallback((handle: string) => kocByHandleMap.get(normHandle(handle)), [kocByHandleMap]);
   const kocIdOfHandle = useCallback((handle: string) => kocOfHandle(handle)?.id, [kocOfHandle]);
 
   /** Số hợp đồng ghi trong hồ sơ (ô điền có chữ số hợp đồng, phụ lục hoặc SOW), không có thì dùng mã hồ sơ. */

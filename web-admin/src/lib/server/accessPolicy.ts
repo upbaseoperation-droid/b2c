@@ -170,8 +170,8 @@ export function reconcileAccessPolicy(saved: Partial<AccessPolicy> | null | unde
 let cachedReconciledPolicy: { revision: number; data: AccessPolicy } | null = null;
 
 export async function readPolicy() {
-  const record = await readRecord('access-policy', defaultPolicy);
-  if (cachedReconciledPolicy && cachedReconciledPolicy.revision === record.revision && record.revision > 0) {
+  const record = await readRecord('access-policy', defaultPolicy, { clone: false });
+  if (cachedReconciledPolicy && cachedReconciledPolicy.revision === record.revision) {
     return {
       revision: record.revision,
       data: cachedReconciledPolicy.data,

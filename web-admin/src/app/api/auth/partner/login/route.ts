@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { encodeSessionToken, SESSION_COOKIE_NAME } from '@/lib/larkAuth';
 import { 
-  INITIAL_THIRD_PARTY_ACCOUNTS, 
   convertPartnerAccountToUserProfile,
   getPartnerLandingTab 
 } from '@/lib/thirdPartyAccessData';
+import { getThirdPartyAccountsFromDb } from '@/lib/server/thirdPartyAccountsStore';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,12 +13,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email, accountId } = body;
 
+    const accounts = await getThirdPartyAccountsFromDb();
     let targetAccount = null;
 
     if (accountId) {
-      targetAccount = INITIAL_THIRD_PARTY_ACCOUNTS.find(a => a.id === accountId);
+      targetAccount = accounts.find(a => a.id === accountId);
     } else if (email) {
-      targetAccount = INITIAL_THIRD_PARTY_ACCOUNTS.find(
+      targetAccount = accounts.find(
         a => a.gmail.toLowerCase() === email.trim().toLowerCase()
       );
     }

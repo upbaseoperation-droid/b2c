@@ -58,6 +58,31 @@ const planInclude = {
 
 type PlanRow = Prisma.MonthlyPlanGetPayload<{ include: typeof planInclude }>;
 
+const PLANS_CACHE_TTL_MS = 25_000;
+let cachedPlansState: {
+  expiresAt: number;
+  list: StoredMonthlyPlan[];
+  byId: Map<string, StoredMonthlyPlan>;
+} | null = null;
+let inflightPlansLoad: Promise<StoredMonthlyPlan[]> | null = null;
+let hasVerifiedRealLarkPlans = false;
+
+export function invalidateMonthlyPlansCache() {
+  cachedPlansState = null;
+}
+
+function upsertCachedPlan(stored: StoredMonthlyPlan) {
+  if (!cachedPlansState) return;
+  cachedPlansState.byId.set(stored.plan.id, stored);
+  const idx = cachedPlansState.list.findIndex(item => item.plan.id === stored.plan.id);
+  if (idx >= 0) {
+    cachedPlansState.list[idx] = stored;
+  } else {
+    cachedPlansState.list = [stored, ...cachedPlansState.list];
+  }
+  cachedPlansState.expiresAt = Date.now() + PLANS_CACHE_TTL_MS;
+}
+
 function toStored(row: PlanRow): StoredMonthlyPlan {
   const base = row.data as unknown as InputPlanBreakdownState;
   const resolvedLeader = resolveStoreBookingLeader(base.storeName || base.brandName, base.bookingLeader);
@@ -181,6 +206,16 @@ function checkPlanAccessWithCatalog(
   }
 }
 
+async function getStoredPlanByIdFast(id: string): Promise<StoredMonthlyPlan | null> {
+  if (cachedPlansState && Date.now() < cachedPlansState.expiresAt) {
+    const cached = cachedPlansState.byId.get(id);
+    if (cached) return cached;
+  }
+  const row = await prisma.monthlyPlan.findUnique({ where: { id }, include: planInclude });
+  if (!row || row.deletedAt) return null;
+  return toStored(row);
+}
+
 export async function assertPlanAccess(plan: InputPlanBreakdownState, actor: UserProfile, action: 'read' | 'write' | 'approve' = 'read') {
   const [{ data }, allowed] = await Promise.all([
     readMasterCatalog(),
@@ -189,11 +224,10 @@ export async function assertPlanAccess(plan: InputPlanBreakdownState, actor: Use
   checkPlanAccessWithCatalog(plan, actor, action, data, allowed);
 }
 export async function assertPlanIdAccess(id: string, actor: UserProfile, action: 'read' | 'write' = 'read') {
-  const row = await prisma.monthlyPlan.findUnique({ where: { id }, include: planInclude });
-  if (!row || row.deletedAt) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
-  const plan = toStored(row).plan;
-  await assertPlanAccess(plan, actor, action);
-  return plan;
+  const stored = await getStoredPlanByIdFast(id);
+  if (!stored) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
+  await assertPlanAccess(stored.plan, actor, action);
+  return stored.plan;
 }
 /**
  * Quyền với Plan tháng của Brand của một kế hoạch: PIC gian / quản lý sửa cả plan;
@@ -220,28 +254,78 @@ function brandPlanAccessSync(
 }
 
 export async function resolveBrandPlanAccess(id: string, actor: UserProfile): Promise<{ plan: InputPlanBreakdownState; access: BrandPlanAccess }> {
-  const [row, { data }, canWrite, canRead] = await Promise.all([
-    prisma.monthlyPlan.findUnique({ where: { id }, include: planInclude }),
+  const [stored, { data }, canWrite, canRead] = await Promise.all([
+    getStoredPlanByIdFast(id),
     readMasterCatalog(),
     actionAllowed(actor, 'plan_target_month', 'write'),
     actionAllowed(actor, 'plan_target_month', 'read'),
   ]);
-  if (!row || row.deletedAt) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
-  const plan = toStored(row).plan;
-  return { plan, access: brandPlanAccessSync(plan, actor, data, canWrite, canRead) };
+  if (!stored) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
+  return { plan: stored.plan, access: brandPlanAccessSync(stored.plan, actor, data, canWrite, canRead) };
+}
+
+async function loadAllStoredPlans(actorForSeed?: UserProfile): Promise<StoredMonthlyPlan[]> {
+  if (cachedPlansState && Date.now() < cachedPlansState.expiresAt) {
+    return cachedPlansState.list;
+  }
+  if (inflightPlansLoad) {
+    return inflightPlansLoad;
+  }
+  inflightPlansLoad = (async () => {
+    let rows = await prisma.monthlyPlan.findMany({
+      where: { deletedAt: null },
+      include: planInclude,
+      orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
+    });
+    if (rows.length === 0 && actorForSeed?.role === 'ADMIN') {
+      const totalCount = await prisma.monthlyPlan.count();
+      if (totalCount === 0) {
+        await seedInitialPlans(actorForSeed);
+        rows = await prisma.monthlyPlan.findMany({
+          where: { deletedAt: null },
+          include: planInclude,
+          orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
+        });
+      }
+      hasVerifiedRealLarkPlans = true;
+    } else if (!hasVerifiedRealLarkPlans) {
+      hasVerifiedRealLarkPlans = true;
+      const existingIds = new Set(rows.map(r => r.id));
+      const allRealPlans = [...REAL_MONTHLY_PLANS_OCT_2026, ...REAL_MONTHLY_PLANS_NOV_2026];
+      const missingRealPlans = allRealPlans.filter(p => !existingIds.has(p.id));
+      if (missingRealPlans.length > 0) {
+        await syncRealLarkPlans(missingRealPlans);
+        rows = await prisma.monthlyPlan.findMany({
+          where: { deletedAt: null },
+          include: planInclude,
+          orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
+        });
+      }
+    }
+    const list = rows.map(toStored);
+    const byId = new Map(list.map(item => [item.plan.id, item]));
+    cachedPlansState = {
+      expiresAt: Date.now() + PLANS_CACHE_TTL_MS,
+      list,
+      byId
+    };
+    return list;
+  })().finally(() => {
+    inflightPlansLoad = null;
+  });
+  return inflightPlansLoad;
 }
 
 /** Kế hoạch mở được ở màn Plan tháng của Brand: kế hoạch trong phạm vi + kế hoạch của gian mình giữ vị trí Plan / Strategy, Key Visual / SIS. */
 export async function listBrandPlanPlans(actor: UserProfile): Promise<{ plan: InputPlanBreakdownState; access: BrandPlanAccess }[]> {
-  const [rows, { data }, canWrite, canRead] = await Promise.all([
-    prisma.monthlyPlan.findMany({ where: { deletedAt: null }, include: planInclude, orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }] }),
+  const [storedList, { data }, canWrite, canRead] = await Promise.all([
+    loadAllStoredPlans(actor),
     readMasterCatalog(),
     actionAllowed(actor, 'plan_target_month', 'write'),
     actionAllowed(actor, 'plan_target_month', 'read'),
   ]);
   const out: { plan: InputPlanBreakdownState; access: BrandPlanAccess }[] = [];
-  for (const row of rows) {
-    const plan = toStored(row).plan;
+  for (const { plan } of storedList) {
     try {
       out.push({ plan, access: brandPlanAccessSync(plan, actor, data, canWrite, canRead) });
     } catch (err) {
@@ -253,78 +337,50 @@ export async function listBrandPlanPlans(actor: UserProfile): Promise<{ plan: In
 
 /** Lấy danh sách kế hoạch. Lần đầu khi bảng trống sẽ nạp bộ kế hoạch mẫu ban đầu. */
 export async function listMonthlyPlans(actor: UserProfile): Promise<StoredMonthlyPlan[]> {
-  const [initialRows, { data }, allowed] = await Promise.all([
-    prisma.monthlyPlan.findMany({
-      where: { deletedAt: null },
-      include: planInclude,
-      orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
-    }),
+  const [storedList, { data }, allowed] = await Promise.all([
+    loadAllStoredPlans(actor),
     readMasterCatalog(),
     actionAllowed(actor, 'plan_target_month', 'read')
   ]);
   if (!allowed) throw new PlanStoreError('FORBIDDEN', 'Không có quyền xem kế hoạch.');
-  let rows = initialRows;
-  if (rows.length === 0 && actor.role === 'ADMIN') {
-    const totalCount = await prisma.monthlyPlan.count();
-    if (totalCount === 0) {
-      await seedInitialPlans(actor);
-      rows = await prisma.monthlyPlan.findMany({
-        where: { deletedAt: null },
-        include: planInclude,
-        orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
-      });
-    }
-  } else if (
-    rows.filter(r => r.month === '2026/10').length !== REAL_MONTHLY_PLANS_OCT_2026.length ||
-    rows.filter(r => r.month === '2026/11').length !== REAL_MONTHLY_PLANS_NOV_2026.length ||
-    !rows.some(r => r.id === REAL_MONTHLY_PLANS_OCT_2026[0]?.id) ||
-    !rows.some(r => r.id === REAL_MONTHLY_PLANS_NOV_2026[0]?.id)
-  ) {
-    await syncRealLarkPlans();
-    rows = await prisma.monthlyPlan.findMany({
-      where: { deletedAt: null },
-      include: planInclude,
-      orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
-    });
-  }
-  return rows.map(toStored).filter(row => isPlanManagedByUser(row.plan, actor, data.stores));
+  return storedList.filter(row => isPlanManagedByUser(row.plan, actor, data.stores));
 }
 
-async function syncRealLarkPlans() {
+async function syncRealLarkPlans(plansToSync = [...REAL_MONTHLY_PLANS_OCT_2026, ...REAL_MONTHLY_PLANS_NOV_2026]) {
   try {
-    const allRealPlans = [...REAL_MONTHLY_PLANS_OCT_2026, ...REAL_MONTHLY_PLANS_NOV_2026];
-    const validIds = allRealPlans.map(p => p.id);
-    await prisma.monthlyPlan.updateMany({
-      where: { month: { in: ['2026/10', '2026/11'] }, id: { notIn: validIds } },
-      data: { deletedAt: new Date(), larkRecordId: null }
-    });
-    for (const plan of allRealPlans) {
-      const { working } = splitPlan(plan);
-      await prisma.monthlyPlan.upsert({
-        where: { id: plan.id },
-        create: {
-          id: plan.id,
-          ...indexedColumns(plan),
-          sourceSystem: 'LARKBASE',
-          larkRecordId: plan.larkRecordId ?? null,
-          larkAppToken: plan.larkAppToken ?? 'W6vRbbuOVar3qtsV18dlan1xgXb',
-          larkTableId: plan.larkTableId ?? 'tblvgyOkneDKOVsB',
-          larkSyncedAt: new Date(),
-          data: working as unknown as Prisma.InputJsonValue,
-          createdBy: 'Lark Base Sync',
-          updatedBy: 'Lark Base Sync'
-        },
-        update: {
-          ...indexedColumns(plan),
-          sourceSystem: 'LARKBASE',
-          larkRecordId: plan.larkRecordId ?? null,
-          larkAppToken: plan.larkAppToken ?? 'W6vRbbuOVar3qtsV18dlan1xgXb',
-          larkTableId: plan.larkTableId ?? 'tblvgyOkneDKOVsB',
-          larkSyncedAt: new Date(),
-          data: working as unknown as Prisma.InputJsonValue,
-          updatedBy: 'Lark Base Sync'
-        }
-      });
+    const CHUNK_SIZE = 15;
+    for (let i = 0; i < plansToSync.length; i += CHUNK_SIZE) {
+      const chunk = plansToSync.slice(i, i + CHUNK_SIZE);
+      await Promise.all(
+        chunk.map(plan => {
+          const { working } = splitPlan(plan);
+          return prisma.monthlyPlan.upsert({
+            where: { id: plan.id },
+            create: {
+              id: plan.id,
+              ...indexedColumns(plan),
+              sourceSystem: 'LARKBASE',
+              larkRecordId: plan.larkRecordId ?? null,
+              larkAppToken: plan.larkAppToken ?? 'W6vRbbuOVar3qtsV18dlan1xgXb',
+              larkTableId: plan.larkTableId ?? 'tblvgyOkneDKOVsB',
+              larkSyncedAt: new Date(),
+              data: working as unknown as Prisma.InputJsonValue,
+              createdBy: 'Lark Base Sync',
+              updatedBy: 'Lark Base Sync'
+            },
+            update: {
+              ...indexedColumns(plan),
+              sourceSystem: 'LARKBASE',
+              larkRecordId: plan.larkRecordId ?? null,
+              larkAppToken: plan.larkAppToken ?? 'W6vRbbuOVar3qtsV18dlan1xgXb',
+              larkTableId: plan.larkTableId ?? 'tblvgyOkneDKOVsB',
+              larkSyncedAt: new Date(),
+              data: working as unknown as Prisma.InputJsonValue,
+              updatedBy: 'Lark Base Sync'
+            }
+          });
+        })
+      );
     }
   } catch {
     // Bỏ qua nếu có xung đột đồng thời
@@ -367,7 +423,9 @@ export async function createMonthlyPlan(plan: InputPlanBreakdownState, actor: Us
       }
       return tx.monthlyPlan.findUniqueOrThrow({ where: { id: plan.id }, include: planInclude });
     });
-    return toStored(row);
+    const stored = toStored(row);
+    upsertCachedPlan(stored);
+    return stored;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       throw new PlanStoreError('EXISTS', `Kế hoạch ${plan.id} đã tồn tại.`);
@@ -487,7 +545,9 @@ export async function saveMonthlyPlan(
   // Phát tín hiệu sau khi transaction đã commit; hàm không bao giờ ném lỗi
   if (insertedMessages > 0) await notifyPlanMessages(id);
 
-  return toStored(row);
+  const stored = toStored(row);
+  upsertCachedPlan(stored);
+  return stored;
 }
 
 // =========================================================================
@@ -504,6 +564,9 @@ function rowToMessage(row: { data: Prisma.JsonValue; postedAt: Date }): PlanChat
 }
 
 async function assertPlanExists(planId: string) {
+  if (cachedPlansState && Date.now() < cachedPlansState.expiresAt && cachedPlansState.byId.has(planId)) {
+    return;
+  }
   const plan = await prisma.monthlyPlan.findUnique({ where: { id: planId }, select: { id: true, deletedAt: true } });
   if (!plan || plan.deletedAt) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
 }
@@ -607,6 +670,7 @@ export async function appendPlanMessage(
     throw err;
   }
 
+  invalidateMonthlyPlansCache();
   await notifyPlanMessages(planId);
   return { message, created: true };
 }

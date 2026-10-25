@@ -25,9 +25,16 @@ import {
   useFlipList
 } from '../ui';
 import { formatVndShort } from '../../lib/format';
+import { pushSharedStateToDb } from '../../lib/sharedStateClient';
 import { PlanOrderUploadModal } from './PlanOrderUploadModal';
 import { PlanWeeklyBreakdown } from './PlanWeeklyBreakdown';
-import { getBreakdownHealth } from '../../lib/planBreakdownRules';
+import {
+  getBreakdownHealth,
+  evaluatePlanValiditySummary,
+  distributeReference41ToWeeks,
+  comparePlanWithNewReference41,
+  type PlanValidityEvaluation,
+} from '../../lib/planBreakdownRules';
 import {
   Plus,
   AlertCircle,
@@ -259,6 +266,7 @@ interface StoreGovernanceItem {
   status: MonthlyPlanStatus | 'MISSING';
   breakdown: B2cWorkloadBreakdown;
   workstreamSummary: StorePlanWorkstreamSummary;
+  validity: PlanValidityEvaluation;
 }
 
 /** Tình trạng bảng phân rã tuần của kế hoạch so với số bảng 4.1. */
@@ -365,19 +373,34 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [brandModalTab, setBrandModalTab] = useState<'ONE_SHEET' | 'POSITIONS'>('ONE_SHEET');
   const [oneSheetBrandPlan, setOneSheetBrandPlan] = useState<BrandMonthlyPlanItem | null>(null);
 
-  // Khôi phục Kế hoạch tháng theo Brand đã lưu từ localStorage (nếu có)
+  // Khôi phục Kế hoạch tháng theo Brand đã lưu từ localStorage (nếu có) và lắng nghe đồng bộ từ DB
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    try {
-      const raw = window.localStorage.getItem('b2c_brand_monthly_plans_v1');
-      if (!raw) return;
-      const saved = JSON.parse(raw) as BrandMonthlyPlanItem[];
-      if (!Array.isArray(saved) || saved.length === 0) return;
-      const savedMap = new Map(saved.map(item => [item.id, item]));
-      setBrandMonthlyPlans(prev => prev.map(item => savedMap.get(item.id) || item));
-    } catch {
-      /* bỏ qua lỗi đọc localStorage */
-    }
+    const applySavedPlans = (savedList?: BrandMonthlyPlanItem[]) => {
+      try {
+        let list = savedList;
+        if (!list) {
+          const raw = window.localStorage.getItem('b2c_brand_monthly_plans_v1');
+          if (!raw) return;
+          list = JSON.parse(raw) as BrandMonthlyPlanItem[];
+        }
+        if (!Array.isArray(list) || list.length === 0) return;
+        const savedMap = new Map(list.map(item => [item.id, item]));
+        setBrandMonthlyPlans(prev => prev.map(item => savedMap.get(item.id) || item));
+      } catch {
+        /* bỏ qua lỗi đọc localStorage */
+      }
+    };
+
+    applySavedPlans();
+
+    const handleUpdated = (evt: Event) => {
+      const customEvt = evt as CustomEvent<BrandMonthlyPlanItem[]>;
+      applySavedPlans(customEvt.detail);
+    };
+
+    window.addEventListener('upbase:brand-monthly-plans-updated', handleUpdated);
+    return () => window.removeEventListener('upbase:brand-monthly-plans-updated', handleUpdated);
   }, []);
 
   const brandPositionStaffList = useMemo(() => {
@@ -419,23 +442,64 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     const targetMonth = selectedMonth === 'ALL' ? '2026/10' : selectedMonth;
     const lookupStorePlan = buildPlanLookupMap(scopedPlans, targetMonth);
 
+    // Pre-index stores and plans by normalized brand name / slug for O(1) lookup
+    const storesByBrandNorm = new Map<string, StorePortfolioItem[]>();
+    const storesByBrandSlug = new Map<string, StorePortfolioItem[]>();
+    const storeBySlug = new Map<string, StorePortfolioItem>();
+    for (const s of effectiveStores) {
+      const sBrand = (s.brandName || '').trim().toLowerCase();
+      if (sBrand) {
+        const list = storesByBrandNorm.get(sBrand) || [];
+        list.push(s);
+        storesByBrandNorm.set(sBrand, list);
+      }
+      const sSlug = normStoreSlug(s.brandName);
+      if (sSlug.length >= 2) {
+        const list = storesByBrandSlug.get(sSlug) || [];
+        list.push(s);
+        storesByBrandSlug.set(sSlug, list);
+      }
+      const nameSlug = normStoreSlug(s.storeName);
+      if (nameSlug) storeBySlug.set(nameSlug, s);
+    }
+
+    const plansByBrandNorm = new Map<string, InputPlanBreakdownState[]>();
+    const plansByBrandSlug = new Map<string, InputPlanBreakdownState[]>();
+    for (const p of scopedPlans) {
+      if (selectedMonth !== 'ALL' && p.month !== selectedMonth) continue;
+      const pBrand = (p.parentBrand || p.brandName.split('_')[0] || '').trim().toLowerCase();
+      if (pBrand) {
+        const list = plansByBrandNorm.get(pBrand) || [];
+        list.push(p);
+        plansByBrandNorm.set(pBrand, list);
+      }
+      const pSlug = normStoreSlug(pBrand);
+      if (pSlug) {
+        const list = plansByBrandSlug.get(pSlug) || [];
+        list.push(p);
+        plansByBrandSlug.set(pSlug, list);
+      }
+    }
+
     for (const bp of brandMonthlyPlans) {
       const bNorm = (bp.brandName || '').trim().toLowerCase();
       const bSlug = normStoreSlug(bp.brandName);
-      const stores = effectiveStores.filter(s => {
-        const sBrand = (s.brandName || '').trim().toLowerCase();
-        return sBrand === bNorm || (bSlug.length >= 2 && normStoreSlug(s.brandName) === bSlug);
-      });
+      const storesSet = new Set<StorePortfolioItem>(storesByBrandNorm.get(bNorm) || []);
+      if (bSlug.length >= 2) {
+        for (const s of storesByBrandSlug.get(bSlug) || []) storesSet.add(s);
+      }
+      const stores = Array.from(storesSet);
 
       const matchedPlansMap = new Map<string, InputPlanBreakdownState>();
       for (const st of stores) {
         const p = lookupStorePlan(st);
         if (p) matchedPlansMap.set(p.id, p);
       }
-      for (const p of scopedPlans) {
-        if (selectedMonth !== 'ALL' && p.month !== selectedMonth) continue;
-        const pBrand = (p.parentBrand || p.brandName.split('_')[0] || '').trim().toLowerCase();
-        if (pBrand === bNorm || normStoreSlug(pBrand) === bSlug) {
+      for (const p of plansByBrandNorm.get(bNorm) || []) {
+        matchedPlansMap.set(p.id, p);
+      }
+      if (bSlug) {
+        for (const p of plansByBrandSlug.get(bSlug) || []) {
           matchedPlansMap.set(p.id, p);
         }
       }
@@ -450,7 +514,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
       if (storePlans.length > 0) {
         for (const p of storePlans) {
-          const st = stores.find(s => s.id === p.storeId || normStoreSlug(s.storeName) === normStoreSlug(p.storeName));
+          const st =
+            stores.find(s => s.id === p.storeId) ||
+            (p.storeName ? storeBySlug.get(normStoreSlug(p.storeName)) : undefined);
           const bd = getB2cPlanBreakdown(p, st);
           storeBudget += bd.totalBudget;
           storeGmv += p.targetGmv || st?.monthlyTargetGmv || 0;
@@ -523,6 +589,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       if (typeof window !== 'undefined') {
         try {
           window.localStorage.setItem('b2c_brand_monthly_plans_v1', JSON.stringify(next));
+          pushSharedStateToDb('brand-monthly-plans-v1', next);
         } catch {
           /* bỏ qua lỗi lưu localStorage */
         }
@@ -607,11 +674,36 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [personalSearchQuery, setPersonalSearchQuery] = useState<string>('');
 
   // Lọc cho Ma trận gian hàng (mặc định lọc gian B2C làm kế hoạch)
-  const [storeGovernanceFilter, setStoreGovernanceFilter] = useState<'ALL' | 'B2C_ONLY' | 'MULTI_VERSION' | 'MISSING_PLAN' | 'PENDING_APPROVAL' | 'APPROVED' | 'EXEMPT' | 'PENDING_41_DIFF' | 'UNCONFIRMED_41'>('B2C_ONLY');
+  const [storeGovernanceFilter, setStoreGovernanceFilter] = useState<
+    | 'ALL'
+    | 'B2C_ONLY'
+    | 'MULTI_VERSION'
+    | 'MISSING_PLAN'
+    | 'PENDING_APPROVAL'
+    | 'PENDING_PRE_APPROVAL'
+    | 'REVISION_REQUESTED'
+    | 'DRAFT'
+    | 'APPROVED'
+    | 'EXEMPT'
+    | 'PENDING_41_DIFF'
+    | 'UNCONFIRMED_41'
+    | 'CONFIRMED_41'
+    | 'HAS_WEEKLY_411'
+    | 'EMPTY_WEEKLY'
+    | 'VALID_MATCHED'
+    | 'VALID_WITH_NOTE'
+    | 'INVALID_411'
+    | 'UNEXPLAINED_MISMATCH'
+    | 'HAS_ERRORS'
+    | 'PRICE_WARNING'
+  >('B2C_ONLY');
   const [storeSearchQuery, setStoreSearchQuery] = useState<string>('');
   const [governancePage, setGovernancePage] = useState<number>(1);
   const GOVERNANCE_PAGE_SIZE = 15;
   const [approvingQuickPlan, setApprovingQuickPlan] = useState<{ planId: string; storeName: string } | null>(null);
+  const [inspectingStoreId, setInspectingStoreId] = useState<string | null>(null);
+  const [auditNoteDraft, setAuditNoteDraft] = useState<string>('');
+  const [revisionReasonDraft, setRevisionReasonDraft] = useState<string>('');
 
   // Bảng hứng kế hoạch B2C Booking từ Larkbase (API / Webhook)
   const [isLarkbaseModalOpen, setIsLarkbaseModalOpen] = useState<boolean>(false);
@@ -682,6 +774,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           status: (plan.status || 'DRAFT') as MonthlyPlanStatus,
           breakdown: getB2cPlanBreakdown(plan, store),
           workstreamSummary: getStorePlanWorkstreamSummary(plan),
+          validity: evaluatePlanValiditySummary(plan),
         };
       });
     }
@@ -698,6 +791,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         status: (plan?.status || 'MISSING') as MonthlyPlanStatus | 'MISSING',
         breakdown: getB2cPlanBreakdown(plan, store),
         workstreamSummary: getStorePlanWorkstreamSummary(plan),
+        validity: evaluatePlanValiditySummary(plan),
       };
     });
   }, [activeStores, selectedMonth, scopedPlans]);
@@ -721,6 +815,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   }, [scopedPlans, selectedMonth, filteredBrandMonthlyPlans, canViewTeamPlansAndCoefficients, currentUser]);
 
   const personalStaffSummaryList = useMemo(() => {
+    if (activeHubTab !== 'PERSONAL_PLANS') return [];
     const map = new Map<string, {
       staffName: string;
       roleGroup: PersonalWorkPackageItem['roleGroup'];
@@ -764,9 +859,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
     return Array.from(map.values())
       .sort((a, b) => b.totalBudget - a.totalBudget || b.totalQty - a.totalQty);
-  }, [allPersonalPackages, personalRoleFilter]);
+  }, [activeHubTab, allPersonalPackages, personalRoleFilter]);
 
   const filteredPersonalPackages = useMemo(() => {
+    if (activeHubTab !== 'PERSONAL_PLANS') return [];
     const q = personalSearchQuery.trim().toLowerCase();
     return allPersonalPackages.filter(pkg => {
       if (personalRoleFilter !== 'ALL' && pkg.roleGroup !== personalRoleFilter) return false;
@@ -778,7 +874,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       }
       return true;
     });
-  }, [allPersonalPackages, personalRoleFilter, personalSelectedStaff, personalWorkstreamFilter, personalSearchQuery]);
+  }, [activeHubTab, allPersonalPackages, personalRoleFilter, personalSelectedStaff, personalWorkstreamFilter, personalSearchQuery]);
 
   // Bộ chỉ số quản trị duyệt kế hoạch & tổng hợp 4 đầu việc B2C theo tháng
   const governanceStats = useMemo(() => {
@@ -792,14 +888,41 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     const withPlan = b2cList.filter((item: StoreGovernanceItem) => item.hasPlan);
     const missingPlan = b2cList.filter((item: StoreGovernanceItem) => !item.hasPlan);
 
+    // Chặng 1: Tiến độ Plan Tổng 4.1
+    const confirmed41 = b2cList.filter(
+      (item: StoreGovernanceItem) => item.hasPlan && item.validity.is41Confirmed && !item.validity.hasPending41Diff
+    );
+    const pending41Diff = b2cList.filter((item: StoreGovernanceItem) => Boolean(item.plan?.pendingReference41));
+    const unconfirmed41 = b2cList.filter((item: StoreGovernanceItem) => item.plan?.reference41?.isGrowthLocked === false);
+
+    // Chặng 2: Tiến độ Plan Chi tiết 4.1.1 (Phân rã tuần)
+    const hasWeekly411 = b2cList.filter((item: StoreGovernanceItem) => item.hasPlan && item.validity.hasWeeklyBreakdown);
+    const emptyWeekly411 = b2cList.filter((item: StoreGovernanceItem) => item.hasPlan && !item.validity.hasWeeklyBreakdown);
+    const weekly411Pct = totalB2cManaged > 0 ? Math.round((hasWeekly411.length / totalB2cManaged) * 100) : 0;
+
+    // Chặng 3: Tính hợp lệ 4.1 vs 4.1.1
+    const validMatched = b2cList.filter((item: StoreGovernanceItem) => item.validity.state === 'VALID_MATCHED');
+    const validWithNote = b2cList.filter((item: StoreGovernanceItem) => item.validity.state === 'VALID_WITH_NOTE');
+    const validTotal = b2cList.filter((item: StoreGovernanceItem) => item.validity.isValidForSubmit);
+    const invalid411 = b2cList.filter((item: StoreGovernanceItem) => item.hasPlan && !item.validity.isValidForSubmit);
+    const unexplainedMismatch = b2cList.filter((item: StoreGovernanceItem) => item.validity.state === 'UNEXPLAINED_MISMATCH');
+    const hasErrors = b2cList.filter((item: StoreGovernanceItem) => item.validity.state === 'HAS_ERRORS');
+    const priceWarnings = b2cList.filter((item: StoreGovernanceItem) => item.validity.priceWarningCount > 0);
+    const validPct = withPlan.length > 0 ? Math.round((validTotal.length / withPlan.length) * 100) : 0;
+
+    // Chặng 4: Tiến độ Phê duyệt & Thực thi
     const approved = b2cList.filter((item: StoreGovernanceItem) => item.plan && ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(item.plan.status || ''));
     const pendingApproval = b2cList.filter((item: StoreGovernanceItem) => item.plan && item.plan.status === 'PENDING_APPROVAL');
     const pendingPreApproval = b2cList.filter((item: StoreGovernanceItem) => item.plan && (item.plan.status === 'PENDING_PRE_APPROVAL' || item.plan.status === 'PRE_APPROVED'));
     const revisionRequested = b2cList.filter((item: StoreGovernanceItem) => item.plan && item.plan.status === 'REVISION_REQUESTED');
     const draft = b2cList.filter((item: StoreGovernanceItem) => item.plan && (item.plan.status === 'DRAFT' || !item.plan.status));
     const multiVersion = b2cList.filter((item: StoreGovernanceItem) => item.plan && getPlanVersionSnapshots(item.plan).length > 1);
-    const pending41Diff = b2cList.filter((item: StoreGovernanceItem) => Boolean(item.plan?.pendingReference41));
-    const unconfirmed41 = b2cList.filter((item: StoreGovernanceItem) => item.plan?.reference41?.isGrowthLocked === false);
+    const readyToBatchApprove = b2cList.filter(
+      (item: StoreGovernanceItem) =>
+        item.plan &&
+        item.validity.isValidForSubmit &&
+        ['PENDING_APPROVAL', 'PRE_APPROVED', 'PENDING_PRE_APPROVAL'].includes(item.plan.status || '')
+    );
 
     const coveragePct = totalB2cManaged > 0 ? Math.round((withPlan.length / totalB2cManaged) * 100) : 0;
     const approvedPct = totalB2cManaged > 0 ? Math.round((approved.length / totalB2cManaged) * 100) : 0;
@@ -821,14 +944,28 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       totalExempt,
       countWithPlan: withPlan.length,
       countMissingPlan: missingPlan.length,
+      countConfirmed41: confirmed41.length,
+      countPending41Diff: pending41Diff.length,
+      countUnconfirmed41: unconfirmed41.length,
+      countHasWeekly411: hasWeekly411.length,
+      countEmptyWeekly411: emptyWeekly411.length,
+      weekly411Pct,
+      countValidMatched: validMatched.length,
+      countValidWithNote: validWithNote.length,
+      countValidTotal: validTotal.length,
+      countInvalid411: invalid411.length,
+      countUnexplainedMismatch: unexplainedMismatch.length,
+      countHasErrors: hasErrors.length,
+      countPriceWarnings: priceWarnings.length,
+      validPct,
       countApproved: approved.length,
       countPendingApproval: pendingApproval.length,
       countPendingPreApproval: pendingPreApproval.length,
       countRevisionRequested: revisionRequested.length,
       countDraft: draft.length,
       countMultiVersion: multiVersion.length,
-      countPending41Diff: pending41Diff.length,
-      countUnconfirmed41: unconfirmed41.length,
+      countReadyToBatchApprove: readyToBatchApprove.length,
+      readyToBatchApproveList: readyToBatchApprove,
       coveragePct,
       approvedPct,
       totalBudget,
@@ -850,10 +987,22 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       if (storeGovernanceFilter === 'EXEMPT' && item.isB2c) return false;
       if (storeGovernanceFilter === 'MULTI_VERSION' && (!item.plan || getPlanVersionSnapshots(item.plan).length <= 1)) return false;
       if (storeGovernanceFilter === 'MISSING_PLAN' && (!item.isB2c || item.hasPlan)) return false;
-      if (storeGovernanceFilter === 'PENDING_APPROVAL' && (!item.plan || item.plan.status !== 'PENDING_APPROVAL')) return false;
-      if (storeGovernanceFilter === 'APPROVED' && (!item.plan || !['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(item.plan.status || ''))) return false;
+      if (storeGovernanceFilter === 'CONFIRMED_41' && (!item.isB2c || !item.hasPlan || !item.validity.is41Confirmed || item.validity.hasPending41Diff)) return false;
       if (storeGovernanceFilter === 'PENDING_41_DIFF' && !item.plan?.pendingReference41) return false;
       if (storeGovernanceFilter === 'UNCONFIRMED_41' && item.plan?.reference41?.isGrowthLocked !== false) return false;
+      if (storeGovernanceFilter === 'HAS_WEEKLY_411' && (!item.isB2c || !item.hasPlan || !item.validity.hasWeeklyBreakdown)) return false;
+      if (storeGovernanceFilter === 'EMPTY_WEEKLY' && (!item.isB2c || !item.hasPlan || item.validity.hasWeeklyBreakdown)) return false;
+      if (storeGovernanceFilter === 'VALID_MATCHED' && item.validity.state !== 'VALID_MATCHED') return false;
+      if (storeGovernanceFilter === 'VALID_WITH_NOTE' && item.validity.state !== 'VALID_WITH_NOTE') return false;
+      if (storeGovernanceFilter === 'INVALID_411' && (!item.isB2c || !item.hasPlan || item.validity.isValidForSubmit)) return false;
+      if (storeGovernanceFilter === 'UNEXPLAINED_MISMATCH' && item.validity.state !== 'UNEXPLAINED_MISMATCH') return false;
+      if (storeGovernanceFilter === 'HAS_ERRORS' && item.validity.state !== 'HAS_ERRORS') return false;
+      if (storeGovernanceFilter === 'PRICE_WARNING' && item.validity.priceWarningCount === 0) return false;
+      if (storeGovernanceFilter === 'PENDING_PRE_APPROVAL' && (!item.plan || (item.plan.status !== 'PENDING_PRE_APPROVAL' && item.plan.status !== 'PRE_APPROVED'))) return false;
+      if (storeGovernanceFilter === 'PENDING_APPROVAL' && (!item.plan || item.plan.status !== 'PENDING_APPROVAL')) return false;
+      if (storeGovernanceFilter === 'REVISION_REQUESTED' && (!item.plan || item.plan.status !== 'REVISION_REQUESTED')) return false;
+      if (storeGovernanceFilter === 'DRAFT' && (!item.plan || (item.plan.status && item.plan.status !== 'DRAFT'))) return false;
+      if (storeGovernanceFilter === 'APPROVED' && (!item.plan || !['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(item.plan.status || ''))) return false;
 
       if (storeSearchQuery.trim()) {
         const q = storeSearchQuery.toLowerCase();
@@ -1402,34 +1551,423 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         /* TAB 1: MA TRẬN QUẢN TRỊ GIAN HÀNG VÀ TRẠNG THÁI GỬI DUYỆT PLAN            */
         /* ========================================================================= */
         <div className="space-y-4">
-          {/* TỔNG HỢP ĐỀ BÀI B2C & 4 ĐẦU VIỆC THỰC THI (GỌN 1 KHỐI) */}
+          {/* BẢNG ĐIỀU KHIỂN TIẾN ĐỘ & THẨM ĐỊNH HỢP LỆ 4 CHẶNG CHO QUẢN LÝ */}
           <section className="bg-surface border border-line rounded-xl overflow-hidden">
-            <div className="px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 border-b border-line bg-sunken/30 text-xs">
-              <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
+            <div className="px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 border-b border-line bg-sunken/40 text-xs">
+              <div className="flex items-center gap-2 min-w-0 flex-wrap">
                 <span className="font-semibold text-ink">
-                  Tổng hợp kế hoạch B2C kỳ {selectedMonth === 'ALL' ? 'Toàn bộ' : selectedMonth}
+                  Tiến độ &amp; Thẩm định hợp lệ kế hoạch kỳ {selectedMonth === 'ALL' ? 'Toàn bộ' : selectedMonth}
                 </span>
                 <span className="text-ink-3">•</span>
                 <span className="font-semibold text-positive tabular-nums">
+                  Hợp lệ {governanceStats.countValidTotal}/{governanceStats.countWithPlan || 1} bản ({governanceStats.validPct}%)
+                </span>
+                <span className="text-ink-3">•</span>
+                <span className="font-semibold text-accent tabular-nums">
                   Đã duyệt {governanceStats.countApproved}/{governanceStats.totalB2cManaged} gian ({governanceStats.approvedPct}%)
                 </span>
-                {governanceStats.countMissingPlan > 0 && (
-                  <span className="text-warning font-medium inline-flex items-center gap-1">
-                    • <AlertCircle className="w-3 h-3" /> {governanceStats.countMissingPlan} chưa lập
-                  </span>
-                )}
               </div>
-              <div className="w-32 sm:w-40">
-                <Progress
-                  value={governanceStats.countApproved}
-                  max={governanceStats.totalB2cManaged || 1}
-                  label="Tiến độ duyệt kế hoạch"
-                />
+              <div className="flex items-center gap-2 flex-wrap">
+                {governanceStats.countReadyToBatchApprove > 0 &&
+                  currentUser &&
+                  isStaffGlobalAdminOrManager(currentUser) &&
+                  onUpdatePlanStatus && (
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      icon={CheckCircle2}
+                      onClick={() => {
+                        for (const item of governanceStats.readyToBatchApproveList) {
+                          if (!item.plan) continue;
+                          onUpdatePlanStatus(
+                            item.plan.id,
+                            'LEAD_APPROVED',
+                            `Quản lý (${currentUser.name || 'Giám đốc MKT'}) đã phê duyệt hàng loạt kế hoạch hợp lệ cho gian hàng ${item.store.storeName}.`,
+                            'Phê duyệt nhanh kế hoạch đã đạt kiểm định 4.1 vs 4.1.1.'
+                          );
+                        }
+                        notify(
+                          `Đã phê duyệt hàng loạt ${governanceStats.countReadyToBatchApprove} kế hoạch hợp lệ đang chờ duyệt.`
+                        );
+                      }}
+                    >
+                      Duyệt nhanh {governanceStats.countReadyToBatchApprove} plan hợp lệ
+                    </Button>
+                  )}
+                {storeGovernanceFilter !== 'B2C_ONLY' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStoreGovernanceFilter('B2C_ONLY');
+                      setGovernancePage(1);
+                    }}
+                    className="h-7 px-2.5 rounded-lg border border-line bg-surface hover:bg-sunken text-2xs font-semibold text-ink-2 cursor-pointer"
+                  >
+                    Đặt lại bộ lọc ({governanceStats.totalB2cManaged} gian B2C)
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* 5 Ô THÔNG SỐ TỔNG & 4 ĐẦU VIỆC B2C (BỎ CHỮ PHỤ RƯỜM RÀ) */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 divide-y lg:divide-y-0 sm:divide-x divide-line bg-surface">
+            {/* 4 CHẶNG QUẢN TRỊ KẾ HOẠCH: 1. PLAN TỔNG (4.1 & BRAND) -> 2. PLAN CHI TIẾT (4.1.1) -> 3. TÍNH HỢP LỆ -> 4. DUYỆT & THỰC THI */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-line bg-surface text-xs">
+              {/* CHẶNG 1: TIẾN ĐỘ LÊN PLAN TỔNG (BẢNG 4.1 & PLAN BRAND) */}
+              <div className="p-3.5 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-ink">1. Plan Tổng (4.1 &amp; Brand)</span>
+                  <span className="text-2xs font-semibold font-mono px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {governanceStats.countConfirmed41}/{governanceStats.totalB2cManaged} đã chốt 4.1
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 text-2xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStoreGovernanceFilter('CONFIRMED_41');
+                      setGovernancePage(1);
+                    }}
+                    className={cx(
+                      'px-2 py-1 rounded-md border font-medium transition cursor-pointer',
+                      storeGovernanceFilter === 'CONFIRMED_41'
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'bg-emerald-50/70 text-emerald-800 border-emerald-200 hover:bg-emerald-100/70'
+                    )}
+                  >
+                    4.1 Đã chốt: <strong>{governanceStats.countConfirmed41}</strong>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStoreGovernanceFilter('UNCONFIRMED_41');
+                      setGovernancePage(1);
+                    }}
+                    className={cx(
+                      'px-2 py-1 rounded-md border font-medium transition cursor-pointer',
+                      storeGovernanceFilter === 'UNCONFIRMED_41'
+                        ? 'bg-amber-600 text-white border-amber-600'
+                        : 'bg-amber-50/80 text-amber-900 border-amber-200 hover:bg-amber-100/80'
+                    )}
+                  >
+                    4.1 Chưa chốt: <strong>{governanceStats.countUnconfirmed41}</strong>
+                  </button>
+                  {governanceStats.countPending41Diff > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStoreGovernanceFilter('PENDING_41_DIFF');
+                        setGovernancePage(1);
+                      }}
+                      className={cx(
+                        'px-2 py-1 rounded-md border font-semibold transition cursor-pointer',
+                        storeGovernanceFilter === 'PENDING_41_DIFF'
+                          ? 'bg-rose-600 text-white border-rose-600'
+                          : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'
+                      )}
+                    >
+                      Lệch 4.1 mới: <strong>{governanceStats.countPending41Diff}</strong>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStoreGovernanceFilter('MISSING_PLAN');
+                      setGovernancePage(1);
+                    }}
+                    className={cx(
+                      'px-2 py-1 rounded-md border font-medium transition cursor-pointer',
+                      storeGovernanceFilter === 'MISSING_PLAN'
+                        ? 'bg-slate-800 text-white border-slate-800'
+                        : 'bg-sunken text-ink-2 border-line hover:bg-line/50'
+                    )}
+                  >
+                    Chưa có 4.1: <strong>{governanceStats.countMissingPlan}</strong>
+                  </button>
+                </div>
+                <div className="pt-1.5 border-t border-line/70 flex items-center justify-between text-2xs">
+                  <span className="text-ink-3">
+                    Plan Brand 3 vị trí: <strong className="text-ink">{brandPlanKpis.completeCoverageCount}/{brandPlanKpis.total} nhãn</strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveHubTab('BRAND_PLANS')}
+                    className="text-accent hover:underline font-semibold cursor-pointer"
+                  >
+                    Xem Plan Brand →
+                  </button>
+                </div>
+              </div>
+
+              {/* CHẶNG 2: TIẾN ĐỘ LÊN PLAN CHI TIẾT (PHÂN RÃ 4.1.1 THEO KÊNH/KL & TUẦN W1-W5) */}
+              <div className="p-3.5 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-ink">2. Plan Chi Tiết (4.1.1 Tuần)</span>
+                  <span className="text-2xs font-semibold font-mono px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                    {governanceStats.countHasWeekly411}/{governanceStats.totalB2cManaged} đã chia ({governanceStats.weekly411Pct}%)
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 text-2xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStoreGovernanceFilter('HAS_WEEKLY_411');
+                      setGovernancePage(1);
+                    }}
+                    className={cx(
+                      'px-2 py-1 rounded-md border font-medium transition cursor-pointer',
+                      storeGovernanceFilter === 'HAS_WEEKLY_411'
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-blue-50/70 text-blue-800 border-blue-200 hover:bg-blue-100/70'
+                    )}
+                  >
+                    Đã phân rã tuần 4.1.1: <strong>{governanceStats.countHasWeekly411}</strong>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStoreGovernanceFilter('EMPTY_WEEKLY');
+                      setGovernancePage(1);
+                    }}
+                    className={cx(
+                      'px-2 py-1 rounded-md border font-medium transition cursor-pointer',
+                      storeGovernanceFilter === 'EMPTY_WEEKLY'
+                        ? 'bg-amber-600 text-white border-amber-600'
+                        : 'bg-amber-50/80 text-amber-900 border-amber-200 hover:bg-amber-100/80'
+                    )}
+                  >
+                    Chưa chia tuần 4.1.1: <strong>{governanceStats.countEmptyWeekly411}</strong>
+                  </button>
+                </div>
+                <div className="pt-1.5 border-t border-line/70 flex items-center justify-between text-2xs">
+                  <span className="text-ink-3">
+                    Gói việc nhân sự: <strong className="text-ink">{allPersonalPackages.length} đầu mục</strong>
+                  </span>
+                  {canViewTeamPlansAndCoefficients && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveHubTab('PERSONAL_PLANS')}
+                      className="text-accent hover:underline font-semibold cursor-pointer"
+                    >
+                      Theo nhân sự →
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* CHẶNG 3: KIỂM ĐỊNH TÍNH HỢP LỆ CỦA CÁC PLAN (ĐỐI SOÁT 4.1 VS 4.1.1) */}
+              <div className="p-3.5 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-ink">3. Kiểm Định Hợp Lệ (4.1 vs 4.1.1)</span>
+                  <span
+                    className={cx(
+                      'text-2xs font-semibold font-mono px-1.5 py-0.5 rounded border',
+                      governanceStats.countInvalid411 > 0
+                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    )}
+                  >
+                    {governanceStats.countValidTotal} hợp lệ · {governanceStats.countInvalid411} cần xử lý
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 text-2xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStoreGovernanceFilter('VALID_MATCHED');
+                      setGovernancePage(1);
+                    }}
+                    className={cx(
+                      'px-2 py-1 rounded-md border font-medium transition cursor-pointer',
+                      storeGovernanceFilter === 'VALID_MATCHED'
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'bg-emerald-50/70 text-emerald-800 border-emerald-200 hover:bg-emerald-100/70'
+                    )}
+                  >
+                    ✓ Khớp 100% 4.1: <strong>{governanceStats.countValidMatched}</strong>
+                  </button>
+                  {governanceStats.countValidWithNote > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStoreGovernanceFilter('VALID_WITH_NOTE');
+                        setGovernancePage(1);
+                      }}
+                      className={cx(
+                        'px-2 py-1 rounded-md border font-medium transition cursor-pointer',
+                        storeGovernanceFilter === 'VALID_WITH_NOTE'
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-blue-50/70 text-blue-800 border-blue-200 hover:bg-blue-100/70'
+                      )}
+                    >
+                      ✓ Đã giải trình: <strong>{governanceStats.countValidWithNote}</strong>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStoreGovernanceFilter('UNEXPLAINED_MISMATCH');
+                      setGovernancePage(1);
+                    }}
+                    className={cx(
+                      'px-2 py-1 rounded-md border font-medium transition cursor-pointer',
+                      storeGovernanceFilter === 'UNEXPLAINED_MISMATCH'
+                        ? 'bg-amber-600 text-white border-amber-600'
+                        : 'bg-amber-50/80 text-amber-900 border-amber-200 hover:bg-amber-100/80'
+                    )}
+                  >
+                    ⚠ Lệch 4.1: <strong>{governanceStats.countUnexplainedMismatch}</strong>
+                  </button>
+                  {governanceStats.countHasErrors > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStoreGovernanceFilter('HAS_ERRORS');
+                        setGovernancePage(1);
+                      }}
+                      className={cx(
+                        'px-2 py-1 rounded-md border font-semibold transition cursor-pointer',
+                        storeGovernanceFilter === 'HAS_ERRORS'
+                          ? 'bg-rose-600 text-white border-rose-600'
+                          : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'
+                      )}
+                    >
+                      ✕ Lỗi 4.1.1: <strong>{governanceStats.countHasErrors}</strong>
+                    </button>
+                  )}
+                </div>
+                <div className="pt-1.5 border-t border-line/70 flex items-center justify-between text-2xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStoreGovernanceFilter('PRICE_WARNING');
+                      setGovernancePage(1);
+                    }}
+                    className="text-ink-3 hover:text-ink cursor-pointer"
+                  >
+                    Đơn giá ngoài khung 5.6: <strong className="text-ink-2">{governanceStats.countPriceWarnings} gian</strong>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStoreGovernanceFilter('INVALID_411');
+                      setGovernancePage(1);
+                    }}
+                    className="text-amber-800 hover:underline font-semibold cursor-pointer"
+                  >
+                    Lọc plan cần xử lý →
+                  </button>
+                </div>
+              </div>
+
+              {/* CHẶNG 4: LUỒNG DUYỆT 2 CẤP & TRIỂN KHAI TIẾP ("RỒI LÀM GÌ TIẾP") */}
+              <div className="p-3.5 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-ink">4. Phê Duyệt &amp; Thực Thi</span>
+                  <div className="w-24">
+                    <Progress
+                      value={governanceStats.countApproved}
+                      max={governanceStats.totalB2cManaged || 1}
+                      label="Tiến độ duyệt kế hoạch"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5 text-2xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStoreGovernanceFilter('APPROVED');
+                      setGovernancePage(1);
+                    }}
+                    className={cx(
+                      'px-2 py-1 rounded-md border font-medium transition cursor-pointer',
+                      storeGovernanceFilter === 'APPROVED'
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'bg-emerald-50/70 text-emerald-800 border-emerald-200 hover:bg-emerald-100/70'
+                    )}
+                  >
+                    Đã duyệt: <strong>{governanceStats.countApproved}</strong>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStoreGovernanceFilter('PENDING_APPROVAL');
+                      setGovernancePage(1);
+                    }}
+                    className={cx(
+                      'px-2 py-1 rounded-md border font-medium transition cursor-pointer',
+                      storeGovernanceFilter === 'PENDING_APPROVAL'
+                        ? 'bg-amber-600 text-white border-amber-600'
+                        : 'bg-amber-50/80 text-amber-900 border-amber-200 hover:bg-amber-100/80'
+                    )}
+                  >
+                    Chờ GĐ duyệt: <strong>{governanceStats.countPendingApproval}</strong>
+                  </button>
+                  {governanceStats.countPendingPreApproval > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStoreGovernanceFilter('PENDING_PRE_APPROVAL');
+                        setGovernancePage(1);
+                      }}
+                      className={cx(
+                        'px-2 py-1 rounded-md border font-medium transition cursor-pointer',
+                        storeGovernanceFilter === 'PENDING_PRE_APPROVAL'
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-blue-50/70 text-blue-800 border-blue-200 hover:bg-blue-100/70'
+                      )}
+                    >
+                      Chờ Leader: <strong>{governanceStats.countPendingPreApproval}</strong>
+                    </button>
+                  )}
+                  {governanceStats.countRevisionRequested > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStoreGovernanceFilter('REVISION_REQUESTED');
+                        setGovernancePage(1);
+                      }}
+                      className={cx(
+                        'px-2 py-1 rounded-md border font-semibold transition cursor-pointer',
+                        storeGovernanceFilter === 'REVISION_REQUESTED'
+                          ? 'bg-rose-600 text-white border-rose-600'
+                          : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'
+                      )}
+                    >
+                      Cần sửa: <strong>{governanceStats.countRevisionRequested}</strong>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStoreGovernanceFilter('DRAFT');
+                      setGovernancePage(1);
+                    }}
+                    className={cx(
+                      'px-2 py-1 rounded-md border font-medium transition cursor-pointer',
+                      storeGovernanceFilter === 'DRAFT'
+                        ? 'bg-slate-800 text-white border-slate-800'
+                        : 'bg-sunken text-ink-2 border-line hover:bg-line/50'
+                    )}
+                  >
+                    Nháp: <strong>{governanceStats.countDraft}</strong>
+                  </button>
+                </div>
+                <div className="pt-1.5 border-t border-line/70 flex items-center justify-between text-2xs">
+                  <span className="text-ink-3">Sau khi duyệt: Listing KOC · HĐ · Air</span>
+                  {onOpenPlanReport && (
+                    <button
+                      type="button"
+                      onClick={onOpenPlanReport}
+                      className="text-accent hover:underline font-semibold cursor-pointer"
+                    >
+                      Báo cáo thẩm định →
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 5 Ô THÔNG SỐ TỔNG & 4 ĐẦU VIỆC B2C */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 divide-y lg:divide-y-0 sm:divide-x divide-line bg-sunken/20 border-t border-line">
               <div className="col-span-2 sm:col-span-1 px-3.5 py-2.5">
                 <div className="text-2xs text-ink-3 font-medium">Tổng hạn mức Net B2C</div>
                 <div className="mt-1 flex items-baseline justify-between gap-2">
@@ -1501,6 +2039,13 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   <Chips
                     items={[
                       { key: 'B2C_ONLY', label: 'B2C phụ trách', count: governanceStats.totalB2cManaged },
+                      { key: 'VALID_MATCHED', label: 'Khớp 4.1', count: governanceStats.countValidMatched },
+                      ...(governanceStats.countInvalid411 > 0
+                        ? [{ key: 'INVALID_411' as const, label: 'Cần xử lý / Lệch 4.1', count: governanceStats.countInvalid411 }]
+                        : []),
+                      ...(governanceStats.countEmptyWeekly411 > 0
+                        ? [{ key: 'EMPTY_WEEKLY' as const, label: 'Chưa chia 4.1.1', count: governanceStats.countEmptyWeekly411 }]
+                        : []),
                       ...(governanceStats.countPending41Diff > 0
                         ? [{ key: 'PENDING_41_DIFF' as const, label: 'Lệch 4.1 mới', count: governanceStats.countPending41Diff }]
                         : []),
@@ -1567,11 +2112,18 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           ) : plan ? (
                             <>
                               {getStatusBadge(plan.status)}
-                              {plan.pendingReference41 ? (
-                                <Status tone="critical">Lệch 4.1 mới</Status>
-                              ) : plan.reference41?.isGrowthLocked === false ? (
-                                <Status tone="warning">4.1 Chưa chốt</Status>
-                              ) : null}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setInspectingStoreId(store.id);
+                                  setAuditNoteDraft(plan.breakdownNote || '');
+                                  setRevisionReasonDraft(plan.revisionNotes || '');
+                                }}
+                                className="cursor-pointer"
+                                title={item.validity.shortDetail}
+                              >
+                                <Status tone={item.validity.badgeTone}>{item.validity.badgeLabel}</Status>
+                              </button>
                             </>
                           ) : (
                             <Status tone="neutral">Chưa lập</Status>
@@ -1967,17 +2519,32 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           </td>
 
                           {/* 8. TRẠNG THÁI & THAO TÁC */}
-                          <td className="py-2.5 px-3 text-right align-middle" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-end gap-1.5">
+                          <td className="py-2 px-3 text-right align-middle" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex flex-col items-end gap-1">
                               {!isB2c ? (
                                 <Status tone="neutral">Miễn trừ</Status>
                               ) : plan ? (
                                 <>
-                                  {getStatusBadge(plan.status)}
-                                  {plan.pendingReference41 ? (
-                                    <>
-                                      <Status tone="critical">Lệch 4.1 mới</Status>
-                                      {currentUser && isStaffGlobalAdminOrManager(currentUser) && onUpdatePlan && (
+                                  <div className="flex items-center justify-end gap-1 flex-wrap">
+                                    {getStatusBadge(plan.status)}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setInspectingStoreId(store.id);
+                                        setAuditNoteDraft(plan.breakdownNote || '');
+                                        setRevisionReasonDraft(plan.revisionNotes || '');
+                                      }}
+                                      className="cursor-pointer hover:opacity-85 transition-opacity"
+                                      title={`${item.validity.shortDetail} — Bấm để đối soát nhanh 4.1 vs 4.1.1 & xử lý duyệt`}
+                                    >
+                                      <Status tone={item.validity.badgeTone}>{item.validity.badgeLabel}</Status>
+                                    </button>
+                                  </div>
+                                  <div className="flex items-center justify-end gap-1 flex-wrap">
+                                    {plan.pendingReference41 &&
+                                      currentUser &&
+                                      isStaffGlobalAdminOrManager(currentUser) &&
+                                      onUpdatePlan && (
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -2015,53 +2582,50 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                           Mở khóa 4.1
                                         </button>
                                       )}
-                                    </>
-                                  ) : plan.reference41?.isGrowthLocked === false ? (
-                                    <Status tone="warning">4.1 Chưa chốt</Status>
-                                  ) : null}
-                                  {onOpenListingForPlan && (bd.affPaidQty > 0 || bd.focQty > 0) && (
-                                    <button
-                                      type="button"
-                                      onClick={() => onOpenListingForPlan(plan)}
-                                      className="h-6 px-2 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold shrink-0 whitespace-nowrap transition cursor-pointer"
-                                      title="Triển khai Listing KOC theo Plan Final (KL1–KL7)"
-                                    >
-                                      Listing KOC
-                                    </button>
-                                  )}
-                                  {plan.status === 'PENDING_APPROVAL' ? (
-                                    <Button
-                                      size="sm"
-                                      variant="primary"
-                                      onClick={() => onSelectPlan(plan)}
-                                      className="h-6 px-2 text-2xs font-medium shrink-0"
-                                    >
-                                      Duyệt
-                                    </Button>
-                                  ) : (
-                                    <>
+                                    {onOpenListingForPlan && (bd.affPaidQty > 0 || bd.focQty > 0) && (
                                       <button
                                         type="button"
-                                        onClick={() => setExpandedStoreId(prev => (prev === store.id ? null : store.id))}
-                                        className={cx(
-                                          'h-6 px-2 rounded border text-2xs font-semibold shrink-0 whitespace-nowrap transition cursor-pointer',
-                                          isExpanded
-                                            ? 'bg-indigo-600 text-white border-indigo-600'
-                                            : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
-                                        )}
+                                        onClick={() => onOpenListingForPlan(plan)}
+                                        className="h-6 px-2 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold shrink-0 whitespace-nowrap transition cursor-pointer"
+                                        title="Triển khai Listing KOC theo Plan Final (KL1–KL7)"
                                       >
-                                        {isExpanded ? 'Đóng' : 'Xem 4.1.1'}
+                                        Listing KOC
                                       </button>
+                                    )}
+                                    {plan.status === 'PENDING_APPROVAL' ? (
                                       <Button
                                         size="sm"
-                                        variant="ghost"
+                                        variant="primary"
                                         onClick={() => onSelectPlan(plan)}
                                         className="h-6 px-2 text-2xs font-medium shrink-0"
                                       >
-                                        Chi tiết
+                                        Duyệt
                                       </Button>
-                                    </>
-                                  )}
+                                    ) : (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => setExpandedStoreId(prev => (prev === store.id ? null : store.id))}
+                                          className={cx(
+                                            'h-6 px-2 rounded border text-2xs font-semibold shrink-0 whitespace-nowrap transition cursor-pointer',
+                                            isExpanded
+                                              ? 'bg-indigo-600 text-white border-indigo-600'
+                                              : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                                          )}
+                                        >
+                                          {isExpanded ? 'Đóng' : 'Xem 4.1.1'}
+                                        </button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => onSelectPlan(plan)}
+                                          className="h-6 px-2 text-2xs font-medium shrink-0"
+                                        >
+                                          Chi tiết
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
                                 </>
                               ) : (
                                 <Button
@@ -4708,6 +5272,330 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           />
         )}
       </Modal>
+
+      {/* Modal: Thẩm định & Đối soát Nhanh Tính Hợp Lệ Plan 4.1 vs 4.1.1 & Xử lý Duyệt */}
+      {(() => {
+        const inspectingItem = inspectingStoreId
+          ? storeGovernanceList.find(it => it.store.id === inspectingStoreId) || null
+          : null;
+        const iStore = inspectingItem?.store;
+        const iPlan = inspectingItem?.plan;
+        const iVal = inspectingItem?.validity;
+        const hasLeader = Boolean(iPlan?.hasBookingLeader ?? iStore?.hasBookingLeader);
+        const canManageApproval = Boolean(
+          currentUser && (isStaffGlobalAdminOrManager(currentUser) || currentUser.role === 'LEADER')
+        );
+
+        return (
+          <Modal
+            open={Boolean(inspectingItem && iPlan && iVal)}
+            onClose={() => setInspectingStoreId(null)}
+            title={
+              iStore && iPlan
+                ? `Thẩm định Kế hoạch 4.1 vs 4.1.1 — ${iStore.storeName} (${iPlan.month})`
+                : 'Thẩm định Kế hoạch'
+            }
+            size="lg"
+            footer={
+              iStore && iPlan && iVal ? (
+                <div className="flex flex-wrap items-center justify-between gap-2 w-full">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Button variant="ghost" size="sm" onClick={() => setInspectingStoreId(null)}>
+                      Đóng
+                    </Button>
+                    {onOpenListingForPlan && (inspectingItem.breakdown.affPaidQty > 0 || inspectingItem.breakdown.focQty > 0) && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setInspectingStoreId(null);
+                          onOpenListingForPlan(iPlan);
+                        }}
+                      >
+                        Chuyển sang Listing KOC
+                      </Button>
+                    )}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setInspectingStoreId(null);
+                        onSelectPlan(iPlan);
+                      }}
+                    >
+                      Mở chi tiết 5 bước →
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {onUpdatePlan && iPlan.reference41 && (!iVal.hasWeeklyBreakdown || iVal.mismatchCount > 0 || iVal.errorCount > 0) && !iPlan.isVersionLocked && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          const synced = distributeReference41ToWeeks(iPlan, 'EVEN');
+                          onUpdatePlan(iPlan.id, {
+                            weeklyBreakdown: synced.weeklyBreakdown,
+                            items: synced.items,
+                            updatedAt: new Date().toISOString(),
+                          });
+                          notify(`Đã tự động phân bổ tuần 4.1.1 khớp 100% với Bảng 4.1 cho "${iStore.storeName}".`);
+                        }}
+                      >
+                        Khớp 4.1 &amp; Chia đều tuần
+                      </Button>
+                    )}
+                    {canManageApproval && onUpdatePlanStatus && (
+                      <>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            const reason = revisionReasonDraft.trim() || 'Yêu cầu rà soát lại số liệu phân rã tuần 4.1.1 khớp với Bảng 4.1.';
+                            onUpdatePlanStatus(
+                              iPlan.id,
+                              'REVISION_REQUESTED',
+                              `Quản lý (${currentUser?.name || 'Lead'}) yêu cầu chỉnh sửa kế hoạch ${iStore.storeName}: ${reason}`,
+                              reason
+                            );
+                            if (onUpdatePlan) {
+                              onUpdatePlan(iPlan.id, { isVersionLocked: false, revisionNotes: reason });
+                            }
+                            notify(`Đã chuyển kế hoạch "${iStore.storeName}" sang trạng thái Cần sửa.`);
+                            setInspectingStoreId(null);
+                          }}
+                        >
+                          Yêu cầu sửa lại
+                        </Button>
+                        {currentUser?.role === 'LEADER' && hasLeader && iPlan.status === 'PENDING_PRE_APPROVAL' ? (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            icon={CheckCircle2}
+                            onClick={() => {
+                              onUpdatePlanStatus(
+                                iPlan.id,
+                                'PENDING_APPROVAL',
+                                `Trưởng nhóm (${currentUser.name}) đã sơ duyệt đạt kế hoạch ${iStore.storeName}, chuyển Giám đốc Marketing phê duyệt.`,
+                                'Sơ duyệt đạt chuẩn 4.1.1'
+                              );
+                              if (onUpdatePlan) {
+                                onUpdatePlan(iPlan.id, { leaderApprovalStatus: 'ĐÃ_SƠ_DUYỆT' });
+                              }
+                              notify(`Đã sơ duyệt đạt cho "${iStore.storeName}", chuyển trình Giám đốc Marketing.`);
+                              setInspectingStoreId(null);
+                            }}
+                          >
+                            Sơ duyệt đạt (Chuyển GĐ)
+                          </Button>
+                        ) : isStaffGlobalAdminOrManager(currentUser) ? (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            icon={CheckCircle2}
+                            onClick={() => {
+                              handleQuickApprovePlan(iPlan.id, iStore.storeName);
+                              setInspectingStoreId(null);
+                            }}
+                          >
+                            Phê duyệt kế hoạch
+                          </Button>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+                </div>
+              ) : undefined
+            }
+          >
+            {iStore && iPlan && iVal && (
+              <div className="space-y-4 text-xs">
+                {/* 1. Tóm tắt 4 chặng của gian hàng */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-sunken/50 border border-line">
+                  <div>
+                    <div className="text-2xs text-ink-3">1. Plan Tổng (4.1)</div>
+                    <div className="mt-1 font-semibold text-ink">
+                      {iPlan.pendingReference41
+                        ? 'Lệch 4.1 mới'
+                        : iPlan.reference41?.isGrowthLocked === false
+                          ? '4.1 Chưa chốt (Tạm tính)'
+                          : iPlan.reference41
+                            ? '4.1 Đã chốt'
+                            : 'Khởi tạo trực tiếp'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-2xs text-ink-3">2. Plan Chi tiết (4.1.1)</div>
+                    <div className="mt-1 font-semibold text-ink">
+                      {iVal.hasWeeklyBreakdown ? 'Đã chia lịch tuần W1–W5' : 'Chưa nhập lịch tuần'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-2xs text-ink-3">3. Tính hợp lệ</div>
+                    <div className="mt-1">
+                      <Status tone={iVal.badgeTone}>{iVal.badgeLabel}</Status>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-2xs text-ink-3">4. Luồng phê duyệt</div>
+                    <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                      {getStatusBadge(iPlan.status)}
+                      <span className="text-2xs text-ink-3">
+                        ({hasLeader ? 'Qua Leader Ngọc Tâm' : 'Trình thẳng GĐ'})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Kết luận thẩm định nhanh */}
+                <div
+                  className={cx(
+                    'p-3 rounded-xl border',
+                    iVal.badgeTone === 'positive'
+                      ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
+                      : iVal.badgeTone === 'info'
+                        ? 'bg-blue-50/70 border-blue-200 text-blue-950'
+                        : iVal.badgeTone === 'critical'
+                          ? 'bg-rose-50/80 border-rose-200 text-rose-950'
+                          : 'bg-amber-50/80 border-amber-200 text-amber-950'
+                  )}
+                >
+                  <div className="font-semibold">
+                    Kết luận kiểm định: {iVal.shortDetail}
+                  </div>
+                  <div className="mt-1 text-2xs opacity-90">
+                    PIC phụ trách: <strong>{iStore.b2cOwners?.[0] || iStore.b2cOwnerName || iPlan.pic || 'Chưa gán'}</strong>
+                    {' · '}
+                    Phiên bản hiện hành: <strong>{iPlan.currentVersionCode || 'v1.0'}</strong>
+                  </div>
+                </div>
+
+                {/* 3. Bảng đối soát 7 chỉ tiêu cốt lõi: Bảng 4.1 (Plan Tổng) vs Bảng 4.1.1 (Phân rã Tuần) */}
+                {iVal.comparison.length > 0 && (
+                  <div className="rounded-xl border border-line overflow-hidden">
+                    <div className="px-3.5 py-2 bg-sunken/70 border-b border-line font-semibold text-ink flex items-center justify-between">
+                      <span>Bảng đối soát 7 chỉ tiêu: Plan Tổng (4.1) vs Phân rã Tuần (4.1.1)</span>
+                      <span className="text-2xs text-ink-3 font-normal">Đơn vị tiền: Net (VNĐ)</span>
+                    </div>
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-line bg-surface text-2xs text-ink-3">
+                          <th className="py-2 px-3">Chỉ tiêu</th>
+                          <th className="py-2 px-3 text-right">Plan Tổng (4.1)</th>
+                          <th className="py-2 px-3 text-right">Phân rã Tuần (4.1.1)</th>
+                          <th className="py-2 px-3 text-right">Chênh lệch</th>
+                          <th className="py-2 px-3 text-center">Kết quả</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-line">
+                        {iVal.comparison.map(row => {
+                          const fmtVal = (v: number) =>
+                            row.unit === 'money' ? formatVndShort(v) : v.toLocaleString('vi-VN');
+                          return (
+                            <tr key={row.key} className={row.matched ? '' : 'bg-amber-50/40'}>
+                              <td className="py-2 px-3 font-medium text-ink">{row.label}</td>
+                              <td className="py-2 px-3 text-right tabular-nums text-ink-2">{fmtVal(row.reference)}</td>
+                              <td className="py-2 px-3 text-right tabular-nums font-semibold text-ink">{fmtVal(row.planned)}</td>
+                              <td
+                                className={cx(
+                                  'py-2 px-3 text-right tabular-nums font-semibold',
+                                  row.matched ? 'text-ink-3' : row.diff > 0 ? 'text-amber-700' : 'text-rose-700'
+                                )}
+                              >
+                                {row.matched
+                                  ? '0'
+                                  : `${row.diff > 0 ? '+' : ''}${fmtVal(row.diff)}`}
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                {row.matched ? (
+                                  <Status tone="positive">Khớp</Status>
+                                ) : (
+                                  <Status tone="warning">{row.diff > 0 ? 'Thừa' : 'Thiếu'}</Status>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* 4. Danh sách lỗi logic hoặc cảnh báo đơn giá Ratecard Bảng 5.6 */}
+                {iVal.issues.length > 0 && (
+                  <div className="rounded-xl border border-line p-3 space-y-1.5 bg-surface">
+                    <div className="font-semibold text-ink">
+                      Chi tiết cảnh báo &amp; lỗi kiểm định ({iVal.issues.length} mục)
+                    </div>
+                    <ul className="space-y-1 max-h-36 overflow-y-auto text-2xs">
+                      {iVal.issues.map((iss, idx) => (
+                        <li
+                          key={`${iss.code}-${idx}`}
+                          className={cx(
+                            'px-2.5 py-1.5 rounded-lg border flex items-center justify-between gap-2',
+                            iss.severity === 'error'
+                              ? 'bg-rose-50 border-rose-200 text-rose-900 font-medium'
+                              : 'bg-amber-50/70 border-amber-200 text-amber-900'
+                          )}
+                        >
+                          <span>{iss.message}</span>
+                          <span className="shrink-0 font-mono text-[10px] uppercase">
+                            {iss.severity === 'error' ? 'Lỗi chặn gửi' : iss.needsNote ? 'Cần giải trình' : 'Lưu ý giá'}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* 5. Giải trình của chuyên viên (breakdownNote) & Ghi chú yêu cầu sửa của Quản lý */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-ink block">
+                      Giải trình chênh lệch 4.1 vs 4.1.1 của PIC
+                    </label>
+                    <Textarea
+                      rows={2}
+                      placeholder="Nhập lý do nếu phân rã 4.1.1 điều chỉnh khác Bảng 4.1..."
+                      value={auditNoteDraft}
+                      onChange={e => setAuditNoteDraft(e.target.value)}
+                    />
+                    {onUpdatePlan && auditNoteDraft !== (iPlan.breakdownNote || '') && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          onUpdatePlan(iPlan.id, {
+                            breakdownNote: auditNoteDraft.trim(),
+                            updatedAt: new Date().toISOString(),
+                          });
+                          notify(`Đã lưu giải trình đối soát 4.1 cho "${iStore.storeName}".`);
+                        }}
+                      >
+                        Lưu giải trình
+                      </Button>
+                    )}
+                  </div>
+
+                  {canManageApproval && (
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-ink block">
+                        Ghi chú phản hồi của Quản lý (khi duyệt / yêu cầu sửa)
+                      </label>
+                      <Textarea
+                        rows={2}
+                        placeholder="Nhập chỉ đạo hoặc lý do yêu cầu sửa kế hoạch..."
+                        value={revisionReasonDraft}
+                        onChange={e => setRevisionReasonDraft(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </Modal>
+        );
+      })()}
     </div>
   );
 };

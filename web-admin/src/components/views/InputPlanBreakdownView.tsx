@@ -1519,7 +1519,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   return (
     <div className="space-y-2 animate-in fade-in duration-200 pb-2">
       {/* ========================================================================= */}
-      {/* 1. ĐẨY ĐIỀU HƯỚNG GIAN HÀNG & PHIÊN BẢN LÊN TOPHEADER CẠNH TIÊU ĐỀ        */}
+      {/* 1. ĐẨY ĐIỀU HƯỚNG GIAN HÀNG, PHIÊN BẢN & 5 BƯỚC LÊN TOPHEADER CẠNH TIÊU ĐỀ */}
       {/* ========================================================================= */}
       <PageHeaderNav>
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -1531,7 +1531,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               setIsShowingStudio(false);
               if (planSync.isPersistent) void planSync.saveNow();
             }}
-            className="h-8 px-2 sm:px-2.5 shrink-0 inline-flex items-center gap-1 rounded-lg bg-surface hover:bg-sunken border border-line text-ink text-xs font-semibold transition cursor-pointer"
+            className="h-8 px-2 shrink-0 inline-flex items-center gap-1 rounded-lg bg-surface hover:bg-sunken border border-line text-ink text-xs font-semibold transition cursor-pointer"
             title="Quay lại danh sách kế hoạch tháng"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -1547,7 +1547,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 setPlanState(found);
               }
             }}
-            className="h-8 px-2 sm:px-2.5 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[140px] sm:max-w-[200px] xl:max-w-[250px] truncate"
+            className="h-8 px-2 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[130px] sm:max-w-[180px] xl:max-w-[220px] truncate"
             title="Chuyển sang gian hàng khác"
           >
             {scopedStudioPlans.map(p => (
@@ -1557,7 +1557,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             ))}
           </select>
 
-          <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-sunken border border-line shrink-0">
+          <div className="inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-sunken border border-line shrink-0">
             {studioVersionSnapshots.map((snap) => {
               const isCurrent = snap.versionCode === activeVersionCode;
               return (
@@ -1844,12 +1844,12 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200/90 px-2.5 py-1 shadow-2xs flex items-center justify-between gap-2 flex-wrap">
-        <div className="inline-flex max-w-full items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 gap-0.5 shrink-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="bg-white rounded-xl border border-slate-200/90 px-2.5 py-1.5 shadow-2xs flex items-center justify-between gap-2 flex-nowrap overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="inline-flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 gap-0.5 shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('OVERVIEW')}
-            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
+            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer shrink-0 ${
               activeTab === 'OVERVIEW'
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -1857,7 +1857,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           >
             <span className="sm:hidden">1. Chỉ tiêu</span>
             <span className="hidden sm:inline">1. Chỉ tiêu tháng</span>
-            <span className="hidden sm:inline text-2xs font-normal text-slate-500">
+            <span className="hidden 2xl:inline text-2xs font-normal text-slate-500">
               · {isLayer1Locked ? 'Đã chốt' : 'Đang điền'}
             </span>
           </button>
@@ -1866,7 +1866,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             onClick={() => {
               if (!isDetailBreakdownTab) setActiveTab('ALL_SUMMARY');
             }}
-            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
+            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer shrink-0 ${
               isDetailBreakdownTab
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -1914,8 +1914,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </button>
         </div>
 
-        {/* Bên phải thanh bước: Trạng thái 4.1, Đội ngũ 4.1 & lối tắt Listing KOC */}
-        <div className="flex items-center gap-1.5 text-2xs text-slate-600 w-full xl:w-auto xl:ml-auto shrink-0 flex-wrap">
+        {/* Bên phải thanh bước: Trạng thái 4.1, Đội ngũ 4.1 & lối tắt Listing KOC gọn trên 1 dòng */}
+        <div className="flex items-center gap-1.5 text-2xs text-slate-600 ml-auto shrink-0">
           {planState.reference41 && (
             <span
               className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border font-semibold shrink-0 ${
@@ -1928,39 +1928,36 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               <span>4.1: {planState.reference41.isGrowthLocked === false ? (planState.reference41.growthLockLabel || 'Chưa chốt') : 'Đã chốt'}</span>
             </span>
           )}
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 max-w-full overflow-x-auto whitespace-nowrap">
+          <span
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 whitespace-nowrap"
+            title={[
+              planState.reference41?.rolePics?.growthPics?.length ? `Growth: ${planState.reference41.rolePics.growthPics.join(', ')}` : '',
+              planState.reference41?.rolePics?.accountPics?.length ? `Account: ${planState.reference41.rolePics.accountPics.join(', ')}` : '',
+              `Booking PIC: ${planState.reference41?.rolePics?.bookingPics?.join(', ') || planState.primaryPic || planState.pic}`,
+              `Leader: ${hasLeader ? (resolvedBookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'Không có leader'}`,
+              planState.reference41?.rolePics?.livePics?.length ? `Live: ${planState.reference41.rolePics.livePics.join(', ')}` : '',
+            ].filter(Boolean).join(' · ')}
+          >
             {planState.reference41?.rolePics?.growthPics?.length ? (
               <>
-                <span className="hidden sm:inline">Growth: <strong className="text-slate-900">{planState.reference41.rolePics.growthPics.join(', ')}</strong></span>
-                <span className="text-slate-300 hidden sm:inline">·</span>
+                <span className="hidden 2xl:inline">Growth: <strong className="text-slate-900">{planState.reference41.rolePics.growthPics.join(', ')}</strong></span>
+                <span className="text-slate-300 hidden 2xl:inline">·</span>
               </>
             ) : null}
-            {planState.reference41?.rolePics?.accountPics?.length ? (
-              <>
-                <span className="hidden xl:inline">Account: <strong className="text-slate-900">{planState.reference41.rolePics.accountPics.join(', ')}</strong></span>
-                <span className="text-slate-300 hidden xl:inline">·</span>
-              </>
-            ) : null}
-            <span>Booking PIC: <strong className="text-slate-900">{planState.reference41?.rolePics?.bookingPics?.join(', ') || planState.primaryPic || planState.pic}</strong></span>
-            <span className="text-slate-300">·</span>
-            <span>
+            <span>PIC: <strong className="text-slate-900">{planState.reference41?.rolePics?.bookingPics?.join(', ') || planState.primaryPic || planState.pic}</strong></span>
+            <span className="text-slate-300 hidden sm:inline">·</span>
+            <span className="hidden sm:inline">
               Leader:{' '}
               <strong className="text-slate-900">
                 {hasLeader ? (resolvedBookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'Không có leader'}
               </strong>
             </span>
-            {planState.reference41?.rolePics?.livePics?.length ? (
-              <>
-                <span className="text-slate-300 hidden 2xl:inline">·</span>
-                <span className="hidden 2xl:inline">Live: <strong className="text-slate-900">{planState.reference41.rolePics.livePics.join(', ')}</strong></span>
-              </>
-            ) : null}
           </span>
           {onOpenListingForPlan && (
             <button
               type="button"
               onClick={() => onOpenListingForPlan(planState)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-2xs transition cursor-pointer ml-auto sm:ml-0 shrink-0"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-2xs transition cursor-pointer shrink-0"
               title="Mở bảng Listing KOC theo khung lương KL1–KL7 của kế hoạch này"
             >
               <UserCheck className="w-3 h-3" />

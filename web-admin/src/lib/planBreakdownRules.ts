@@ -171,7 +171,11 @@ export interface BreakdownTotals {
   totalBudget: number;
 }
 
+const sumBreakdownCache = new WeakMap<PlanWeekRow[], BreakdownTotals>();
+
 export function sumBreakdown(rows: PlanWeekRow[]): BreakdownTotals {
+  const cached = sumBreakdownCache.get(rows);
+  if (cached) return cached;
   const tiers = Object.fromEntries(TIER_KEYS.map(k => [k, { qty: 0, budget: 0 }])) as BreakdownTotals['tiers'];
   const focByType = { tapBrand: 0, tap: 0, tapUp: 0 };
   const selfByType: Record<keyof PlanWeekRow['self'], number> = {
@@ -229,7 +233,7 @@ export function sumBreakdown(rows: PlanWeekRow[]): BreakdownTotals {
   const multiTotalAffQty = MULTI_PLATFORMS.reduce((s, mp) => s + multiPlatform[mp.key].affQty, 0);
   const multiTotalReupQty = MULTI_PLATFORMS.reduce((s, mp) => s + multiPlatform[mp.key].reupQty, 0);
   const multiTotalBudget = MULTI_PLATFORMS.reduce((s, mp) => s + multiPlatform[mp.key].budgetNet, 0);
-  return {
+  const result: BreakdownTotals = {
     tiers,
     castQty,
     castBudget,
@@ -250,6 +254,8 @@ export function sumBreakdown(rows: PlanWeekRow[]): BreakdownTotals {
     liveSelfBudget,
     totalBudget: castBudget + selfBudget + liveBudget + multiTotalBudget + liveSelfBudget,
   };
+  sumBreakdownCache.set(rows, result);
+  return result;
 }
 
 export type BreakdownIssueSeverity = 'error' | 'warning';
@@ -300,7 +306,27 @@ export function compareWith41(plan: InputPlanBreakdownState, rows: PlanWeekRow[]
   ];
 }
 
+interface CachedValidationResult {
+  month: string;
+  weeklyBreakdown: unknown;
+  reference41: unknown;
+  isGrowthLocked: boolean | undefined;
+  value: { issues: BreakdownIssue[]; comparison: BreakdownComparisonRow[]; rows: PlanWeekRow[] };
+}
+
+const validateBreakdownCache = new WeakMap<InputPlanBreakdownState, CachedValidationResult>();
+
 export function validateBreakdown(plan: InputPlanBreakdownState): { issues: BreakdownIssue[]; comparison: BreakdownComparisonRow[]; rows: PlanWeekRow[] } {
+  const cached = validateBreakdownCache.get(plan);
+  if (
+    cached &&
+    cached.month === plan.month &&
+    cached.weeklyBreakdown === plan.weeklyBreakdown &&
+    cached.reference41 === plan.reference41 &&
+    cached.isGrowthLocked === plan.reference41?.isGrowthLocked
+  ) {
+    return cached.value;
+  }
   const rows = resolveWeekRows(plan);
   const issues: BreakdownIssue[] = [];
 
@@ -385,7 +411,15 @@ export function validateBreakdown(plan: InputPlanBreakdownState): { issues: Brea
     });
   }
 
-  return { issues, comparison, rows };
+  const value = { issues, comparison, rows };
+  validateBreakdownCache.set(plan, {
+    month: plan.month,
+    weeklyBreakdown: plan.weeklyBreakdown,
+    reference41: plan.reference41,
+    isGrowthLocked: plan.reference41?.isGrowthLocked,
+    value,
+  });
+  return value;
 }
 
 /** Đối chiếu bản 4.1 mới tải lên với kế hoạch hiện có trên hệ thống (đặc biệt cho kế hoạch đã duyệt hoặc đang trình duyệt). */
@@ -521,6 +555,247 @@ export function getBreakdownHealth(plan: InputPlanBreakdownState): {
     unconfirmed41: plan.reference41?.isGrowthLocked === false,
     hasPending41: Boolean(plan.pendingReference41),
   };
+}
+
+export type PlanValidityState =
+  | 'NO_PLAN'
+  | 'UNCONFIRMED_41'
+  | 'PENDING_41_DIFF'
+  | 'EMPTY_WEEKLY'
+  | 'HAS_ERRORS'
+  | 'UNEXPLAINED_MISMATCH'
+  | 'VALID_WITH_NOTE'
+  | 'VALID_MATCHED';
+
+export interface PlanValidityEvaluation {
+  state: PlanValidityState;
+  isValidForSubmit: boolean;
+  hasReference41: boolean;
+  is41Confirmed: boolean;
+  hasPending41Diff: boolean;
+  hasWeeklyBreakdown: boolean;
+  errorCount: number;
+  mismatchCount: number;
+  priceWarningCount: number;
+  hasExplanationNote: boolean;
+  badgeLabel: string;
+  badgeTone: 'positive' | 'info' | 'warning' | 'critical' | 'neutral';
+  shortDetail: string;
+  issues: BreakdownIssue[];
+  comparison: BreakdownComparisonRow[];
+}
+
+interface CachedValidityEvaluation {
+  month: string;
+  weeklyBreakdown: unknown;
+  reference41: unknown;
+  pendingReference41: unknown;
+  breakdownNote: string | undefined;
+  value: PlanValidityEvaluation;
+}
+
+const validityEvalCache = new WeakMap<InputPlanBreakdownState, CachedValidityEvaluation>();
+
+/**
+ * Đánh giá thống nhất tiến độ Plan tổng (4.1) -> Plan chi tiết (4.1.1) -> Tính hợp lệ
+ * Dùng chung cho Ma trận gian hàng (MonthlyPlanHub) và Phễu tiến độ 0->18 (StorePipelineFunnelOverview)
+ */
+export function evaluatePlanValiditySummary(plan: InputPlanBreakdownState | null): PlanValidityEvaluation {
+  if (!plan) {
+    return {
+      state: 'NO_PLAN',
+      isValidForSubmit: false,
+      hasReference41: false,
+      is41Confirmed: false,
+      hasPending41Diff: false,
+      hasWeeklyBreakdown: false,
+      errorCount: 0,
+      mismatchCount: 0,
+      priceWarningCount: 0,
+      hasExplanationNote: false,
+      badgeLabel: 'Chưa lập plan',
+      badgeTone: 'neutral',
+      shortDetail: 'Gian hàng chưa khởi tạo kế hoạch tháng.',
+      issues: [],
+      comparison: [],
+    };
+  }
+
+  const cached = validityEvalCache.get(plan);
+  if (
+    cached &&
+    cached.month === plan.month &&
+    cached.weeklyBreakdown === plan.weeklyBreakdown &&
+    cached.reference41 === plan.reference41 &&
+    cached.pendingReference41 === plan.pendingReference41 &&
+    cached.breakdownNote === plan.breakdownNote
+  ) {
+    return cached.value;
+  }
+
+  const saveAndReturn = (value: PlanValidityEvaluation): PlanValidityEvaluation => {
+    validityEvalCache.set(plan, {
+      month: plan.month,
+      weeklyBreakdown: plan.weeklyBreakdown,
+      reference41: plan.reference41,
+      pendingReference41: plan.pendingReference41,
+      breakdownNote: plan.breakdownNote,
+      value,
+    });
+    return value;
+  };
+
+  const { issues, comparison, rows } = validateBreakdown(plan);
+  const hasReference41 = Boolean(plan.reference41);
+  const is41Confirmed = plan.reference41 ? plan.reference41.isGrowthLocked !== false : true;
+  const hasPending41Diff = Boolean(plan.pendingReference41);
+  const hasWeeklyBreakdown = hasBreakdownData(rows);
+  const errorCount = issues.filter(i => i.severity === 'error').length;
+  const mismatchCount = issues.filter(i => i.needsNote).length;
+  const priceWarningCount = issues.filter(i => i.code === 'TIER_PRICE_RANGE').length;
+  const hasExplanationNote = Boolean((plan.breakdownNote || '').trim());
+
+  if (hasPending41Diff) {
+    return saveAndReturn({
+      state: 'PENDING_41_DIFF',
+      isValidForSubmit: false,
+      hasReference41,
+      is41Confirmed,
+      hasPending41Diff,
+      hasWeeklyBreakdown,
+      errorCount,
+      mismatchCount,
+      priceWarningCount,
+      hasExplanationNote,
+      badgeLabel: 'Lệch 4.1 mới',
+      badgeTone: 'critical',
+      shortDetail: 'Bản 4.1 mới tải lên thay đổi số liệu so với bản đã duyệt, chờ Quản lý mở khóa.',
+      issues,
+      comparison,
+    });
+  }
+
+  if (plan.reference41?.isGrowthLocked === false) {
+    return saveAndReturn({
+      state: 'UNCONFIRMED_41',
+      isValidForSubmit: false,
+      hasReference41,
+      is41Confirmed: false,
+      hasPending41Diff,
+      hasWeeklyBreakdown,
+      errorCount,
+      mismatchCount,
+      priceWarningCount,
+      hasExplanationNote,
+      badgeLabel: '4.1 Chưa chốt',
+      badgeTone: 'warning',
+      shortDetail: 'Dòng 4.1 đang tạm tính (chưa chốt), chỉ lưu Nháp.',
+      issues,
+      comparison,
+    });
+  }
+
+  if (!hasWeeklyBreakdown) {
+    return saveAndReturn({
+      state: 'EMPTY_WEEKLY',
+      isValidForSubmit: false,
+      hasReference41,
+      is41Confirmed,
+      hasPending41Diff,
+      hasWeeklyBreakdown: false,
+      errorCount,
+      mismatchCount,
+      priceWarningCount,
+      hasExplanationNote,
+      badgeLabel: 'Chưa chia 4.1.1',
+      badgeTone: 'warning',
+      shortDetail: 'Đã có Plan tổng 4.1 nhưng chưa nhập phân rã tuần 4.1.1.',
+      issues,
+      comparison,
+    });
+  }
+
+  if (errorCount > 0) {
+    const firstErr = issues.find(i => i.severity === 'error')?.message || `Còn ${errorCount} lỗi phân rã.`;
+    return saveAndReturn({
+      state: 'HAS_ERRORS',
+      isValidForSubmit: false,
+      hasReference41,
+      is41Confirmed,
+      hasPending41Diff,
+      hasWeeklyBreakdown: true,
+      errorCount,
+      mismatchCount,
+      priceWarningCount,
+      hasExplanationNote,
+      badgeLabel: `Lỗi 4.1.1 (${errorCount})`,
+      badgeTone: 'critical',
+      shortDetail: firstErr,
+      issues,
+      comparison,
+    });
+  }
+
+  if (mismatchCount > 0 && !hasExplanationNote) {
+    return saveAndReturn({
+      state: 'UNEXPLAINED_MISMATCH',
+      isValidForSubmit: false,
+      hasReference41,
+      is41Confirmed,
+      hasPending41Diff,
+      hasWeeklyBreakdown: true,
+      errorCount: 0,
+      mismatchCount,
+      priceWarningCount,
+      hasExplanationNote: false,
+      badgeLabel: `Lệch 4.1 (${mismatchCount} mục)`,
+      badgeTone: 'warning',
+      shortDetail: `Phân rã 4.1.1 lệch ${mismatchCount} chỉ tiêu so với 4.1 và chưa ghi giải trình.`,
+      issues,
+      comparison,
+    });
+  }
+
+  if (mismatchCount > 0 && hasExplanationNote) {
+    return saveAndReturn({
+      state: 'VALID_WITH_NOTE',
+      isValidForSubmit: true,
+      hasReference41,
+      is41Confirmed,
+      hasPending41Diff,
+      hasWeeklyBreakdown: true,
+      errorCount: 0,
+      mismatchCount,
+      priceWarningCount,
+      hasExplanationNote: true,
+      badgeLabel: `Hợp lệ (Giải trình ${mismatchCount})`,
+      badgeTone: 'info',
+      shortDetail: `Lệch ${mismatchCount} chỉ tiêu so với 4.1 nhưng đã ghi giải trình hợp lệ.`,
+      issues,
+      comparison,
+    });
+  }
+
+  return saveAndReturn({
+    state: 'VALID_MATCHED',
+    isValidForSubmit: true,
+    hasReference41,
+    is41Confirmed,
+    hasPending41Diff,
+    hasWeeklyBreakdown: true,
+    errorCount: 0,
+    mismatchCount: 0,
+    priceWarningCount,
+    hasExplanationNote,
+    badgeLabel: hasReference41 ? 'Khớp 4.1' : 'Hợp lệ · Đã chia tuần',
+    badgeTone: 'positive',
+    shortDetail:
+      priceWarningCount > 0
+        ? `Khớp 100% chỉ tiêu 4.1 (Lưu ý: ${priceWarningCount} đơn giá ngoài khung 5.6)`
+        : 'Khớp 100% chỉ tiêu Bảng 4.1 và đã phân rã tuần 4.1.1 hợp lệ.',
+    issues,
+    comparison,
+  });
 }
 
 /** Sinh các dòng items (id bắt đầu bằng 'WB-') từ bảng phân rã để các màn khác tiếp tục dùng. */

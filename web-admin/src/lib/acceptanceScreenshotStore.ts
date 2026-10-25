@@ -1,4 +1,5 @@
 import type { AcceptanceScreenshotItem } from './contracts/types';
+import { pushSharedStateToDb } from './sharedStateClient';
 
 const STORAGE_KEY = 'upbase_b2c_video_acceptance_screenshots_v1';
 export const ACCEPTANCE_SCREENSHOTS_UPDATED_EVENT = 'upbase:acceptance-screenshots-updated';
@@ -48,6 +49,7 @@ function saveAllBuckets(buckets: StoredAcceptanceScreenshotBucket[]) {
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
       .slice(0, 40);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+    pushSharedStateToDb('video-acceptance-screenshots-v1', buckets.slice(0, 100));
     window.dispatchEvent(new CustomEvent(ACCEPTANCE_SCREENSHOTS_UPDATED_EVENT));
   } catch {
     // Bỏ qua lỗi quota
