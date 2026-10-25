@@ -504,6 +504,37 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
   return (
     <div className="space-y-4">
+      <PageActions>
+        {activeSection === 'BRANDS' && (
+          <Button
+            size="sm"
+            variant="primary"
+            icon={Plus}
+            onClick={() => {
+              setEditingBrand(null);
+              setBrandAddMode('FROM_MASTER');
+              setSelectedMasterBrandId('');
+              setMasterBrandSearch('');
+              setMasterBrandCategoryFilter('ALL');
+              setHideAllocatedMasterBrands(true);
+              setBrandFormState({
+                name: '',
+                companyName: '',
+                category: 'Mỹ phẩm & Chăm sóc da',
+                bookingPicLead: staffList[0]?.name || 'Đặng Thị Yến Nhi',
+                accountPic: 'Phạm Thị Nhài',
+                contentBrandMainPic: 'Quỳnh Như',
+                planStrategyPic: 'Nguyễn Thị Ngọc Tâm',
+                keyVisualSisPic: 'Vũ Hoài Lâm',
+              });
+              setIsBrandModalOpen(true);
+            }}
+          >
+            Thêm nhãn hàng
+          </Button>
+        )}
+      </PageActions>
+
       <Tabs
         value={activeSection}
         onChange={(k) => setActiveSection(k as typeof activeSection)}
@@ -516,38 +547,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           { key: 'BRANDS', label: 'Phân công theo Brand', count: brands.length },
           { key: 'ASSIGNMENT_HISTORY', label: 'Lịch sử bàn giao', count: assignmentHistory.length },
         ]}
-        actions={
-          <PageActions>
-            {activeSection === 'BRANDS' && (
-              <Button
-                size="sm"
-                variant="primary"
-                icon={Plus}
-                onClick={() => {
-                  setEditingBrand(null);
-                  setBrandAddMode('FROM_MASTER');
-                  setSelectedMasterBrandId('');
-                  setMasterBrandSearch('');
-                  setMasterBrandCategoryFilter('ALL');
-                  setHideAllocatedMasterBrands(true);
-                  setBrandFormState({
-                    name: '',
-                    companyName: '',
-                    category: 'Mỹ phẩm & Chăm sóc da',
-                    bookingPicLead: staffList[0]?.name || 'Đặng Thị Yến Nhi',
-                    accountPic: 'Phạm Thị Nhài',
-                    contentBrandMainPic: 'Quỳnh Như',
-                    planStrategyPic: 'Nguyễn Thị Ngọc Tâm',
-                    keyVisualSisPic: 'Vũ Hoài Lâm',
-                  });
-                  setIsBrandModalOpen(true);
-                }}
-              >
-                Thêm nhãn hàng
-              </Button>
-            )}
-          </PageActions>
-        }
       />
 
       {/* ========================================================================= */}

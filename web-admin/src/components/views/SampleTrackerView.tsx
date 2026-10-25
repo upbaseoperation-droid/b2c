@@ -464,7 +464,7 @@ export default function SampleTrackerView({
     <div className="space-y-4">
       {!embedded && (
         <PageActions>
-          <Button variant="primary" icon={Plus} onClick={handleOpenCreateShipmentModal}>
+          <Button size="sm" variant="primary" icon={Plus} onClick={handleOpenCreateShipmentModal}>
             Tạo phiếu gửi mẫu
           </Button>
         </PageActions>

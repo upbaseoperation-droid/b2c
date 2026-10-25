@@ -1255,24 +1255,69 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         />
       ) : (
         <>
-          {/* Thanh chuyển đổi 2 Bảng dữ liệu KOC + Hành động trang */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="inline-flex items-center p-1 rounded-xl bg-sunken border border-line gap-1">
+          <PageActions>
+            {onReturnToSource && returnToSourceLabel && (
+              <Button size="sm" variant="secondary" icon={ArrowLeft} onClick={onReturnToSource}>
+                {returnToSourceLabel}
+              </Button>
+            )}
+            <ActionMenu
+              label="Tiện ích danh bạ KOC"
+              items={[
+                {
+                  label: 'Đồng bộ & Cấu hình UpAffiliate',
+                  icon: RefreshCw,
+                  onSelect: () => {
+                    void reloadUpaffiliateState();
+                    setUpaffiliateSyncOpen(true);
+                  },
+                },
+                {
+                  label: `Lịch sử đánh giá KOC (${channelReviews.length})`,
+                  icon: History,
+                  onSelect: () => openChannelReview(null, 'ALL_HISTORY'),
+                },
+                {
+                  label: 'Video ID & API Tuần',
+                  icon: FileSpreadsheet,
+                  onSelect: () => setVideoRegistryOpen(true),
+                },
+              ]}
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={CloudDownload}
+              onClick={() => {
+                setScraperInitialHandle('');
+                setScraperOpen(true);
+              }}
+            >
+              Lấy dữ liệu TikTok
+            </Button>
+            <Button size="sm" variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
+              Thêm KOC
+            </Button>
+          </PageActions>
+
+          {/* Thanh chuyển đổi 2 Bảng dữ liệu KOC + Trạng thái kết nối UpAffiliate trên cùng 1 hàng */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5">
+            <div className="inline-flex items-center p-0.5 rounded-lg bg-sunken border border-line gap-1">
               <button
                 type="button"
                 onClick={() => {
                   setDatasetTab('COOPERATED');
                   resetFilters();
                 }}
-                className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
                   datasetTab === 'COOPERATED'
-                    ? 'bg-surface text-ink shadow-xs border border-line'
+                    ? 'bg-surface text-ink shadow-2xs border border-line'
                     : 'text-ink-2 hover:text-ink'
                 }`}
               >
-                <Users className="w-4 h-4 text-accent" />
+                <Users className="w-3.5 h-3.5 text-accent" />
                 <span>1. Bảng KOC Cũ kèm lịch sử</span>
-                <span className="px-1.5 py-0.5 rounded-md bg-accent-soft text-accent text-2xs font-semibold tabular-nums">
+                <span className="px-1.5 py-0.5 rounded bg-accent-soft text-accent text-2xs font-semibold tabular-nums">
                   {formatNumber(cooperatedKocs.length)}
                 </span>
               </button>
@@ -1283,106 +1328,34 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                   setDatasetTab('NEW');
                   resetFilters();
                 }}
-                className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
                   datasetTab === 'NEW'
-                    ? 'bg-surface text-ink shadow-xs border border-line'
+                    ? 'bg-surface text-ink shadow-2xs border border-line'
                     : 'text-ink-2 hover:text-ink'
                 }`}
               >
-                <Sparkles className="w-4 h-4 text-positive" />
+                <Sparkles className="w-3.5 h-3.5 text-positive" />
                 <span>2. Bảng KOC Mới / Tiềm năng</span>
-                <span className="px-1.5 py-0.5 rounded-md bg-positive-soft text-positive text-2xs font-semibold tabular-nums">
+                <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive text-2xs font-semibold tabular-nums">
                   {formatNumber(newKocs.length)}
                 </span>
               </button>
             </div>
 
-            <PageActions>
-              {onReturnToSource && returnToSourceLabel && (
-                <Button variant="secondary" icon={ArrowLeft} onClick={onReturnToSource}>
-                  {returnToSourceLabel}
-                </Button>
-              )}
-              <Button
-                variant="secondary"
-                icon={RefreshCw}
-                onClick={() => {
-                  void reloadUpaffiliateState();
-                  setUpaffiliateSyncOpen(true);
-                }}
-              >
-                Đồng bộ UpAffiliate
-              </Button>
-              <Button
-                variant="secondary"
-                icon={History}
-                onClick={() => openChannelReview(null, 'ALL_HISTORY')}
-              >
-                Lịch sử đánh giá KOC ({channelReviews.length})
-              </Button>
-              <Button
-                variant="secondary"
-                icon={FileSpreadsheet}
-                onClick={() => setVideoRegistryOpen(true)}
-              >
-                Video ID &amp; API Tuần
-              </Button>
-              <Button
-                variant="secondary"
-                icon={CloudDownload}
-                onClick={() => {
-                  setScraperInitialHandle('');
-                  setScraperOpen(true);
-                }}
-              >
-                Lấy dữ liệu TikTok
-              </Button>
-              <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
-                Thêm KOC
-              </Button>
-            </PageActions>
-          </div>
-
-          {/* Thanh trạng thái kết nối & đồng bộ định kỳ với UpAffiliate */}
-          <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
               <Status tone={upaffiliateConfig.enabled ? 'positive' : 'neutral'}>
-                {upaffiliateConfig.enabled ? 'Đã kết nối UpAffiliate' : 'Tạm dừng lịch tự động'}
+                {upaffiliateConfig.enabled ? 'UpAffiliate: Đã kết nối' : 'UpAffiliate: Tạm dừng'}
               </Status>
-              <span className="text-ink-2">
-                Chu kỳ đồng bộ:{' '}
-                <strong className="text-ink">
-                  {SCHEDULE_MODE_LABELS[upaffiliateConfig.scheduleMode]}
-                </strong>
+              <span className="text-ink-3 hidden xl:inline">
+                Gần nhất: <span className="font-code text-ink-2">{formatSyncDateTime(upaffiliateConfig.lastSyncedAt)}</span>
               </span>
-              <span className="text-ink-3">·</span>
-              <span className="text-ink-2">
-                Đồng bộ gần nhất:{' '}
-                <span className="font-code text-ink">
-                  {formatSyncDateTime(upaffiliateConfig.lastSyncedAt)}
-                </span>
-              </span>
-              {upaffiliateConfig.nextScheduledSyncAt && upaffiliateConfig.enabled && (
-                <>
-                  <span className="text-ink-3">·</span>
-                  <span className="text-ink-2">
-                    Phiên kế tiếp:{' '}
-                    <span className="font-code text-ink">
-                      {formatSyncDateTime(upaffiliateConfig.nextScheduledSyncAt)}
-                    </span>
-                  </span>
-                </>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
               {stagingPendingCount > 0 && (
                 <Button
                   size="sm"
                   variant="secondary"
                   onClick={() => void openStagingQueueModal()}
                 >
-                  Bảng tạm chờ đẩy ({stagingPendingCount})
+                  Bảng tạm ({stagingPendingCount})
                 </Button>
               )}
               <Button
@@ -1402,7 +1375,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                   setUpaffiliateSyncOpen(true);
                 }}
               >
-                Cấu hình &amp; Nhật ký
+                Cấu hình
               </Button>
             </div>
           </div>

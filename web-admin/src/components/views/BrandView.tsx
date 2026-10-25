@@ -479,8 +479,8 @@ export const BrandView: React.FC<BrandViewProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       <PageActions>
-        <Button variant="primary" icon={Plus} onClick={() => handleOpenCreateModal()}>
-          Khởi tạo Chiến dịch (Campaign)
+        <Button size="sm" variant="primary" icon={Plus} onClick={() => handleOpenCreateModal()}>
+          Tạo chiến dịch
         </Button>
       </PageActions>
 

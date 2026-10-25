@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
-import { Button, ConfirmDialog, Field, Input, Modal, PageActions, Panel, Select, Status, Tabs, Textarea } from '../ui';
+import { ActionMenu, Button, ConfirmDialog, Field, Input, Modal, PageActions, Panel, Select, Status, Tabs, Textarea } from '../ui';
 import { ContentPlanBoard } from './ContentPlanBoard';
 import { PlanSelfChannelBoard } from './PlanSelfChannelBoard';
 import { BrandMonthlyPlanForm } from './BrandMonthlyPlanForm';
@@ -637,14 +637,13 @@ export const ContentView: React.FC<ContentViewProps> = ({
   return (
     <div className="space-y-4">
       <PageActions>
-        <Button
-          size="sm"
-          variant="secondary"
-          icon={FileText}
-          onClick={() => setIsScriptReportOpen(true)}
-        >
-          Rà soát kịch bản & từ cấm
-        </Button>
+        <ActionMenu
+          label="Tiện ích kịch bản"
+          items={[
+            { label: 'Rà soát kịch bản & từ cấm', icon: FileText, onSelect: () => setIsScriptReportOpen(true) },
+            { label: 'Gợi ý & Soát xét', icon: Lightbulb, onSelect: () => setIsCopilotOpen(true) },
+          ]}
+        />
         <Button
           size="sm"
           variant="secondary"
@@ -655,14 +654,6 @@ export const ContentView: React.FC<ContentViewProps> = ({
           }}
         >
           Nghiệm thu video
-        </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          icon={Lightbulb}
-          onClick={() => setIsCopilotOpen(true)}
-        >
-          Gợi ý & Soát xét
         </Button>
         <Button
           size="sm"

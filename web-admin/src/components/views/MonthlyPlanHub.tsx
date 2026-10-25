@@ -1561,49 +1561,31 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   return (
     <div className="space-y-6">
       <PageActions>
-        <div className="hidden md:block">{syncBadge}</div>
-        <div className="hidden sm:flex items-center gap-1.5">
-          {onPlanOrderUploaded && currentUser && isStaffGlobalAdminOrManager(currentUser) && (
-            <Button variant="primary" size="md" icon={Upload} onClick={() => setIsPlanOrderUploadOpen(true)}>
-              Tải Plan order tổng
-            </Button>
-          )}
-          <Button variant="secondary" size="md" icon={Database} onClick={() => setIsLarkbaseModalOpen(true)}>
-            Đồng bộ Larkbase
+        <div className="hidden xl:block">{syncBadge}</div>
+        <ActionMenu
+          label="Tác vụ kế hoạch"
+          items={[
+            ...(onPlanOrderUploaded && currentUser && isStaffGlobalAdminOrManager(currentUser)
+              ? [{ label: 'Tải Plan order tổng (4.1)', icon: Upload, onSelect: () => setIsPlanOrderUploadOpen(true) }]
+              : []),
+            { label: 'Đồng bộ Larkbase', icon: Database, onSelect: () => setIsLarkbaseModalOpen(true) },
+            ...(onOpenPlanReport
+              ? [{ label: 'Báo cáo thẩm định kế hoạch', icon: FileText, onSelect: onOpenPlanReport }]
+              : []),
+          ]}
+        />
+        {onPlanOrderUploaded && currentUser && isStaffGlobalAdminOrManager(currentUser) && (
+          <Button variant="secondary" size="sm" icon={Upload} onClick={() => setIsPlanOrderUploadOpen(true)} className="hidden md:inline-flex">
+            Tải Plan 4.1
           </Button>
-          {onOpenPlanReport && (
-            <Button
-              variant="secondary"
-              size="md"
-              icon={FileText}
-              onClick={onOpenPlanReport}
-            >
-              Báo cáo thẩm định kế hoạch
-            </Button>
-          )}
-        </div>
-        <div className="sm:hidden">
-          <ActionMenu
-            label="Tác vụ kế hoạch"
-            items={[
-              ...(onPlanOrderUploaded && currentUser && isStaffGlobalAdminOrManager(currentUser)
-                ? [{ label: 'Tải Plan order tổng (4.1)', icon: Upload, onSelect: () => setIsPlanOrderUploadOpen(true) }]
-                : []),
-              { label: 'Đồng bộ Larkbase', icon: Database, onSelect: () => setIsLarkbaseModalOpen(true) },
-              ...(onOpenPlanReport
-                ? [{ label: 'Báo cáo thẩm định kế hoạch', icon: FileText, onSelect: onOpenPlanReport }]
-                : []),
-            ]}
-          />
-        </div>
+        )}
         <Button
           variant="primary"
-          size="md"
+          size="sm"
           icon={Plus}
           onClick={handleOpenCreateModal}
         >
-          <span className="sm:hidden">Tạo plan</span>
-          <span className="hidden sm:inline">Tạo kế hoạch</span>
+          Tạo kế hoạch
         </Button>
       </PageActions>
 

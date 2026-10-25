@@ -71,8 +71,8 @@ interface CentralizedRbacHubViewProps {
   brands?: BrandDetail[];
   kocs?: KocItem[];
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
-  onImpersonateUser?: (user: UserProfile) => void;
-  onImpersonatePartner?: (partnerUser: UserProfile) => void;
+
+
 }
 
 type MainTab = 'roles' | 'matrix' | 'internal' | 'gatekeeper' | 'third-party';
@@ -153,8 +153,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   brands = INITIAL_BRANDS,
   kocs = INITIAL_KOCS,
   onNotify,
-  onImpersonateUser,
-  onImpersonatePartner,
 }) => {
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('roles');
   const logCounterRef = useRef(100);
@@ -1131,30 +1129,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     </Select>
                   </div>
 
-                  {onImpersonatePartner && (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      icon={Eye}
-                      onClick={() => {
-                        const sampleStaff = roleAssignedStaff[0];
-                        onImpersonatePartner({
-                          id: sampleStaff?.id || `preview-role-${selectedRoleKey.toLowerCase()}`,
-                          name: sampleStaff?.name || `Xem thử: ${selectedRoleDef.name}`,
-                          email: sampleStaff?.email || `${selectedRoleKey.toLowerCase()}@upbase.vn`,
-                          role: selectedRoleKey,
-                          roleTitle: selectedRoleDef.name,
-                          avatar: sampleStaff?.avatar || selectedRoleKey.slice(0, 2),
-                          departmentScope: selectedRoleDef.departmentScope || 'MARKETING_B2C',
-                          teamName: sampleStaff?.department || 'Khối B2C',
-                          canLogin: true,
-                        });
-                      }}
-                    >
-                      Xem thử Role
-                    </Button>
-                  )}
-
                   <Button
                     variant="secondary"
                     size="sm"
@@ -1721,30 +1695,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
                         <td className="py-2.5 px-4 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {onImpersonateUser && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  onImpersonateUser({
-                                    id: staff.id,
-                                    name: staff.name,
-                                    email: staff.email,
-                                    role: staff.role,
-                                    roleTitle: staff.roleTitle,
-                                    avatar: staff.avatar,
-                                    staffCode: staff.staffCode,
-                                    departmentScope: staff.departmentScope,
-                                    departmentName: staff.department,
-                                    teamName: staff.team,
-                                    canLogin: true,
-                                  })
-                                }
-                                className="p-1.5 rounded-md text-ink-3 hover:text-accent hover:bg-accent-soft transition"
-                                title="Xem thử giao diện của nhân sự này"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
-                            )}
                             <button
                               type="button"
                               onClick={() => handleOpenEditStaff(staff)}
@@ -2048,7 +1998,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
           brands={brands}
           kocs={kocs}
           onNotify={onNotify}
-          onImpersonatePartner={onImpersonatePartner}
+
         />
       )}
 

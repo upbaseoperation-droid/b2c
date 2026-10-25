@@ -26,7 +26,6 @@ interface PlanApprovalStepperProps {
   plan: InputPlanBreakdownState;
   currentRole: PlanDiscussionRole;
   currentUser?: UserProfile;
-  onRoleChange?: (role: PlanDiscussionRole) => void;
   onStatusChange: (newStatus: MonthlyPlanStatus, logMessage: string, note?: string) => void;
   onUpdatePlan?: (updated: Partial<InputPlanBreakdownState>) => void;
   onNotify?: (msg: string) => void;
@@ -57,7 +56,6 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
   plan,
   currentRole,
   currentUser,
-  onRoleChange,
   onStatusChange,
   onUpdatePlan,
   onNotify,
@@ -405,20 +403,6 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
 
         <div className="flex items-center gap-1.5 flex-wrap">
           {headerExtra}
-          {onRoleChange && (
-            <div className="inline-flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200 text-2xs">
-              <UserCheck className="w-3 h-3 text-slate-400" />
-              <select
-                value={currentRole}
-                onChange={(e) => onRoleChange(e.target.value as PlanDiscussionRole)}
-                className="font-semibold text-slate-800 bg-transparent focus:outline-none cursor-pointer"
-                title="Đổi vai trò duyệt thử"
-              >
-                <option value="BOOKING">Vai trò: Marketing B2C</option>
-                <option value="LEAD">Vai trò: Giám đốc MKT</option>
-              </select>
-            </div>
-          )}
           {!isLocked && canLeaderAct && (
             <button
               type="button"

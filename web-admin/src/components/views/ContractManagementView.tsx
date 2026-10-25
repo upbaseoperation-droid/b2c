@@ -300,15 +300,15 @@ export function ContractManagementView({
       {(screen.mode === 'list' || screen.mode === 'catalog') && (
         <>
           <PageActions>
-            <Button variant="secondary" icon={FileText} onClick={() => setIsContractReportOpen(true)}>
+            <Button size="sm" variant="secondary" icon={FileText} onClick={() => setIsContractReportOpen(true)}>
               Kiểm tra điều khoản & thuế
             </Button>
             {canCreate && (
               <>
-                <Button variant="secondary" icon={Upload} onClick={() => setScreen({ mode: 'form', init: { isKocOwnForm: true } })}>
-                  Tải hợp đồng KOC (.docx)
+                <Button size="sm" variant="secondary" icon={Upload} onClick={() => setScreen({ mode: 'form', init: { isKocOwnForm: true } })}>
+                  Tải hợp đồng (.docx)
                 </Button>
-                <Button variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>
+                <Button size="sm" variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>
                   Tạo hợp đồng
                 </Button>
               </>

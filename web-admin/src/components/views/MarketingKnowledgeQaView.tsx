@@ -631,6 +631,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
     <div className="space-y-6">
       <PageActions>
         <Button
+          size="sm"
           variant="primary"
           icon={Plus}
           onClick={() => setIsAddArticleModalOpen(true)}

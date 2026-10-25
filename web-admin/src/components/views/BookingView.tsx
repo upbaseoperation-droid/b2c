@@ -2237,7 +2237,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     <div className="space-y-6">
       {onOpenQuickBook && (
         <PageActions>
-          <Button variant="primary" icon={Plus} onClick={onOpenQuickBook}>Tạo booking</Button>
+          <Button size="sm" variant="primary" icon={Plus} onClick={onOpenQuickBook}>Tạo booking</Button>
         </PageActions>
       )}
 

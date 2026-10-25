@@ -1455,14 +1455,13 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 { key: 'DISCUSSION', label: 'Trao đổi' },
               ]
             : [
-                { key: 'PLAN_WORKFLOW', label: 'Quy trình & Nghiệm thu theo Kế hoạch' },
+                { key: 'PLAN_WORKFLOW', label: 'Quy trình & Nghiệm thu' },
                 { key: 'OVERVIEW', label: 'Tổng quan & Trụ cột' },
-                { key: 'PLAN_FINAL_RBAC', label: 'Chỉ tiêu Plan Final & Phân quyền', count: approvedPlanFinalsForSelfChannel.length },
+                { key: 'PLAN_FINAL_RBAC', label: 'Chỉ tiêu & Phân quyền', count: approvedPlanFinalsForSelfChannel.length },
                 { key: 'ACTIVE_JOBS', label: 'Điều phối công việc', count: tasks.length },
-                { key: 'APPROVALS', label: 'Chờ duyệt & nghiệm thu', count: stats.pendingApprovalsCount > 0 ? stats.pendingApprovalsCount : undefined },
+                { key: 'APPROVALS', label: 'Chờ duyệt', count: stats.pendingApprovalsCount > 0 ? stats.pendingApprovalsCount : undefined },
                 { key: 'CONTRIBUTORS', label: 'Danh bạ & Tồn mẫu VJ', count: contributors.length },
                 { key: 'HISTORY', label: 'Quyết toán CTV' },
-                { key: 'CTV_PORTAL', label: 'Cổng CTV (Giả lập)' },
                 { key: 'DISCUSSION', label: 'Trao đổi' },
               ]) as Array<TabItem<'PLAN_WORKFLOW' | 'OVERVIEW' | 'PLAN_FINAL_RBAC' | 'CTV_PORTAL' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'>>
         }
@@ -2506,46 +2505,8 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 <option value="SHIPPING">Đang giao mẫu</option>
                 <option value="DELIVERED">VJ đã nhận mẫu</option>
               </select>
-
-              {!isCtvPartner && (
-                <button
-                  type="button"
-                  onClick={() => setIsCtvSimulatorView(!isCtvSimulatorView)}
-                  className={`px-3 py-1.5 rounded-lg text-2xs font-semibold transition ${
-                    isCtvSimulatorView
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  {isCtvSimulatorView ? 'Đang bật góc nhìn VJ nộp bài' : 'Mô phỏng góc nhìn VJ'}
-                </button>
-              )}
             </div>
           </div>
-
-          {/* Simulator switcher when enabled */}
-          {(isCtvSimulatorView || isCtvPartner) && (
-            <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-blue-900">
-                  Cổng làm việc của Cộng tác viên / VJ (Nhận việc, Nộp kịch bản, Gắn link video Google Drive):
-                </span>
-              </div>
-              {!isCtvPartner && (
-                <select
-                  value={simulatedCtvId}
-                  onChange={(e) => setSimulatedCtvId(e.target.value)}
-                  className="px-2.5 py-1 rounded-lg border border-blue-200 bg-white text-slate-800 text-xs font-semibold"
-                >
-                  {contributors.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.code || c.id} • Sẵn {(c.onHandProducts || []).length} SKU tại nhà)
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-          )}
 
           {/* Tasks List */}
           <div className="space-y-3">
@@ -3195,22 +3156,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  {!isCtvPartner && (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
-                      <span className="text-slate-500 text-2xs">Đang xem Cổng của CTV:</span>
-                      <select
-                        value={portalCtv.id}
-                        onChange={(e) => setSimulatedCtvId(e.target.value)}
-                        className="font-semibold text-slate-900 bg-transparent focus:outline-none cursor-pointer"
-                      >
-                        {contributors.map(c => (
-                          <option key={c.id} value={c.id}>
-                            {c.name} ({c.code || c.id})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
                   {onOpenCtvProfile && (
                     <button
                       type="button"

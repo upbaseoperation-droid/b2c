@@ -1150,38 +1150,48 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         return (
           <div className="space-y-6">
             <PageActions>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setLarkRawText('');
-                    setIsLarkSyncModalOpen(true);
-                  }}
-                >
-                  Đồng bộ Lark Base
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    if (onNavigateToBrandProfile) onNavigateToBrandProfile('ALL');
-                    else onNotify?.('Chuyển sang Màn hình Hồ sơ thương hiệu', 'info');
-                  }}
-                >
-                  Hồ sơ thương hiệu
-                </Button>
-                <Button
-                  variant="primary"
-                  icon={Plus}
-                  onClick={() => {
-                    setQuickBrandName('');
-                    setQuickBrandCode('');
-                    setQuickBrandCategory(brandCategories[0] || 'Mỹ phẩm & Làm đẹp');
-                    setIsQuickBrandModalOpen(true);
-                  }}
-                >
-                  Thêm thương hiệu
-                </Button>
-              </div>
+              <ActionMenu
+                label="Tác vụ thương hiệu"
+                items={[
+                  {
+                    label: 'Đồng bộ Lark Base',
+                    onSelect: () => {
+                      setLarkRawText('');
+                      setIsLarkSyncModalOpen(true);
+                    },
+                  },
+                  {
+                    label: 'Hồ sơ thương hiệu',
+                    onSelect: () => {
+                      if (onNavigateToBrandProfile) onNavigateToBrandProfile('ALL');
+                      else onNotify?.('Chuyển sang Màn hình Hồ sơ thương hiệu', 'info');
+                    },
+                  },
+                ]}
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setLarkRawText('');
+                  setIsLarkSyncModalOpen(true);
+                }}
+              >
+                Đồng bộ Lark Base
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                icon={Plus}
+                onClick={() => {
+                  setQuickBrandName('');
+                  setQuickBrandCode('');
+                  setQuickBrandCategory(brandCategories[0] || 'Mỹ phẩm & Làm đẹp');
+                  setIsQuickBrandModalOpen(true);
+                }}
+              >
+                Thêm thương hiệu
+              </Button>
             </PageActions>
 
             <Panel flush>
@@ -1344,6 +1354,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         <div className="space-y-4">
           <PageActions>
             <Button
+              size="sm"
               variant="primary"
               icon={Plus}
               onClick={() => {
@@ -1626,6 +1637,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         <div className="space-y-4">
           <PageActions>
             <Button
+              size="sm"
               variant="primary"
               icon={Plus}
               onClick={() => {

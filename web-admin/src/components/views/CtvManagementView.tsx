@@ -502,7 +502,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
   return (
     <div ref={rootRef} className="space-y-4">
       <PageActions>
-        <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
+        <Button size="sm" variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
           Thêm CTV
         </Button>
       </PageActions>

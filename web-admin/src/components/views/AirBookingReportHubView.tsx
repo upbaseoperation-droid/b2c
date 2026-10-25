@@ -462,8 +462,27 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 bg-slate-50 min-h-screen text-slate-800">
-      {/* 1. Thanh hành động & Điều hướng Phân hệ */}
+      {/* 1. Thanh hành động trang */}
       <PageActions>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={Download}
+          onClick={handleExportCsv}
+          title="Xuất file đối soát Excel (.csv)"
+        >
+          Xuất file
+        </Button>
+
+        {activeSubTab === 'PLAN_STUDIO' && (
+          <Button variant="primary" size="sm" icon={Plus} onClick={handleOpenCreatePlan}>
+            Tạo kế hoạch
+          </Button>
+        )}
+      </PageActions>
+
+      {/* 2. Thanh Chuyển Phân hệ & Bộ lọc Đa chiều */}
+      <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center gap-3">
         <Segmented<'REPORT' | 'PLAN_STUDIO'>
           value={activeSubTab}
           onChange={setActiveSubTab}
@@ -472,26 +491,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
             { key: 'PLAN_STUDIO', label: 'Kế hoạch Gian hàng theo KL' },
           ]}
         />
-
-        {activeSubTab === 'PLAN_STUDIO' && (
-          <Button variant="primary" size="md" icon={Plus} onClick={handleOpenCreatePlan}>
-            Tạo kế hoạch gian hàng
-          </Button>
-        )}
-
-        <Button
-          variant="secondary"
-          size="md"
-          icon={Download}
-          onClick={handleExportCsv}
-          title="Xuất file đối soát Excel (.csv)"
-        >
-          Xuất file
-        </Button>
-      </PageActions>
-
-      {/* 2. Thanh Bộ lọc Đa chiều */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-3">
+        <span className="text-slate-200 hidden sm:inline">|</span>
         {/* Lọc Tháng */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-slate-500">Tháng:</span>

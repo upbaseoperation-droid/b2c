@@ -478,10 +478,10 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
     <div className="space-y-4 animate-in fade-in duration-150">
       {!embedded && (
         <PageActions>
-          <Button variant="secondary" icon={Lightbulb} onClick={handleOpenAiModal}>
+          <Button size="sm" variant="secondary" icon={Lightbulb} onClick={handleOpenAiModal}>
             Gợi ý góc tiếp cận
           </Button>
-          <Button variant="primary" icon={Plus} onClick={() => handleOpenCreateModal()}>
+          <Button size="sm" variant="primary" icon={Plus} onClick={() => handleOpenCreateModal()}>
             Thêm góc tiếp cận
           </Button>
         </PageActions>

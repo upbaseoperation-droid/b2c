@@ -39,9 +39,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   userScopeSummary,
 }) => {
   return (
-    <header className="app-header sticky top-0 z-20 min-h-12 bg-surface border-b border-line px-3 sm:px-5 lg:px-6 py-1.5 flex flex-wrap items-center justify-between gap-2 shrink-0">
+    <header className="app-header sticky top-0 z-20 min-h-12 bg-surface border-b border-line px-3 sm:px-5 lg:px-6 py-1.5 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2 shrink-0">
       {/* Khối trái: Nút menu, Tiêu đề trang, Tabs nhóm và Điều hướng ngữ cảnh trên cùng 1 hàng */}
-      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 max-w-full flex-1">
+      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {onToggleMobileSidebar && (
           <button
             type="button"
@@ -78,7 +78,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
         <h1 className="text-sm sm:text-base font-semibold text-ink leading-6 tracking-tight whitespace-nowrap shrink-0">{title}</h1>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden empty:hidden">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 shrink-0 empty:hidden">
           {groupTabs && groupTabs.length > 1 && activeTab && onNavigateTab && (
             <Segmented<TabKey>
               items={groupTabs}
@@ -90,9 +90,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         </div>
       </div>
 
-      {/* Khối phải: Phạm vi phân quyền & Thao tác trang */}
+      {/* Khối phải: Phạm vi phân quyền (khi giới hạn phạm vi) & Thao tác trang */}
       <div className="flex items-center justify-end gap-1.5 shrink-0 ml-auto empty:hidden">
-        {activeTab !== 'tiktok-crawler' && activeTab !== 'input-plan' && (
+        {activeTab !== 'tiktok-crawler' && activeTab !== 'input-plan' && (!groupTabs || groupTabs.length <= 1) && (
           currentUser.role === 'BRAND_PARTNER' ? (
             <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-positive-soft text-positive text-xs font-medium border border-positive/20 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-positive shrink-0" aria-hidden="true" />
@@ -108,13 +108,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               <Building2 className="w-3.5 h-3.5 text-accent shrink-0" />
               <span className="truncate max-w-[180px]">{userScopeSummary.scopeBadgeText}</span>
             </div>
-          ) : (
-            <div className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-sunken text-ink-2 text-xs font-medium border border-line shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-positive shrink-0" aria-hidden="true" />
-              <Building2 className="w-3.5 h-3.5 text-ink-3 shrink-0" />
-              <span>Toàn hệ thống (69 gian hàng)</span>
-            </div>
-          )
+          ) : null
         )}
 
         <PageActionsSlot />

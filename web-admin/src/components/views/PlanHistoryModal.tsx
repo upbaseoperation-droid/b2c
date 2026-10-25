@@ -353,7 +353,6 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
               plan={plan}
               currentRole={currentRole}
               currentUser={currentUser}
-              onRoleChange={currentUser?.role === 'ADMIN' ? setCurrentRole : undefined}
               onStatusChange={(newStatus, log, note) => onStatusChange(plan.id, newStatus, log, note)}
               onUpdatePlan={onUpdatePlan}
               onNotify={onNotify}

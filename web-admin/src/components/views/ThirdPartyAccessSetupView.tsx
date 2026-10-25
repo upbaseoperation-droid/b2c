@@ -41,7 +41,6 @@ interface ThirdPartyAccessSetupViewProps {
   brands?: BrandDetail[];
   kocs?: KocItem[];
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
-  onImpersonatePartner?: (partnerUser: UserProfile) => void;
 }
 
 type PartnerTypeFilter = 'ALL' | 'BRAND' | 'KOC' | 'CTV';
@@ -53,7 +52,6 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
   brands = INITIAL_BRANDS,
   kocs = INITIAL_KOCS,
   onNotify,
-  onImpersonatePartner,
 }) => {
   const [accounts, setAccounts] = useState<ThirdPartyAccessAccount[]>(() => {
     if (typeof window === 'undefined') return INITIAL_THIRD_PARTY_ACCOUNTS;
@@ -263,19 +261,6 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
     );
   };
 
-  // Impersonate / Test View
-  const handleImpersonate = (acc: ThirdPartyAccessAccount) => {
-    if (acc.status === 'SUSPENDED') {
-      onNotify?.('Tài khoản này đang bị tạm khóa, không thể đăng nhập thử!', 'warning');
-      return;
-    }
-    const partnerUserProfile = convertPartnerAccountToUserProfile(acc);
-    if (onImpersonatePartner) {
-      onImpersonatePartner(partnerUserProfile);
-      onNotify?.(`Đang chuyển sang giao diện của ${acc.displayName} (${acc.partnerType})...`, 'info');
-    }
-  };
-
   const columns: Column<ThirdPartyAccessAccount>[] = [
     {
       key: 'account',
@@ -399,16 +384,6 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
       align: 'right',
       render: (acc) => (
         <div className="flex items-center justify-end gap-1">
-          {onImpersonatePartner && (
-            <button
-              type="button"
-              onClick={() => handleImpersonate(acc)}
-              className="p-1.5 rounded-md text-ink-3 hover:text-accent hover:bg-accent-soft transition"
-              title="Xem thử giao diện đối tác"
-            >
-              <Eye className="w-3.5 h-3.5" />
-            </button>
-          )}
           <button
             type="button"
             onClick={() => handleOpenEditModal(acc)}

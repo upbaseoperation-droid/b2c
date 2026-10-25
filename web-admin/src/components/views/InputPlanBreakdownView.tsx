@@ -3128,7 +3128,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   plan={planState}
                   currentRole={currentRole}
                   currentUser={currentUser}
-                  onRoleChange={currentUser?.role === 'ADMIN' ? setCurrentRole : undefined}
                   onStatusChange={(newStatus, log, note) => handleStatusChangeForPlan(planState.id, newStatus, log, note)}
                   onUpdatePlan={(upd) => {
                     setPlanState(prev => ({ ...prev, ...upd }));

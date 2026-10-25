@@ -1125,18 +1125,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     <span>Xem tại Danh bạ KOC</span>
                   </button>
                 )}
-                <span className="text-2xs text-slate-500 hidden sm:inline">Chuyển KOC:</span>
-                <select
-                  value={selectedKocId}
-                  onChange={(e) => setSelectedKocId(e.target.value)}
-                  className="bg-white border border-blue-200 text-blue-900 font-semibold text-xs rounded-lg px-2 py-1 focus:outline-none cursor-pointer"
-                >
-                  {filteredKocs.map(k => (
-                    <option key={k.id} value={k.id}>
-                      {k.stageName} ({k.salaryGrade} · {k.tierLabel || k.tier})
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
           )}
@@ -1195,30 +1183,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   <FileScan className="w-3.5 h-3.5 text-blue-600" />
                   <span>Đọc ảnh CCCD</span>
                 </button>
-
-                {onNavigateToBrandHub && (
-                  <button
-                    type="button"
-                    onClick={onNavigateToBrandHub}
-                    className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition"
-                    title="Chuyển sang Cổng Brand"
-                  >
-                    <Building className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Cổng Brand</span>
-                  </button>
-                )}
-
-                {onNavigateToCtvHub && (
-                  <button
-                    type="button"
-                    onClick={onNavigateToCtvHub}
-                    className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition"
-                    title="Chuyển sang Kênh CTV"
-                  >
-                    <Video className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Kênh CTV</span>
-                  </button>
-                )}
               </div>
             </div>
           </div>

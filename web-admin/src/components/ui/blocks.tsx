@@ -862,7 +862,7 @@ const noopSubscribe = () => () => {};
 
 /** Chỗ đặt nút chính của trang, nằm cuối thanh trên. Chỉ khung app (TopHeader) đặt. */
 export function PageActionsSlot() {
-  return <div id={PAGE_ACTIONS_SLOT} className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 max-w-full shrink-0 empty:hidden" />;
+  return <div id={PAGE_ACTIONS_SLOT} className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-1.5 sm:gap-2 max-w-full shrink-0 empty:hidden" />;
 }
 
 /** Chỗ đặt điều hướng phụ / bộ chọn ngữ cảnh cạnh tiêu đề trang. Chỉ khung app (TopHeader) đặt. */

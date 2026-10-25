@@ -3528,59 +3528,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         onChange={(t) => setActiveTab(t)}
       />
 
-      {/* Nút chính bên trái, menu tiện ích ⋯ ở ngoài cùng bên phải */}
       <PageActions>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={Users}
-            onClick={() => setPendingStagingModalOpen(true)}
-          >
-            <span>Bảng Tạm KOC</span>
-            {stagingKocs.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-accent text-white text-2xs font-semibold tabular-nums">
-                {stagingKocs.length}
-              </span>
-            )}
-          </Button>
-          <Button
-            size="sm"
-            variant="primary"
-            icon={Target}
-            onClick={() => {
-              const defaultHandles =
-                activeTab === 'COMPETITOR_KOCS' && compResults.length > 0
-                  ? compResults.slice(0, 5).map((r) => `@${r.handle}`)
-                  : activeTab === 'HASHTAG_DISCOVERY' && tagResults.length > 0
-                    ? tagResults.slice(0, 5).map((r) => `@${r.handle}`)
-                    : activeTab === 'CHANNEL_AND_VIDEO_TOOLS' && trendingCreators.length > 0
-                      ? trendingCreators.slice(0, 5).map((r) => `@${r.handle}`)
-                      : [];
-              openBriefMatcherModal(defaultHandles, competitorInput || hashtagInput);
-            }}
-          >
-            <span>Phân tích Kênh &amp; Khớp Brief</span>
-            {runningBriefJobsCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/20 text-white text-2xs font-semibold tabular-nums">
-                {runningBriefJobsCount}
-              </span>
-            )}
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={History}
-            onClick={() => openChannelReviewModal(null, 'ALL_HISTORY')}
-          >
-            <span>Lịch sử đánh giá KOC{channelReviews.length > 0 ? ` (${channelReviews.length})` : ''}</span>
-          </Button>
-        </div>
         <ActionMenu
           label="Tiện ích crawler"
           items={[
             {
-              label: 'Lịch sử đánh giá kênh KOC',
+              label: `Lịch sử đánh giá KOC${channelReviews.length > 0 ? ` (${channelReviews.length})` : ''}`,
               icon: History,
               onSelect: () => openChannelReviewModal(null, 'ALL_HISTORY'),
             },
@@ -3604,6 +3557,42 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             },
           ]}
         />
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={Users}
+          onClick={() => setPendingStagingModalOpen(true)}
+        >
+          <span>Bảng Tạm KOC</span>
+          {stagingKocs.length > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-accent text-white text-2xs font-semibold tabular-nums">
+              {stagingKocs.length}
+            </span>
+          )}
+        </Button>
+        <Button
+          size="sm"
+          variant="primary"
+          icon={Target}
+          onClick={() => {
+            const defaultHandles =
+              activeTab === 'COMPETITOR_KOCS' && compResults.length > 0
+                ? compResults.slice(0, 5).map((r) => `@${r.handle}`)
+                : activeTab === 'HASHTAG_DISCOVERY' && tagResults.length > 0
+                  ? tagResults.slice(0, 5).map((r) => `@${r.handle}`)
+                  : activeTab === 'CHANNEL_AND_VIDEO_TOOLS' && trendingCreators.length > 0
+                    ? trendingCreators.slice(0, 5).map((r) => `@${r.handle}`)
+                    : [];
+            openBriefMatcherModal(defaultHandles, competitorInput || hashtagInput);
+          }}
+        >
+          <span>Phân tích &amp; Khớp Brief</span>
+          {runningBriefJobsCount > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/20 text-white text-2xs font-semibold tabular-nums">
+              {runningBriefJobsCount}
+            </span>
+          )}
+        </Button>
       </PageActions>
 
       {/* Thanh theo dõi trực tiếp các tiến trình Phân tích Kênh & Khớp Brief đang chạy ngầm */}
