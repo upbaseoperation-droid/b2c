@@ -179,7 +179,7 @@ interface BookingViewProps {
   kocs?: KocItem[];
   currentUser?: UserProfile;
   onOpenQuickBookWithKoc: (koc: KocItem) => void;
-  onSelectDealForContract?: (deal: BookingDealItem) => void;
+  onSelectDealForContract?: (deal: BookingDealItem, document?: 'HDNT' | 'SOW' | 'BBNT') => void;
   onUpdateDeal?: (updatedDeal: BookingDealItem) => void;
   onKocCreated?: (newKoc: KocItem) => void;
   onKocUpdated?: (updatedKoc: KocItem, message?: string) => void;
@@ -1390,7 +1390,14 @@ export const BookingView: React.FC<BookingViewProps> = ({
               <Button size="sm" variant="ghost" icon={Truck} onClick={() => handleOpenSampleModal(d)} title="Vận đơn hàng mẫu (Bước 3)" />
               <Button size="sm" variant="ghost" icon={Share2} onClick={() => handleOpenGrowthHandoff(d)} title="Bàn giao mã Spark Ads (Bước 4)" />
               <Button size="sm" variant="ghost" icon={Edit3} onClick={() => handleOpenEditModal(d)} title="Chỉnh sửa deal" />
-              <Button size="sm" variant="ghost" onClick={() => onSelectDealForContract?.(d)} title="Xem hợp đồng">HĐ</Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onSelectDealForContract?.(d, d.tiktokVideoUrl ? undefined : 'SOW')}
+                title="Ký Phụ lục SOW / Xem hợp đồng của Deal"
+              >
+                {d.contractAppendixStatus === 'ĐÃ_KÝ' ? 'HĐ' : 'Ký SOW'}
+              </Button>
               {(d.totalValue || 0) > 0 && (
                 <Button
                   size="sm"
@@ -2025,9 +2032,10 @@ export const BookingView: React.FC<BookingViewProps> = ({
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={() => onSelectDealForContract?.(d)}
+                                    onClick={() => onSelectDealForContract?.(d, d.tiktokVideoUrl ? undefined : 'SOW')}
+                                    title="Ký Phụ lục SOW / Xem hợp đồng của Deal"
                                   >
-                                    HĐ
+                                    {d.contractAppendixStatus === 'ĐÃ_KÝ' ? 'HĐ' : 'Ký SOW'}
                                   </Button>
                                   {(d.totalValue || 0) > 0 && (
                                     <Button

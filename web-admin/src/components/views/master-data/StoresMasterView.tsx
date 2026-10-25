@@ -31,7 +31,7 @@ import {
   BrandAvatar
 } from '../../ui';
 import type { Column } from '../../ui';
-import { StorePortfolioItem, BrandDetail, BookingDealItem } from '../../../lib/types';
+import { StorePortfolioItem, BrandDetail, BookingDealItem, resolveStoreStaffAssignment } from '../../../lib/types';
 import { StaffSearchSelect } from './StaffSearchSelect';
 import { StoreDetailModal } from './StoreDetailModal';
 import { StoreHandoverModal } from './StoreHandoverModal';
@@ -383,6 +383,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   };
 
   const handleOpenEdit = (s: StorePortfolioItem) => {
+    const assign = resolveStoreStaffAssignment(s, '');
     setEditingStore(s);
     setForm({
       storeName: s.storeName,
@@ -391,7 +392,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       platform: s.platform,
       servicePackage: s.servicePackage || 'E2E-S',
       accountOwnerName: s.accountOwnerName || '',
-      b2cOwnerName: s.b2cOwnerName || (s.b2cOwners ? s.b2cOwners.join(', ') : ''),
+      b2cOwnerName: assign.primaryPic,
       bookingLeader: s.bookingLeader || '',
       hasBookingLeader: !!(s.hasBookingLeader && s.bookingLeader),
       contentPic: s.contentPic || '',
@@ -426,6 +427,13 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     const accStatus = opStatus === 'Live' ? 'ACTIVE' : (opStatus === 'Off' ? 'OFFBOARDED' : 'MAINTENANCE');
     const isLeaderSet = !!(form.bookingLeader && form.bookingLeader.trim() !== '');
 
+    const prevAssign = resolveStoreStaffAssignment(editingStore, '');
+    const nextPrimary = form.b2cOwnerName.trim() || prevAssign.primaryPic || editingStore.b2cOwnerName;
+    const keptSupport = prevAssign.supportStaff.filter(
+      n => n.toLowerCase() !== nextPrimary.toLowerCase()
+    );
+    const nextOwners = [nextPrimary, ...keptSupport].filter(Boolean);
+
     const updatedStore: StorePortfolioItem = {
       ...editingStore,
       storeName: form.storeName.trim(),
@@ -434,7 +442,11 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       platform: form.platform,
       servicePackage: form.servicePackage,
       accountOwnerName: form.accountOwnerName.trim() || editingStore.accountOwnerName,
-      b2cOwnerName: form.b2cOwnerName.trim() || editingStore.b2cOwnerName,
+      b2cOwnerName: nextPrimary,
+      primaryPic: nextPrimary,
+      assignedStaff: nextPrimary,
+      b2cOwners: nextOwners,
+      assignedMembers: nextOwners,
       bookingLeader: isLeaderSet ? form.bookingLeader.trim() : undefined,
       hasBookingLeader: isLeaderSet,
       contentPic: form.contentPic.trim() || editingStore.contentPic,
@@ -583,19 +595,39 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     {
       key: 'pic',
       header: 'Đội ngũ phụ trách',
-      width: 210,
+      width: 220,
       render: (s) => {
         const hasLeaderTeam = s.hasBookingLeader && !!s.bookingLeader;
+        const assign = resolveStoreStaffAssignment(s, 'Chưa gán');
         return (
           <div className="space-y-0.5 leading-tight text-xs whitespace-nowrap">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-2xs text-ink-3 w-10 shrink-0 font-normal">PIC:</span>
-              <span className="font-medium text-ink truncate" title={s.b2cOwnerName || s.primaryPic || 'Chưa gán'}>
-                {s.b2cOwnerName || s.primaryPic || 'Chưa gán'}
+              <span className="text-2xs text-ink-3 w-11 shrink-0 font-normal">Chính:</span>
+              <span className="font-medium text-ink truncate" title={assign.primaryPic}>
+                {assign.primaryPic}
               </span>
+              {assign.supportStaff.length > 0 && (
+                <span
+                  className="px-1 py-0.2 rounded bg-accent-soft text-accent text-2xs font-semibold shrink-0"
+                  title={`Hỗ trợ: ${assign.supportStaff.join(', ')}`}
+                >
+                  +{assign.supportStaff.length}
+                </span>
+              )}
             </div>
+            {assign.supportStaff.length > 0 && (
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-2xs text-ink-3 w-11 shrink-0 font-normal">Hỗ trợ:</span>
+                <span
+                  className="text-ink-2 truncate"
+                  title={assign.supportStaff.join(', ')}
+                >
+                  {assign.supportStaff.join(', ')}
+                </span>
+              </div>
+            )}
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-2xs text-ink-3 w-10 shrink-0 font-normal">Leader:</span>
+              <span className="text-2xs text-ink-3 w-11 shrink-0 font-normal">Leader:</span>
               <span className="text-ink-2 font-medium truncate" title={hasLeaderTeam ? s.bookingLeader : 'Không có leader'}>
                 {hasLeaderTeam ? s.bookingLeader : '—'}
               </span>

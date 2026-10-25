@@ -491,7 +491,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     setActiveJobId(jobId || targetDeal?.jobs?.[0]?.id || null);
   };
 
-  const makeDeal = (itemId: string) => {
+  const makeDeal = (itemId: string, openSowAfterCreate?: boolean) => {
     if (!plan) return;
     const item = items.find(i => i.id === itemId);
     if (!item) return;
@@ -539,6 +539,11 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     });
     setDeals([...deals, deal]);
     setExpandedDealIds(prev => ({ ...prev, [deal.id]: true }));
+    if (openSowAfterCreate && onOpenContract && deal.jobs[0]) {
+      const fwNo = frameworks[normHandle(deal.kocHandle)]?.contractNo || defProfile?.frameworkContractCode;
+      onOpenContract(planJobToBookingDeal(deal, deal.jobs[0], plan, kocIdOfHandle(deal.kocHandle), fwNo), 'SOW');
+      return;
+    }
     openDealWithJob(deal.id, deal.jobs[0]?.id);
   };
 
@@ -1813,9 +1818,25 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
             <div className="text-sm font-semibold text-ink">
               2. Hồ sơ pháp lý thụ hưởng (1–N) &amp; Phụ lục hợp đồng ({job.code})
             </div>
-            <Button size="sm" variant="secondary" onClick={() => void loadContracts()}>
-              Tải lại hồ sơ
-            </Button>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {plan && onOpenContract && (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() =>
+                    onOpenContract(
+                      planJobToBookingDeal(d, job, plan, kocIdOfHandle(d.kocHandle), fw?.contractNo),
+                      'SOW'
+                    )
+                  }
+                >
+                  {job.appendixNo.trim() ? 'Xem Phụ lục SOW' : 'Ký Phụ lục SOW (Bắt đầu Deal)'}
+                </Button>
+              )}
+              <Button size="sm" variant="secondary" onClick={() => void loadContracts()}>
+                Tải lại hồ sơ
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3 rounded-md border border-line bg-sunken/50 p-3 md:grid-cols-4">
@@ -3744,9 +3765,26 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                                   + Thêm Job vào {existingDealOfKoc.code}
                                 </Button>
                               )}
-                              <Button size="sm" variant="primary" disabled={Boolean(blocker)} title={blocker || undefined} onClick={() => makeDeal(i.id)}>
+                              <Button
+                                size="sm"
+                                variant={onOpenContract ? 'secondary' : 'primary'}
+                                disabled={Boolean(blocker)}
+                                title={blocker || undefined}
+                                onClick={() => makeDeal(i.id, false)}
+                              >
                                 Tạo Deal
                               </Button>
+                              {onOpenContract && (
+                                <Button
+                                  size="sm"
+                                  variant="primary"
+                                  disabled={Boolean(blocker)}
+                                  title={blocker || undefined}
+                                  onClick={() => makeDeal(i.id, true)}
+                                >
+                                  Tạo Deal &amp; Ký Phụ lục SOW
+                                </Button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -3913,11 +3951,26 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                                     </div>
                                   </td>
                                   <td className={TD}>
-                                    <div>
+                                    <div className="flex flex-wrap items-center gap-1.5">
                                       {job.appendixNo ? (
                                         <span className="text-xs font-medium text-ink">{job.appendixNo}</span>
                                       ) : (
                                         <span className="text-xs text-ink-3">Chưa ký</span>
+                                      )}
+                                      {onOpenContract && (
+                                        <button
+                                          type="button"
+                                          onClick={e => {
+                                            e.stopPropagation();
+                                            onOpenContract(
+                                              planJobToBookingDeal(d, job, plan, kocIdOfHandle(d.kocHandle), fw?.contractNo),
+                                              'SOW'
+                                            );
+                                          }}
+                                          className="rounded border border-accent/30 bg-accent-soft/25 px-1.5 py-0.5 text-2xs font-semibold text-accent hover:bg-accent-soft/50"
+                                        >
+                                          {job.appendixNo ? 'Mở SOW' : 'Ký Phụ lục SOW'}
+                                        </button>
                                       )}
                                     </div>
                                     <div className="text-2xs text-ink-3">

@@ -975,6 +975,35 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 
 ---
 
+### BUG-052 — Hồ Sơ Thương Hiệu (`BrandProfileDetail` & `BrandProfilesView`) Chiếm Quá Nhiều Diện Tích Dọc, Đẩy Bảng Gian Hàng Và Deal Booking Xuống Cuối Màn Hình
+- **Ngày phát hiện:** 25/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/brands/BrandProfileDetail.tsx`, `web-admin/src/components/views/BrandProfilesView.tsx`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. Trong `BrandProfileDetail.tsx`, phần đầu trang tách thành 3 khối dọc riêng biệt (`Toolbar` điều hướng + `<header>` 3 dòng + `<StatRow>` 4 thẻ cỡ lớn `size="md"`) với khoảng cách `space-y-6` (24px), chiếm tới ~360px chiều cao dọc trong khi thanh `TopHeader` bên trên bị bỏ trống.
+  2. Dưới tiêu đề `<h2>{row.name}</h2>` có dòng văn bản mô tả phụ `<p className="text-[13px] text-ink-2">` và một số trường trong `PRODUCT_FIELDS`, `LEGAL_FIELDS` còn chứa `hint`, vi phạm Quy tắc 1 (`GEMINI.md`).
+  3. Tại tab mặc định `STORES`, bảng `Hồ sơ Tháng (Plan & Report)` 4 dòng hiển thị cố định ở trên cùng (~280px), lặp lại đúng các con số KPI vừa hiển thị ở `<StatRow>` phía trên và đẩy bảng `Đối soát Gian hàng` cùng `Deal Booking` xuống sát đáy màn hình.
+- **Cách khắc phục:**
+  1. Đưa cụm điều hướng (`Danh bạ`, chuyển nhãn, chọn `Kỳ hồ sơ`) vào `<PageHeaderNav>` và các nút thao tác (`Tải tệp`, `Brief 5 phần`, `Plan`, `Booking`) vào `<PageActions>` trên thanh `TopHeader` (cả ở `BrandProfileDetail` và `BrandProfilesView`).
+  2. Gộp phần Định danh thương hiệu, đội ngũ PIC và 4 chỉ số KPI (`NMV`, `Chi Net`, `Video Air`, `Hồ sơ tĩnh`) vào duy nhất 1 khung ngang gọn nhẹ (`px-3.5 py-2.5`), xóa bỏ dòng phụ đề dưới `<h2>` và các `hint` thừa.
+  3. Thay bảng `Hồ sơ Tháng` 4 dòng cố định bằng dải pill chuyển nhanh 4 kỳ tháng kèm nút bật/tắt `So sánh 4 tháng`, đưa bảng `Đối soát Gian hàng trực thuộc` và `Thực tế Deal Booking` lên ngay đầu tab với khoảng cách `space-y-3` / `space-y-3.5`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đồng bộ thu gọn `StatRow size="sm"` và `FilterBar` tại danh bạ `BrandProfilesView.tsx`.
+
+---
+
+### BUG-053 — Thiếu Giao Diện Gán Nhân Viên Chính Và Đa Chọn Nhân Viên Hỗ Trợ Trên Phân Công & Hồ Sơ Gian Hàng
+- **Ngày phát hiện:** 25/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/lib/types.ts`, `web-admin/src/components/views/ManagerDelegationHub.tsx`, `web-admin/src/components/stores/StoreProfile.tsx`, `web-admin/src/components/stores/StoreHandoverDialog.tsx`, `web-admin/src/components/views/StoreManagementView.tsx`, `web-admin/src/components/views/master-data/StoresMasterView.tsx`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. Dữ liệu `StorePortfolioItem` đã có trường `primaryPic`, `b2cOwners: string[]`, `assignedMembers: string[]` để lưu 1 Nhân viên chính + các Nhân viên hỗ trợ, nhưng giao diện tại `ManagerDelegationHub`, `StoreProfile` và `StoreHandoverDialog` chỉ hiển thị 1 ô chọn `Chuyên viên B2C (PIC)` duy nhất và khi lưu lại ghi đè `b2cOwners: [newPic]`, làm mất danh sách nhân viên hỗ trợ.
+  2. Giữa các màn hình danh sách (`StoreManagementView`, `StoresMasterView`) và màn chi tiết (`StoreProfile`) tự cắt chuỗi `b2cOwnerName` khác nhau thay vì dùng chung một hàm chuẩn hóa.
+- **Cách khắc phục:**
+  1. Bổ sung hàm dùng chung `resolveStoreStaffAssignment(store)` trong `web-admin/src/lib/types.ts` (`RULE-SYNC-01`) để bóc tách nhất quán `primaryPic` (Nhân viên chính), `supportStaff` (mảng Nhân viên hỗ trợ không trùng với Nhân viên chính) và `allOwners`.
+  2. Tại `ManagerDelegationHub.tsx`: Tách rõ cột **Nhân viên chính (PIC)** và cột **Nhân viên hỗ trợ** (hiển thị chip nhân viên hỗ trợ kèm nút gỡ `×` và ô chọn `+ Thêm nhân viên hỗ trợ...` ngay trên bảng), đồng thời nâng cấp hộp thoại `Phân công & Bàn giao gian hàng` hỗ trợ chọn 1 Nhân viên chính + tích chọn nhiều Nhân viên hỗ trợ.
+  3. Tại `StoreHandoverDialog.tsx` & `StoreProfile.tsx`: Hiển thị đầy đủ danh sách `Nhân viên hỗ trợ` kèm nút `+ Gán hỗ trợ` / `Sửa hỗ trợ` trong Panel `Đội ngũ phụ trách`, và cho phép đa chọn nhiều Nhân viên hỗ trợ trong hộp thoại bàn giao/phân công.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đồng bộ hiển thị `Chính` + `+N hỗ trợ` trên cột danh sách của `StoreManagementView.tsx` và `StoresMasterView.tsx`.
+
+---
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

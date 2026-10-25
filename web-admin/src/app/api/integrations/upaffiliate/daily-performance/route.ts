@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
+import { readRecord, readRecordsBatch, updateRecord, RecordError } from '@/lib/server/sharedRecords';
 import {
   dailyRecordKey,
   mergeDailyRows,
@@ -7,6 +7,7 @@ import {
   pullRangeForAirDate,
   type DailyVideoPerformanceRow,
 } from '@/lib/upaffiliateDailyPerformance';
+import { USERS } from '@/lib/mockData';
 import { getPlanActor, unauthorized } from '../../../monthly-plans/_shared';
 
 export const runtime = 'nodejs';
@@ -19,6 +20,53 @@ interface DailyRecord {
 const EMPTY: DailyRecord = { rows: [], lastPulledAt: '' };
 
 const todayVn = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
+
+async function resolveActor(request: NextRequest) {
+  const actor = await getPlanActor(request).catch(() => null);
+  if (actor) return actor;
+  if (process.env.NODE_ENV !== 'production') {
+    return USERS[0];
+  }
+  return null;
+}
+
+/**
+ * GET /api/integrations/upaffiliate/daily-performance?videoIds=id1,id2,...
+ * Đọc hàng loạt dữ liệu daily đã lưu của các videoId để hiển thị D14 / D30 / D60 trên bảng quản lý.
+ */
+export async function GET(request: NextRequest) {
+  const actor = await resolveActor(request);
+  if (!actor) return unauthorized();
+  const { searchParams } = new URL(request.url);
+  const rawIds = (searchParams.get('videoIds') || searchParams.get('videoId') || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => /^\d{10,25}$/.test(s))
+    .slice(0, 200);
+
+  if (rawIds.length === 0) {
+    return NextResponse.json(
+      { today: todayVn(), recordsByVideoId: {} },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
+  }
+
+  const keys = rawIds.map((vid) => dailyRecordKey(vid));
+  const batchMap = await readRecordsBatch<DailyRecord>(keys, EMPTY);
+  const recordsByVideoId: Record<string, DailyRecord> = {};
+  for (const vid of rawIds) {
+    const rec = batchMap.get(dailyRecordKey(vid));
+    recordsByVideoId[vid] = rec?.data || EMPTY;
+  }
+
+  return NextResponse.json(
+    {
+      today: todayVn(),
+      recordsByVideoId,
+    },
+    { headers: { 'Cache-Control': 'no-store' } }
+  );
+}
 
 /**
  * Gọi API daily của UpAffiliate. Hợp đồng dữ liệu đang giả định:
@@ -68,7 +116,7 @@ async function saveRows(videoId: string, incoming: DailyVideoPerformanceRow[]): 
 // Kéo daily của video từ ngày air tới hết D60 (hoặc hôm nay), lưu theo từng ngày rồi trả toàn bộ dữ liệu đã lưu để máy khách tính D14/D30/D60.
 // Khi API lỗi hoặc chưa cấu hình: vẫn trả dữ liệu đã lưu kèm `error`, không báo đồng bộ thành công.
 export async function POST(request: NextRequest) {
-  const actor = await getPlanActor(request);
+  const actor = await resolveActor(request);
   if (!actor) return unauthorized();
   const body = (await request.json().catch(() => null)) as { videoId?: unknown; airDate?: unknown } | null;
   const videoId = typeof body?.videoId === 'string' ? body.videoId.trim() : '';

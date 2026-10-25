@@ -2517,6 +2517,64 @@ export interface StorePortfolioItem {
   updatedBy?: string;
 }
 
+/**
+ * Chuẩn hóa việc đọc Nhân viên chính (Primary PIC) và danh sách Nhân viên hỗ trợ (Supporting Staff)
+ * từ một bản ghi Gian hàng (Single Source of Truth theo RULE-SYNC-01).
+ */
+export function resolveStoreStaffAssignment(
+  store: Pick<
+    StorePortfolioItem,
+    'primaryPic' | 'b2cOwnerName' | 'b2cOwners' | 'assignedMembers' | 'assignedStaff' | 'assignedPic' | 'backupOwnerName'
+  >,
+  fallbackPrimary = 'Lê Phương Thảo'
+): {
+  primaryPic: string;
+  supportStaff: string[];
+  allOwners: string[];
+} {
+  const isValidName = (n?: string) => {
+    const t = (n || '').trim();
+    return Boolean(t && t !== 'Chưa phân công' && t !== 'Chưa giao' && t !== 'Chưa gán' && t !== '—');
+  };
+
+  const splitNames = (raw?: string) =>
+    (raw || '')
+      .split(/[,;|]/)
+      .map(s => s.trim())
+      .filter(isValidName);
+
+  const ownerTokens = [
+    ...(store.b2cOwners || []).flatMap(splitNames),
+    ...splitNames(store.primaryPic),
+    ...splitNames(store.b2cOwnerName),
+    ...splitNames(store.assignedStaff),
+    ...splitNames(store.assignedPic),
+  ];
+
+  const primaryPic = ownerTokens[0] || fallbackPrimary;
+
+  const supportSet = new Set<string>();
+  const addSupport = (n?: string) => {
+    for (const part of splitNames(n)) {
+      if (part.toLowerCase() !== primaryPic.toLowerCase()) {
+        supportSet.add(part);
+      }
+    }
+  };
+
+  (store.b2cOwners || []).slice(1).forEach(addSupport);
+  splitNames(store.b2cOwnerName).slice(1).forEach(addSupport);
+  (store.assignedMembers || []).forEach(addSupport);
+  if (store.backupOwnerName) addSupport(store.backupOwnerName);
+
+  const supportStaff = Array.from(supportSet);
+  return {
+    primaryPic,
+    supportStaff,
+    allOwners: [primaryPic, ...supportStaff],
+  };
+}
+
 // MASTER DATA NHÂN VIÊN & PHÂN CÔNG GIAN HÀNG
 export interface StaffMasterMember {
   id: string;

@@ -150,7 +150,7 @@ export async function GET() {
     ]);
 
     const stagingPendingCount = (stagingRecord.data.items || []).filter(
-      (it) => it.exportStatus === 'PENDING_EXPORT',
+      (it) => it.exportStatus === 'PENDING_EXPORT' || it.exportStatus === 'ENRICHING',
     ).length;
 
     const customItems = Object.values(changesRecord.data.itemsByHandle || {});
@@ -267,7 +267,7 @@ export async function POST(req: NextRequest) {
     ]);
 
     const pendingStagingItems = (stagingRecord.data.items || []).filter(
-      (it) => it.exportStatus === 'PENDING_EXPORT',
+      (it) => it.exportStatus === 'PENDING_EXPORT' || it.exportStatus === 'ENRICHING',
     );
     const incomingPendingKocs: KocItem[] = Array.isArray(body?.pendingKocsToPush)
       ? body.pendingKocsToPush
@@ -382,7 +382,7 @@ export async function POST(req: NextRequest) {
         stagingRecord.revision,
         (prev) => ({
           items: (prev.items || []).map((it) =>
-            it.exportStatus === 'PENDING_EXPORT'
+            it.exportStatus === 'PENDING_EXPORT' || it.exportStatus === 'ENRICHING'
               ? {
                   ...it,
                   exportStatus: 'EXPORTED',

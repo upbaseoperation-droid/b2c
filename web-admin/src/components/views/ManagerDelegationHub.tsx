@@ -11,6 +11,7 @@ import {
   Database,
   ArrowRight,
   History,
+  X,
 } from 'lucide-react';
 import {
   UserProfile,
@@ -22,6 +23,7 @@ import {
   StoreDifficultyTier,
   getStoreCoefficientByTier,
   normalizeStoreCoefficient,
+  resolveStoreStaffAssignment,
 } from '../../lib/types';
 import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
 import { getVietnamDateYmd } from '../../lib/format';
@@ -192,9 +194,10 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       }
 
       if (selectedStaffFilter !== 'ALL') {
-        const matchStaff =
-          (store.b2cOwners && store.b2cOwners.includes(selectedStaffFilter)) ||
-          (store.b2cOwnerName && store.b2cOwnerName.includes(selectedStaffFilter));
+        const assign = resolveStoreStaffAssignment(store, '');
+        const matchStaff = assign.allOwners.some(
+          (o) => o.toLowerCase() === selectedStaffFilter.toLowerCase()
+        );
         if (!matchStaff) return false;
       }
 
@@ -204,11 +207,10 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
       if (storeSearchTerm.trim()) {
         const q = storeSearchTerm.toLowerCase().trim();
+        const assign = resolveStoreStaffAssignment(store, '');
         const matchName = store.storeName.toLowerCase().includes(q);
         const matchBrand = (store.brandName || '').toLowerCase().includes(q);
-        const matchPic =
-          (store.b2cOwnerName || '').toLowerCase().includes(q) ||
-          (store.b2cOwners && store.b2cOwners.some((bo) => bo.toLowerCase().includes(q)));
+        const matchPic = assign.allOwners.some((bo) => bo.toLowerCase().includes(q));
         if (!matchName && !matchBrand && !matchPic) return false;
       }
 
@@ -220,6 +222,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<BrandDetail | null>(null);
   const [editingStore, setEditingStore] = useState<StorePortfolioItem | null>(null);
+  const [modalSupportSearch, setModalSupportSearch] = useState('');
 
   const [brandAddMode, setBrandAddMode] = useState<'FROM_MASTER' | 'CUSTOM'>('FROM_MASTER');
   const [selectedMasterBrandId, setSelectedMasterBrandId] = useState<string>('');
@@ -388,9 +391,19 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     const targetStore = storePortfolios.find((s) => s.id === storeId);
     if (!targetStore) return;
 
-    const prevOwner = (targetStore.b2cOwners && targetStore.b2cOwners[0]) || targetStore.b2cOwnerName || '';
-    const nextOwner = b2cOwners[0] || '';
-    const isPicChanged = Boolean(prevOwner && nextOwner && prevOwner !== nextOwner);
+    const prevAssign = resolveStoreStaffAssignment(targetStore, '');
+    const prevOwner = prevAssign.primaryPic;
+    const nextOwner = (b2cOwners[0] || prevOwner || 'Nguyễn Thị Ngọc Tâm').trim();
+    const supportOwners = Array.from(
+      new Set(
+        b2cOwners
+          .slice(1)
+          .map((s) => s.trim())
+          .filter((s) => Boolean(s) && s.toLowerCase() !== nextOwner.toLowerCase())
+      )
+    );
+    const cleanOwners = [nextOwner, ...supportOwners];
+    const isPicChanged = Boolean(prevOwner && nextOwner && prevOwner.toLowerCase() !== nextOwner.toLowerCase());
     const today = getVietnamDateYmd();
 
     const updated: StorePortfolioItem = {
@@ -401,10 +414,13 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             handoverEffectiveDate: today,
           }
         : {}),
-      b2cOwners,
-      b2cOwnerName: b2cOwners.join(', '),
-      primaryPic: nextOwner || targetStore.primaryPic,
-      assignedStaff: nextOwner || targetStore.assignedStaff,
+      b2cOwners: cleanOwners,
+      assignedMembers: cleanOwners,
+      b2cOwnerName: nextOwner,
+      primaryPic: nextOwner,
+      assignedStaff: nextOwner,
+      assignedPic: nextOwner,
+      backupOwnerName: supportOwners[0] || undefined,
       assignmentNotes: notes,
       updatedAt: new Date().toISOString(),
     };
@@ -481,12 +497,14 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       ]);
     }
 
+    const supportLabel =
+      supportOwners.length > 0 ? ` (Hỗ trợ: ${supportOwners.join(', ')})` : '';
     notify(
       isPicChanged
-        ? `Đã bàn giao gian "${updated.storeName}" từ ${prevOwner} sang ${b2cOwners.join(' & ')}${
+        ? `Đã bàn giao gian "${updated.storeName}" từ ${prevOwner} sang ${nextOwner}${supportLabel}${
             shouldTransferJobs && transferredCount > 0 ? ` (Đã chuyển giao ${transferredCount} Job đang chạy dở)` : ''
           }`
-        : `Đã cập nhật phân công gian hàng "${updated.storeName}"`
+        : `Đã cập nhật phân công gian "${updated.storeName}": Chính ${nextOwner}${supportLabel}`
     );
     setEditingStore(null);
   };
@@ -632,9 +650,10 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 <tr className="bg-canvas text-ink-3 font-medium border-b border-line text-2xs">
                   <th className="py-2.5 px-4 min-w-[200px]">Gian hàng & sàn</th>
                   <th className="py-2.5 px-3">Nhãn hàng</th>
-                  <th className="py-2.5 px-3 w-44">Hệ số gian hàng</th>
-                  <th className="py-2.5 px-3 min-w-[190px]">Cấp sơ duyệt (Leader)</th>
-                  <th className="py-2.5 px-3 min-w-[210px]">Chuyên viên B2C (PIC)</th>
+                  <th className="py-2.5 px-3 w-40">Hệ số gian hàng</th>
+                  <th className="py-2.5 px-3 min-w-[180px]">Cấp sơ duyệt (Leader)</th>
+                  <th className="py-2.5 px-3 min-w-[205px]">Nhân viên chính (PIC)</th>
+                  <th className="py-2.5 px-3 min-w-[220px]">Nhân viên hỗ trợ</th>
                   <th className="py-2.5 px-3 text-right w-28">
                     <span className="sr-only">Thao tác</span>
                   </th>
@@ -643,17 +662,15 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               <tbody className="divide-y divide-line">
                 {displayedStores.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-10 text-center text-ink-3 text-xs">
+                    <td colSpan={7} className="py-10 text-center text-ink-3 text-xs">
                       Không có gian hàng nào phù hợp với bộ lọc hiện tại.
                     </td>
                   </tr>
                 ) : (
                   displayedStores.map((store) => {
-                    const owners =
-                      store.b2cOwners ||
-                      (store.b2cOwnerName
-                        ? store.b2cOwnerName.split(',').map((s) => s.trim())
-                        : ['Nguyễn Thị Ngọc Tâm']);
+                    const assign = resolveStoreStaffAssignment(store, 'Nguyễn Thị Ngọc Tâm');
+                    const primaryPic = assign.primaryPic;
+                    const supportStaff = assign.supportStaff;
                     const hasLeader = Boolean(store.hasBookingLeader && store.bookingLeader);
                     const currentLeaderVal = hasLeader ? store.bookingLeader || 'Nguyễn Thị Ngọc Tâm' : 'NONE';
                     const coef = normalizeStoreCoefficient(store.difficultyTier, store.difficultyMultiplier);
@@ -723,14 +740,22 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           </select>
                         </td>
 
-                        {/* Chọn Chuyên viên B2C (PIC) */}
+                        {/* Chọn Nhân viên chính (PIC) */}
                         <td className="py-2.5 px-3">
                           <div className="flex items-center gap-2">
-                            <Avatar name={owners[0] || 'Nguyễn Thị Ngọc Tâm'} size={22} />
+                            <Avatar name={primaryPic} size={22} />
                             <select
-                              value={owners[0] || 'Nguyễn Thị Ngọc Tâm'}
+                              value={primaryPic}
                               onChange={(e) => {
-                                handleSaveStoreAssignment(store.id, [e.target.value], store.assignmentNotes || '');
+                                const nextPrimary = e.target.value;
+                                const keptSupport = supportStaff.filter(
+                                  (n) => n.toLowerCase() !== nextPrimary.toLowerCase()
+                                );
+                                void handleSaveStoreAssignment(
+                                  store.id,
+                                  [nextPrimary, ...keptSupport],
+                                  store.assignmentNotes || ''
+                                );
                               }}
                               className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
                             >
@@ -747,9 +772,86 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           </div>
                         </td>
 
+                        {/* Chọn Nhân viên hỗ trợ (Đa chọn) */}
+                        <td className="py-2.5 px-3">
+                          <div className="space-y-1">
+                            {supportStaff.length > 0 && (
+                              <div className="flex flex-wrap items-center gap-1">
+                                {supportStaff.map((sp) => (
+                                  <span
+                                    key={sp}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-accent-soft text-accent border border-accent/20 text-2xs font-medium"
+                                  >
+                                    <span>{sp}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const nextSupport = supportStaff.filter(
+                                          (n) => n.toLowerCase() !== sp.toLowerCase()
+                                        );
+                                        void handleSaveStoreAssignment(
+                                          store.id,
+                                          [primaryPic, ...nextSupport],
+                                          store.assignmentNotes || '',
+                                          false
+                                        );
+                                      }}
+                                      className="hover:text-critical cursor-pointer"
+                                      title={`Gỡ ${sp} khỏi nhân viên hỗ trợ`}
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            <select
+                              value=""
+                              onChange={(e) => {
+                                const addName = e.target.value;
+                                if (!addName) return;
+                                void handleSaveStoreAssignment(
+                                  store.id,
+                                  [primaryPic, ...supportStaff, addName],
+                                  store.assignmentNotes || '',
+                                  false
+                                );
+                              }}
+                              className="w-full text-2xs font-medium px-2 py-1 bg-surface hover:bg-canvas border border-line rounded-md text-ink-2 focus:outline-none focus:border-focus transition-colors"
+                            >
+                              <option value="">
+                                {supportStaff.length > 0
+                                  ? '+ Thêm nhân viên hỗ trợ...'
+                                  : '+ Gán nhân viên hỗ trợ...'}
+                              </option>
+                              {b2cStorePicOptions
+                                .filter(
+                                  (s) =>
+                                    s.name.toLowerCase() !== primaryPic.toLowerCase() &&
+                                    !supportStaff.some(
+                                      (sp) => sp.toLowerCase() === s.name.toLowerCase()
+                                    )
+                                )
+                                .map((s) => (
+                                  <option key={s.id} value={s.name}>
+                                    {s.name} ({s.roleTitle})
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
+                        </td>
+
                         <td className="py-2.5 px-3 text-right">
-                          <Button size="sm" variant="secondary" onClick={() => setEditingStore(store)}>
-                            Bàn giao
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              setModalSupportSearch('');
+                              setEditingStore(store);
+                            }}
+                          >
+                            Phân công / Bàn giao
                           </Button>
                         </td>
                       </tr>
@@ -1346,81 +1448,202 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       </Modal>
 
       {/* ========================================================================= */}
-      {/* MODAL 2: BÀN GIAO GIAN HÀNG                                               */}
+      {/* MODAL 2: PHÂN CÔNG & BÀN GIAO GIAN HÀNG (CHÍNH + ĐA CHỌN HỖ TRỢ)          */}
       {/* ========================================================================= */}
       <Modal
         open={!!editingStore}
         onClose={() => setEditingStore(null)}
-        title={editingStore ? `Bàn giao gian hàng · ${editingStore.storeName}` : 'Bàn giao gian hàng'}
-        size="md"
+        title={editingStore ? `Phân công & Bàn giao gian hàng · ${editingStore.storeName}` : 'Phân công & Bàn giao gian hàng'}
+        size="lg"
       >
-        {editingStore && (
-          <div className="space-y-4 text-xs">
-            <div>
-              <label className="font-semibold text-ink-2 block mb-1">Chuyên viên B2C tiếp nhận</label>
-              <select
-                value={
-                  (editingStore.b2cOwners && editingStore.b2cOwners[0]) ||
-                  editingStore.b2cOwnerName ||
-                  'Nguyễn Thị Ngọc Tâm'
-                }
-                onChange={(e) => {
-                  setEditingStore({
-                    ...editingStore,
-                    b2cOwners: [e.target.value],
-                    b2cOwnerName: e.target.value,
-                  });
-                }}
-                className="w-full text-xs font-medium px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
-              >
-                {b2cStorePicOptions.map((s) => (
-                  <option key={s.id} value={s.name}>
-                    {s.name} ({s.roleTitle})
-                  </option>
-                ))}
-              </select>
-            </div>
+        {editingStore && (() => {
+          const modalAssign = resolveStoreStaffAssignment(editingStore, 'Nguyễn Thị Ngọc Tâm');
+          const modalPrimary = modalAssign.primaryPic;
+          const modalSupport = modalAssign.supportStaff;
+          const sq = modalSupportSearch.trim().toLowerCase();
+          const supportCandidates = b2cStorePicOptions.filter(
+            (s) =>
+              s.name.toLowerCase() !== modalPrimary.toLowerCase() &&
+              (!sq ||
+                s.name.toLowerCase().includes(sq) ||
+                s.roleTitle.toLowerCase().includes(sq) ||
+                s.id.toLowerCase().includes(sq))
+          );
 
-            <div>
-              <label className="font-semibold text-ink-2 block mb-1">Lý do & ghi chú bàn giao</label>
-              <textarea
-                rows={3}
-                defaultValue={editingStore.assignmentNotes || ''}
-                id="store-notes-input"
-                placeholder="Ghi chú nội dung bàn giao gian hàng..."
-                className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink placeholder-ink-3 focus:outline-none"
-              />
-            </div>
+          const toggleModalSupport = (staffName: string) => {
+            const exists = modalSupport.some(
+              (n) => n.toLowerCase() === staffName.toLowerCase()
+            );
+            const nextSupport = exists
+              ? modalSupport.filter((n) => n.toLowerCase() !== staffName.toLowerCase())
+              : [...modalSupport, staffName];
+            const nextOwners = [modalPrimary, ...nextSupport];
+            setEditingStore({
+              ...editingStore,
+              primaryPic: modalPrimary,
+              b2cOwnerName: modalPrimary,
+              b2cOwners: nextOwners,
+              assignedMembers: nextOwners,
+            });
+          };
 
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-canvas px-3 py-2 text-xs text-ink">
-              <input
-                type="checkbox"
-                checked={transferActiveJobs}
-                onChange={(e) => setTransferActiveJobs(e.target.checked)}
-              />
-              <span>Chuyển giao cả các KOC / Job đang chạy dở (chưa tất toán) trong tháng cho PIC mới</span>
-            </label>
+          return (
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="font-semibold text-ink-2 block mb-1">
+                  Nhân viên chính (PIC chủ trì) *
+                </label>
+                <select
+                  value={modalPrimary}
+                  onChange={(e) => {
+                    const nextPrimary = e.target.value;
+                    const nextSupport = modalSupport.filter(
+                      (n) => n.toLowerCase() !== nextPrimary.toLowerCase()
+                    );
+                    const nextOwners = [nextPrimary, ...nextSupport];
+                    setEditingStore({
+                      ...editingStore,
+                      primaryPic: nextPrimary,
+                      b2cOwnerName: nextPrimary,
+                      b2cOwners: nextOwners,
+                      assignedMembers: nextOwners,
+                    });
+                  }}
+                  className="w-full text-xs font-medium px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
+                >
+                  {b2cStorePicOptions.map((s) => (
+                    <option key={s.id} value={s.name}>
+                      {s.name} ({s.roleTitle})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="pt-3 border-t border-line flex items-center justify-end gap-2">
-              <Button type="button" variant="secondary" size="sm" onClick={() => setEditingStore(null)}>
-                Hủy
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                icon={Check}
-                onClick={() => {
-                  const notes = (document.getElementById('store-notes-input') as HTMLTextAreaElement)?.value || '';
-                  const owners = editingStore.b2cOwners || [editingStore.b2cOwnerName];
-                  void handleSaveStoreAssignment(editingStore.id, owners, notes, transferActiveJobs);
-                }}
-              >
-                Xác nhận bàn giao
-              </Button>
+              <div>
+                <label className="font-semibold text-ink-2 block mb-1">
+                  Nhân viên hỗ trợ cùng thực thi ({modalSupport.length} nhân sự)
+                </label>
+                <div className="space-y-2 rounded-lg border border-line bg-canvas p-2.5">
+                  {modalSupport.length > 0 ? (
+                    <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-line">
+                      {modalSupport.map((sp) => (
+                        <span
+                          key={sp}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-accent-soft text-accent border border-accent/20 text-xs font-medium"
+                        >
+                          <Users className="w-3 h-3 shrink-0" />
+                          <span>{sp}</span>
+                          <button
+                            type="button"
+                            onClick={() => toggleModalSupport(sp)}
+                            className="ml-0.5 hover:text-critical cursor-pointer"
+                            title={`Gỡ ${sp}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-2xs text-ink-3 pb-1.5 border-b border-line">
+                      Chưa chọn nhân viên hỗ trợ. Tích chọn một hoặc nhiều nhân sự bên dưới.
+                    </div>
+                  )}
+
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={modalSupportSearch}
+                      onChange={(e) => setModalSupportSearch(e.target.value)}
+                      placeholder="Tìm tên nhân viên hỗ trợ..."
+                      className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-surface border border-line rounded-md text-ink placeholder-ink-3 focus:outline-none focus:border-focus"
+                    />
+                  </div>
+
+                  <div className="max-h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                    {supportCandidates.map((s) => {
+                      const isSelected = modalSupport.some(
+                        (n) => n.toLowerCase() === s.name.toLowerCase()
+                      );
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => toggleModalSupport(s.name)}
+                          className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border text-left text-xs transition cursor-pointer ${
+                            isSelected
+                              ? 'bg-accent-soft border-accent/30 text-accent font-semibold'
+                              : 'bg-surface border-line text-ink hover:bg-sunken'
+                          }`}
+                        >
+                          <div className="min-w-0 truncate">
+                            <span className="block truncate">{s.name}</span>
+                            <span className="block text-2xs text-ink-3 truncate font-normal">
+                              {s.roleTitle}
+                            </span>
+                          </div>
+                          <span
+                            className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border ${
+                              isSelected
+                                ? 'bg-accent border-accent text-white'
+                                : 'border-line-strong bg-surface'
+                            }`}
+                          >
+                            {isSelected && <Check className="w-3 h-3" />}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-ink-2 block mb-1">Lý do & ghi chú phân công / bàn giao</label>
+                <textarea
+                  rows={2}
+                  defaultValue={editingStore.assignmentNotes || ''}
+                  id="store-notes-input"
+                  placeholder="Ghi chú nội dung phân công hoặc bàn giao gian hàng..."
+                  className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink placeholder-ink-3 focus:outline-none"
+                />
+              </div>
+
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-canvas px-3 py-2 text-xs text-ink">
+                <input
+                  type="checkbox"
+                  checked={transferActiveJobs}
+                  onChange={(e) => setTransferActiveJobs(e.target.checked)}
+                />
+                <span>Chuyển giao cả các KOC / Job đang chạy dở (chưa tất toán) trong tháng khi đổi Nhân viên chính</span>
+              </label>
+
+              <div className="pt-3 border-t border-line flex items-center justify-end gap-2">
+                <Button type="button" variant="secondary" size="sm" onClick={() => setEditingStore(null)}>
+                  Hủy
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  icon={Check}
+                  onClick={() => {
+                    const notes = (document.getElementById('store-notes-input') as HTMLTextAreaElement)?.value || '';
+                    void handleSaveStoreAssignment(
+                      editingStore.id,
+                      [modalPrimary, ...modalSupport],
+                      notes,
+                      transferActiveJobs
+                    );
+                  }}
+                >
+                  Lưu phân công
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </Modal>
     </div>
   );

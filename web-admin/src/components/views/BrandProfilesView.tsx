@@ -27,6 +27,8 @@ import {
   DataTable,
   EmptyState,
   FilterBar,
+  PageActions,
+  PageHeaderNav,
   Pagination,
   Panel,
   Stat,
@@ -597,8 +599,38 @@ export function BrandProfilesView({
   const activeMonthLabel = PROFILE_MONTH_OPTIONS.find(m => m.value === selectedMonth)?.shortLabel || `Tháng ${selectedMonth}`;
 
   return (
-    <div className="space-y-4">
-      <StatRow>
+    <div className="space-y-3">
+      <PageHeaderNav>
+        <div className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 text-xs">
+          <Calendar className="w-3.5 h-3.5 text-accent" />
+          <span className="text-ink-3">Kỳ hồ sơ:</span>
+          <select
+            value={selectedMonth}
+            onChange={e => setSelectedMonth(e.target.value)}
+            className="bg-transparent font-semibold text-ink focus:outline-none cursor-pointer"
+            aria-label="Chọn kỳ hồ sơ tháng của thương hiệu"
+          >
+            {PROFILE_MONTH_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </PageHeaderNav>
+
+      <PageActions>
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={Cloud}
+          onClick={() => setR2SetupOpen(true)}
+        >
+          Cấu hình Cloudflare R2
+        </Button>
+      </PageActions>
+
+      <StatRow size="sm">
         <Stat
           label={`Doanh số NMV (${activeMonthLabel})`}
           value={kpiSummary.totalReportNmv > 0 ? formatVndShort(kpiSummary.totalReportNmv) : '0 đ'}
@@ -640,39 +672,11 @@ export function BrandProfilesView({
       </StatRow>
 
       <Panel flush>
-        <div className="p-4 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="px-3.5 py-2.5 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="flex-1">
             <FilterBar
               search={{ value: search, onChange: setSearch, placeholder: 'Tìm tên nhãn, mã brand, ngành hàng, Account/Booking PIC…' }}
               chips={<Chips items={chips} value={filter} onChange={setFilter} />}
-              filters={
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 text-xs">
-                    <Calendar className="w-3.5 h-3.5 text-accent" />
-                    <span className="text-ink-3">Kỳ hồ sơ:</span>
-                    <select
-                      value={selectedMonth}
-                      onChange={e => setSelectedMonth(e.target.value)}
-                      className="bg-transparent font-semibold text-ink focus:outline-none cursor-pointer"
-                      aria-label="Chọn kỳ hồ sơ tháng của thương hiệu"
-                    >
-                      {PROFILE_MONTH_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={Cloud}
-                    onClick={() => setR2SetupOpen(true)}
-                  >
-                    Cấu hình Cloudflare R2
-                  </Button>
-                </div>
-              }
               resultCount={search.trim() ? visible.length : undefined}
             />
           </div>

@@ -53,12 +53,13 @@ import {
   EmptyState,
   FilterBar,
   Modal,
+  PageActions,
+  PageHeaderNav,
   Pagination,
   Panel,
   Person,
+  Progress,
   Select,
-  Stat,
-  StatRow,
   Status,
   Tabs,
   channelOf,
@@ -107,11 +108,11 @@ export type BrandDetailTab = 'OVERVIEW' | 'WORKFLOW' | 'FILES' | 'STORES' | 'PRO
 const PRODUCT_FIELDS: ItemField[] = [
   { key: 'name', label: 'Tên sản phẩm', required: true, wide: true },
   { key: 'skuCode', label: 'Mã SKU' },
-  { key: 'size', label: 'Quy cách', hint: 'Ví dụ 120g, 500ml, 60 viên.' },
+  { key: 'size', label: 'Quy cách' },
   { key: 'priceVnd', label: 'Giá niêm yết', kind: 'money' },
   { key: 'dealPriceVnd', label: 'Giá bán chiến dịch / Giá deal', kind: 'money' },
-  { key: 'commissionOrganicPct', label: 'Hoa hồng tự nhiên (%)', kind: 'number', hint: 'VD: 12' },
-  { key: 'commissionAdsPct', label: 'Hoa hồng chạy quảng cáo (%)', kind: 'number', hint: 'VD: 8' },
+  { key: 'commissionOrganicPct', label: 'Hoa hồng tự nhiên (%)', kind: 'number' },
+  { key: 'commissionAdsPct', label: 'Hoa hồng chạy quảng cáo (%)', kind: 'number' },
   {
     key: 'sampleStockStatus',
     label: 'Tồn kho hàng mẫu gửi KOC',
@@ -127,7 +128,7 @@ const PRODUCT_FIELDS: ItemField[] = [
   { key: 'pdpUrl', label: 'Link trang sản phẩm', kind: 'url', wide: true },
   { key: 'usps', label: 'Điểm nổi bật KOC cần nhấn mạnh', kind: 'lines' },
   { key: 'mechanism', label: 'Cơ chế tác động', kind: 'long' },
-  { key: 'ingredients', label: 'Thành phần chính', kind: 'lines', hint: 'Mỗi dòng: tên thành phần: công dụng.' },
+  { key: 'ingredients', label: 'Thành phần chính', kind: 'lines' },
   { key: 'targetUser', label: 'Phù hợp với' },
   { key: 'contraindications', label: 'Không dùng cho' },
 ];
@@ -138,11 +139,11 @@ const FAQ_FIELDS: ItemField[] = [
   { key: 'avoid', label: 'Không được nói', kind: 'lines' },
 ];
 const LEGAL_FIELDS: ItemField[] = [
-  { key: 'title', label: 'Tên văn bản', required: true, wide: true, hint: 'Ví dụ: Phiếu công bố mỹ phẩm, Giấy xác nhận nội dung quảng cáo.' },
+  { key: 'title', label: 'Tên văn bản', required: true, wide: true },
   { key: 'docNumber', label: 'Số văn bản' },
   { key: 'authority', label: 'Cơ quan cấp' },
-  { key: 'issueDate', label: 'Ngày cấp', hint: 'dd/mm/yyyy' },
-  { key: 'validUntil', label: 'Hiệu lực đến', hint: 'dd/mm/yyyy, để trống nếu không thời hạn.' },
+  { key: 'issueDate', label: 'Ngày cấp' },
+  { key: 'validUntil', label: 'Hiệu lực đến' },
   { key: 'disclaimer', label: 'Câu cảnh báo bắt buộc khi truyền thông', kind: 'long' },
   { key: 'url', label: 'Tệp bản scan hoặc link', kind: 'file', wide: true },
 ];
@@ -361,6 +362,7 @@ export function BrandProfileDetail({
   }, [monthlyBrandLedger, activeMonth, row.name, brandStores, monthlyPlans, deals]);
 
   const [bookingPage, setBookingPage] = useState<number>(1);
+  const [showLedgerTable, setShowLedgerTable] = useState<boolean>(false);
   const BOOKING_PAGE_SIZE = 25;
 
   const isOverbudget = currentBrandReport.overbudgetStoresCount > 0 || (currentBrandReport.planBudgetNet > 0 && currentBrandReport.reportSpentNet > currentBrandReport.planBudgetNet);
@@ -784,256 +786,295 @@ export function BrandProfileDetail({
     },
   ];
 
-  return (
-    <div className="space-y-6">
-      {/* 1. THANH ĐIỀU HƯỚNG & THAO TÁC NHANH */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={onBack} className="-ml-2.5">
-            {embedded ? 'Quay lại Tổng quan Cổng' : 'Danh bạ thương hiệu'}
-          </Button>
-          {(nav?.onPrev || nav?.onNext) && (
-            <div className="flex items-center gap-1 pl-2 border-l border-line text-2xs text-ink-3">
-              <button
-                type="button"
-                disabled={!nav?.onPrev}
-                onClick={nav?.onPrev}
-                aria-label="Nhãn hàng trước"
-                title="Nhãn hàng trước"
-                className="p-1 rounded hover:bg-sunken text-ink-3 hover:text-ink disabled:opacity-30 disabled:pointer-events-none"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              {nav?.position && nav?.total ? (
-                <span className="tabular-nums font-medium">{nav.position} / {nav.total}</span>
-              ) : null}
-              <button
-                type="button"
-                disabled={!nav?.onNext}
-                onClick={nav?.onNext}
-                aria-label="Nhãn hàng sau"
-                title="Nhãn hàng sau"
-                className="p-1 rounded hover:bg-sunken text-ink-3 hover:text-ink disabled:opacity-30 disabled:pointer-events-none"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 text-xs">
-            <Calendar className="w-3.5 h-3.5 text-accent" />
-            <span className="text-ink-3">Kỳ hồ sơ:</span>
-            <select
-              value={activeMonth}
-              onChange={e => handleMonthChange(e.target.value)}
-              className="bg-transparent font-semibold text-ink focus:outline-none cursor-pointer"
-              aria-label="Chọn kỳ hồ sơ tháng của thương hiệu"
-            >
-              {PROFILE_MONTH_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <input
-            ref={quickFileInputRef}
-            type="file"
-            multiple
-            accept={QUICK_UPLOAD_ACCEPT}
-            className="hidden"
-            onChange={e => void handleQuickUploadFiles(e.target.files)}
-          />
-          {can.DOCUMENTS && (
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={quickUploading ? Loader2 : Upload}
-              disabled={busy || quickUploading}
-              onClick={() => quickFileInputRef.current?.click()}
-            >
-              {quickUploading ? 'Đang tải tệp…' : 'Tải tệp thương hiệu'}
-            </Button>
-          )}
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={FileText}
-            onClick={() => setShowStandardBrief(true)}
+  const navControl = (
+    <div className="flex items-center gap-1.5">
+      <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={onBack} className="-ml-1">
+        {embedded ? 'Quay lại' : 'Danh bạ'}
+      </Button>
+      {(nav?.onPrev || nav?.onNext) && (
+        <div className="flex items-center gap-0.5 pl-1.5 border-l border-line text-2xs text-ink-3">
+          <button
+            type="button"
+            disabled={!nav?.onPrev}
+            onClick={nav?.onPrev}
+            aria-label="Nhãn hàng trước"
+            title="Nhãn hàng trước"
+            className="p-1 rounded hover:bg-sunken text-ink-3 hover:text-ink disabled:opacity-30 disabled:pointer-events-none"
           >
-            Brief chuẩn 5 phần
-          </Button>
-          {onDrilldownToPlan && (
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={FileSpreadsheet}
-              onClick={() => onDrilldownToPlan({ brandName: row.name, month: activeMonth })}
-            >
-              Chi tiết Plan ({activeMonth})
-            </Button>
-          )}
-          {(onDrilldownToBooking || onOpenBooking) && (
-            <Button
-              size="sm"
-              variant="primary"
-              onClick={() => {
-                if (onDrilldownToBooking) {
-                  onDrilldownToBooking({ brandName: row.name, month: activeMonth });
-                } else {
-                  onOpenBooking?.();
-                }
-              }}
-            >
-              Quản lý Booking ({currentBrandReport.reportBookedCount})
-            </Button>
-          )}
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+          {nav?.position && nav?.total ? (
+            <span className="tabular-nums font-medium px-0.5">{nav.position}/{nav.total}</span>
+          ) : null}
+          <button
+            type="button"
+            disabled={!nav?.onNext}
+            onClick={nav?.onNext}
+            aria-label="Nhãn hàng sau"
+            title="Nhãn hàng sau"
+            className="p-1 rounded hover:bg-sunken text-ink-3 hover:text-ink disabled:opacity-30 disabled:pointer-events-none"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
         </div>
+      )}
+      <div className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-2 py-0.5 text-xs ml-1">
+        <Calendar className="w-3.5 h-3.5 text-accent shrink-0" />
+        <select
+          value={activeMonth}
+          onChange={e => handleMonthChange(e.target.value)}
+          className="bg-transparent font-semibold text-ink focus:outline-none cursor-pointer"
+          aria-label="Chọn kỳ hồ sơ tháng của thương hiệu"
+        >
+          {PROFILE_MONTH_OPTIONS.map(opt => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
       </div>
+    </div>
+  );
 
-      {/* 2. ĐỊNH DANH THƯƠNG HIỆU (THÔNG SỐ TĨNH) */}
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-3.5 min-w-0">
-          {/* Tên chuyển cảnh khớp với hàng trong BrandProfilesView */}
-          <span className="shrink-0 inline-flex" style={sharedTo('brand-avatar')}>
-            <BrandAvatar name={row.name} id={row.master?.id} code={row.master?.code} size={48} rounded="lg" />
-          </span>
-          <div className="min-w-0 grid gap-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold text-ink" style={sharedTo('brand-title')}>{row.name}</h2>
-              {m?.code && (
-                <span className="text-2xs font-code text-ink-3">
-                  · {m.code}
+  const actionControls = (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <input
+        ref={quickFileInputRef}
+        type="file"
+        multiple
+        accept={QUICK_UPLOAD_ACCEPT}
+        className="hidden"
+        onChange={e => void handleQuickUploadFiles(e.target.files)}
+      />
+      {can.DOCUMENTS && (
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={quickUploading ? Loader2 : Upload}
+          disabled={busy || quickUploading}
+          onClick={() => quickFileInputRef.current?.click()}
+        >
+          {quickUploading ? 'Đang tải…' : 'Tải tệp'}
+        </Button>
+      )}
+      <Button
+        size="sm"
+        variant="secondary"
+        icon={FileText}
+        onClick={() => setShowStandardBrief(true)}
+      >
+        Brief 5 phần
+      </Button>
+      {onDrilldownToPlan && (
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={FileSpreadsheet}
+          onClick={() => onDrilldownToPlan({ brandName: row.name, month: activeMonth })}
+        >
+          Plan ({activeMonth})
+        </Button>
+      )}
+      {(onDrilldownToBooking || onOpenBooking) && (
+        <Button
+          size="sm"
+          variant="primary"
+          onClick={() => {
+            if (onDrilldownToBooking) {
+              onDrilldownToBooking({ brandName: row.name, month: activeMonth });
+            } else {
+              onOpenBooking?.();
+            }
+          }}
+        >
+          Booking ({currentBrandReport.reportBookedCount})
+        </Button>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="space-y-3">
+      {/* 1. ĐIỀU HƯỚNG & THAO TÁC NHANH (ĐƯA LÊN TOP HEADER KHI KHÔNG NHÚNG) */}
+      {!embedded ? (
+        <>
+          <PageHeaderNav>{navControl}</PageHeaderNav>
+          <PageActions>{actionControls}</PageActions>
+        </>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {navControl}
+          {actionControls}
+        </div>
+      )}
+
+      {/* 2. KHUNG ĐỊNH DANH THƯƠNG HIỆU & CHỈ SỐ GỌN TRONG 1 DẢI */}
+      <section className="bg-surface border border-line rounded-xl px-3.5 py-2.5 shadow-2xs">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+          {/* Cột trái: Định danh & Nhân sự phụ trách */}
+          <div className="flex items-start gap-3 min-w-0">
+            <span className="shrink-0 inline-flex mt-0.5" style={sharedTo('brand-avatar')}>
+              <BrandAvatar name={row.name} id={row.master?.id} code={row.master?.code} size={38} rounded="lg" />
+            </span>
+            <div className="min-w-0 space-y-1">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <h2 className="text-base font-semibold text-ink leading-tight" style={sharedTo('brand-title')}>
+                  {row.name}
+                </h2>
+                {m?.code && <span className="text-2xs font-code text-ink-3">· {m.code}</span>}
+                <Status tone={status.tone}>{status.label}</Status>
+                {(m?.platforms || []).map(pl => (
+                  <ChannelTag key={pl} channel={channelOf(pl)} />
+                ))}
+                <span className="text-2xs text-ink-2 bg-canvas border border-line rounded px-1.5 py-0.5">
+                  {real(m?.category) || 'Nhãn hàng B2C'}
                 </span>
-              )}
-              <Status tone={status.tone}>{status.label}</Status>
-              <span className="text-[13px] text-ink-3 tabular-nums">{row.done}/{row.total} mục hồ sơ tĩnh</span>
-              {(m?.platforms || []).map(pl => (
-                <ChannelTag key={pl} channel={channelOf(pl)} />
-              ))}
-              {isOverbudget && (
-                <span className="text-2xs font-medium text-critical">
-                  · Có gian hàng vượt hạn mức ({activeMonth})
+                {(p.entity?.originCountry || p.entity?.companyName || real(m?.companyName)) && (
+                  <span className="text-2xs text-ink-3 truncate max-w-[260px]">
+                    {[p.entity?.companyName || real(m?.companyName), p.entity?.originCountry].filter(Boolean).join(' · ')}
+                  </span>
+                )}
+                {isOverbudget && (
+                  <span className="px-1.5 py-0.5 rounded bg-critical-soft text-critical text-2xs font-semibold">
+                    Vượt hạn mức ({activeMonth})
+                  </span>
+                )}
+                {isUnbudgetedSpend && (
+                  <span className="px-1.5 py-0.5 rounded bg-warning-soft text-warning text-2xs font-semibold">
+                    Chi ngoài KH ({activeMonth})
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-2xs text-ink-3">
+                <span className="inline-flex items-center gap-1">
+                  <span>Account:</span>
+                  {accountPicName ? <Person name={accountPicName} size={16} /> : <span className="text-ink-2">Chưa gán</span>}
                 </span>
-              )}
-              {isUnbudgetedSpend && (
-                <span className="text-2xs font-medium text-warning">
-                  · Có gian hàng chi ngoài KH ({activeMonth})
+                <span>·</span>
+                <span className="inline-flex items-center gap-1">
+                  <span>Booking:</span>
+                  <Person name={primarySpecialist} size={16} />
                 </span>
+                <span>·</span>
+                <span className="inline-flex items-center gap-1">
+                  <span>TP B2C:</span>
+                  <Person name={leadB2c} size={16} />
+                </span>
+                {row.saved && (
+                  <>
+                    <span>·</span>
+                    <span>
+                      v{p.revision} ({dateTime(p.updatedAt)} · <strong className="text-ink-2 font-medium">{p.updatedBy}</strong>)
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Cột phải: 4 chỉ số cốt lõi dạng dải ngang siêu gọn */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 xl:gap-3 pt-2 xl:pt-0 border-t xl:border-t-0 xl:border-l border-line xl:pl-3.5 shrink-0">
+            {/* Chỉ số 1: NMV */}
+            <div className="min-w-[130px] space-y-0.5">
+              <div className="flex items-center justify-between gap-1 text-2xs text-ink-3">
+                <span>NMV ({activeMonth})</span>
+                {currentBrandReport.planNmv > 0 && (
+                  <span className={`font-mono font-medium ${currentBrandReport.nmvAchievementPct >= 80 ? 'text-positive' : 'text-ink-3'}`}>
+                    {currentBrandReport.nmvAchievementPct}%
+                  </span>
+                )}
+              </div>
+              <div className="text-sm font-semibold text-ink tabular-nums">
+                {currentBrandReport.reportNmv > 0 ? formatVndShort(currentBrandReport.reportNmv) : '0 đ'}
+                <span className="text-2xs font-normal text-ink-3">
+                  {' '}/ {currentBrandReport.planNmv > 0 ? formatVndShort(currentBrandReport.planNmv) : 'Theo sàn'}
+                </span>
+              </div>
+              {currentBrandReport.planNmv > 0 && (
+                <Progress value={currentBrandReport.reportNmv} max={currentBrandReport.planNmv} label="Tiến độ NMV" />
               )}
             </div>
-            <p className="text-[13px] text-ink-2">
-              {[
-                real(m?.category) || 'Nhãn hàng B2C',
-                p.entity?.companyName || real(m?.companyName),
-                p.entity?.originCountry ? `Xuất xứ: ${p.entity.originCountry}` : '',
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </p>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-ink-3">
-              <span>Account PIC:</span>
-              {accountPicName ? <Person name={accountPicName} size={18} /> : <span className="text-ink-3">Chưa gán</span>}
-              <span>·</span>
-              <span>Booking PIC:</span>
-              <Person name={primarySpecialist} size={18} />
-              <span>·</span>
-              <span>Trưởng phòng B2C:</span>
-              <Person name={leadB2c} size={18} />
+
+            {/* Chỉ số 2: Ngân sách Net */}
+            <div className="min-w-[135px] space-y-0.5 sm:border-l sm:border-line sm:pl-2.5">
+              <div className="flex items-center justify-between gap-1 text-2xs text-ink-3">
+                <span>Chi Net ({activeMonth})</span>
+                <span className={`font-medium ${isOverbudget || isUnbudgetedSpend ? 'text-critical' : 'text-positive'}`}>
+                  {isUnbudgetedSpend ? 'Ngoài KH' : isOverbudget ? 'Vượt trần' : `${currentBrandReport.budgetBurnPct}%`}
+                </span>
+              </div>
+              <div className={`text-sm font-semibold tabular-nums ${isOverbudget || isUnbudgetedSpend ? 'text-critical' : 'text-ink'}`}>
+                {formatVndShort(currentBrandReport.reportSpentNet)}
+                <span className="text-2xs font-normal text-ink-3">
+                  {' '}/ {currentBrandReport.planBudgetNet > 0 ? formatVndShort(currentBrandReport.planBudgetNet) : '0 đ'}
+                </span>
+              </div>
+              <Progress
+                value={currentBrandReport.reportSpentNet}
+                max={currentBrandReport.planBudgetNet || 1}
+                invert={currentBrandReport.reportSpentNet > currentBrandReport.planBudgetNet}
+                label="Ngân sách Net"
+              />
+            </div>
+
+            {/* Chỉ số 3: Sản lượng Video */}
+            <div className="min-w-[135px] space-y-0.5 sm:border-l sm:border-line sm:pl-2.5">
+              <div className="flex items-center justify-between gap-1 text-2xs text-ink-3">
+                <span>Video Air</span>
+                <span className="font-mono text-accent font-medium">{currentBrandReport.reportBookedCount} deal</span>
+              </div>
+              <div className="text-sm font-semibold text-ink tabular-nums">
+                {currentBrandReport.reportAiredCount} <span className="text-2xs font-normal text-ink-3">/ {currentBrandReport.planTotalVideos} video</span>
+              </div>
+              <div className="text-2xs text-ink-3 truncate tabular-nums">
+                {formatNumber(currentBrandReport.reportTotalViews)} xem · {formatNumber(currentBrandReport.reportTotalOrders)} đơn
+              </div>
+            </div>
+
+            {/* Chỉ số 4: Hồ sơ tĩnh */}
+            <div className="min-w-[125px] space-y-0.5 sm:border-l sm:border-line sm:pl-2.5">
+              <div className="flex items-center justify-between gap-1 text-2xs text-ink-3">
+                <span>Hồ sơ tĩnh</span>
+                <span className="font-mono font-medium text-positive">{row.done}/{row.total} mục</span>
+              </div>
+              <div className="text-sm font-semibold text-ink tabular-nums">
+                {p.documents.length} tệp · {effectiveProductCount} SKU
+              </div>
+              <div className={`text-2xs truncate ${expiredLegalCount > 0 ? 'text-critical font-medium' : 'text-ink-3'}`}>
+                {expiredLegalCount > 0
+                  ? `${expiredLegalCount} pháp lý hết hạn`
+                  : `${p.legal.length} pháp lý · ${p.contentRules?.banned.length || 0} từ cấm`}
+              </div>
             </div>
           </div>
         </div>
-        {row.saved && (
-          <p className="text-2xs text-ink-3">
-            Phiên bản v{p.revision} · Cập nhật {dateTime(p.updatedAt)} bởi <strong className="text-ink-2 font-medium">{p.updatedBy}</strong>
-          </p>
-        )}
-      </header>
+      </section>
 
-      {/* 3. THANH CHỈ SỐ HỒ SƠ THÁNG: PLAN VS REPORT (THEO KỲ ĐANG CHỌN) */}
-      <StatRow>
-        <Stat
-          label={`Doanh số NMV (${currentBrandReport.monthLabel})`}
-          value={currentBrandReport.reportNmv > 0 ? formatVndShort(currentBrandReport.reportNmv) : '0 đ'}
-          progress={
-            currentBrandReport.planNmv > 0
-              ? { value: currentBrandReport.reportNmv, max: currentBrandReport.planNmv }
-              : undefined
-          }
-          note={
-            currentBrandReport.planNmv > 0
-              ? `Plan NMV: ${formatVndShort(currentBrandReport.planNmv)} · Đạt ${currentBrandReport.nmvAchievementPct}% (${brandStores.length} gian)`
-              : `Plan NMV: Theo sàn (${brandStores.length} gian hàng)`
-          }
-          tone={currentBrandReport.nmvAchievementPct >= 80 ? 'positive' : undefined}
-        />
-        <Stat
-          label={`Ngân sách Net (${currentBrandReport.monthLabel})`}
-          value={formatVndShort(currentBrandReport.reportSpentNet)}
-          progress={{
-            value: currentBrandReport.reportSpentNet,
-            max: currentBrandReport.planBudgetNet || 1,
-            invert: currentBrandReport.reportSpentNet > currentBrandReport.planBudgetNet,
-          }}
-          note={
-            currentBrandReport.planBudgetNet > 0
-              ? `Plan Net: ${formatVndShort(currentBrandReport.planBudgetNet)} · Giải ngân ${currentBrandReport.budgetBurnPct}%`
-              : currentBrandReport.reportSpentNet > 0
-                ? 'Cảnh báo: Phát sinh chi khi Plan Net = 0 đ'
-                : 'Plan Net: 0 đ (Chế độ FOC gửi mẫu)'
-          }
-          tone={isOverbudget ? 'critical' : isUnbudgetedSpend ? 'warning' : 'positive'}
-        />
-        <Stat
-          label={`Sản lượng Video (${currentBrandReport.monthLabel})`}
-          value={`${currentBrandReport.reportAiredCount} / ${currentBrandReport.planTotalVideos} video`}
-          progress={
-            currentBrandReport.planTotalVideos > 0
-              ? { value: currentBrandReport.reportAiredCount, max: currentBrandReport.planTotalVideos }
-              : undefined
-          }
-          note={`Đã chốt ${currentBrandReport.reportBookedCount} deal · ${formatNumber(currentBrandReport.reportTotalViews)} xem · ${formatNumber(currentBrandReport.reportTotalOrders)} đơn`}
-          tone={currentBrandReport.videoAiredPct >= 75 ? 'positive' : undefined}
-        />
-        <Stat
-          label="Hồ sơ tĩnh: Tài liệu & Pháp lý"
-          value={`${p.documents.length} tệp · ${effectiveProductCount} SKU`}
-          note={
-            expiredLegalCount > 0
-              ? `${expiredLegalCount} văn bản pháp lý hết hiệu lực`
-              : `${p.legal.length} văn bản pháp lý · ${p.contentRules?.banned.length || 0} từ cấm`
-          }
-          tone={expiredLegalCount > 0 ? 'critical' : r2FilesCount > 0 ? 'positive' : undefined}
-        />
-      </StatRow>
-
-      {/* 4. CÁC PHÂN KHU NGHIỆP VỤ */}
+      {/* 3. CÁC PHÂN KHU NGHIỆP VỤ */}
       <Tabs<BrandDetailTab>
         value={activeTab}
         onChange={setActiveTab}
         items={[
           {
             key: 'STORES',
-            label: `Hồ sơ Tháng: Plan & Report (${activeMonth})`,
+            label: `Plan & Booking (${activeMonth})`,
             count: `${brandStores.length} gian · ${currentBrandReport.reportBookedCount} deal`,
           },
-          { key: 'OVERVIEW', label: 'Định vị & Pháp nhân', count: `${row.done}/${row.total}` },
+          { key: 'OVERVIEW', label: 'Định vị & Nhân sự', count: `${row.done}/${row.total}` },
           {
             key: 'WORKFLOW',
-            label: 'Quy tắc vận hành & Phê duyệt',
+            label: 'Quy tắc & Phê duyệt',
             count: p.workflowRules?.kocApprovalMode === 'KL4_PLUS_ONLY' ? 'Duyệt KL4+' : p.workflowRules?.kocApprovalMode === 'NONE_AUTO' ? 'Tự chủ' : 'Duyệt 100%',
           },
-          { key: 'FILES', label: 'Tài liệu & Hợp đồng', count: p.documents.length },
-          { key: 'PRODUCTS', label: 'Sản phẩm, Combo & Góc nội dung', count: `${effectiveProductCount} SKU` },
+          { key: 'PRODUCTS', label: 'Sản phẩm & Kịch bản', count: `${effectiveProductCount} SKU` },
           {
             key: 'COMPLIANCE',
-            label: 'Từ cấm, Pháp lý & Câu hỏi khó',
+            label: 'Từ cấm & Pháp lý',
             count: (p.contentRules?.banned.length || 0) + p.legal.length + p.faqs.length,
             tone: expiredLegalCount > 0 ? 'critical' : 'default',
           },
+          { key: 'FILES', label: 'Tài liệu & Hợp đồng', count: p.documents.length },
         ]}
       />
 
@@ -1041,8 +1082,8 @@ export function BrandProfileDetail({
       {/* TAB 1: ĐỊNH VỊ & PHÁP NHÂN (BỐ CỤC 2 CỘT)                             */}
       {/* ===================================================================== */}
       {activeTab === 'OVERVIEW' && (
-        <div className="grid gap-6 items-start lg:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="grid gap-6 min-w-0">
+        <div className="grid gap-3.5 items-start lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="grid gap-3.5 min-w-0">
             {/* Định vị & thông điệp 4P / Insight */}
             <Panel
               title={SECTION_LABEL.POSITIONING}
@@ -1281,15 +1322,15 @@ export function BrandProfileDetail({
       {/* TAB 1B: QUY TẮC VẬN HÀNH & PHÊ DUYỆT (ĐIỀU KHIỂN LUỒNG LÀM VIỆC)       */}
       {/* ===================================================================== */}
       {activeTab === 'WORKFLOW' && (
-        <div className="space-y-6">
+        <div className="space-y-3.5">
           <Panel
             title={`${SECTION_LABEL.WORKFLOW_RULES} — ${row.name}`}
             actions={editBtn('WORKFLOW_RULES', () => setDialog('WORKFLOW_RULES'), 'Chỉnh sửa quy tắc vận hành')}
           >
             {p.workflowRules ? (
-              <div className="grid gap-6 md:grid-cols-2 text-[13px]">
+              <div className="grid gap-3.5 md:grid-cols-2 text-[13px]">
                 {/* Nhóm 1: Phân hạng dự án & Mô hình vận hành */}
-                <div className="rounded-xl border border-line bg-canvas/50 p-4 space-y-3">
+                <div className="rounded-xl border border-line bg-canvas/50 p-3.5 space-y-2.5">
                   <h4 className="text-xs font-semibold text-ink uppercase tracking-wide">
                     1. Phân hạng dự án &amp; Mô hình phối hợp team
                   </h4>
@@ -1467,7 +1508,7 @@ export function BrandProfileDetail({
       {/* TAB 2: KHO TÀI LIỆU & HỢP ĐỒNG THƯƠNG HIỆU                            */}
       {/* ===================================================================== */}
       {activeTab === 'FILES' && (
-        <div className="space-y-6">
+        <div className="space-y-3.5">
           {/* Khu vực tải tệp thương hiệu */}
           {can.DOCUMENTS && (
             <div
@@ -1477,17 +1518,15 @@ export function BrandProfileDetail({
                 e.stopPropagation();
                 void handleQuickUploadFiles(e.dataTransfer.files);
               }}
-              className="bg-surface border-2 border-dashed border-line-strong rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4"
+              className="bg-surface border border-dashed border-line-strong rounded-xl px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3"
             >
-              <div className="flex items-start gap-3.5 min-w-0">
-                <div className="w-10 h-10 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0">
-                  <Upload className="w-5 h-5" />
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0">
+                  <Upload className="w-4 h-4" />
                 </div>
-                <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-ink">
-                    Tải tài liệu thương hiệu lên hệ thống
-                  </h3>
-                </div>
+                <h3 className="text-xs font-semibold text-ink">
+                  Tải tài liệu thương hiệu lên hệ thống
+                </h3>
               </div>
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -1634,31 +1673,69 @@ export function BrandProfileDetail({
       {/* TAB 3: HỒ SƠ THÁNG: PLAN & REPORT CỦA THƯƠNG HIỆU & CÁC GIAN HÀNG     */}
       {/* ===================================================================== */}
       {activeTab === 'STORES' && (
-        <div className="space-y-6">
-          {/* 1. BẢNG LỊCH SỬ HỒ SƠ PLAN & REPORT CỦA THƯƠNG HIỆU QUA CÁC THÁNG */}
-          <Panel
-            title={`Hồ sơ Tháng (Plan & Report) — ${row.name}`}
-            actions={
-              onDrilldownToPlan && (
+        <div className="space-y-3.5">
+          {/* 1. THANH CHUYỂN KỲ THÁNG NHANH & ĐỐI SOÁT GỌN */}
+          <div className="bg-surface border border-line rounded-xl px-3 py-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+              <span className="text-2xs font-semibold text-ink-3 uppercase tracking-wide mr-1">Kỳ tháng:</span>
+              {monthlyBrandLedger.map(r => {
+                const isSelected = r.month === activeMonth;
+                const isOver = r.overbudgetStoresCount > 0 || r.unbudgetedStoresCount > 0 || (r.planBudgetNet > 0 && r.reportSpentNet > r.planBudgetNet);
+                return (
+                  <button
+                    key={r.month}
+                    type="button"
+                    onClick={() => handleMonthChange(r.month)}
+                    className={`px-2.5 py-1 rounded-lg border text-left transition-colors inline-flex items-center gap-2 text-xs ${
+                      isSelected
+                        ? 'bg-accent-soft/70 border-accent text-ink font-semibold'
+                        : 'bg-canvas/60 border-line text-ink-2 hover:bg-sunken hover:text-ink'
+                    }`}
+                  >
+                    <span className={isSelected ? 'text-accent font-semibold' : 'font-medium'}>{r.month}</span>
+                    <span className="text-2xs text-ink-3 tabular-nums">
+                      Chi <strong className={isOver ? 'text-critical' : 'text-ink-2'}>{formatVndShort(r.reportSpentNet)}</strong>
+                      {' · '}
+                      <strong className="text-positive">{r.reportAiredCount}</strong>/{r.planTotalVideos} vid
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowLedgerTable(v => !v)}
+              >
+                {showLedgerTable ? 'Ẩn bảng 4 tháng' : 'So sánh 4 tháng'}
+              </Button>
+              {onDrilldownToPlan && (
                 <Button
                   size="sm"
                   variant="secondary"
                   icon={FileSpreadsheet}
                   onClick={() => onDrilldownToPlan({ brandName: row.name, month: activeMonth })}
                 >
-                  Mở Kế hoạch Tháng ({activeMonth})
+                  Mở Plan ({activeMonth})
                 </Button>
-              )
-            }
-            flush
-          >
-            <DataTable
-              columns={brandLedgerColumns}
-              rows={monthlyBrandLedger}
-              rowKey={r => r.month}
-              onRowClick={r => handleMonthChange(r.month)}
-            />
-          </Panel>
+              )}
+            </div>
+          </div>
+
+          {showLedgerTable && (
+            <Panel
+              title={`Hồ sơ Tháng (Plan & Report) — ${row.name}`}
+              flush
+            >
+              <DataTable
+                columns={brandLedgerColumns}
+                rows={monthlyBrandLedger}
+                rowKey={r => r.month}
+                onRowClick={r => handleMonthChange(r.month)}
+              />
+            </Panel>
+          )}
 
           {/* 2. ĐỐI SOÁT PLAN VS REPORT THEO TỪNG GIAN HÀNG TRỰC THUỘC TRONG KỲ */}
           <Panel
@@ -1680,7 +1757,7 @@ export function BrandProfileDetail({
             )}
           </Panel>
 
-          {/* 4. THỰC TẾ DEAL BOOKING & BÁO CÁO VIDEO CỦA THƯƠNG HIỆU TRONG KỲ */}
+          {/* 3. THỰC TẾ DEAL BOOKING & BÁO CÁO VIDEO CỦA THƯƠNG HIỆU TRONG KỲ */}
           <Panel
             title={`Thực tế Deal Booking & Báo cáo Video (${currentBrandReport.monthLabel} · ${currentBrandReport.bookings.length} deal)`}
             actions={
@@ -1744,7 +1821,7 @@ export function BrandProfileDetail({
       {/* TAB 4: SẢN PHẨM & COMBO 2 TẦNG, GÓC NỘI DUNG & TRẦN THÙ LAO KOC       */}
       {/* ===================================================================== */}
       {activeTab === 'PRODUCTS' && (
-        <div className="space-y-6">
+        <div className="space-y-3.5">
           <Panel title={`Danh mục Nhóm Sản phẩm & Combo 2 tầng — ${row.name}`}>
             <ProductCatalogView
               brandNames={[row.name]}
@@ -1822,7 +1899,7 @@ export function BrandProfileDetail({
       {/* TAB 5: TỪ CẤM, PHÁP LÝ & CÂU HỎI KHÓ                                  */}
       {/* ===================================================================== */}
       {activeTab === 'COMPLIANCE' && (
-        <div className="space-y-6">
+        <div className="space-y-3.5">
           <Panel
             title={SECTION_LABEL.CONTENT_RULES}
             actions={editBtn('CONTENT_RULES', () => setDialog('CONTENT_RULES'), p.contentRules ? 'Sửa quy chuẩn' : 'Thêm quy chuẩn')}

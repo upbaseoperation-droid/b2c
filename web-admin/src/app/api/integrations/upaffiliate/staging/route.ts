@@ -156,6 +156,79 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const rawChannels: string[] = Array.isArray(body?.channelIds)
+      ? body.channelIds
+      : body?.channelId
+        ? [body.channelId]
+        : [];
+    const nextStatus = body?.exportStatus as StagingKocItem['exportStatus'] | undefined;
+
+    if (rawChannels.length === 0 || !nextStatus) {
+      return NextResponse.json(
+        { success: false, message: 'Thiếu danh sách kênh hoặc trạng thái cần cập nhật.' },
+        { status: 400, headers }
+      );
+    }
+
+    const targetSet = new Set(
+      rawChannels.map((c) => String(c).toLowerCase().trim().replace(/^@+/, '')).filter(Boolean)
+    );
+    const now = new Date().toISOString();
+
+    const currentRecord = await readRecord<StagingStorageData>(
+      STAGING_RECORD_KEY,
+      DEFAULT_STAGING_DATA
+    );
+
+    const result = await updateRecord<StagingStorageData>(
+      STAGING_RECORD_KEY,
+      DEFAULT_STAGING_DATA,
+      currentRecord.revision,
+      (current: StagingStorageData) => {
+        const existingList = Array.isArray(current.items) ? current.items : [];
+        const updatedItems = existingList.map((it) => {
+          const clean = it.channelId.toLowerCase().trim().replace(/^@+/, '');
+          if (!targetSet.has(clean)) return it;
+          return {
+            ...it,
+            exportStatus: nextStatus,
+            upaffiliateMasterId:
+              it.upaffiliateMasterId ||
+              `UPA-NEW-${clean.slice(0, 6).toUpperCase()}`,
+            exportedAt:
+              nextStatus === 'ENRICHING' || nextStatus === 'EXPORTED'
+                ? now
+                : it.exportedAt,
+          };
+        });
+        return {
+          items: updatedItems,
+          updatedAt: now,
+        };
+      }
+    );
+
+    return NextResponse.json(
+      {
+        success: true,
+        items: result.data.items,
+        total: result.data.items.length,
+        updatedAt: result.data.updatedAt,
+      },
+      { headers }
+    );
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Lỗi cập nhật trạng thái bảng tạm.';
+    return NextResponse.json(
+      { success: false, message: msg },
+      { status: 500, headers }
+    );
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);

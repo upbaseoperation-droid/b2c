@@ -34,6 +34,7 @@ import {
   type StorePortfolioItem,
   type UserProfile,
   normalizeStoreCoefficient,
+  resolveStoreStaffAssignment,
 } from '../../lib/types';
 import { formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
 import {
@@ -162,11 +163,12 @@ export function StoreProfile({
   const leadB2c = 'Đặng Thị Yến Nhi';
   const hasLeader = store.hasBookingLeader && !!store.bookingLeader;
   const leaderName = hasLeader ? store.bookingLeader : undefined;
-  const specialistPic =
-    store.b2cOwnerName ||
-    store.primaryPic ||
-    (store.b2cOwners && store.b2cOwners[0]) ||
-    'Lê Phương Thảo';
+  const staffAssignment = useMemo(
+    () => resolveStoreStaffAssignment(store, 'Lê Phương Thảo'),
+    [store]
+  );
+  const specialistPic = staffAssignment.primaryPic;
+  const supportStaff = staffAssignment.supportStaff;
   const focSpecialist = 'Trần Thị Hảo';
 
   // Lịch sử phân công & bàn giao của riêng gian hàng này
@@ -1241,7 +1243,7 @@ export function StoreProfile({
             actions={
               onOpenHandover && (
                 <Button size="sm" icon={UserCheck} onClick={() => onOpenHandover(store)}>
-                  Bàn giao
+                  Phân công / Bàn giao
                 </Button>
               )
             }
@@ -1262,8 +1264,34 @@ export function StoreProfile({
               </div>
 
               <div>
-                <span className="block text-2xs text-ink-3 mb-1">Chuyên viên Booking chính (PIC)</span>
+                <span className="block text-2xs text-ink-3 mb-1">Nhân viên chính (PIC chủ trì)</span>
                 <Person name={specialistPic} />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="block text-2xs text-ink-3">
+                    Nhân viên hỗ trợ ({supportStaff.length})
+                  </span>
+                  {onOpenHandover && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenHandover(store)}
+                      className="text-2xs font-semibold text-accent hover:underline cursor-pointer"
+                    >
+                      {supportStaff.length > 0 ? 'Sửa hỗ trợ' : '+ Gán hỗ trợ'}
+                    </button>
+                  )}
+                </div>
+                {supportStaff.length > 0 ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {supportStaff.map(st => (
+                      <Person key={st} name={st} />
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-2xs text-ink-3">Chưa gán nhân viên hỗ trợ</span>
+                )}
               </div>
 
               <div>

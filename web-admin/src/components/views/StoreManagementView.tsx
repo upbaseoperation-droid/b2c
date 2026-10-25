@@ -18,6 +18,7 @@ import {
   type StorePortfolioItem,
   type UserProfile,
   normalizeStoreCoefficient,
+  resolveStoreStaffAssignment,
 } from '../../lib/types';
 import {
   Button,
@@ -186,14 +187,16 @@ export function StoreManagementView({
   const searchedStores = useMemo(() => {
     if (!search.trim()) return storeList;
     const q = search.trim().toLowerCase();
-    return storeList.filter(
-      s =>
+    return storeList.filter(s => {
+      const assign = resolveStoreStaffAssignment(s, '');
+      return (
         s.storeName.toLowerCase().includes(q) ||
         s.brandName.toLowerCase().includes(q) ||
         (s.storeOperationId && s.storeOperationId.toLowerCase().includes(q)) ||
-        (s.b2cOwnerName && s.b2cOwnerName.toLowerCase().includes(q)) ||
+        assign.allOwners.some(o => o.toLowerCase().includes(q)) ||
         (s.bookingLeader && s.bookingLeader.toLowerCase().includes(q))
-    );
+      );
+    });
   }, [storeList, search]);
 
   const matchesFilter = useCallback(
@@ -313,8 +316,13 @@ export function StoreManagementView({
     }
     setStoreOverrides(prev => ({ ...prev, [updated.id]: updated }));
     onUpdateStore?.(updated);
+    const assign = resolveStoreStaffAssignment(updated);
+    const supportText =
+      assign.supportStaff.length > 0 ? ` · Hỗ trợ: ${assign.supportStaff.join(', ')}` : '';
     onNotify?.(
-      `Đã bàn giao gian hàng ${updated.storeName} từ ${logEntry.fromPic} sang ${logEntry.toPic}`,
+      logEntry.fromPic.toLowerCase() !== logEntry.toPic.toLowerCase()
+        ? `Đã bàn giao gian hàng ${updated.storeName} từ ${logEntry.fromPic} sang ${logEntry.toPic}${supportText}`
+        : `Đã cập nhật phân công gian hàng ${updated.storeName}: Chính ${assign.primaryPic}${supportText}`,
       'success'
     );
   };
@@ -458,16 +466,48 @@ export function StoreManagementView({
     },
     {
       key: 'pic',
-      header: 'Chuyên viên PIC',
-      width: 130,
+      header: 'Nhân sự phụ trách',
+      width: 155,
       render: s => {
-        const pic =
-          s.b2cOwnerName || s.primaryPic || (s.b2cOwners && s.b2cOwners[0]) || 'Chưa giao';
+        const assign = resolveStoreStaffAssignment(s, 'Chưa giao');
         return (
-          <div className="leading-tight">
-            <Person name={pic} size={18} />
+          <div
+            className={`leading-tight ${canManageStores ? 'cursor-pointer hover:opacity-80' : ''}`}
+            onClick={
+              canManageStores
+                ? e => {
+                    e.stopPropagation();
+                    setHandoverTarget(s);
+                  }
+                : undefined
+            }
+            title={
+              canManageStores
+                ? 'Bấm để phân công Nhân viên chính & Nhân viên hỗ trợ'
+                : undefined
+            }
+          >
+            <div className="flex items-center gap-1 flex-wrap">
+              <Person name={assign.primaryPic} size={18} />
+              {assign.supportStaff.length > 0 && (
+                <span
+                  className="px-1.5 py-0.2 rounded bg-accent-soft text-accent text-2xs font-semibold"
+                  title={`Nhân viên hỗ trợ: ${assign.supportStaff.join(', ')}`}
+                >
+                  +{assign.supportStaff.length} hỗ trợ
+                </span>
+              )}
+            </div>
+            {assign.supportStaff.length > 0 && (
+              <span
+                className="block text-2xs text-ink-3 truncate max-w-[145px] mt-0.5"
+                title={`Nhân viên hỗ trợ: ${assign.supportStaff.join(', ')}`}
+              >
+                Hỗ trợ: {assign.supportStaff.join(', ')}
+              </span>
+            )}
             {s.hasBookingLeader && s.bookingLeader && (
-              <span className="block text-2xs text-accent font-medium mt-0.5 truncate max-w-[120px]">
+              <span className="block text-2xs text-accent font-medium mt-0.5 truncate max-w-[145px]">
                 TN: {s.bookingLeader}
               </span>
             )}

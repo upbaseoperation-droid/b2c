@@ -47,6 +47,7 @@ export function ContractManagementView({
   kocs = [],
   intent,
   onNotify,
+  onSyncDealContractStatus,
   demoMode = false,
   currentUserId,
 }: {
@@ -54,6 +55,7 @@ export function ContractManagementView({
   kocs?: KocItem[];
   intent?: ContractIntent | null;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+  onSyncDealContractStatus?: (dealId: string, patch: Partial<BookingDealItem>) => void;
   demoMode?: boolean;
   currentUserId?: string;
 }) {
@@ -136,7 +138,16 @@ export function ContractManagementView({
       const doc = intent.document;
       const deal = deals.find(d => d.id === intent.dealId);
       const koc = kocs.find(k => k.id === (intent.kocId || deal?.kocId));
-      const subject = detectSubjectKind(koc, deal);
+      const activeProf = resolveActiveLegalProfile(koc, deal, intent.legalProfileId || deal?.legalProfileId);
+      const baseSubject = detectSubjectKind(koc, deal);
+      const subject =
+        baseSubject === 'CTV'
+          ? 'CTV'
+          : activeProf?.legalType === 'COMPANY'
+            ? 'COM'
+            : activeProf?.legalType === 'HOUSEHOLD'
+              ? 'HKD'
+              : baseSubject;
       const sameKocForDoc = (r: ContractRecord) => r.dealId === intent.dealId || Boolean(deal?.kocId && r.kocId === deal.kocId);
       const existing = latest(data.records.filter(r => documentOfTemplate(r.templateId) === doc && (doc === 'HDNT' ? sameKocForDoc(r) : r.dealId === intent.dealId)));
       if (existing) setScreen({ mode: 'detail', id: existing.id });
@@ -150,14 +161,42 @@ export function ContractManagementView({
           const framework = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && sameKoc(r)));
           const sow = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'SOW' && r.dealId === intent.dealId));
           const parentId = doc === 'SOW' ? framework?.id : doc === 'BBNT' ? sow?.id || framework?.id : undefined;
-          setScreen({ mode: 'form', init: { dealId: intent.dealId, kocId: intent.kocId || deal?.kocId, legalProfileId: intent.legalProfileId || deal?.legalProfileId, kind: doc === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', docStage: doc, templateId, parentId } });
+          setScreen({ mode: 'form', init: { dealId: intent.dealId, kocId: intent.kocId || deal?.kocId, legalProfileId: intent.legalProfileId || deal?.legalProfileId || activeProf?.id, kind: doc === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', docStage: doc, templateId, parentId } });
         }
       }
     } else {
       const existing = latest(data.records.filter(r => r.dealId === intent.dealId && !isAcceptance(r.templateId)));
       const deal = deals.find(d => d.id === intent.dealId);
+      const koc = kocs.find(k => k.id === (intent.kocId || deal?.kocId));
+      const activeProf = resolveActiveLegalProfile(koc, deal, intent.legalProfileId || deal?.legalProfileId);
+      const baseSubject = detectSubjectKind(koc, deal);
+      const subject =
+        baseSubject === 'CTV'
+          ? 'CTV'
+          : activeProf?.legalType === 'COMPANY'
+            ? 'COM'
+            : activeProf?.legalType === 'HOUSEHOLD'
+              ? 'HKD'
+              : baseSubject;
       const framework = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && (r.dealId === intent.dealId || Boolean(deal?.kocId && r.kocId === deal.kocId))));
-      setScreen(existing ? { mode: 'detail', id: existing.id } : { mode: 'form', init: { dealId: intent.dealId, kocId: intent.kocId || deal?.kocId, legalProfileId: intent.legalProfileId || deal?.legalProfileId, kind: 'CONTRACT', docStage: framework ? 'SOW' : 'HDNT', parentId: framework?.id } });
+      const nextStage = subject === 'CTV' ? 'HDNT' : 'SOW';
+      const nextTemplateId = nextStage === 'SOW' ? `${subject}-SOW` : `${subject}-HDNT`;
+      setScreen(
+        existing
+          ? { mode: 'detail', id: existing.id }
+          : {
+              mode: 'form',
+              init: {
+                dealId: intent.dealId,
+                kocId: intent.kocId || deal?.kocId,
+                legalProfileId: intent.legalProfileId || deal?.legalProfileId || activeProf?.id,
+                kind: 'CONTRACT',
+                docStage: nextStage,
+                templateId: nextTemplateId,
+                parentId: framework?.id,
+              },
+            },
+      );
     }
   }
 
@@ -171,6 +210,23 @@ export function ContractManagementView({
     try {
       const result = await contractApi<{ record: ContractRecord }>('/api/contracts', { id: record?.id, revision: record?.revision, ...payload });
       await refresh();
+      if (result.record.dealId && onSyncDealContractStatus) {
+        const docKind = documentOfTemplate(result.record.templateId);
+        const isCompleted = result.record.signing.at(-1)?.status === 'COMPLETED';
+        const vMap = result.record.values || {};
+        const docDate = vMap['token:[DDMMYY]'] || vMap['token:[DD/MM/YYYY]'] || '';
+        const kocCode = vMap['token:[ID KOC]'] || result.record.dealCode || 'KOC';
+        if (docKind === 'SOW') {
+          onSyncDealContractStatus(result.record.dealId, {
+            contractAppendixCode: `PL01-${docDate || '26'}/${kocCode}`,
+            contractAppendixStatus: isCompleted ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
+          });
+        } else if (docKind === 'HDNT') {
+          onSyncDealContractStatus(result.record.dealId, {
+            masterContractCode: `${docDate || '26'}/${kocCode}/HĐNT-UPB`,
+          });
+        }
+      }
       setScreen({ mode: 'detail', id: result.record.id });
       onNotify?.(done, 'success');
       return result.record;
@@ -403,6 +459,19 @@ export function ContractManagementView({
                 <Button size="sm" variant="secondary" icon={Upload} onClick={() => setScreen({ mode: 'form', init: { isKocOwnForm: true } })}>
                   Tải hợp đồng (.docx)
                 </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={FileText}
+                  onClick={() =>
+                    setScreen({
+                      mode: 'form',
+                      init: { docStage: 'SOW', kind: 'CONTRACT', templateId: 'IND-SOW' },
+                    })
+                  }
+                >
+                  Ký Phụ lục SOW (Bắt đầu Deal)
+                </Button>
                 <Button size="sm" variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>
                   Tạo hợp đồng
                 </Button>
@@ -434,7 +503,7 @@ export function ContractManagementView({
         />
       ) : screen.mode === 'form' ? (
         <ContractForm
-          key={screen.editId || `new-${screen.init?.dealId || ''}-${screen.init?.kocId || ''}-${screen.init?.legalProfileId || ''}-${screen.init?.kind || ''}-${screen.init?.parentId || ''}-${screen.init?.templateId || ''}-${screen.init?.isKocOwnForm ? 'koc' : 'std'}`}
+          key={screen.editId || `new-${screen.init?.dealId || ''}-${screen.init?.kocId || ''}-${screen.init?.legalProfileId || ''}-${screen.init?.kind || ''}-${screen.init?.docStage || ''}-${screen.init?.parentId || ''}-${screen.init?.templateId || ''}-${screen.init?.isKocOwnForm ? 'koc' : 'std'}`}
           data={data}
           deals={deals}
           kocs={kocs}
@@ -442,6 +511,7 @@ export function ContractManagementView({
           init={screen.init}
           busy={busy}
           onCancel={() => setScreen(screen.editId ? { mode: 'detail', id: screen.editId } : { mode: 'list' })}
+          onQuickFrameworkCreated={() => { void refresh(); }}
           onSave={(p: ContractFormPayload) => act({ action: screen.editId ? 'EDIT' : 'CREATE', ...p }, screen.editId ? 'Đã lưu phiên bản mới' : 'Đã lưu nháp hợp đồng')}
         />
       ) : screen.mode === 'detail' && record ? (

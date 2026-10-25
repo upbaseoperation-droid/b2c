@@ -76,6 +76,7 @@ export interface ApprovedBookingListViewProps {
   initialStoreName?: string;
   initialMonthKey?: string;
   onCreateOrUpdateDeals?: (newOrUpdatedDeals: BookingDealItem[]) => void;
+  onOpenContractForDeal?: (deal: BookingDealItem, document?: 'HDNT' | 'SOW' | 'BBNT') => void;
   onNavigateTab?: (tab: 'koc-listing' | 'booking', context?: { storeName?: string; monthKey?: string }) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
@@ -111,6 +112,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   initialStoreName,
   initialMonthKey,
   onCreateOrUpdateDeals,
+  onOpenContractForDeal,
   onNavigateTab,
   onNotify,
 }) => {
@@ -368,7 +370,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     });
   };
 
-  const handleSaveDealBuilderModal = () => {
+  const handleSaveDealBuilderModal = (openSowAfterSave?: boolean) => {
     if (!dealBuilderItem) return;
     if (!dealDraftPlannedAirDate.trim()) {
       onNotify?.(
@@ -414,11 +416,13 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       })
     );
 
+    let mappedDeal: BookingDealItem | null = null;
     if (savedRow) {
       const syncedRow: ApprovedBookingListItem = savedRow;
       syncApprovedItemsBackToStaffBrandSheets([syncedRow], kocs, stores, deals);
+      mappedDeal = buildBookingDealFromApprovedItem(syncedRow);
       if (onCreateOrUpdateDeals) {
-        onCreateOrUpdateDeals([buildBookingDealFromApprovedItem(syncedRow)]);
+        onCreateOrUpdateDeals([mappedDeal]);
       }
     }
 
@@ -427,6 +431,9 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       `Đã tạo Deal ${finalDealCode} (1 Video Asset + ${dealDraftAddons.length} dịch vụ gia tăng) & Phụ lục ${finalAppendixCode}.`,
       'success'
     );
+    if (openSowAfterSave && mappedDeal && onOpenContractForDeal) {
+      onOpenContractForDeal(mappedDeal, 'SOW');
+    }
   };
 
   // Tạo Deal (mã BO...) & Phụ lục cho 1 dòng hoặc nhiều dòng đã chọn
@@ -2319,11 +2326,34 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             </Button>
                           ) : (
                             <>
+                              {onOpenContractForDeal && (
+                                <Button
+                                  variant={
+                                    item.contractAppendixStatus === 'ĐÃ_KÝ'
+                                      ? 'secondary'
+                                      : 'primary'
+                                  }
+                                  size="sm"
+                                  icon={FileText}
+                                  onClick={() =>
+                                    onOpenContractForDeal(
+                                      buildBookingDealFromApprovedItem(item),
+                                      'SOW'
+                                    )
+                                  }
+                                >
+                                  {item.contractAppendixStatus === 'ĐÃ_KÝ'
+                                    ? 'Xem Phụ lục SOW'
+                                    : 'Ký Phụ lục SOW'}
+                                </Button>
+                              )}
                               <Button
                                 variant={
                                   item.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL'
                                     ? 'secondary'
-                                    : 'primary'
+                                    : onOpenContractForDeal
+                                      ? 'secondary'
+                                      : 'primary'
                                 }
                                 size="sm"
                                 icon={Video}
@@ -3066,12 +3096,21 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               Hủy
             </Button>
             <Button
-              variant="primary"
+              variant={onOpenContractForDeal ? 'secondary' : 'primary'}
               icon={FileCheck}
-              onClick={handleSaveDealBuilderModal}
+              onClick={() => handleSaveDealBuilderModal(false)}
             >
               Lưu Deal &amp; Phát hành Phụ lục
             </Button>
+            {onOpenContractForDeal && (
+              <Button
+                variant="primary"
+                icon={FileText}
+                onClick={() => handleSaveDealBuilderModal(true)}
+              >
+                Lưu Deal &amp; Ký Phụ lục SOW
+              </Button>
+            )}
           </>
         }
       >

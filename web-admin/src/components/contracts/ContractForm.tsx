@@ -98,6 +98,7 @@ export function ContractForm({
   busy,
   onCancel,
   onSave,
+  onQuickFrameworkCreated,
 }: {
   data: ContractBootstrap;
   deals: BookingDealItem[];
@@ -108,15 +109,19 @@ export function ContractForm({
   busy: boolean;
   onCancel: () => void;
   onSave: (payload: ContractFormPayload) => void;
+  onQuickFrameworkCreated?: (createdRecord: ContractRecord) => void;
 }) {
   const editing = !!record;
   const findFrameworkForKoc = (k?: KocItem, d?: BookingDealItem): ContractRecord | undefined => {
     const kId = k?.id || d?.kocId;
     const pName = partnerName(k, d);
+    const cleanHandle = (k?.channelId || d?.kocChannelId || '').replace(/^@/, '').toLowerCase();
     return data.records.find(
       r =>
         r.templateId.endsWith('-HDNT') &&
-        ((kId && r.kocId === kId) || (pName && r.partner === pName)),
+        ((kId && r.kocId === kId) ||
+          (pName && r.partner === pName) ||
+          (cleanHandle && (r.values['token:[ID KOC]'] || '').toLowerCase().startsWith(cleanHandle))),
     );
   };
 
@@ -164,7 +169,10 @@ export function ContractForm({
     }
     if (initialDealLookup) {
       const existingFw = findFrameworkForKoc(initialKocLookup, initialDealLookup);
-      return existingFw ? 'SOW' : 'HDNT';
+      const hasProfileFw = Boolean(
+        initialResolvedProfile?.frameworkContractCode?.trim() || initialDealLookup.masterContractCode?.trim(),
+      );
+      return existingFw || hasProfileFw ? 'SOW' : 'HDNT';
     }
     return 'HDNT';
   })();
@@ -395,9 +403,26 @@ export function ContractForm({
   );
   const [draftVideoFee, setDraftVideoFee] = useState<number>(initialBreakdown.videoItem.feeNetVnd);
   const [draftAddons, setDraftAddons] = useState<JobAcceptanceAddonRow[]>(initialBreakdown.addonItems);
+  const [draftAdvanceAmount, setDraftAdvanceAmount] = useState<number>(initialBreakdown.financials.advanceAmount);
+  const [draftProductName, setDraftProductName] = useState<string>(initialBreakdown.videoItem.productName);
+  const [draftAirDate, setDraftAirDate] = useState<string>(
+    initialDeal?.postedDate || initialDeal?.deadlinePost || initialBreakdown.videoItem.airDate || '',
+  );
+  const [creatingQuickFramework, setCreatingQuickFramework] = useState<boolean>(false);
+  const [quickFwNotice, setQuickFwNotice] = useState<string>('');
   const jobAcceptanceBreakdown = useMemo(
-    () => buildJobAcceptanceBreakdown(dealWithActiveProfile || deal, koc, parentRecord, draftAddons, draftVideoFee),
-    [dealWithActiveProfile, deal, koc, parentRecord, draftAddons, draftVideoFee],
+    () =>
+      buildJobAcceptanceBreakdown(
+        dealWithActiveProfile || deal,
+        koc,
+        parentRecord,
+        draftAddons,
+        draftVideoFee,
+        draftAdvanceAmount,
+        draftProductName,
+        draftAirDate,
+      ),
+    [dealWithActiveProfile, deal, koc, parentRecord, draftAddons, draftVideoFee, draftAdvanceAmount, draftProductName, draftAirDate],
   );
 
   const latestPrefillCtxRef = useRef({
@@ -465,7 +490,16 @@ export function ContractForm({
       legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
       ctvAcceptedDeals,
     });
-    const nextBd = buildJobAcceptanceBreakdown(dealWithActiveProfile || deal, koc, parentRecord, draftAddons, draftVideoFee);
+    const nextBd = buildJobAcceptanceBreakdown(
+      dealWithActiveProfile || deal,
+      koc,
+      parentRecord,
+      draftAddons,
+      draftVideoFee,
+      draftAdvanceAmount,
+      draftProductName,
+      draftAirDate,
+    );
     const synced = syncValuesFromJobAcceptanceBreakdown(fields, result.values, nextBd);
     setValues(synced);
     setPrefilled(new Set(result.filled));
@@ -477,12 +511,73 @@ export function ContractForm({
     targetDeal = dealWithActiveProfile || deal,
     targetKoc = koc,
     targetParent = parentRecord,
+    nextAdvanceAmount = draftAdvanceAmount,
+    nextProductName = draftProductName,
+    nextAirDate = draftAirDate,
   ) => {
     setDraftVideoFee(nextVideoFee);
     setDraftAddons(nextAddons);
+    setDraftAdvanceAmount(nextAdvanceAmount);
+    setDraftProductName(nextProductName);
+    setDraftAirDate(nextAirDate);
     if (fields.length > 0) {
-      const nextBd = buildJobAcceptanceBreakdown(targetDeal, targetKoc, targetParent, nextAddons, nextVideoFee);
+      const nextBd = buildJobAcceptanceBreakdown(
+        targetDeal,
+        targetKoc,
+        targetParent,
+        nextAddons,
+        nextVideoFee,
+        nextAdvanceAmount,
+        nextProductName,
+        nextAirDate,
+      );
       setValues(prev => syncValuesFromJobAcceptanceBreakdown(fields, prev, nextBd));
+    }
+  };
+
+  const handleQuickCreateFrameworkForSow = async () => {
+    if (!koc && !deal) return;
+    setCreatingQuickFramework(true);
+    setLoadError('');
+    try {
+      const fwTemplateId = templateFor(koc, 'CONTRACT', dealWithActiveProfile || deal, data.templates, 'HDNT');
+      const r = await contractApi<{ template: LegalTemplate }>(`/api/contracts/templates/${fwTemplateId}`);
+      const fwFields = uniqueFields(r.template);
+      const fwPrefill = prefill(fwFields, {}, {
+        koc,
+        deal: dealWithActiveProfile || deal,
+        brand: 'UPBASE',
+        existingRecords: data.records,
+        legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
+      });
+      const fwTitle = formatStageTitle('HDNT', koc, dealWithActiveProfile || deal, partner, 'UPBASE');
+      const created = await contractApi<{ record: ContractRecord }>('/api/contracts', {
+        action: 'CREATE',
+        title: fwTitle,
+        brand: 'UPBASE',
+        partner: partner.trim() || partnerName(koc, deal, selectedLegalProfileId) || 'Đối tác KOC',
+        templateId: fwTemplateId,
+        values: fwPrefill.values,
+        kocId: koc?.id,
+        dealId: deal?.id,
+        dealCode: deal?.dealCode,
+      });
+      setParentId(created.record.id);
+      const fwDocDate = created.record.values['token:[dd.mm.yy]'] || '';
+      if (fwDocDate) {
+        setValues(prev => ({
+          ...prev,
+          'token:[Ngày HĐNT]': fwDocDate,
+        }));
+      }
+      onQuickFrameworkCreated?.(created.record);
+      setQuickFwNotice(
+        `Đã khởi tạo Hợp đồng nguyên tắc gốc "${created.record.title}" và tự động liên kết vào Phụ lục SOW này.`,
+      );
+    } catch (e) {
+      setLoadError((e as Error).message || 'Không thể khởi tạo nhanh Hợp đồng nguyên tắc.');
+    } finally {
+      setCreatingQuickFramework(false);
     }
   };
 
@@ -498,10 +593,12 @@ export function ContractForm({
     setPartner(partnerName(k, d, profId));
     if (d.totalValue && !customContractValue) setCustomContractValue(formatMoneyInput(String(d.totalValue)));
 
-    // Nếu đang ở HĐNT nhưng KOC đã có HĐNT khung rồi -> tự chuyển sang Phụ lục SOW
+    // Khi chọn 1 Deal để bắt đầu thực thi: nếu KOC đã có HĐNT (trong kho HĐ hoặc trong Hồ sơ pháp lý) -> mở thẳng Phụ lục SOW
     const existingFw = findFrameworkForKoc(k, d);
+    const kProf = resolveActiveLegalProfile(k, d, profId);
+    const hasFwCode = Boolean(existingFw || kProf?.frameworkContractCode?.trim() || d.masterContractCode?.trim());
     const effectiveStage: ContractDocStage =
-      docStage === 'BBNT' ? 'BBNT' : docStage === 'SOW' || existingFw ? 'SOW' : 'HDNT';
+      docStage === 'BBNT' ? 'BBNT' : docStage === 'SOW' || hasFwCode ? 'SOW' : 'HDNT';
     if (effectiveStage !== docStage) setDocStage(effectiveStage);
 
     setTitle(formatStageTitle(effectiveStage, k, d, partnerName(k, d, profId), d.brandName));
@@ -517,6 +614,9 @@ export function ContractForm({
     const freshBd = buildJobAcceptanceBreakdown(d, k, matchedParent);
     setDraftVideoFee(freshBd.videoItem.feeNetVnd);
     setDraftAddons(freshBd.addonItems);
+    setDraftAdvanceAmount(freshBd.financials.advanceAmount);
+    setDraftProductName(freshBd.videoItem.productName);
+    setDraftAirDate(d.postedDate || d.deadlinePost || freshBd.videoItem.airDate || '');
     const savedShots = loadSavedScreenshotsForDeal(d, k?.id);
     if (savedShots.length > 0 && acceptanceScreenshots.length === 0) {
       setAcceptanceScreenshots(savedShots);
@@ -626,6 +726,9 @@ export function ContractForm({
     const freshBd = buildJobAcceptanceBreakdown(syntheticDeal, k, nextParent);
     setDraftVideoFee(freshBd.videoItem.feeNetVnd);
     setDraftAddons(freshBd.addonItems);
+    setDraftAdvanceAmount(freshBd.financials.advanceAmount);
+    setDraftProductName(freshBd.videoItem.productName);
+    setDraftAirDate(matchedDealForKoc?.postedDate || matchedDealForKoc?.deadlinePost || freshBd.videoItem.airDate || '');
 
     const nextParentTpl = nextParent ? data.templates.find(t => t.id === nextParent.templateId) : undefined;
     const nextCtvDeals = deals
@@ -739,12 +842,18 @@ export function ContractForm({
       const freshBd = buildJobAcceptanceBreakdown(dealWithActiveProfile || deal, koc, nextParent || parentRecord);
       setDraftVideoFee(freshBd.videoItem.feeNetVnd);
       setDraftAddons(freshBd.addonItems);
+      setDraftAdvanceAmount(freshBd.financials.advanceAmount);
+      setDraftProductName(freshBd.videoItem.productName);
+      setDraftAirDate(deal?.postedDate || deal?.deadlinePost || freshBd.videoItem.airDate || '');
     } else if (nextStage === 'SOW') {
       nextParent = findFrameworkForKoc(koc, deal);
       setParentId(nextParent?.id || '');
       const freshBd = buildJobAcceptanceBreakdown(dealWithActiveProfile || deal, koc, nextParent || parentRecord);
       setDraftVideoFee(freshBd.videoItem.feeNetVnd);
       setDraftAddons(freshBd.addonItems);
+      setDraftAdvanceAmount(freshBd.financials.advanceAmount);
+      setDraftProductName(freshBd.videoItem.productName);
+      setDraftAirDate(deal?.postedDate || deal?.deadlinePost || freshBd.videoItem.airDate || '');
     } else {
       setParentId('');
     }
@@ -1017,6 +1126,13 @@ export function ContractForm({
     });
   }, [koc, dealWithActiveProfile, deal, numericTotal, numericAdvance, hasCustomTerms, isKocOwnForm, templateId, data.templates]);
 
+  const hasInheritedMasterContract = Boolean(
+    parentId ||
+      activeLegalProfile?.frameworkContractCode?.trim() ||
+      deal?.masterContractCode?.trim() ||
+      values['token:[Ngày HĐNT]']?.trim(),
+  );
+
   const canSubmitForm =
     !busy &&
     Boolean(template) &&
@@ -1024,7 +1140,7 @@ export function ContractForm({
     (isHdnt || Boolean(brand.trim())) &&
     Boolean(partner.trim()) &&
     (!isKocOwnForm || Boolean(customFile)) &&
-    (!isSow || Boolean(parentId));
+    (!isSow || hasInheritedMasterContract);
 
   return (
     <form
@@ -1111,6 +1227,13 @@ export function ContractForm({
         <div role="status" className="rounded-xl bg-positive-soft border border-line px-4 py-2 text-xs text-positive font-medium flex items-center justify-between gap-2">
           <span>{ocrNotice}</span>
           <button type="button" onClick={() => setOcrNotice('')} className="text-ink-3 hover:text-ink">Đóng</button>
+        </div>
+      )}
+
+      {quickFwNotice && (
+        <div role="status" className="rounded-xl bg-positive-soft border border-positive/30 px-4 py-2 text-xs text-positive font-medium flex items-center justify-between gap-2">
+          <span>{quickFwNotice}</span>
+          <button type="button" onClick={() => setQuickFwNotice('')} className="text-ink-3 hover:text-ink">Đóng</button>
         </div>
       )}
 
@@ -1584,47 +1707,97 @@ export function ContractForm({
                 )}
                 {(kind === 'ACCEPTANCE' || isSow) && (
                   <Field label={isSow ? 'Hợp đồng nguyên tắc gốc của KOC' : 'Phụ lục SOW / Hợp đồng gốc của Job'} htmlFor="ct-parent" className="md:col-span-2">
-                    <Select
-                      id="ct-parent"
-                      value={parentId}
-                      onChange={e => {
-                        const nextParentId = e.target.value;
-                        setParentId(nextParentId);
-                        const pRec = data.records.find(r => r.id === nextParentId);
-                        if (pRec) {
-                          if (!brand.trim()) setBrand(pRec.brand);
-                          if (!partner.trim()) setPartner(pRec.partner);
-                          if (pRec.dealId && !dealId) chooseDeal(pRec.dealId);
-                          if (!title.trim()) setTitle(formatStageTitle(docStage, koc, deal, pRec.partner, pRec.brand));
-                          const freshBd = buildJobAcceptanceBreakdown(dealWithActiveProfile || deal, koc, pRec);
-                          setDraftVideoFee(freshBd.videoItem.feeNetVnd);
-                          setDraftAddons(freshBd.addonItems);
-                          const inferredTpl = isSow ? '' : inferAcceptanceTemplate(pRec.templateId);
-                          if (inferredTpl && inferredTpl !== templateId) {
-                            setTemplate(null);
-                            setValues({});
-                            setTemplateId(inferredTpl);
-                          } else if (template) {
-                            const pTpl = data.templates.find(t => t.id === pRec.templateId);
-                            const result = prefill(fields, {}, {
+                    <div className="space-y-2">
+                      <Select
+                        id="ct-parent"
+                        value={parentId}
+                        onChange={e => {
+                          const nextParentId = e.target.value;
+                          setParentId(nextParentId);
+                          const pRec = data.records.find(r => r.id === nextParentId);
+                          if (pRec) {
+                            if (!brand.trim()) setBrand(pRec.brand);
+                            if (!partner.trim()) setPartner(pRec.partner);
+                            if (pRec.dealId && !dealId) chooseDeal(pRec.dealId);
+                            if (!title.trim()) setTitle(formatStageTitle(docStage, koc, deal, pRec.partner, pRec.brand));
+                            const freshBd = buildJobAcceptanceBreakdown(
+                              dealWithActiveProfile || deal,
                               koc,
-                              deal: dealWithActiveProfile || deal,
-                              brand: brand || pRec.brand,
-                              existingRecords: data.records,
-                              parentRecord: pRec,
-                              parentFields: pTpl ? uniqueFields(pTpl) : [],
-                              legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
-                              ctvAcceptedDeals,
-                            });
-                            setValues(result.values);
-                            setPrefilled(new Set(result.filled));
+                              pRec,
+                              undefined,
+                              undefined,
+                              draftAdvanceAmount,
+                              draftProductName || undefined,
+                              draftAirDate || undefined,
+                            );
+                            setDraftVideoFee(freshBd.videoItem.feeNetVnd);
+                            setDraftAddons(freshBd.addonItems);
+                            const inferredTpl = isSow ? '' : inferAcceptanceTemplate(pRec.templateId);
+                            if (inferredTpl && inferredTpl !== templateId) {
+                              setTemplate(null);
+                              setValues({});
+                              setTemplateId(inferredTpl);
+                            } else if (template) {
+                              const pTpl = data.templates.find(t => t.id === pRec.templateId);
+                              const result = prefill(fields, {}, {
+                                koc,
+                                deal: dealWithActiveProfile || deal,
+                                brand: brand || pRec.brand,
+                                existingRecords: data.records,
+                                parentRecord: pRec,
+                                parentFields: pTpl ? uniqueFields(pTpl) : [],
+                                legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
+                                ctvAcceptedDeals,
+                              });
+                              setValues(result.values);
+                              setPrefilled(new Set(result.filled));
+                            }
                           }
-                        }
-                      }}
-                    >
-                      <option value="">{isSow ? 'Chọn hợp đồng nguyên tắc của KOC' : 'Chọn Phụ lục SOW / Hợp đồng của Job'}</option>
-                      {parents.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
-                    </Select>
+                        }}
+                      >
+                        <option value="">
+                          {isSow
+                            ? activeLegalProfile?.frameworkContractCode?.trim() || deal?.masterContractCode?.trim()
+                              ? `Kế thừa HĐNT từ hồ sơ pháp lý (${activeLegalProfile?.frameworkContractCode || deal?.masterContractCode})`
+                              : 'Chọn hợp đồng nguyên tắc của KOC...'
+                            : 'Chọn Phụ lục SOW / Hợp đồng của Job'}
+                        </option>
+                        {parents.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
+                      </Select>
+
+                      {isSow && !parentId && (
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent-soft/20 px-3 py-2 text-2xs">
+                          <div className="flex items-center gap-1.5 text-ink">
+                            <ShieldCheck className="w-3.5 h-3.5 text-accent shrink-0" />
+                            {activeLegalProfile?.frameworkContractCode?.trim() || deal?.masterContractCode?.trim() ? (
+                              <span>
+                                Phụ lục SOW đang kế thừa số HĐNT{' '}
+                                <strong className="font-mono text-accent">
+                                  {activeLegalProfile?.frameworkContractCode || deal?.masterContractCode}
+                                </strong>{' '}
+                                từ Hồ sơ pháp lý KOC (có thể lưu và trình ký ngay).
+                              </span>
+                            ) : (
+                              <span>
+                                KOC chưa có bản ghi Hợp đồng nguyên tắc (HĐNT) trong danh sách hợp đồng. Bạn có thể khởi tạo nhanh HĐNT gốc ngay tại đây để gắn vào Phụ lục SOW.
+                              </span>
+                            )}
+                          </div>
+                          {koc && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={creatingQuickFramework}
+                              onClick={() => void handleQuickCreateFrameworkForSow()}
+                            >
+                              {creatingQuickFramework
+                                ? 'Đang tạo HĐNT gốc...'
+                                : 'Khởi tạo nhanh HĐNT gốc & Gắn vào Phụ lục SOW'}
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </Field>
                 )}
               </div>
@@ -1821,7 +1994,7 @@ export function ContractForm({
                 </div>
 
                 {/* Task #1: Sản xuất & đăng tải Video chính */}
-                <div className="p-3 rounded-lg border border-line bg-surface space-y-2">
+                <div className="p-3 rounded-lg border border-line bg-surface space-y-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="px-1.5 py-0.5 rounded bg-accent/15 text-accent font-mono text-2xs font-semibold">
@@ -1836,24 +2009,69 @@ export function ContractForm({
                         {jobAcceptanceBreakdown.videoItem.deliverableLabel}
                       </span>
                       <Status tone={jobAcceptanceBreakdown.videoItem.videoUrl ? 'positive' : 'warning'}>
-                        {jobAcceptanceBreakdown.videoItem.videoUrl ? 'Đã gắn Link Air' : 'Chờ Link Air'}
+                        {jobAcceptanceBreakdown.videoItem.videoUrl
+                          ? 'Đã gắn Link Air'
+                          : isSow
+                            ? 'Bắt đầu Deal (Chưa Air)'
+                            : 'Chờ Link Air'}
                       </Status>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 items-end">
-                    <Field label="Ngày đăng tải (Tự lấy từ Job)">
-                      <Input
-                        value={jobAcceptanceBreakdown.videoItem.airDate || '—'}
-                        readOnly
-                        className="font-mono bg-sunken/40"
-                      />
+                    <Field label={isSow ? 'Tên sản phẩm / Dịch vụ trong Phụ lục SOW' : 'Đầu việc nghiệm thu: Link bài đăng (Link Air)'}>
+                      {isSow ? (
+                        <Input
+                          value={draftProductName}
+                          onChange={e => {
+                            const nextProd = e.target.value;
+                            applyJobBreakdownToDraftValues(
+                              draftVideoFee,
+                              draftAddons,
+                              undefined,
+                              undefined,
+                              undefined,
+                              draftAdvanceAmount,
+                              nextProd,
+                              draftAirDate,
+                            );
+                          }}
+                          placeholder={brand || 'Nhập tên sản phẩm / chiến dịch'}
+                        />
+                      ) : (
+                        <Input
+                          value={jobAcceptanceBreakdown.videoItem.videoUrl || 'Chưa có link video trên Job'}
+                          readOnly
+                          className="font-mono bg-sunken/40"
+                        />
+                      )}
                     </Field>
-                    <Field label="Đầu việc nghiệm thu: Link bài đăng (Link Air)">
-                      <Input
-                        value={jobAcceptanceBreakdown.videoItem.videoUrl || 'Chưa có link video trên Job'}
-                        readOnly
-                        className="font-mono bg-sunken/40"
-                      />
+                    <Field label={isSow ? 'Ngày dự kiến đăng tải (Air Date)' : 'Ngày đăng tải (Tự lấy từ Job)'}>
+                      {isSow ? (
+                        <Input
+                          value={draftAirDate}
+                          onChange={e => {
+                            const nextDate = e.target.value;
+                            applyJobBreakdownToDraftValues(
+                              draftVideoFee,
+                              draftAddons,
+                              undefined,
+                              undefined,
+                              undefined,
+                              draftAdvanceAmount,
+                              draftProductName,
+                              nextDate,
+                            );
+                          }}
+                          placeholder="DD/MM/YYYY"
+                          className="font-mono"
+                        />
+                      ) : (
+                        <Input
+                          value={jobAcceptanceBreakdown.videoItem.airDate || '—'}
+                          readOnly
+                          className="font-mono bg-sunken/40"
+                        />
+                      )}
                     </Field>
                     <Field label="Thành tiền Task #1 (VNĐ - Net)">
                       <Input
@@ -1862,11 +2080,90 @@ export function ContractForm({
                         value={formatMoneyInput(String(draftVideoFee || 0))}
                         onChange={e => {
                           const nextFee = Number(e.target.value.replace(/\D/g, '')) || 0;
-                          applyJobBreakdownToDraftValues(nextFee, draftAddons);
+                          applyJobBreakdownToDraftValues(
+                            nextFee,
+                            draftAddons,
+                            undefined,
+                            undefined,
+                            undefined,
+                            draftAdvanceAmount,
+                            draftProductName,
+                            draftAirDate,
+                          );
                         }}
                       />
                     </Field>
                   </div>
+
+                  {isSow && (
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end pt-2 border-t border-line/70">
+                      <div className="md:col-span-5">
+                        <Field label="Số tiền tạm ứng đợt 1 khi bắt đầu Deal (VNĐ)">
+                          <Input
+                            inputMode="numeric"
+                            className="font-mono tabular-nums font-semibold"
+                            value={formatMoneyInput(String(draftAdvanceAmount || 0))}
+                            onChange={e => {
+                              const nextAdv = Number(e.target.value.replace(/\D/g, '')) || 0;
+                              applyJobBreakdownToDraftValues(
+                                draftVideoFee,
+                                draftAddons,
+                                undefined,
+                                undefined,
+                                undefined,
+                                nextAdv,
+                                draftProductName,
+                                draftAirDate,
+                              );
+                            }}
+                          />
+                        </Field>
+                      </div>
+                      <div className="md:col-span-7 flex flex-wrap items-center gap-1.5">
+                        <span className="text-2xs text-ink-3 mr-1">Chọn mức tạm ứng:</span>
+                        {[
+                          { label: '0đ (Trả sau 100%)', calc: () => 0 },
+                          {
+                            label: 'Tạm ứng 30%',
+                            calc: () => Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.3),
+                          },
+                          {
+                            label: 'Tạm ứng 50%',
+                            calc: () => Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.5),
+                          },
+                          {
+                            label: 'Tối đa 2.000.000đ',
+                            calc: () =>
+                              Math.min(
+                                2_000_000,
+                                Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.5),
+                              ),
+                          },
+                        ].map(preset => (
+                          <Button
+                            key={preset.label}
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              const nextAdv = preset.calc();
+                              applyJobBreakdownToDraftValues(
+                                draftVideoFee,
+                                draftAddons,
+                                undefined,
+                                undefined,
+                                undefined,
+                                nextAdv,
+                                draftProductName,
+                                draftAirDate,
+                              );
+                            }}
+                          >
+                            {preset.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Task #2..N: Các Task đi kèm trong Phụ lục SOW (Bật/tắt tùy theo Job của từng KOC) */}

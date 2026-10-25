@@ -984,8 +984,15 @@ export default function App() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   // Mở hồ sơ hợp đồng của một deal hoặc từ một KOC / Hồ sơ pháp lý (từ Booking, Danh bạ KOC, Tổng quan, Việc của tôi).
   const [contractIntent, setContractIntent] = useState<ContractIntent | null>(null);
-  const openContractForDeal = (deal: BookingDealItem) => {
-    setContractIntent({ dealId: deal.id, nonce: Date.now() });
+  const openContractForDeal = (deal: BookingDealItem, document?: ContractDocument) => {
+    setDeals(prev => (prev.some(d => d.id === deal.id) ? prev.map(d => (d.id === deal.id ? deal : d)) : [deal, ...prev]));
+    setContractIntent({
+      dealId: deal.id,
+      kocId: deal.kocId,
+      legalProfileId: deal.legalProfileId,
+      nonce: Date.now(),
+      document: document || (!deal.tiktokVideoUrl ? 'SOW' : undefined),
+    });
     setActiveTab('contracts');
   };
   const openContractForKoc = (koc: KocItem, legalProfileId?: string) => {
@@ -1234,7 +1241,7 @@ export default function App() {
     }
   };
 
-  const handleDealCreated = (newDeal: BookingDealItem) => {
+  const handleDealCreated = (newDeal: BookingDealItem, openSowAfterCreate?: boolean) => {
     setDeals(prev => [newDeal, ...prev]);
     const newTask: SlaTask = {
       id: `task-${Date.now()}`,
@@ -1249,6 +1256,11 @@ export default function App() {
       dealCode: newDeal.dealCode
     };
     setTasks(prev => [newTask, ...prev]);
+    if (openSowAfterCreate) {
+      openContractForDeal(newDeal, 'SOW');
+      showToast(`Đã tạo deal ${newDeal.dealCode} và mở Phụ lục SOW cho ${newDeal.kocStageName}.`);
+      return;
+    }
     showToast(`Đã tạo deal ${newDeal.dealCode} cho ${newDeal.kocStageName}. Hạn duyệt kịch bản: 24 giờ.`);
   };
 
@@ -1685,6 +1697,7 @@ export default function App() {
                   return [...brandNew, ...updatedExisting];
                 });
               }}
+              onOpenContractForDeal={openContractForDeal}
               onNavigateTab={(targetTab, ctx) => {
                 if (targetTab === 'koc-listing') {
                   setListingPlanContext({
@@ -1964,7 +1977,16 @@ export default function App() {
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="contracts" currentTab={activeTab}>
-            <ContractManagementView deals={scopedDeals} kocs={kocs} intent={contractIntent} onNotify={showToast} currentUserId={currentUser.id} />
+            <ContractManagementView
+              deals={scopedDeals}
+              kocs={kocs}
+              intent={contractIntent}
+              onNotify={showToast}
+              onSyncDealContractStatus={(dealId, patch) => {
+                setDeals(prev => prev.map(d => (d.id === dealId ? { ...d, ...patch } : d)));
+              }}
+              currentUserId={currentUser.id}
+            />
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="sample-tracker" currentTab={activeTab}>

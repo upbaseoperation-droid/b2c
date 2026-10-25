@@ -5,11 +5,13 @@ export type StagingDiscoverySource =
   | 'HASHTAG_DISCOVERY'
   | 'SEARCH_BAR'
   | 'EXCEL_IMPORT'
-  | 'TIKTOK_SCRAPER';
+  | 'TIKTOK_SCRAPER'
+  | 'MANUAL_ENTRY';
 
 export type StagingExportStatus =
-  | 'PENDING_EXPORT'    // Đang lưu tạm, chờ đẩy sang Upaffiliate
-  | 'EXPORTED'          // Đã đẩy thành công sang Upaffiliate
+  | 'PENDING_EXPORT'    // Đang lưu tạm tại B2C Hub, chờ gửi sang UpAffiliate
+  | 'ENRICHING'         // Đã gửi sang UpAffiliate, đang chờ lấy số liệu Sàn & Kalodata
+  | 'EXPORTED'          // UpAffiliate đã trả số liệu về và đồng bộ vào Bảng KOC Mới
   | 'DUPLICATE_REJECTED'; // Bị từ chối do trùng lặp
 
 export interface StagingKocItem {
@@ -235,3 +237,43 @@ export async function saveStagingKocsBatch(
 
   return { success: true, savedCount, items: merged };
 }
+
+/**
+ * Cập nhật trạng thái của 1 hoặc nhiều KOC trong bảng tạm (PENDING_EXPORT -> ENRICHING -> EXPORTED).
+ */
+export async function updateStagingKocStatusBatch(
+  channelIds: string[],
+  exportStatus: StagingExportStatus
+): Promise<{ success: boolean; items: StagingKocItem[] }> {
+  const cleanIds = channelIds.map((c) => normalizeKocHandle(c)).filter(Boolean);
+  if (cleanIds.length === 0) {
+    return { success: true, items: [] };
+  }
+
+  try {
+    const res = await fetch('/api/integrations/upaffiliate/staging', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channelIds: cleanIds, exportStatus }),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && Array.isArray(json.items)) {
+        try {
+          window.localStorage.setItem(
+            LOCAL_STORAGE_STAGING_KEY,
+            JSON.stringify(json.items)
+          );
+        } catch {
+          // ignore
+        }
+        return { success: true, items: json.items };
+      }
+    }
+  } catch {
+    // fallback client
+  }
+
+  return { success: false, items: [] };
+}
+

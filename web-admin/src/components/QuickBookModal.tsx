@@ -29,7 +29,7 @@ import {
 interface QuickBookModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onDealCreated: (deal: BookingDealItem) => void;
+  onDealCreated: (deal: BookingDealItem, openSowAfterCreate?: boolean) => void;
   kocs?: KocItem[];
   preselectedKoc?: KocItem | null;
   preselectedBrand?: string | null;
@@ -277,7 +277,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
   const advanceAmount = dealType === 'SERVICE_ONLY' ? 0 : advanceType === 'FIXED_2M' ? Math.min(2000000, rate) : Math.round(rate * 0.2);
   const finalAmount = Math.max(0, rate - advanceAmount);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent, openSowAfterCreate = false) => {
     e.preventDefault();
     if (isSelectedSkuOutOfStock) {
       setValidationError(
@@ -443,7 +443,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
       rightsTerms: finalRightsTerms,
     };
 
-    onDealCreated(newDeal);
+    onDealCreated(newDeal, openSowAfterCreate);
     onClose();
   };
 
@@ -460,7 +460,12 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
           <Button variant="ghost" onClick={onClose}>
             Hủy
           </Button>
-          <Button variant="primary" icon={Zap} onClick={handleSubmit} className="max-w-full truncate">
+          <Button
+            variant="secondary"
+            icon={Zap}
+            onClick={e => handleSubmit(e, false)}
+            className="max-w-full truncate"
+          >
             <span className="truncate">
               {isOverCeiling
                 ? 'Tạo deal & trình duyệt vượt trần'
@@ -471,10 +476,18 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
                     : `Tạo deal & trình ${workflowRules?.brandApproverName || 'nhãn hàng'} duyệt`}
             </span>
           </Button>
+          <Button
+            variant="primary"
+            icon={CheckCircle2}
+            onClick={e => handleSubmit(e, true)}
+            className="max-w-full truncate"
+          >
+            <span className="truncate">Tạo deal &amp; Ký Phụ lục SOW</span>
+          </Button>
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={e => handleSubmit(e, false)} className="space-y-4">
         {/* Chọn cấu trúc Deal: Đa nền tảng / Đơn kênh / Mua lẻ dịch vụ từ video cũ */}
         <div>
           <label className="block text-xs font-semibold text-ink-2 mb-1.5">
