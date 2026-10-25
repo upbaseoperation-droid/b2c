@@ -73,6 +73,20 @@ export interface CatalogProduct {
   monthlySampleQuota?: number | null;
   substituteProductId?: string;
   detectKeywords?: string;
+  /** Dung tích / Quy cách đóng gói (VD: Tuýp 30g, Chai 50ml, Hộp 30 gói) */
+  size?: string;
+  /** Điểm nổi bật riêng của SKU (USP cấp sản phẩm) */
+  usps?: string;
+  /** Thành phần & Hoạt chất chính (VD: Nghệ Nano THC, Bơ hạt mỡ, Vitamin E) */
+  ingredients?: string;
+  /** Công dụng & Cơ chế tác động */
+  mechanism?: string;
+  /** Hướng dẫn sử dụng / Bước dùng trong Routine */
+  usageInstruction?: string;
+  /** Đối tượng / Loại da sử dụng phù hợp */
+  targetUser?: string;
+  /** Lưu ý / Chống chỉ định riêng của SKU */
+  contraindications?: string;
   bundleComponents?: BundleComponentItem[];
   cartLinks: CartLink[];
   affiliateLinks: AffiliateLink[];
@@ -109,6 +123,13 @@ export const newProduct = (productType: ProductItemType = 'SINGLE'): CatalogProd
   monthlySampleQuota: null,
   substituteProductId: '',
   detectKeywords: '',
+  size: '',
+  usps: '',
+  ingredients: '',
+  mechanism: '',
+  usageInstruction: '',
+  targetUser: '',
+  contraindications: '',
   bundleComponents: [],
   cartLinks: [],
   affiliateLinks: [],
@@ -178,6 +199,13 @@ export function sanitizeProductCatalog(input: Partial<BrandProductCatalog> | und
       monthlySampleQuota: nonNegInt(p?.monthlySampleQuota),
       substituteProductId: s(p?.substituteProductId, 40),
       detectKeywords: s(p?.detectKeywords, 500),
+      size: s(p?.size, 120),
+      usps: s(p?.usps, 1500),
+      ingredients: s(p?.ingredients, 1500),
+      mechanism: s(p?.mechanism, 2000),
+      usageInstruction: s(p?.usageInstruction, 1000),
+      targetUser: s(p?.targetUser, 600),
+      contraindications: s(p?.contraindications, 600),
       bundleComponents: (Array.isArray(p?.bundleComponents) ? p.bundleComponents : []).slice(0, 30).map(c => ({
         id: s(c?.id, 40) || newCatalogId('BC'),
         productId: s(c?.productId, 40),
@@ -580,6 +608,10 @@ export interface BrandProfileProductSource {
   sampleStockStatus?: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'PRE_ORDER';
   pdpUrl?: string;
   usps?: string[];
+  mechanism?: string;
+  ingredients?: string[];
+  usageInstruction?: string;
+  targetUser?: string;
   contraindications?: string;
 }
 
@@ -677,7 +709,23 @@ export function mergeBrandSourcesIntoCatalog(
     const skuKey = (bp.skuCode || '').trim().toLowerCase();
     const nameKey = normName(bp.name || '');
     if (!nameKey) return;
-    if ((skuKey && knownSkus.has(skuKey)) || knownNames.has(nameKey)) return;
+    if ((skuKey && knownSkus.has(skuKey)) || knownNames.has(nameKey)) {
+      // Nếu sản phẩm đã có trong catalog nhưng chưa có thông số chuyên môn thì làm giàu tự động
+      for (const g of groups) {
+        for (const p of g.products) {
+          if ((skuKey && p.sku.trim().toLowerCase() === skuKey) || normName(p.name) === nameKey) {
+            if (!p.size && bp.size) p.size = bp.size;
+            if (!p.usps && bp.usps?.length) p.usps = bp.usps.join(' · ');
+            if (!p.ingredients && bp.ingredients?.length) p.ingredients = bp.ingredients.join('; ');
+            if (!p.mechanism && bp.mechanism) p.mechanism = bp.mechanism;
+            if (!p.usageInstruction && bp.usageInstruction) p.usageInstruction = bp.usageInstruction;
+            if (!p.targetUser && bp.targetUser) p.targetUser = bp.targetUser;
+            if (!p.contraindications && bp.contraindications) p.contraindications = bp.contraindications;
+          }
+        }
+      }
+      return;
+    }
 
     const matchedPush = matchingPush.find(
       mp => (skuKey && mp.sku.trim().toLowerCase() === skuKey) || normName(mp.productName) === nameKey
@@ -751,6 +799,13 @@ export function mergeBrandSourcesIntoCatalog(
       monthlySampleQuota: quota,
       substituteProductId: '',
       detectKeywords: [bp.skuCode, bp.name].filter(Boolean).join(', '),
+      size: bp.size || '',
+      usps: uspText,
+      ingredients: (bp.ingredients || []).filter(Boolean).join('; '),
+      mechanism: bp.mechanism || '',
+      usageInstruction: bp.usageInstruction || '',
+      targetUser: bp.targetUser || '',
+      contraindications: bp.contraindications || '',
       bundleComponents: [],
       cartLinks,
       affiliateLinks,

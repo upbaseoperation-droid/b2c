@@ -93,6 +93,15 @@ function buildDefaultWorkflowRules(m: BrandDetail, actor: string): BrandWorkflow
         : ['Beauty Reviewer', 'Bác sĩ Da liễu / Chuyên gia', 'Haul & Routine chăm sóc cá nhân'],
     kocSelectionCriteria:
       'Ưu tiên kênh có tệp người xem thật tại Việt Nam, lịch sử ra đơn ổn định trên TikTok Shop/Shopee, không dính gậy vi phạm chính sách sàn và không nhận bài đối thủ cạnh tranh trực tiếp trong vòng 7 ngày.',
+    targetAudienceDemographics: isMomBaby
+      ? 'Khán giả Nữ ≥ 75%, độ tuổi 22–38 (mẹ bầu & mẹ bỉm sữa tại Việt Nam)'
+      : isHealth
+        ? 'Khán giả Nữ & Nam 25–45 tuổi quan tâm chăm sóc sức khỏe chủ động'
+        : 'Khán giả Nữ ≥ 70%, độ tuổi 18–34 mua sắm trên TikTok Shop & Shopee Mall',
+    kocPersonaAndVisualCriteria: isMomBaby
+      ? 'Mẹ bỉm có em bé thật hoặc Bác sĩ/Dược sĩ; bối cảnh phòng ngủ/phòng khách gia đình gọn gàng, sáng sủa; giọng nói ấm áp, chân thực.'
+      : 'Da thật khỏe hoặc đúng tình trạng sản phẩm xử lý; quay cận cảnh kết cấu dưới ánh sáng tự nhiên, không dùng filter làm bệt màu; giọng đọc rõ ràng.',
+    blacklistedKocs: [],
     handoverFrom: realFiles?.handoverFrom,
     handoverTo: realFiles?.handoverTo || m.brandPicName,
     handoverFileUrl: realFiles?.handoverFileUrl,
@@ -213,6 +222,7 @@ function seedFromMock(kb: BrandKnowledgeBase, master?: BrandDetail): BrandProfil
     usps: s.uniqueSellingPoints,
     mechanism: s.scientificMechanism,
     ingredients: s.keyActiveIngredients.map(i => [i.name, i.benefit].filter(Boolean).join(': ')),
+    usageInstruction: 'Sử dụng đều đặn sáng và tối sau bước làm sạch theo đúng hướng dẫn trên bao bì.',
     targetUser: s.targetSkinOrUser,
     contraindications: s.contraindications,
   }));
@@ -297,6 +307,8 @@ function seedFromMock(kb: BrandKnowledgeBase, master?: BrandDetail): BrandProfil
       mandatoryMentions: fallback.contentRules!.mandatoryMentions,
       defaultCta: fallback.contentRules!.defaultCta,
       videoDurationRule: fallback.contentRules!.videoDurationRule,
+      minAdvertisedPriceRule: fallback.contentRules!.minAdvertisedPriceRule,
+      keyPromotionMechanic: fallback.contentRules!.keyPromotionMechanic,
     },
     faqs: mappedFaqs.length > 0 ? mappedFaqs : fallback.faqs,
     legal: mappedLegal.length > 0 ? mappedLegal : fallback.legal,
@@ -351,6 +363,7 @@ function seedFromMasterBrand(m: BrandDetail, index: number): BrandProfile {
         ],
         mechanism: p.viralAngle || p.keyMessage || `Tập trung làm rõ hiệu quả thực tế, trải nghiệm sử dụng trực tiếp và ưu đãi chính hãng trên gian hàng ${m.name}.`,
         ingredients: ['Thành phần đạt chuẩn kiểm định chất lượng lưu hành tại Việt Nam'],
+        usageInstruction: 'Sử dụng đều đặn hàng ngày theo hướng dẫn trên bao bì sản phẩm; quay rõ thao tác sử dụng trên video.',
         targetUser: isMomBaby ? 'Mẹ bỉm sữa và gia đình có trẻ nhỏ' : isHealth ? 'Người trưởng thành quan tâm chăm sóc sức khỏe chủ động' : 'Khách hàng nữ 18-35 tuổi mua sắm trên TikTok Shop & Shopee Mall',
         contraindications: 'Bảo quản nơi khô thoáng, đọc kỹ hướng dẫn sử dụng trên bao bì trước khi dùng.',
       }))
@@ -379,6 +392,7 @@ function seedFromMasterBrand(m: BrandDetail, index: number): BrandProfile {
         ],
         mechanism: `Quay rõ chất sản phẩm khi dùng thử trực tiếp và gắn giỏ hàng gian hàng chính hãng.`,
         ingredients: ['Sản phẩm phân phối chính hãng, có đầy đủ tem phụ tiếng Việt'],
+        usageInstruction: 'Sử dụng đều đặn hàng ngày theo hướng dẫn trên bao bì sản phẩm; quay rõ thao tác sử dụng trên video.',
         targetUser: `Khách hàng ngành ${m.category} trên sàn thương mại điện tử`,
         contraindications: 'Không dùng sản phẩm đã quá hạn hoặc rách niêm phong.',
       }))
@@ -582,6 +596,8 @@ function seedFromMasterBrand(m: BrandDetail, index: number): BrandProfile {
       mandatoryMentions: [`@${bKey.replace(/-/g, '')}.official`],
       defaultCta: `Bấm vào giỏ hàng góc trái gian hàng chính hãng ${m.name} để áp voucher ưu đãi và nhận quà tặng kèm ngay hôm nay.`,
       videoDurationRule: 'Thời lượng 45–90 giây; sản phẩm phải xuất hiện trong 5 giây đầu và quay cận cảnh kết cấu.',
+      minAdvertisedPriceRule: `Chỉ truyền thông đúng khung giá Deal đã duyệt của chiến dịch; tuyệt đối không dùng từ "xả kho", "thanh lý giá rẻ" hoặc tự ý báo giá thấp hơn giá sàn của nhãn ${m.name}.`,
+      keyPromotionMechanic: `Ưu đãi voucher gian hàng chính hãng ${m.name} + Quà tặng kèm GWP và Freeship theo khung chiến dịch Mega / Payday.`,
     },
     faqs: [
       {

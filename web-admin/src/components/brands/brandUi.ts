@@ -126,6 +126,19 @@ export function buildRows(masters: BrandDetail[], profiles: BrandProfile[]): Bra
 
 /** Quyền hiển thị nút “Sửa”. Máy chủ vẫn kiểm tra lại khi lưu. */
 export function permissionsOf(access: BrandAccess | undefined, accountPic?: string, brandName?: string): BrandPermissions {
+  if (!access) {
+    return {
+      POSITIONING: true,
+      ENTITY: true,
+      WORKFLOW_RULES: true,
+      PRODUCTS: true,
+      CONTENT_RULES: true,
+      FAQS: true,
+      DOCUMENTS: true,
+      LEGAL: true,
+      RATECARD: true,
+    };
+  }
   const pic = !!access && !!accountPic && access.name.trim().toLowerCase() === accountPic.trim().toLowerCase();
   let partnerMatch = false;
   if (access?.brandPartner && brandName) {
@@ -136,7 +149,8 @@ export function permissionsOf(access: BrandAccess | undefined, accountPic?: stri
       return ck && (ck === targetKey);
     });
   }
-  const content = !!access && (access.lead || pic || partnerMatch);
+  const internalStaff = !access.brandPartner;
+  const content = Boolean(access.lead || pic || internalStaff || partnerMatch);
   return {
     POSITIONING: content,
     ENTITY: content,
@@ -145,8 +159,8 @@ export function permissionsOf(access: BrandAccess | undefined, accountPic?: stri
     CONTENT_RULES: content,
     FAQS: content,
     DOCUMENTS: content,
-    LEGAL: !!access && (access.lead || access.legal || partnerMatch),
-    RATECARD: !!access && access.lead,
+    LEGAL: Boolean(access.lead || access.legal || internalStaff || partnerMatch),
+    RATECARD: Boolean(access.lead || internalStaff),
   };
 }
 

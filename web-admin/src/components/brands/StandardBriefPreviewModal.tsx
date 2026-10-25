@@ -74,6 +74,7 @@ export function buildStandardBriefMarkdown(
       `- **Điểm nổi bật cần nhấn mạnh (USP):** ${(p.usps || []).join('; ') || '—'}`,
       `- **Cơ chế & Công dụng:** ${p.mechanism || '—'}`,
       `- **Thành phần chính:** ${(p.ingredients || []).join('; ') || '—'}`,
+      `- **Hướng dẫn sử dụng / Bước dùng trong Routine:** ${p.usageInstruction || '—'}`,
       `- **Đối tượng sử dụng:** ${p.targetUser || '—'} | **Lưu ý:** ${p.contraindications || '—'}`,
       `- **Link sản phẩm gắn giỏ:** ${p.pdpUrl || '—'}`,
     ]),
@@ -106,11 +107,15 @@ export function buildStandardBriefMarkdown(
 
   lines.push(
     ``,
-    `### 4.2. Quy chuẩn Hình ảnh & Quay dựng (Moodboard)`,
+    `### 4.2. Quy chuẩn Hình ảnh, Giá Truyền Thông & Quay dựng (Moodboard)`,
     `- **Nên làm (Visual Do):** ${(rules?.visualDo || []).join('; ') || 'Quay đủ sáng tự nhiên, cận cảnh chất sản phẩm và trước/sau khi dùng.'}`,
     `- **Không được làm (Visual Don't):** ${(rules?.visualDont || []).join('; ') || 'Không quay thiếu sáng, không dùng filter làm bệt màu, không để lộ sản phẩm đối thủ.'}`,
     `- **Thời lượng & Khung hình:** ${rules?.videoDurationRule || '45–90 giây; lộ diện sản phẩm trong 5 giây đầu.'}`,
     `- **Hashtag bắt buộc:** ${(rules?.mandatoryHashtags || []).join(' ') || '—'}`,
+    `- **Quy định giá sàn truyền thông:** ${rules?.minAdvertisedPriceRule || 'Truyền thông đúng khung giá Deal chiến dịch.'}`,
+    `- **Cơ chế khuyến mãi & quà tặng chủ đạo:** ${rules?.keyPromotionMechanic || 'Theo chương trình ưu đãi của gian hàng chính hãng.'}`,
+    ...(wf?.targetAudienceDemographics ? [`- **Nhân khẩu học khán giả kênh KOC:** ${wf.targetAudienceDemographics}`] : []),
+    ...(wf?.kocPersonaAndVisualCriteria ? [`- **Yêu cầu hình ảnh & bối cảnh KOC:** ${wf.kocPersonaAndVisualCriteria}`] : []),
     ``,
     `### 4.3. Bảng Từ khóa Vi phạm & Từ Thay thế`,
     ...(rules?.banned?.length
@@ -359,8 +364,14 @@ export const StandardBriefPreviewModal: React.FC<StandardBriefPreviewModalProps>
                       <span className="font-semibold text-ink-2">USP:</span> {(p.usps || []).join('; ') || '—'}
                     </div>
                     <div className="text-xs text-ink-2">
-                      <span className="font-semibold">Thành phần &amp; Cơ chế:</span> {(p.ingredients || []).join(', ')} — {p.mechanism}
+                      <span className="font-semibold">Thành phần &amp; Cơ chế:</span> {(p.ingredients || []).join(', ') || '—'} — {p.mechanism || '—'}
                     </div>
+                    {(p.usageInstruction || p.targetUser) && (
+                      <div className="text-xs text-ink-2">
+                        {p.usageInstruction && <><span className="font-semibold">Cách dùng:</span> {p.usageInstruction} </>}
+                        {p.targetUser && <><span className="font-semibold">· Đối tượng:</span> {p.targetUser}</>}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

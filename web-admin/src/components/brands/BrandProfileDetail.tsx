@@ -26,12 +26,13 @@ import {
   Pencil,
   Plus,
   Store,
+  Trash2,
   Upload,
   Users,
   Video,
 } from 'lucide-react';
 import type { BookingDealItem, InputPlanBreakdownState, StorePortfolioItem, UserProfile } from '../../lib/types';
-import type { BrandDocCategory, BrandDocument, BrandPermissions, BrandProduct, BrandProfile, BrandSection } from '../../lib/brands/types';
+import type { BrandContentRules, BrandDocCategory, BrandDocument, BrandPermissions, BrandProduct, BrandProfile, BrandSection } from '../../lib/brands/types';
 import { SECTION_LABEL } from '../../lib/brands/types';
 import { formatNumber, formatVnd, formatVndShort } from '../../lib/format';
 import { INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
@@ -52,6 +53,7 @@ import {
   DataTable,
   EmptyState,
   FilterBar,
+  Input,
   Modal,
   PageActions,
   PageHeaderNav,
@@ -129,6 +131,7 @@ const PRODUCT_FIELDS: ItemField[] = [
   { key: 'usps', label: 'Điểm nổi bật KOC cần nhấn mạnh', kind: 'lines' },
   { key: 'mechanism', label: 'Cơ chế tác động', kind: 'long' },
   { key: 'ingredients', label: 'Thành phần chính', kind: 'lines' },
+  { key: 'usageInstruction', label: 'Hướng dẫn sử dụng / Bước dùng trong Routine', kind: 'long' },
   { key: 'targetUser', label: 'Phù hợp với' },
   { key: 'contraindications', label: 'Không dùng cho' },
 ];
@@ -152,6 +155,7 @@ const DOC_FIELDS: ItemField[] = [
   { key: 'category', label: 'Loại', kind: 'select', options: Object.entries(DOC_CATEGORY_LABEL).map(([value, label]) => ({ value, label })) },
   { key: 'url', label: 'Tệp tài liệu hoặc link (Lark, Google Drive…)', kind: 'file', required: true },
   { key: 'note', label: 'Ghi chú', kind: 'long' },
+  { key: 'extractedContent', label: 'Tóm tắt nội dung cốt lõi trong tài liệu', kind: 'long' },
 ];
 const LIST_META: Record<ListKey, { section: BrandSection; fields: ItemField[]; noun: string }> = {
   products: { section: 'PRODUCTS', fields: PRODUCT_FIELDS, noun: 'sản phẩm' },
@@ -227,22 +231,38 @@ export function BrandProfileDetail({
 
   const mergedBrandProducts = useMemo<BrandProduct[]>(() => {
     if (!liveCatalog) return p.products;
-    const fromCatalog: BrandProduct[] = listAllCatalogProducts(liveCatalog).map(({ group, product }) => ({
-      id: product.id,
-      skuCode: product.sku || product.id,
-      name: product.name,
-      size: '',
-      priceVnd: product.originalPrice ?? undefined,
-      dealPriceVnd: product.promoPrice ?? undefined,
-      commissionOrganicPct: product.affiliateLinks?.[0]?.commissionPct ?? undefined,
-      sampleStockStatus: product.status === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : 'IN_STOCK',
-      pdpUrl: product.cartLinks?.[0]?.url || '',
-      usps: group.usp ? [group.usp] : [],
-      mechanism: group.usp || '',
-      ingredients: [],
-      targetUser: '',
-      contraindications: group.forbiddenClaims || '',
-    }));
+    const fromCatalog: BrandProduct[] = listAllCatalogProducts(liveCatalog).map(({ group, product }) => {
+      const existing = p.products.find(
+        bp =>
+          bp.id === product.id ||
+          (bp.skuCode && product.sku && bp.skuCode.trim().toLowerCase() === product.sku.trim().toLowerCase()) ||
+          bp.name.trim().toLowerCase() === product.name.trim().toLowerCase(),
+      );
+      const skuUsps = product.usps
+        ? product.usps.split(/[·;\n]+/).map(s => s.trim()).filter(Boolean)
+        : [];
+      const mergedUsps = skuUsps.length > 0 ? skuUsps : existing?.usps?.length ? existing.usps : group.usp ? [group.usp] : [];
+      const skuIngredients = product.ingredients
+        ? product.ingredients.split(/[;\n]+/).map(s => s.trim()).filter(Boolean)
+        : [];
+      return {
+        id: product.id,
+        skuCode: product.sku || product.id,
+        name: product.name,
+        size: product.size || existing?.size || '',
+        priceVnd: product.originalPrice ?? existing?.priceVnd ?? undefined,
+        dealPriceVnd: product.promoPrice ?? existing?.dealPriceVnd ?? undefined,
+        commissionOrganicPct: product.affiliateLinks?.[0]?.commissionPct ?? existing?.commissionOrganicPct ?? undefined,
+        sampleStockStatus: product.status === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : 'IN_STOCK',
+        pdpUrl: product.cartLinks?.[0]?.url || existing?.pdpUrl || '',
+        usps: mergedUsps,
+        mechanism: product.mechanism || existing?.mechanism || group.usp || '',
+        ingredients: skuIngredients.length > 0 ? skuIngredients : existing?.ingredients || [],
+        usageInstruction: product.usageInstruction || existing?.usageInstruction || '',
+        targetUser: product.targetUser || existing?.targetUser || '',
+        contraindications: product.contraindications || existing?.contraindications || group.forbiddenClaims || '',
+      };
+    });
     return fromCatalog.length > 0 ? fromCatalog : p.products;
   }, [liveCatalog, p.products]);
   const effectiveProductCount = mergedBrandProducts.length;
@@ -399,13 +419,38 @@ export function BrandProfileDetail({
     );
   const itemMenu = (list: ListKey, index: number) =>
     can[LIST_META[list].section] && (
-      <ActionMenu
-        items={[
-          { label: 'Sửa', onSelect: () => setItem({ list, index }) },
-          { label: 'Xóa', onSelect: () => setRemoving({ list, index }) },
-        ]}
-      />
+      <div className="inline-flex items-center gap-1 shrink-0">
+        <Button size="sm" variant="ghost" icon={Pencil} onClick={() => setItem({ list, index })}>
+          Sửa
+        </Button>
+        <Button size="sm" variant="ghost" icon={Trash2} onClick={() => setRemoving({ list, index })}>
+          Xóa
+        </Button>
+      </div>
     );
+
+  // State thêm/sửa trực tiếp trên tab Từ cấm & Quy chuẩn nội dung
+  const baseRules: BrandContentRules = p.contentRules || { banned: [], preferred: [], visualDo: [], visualDont: [] };
+  const [editingBannedIdx, setEditingBannedIdx] = useState<number | null>(null); // -1 = thêm mới
+  const [bannedPhraseDraft, setBannedPhraseDraft] = useState('');
+  const [bannedReplDraft, setBannedReplDraft] = useState('');
+
+  const [editingPrefIdx, setEditingPrefIdx] = useState<number | null>(null); // -1 = thêm mới
+  const [prefPhraseDraft, setPrefPhraseDraft] = useState('');
+
+  const [editingDontIdx, setEditingDontIdx] = useState<number | null>(null); // -1 = thêm mới
+  const [dontDraft, setDontDraft] = useState('');
+
+  const [editingDoIdx, setEditingDoIdx] = useState<number | null>(null); // -1 = thêm mới
+  const [doDraft, setDoDraft] = useState('');
+
+  const saveContentRulesPatch = async (patch: Partial<BrandContentRules>, summary: string) => {
+    const next: BrandContentRules = {
+      ...baseRules,
+      ...patch,
+    };
+    return onSave('CONTENT_RULES', next, summary);
+  };
 
   // Lọc danh sách tài liệu trong tab Kho tệp R2
   const filteredDocs = useMemo(() => {
@@ -1433,6 +1478,21 @@ export function BrandProfileDetail({
                     <Info label="Tiêu chí duyệt kênh KOC">
                       <span>{p.workflowRules.kocSelectionCriteria || '—'}</span>
                     </Info>
+                    {p.workflowRules.targetAudienceDemographics && (
+                      <Info label="Nhân khẩu học khán giả kênh KOC">
+                        <span>{p.workflowRules.targetAudienceDemographics}</span>
+                      </Info>
+                    )}
+                    {p.workflowRules.kocPersonaAndVisualCriteria && (
+                      <Info label="Yêu cầu ngoại hình, làn da &amp; bối cảnh KOC">
+                        <span>{p.workflowRules.kocPersonaAndVisualCriteria}</span>
+                      </Info>
+                    )}
+                    {(p.workflowRules.blacklistedKocs?.length || 0) > 0 && (
+                      <Info label="Danh sách KOC nhãn từ chối hợp tác lại (Blacklist)">
+                        <span className="text-critical font-medium">{(p.workflowRules.blacklistedKocs || []).join(' · ')}</span>
+                      </Info>
+                    )}
                     {(p.workflowRules.handoverFrom || p.workflowRules.handoverTo) && (
                       <Info label="Nhân sự bàn giao &amp; tiếp nhận (Bảng 3.5)">
                         <span>
@@ -1631,6 +1691,11 @@ export function BrandProfileDetail({
                             {d.addedAt && <span>· {dateTime(d.addedAt)}</span>}
                           </div>
                           {d.note && <p className="text-xs text-ink-2 mt-1">{d.note}</p>}
+                          {d.extractedContent && (
+                            <p className="text-xs text-ink mt-1 rounded bg-canvas border border-line px-2.5 py-1.5 whitespace-pre-line">
+                              {d.extractedContent}
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -1902,71 +1967,493 @@ export function BrandProfileDetail({
         <div className="space-y-3.5">
           <Panel
             title={SECTION_LABEL.CONTENT_RULES}
-            actions={editBtn('CONTENT_RULES', () => setDialog('CONTENT_RULES'), p.contentRules ? 'Sửa quy chuẩn' : 'Thêm quy chuẩn')}
+            actions={editBtn('CONTENT_RULES', () => setDialog('CONTENT_RULES'), 'Sửa toàn bộ quy chuẩn')}
             flush
           >
-            {!p.contentRules ||
-            (!p.contentRules.banned.length &&
-              !p.contentRules.preferred.length &&
-              !p.contentRules.visualDo.length &&
-              !p.contentRules.visualDont.length) ? (
-              <EmptyState title="Chưa có quy chuẩn nội dung" description="Thiết lập từ khóa cấm và quy chuẩn hình ảnh." />
-            ) : (
-              <div className="divide-y divide-line text-[13px]">
-                <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-line">
-                  <div className="p-4 grid gap-3 content-start">
-                    <h4 className="text-xs font-semibold text-critical">Từ khóa cấm ({p.contentRules.banned.length})</h4>
-                    {p.contentRules.banned.map(b => (
-                      <div key={b.id} className="rounded-lg bg-canvas border border-line p-3 grid gap-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-critical">“{b.phrase}”</span>
-                          {b.replacement && <span className="text-ink-2">→ Thay bằng: <strong className="text-positive">“{b.replacement}”</strong></span>}
-                        </div>
-                        {b.reason && <p className="text-2xs text-ink-3">{b.reason}</p>}
-                      </div>
-                    ))}
-                    {p.contentRules.visualDont.length > 0 && (
-                      <div className="pt-2">
-                        <h4 className="text-xs font-semibold text-ink mb-1.5">Hình ảnh không được dùng</h4>
-                        <ul className="list-disc pl-5 text-ink-2 grid gap-1">
-                          {p.contentRules.visualDont.map((x, k) => <li key={k}>{x}</li>)}
-                        </ul>
-                      </div>
+            <div className="divide-y divide-line text-[13px]">
+              <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-line">
+                {/* CỘT TRÁI: TỪ KHÓA CẤM & HÌNH ẢNH KHÔNG ĐƯỢC DÙNG */}
+                <div className="p-4 grid gap-3 content-start">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-xs font-semibold text-critical">Từ khóa cấm ({baseRules.banned.length})</h4>
+                    {can.CONTENT_RULES && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        icon={Plus}
+                        onClick={() => {
+                          setEditingBannedIdx(-1);
+                          setBannedPhraseDraft('');
+                          setBannedReplDraft('');
+                        }}
+                      >
+                        Thêm từ cấm
+                      </Button>
                     )}
                   </div>
-                  <div className="p-4 grid gap-3 content-start">
-                    <h4 className="text-xs font-semibold text-positive">Cụm từ nên dùng ({p.contentRules.preferred.length})</h4>
-                    {p.contentRules.preferred.map(x => (
-                      <div key={x.id} className="rounded-lg bg-canvas border border-line p-3 grid gap-1">
-                        <span className="font-semibold text-positive">“{x.phrase}”</span>
-                        {x.note && <p className="text-2xs text-ink-3">{x.note}</p>}
+
+                  {editingBannedIdx === -1 && (
+                    <div className="rounded-lg bg-accent-soft/25 border border-accent p-2.5 grid gap-2">
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        <Input
+                          value={bannedPhraseDraft}
+                          onChange={e => setBannedPhraseDraft(e.target.value)}
+                          placeholder="Từ khóa cấm (VD: Trị dứt điểm)"
+                        />
+                        <Input
+                          value={bannedReplDraft}
+                          onChange={e => setBannedReplDraft(e.target.value)}
+                          placeholder="Thay bằng (VD: Hỗ trợ làm dịu)"
+                        />
                       </div>
-                    ))}
-                    {p.contentRules.visualDo.length > 0 && (
-                      <div className="pt-2">
-                        <h4 className="text-xs font-semibold text-ink mb-1.5">Hình ảnh khuyến khích trong video</h4>
-                        <ul className="list-disc pl-5 text-ink-2 grid gap-1">
-                          {p.contentRules.visualDo.map((x, k) => <li key={k}>{x}</li>)}
-                        </ul>
+                      <div className="flex justify-end gap-1.5">
+                        <Button size="sm" variant="ghost" onClick={() => setEditingBannedIdx(null)}>
+                          Hủy
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          disabled={busy || !bannedPhraseDraft.trim()}
+                          onClick={async () => {
+                            const nextBanned = [
+                              ...baseRules.banned,
+                              {
+                                id: `ban-${Date.now()}`,
+                                phrase: bannedPhraseDraft.trim(),
+                                replacement: bannedReplDraft.trim(),
+                                reason: '',
+                              },
+                            ];
+                            if (await saveContentRulesPatch({ banned: nextBanned }, `Thêm từ cấm: ${bannedPhraseDraft.trim()}`)) {
+                              setEditingBannedIdx(null);
+                            }
+                          }}
+                        >
+                          Lưu
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {baseRules.banned.map((b, idx) =>
+                    editingBannedIdx === idx ? (
+                      <div key={b.id || idx} className="rounded-lg bg-accent-soft/25 border border-accent p-2.5 grid gap-2">
+                        <div className="grid sm:grid-cols-2 gap-2">
+                          <Input
+                            value={bannedPhraseDraft}
+                            onChange={e => setBannedPhraseDraft(e.target.value)}
+                            placeholder="Từ khóa cấm"
+                          />
+                          <Input
+                            value={bannedReplDraft}
+                            onChange={e => setBannedReplDraft(e.target.value)}
+                            placeholder="Cụm từ thay thế"
+                          />
+                        </div>
+                        <div className="flex justify-end gap-1.5">
+                          <Button size="sm" variant="ghost" onClick={() => setEditingBannedIdx(null)}>
+                            Hủy
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            disabled={busy || !bannedPhraseDraft.trim()}
+                            onClick={async () => {
+                              const nextBanned = baseRules.banned.map((item, i) =>
+                                i === idx
+                                  ? { ...item, phrase: bannedPhraseDraft.trim(), replacement: bannedReplDraft.trim() }
+                                  : item,
+                              );
+                              if (await saveContentRulesPatch({ banned: nextBanned }, `Cập nhật từ cấm: ${bannedPhraseDraft.trim()}`)) {
+                                setEditingBannedIdx(null);
+                              }
+                            }}
+                          >
+                            Lưu
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div key={b.id || idx} className="rounded-lg bg-canvas border border-line px-3 py-2 flex items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2 min-w-0">
+                          <span className="font-semibold text-critical">“{b.phrase}”</span>
+                          {b.replacement && (
+                            <span className="text-ink-2">
+                              → Thay bằng: <strong className="text-positive">“{b.replacement}”</strong>
+                            </span>
+                          )}
+                        </div>
+                        {can.CONTENT_RULES && (
+                          <div className="inline-flex items-center gap-1 shrink-0">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              icon={Pencil}
+                              onClick={() => {
+                                setEditingBannedIdx(idx);
+                                setBannedPhraseDraft(b.phrase);
+                                setBannedReplDraft(b.replacement || '');
+                              }}
+                            >
+                              Sửa
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              icon={Trash2}
+                              disabled={busy}
+                              onClick={() => {
+                                const nextBanned = baseRules.banned.filter((_, i) => i !== idx);
+                                void saveContentRulesPatch({ banned: nextBanned }, `Xóa từ cấm: ${b.phrase}`);
+                              }}
+                            >
+                              Xóa
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ),
+                  )}
+
+                  {/* Hình ảnh không được dùng */}
+                  <div className="pt-2 border-t border-line/60 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-xs font-semibold text-ink">Hình ảnh không được dùng ({baseRules.visualDont.length})</h4>
+                      {can.CONTENT_RULES && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={Plus}
+                          onClick={() => {
+                            setEditingDontIdx(-1);
+                            setDontDraft('');
+                          }}
+                        >
+                          Thêm
+                        </Button>
+                      )}
+                    </div>
+                    {editingDontIdx === -1 && (
+                      <div className="flex items-center gap-1.5">
+                        <Input
+                          value={dontDraft}
+                          onChange={e => setDontDraft(e.target.value)}
+                          placeholder="Nhập quy định hình ảnh cần tránh..."
+                        />
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          disabled={busy || !dontDraft.trim()}
+                          onClick={async () => {
+                            const nextDont = [...baseRules.visualDont, dontDraft.trim()];
+                            if (await saveContentRulesPatch({ visualDont: nextDont }, 'Thêm quy tắc hình ảnh không được dùng')) {
+                              setEditingDontIdx(null);
+                            }
+                          }}
+                        >
+                          Lưu
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingDontIdx(null)}>
+                          Hủy
+                        </Button>
                       </div>
                     )}
+                    <ul className="space-y-1.5">
+                      {baseRules.visualDont.map((x, k) =>
+                        editingDontIdx === k ? (
+                          <li key={k} className="flex items-center gap-1.5">
+                            <Input value={dontDraft} onChange={e => setDontDraft(e.target.value)} />
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              disabled={busy || !dontDraft.trim()}
+                              onClick={async () => {
+                                const nextDont = baseRules.visualDont.map((it, i) => (i === k ? dontDraft.trim() : it));
+                                if (await saveContentRulesPatch({ visualDont: nextDont }, 'Sửa quy tắc hình ảnh không được dùng')) {
+                                  setEditingDontIdx(null);
+                                }
+                              }}
+                            >
+                              Lưu
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingDontIdx(null)}>
+                              Hủy
+                            </Button>
+                          </li>
+                        ) : (
+                          <li key={k} className="flex items-center justify-between gap-2 rounded-md bg-canvas/70 border border-line px-2.5 py-1.5 text-ink">
+                            <span>• {x}</span>
+                            {can.CONTENT_RULES && (
+                              <div className="inline-flex items-center gap-1 shrink-0">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  icon={Pencil}
+                                  onClick={() => {
+                                    setEditingDontIdx(k);
+                                    setDontDraft(x);
+                                  }}
+                                >
+                                  Sửa
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  icon={Trash2}
+                                  disabled={busy}
+                                  onClick={() => {
+                                    const nextDont = baseRules.visualDont.filter((_, i) => i !== k);
+                                    void saveContentRulesPatch({ visualDont: nextDont }, 'Xóa quy tắc hình ảnh không được dùng');
+                                  }}
+                                >
+                                  Xóa
+                                </Button>
+                              </div>
+                            )}
+                          </li>
+                        ),
+                      )}
+                    </ul>
                   </div>
                 </div>
-                {((p.contentRules.mandatoryHashtags?.length || 0) > 0 || p.contentRules.defaultCta || p.contentRules.videoDurationRule) && (
-                  <div className="p-4 bg-canvas/40 grid gap-3 sm:grid-cols-3 text-xs">
-                    <Info label="Hashtag & gắn thẻ bắt buộc">
-                      {[...(p.contentRules.mandatoryHashtags || []), ...(p.contentRules.mandatoryMentions || [])].join(' ')}
-                    </Info>
-                    <Info label="Thời lượng & cấu trúc clip">
-                      {p.contentRules.videoDurationRule}
-                    </Info>
-                    <Info label="Câu điều hướng mua hàng (CTA)">
-                      {p.contentRules.defaultCta}
-                    </Info>
+
+                {/* CỘT PHẢI: CỤM TỪ NÊN DÙNG & HÌNH ẢNH KHUYẾN KHÍCH */}
+                <div className="p-4 grid gap-3 content-start">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-xs font-semibold text-positive">Cụm từ nên dùng ({baseRules.preferred.length})</h4>
+                    {can.CONTENT_RULES && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        icon={Plus}
+                        onClick={() => {
+                          setEditingPrefIdx(-1);
+                          setPrefPhraseDraft('');
+                        }}
+                      >
+                        Thêm cụm từ
+                      </Button>
+                    )}
                   </div>
+
+                  {editingPrefIdx === -1 && (
+                    <div className="rounded-lg bg-accent-soft/25 border border-accent p-2.5 flex items-center gap-1.5">
+                      <Input
+                        value={prefPhraseDraft}
+                        onChange={e => setPrefPhraseDraft(e.target.value)}
+                        placeholder="Nhập cụm từ khuyến khích..."
+                      />
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        disabled={busy || !prefPhraseDraft.trim()}
+                        onClick={async () => {
+                          const nextPref = [
+                            ...baseRules.preferred,
+                            { id: `pref-${Date.now()}`, phrase: prefPhraseDraft.trim(), note: '' },
+                          ];
+                          if (await saveContentRulesPatch({ preferred: nextPref }, `Thêm cụm từ nên dùng: ${prefPhraseDraft.trim()}`)) {
+                            setEditingPrefIdx(null);
+                          }
+                        }}
+                      >
+                        Lưu
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingPrefIdx(null)}>
+                        Hủy
+                      </Button>
+                    </div>
+                  )}
+
+                  {baseRules.preferred.map((x, idx) =>
+                    editingPrefIdx === idx ? (
+                      <div key={x.id || idx} className="rounded-lg bg-accent-soft/25 border border-accent p-2.5 flex items-center gap-1.5">
+                        <Input
+                          value={prefPhraseDraft}
+                          onChange={e => setPrefPhraseDraft(e.target.value)}
+                          placeholder="Cụm từ khuyến khích"
+                        />
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          disabled={busy || !prefPhraseDraft.trim()}
+                          onClick={async () => {
+                            const nextPref = baseRules.preferred.map((it, i) =>
+                              i === idx ? { ...it, phrase: prefPhraseDraft.trim() } : it,
+                            );
+                            if (await saveContentRulesPatch({ preferred: nextPref }, `Sửa cụm từ nên dùng: ${prefPhraseDraft.trim()}`)) {
+                              setEditingPrefIdx(null);
+                            }
+                          }}
+                        >
+                          Lưu
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingPrefIdx(null)}>
+                          Hủy
+                        </Button>
+                      </div>
+                    ) : (
+                      <div key={x.id || idx} className="rounded-lg bg-canvas border border-line px-3 py-2 flex items-center justify-between gap-2">
+                        <span className="font-semibold text-positive">“{x.phrase}”</span>
+                        {can.CONTENT_RULES && (
+                          <div className="inline-flex items-center gap-1 shrink-0">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              icon={Pencil}
+                              onClick={() => {
+                                setEditingPrefIdx(idx);
+                                setPrefPhraseDraft(x.phrase);
+                              }}
+                            >
+                              Sửa
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              icon={Trash2}
+                              disabled={busy}
+                              onClick={() => {
+                                const nextPref = baseRules.preferred.filter((_, i) => i !== idx);
+                                void saveContentRulesPatch({ preferred: nextPref }, `Xóa cụm từ nên dùng: ${x.phrase}`);
+                              }}
+                            >
+                              Xóa
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ),
+                  )}
+
+                  {/* Hình ảnh khuyến khích trong video */}
+                  <div className="pt-2 border-t border-line/60 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-xs font-semibold text-ink">Hình ảnh khuyến khích trong video ({baseRules.visualDo.length})</h4>
+                      {can.CONTENT_RULES && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={Plus}
+                          onClick={() => {
+                            setEditingDoIdx(-1);
+                            setDoDraft('');
+                          }}
+                        >
+                          Thêm
+                        </Button>
+                      )}
+                    </div>
+                    {editingDoIdx === -1 && (
+                      <div className="flex items-center gap-1.5">
+                        <Input
+                          value={doDraft}
+                          onChange={e => setDoDraft(e.target.value)}
+                          placeholder="Nhập hình ảnh khuyến khích trong video..."
+                        />
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          disabled={busy || !doDraft.trim()}
+                          onClick={async () => {
+                            const nextDo = [...baseRules.visualDo, doDraft.trim()];
+                            if (await saveContentRulesPatch({ visualDo: nextDo }, 'Thêm hình ảnh khuyến khích')) {
+                              setEditingDoIdx(null);
+                            }
+                          }}
+                        >
+                          Lưu
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingDoIdx(null)}>
+                          Hủy
+                        </Button>
+                      </div>
+                    )}
+                    <ul className="space-y-1.5">
+                      {baseRules.visualDo.map((x, k) =>
+                        editingDoIdx === k ? (
+                          <li key={k} className="flex items-center gap-1.5">
+                            <Input value={doDraft} onChange={e => setDoDraft(e.target.value)} />
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              disabled={busy || !doDraft.trim()}
+                              onClick={async () => {
+                                const nextDo = baseRules.visualDo.map((it, i) => (i === k ? doDraft.trim() : it));
+                                if (await saveContentRulesPatch({ visualDo: nextDo }, 'Sửa hình ảnh khuyến khích')) {
+                                  setEditingDoIdx(null);
+                                }
+                              }}
+                            >
+                              Lưu
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingDoIdx(null)}>
+                              Hủy
+                            </Button>
+                          </li>
+                        ) : (
+                          <li key={k} className="flex items-center justify-between gap-2 rounded-md bg-canvas/70 border border-line px-2.5 py-1.5 text-ink">
+                            <span>• {x}</span>
+                            {can.CONTENT_RULES && (
+                              <div className="inline-flex items-center gap-1 shrink-0">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  icon={Pencil}
+                                  onClick={() => {
+                                    setEditingDoIdx(k);
+                                    setDoDraft(x);
+                                  }}
+                                >
+                                  Sửa
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  icon={Trash2}
+                                  disabled={busy}
+                                  onClick={() => {
+                                    const nextDo = baseRules.visualDo.filter((_, i) => i !== k);
+                                    void saveContentRulesPatch({ visualDo: nextDo }, 'Xóa hình ảnh khuyến khích');
+                                  }}
+                                >
+                                  Xóa
+                                </Button>
+                              </div>
+                            )}
+                          </li>
+                        ),
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-canvas/40 flex flex-col sm:flex-row sm:items-start justify-between gap-3 text-xs">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 flex-1">
+                  <Info label="Hashtag & gắn thẻ bắt buộc">
+                    {[...(baseRules.mandatoryHashtags || []), ...(baseRules.mandatoryMentions || [])].join(' ') || '—'}
+                  </Info>
+                  <Info label="Thời lượng & cấu trúc clip">
+                    {baseRules.videoDurationRule || '—'}
+                  </Info>
+                  <Info label="Câu điều hướng mua hàng (CTA)">
+                    {baseRules.defaultCta || '—'}
+                  </Info>
+                  <Info label="Quy định giá sàn truyền thông & từ cấm về giá">
+                    {baseRules.minAdvertisedPriceRule || '—'}
+                  </Info>
+                  <Info label="Cơ chế khuyến mãi, voucher & quà tặng chủ đạo">
+                    {baseRules.keyPromotionMechanic || '—'}
+                  </Info>
+                </div>
+                {can.CONTENT_RULES && (
+                  <Button size="sm" variant="secondary" icon={Pencil} onClick={() => setDialog('CONTENT_RULES')}>
+                    Sửa Hashtag / Giá / CTA
+                  </Button>
                 )}
               </div>
-            )}
+            </div>
           </Panel>
 
           <Panel
@@ -1975,7 +2462,7 @@ export function BrandProfileDetail({
             flush
           >
             {p.legal.length === 0 ? (
-              <EmptyState title="Chưa có văn bản pháp lý" description="Tải lên bản scan phiếu công bố hoặc giấy xác nhận quảng cáo." />
+              <EmptyState title="Chưa có văn bản pháp lý" />
             ) : (
               <ul className="divide-y divide-line">
                 {p.legal.map((l, i) => {
@@ -1983,7 +2470,7 @@ export function BrandProfileDetail({
                   const size = formatFileSize(l.fileSize);
                   const downloadUrl = l.fileKey ? `/api/brands/files?key=${encodeURIComponent(l.fileKey)}&download=1` : undefined;
                   return (
-                    <li key={l.id} className="px-4 py-3.5 grid gap-1.5 text-[13px]">
+                    <li key={l.id} className="px-4 py-3 grid gap-1 text-[13px]">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex flex-wrap items-center gap-2">
                           <span className="font-semibold text-ink">{l.title}</span>
@@ -1993,14 +2480,14 @@ export function BrandProfileDetail({
                             <Status tone="positive">Còn hiệu lực</Status>
                           )}
                           {l.fileKey && (
-                            <span className="text-2xs text-ink-3 font-code">
+                            <span className="text-2xs text-ink-2 font-code">
                               · {[ext || 'FILE', size].filter(Boolean).join(' · ')}
                             </span>
                           )}
                         </div>
                         {itemMenu('legal', i)}
                       </div>
-                      <p className="text-2xs text-ink-3 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                      <div className="text-xs text-ink-2 flex flex-wrap items-center gap-x-1.5 gap-y-1">
                         <span>{[l.docNumber && `Số văn bản: ${l.docNumber}`, l.authority && `Cơ quan cấp: ${l.authority}`, l.issueDate && `Ngày cấp: ${l.issueDate}`, l.validUntil && `Hiệu lực đến: ${l.validUntil}`].filter(Boolean).join(' · ')}</span>
                         {l.url && (
                           <>
@@ -2020,8 +2507,8 @@ export function BrandProfileDetail({
                             </a>
                           </>
                         )}
-                      </p>
-                      {l.disclaimer && <p className="text-xs text-ink-2">Câu cảnh báo bắt buộc trên video: “{l.disclaimer}”</p>}
+                      </div>
+                      {l.disclaimer && <p className="text-xs font-medium text-ink">Câu cảnh báo bắt buộc trên video: “{l.disclaimer}”</p>}
                     </li>
                   );
                 })}
@@ -2035,21 +2522,21 @@ export function BrandProfileDetail({
             flush
           >
             {p.faqs.length === 0 ? (
-              <EmptyState title="Chưa có câu hỏi khó" description="Thêm các tình huống hỏi đáp mẫu cho KOC." />
+              <EmptyState title="Chưa có câu hỏi khó" />
             ) : (
               <ul className="divide-y divide-line">
                 {p.faqs.map((f, i) => (
-                  <li key={f.id} className="px-4 py-3.5 grid gap-1.5 text-[13px]">
+                  <li key={f.id} className="px-4 py-3 grid gap-1 text-[13px]">
                     <div className="flex items-start justify-between gap-3">
                       <p className="font-semibold text-ink">{f.question}</p>
                       {itemMenu('faqs', i)}
                     </div>
                     <p className="text-ink-2 whitespace-pre-line">{f.answer}</p>
                     {(f.mention.length > 0 || f.avoid.length > 0) && (
-                      <p className="text-2xs text-ink-3">
-                        {f.mention.length > 0 && <>Nên nhắc: <span className="text-positive">{f.mention.join('; ')}</span></>}
+                      <p className="text-xs text-ink-2">
+                        {f.mention.length > 0 && <>Nên nhắc: <span className="font-medium text-positive">{f.mention.join('; ')}</span></>}
                         {f.mention.length > 0 && f.avoid.length > 0 && ' · '}
-                        {f.avoid.length > 0 && <>Không nói: <span className="text-critical">{f.avoid.join('; ')}</span></>}
+                        {f.avoid.length > 0 && <>Không nói: <span className="font-medium text-critical">{f.avoid.join('; ')}</span></>}
                       </p>
                     )}
                   </li>
@@ -2327,7 +2814,7 @@ export function BrandProfileDetail({
       <StandardBriefPreviewModal
         open={showStandardBrief}
         onClose={() => setShowStandardBrief(false)}
-        profile={p}
+        profile={{ ...p, products: mergedBrandProducts }}
         cycleMonth={activeMonth}
         onNotify={onNotify}
       />

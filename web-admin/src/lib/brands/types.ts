@@ -78,6 +78,8 @@ export interface BrandProduct {
   usps: string[];
   mechanism: string;
   ingredients: string[];
+  /** Hướng dẫn sử dụng chuẩn / Bước dùng trong Routine (liều lượng, thời điểm sáng/tối, lưu ý thao tác trên clip) */
+  usageInstruction?: string;
   targetUser: string;
   contraindications: string;
 }
@@ -98,6 +100,10 @@ export interface BrandContentRules {
   defaultCta?: string;
   /** Quy định thời lượng video & thời điểm xuất hiện sản phẩm */
   videoDurationRule?: string;
+  /** Quy định giá sàn truyền thông tối thiểu (Minimum Advertised Price) & các từ cấm nói về giá */
+  minAdvertisedPriceRule?: string;
+  /** Cơ chế khuyến mãi, ưu đãi combo / voucher & quà tặng chủ đạo KOC được phép truyền thông */
+  keyPromotionMechanic?: string;
 }
 
 export type BrandProjectTier = 'TIER_A_STRATEGIC' | 'TIER_B_GROWTH' | 'TIER_C_FULLSTACK';
@@ -157,6 +163,12 @@ export interface BrandWorkflowRules {
   preferredKocNiches: string[];
   /** Tiêu chí chọn và loại trừ KOC của nhãn */
   kocSelectionCriteria: string;
+  /** Yêu cầu nhân khẩu học khán giả của kênh KOC (VD: Nữ >= 70%, độ tuổi 18–34 tại VN) */
+  targetAudienceDemographics?: string;
+  /** Yêu cầu hình ảnh, đặc điểm ngoại hình/làn da & bối cảnh quay của KOC */
+  kocPersonaAndVisualCriteria?: string;
+  /** Danh sách KOC / kênh bị nhãn hàng từ chối hợp tác lại (Blacklist riêng của nhãn) */
+  blacklistedKocs?: string[];
 
   /** Thông tin bàn giao & bộ file gốc từ Danh sách file brand (3.5) */
   handoverFrom?: string;
@@ -196,6 +208,8 @@ export interface BrandDocument {
   category: BrandDocCategory;
   url: string;
   note: string;
+  /** Tóm tắt nội dung cốt lõi / quy định chính bên trong tài liệu đính kèm */
+  extractedContent?: string;
   addedBy: string;
   addedAt: string;
   fileKey?: string;

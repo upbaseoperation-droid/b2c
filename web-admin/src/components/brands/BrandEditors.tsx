@@ -6,7 +6,7 @@
  */
 
 import React, { useRef, useState } from 'react';
-import { FileText, Loader2, Trash2, Upload } from 'lucide-react';
+import { FileText, Loader2, Plus, Trash2, Upload } from 'lucide-react';
 import type {
   BrandContentRules,
   BrandEntity,
@@ -212,6 +212,7 @@ export function WorkflowRulesDialog({
   const [v, setV] = useState<BrandWorkflowRules>(value || DEFAULT_WORKFLOW);
   const [repostText, setRepostText] = useState((value?.repostAllowedChannels || DEFAULT_WORKFLOW.repostAllowedChannels).join('\n'));
   const [nichesText, setNichesText] = useState((value?.preferredKocNiches || DEFAULT_WORKFLOW.preferredKocNiches).join('\n'));
+  const [blacklistText, setBlacklistText] = useState((value?.blacklistedKocs || []).join('\n'));
 
   const set = <K extends keyof BrandWorkflowRules>(k: K, x: BrandWorkflowRules[K]) => setV(p => ({ ...p, [k]: x }));
 
@@ -220,6 +221,7 @@ export function WorkflowRulesDialog({
       ...v,
       repostAllowedChannels: toLines(repostText),
       preferredKocNiches: toLines(nichesText),
+      blacklistedKocs: toLines(blacklistText),
     });
   };
 
@@ -423,6 +425,33 @@ export function WorkflowRulesDialog({
           <Field label="Tiêu chí chọn & loại trừ KOC" htmlFor="wf-criteria">
             <Textarea id="wf-criteria" rows={2} value={v.kocSelectionCriteria} onChange={e => set('kocSelectionCriteria', e.target.value)} />
           </Field>
+          <div className="grid gap-3 md:grid-cols-2">
+            <Field label="Yêu cầu nhân khẩu học khán giả kênh KOC (% Nữ, Độ tuổi, Khu vực)" htmlFor="wf-demo">
+              <Input
+                id="wf-demo"
+                value={v.targetAudienceDemographics || ''}
+                onChange={e => set('targetAudienceDemographics', e.target.value)}
+                placeholder="VD: Khán giả Nữ ≥ 70%, độ tuổi 18–34 tại Việt Nam"
+              />
+            </Field>
+            <Field label="Yêu cầu ngoại hình, làn da & bối cảnh quay của KOC" htmlFor="wf-persona">
+              <Input
+                id="wf-persona"
+                value={v.kocPersonaAndVisualCriteria || ''}
+                onChange={e => set('kocPersonaAndVisualCriteria', e.target.value)}
+                placeholder="VD: Da thật khỏe, phòng sáng gọn, giọng đọc rõ ràng"
+              />
+            </Field>
+          </div>
+          <Field label="Danh sách KOC / kênh bị nhãn từ chối hợp tác lại (Blacklist riêng của nhãn, mỗi dòng 1 kênh)" htmlFor="wf-blacklist">
+            <Textarea
+              id="wf-blacklist"
+              rows={2}
+              value={blacklistText}
+              onChange={e => setBlacklistText(e.target.value)}
+              placeholder="@id_kenh — Lý do nhãn từ chối"
+            />
+          </Field>
         </div>
 
         {/* Nhóm 5: Thông tin bàn giao & Bộ file gốc (Bảng 3.5 Danh sách file brand) */}
@@ -478,55 +507,206 @@ export function RatecardDialog({ open, value, busy, onClose, onSave }: { open: b
 
 /* --------------------------------------------------------- Quy chuẩn nội dung */
 
-/** Mỗi dòng một mục; cột ngăn bằng “|”. Giữ id cũ khi cụm từ không đổi. */
+/** Chỉnh sửa quy chuẩn nội dung dạng danh sách dòng trực quan (Thêm / Sửa / Xóa từng mục). */
 export function ContentRulesDialog({ open, value, busy, onClose, onSave }: { open: boolean; value?: BrandContentRules; busy: boolean; onClose: () => void; onSave: (v: BrandContentRules) => void }) {
   const v = value || { banned: [], preferred: [], visualDo: [], visualDont: [] };
-  const [banned, setBanned] = useState(v.banned.map(b => [b.phrase, b.replacement, b.reason].join(' | ').replace(/( \| )+$/, '')).join('\n'));
-  const [preferred, setPreferred] = useState(v.preferred.map(p => [p.phrase, p.note].join(' | ').replace(/ \| $/, '')).join('\n'));
-  const [doList, setDoList] = useState(v.visualDo.join('\n'));
-  const [dontList, setDontList] = useState(v.visualDont.join('\n'));
-  const [hashtags, setHashtags] = useState((v.mandatoryHashtags || []).join('\n'));
-  const [mentions, setMentions] = useState((v.mandatoryMentions || []).join('\n'));
+  const [bannedRows, setBannedRows] = useState<Array<{ id: string; phrase: string; replacement: string; reason: string }>>(
+    v.banned.length > 0
+      ? v.banned.map(b => ({ id: b.id, phrase: b.phrase, replacement: b.replacement || '', reason: b.reason || '' }))
+      : [{ id: '', phrase: '', replacement: '', reason: '' }],
+  );
+  const [preferredRows, setPreferredRows] = useState<Array<{ id: string; phrase: string; note: string }>>(
+    v.preferred.length > 0
+      ? v.preferred.map(p => ({ id: p.id, phrase: p.phrase, note: p.note || '' }))
+      : [{ id: '', phrase: '', note: '' }],
+  );
+  const [doRows, setDoRows] = useState<string[]>(v.visualDo.length > 0 ? [...v.visualDo] : ['']);
+  const [dontRows, setDontRows] = useState<string[]>(v.visualDont.length > 0 ? [...v.visualDont] : ['']);
+  const [hashtags, setHashtags] = useState((v.mandatoryHashtags || []).join(' '));
+  const [mentions, setMentions] = useState((v.mandatoryMentions || []).join(' '));
   const [defaultCta, setDefaultCta] = useState(v.defaultCta || '');
   const [durationRule, setDurationRule] = useState(v.videoDurationRule || '');
+  const [minPriceRule, setMinPriceRule] = useState(v.minAdvertisedPriceRule || '');
+  const [promoMechanic, setPromoMechanic] = useState(v.keyPromotionMechanic || '');
 
-  const rows = (s: string) => s.split('\n').map(l => l.split('|').map(x => x.trim())).filter(c => c[0]);
+  const splitTokens = (s: string) => s.split(/[\s,\n]+/).map(x => x.trim()).filter(Boolean);
+
   const save = () => onSave({
-    banned: rows(banned).map(([phrase, replacement = '', reason = '']) => ({ id: v.banned.find(b => b.phrase === phrase)?.id || '', phrase, replacement, reason })),
-    preferred: rows(preferred).map(([phrase, note = '']) => ({ id: v.preferred.find(p => p.phrase === phrase)?.id || '', phrase, note })),
-    visualDo: toLines(doList),
-    visualDont: toLines(dontList),
-    mandatoryHashtags: toLines(hashtags),
-    mandatoryMentions: toLines(mentions),
+    banned: bannedRows
+      .filter(b => b.phrase.trim())
+      .map((b, idx) => ({
+        id: b.id || `ban-${idx}-${Date.now()}`,
+        phrase: b.phrase.trim(),
+        replacement: b.replacement.trim(),
+        reason: b.reason,
+      })),
+    preferred: preferredRows
+      .filter(p => p.phrase.trim())
+      .map((p, idx) => ({
+        id: p.id || `pref-${idx}-${Date.now()}`,
+        phrase: p.phrase.trim(),
+        note: p.note,
+      })),
+    visualDo: doRows.map(x => x.trim()).filter(Boolean),
+    visualDont: dontRows.map(x => x.trim()).filter(Boolean),
+    mandatoryHashtags: splitTokens(hashtags),
+    mandatoryMentions: splitTokens(mentions),
     defaultCta: defaultCta.trim(),
     videoDurationRule: durationRule.trim(),
+    minAdvertisedPriceRule: minPriceRule.trim(),
+    keyPromotionMechanic: promoMechanic.trim(),
   });
+
   return (
     <Modal open={open} onClose={onClose} title="Sửa quy chuẩn nội dung & yêu cầu bài đăng" size="lg" footer={<Footer busy={busy} onClose={onClose} onSave={save} />}>
-      <Field label="Từ cấm" htmlFor="cr-ban">
-        <Textarea id="cr-ban" rows={5} value={banned} onChange={e => setBanned(e.target.value)} />
-      </Field>
-      <Field label="Cụm từ nên dùng" htmlFor="cr-pref">
-        <Textarea id="cr-pref" rows={3} value={preferred} onChange={e => setPreferred(e.target.value)} />
-      </Field>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Hình ảnh nên có" htmlFor="cr-do"><Textarea id="cr-do" rows={3} value={doList} onChange={e => setDoList(e.target.value)} /></Field>
-        <Field label="Hình ảnh không được dùng" htmlFor="cr-dont"><Textarea id="cr-dont" rows={3} value={dontList} onChange={e => setDontList(e.target.value)} /></Field>
+      <div className="space-y-4">
+        {/* Từ khóa cấm */}
+        <div className="rounded-lg border border-line bg-canvas p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-critical">Từ khóa cấm ({bannedRows.filter(b => b.phrase.trim()).length})</span>
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={Plus}
+              onClick={() => setBannedRows(prev => [...prev, { id: '', phrase: '', replacement: '', reason: '' }])}
+            >
+              Thêm từ cấm
+            </Button>
+          </div>
+          <div className="space-y-1.5">
+            {bannedRows.map((row, idx) => (
+              <div key={row.id || `b-${idx}`} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                <Input
+                  value={row.phrase}
+                  onChange={e => setBannedRows(prev => prev.map((it, i) => (i === idx ? { ...it, phrase: e.target.value } : it)))}
+                  placeholder="Từ khóa cấm (VD: Trị dứt điểm)"
+                />
+                <Input
+                  value={row.replacement}
+                  onChange={e => setBannedRows(prev => prev.map((it, i) => (i === idx ? { ...it, replacement: e.target.value } : it)))}
+                  placeholder="Cụm từ thay thế (VD: Hỗ trợ làm dịu)"
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon={Trash2}
+                  onClick={() => setBannedRows(prev => prev.filter((_, i) => i !== idx))}
+                >
+                  Xóa
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Cụm từ nên dùng */}
+        <div className="rounded-lg border border-line bg-canvas p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-positive">Cụm từ nên dùng ({preferredRows.filter(p => p.phrase.trim()).length})</span>
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={Plus}
+              onClick={() => setPreferredRows(prev => [...prev, { id: '', phrase: '', note: '' }])}
+            >
+              Thêm cụm từ
+            </Button>
+          </div>
+          <div className="space-y-1.5">
+            {preferredRows.map((row, idx) => (
+              <div key={row.id || `p-${idx}`} className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                <Input
+                  value={row.phrase}
+                  onChange={e => setPreferredRows(prev => prev.map((it, i) => (i === idx ? { ...it, phrase: e.target.value } : it)))}
+                  placeholder="Cụm từ khuyến khích (VD: Thấm nhanh không nhờn rít)"
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon={Trash2}
+                  onClick={() => setPreferredRows(prev => prev.filter((_, i) => i !== idx))}
+                >
+                  Xóa
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quy tắc hình ảnh */}
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="rounded-lg border border-line bg-canvas p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-ink">Hình ảnh không được dùng ({dontRows.filter(x => x.trim()).length})</span>
+              <Button size="sm" variant="secondary" icon={Plus} onClick={() => setDontRows(prev => [...prev, ''])}>
+                Thêm
+              </Button>
+            </div>
+            <div className="space-y-1.5">
+              {dontRows.map((val, idx) => (
+                <div key={`dont-${idx}`} className="grid grid-cols-[1fr_auto] gap-1.5 items-center">
+                  <Input
+                    value={val}
+                    onChange={e => setDontRows(prev => prev.map((it, i) => (i === idx ? e.target.value : it)))}
+                    placeholder="Hình ảnh cần tránh"
+                  />
+                  <Button size="sm" variant="ghost" icon={Trash2} onClick={() => setDontRows(prev => prev.filter((_, i) => i !== idx))}>
+                    Xóa
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-line bg-canvas p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-ink">Hình ảnh khuyến khích ({doRows.filter(x => x.trim()).length})</span>
+              <Button size="sm" variant="secondary" icon={Plus} onClick={() => setDoRows(prev => [...prev, ''])}>
+                Thêm
+              </Button>
+            </div>
+            <div className="space-y-1.5">
+              {doRows.map((val, idx) => (
+                <div key={`do-${idx}`} className="grid grid-cols-[1fr_auto] gap-1.5 items-center">
+                  <Input
+                    value={val}
+                    onChange={e => setDoRows(prev => prev.map((it, i) => (i === idx ? e.target.value : it)))}
+                    placeholder="Hình ảnh nên có trong video"
+                  />
+                  <Button size="sm" variant="ghost" icon={Trash2} onClick={() => setDoRows(prev => prev.filter((_, i) => i !== idx))}>
+                    Xóa
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Hashtag bắt buộc trên bài đăng" htmlFor="cr-tags">
+            <Input id="cr-tags" value={hashtags} onChange={e => setHashtags(e.target.value)} placeholder="#Beauty #Skincare" />
+          </Field>
+          <Field label="Tài khoản bắt buộc Tag / Mention" htmlFor="cr-mentions">
+            <Input id="cr-mentions" value={mentions} onChange={e => setMentions(e.target.value)} placeholder="@official_store" />
+          </Field>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Thời lượng & cấu trúc clip" htmlFor="cr-dur">
+            <Input id="cr-dur" value={durationRule} onChange={e => setDurationRule(e.target.value)} placeholder="45–90 giây, sản phẩm xuất hiện 3s đầu" />
+          </Field>
+          <Field label="Câu điều hướng mua hàng (CTA)" htmlFor="cr-cta">
+            <Input id="cr-cta" value={defaultCta} onChange={e => setDefaultCta(e.target.value)} placeholder="Bấm giỏ hàng góc trái nhận ưu đãi" />
+          </Field>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Quy định giá sàn truyền thông & từ cấm về giá" htmlFor="cr-map">
+            <Input id="cr-map" value={minPriceRule} onChange={e => setMinPriceRule(e.target.value)} placeholder="VD: Không báo giá dưới 195k, không nói từ xả kho/thanh lý" />
+          </Field>
+          <Field label="Cơ chế khuyến mãi, voucher & quà tặng chủ đạo" htmlFor="cr-promo">
+            <Input id="cr-promo" value={promoMechanic} onChange={e => setPromoMechanic(e.target.value)} placeholder="VD: Mua 1 tặng 1 mini size + Voucher 15% ngày đôi" />
+          </Field>
+        </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Hashtag bắt buộc trên bài đăng" htmlFor="cr-tags">
-          <Textarea id="cr-tags" rows={2} value={hashtags} onChange={e => setHashtags(e.target.value)} />
-        </Field>
-        <Field label="Tài khoản bắt buộc Tag / Mention" htmlFor="cr-mentions">
-          <Textarea id="cr-mentions" rows={2} value={mentions} onChange={e => setMentions(e.target.value)} />
-        </Field>
-      </div>
-      <Field label="Quy định thời lượng & xuất hiện sản phẩm" htmlFor="cr-dur">
-        <Input id="cr-dur" value={durationRule} onChange={e => setDurationRule(e.target.value)} placeholder="VD: 45–90 giây, sản phẩm xuất hiện trong 5 giây đầu" />
-      </Field>
-      <Field label="Câu kêu gọi hành động (CTA) chuẩn cuối video" htmlFor="cr-cta">
-        <Textarea id="cr-cta" rows={2} value={defaultCta} onChange={e => setDefaultCta(e.target.value)} />
-      </Field>
     </Modal>
   );
 }
@@ -706,7 +886,6 @@ export function ItemDialog({
                       ) : (
                         <div className="min-w-0">
                           <p className="text-[13px] font-medium text-ink">Tải tệp tài liệu lên hệ thống</p>
-                          <p className="text-2xs text-ink-3">Kéo thả hoặc chọn tệp PDF, Word, Excel, PowerPoint, ảnh, ZIP (tối đa 25 MB)</p>
                         </div>
                       )}
                       <div className="flex items-center gap-1.5 shrink-0">

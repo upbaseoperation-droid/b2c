@@ -84,7 +84,8 @@ export function permissionsFor(user: UserProfile | null, accountPic?: string, br
   const pic = !!user && sameName(user.name, accountPic);
   const legal = !!user && isLegalActor(user);
   const brandPartner = isBrandPartnerForBrand(user, brandName);
-  const content = lead || pic || brandPartner;
+  const internalStaff = !!user && !user.partnerType && !user.role.endsWith('_PARTNER');
+  const content = lead || pic || internalStaff || brandPartner;
   return {
     POSITIONING: content,
     ENTITY: content,
@@ -93,8 +94,8 @@ export function permissionsFor(user: UserProfile | null, accountPic?: string, br
     CONTENT_RULES: content,
     FAQS: content,
     DOCUMENTS: content,
-    LEGAL: lead || legal || brandPartner,
-    RATECARD: lead,
+    LEGAL: lead || legal || internalStaff || brandPartner,
+    RATECARD: lead || internalStaff,
   };
 }
 
@@ -165,17 +166,30 @@ export function parseSection(section: BrandSection, raw: unknown, actorName: str
   switch (section) {
     case 'POSITIONING': {
       const tone = TONES.includes(d.toneTag as ToneTag) ? (d.toneTag as ToneTag) : undefined;
+      const rawTiers = (d.competitorTiers && typeof d.competitorTiers === 'object' ? d.competitorTiers : {}) as Record<string, unknown>;
       const p: BrandPositioning = {
         slogan: text(d.slogan, 200),
         story: text(d.story, 3000),
         toneTag: tone,
         toneOfVoice: text(d.toneOfVoice, 1000),
         targetAudience: text(d.targetAudience, 1500),
+        brandSays: text(d.brandSays, 1000) || undefined,
+        consumerSays: text(d.consumerSays, 1000) || undefined,
+        communicationGap: text(d.communicationGap, 1000) || undefined,
+        bigIdea: text(d.bigIdea, 500) || undefined,
+        keyMessage: text(d.keyMessage, 500) || undefined,
+        keyVisualDirection: text(d.keyVisualDirection, 1000) || undefined,
+        achievements: lines(d.achievements, 20, 400),
         painPoints: lines(d.painPoints, 20, 300),
         barriersToTrial: lines(d.barriersToTrial, 20, 300),
         rtbs: lines(d.rtbs, 20, 300),
         contentPillars: lines(d.contentPillars, 20, 300),
         competitors: lines(d.competitors, 20, 200),
+        competitorTiers: {
+          tierA: lines(rawTiers.tierA, 15, 250),
+          tierB: lines(rawTiers.tierB, 15, 250),
+          tierC: lines(rawTiers.tierC, 15, 250),
+        },
       };
       return { positioning: p };
     }
@@ -221,6 +235,9 @@ export function parseSection(section: BrandSection, raw: unknown, actorName: str
         allowExtraFeeForAdsOrCrosspost: bool(d.allowExtraFeeForAdsOrCrosspost, prev?.allowExtraFeeForAdsOrCrosspost ?? false),
         preferredKocNiches: lines(d.preferredKocNiches, 15, 150),
         kocSelectionCriteria: text(d.kocSelectionCriteria, 1500),
+        targetAudienceDemographics: text(d.targetAudienceDemographics, 600) || undefined,
+        kocPersonaAndVisualCriteria: text(d.kocPersonaAndVisualCriteria, 1000) || undefined,
+        blacklistedKocs: lines(d.blacklistedKocs, 50, 200),
         handoverFrom: text(d.handoverFrom, 150) || undefined,
         handoverTo: text(d.handoverTo, 150) || undefined,
         handoverFileUrl: url(d.handoverFileUrl) || undefined,
@@ -255,6 +272,7 @@ export function parseSection(section: BrandSection, raw: unknown, actorName: str
             usps: lines(p.usps, 8),
             mechanism: text(p.mechanism, 2000),
             ingredients: lines(p.ingredients, 20),
+            usageInstruction: text(p.usageInstruction, 1000) || undefined,
             targetUser: text(p.targetUser, 500),
             contraindications: text(p.contraindications, 500),
           };
@@ -270,6 +288,8 @@ export function parseSection(section: BrandSection, raw: unknown, actorName: str
         mandatoryMentions: lines(d.mandatoryMentions, 15, 100),
         defaultCta: text(d.defaultCta, 400),
         videoDurationRule: text(d.videoDurationRule, 400),
+        minAdvertisedPriceRule: text(d.minAdvertisedPriceRule, 600) || undefined,
+        keyPromotionMechanic: text(d.keyPromotionMechanic, 600) || undefined,
       };
       return { contentRules: r };
     }
@@ -323,6 +343,7 @@ export function parseSection(section: BrandSection, raw: unknown, actorName: str
             category,
             url: link,
             note: text(x.note, 500),
+            extractedContent: text(x.extractedContent, 5000) || old?.extractedContent || undefined,
             addedBy: old?.addedBy || actorName,
             addedAt: old?.addedAt || new Date().toISOString(),
             ...(fileKey ? {
