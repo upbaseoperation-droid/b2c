@@ -3,6 +3,7 @@
 import { PartnerDiscussion } from '../PartnerDiscussion';
 import React, { useState, useMemo, useRef } from 'react';
 import { ActionMenu, Avatar, Button, Modal, PageActions, Select, Status, TabItem, Tabs, Toolbar } from '../ui';
+import { PlanSelfChannelBoard } from './PlanSelfChannelBoard';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -137,9 +138,9 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
 
   const idCounterRef = useRef(1050);
 
-  // Tab State: 'OVERVIEW' | 'PLAN_FINAL_RBAC' | 'CTV_PORTAL' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'PLAN_FINAL_RBAC' | 'CTV_PORTAL' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'>(
-    currentUser?.role === 'CTV_PARTNER' ? 'CTV_PORTAL' : 'OVERVIEW'
+  // Tab State: 'PLAN_WORKFLOW' | 'OVERVIEW' | 'PLAN_FINAL_RBAC' | 'CTV_PORTAL' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'
+  const [activeTab, setActiveTab] = useState<'PLAN_WORKFLOW' | 'OVERVIEW' | 'PLAN_FINAL_RBAC' | 'CTV_PORTAL' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'>(
+    currentUser?.role === 'CTV_PARTNER' ? 'CTV_PORTAL' : 'PLAN_WORKFLOW'
   );
   const [isCtvSimulatorView, setIsCtvSimulatorView] = useState(false);
 
@@ -1382,8 +1383,8 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Nút chính lên thanh trên; thao tác phụ vào menu */}
-      {!isCtvPartner && (
+      {/* Nút chính lên thanh trên; thao tác phụ vào menu (Ẩn khi ở tab PLAN_WORKFLOW vì có bộ công cụ riêng) */}
+      {!isCtvPartner && activeTab !== 'PLAN_WORKFLOW' && (
         <PageActions>
           <ActionMenu
             items={[
@@ -1401,45 +1402,47 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       )}
 
       {/* Chọn nhãn hàng + tiến độ 5 bước (bấm để mở tab tương ứng) */}
-      <Toolbar
-        actions={
-          isCtvPartner && onOpenPushProducts ? (
-            <Button size="sm" icon={Tag} onClick={onOpenPushProducts}>Sản phẩm đẩy</Button>
-          ) : undefined
-        }
-      >
-        {!isCtvPartner && (
-          <Select
-            aria-label="Nhãn hàng"
-            value={selectedBrandId}
-            onChange={(e) => {
-              setSelectedBrandId(e.target.value);
-              setSelectedPillarId('ALL');
-            }}
-            className="w-56"
-          >
-            <option value="ALL">Tất cả nhãn hàng ({availableAllocations.length})</option>
-            {availableAllocations.map(a => (
-              <option key={a.brandId} value={a.brandId}>{a.brandName}</option>
+      {activeTab !== 'PLAN_WORKFLOW' && (
+        <Toolbar
+          actions={
+            isCtvPartner && onOpenPushProducts ? (
+              <Button size="sm" icon={Tag} onClick={onOpenPushProducts}>Sản phẩm đẩy</Button>
+            ) : undefined
+          }
+        >
+          {!isCtvPartner && (
+            <Select
+              aria-label="Nhãn hàng"
+              value={selectedBrandId}
+              onChange={(e) => {
+                setSelectedBrandId(e.target.value);
+                setSelectedPillarId('ALL');
+              }}
+              className="w-56"
+            >
+              <option value="ALL">Tất cả nhãn hàng ({availableAllocations.length})</option>
+              {availableAllocations.map(a => (
+                <option key={a.brandId} value={a.brandId}>{a.brandName}</option>
+              ))}
+            </Select>
+          )}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px]">
+            {[
+              { label: 'Chỉ tiêu', value: `${stats.totalTasks}/${stats.targetVideos}`, onClick: () => setActiveTab('OVERVIEW') },
+              { label: 'Duyệt VJ & góc quay', value: `${stats.orientationPendingTasks} chờ`, onClick: () => { setSelectedStatus('BRAND_ORIENTATION_PENDING'); setActiveTab('ACTIVE_JOBS'); } },
+              { label: 'Kịch bản', value: `${stats.scriptPendingTasks} chờ`, onClick: () => { setSelectedStatus('ALL'); setActiveTab('ACTIVE_JOBS'); } },
+              { label: 'QA & đăng kênh', value: `${stats.videoQaPendingTasks + stats.brandAcceptPendingTasks} chờ`, onClick: () => setActiveTab('APPROVALS') },
+              { label: 'Chờ thanh toán', value: formatVnd(stats.pendingPayment), onClick: () => setActiveTab('HISTORY') },
+            ].map((step, i) => (
+              <button key={step.label} type="button" onClick={step.onClick} className="inline-flex items-baseline gap-1.5 text-ink-3 hover:text-ink">
+                <span className="text-2xs tabular-nums">{i + 1}.</span>
+                <span>{step.label}</span>
+                <span className="font-medium text-ink tabular-nums">{step.value}</span>
+              </button>
             ))}
-          </Select>
-        )}
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px]">
-          {[
-            { label: 'Chỉ tiêu', value: `${stats.totalTasks}/${stats.targetVideos}`, onClick: () => setActiveTab('OVERVIEW') },
-            { label: 'Duyệt VJ & góc quay', value: `${stats.orientationPendingTasks} chờ`, onClick: () => { setSelectedStatus('BRAND_ORIENTATION_PENDING'); setActiveTab('ACTIVE_JOBS'); } },
-            { label: 'Kịch bản', value: `${stats.scriptPendingTasks} chờ`, onClick: () => { setSelectedStatus('ALL'); setActiveTab('ACTIVE_JOBS'); } },
-            { label: 'QA & đăng kênh', value: `${stats.videoQaPendingTasks + stats.brandAcceptPendingTasks} chờ`, onClick: () => setActiveTab('APPROVALS') },
-            { label: 'Chờ thanh toán', value: formatVnd(stats.pendingPayment), onClick: () => setActiveTab('HISTORY') },
-          ].map((step, i) => (
-            <button key={step.label} type="button" onClick={step.onClick} className="inline-flex items-baseline gap-1.5 text-ink-3 hover:text-ink">
-              <span className="text-2xs tabular-nums">{i + 1}.</span>
-              <span>{step.label}</span>
-              <span className="font-medium text-ink tabular-nums">{step.value}</span>
-            </button>
-          ))}
-        </div>
-      </Toolbar>
+          </div>
+        </Toolbar>
+      )}
 
       <Tabs
         value={activeTab}
@@ -1452,6 +1455,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 { key: 'DISCUSSION', label: 'Trao đổi' },
               ]
             : [
+                { key: 'PLAN_WORKFLOW', label: 'Quy trình & Nghiệm thu theo Kế hoạch' },
                 { key: 'OVERVIEW', label: 'Tổng quan & Trụ cột' },
                 { key: 'PLAN_FINAL_RBAC', label: 'Chỉ tiêu Plan Final & Phân quyền', count: approvedPlanFinalsForSelfChannel.length },
                 { key: 'ACTIVE_JOBS', label: 'Điều phối công việc', count: tasks.length },
@@ -1460,9 +1464,20 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 { key: 'HISTORY', label: 'Quyết toán CTV' },
                 { key: 'CTV_PORTAL', label: 'Cổng CTV (Giả lập)' },
                 { key: 'DISCUSSION', label: 'Trao đổi' },
-              ]) as Array<TabItem<'OVERVIEW' | 'PLAN_FINAL_RBAC' | 'CTV_PORTAL' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'>>
+              ]) as Array<TabItem<'PLAN_WORKFLOW' | 'OVERVIEW' | 'PLAN_FINAL_RBAC' | 'CTV_PORTAL' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'>>
         }
       />
+
+      {/* ========================================================================= */}
+      {/* TAB MỚI: QUY TRÌNH 6 BƯỚC, NGHIỆM THU & ĐNTT THEO KẾ HOẠCH THÁNG          */}
+      {/* ========================================================================= */}
+      {activeTab === 'PLAN_WORKFLOW' && (
+        <PlanSelfChannelBoard
+          contributors={contributors}
+          currentUserName={currentUser?.name || 'Chuyên viên'}
+          onNotify={notify}
+        />
+      )}
 
       {/* ========================================================================= */}
       {/* TAB MỚI: ĐẦU VÀO PLAN FINAL ĐÃ DUYỆT & PHÂN QUYỀN NHÂN SỰ SELF-CHANNEL    */}

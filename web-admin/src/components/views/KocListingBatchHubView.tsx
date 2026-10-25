@@ -23,6 +23,7 @@ import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModa
 import { StaffBrandListingSheetWorkspace } from '../shortlist/StaffBrandListingSheetWorkspace';
 import { PlanListingBoard } from './PlanListingBoard';
 import { PlanDealBoard } from './PlanDealBoard';
+import { PlanSelfChannelBoard } from './PlanSelfChannelBoard';
 import type { ContractDocument } from '../../lib/planDealLink';
 import {
   appendKocsToStaffBrandSheet,
@@ -111,7 +112,7 @@ export function KocListingBatchHubView({
   onNotify,
 }: KocListingBatchHubViewProps) {
   // Navigation sub-tabs
-  const [activeSubTab, setActiveSubTab] = useState<'PLAN_BOARD' | 'DEAL_BOARD' | 'STAFF_BRAND_SHEET' | 'LISTING_APPROVAL' | 'AIR_TRACKER'>('PLAN_BOARD');
+  const [activeSubTab, setActiveSubTab] = useState<'PLAN_BOARD' | 'DEAL_BOARD' | 'SELF_CHANNEL_BOARD' | 'STAFF_BRAND_SHEET' | 'LISTING_APPROVAL' | 'AIR_TRACKER'>('PLAN_BOARD');
 
   // Filters
   const defaultInitialStore = useMemo(() => {
@@ -999,44 +1000,47 @@ export function KocListingBatchHubView({
 
   return (
     <div className="space-y-4">
-      <PageActions>
-        <ActionMenu
-          items={[
-            { label: 'Báo cáo đề xuất cơ cấu KOC', icon: FileText, onSelect: () => setIsKocReportOpen(true) },
-            {
-              label: 'Thêm KOC nháp',
-              icon: Plus,
-              onSelect: () => {
-                const gradeToUse = selectedGrade !== 'ALL' ? selectedGrade : 'KL4';
-                const rowMatch = klTrackingRows.find((r) => r.code === gradeToUse);
-                handleOpenManualAddForGrade(
-                  gradeToUse,
-                  rowMatch?.benchmarkUnitCost || 4500000,
-                  rowMatch?.defaultTier || 'MICRO'
-                );
+      {activeSubTab !== 'DEAL_BOARD' && activeSubTab !== 'SELF_CHANNEL_BOARD' && (
+        <PageActions>
+          <ActionMenu
+            items={[
+              { label: 'Báo cáo đề xuất cơ cấu KOC', icon: FileText, onSelect: () => setIsKocReportOpen(true) },
+              {
+                label: 'Thêm KOC nháp',
+                icon: Plus,
+                onSelect: () => {
+                  const gradeToUse = selectedGrade !== 'ALL' ? selectedGrade : 'KL4';
+                  const rowMatch = klTrackingRows.find((r) => r.code === gradeToUse);
+                  handleOpenManualAddForGrade(
+                    gradeToUse,
+                    rowMatch?.benchmarkUnitCost || 4500000,
+                    rowMatch?.defaultTier || 'MICRO'
+                  );
+                },
               },
-            },
-          ]}
-        />
-        <Button
-          size="sm"
-          variant="primary"
-          icon={Filter}
-          onClick={() => {
-            setShortlistTargetGrade(selectedGrade !== 'ALL' ? selectedGrade : undefined);
-            setShowShortlistModal(true);
-          }}
-        >
-          Đề xuất KOC
-        </Button>
-      </PageActions>
+            ]}
+          />
+          <Button
+            size="sm"
+            variant="primary"
+            icon={Filter}
+            onClick={() => {
+              setShortlistTargetGrade(selectedGrade !== 'ALL' ? selectedGrade : undefined);
+              setShowShortlistModal(true);
+            }}
+          >
+            Đề xuất KOC
+          </Button>
+        </PageActions>
+      )}
 
       <Tabs
         value={activeSubTab}
         onChange={setActiveSubTab}
         items={[
           { key: 'PLAN_BOARD', label: 'Điều phối theo kế hoạch' },
-        { key: 'DEAL_BOARD', label: 'Deal & nghiệm thu' },
+          { key: 'DEAL_BOARD', label: 'Deal & nghiệm thu' },
+          { key: 'SELF_CHANNEL_BOARD', label: 'Video kênh Brand & nghiệm thu' },
           { key: 'STAFF_BRAND_SHEET', label: 'Sheet Listing Cá Nhân (Theo Brand)' },
           { key: 'LISTING_APPROVAL', label: 'Danh sách đề xuất', count: filteredListings.length },
           { key: 'AIR_TRACKER', label: 'Video lên sóng', count: airListings.length },
@@ -1047,6 +1051,9 @@ export function KocListingBatchHubView({
         <PlanListingBoard kocs={kocs} currentUserName={currentUserName} onNotify={onNotify} />
       )}
       {activeSubTab === 'DEAL_BOARD' && <PlanDealBoard kocs={kocs} currentUserName={currentUserName} onNotify={onNotify} onOpenContract={onOpenContractForPlanDeal} />}
+      {activeSubTab === 'SELF_CHANNEL_BOARD' && (
+        <PlanSelfChannelBoard currentUserName={currentUserName} onNotify={onNotify} />
+      )}
 
       {activeSubTab === 'STAFF_BRAND_SHEET' && (
         <StaffBrandListingSheetWorkspace
@@ -1071,7 +1078,7 @@ export function KocListingBatchHubView({
         />
       )}
 
-      {activeSubTab !== 'STAFF_BRAND_SHEET' && activeSubTab !== 'PLAN_BOARD' && activeSubTab !== 'DEAL_BOARD' && (
+      {activeSubTab !== 'STAFF_BRAND_SHEET' && activeSubTab !== 'PLAN_BOARD' && activeSubTab !== 'DEAL_BOARD' && activeSubTab !== 'SELF_CHANNEL_BOARD' && (
         <>
       <StatRow size="sm">
         <Stat

@@ -15,17 +15,21 @@ import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
+import { getKocLegalProfiles, LEGAL_TYPE_LABEL } from '../koc/kocUtils';
 import {
   GROUP_ORDER,
+  OFFICIAL_3STAGE_TEMPLATE_IDS,
   buildJobAcceptanceBreakdown,
   formatMoneyInput,
   inferAcceptanceTemplateId,
   isAcceptance,
   partnerName,
   prefill,
+  resolveActiveLegalProfile,
   syncValuesFromJobAcceptanceBreakdown,
   templateFor,
   uniqueFields,
+  type ContractDocStage,
   type JobAcceptanceAddonRow,
 } from './contractUi';
 import { evaluateContractRules } from '../../lib/contracts/contractRules';
@@ -34,6 +38,7 @@ import { parseDocxInBrowser } from './docxClientParser';
 export interface ContractFormInit {
   dealId?: string;
   kind?: 'CONTRACT' | 'ACCEPTANCE';
+  docStage?: ContractDocStage;
   parentId?: string;
   templateId?: string;
   isKocOwnForm?: boolean;
@@ -53,6 +58,26 @@ export interface ContractFormPayload {
 
 const findKoc = (kocs: KocItem[], deal?: BookingDealItem) =>
   deal ? kocs.find(k => k.id === deal.kocId) || kocs.find(k => k.channelId.replace(/^@/, '').toLowerCase() === (deal.kocChannelId || '').replace(/^@/, '').toLowerCase()) : undefined;
+
+const loadSavedScreenshotsForDeal = (d?: BookingDealItem, fallbackKocId?: string): AcceptanceScreenshotItem[] => {
+  if (!d && !fallbackKocId) return [];
+  const primary = findSavedScreenshotsForContext({
+    dealId: d?.id,
+    dealCode: d?.dealCode,
+    kocId: d?.kocId || fallbackKocId,
+    videoUrl: d?.tiktokVideoUrl,
+  });
+  if (primary.length > 0) return primary;
+  if (d?.sourceDealCode && d?.dealCode) {
+    return findSavedScreenshotsForContext({
+      dealId: d.id,
+      dealCode: `${d.sourceDealCode}-${d.dealCode}`,
+      kocId: d.kocId || fallbackKocId,
+      videoUrl: d.tiktokVideoUrl,
+    });
+  }
+  return [];
+};
 
 export function ContractForm({
   data,
@@ -75,6 +100,16 @@ export function ContractForm({
   onSave: (payload: ContractFormPayload) => void;
 }) {
   const editing = !!record;
+  const findFrameworkForKoc = (k?: KocItem, d?: BookingDealItem): ContractRecord | undefined => {
+    const kId = k?.id || d?.kocId;
+    const pName = partnerName(k, d);
+    return data.records.find(
+      r =>
+        r.templateId.endsWith('-HDNT') &&
+        ((kId && r.kocId === kId) || (pName && r.partner === pName)),
+    );
+  };
+
   const findBestParentForAcceptance = (d?: BookingDealItem, k?: KocItem): ContractRecord | undefined => {
     if (!d && !k) return undefined;
     // Ưu tiên Phụ lục SOW của chính Job đó
@@ -93,40 +128,114 @@ export function ContractForm({
     );
   };
 
+  const initialDealLookup = deals.find(d => d.id === (record?.dealId || init?.dealId));
+  const initialKocLookup =
+    findKoc(kocs, initialDealLookup) ||
+    (record?.kocId ? kocs.find(k => k.id === record.kocId) : undefined);
+
+  const initialDocStage: ContractDocStage = (() => {
+    const tpl = record?.templateId || init?.templateId || '';
+    if (tpl) {
+      if (isAcceptance(tpl)) return 'BBNT';
+      if (tpl.endsWith('-SOW')) return 'SOW';
+      if (tpl.endsWith('-HDNT')) return 'HDNT';
+    }
+    if (init?.docStage) return init.docStage;
+    if (init?.kind === 'ACCEPTANCE') return 'BBNT';
+    if (init?.parentId) {
+      const p = data.records.find(r => r.id === init.parentId);
+      if (p?.templateId.endsWith('-HDNT')) return 'SOW';
+    }
+    if (initialDealLookup) {
+      const existingFw = findFrameworkForKoc(initialKocLookup, initialDealLookup);
+      return existingFw ? 'SOW' : 'HDNT';
+    }
+    return 'HDNT';
+  })();
+
   const initialParent =
     data.records.find(r => r.id === (record?.parentId || init?.parentId)) ||
-    ((record ? isAcceptance(record.templateId) : init?.kind === 'ACCEPTANCE')
-      ? findBestParentForAcceptance(
-          deals.find(d => d.id === (record?.dealId || init?.dealId)),
-          findKoc(kocs, deals.find(d => d.id === (record?.dealId || init?.dealId))),
-        )
-      : undefined);
+    (initialDocStage === 'BBNT'
+      ? findBestParentForAcceptance(initialDealLookup, initialKocLookup)
+      : initialDocStage === 'SOW'
+        ? findFrameworkForKoc(initialKocLookup, initialDealLookup)
+        : undefined);
   const initialDeal = deals.find(d => d.id === (record?.dealId || init?.dealId || initialParent?.dealId));
   const [dealId, setDealId] = useState(initialDeal?.id || '');
+  const [selectedKocId, setSelectedKocId] = useState<string>(
+    initialDeal?.kocId || record?.kocId || initialParent?.kocId || initialKocLookup?.id || '',
+  );
+  const [selectedLegalProfileId, setSelectedLegalProfileId] = useState<string>(
+    initialDeal?.legalProfileId || '',
+  );
+  const [docStage, setDocStage] = useState<ContractDocStage>(initialDocStage);
   const [kind, setKind] = useState<'CONTRACT' | 'ACCEPTANCE'>(
-    record ? (isAcceptance(record.templateId) ? 'ACCEPTANCE' : 'CONTRACT') : init?.templateId ? (isAcceptance(init.templateId) ? 'ACCEPTANCE' : 'CONTRACT') : init?.kind || 'CONTRACT',
+    initialDocStage === 'BBNT'
+      ? 'ACCEPTANCE'
+      : record
+        ? isAcceptance(record.templateId)
+          ? 'ACCEPTANCE'
+          : 'CONTRACT'
+        : init?.templateId
+          ? isAcceptance(init.templateId)
+            ? 'ACCEPTANCE'
+            : 'CONTRACT'
+          : init?.kind || 'CONTRACT',
   );
   const inferAcceptanceTemplate = (parentTplId?: string) =>
     inferAcceptanceTemplateId(parentTplId, data.templates);
+  const formatStageTitle = (
+    stage: ContractDocStage,
+    k?: KocItem,
+    d?: BookingDealItem,
+    fallbackPartner?: string,
+    fallbackBrand?: string,
+  ) => {
+    const kocLabel = k?.stageName || d?.kocStageName || fallbackPartner || '';
+    const brandLabel = d?.brandName || fallbackBrand || '';
+    if (stage === 'HDNT') {
+      return ['Hợp đồng nguyên tắc', kocLabel].filter(Boolean).join(' · ');
+    }
+    if (stage === 'SOW') {
+      return ['Phụ lục SOW', d?.dealCode, kocLabel, brandLabel].filter(Boolean).join(' · ');
+    }
+    if (stage === 'BBNT') {
+      return ['Biên bản nghiệm thu', d?.dealCode, kocLabel, brandLabel].filter(Boolean).join(' · ');
+    }
+    return ['Hợp đồng video', kocLabel, brandLabel].filter(Boolean).join(' · ');
+  };
+
   const [templateId, setTemplateId] = useState(
     record?.templateId ||
       init?.templateId ||
       (initialDeal
-        ? templateFor(findKoc(kocs, initialDeal), init?.kind || 'CONTRACT', initialDeal, data.templates)
-        : init?.kind === 'ACCEPTANCE' && initialParent
+        ? templateFor(findKoc(kocs, initialDeal), initialDocStage === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', initialDeal, data.templates, initialDocStage)
+        : initialDocStage === 'BBNT' && initialParent
           ? inferAcceptanceTemplate(initialParent.templateId) || 'IND-VID-BBNT'
-          : ''),
+          : templateFor(initialKocLookup, initialDocStage === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', undefined, data.templates, initialDocStage)),
   );
   const [title, setTitle] = useState(
     record?.title ||
-      (initialDeal
-        ? [init?.kind === 'ACCEPTANCE' ? 'Nghiệm thu video' : 'Hợp đồng video', initialDeal.kocStageName, initialDeal.brandName].filter(Boolean).join(' · ')
-        : initialParent && init?.kind === 'ACCEPTANCE'
-          ? ['Nghiệm thu video', initialParent.partner, initialParent.brand].filter(Boolean).join(' · ')
-          : ''),
+      formatStageTitle(
+        initialDocStage,
+        findKoc(kocs, initialDeal) || initialKocLookup,
+        initialDeal,
+        initialParent?.partner,
+        initialDeal?.brandName || initialParent?.brand,
+      ),
   );
-  const [brand, setBrand] = useState(record?.brand || initialDeal?.brandName || initialParent?.brand || data.actor.brands[0] || '');
-  const [partner, setPartner] = useState(record?.partner || (initialDeal ? partnerName(findKoc(kocs, initialDeal), initialDeal) : initialParent?.partner || ''));
+  const [brand, setBrand] = useState(
+    record?.brand ||
+      initialDeal?.brandName ||
+      initialParent?.brand ||
+      (initialDocStage === 'HDNT' ? 'UPBASE' : data.actor.brands[0] || ''),
+  );
+  const [partner, setPartner] = useState(
+    record?.partner ||
+      (initialDeal || initialKocLookup
+        ? partnerName(findKoc(kocs, initialDeal) || initialKocLookup, initialDeal, initialDeal?.legalProfileId)
+        : initialParent?.partner || ''),
+  );
   const [parentId, setParentId] = useState(record?.parentId || init?.parentId || initialParent?.id || '');
   const [values, setValues] = useState<Record<string, string>>(record?.values || {});
   const [prefilled, setPrefilled] = useState<Set<string>>(new Set());
@@ -145,12 +254,7 @@ export function ContractForm({
   const [acceptanceScreenshots, setAcceptanceScreenshots] = useState<AcceptanceScreenshotItem[]>(() =>
     record?.acceptanceScreenshots && record.acceptanceScreenshots.length > 0
       ? record.acceptanceScreenshots
-      : findSavedScreenshotsForContext({
-          dealId: initialDeal?.id,
-          dealCode: initialDeal?.dealCode,
-          kocId: initialDeal?.kocId || initialParent?.kocId,
-          videoUrl: initialDeal?.tiktokVideoUrl,
-        })
+      : loadSavedScreenshotsForDeal(initialDeal, initialParent?.kocId)
   );
 
   const [isKocOwnForm, setIsKocOwnForm] = useState<boolean>(record?.isKocOwnForm ?? init?.isKocOwnForm ?? false);
@@ -181,8 +285,16 @@ export function ContractForm({
   );
   const deal = useMemo(() => deals.find(d => d.id === dealId), [deals, dealId]);
   const koc = useMemo(
-    () => findKoc(kocs, deal) || (parentRecord?.kocId ? kocs.find(k => k.id === parentRecord.kocId) : undefined),
-    [kocs, deal, parentRecord],
+    () =>
+      (selectedKocId ? kocs.find(k => k.id === selectedKocId) : undefined) ||
+      findKoc(kocs, deal) ||
+      (parentRecord?.kocId ? kocs.find(k => k.id === parentRecord.kocId) : undefined),
+    [kocs, selectedKocId, deal, parentRecord],
+  );
+  const kocLegalProfiles = useMemo(() => (koc ? getKocLegalProfiles(koc) : []), [koc]);
+  const activeLegalProfile = useMemo(
+    () => resolveActiveLegalProfile(koc, deal, selectedLegalProfileId),
+    [koc, deal, selectedLegalProfileId],
   );
   const targetKocId = koc?.id || deal?.kocId || record?.kocId || parentRecord?.kocId;
   const kocTemplates = data.templates.filter(
@@ -190,6 +302,52 @@ export function ContractForm({
   );
   const primaryKocTemplate = kocTemplates[0];
   const kocLegalNotes = primaryKocTemplate?.legalNotes;
+
+  const dealWithActiveProfile = useMemo<BookingDealItem | undefined>(() => {
+    if (!deal && !activeLegalProfile) return undefined;
+    const base: BookingDealItem = deal || ({
+      id: '',
+      dealCode: '',
+      kocId: koc?.id,
+      kocStageName: koc?.stageName || '',
+      kocChannelId: koc?.channelId || '',
+      brandName: brand || 'UPBASE',
+      stage: 'CONTRACTING',
+      totalValue: 0,
+    } as unknown as BookingDealItem);
+    if (!activeLegalProfile) return base;
+    return {
+      ...base,
+      legalProfileId: activeLegalProfile.id,
+      vatRatePercent: activeLegalProfile.vatRatePercent ?? base.vatRatePercent,
+      kocIdCardNumber: activeLegalProfile.cccd || base.kocIdCardNumber,
+      kocBankName: activeLegalProfile.bankName || base.kocBankName,
+      kocBankAccount: activeLegalProfile.bankAccountNumber || base.kocBankAccount,
+      kocBankHolder: activeLegalProfile.bankHolderName || activeLegalProfile.holderName || base.kocBankHolder,
+      legalProfileSnapshot: {
+        legalType: activeLegalProfile.legalType,
+        holderName: activeLegalProfile.holderName,
+        taxCode: activeLegalProfile.taxCode,
+        cccd: activeLegalProfile.cccd,
+        cccdIssueDate: activeLegalProfile.cccdIssueDate,
+        cccdIssuePlace: activeLegalProfile.cccdIssuePlace,
+        representativeName: activeLegalProfile.representativeName,
+        representativeTitle: activeLegalProfile.representativeTitle,
+        registeredAddress: activeLegalProfile.registeredAddress,
+        bankName: activeLegalProfile.bankName,
+        bankAccountNumber: activeLegalProfile.bankAccountNumber,
+        bankHolderName: activeLegalProfile.bankHolderName,
+        taxRateLabel: activeLegalProfile.taxRateLabel,
+        vatRatePercent: activeLegalProfile.vatRatePercent,
+      },
+    };
+  }, [deal, activeLegalProfile, koc, brand]);
+
+  const ctvAcceptedDeals = useMemo(() => {
+    if (!targetKocId) return deal ? [deal] : [];
+    const matched = deals.filter(d => d.kocId === targetKocId && (d.tiktokVideoUrl || d.id === deal?.id));
+    return matched.length > 0 ? matched.slice(0, 5) : deal ? [deal] : [];
+  }, [deals, targetKocId, deal]);
 
   const initialBreakdown = useMemo(
     () => buildJobAcceptanceBreakdown(initialDeal, findKoc(kocs, initialDeal), initialParent),
@@ -199,8 +357,8 @@ export function ContractForm({
   const [draftVideoFee, setDraftVideoFee] = useState<number>(initialBreakdown.videoItem.feeNetVnd);
   const [draftAddons, setDraftAddons] = useState<JobAcceptanceAddonRow[]>(initialBreakdown.addonItems);
   const jobAcceptanceBreakdown = useMemo(
-    () => buildJobAcceptanceBreakdown(deal, koc, parentRecord, draftAddons, draftVideoFee),
-    [deal, koc, parentRecord, draftAddons, draftVideoFee],
+    () => buildJobAcceptanceBreakdown(dealWithActiveProfile || deal, koc, parentRecord, draftAddons, draftVideoFee),
+    [dealWithActiveProfile, deal, koc, parentRecord, draftAddons, draftVideoFee],
   );
 
   // Tải mẫu (kèm vị trí ô). Hồ sơ đang sửa dùng đúng bản mẫu đã khóa của hồ sơ.
@@ -214,11 +372,13 @@ export function ContractForm({
         if (!record) {
           const result = prefill(uniqueFields(r.template), {}, {
             koc,
-            deal,
+            deal: dealWithActiveProfile || deal,
             brand,
             existingRecords: data.records,
             parentRecord,
             parentFields: parentTemplate ? uniqueFields(parentTemplate) : [],
+            legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
+            ctvAcceptedDeals,
           });
           setValues(result.values); setPrefilled(new Set(result.filled));
         }
@@ -240,7 +400,7 @@ export function ContractForm({
   const applyJobBreakdownToDraftValues = (
     nextVideoFee: number,
     nextAddons: JobAcceptanceAddonRow[],
-    targetDeal = deal,
+    targetDeal = dealWithActiveProfile || deal,
     targetKoc = koc,
     targetParent = parentRecord,
   ) => {
@@ -252,55 +412,219 @@ export function ContractForm({
     }
   };
 
-  const autoTitle = (k: KocItem | undefined, d: BookingDealItem | undefined, kd: 'CONTRACT' | 'ACCEPTANCE') =>
-    [kd === 'CONTRACT' ? 'Hợp đồng video' : 'Nghiệm thu video', k?.stageName || d?.kocStageName, d?.brandName].filter(Boolean).join(' · ');
-
   const chooseDeal = (id: string) => {
-    const d = deals.find(x => x.id === id); const k = findKoc(kocs, d);
+    const d = deals.find(x => x.id === id);
+    const k = findKoc(kocs, d);
     setDealId(id);
     if (!d) return;
-    setBrand(d.brandName); setPartner(partnerName(k, d));
+    if (k?.id) setSelectedKocId(k.id);
+    const profId = d.legalProfileId || '';
+    setSelectedLegalProfileId(profId);
+    setBrand(d.brandName);
+    setPartner(partnerName(k, d, profId));
     if (d.totalValue && !customContractValue) setCustomContractValue(formatMoneyInput(String(d.totalValue)));
-    if (!title.trim() || title === autoTitle(findKoc(kocs, deal), deal, kind)) setTitle(autoTitle(k, d, kind));
-    const matchedParent = kind === 'ACCEPTANCE' ? (findBestParentForAcceptance(d, k) || parentRecord) : parentRecord;
-    if (kind === 'ACCEPTANCE' && matchedParent && matchedParent.id !== parentId) {
-      setParentId(matchedParent.id);
-    }
+
+    // Nếu đang ở HĐNT nhưng KOC đã có HĐNT khung rồi -> tự chuyển sang Phụ lục SOW
+    const existingFw = findFrameworkForKoc(k, d);
+    const effectiveStage: ContractDocStage =
+      docStage === 'BBNT' ? 'BBNT' : docStage === 'SOW' || existingFw ? 'SOW' : 'HDNT';
+    if (effectiveStage !== docStage) setDocStage(effectiveStage);
+
+    setTitle(formatStageTitle(effectiveStage, k, d, partnerName(k, d, profId), d.brandName));
+
+    const matchedParent =
+      effectiveStage === 'BBNT'
+        ? findBestParentForAcceptance(d, k) || parentRecord
+        : effectiveStage === 'SOW'
+          ? existingFw || parentRecord
+          : undefined;
+    setParentId(matchedParent?.id || '');
+
     const freshBd = buildJobAcceptanceBreakdown(d, k, matchedParent);
     setDraftVideoFee(freshBd.videoItem.feeNetVnd);
     setDraftAddons(freshBd.addonItems);
-    const savedShots = findSavedScreenshotsForContext({
-      dealId: d.id,
-      dealCode: d.dealCode,
-      kocId: d.kocId,
-      videoUrl: d.tiktokVideoUrl,
-    });
+    const savedShots = loadSavedScreenshotsForDeal(d, k?.id);
     if (savedShots.length > 0 && acceptanceScreenshots.length === 0) {
       setAcceptanceScreenshots(savedShots);
     }
-    const nextTemplate = templateFor(k, kind, d, data.templates);
-    if (nextTemplate !== templateId) { setTemplate(null); setValues({}); setTemplateId(nextTemplate); }
-    else if (template) {
+    const nextTemplate = templateFor(k, effectiveStage === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', d, data.templates, effectiveStage);
+    if (nextTemplate !== templateId) {
+      setTemplate(null);
+      setValues({});
+      setTemplateId(nextTemplate);
+    } else if (template) {
       const matchedParentTpl = matchedParent ? data.templates.find(t => t.id === matchedParent.templateId) : undefined;
-      const result = prefill(fields, {}, { koc: k, deal: d, brand: d.brandName, existingRecords: data.records, parentRecord: matchedParent, parentFields: matchedParentTpl ? uniqueFields(matchedParentTpl) : [] });
-      setValues(result.values); setPrefilled(new Set(result.filled));
+      const result = prefill(fields, {}, {
+        koc: k,
+        deal: d,
+        brand: d.brandName,
+        existingRecords: data.records,
+        parentRecord: matchedParent,
+        parentFields: matchedParentTpl ? uniqueFields(matchedParentTpl) : [],
+        legalProfileId: profId,
+        ctvAcceptedDeals,
+      });
+      setValues(result.values);
+      setPrefilled(new Set(result.filled));
     }
   };
 
-  const chooseKind = (k: 'CONTRACT' | 'ACCEPTANCE') => {
-    setKind(k);
-    if (title === autoTitle(koc, deal, kind)) setTitle(autoTitle(koc, deal, k));
-    if (k === 'ACCEPTANCE') {
-      const bestP = findBestParentForAcceptance(deal, koc);
-      if (bestP) setParentId(bestP.id);
-      const freshBd = buildJobAcceptanceBreakdown(deal, koc, bestP || parentRecord);
+  const chooseKocDirectly = (kId: string) => {
+    setSelectedKocId(kId);
+    const k = kocs.find(x => x.id === kId);
+    if (!k) return;
+    const profiles = getKocLegalProfiles(k);
+    const defProf = profiles.find(p => p.isDefault) || profiles[0];
+    const nextProfId = defProf?.id || '';
+    setSelectedLegalProfileId(nextProfId);
+    const nextPartner = partnerName(k, deal, nextProfId);
+    setPartner(nextPartner);
+    if (docStage === 'HDNT' && !brand.trim()) setBrand('UPBASE');
+    setTitle(formatStageTitle(docStage, k, deal, nextPartner, brand));
+
+    const existingFw = findFrameworkForKoc(k, deal);
+    if (docStage === 'SOW' && existingFw) setParentId(existingFw.id);
+
+    const syntheticDeal: BookingDealItem | undefined = defProf
+      ? ({
+          ...(deal || {
+            id: '',
+            dealCode: '',
+            kocId: k.id,
+            kocStageName: k.stageName,
+            kocChannelId: k.channelId,
+            brandName: brand || 'UPBASE',
+            stage: 'CONTRACTING',
+            totalValue: 0,
+          }),
+          legalProfileId: defProf.id,
+          vatRatePercent: defProf.vatRatePercent,
+          legalProfileSnapshot: {
+            legalType: defProf.legalType,
+            holderName: defProf.holderName,
+            taxCode: defProf.taxCode,
+            cccd: defProf.cccd,
+            cccdIssueDate: defProf.cccdIssueDate,
+            cccdIssuePlace: defProf.cccdIssuePlace,
+            representativeName: defProf.representativeName,
+            representativeTitle: defProf.representativeTitle,
+            registeredAddress: defProf.registeredAddress,
+            bankName: defProf.bankName,
+            bankAccountNumber: defProf.bankAccountNumber,
+            bankHolderName: defProf.bankHolderName,
+            taxRateLabel: defProf.taxRateLabel,
+            vatRatePercent: defProf.vatRatePercent,
+          },
+        } as unknown as BookingDealItem)
+      : deal;
+
+    const nextTemplate = templateFor(k, kind, syntheticDeal, data.templates, docStage);
+    if (nextTemplate !== templateId) {
+      setTemplate(null);
+      setValues({});
+      setTemplateId(nextTemplate);
+    } else if (template) {
+      const result = prefill(fields, {}, {
+        koc: k,
+        deal: syntheticDeal,
+        brand,
+        existingRecords: data.records,
+        parentRecord,
+        parentFields: parentTemplate ? uniqueFields(parentTemplate) : [],
+        legalProfileId: nextProfId,
+        ctvAcceptedDeals,
+      });
+      setValues(result.values);
+      setPrefilled(new Set(result.filled));
+    }
+  };
+
+  const chooseLegalProfile = (profId: string) => {
+    setSelectedLegalProfileId(profId);
+    const prof = kocLegalProfiles.find(p => p.id === profId);
+    const nextPartner = partnerName(koc, deal, profId);
+    if (nextPartner) setPartner(nextPartner);
+    const syntheticDeal: BookingDealItem | undefined = prof
+      ? ({
+          ...(deal || {
+            id: '',
+            dealCode: '',
+            kocId: koc?.id,
+            kocStageName: koc?.stageName || '',
+            kocChannelId: koc?.channelId || '',
+            brandName: brand || 'UPBASE',
+            stage: 'CONTRACTING',
+            totalValue: 0,
+          }),
+          legalProfileId: prof.id,
+          vatRatePercent: prof.vatRatePercent,
+          legalProfileSnapshot: {
+            legalType: prof.legalType,
+            holderName: prof.holderName,
+            taxCode: prof.taxCode,
+            cccd: prof.cccd,
+            cccdIssueDate: prof.cccdIssueDate,
+            cccdIssuePlace: prof.cccdIssuePlace,
+            representativeName: prof.representativeName,
+            representativeTitle: prof.representativeTitle,
+            registeredAddress: prof.registeredAddress,
+            bankName: prof.bankName,
+            bankAccountNumber: prof.bankAccountNumber,
+            bankHolderName: prof.bankHolderName,
+            taxRateLabel: prof.taxRateLabel,
+            vatRatePercent: prof.vatRatePercent,
+          },
+        } as unknown as BookingDealItem)
+      : deal;
+    const nextTemplate = templateFor(koc, kind, syntheticDeal, data.templates, docStage);
+    if (nextTemplate !== templateId) {
+      setTemplate(null);
+      setValues({});
+      setTemplateId(nextTemplate);
+    } else if (template) {
+      const result = prefill(fields, {}, {
+        koc,
+        deal: syntheticDeal,
+        brand,
+        existingRecords: data.records,
+        parentRecord,
+        parentFields: parentTemplate ? uniqueFields(parentTemplate) : [],
+        legalProfileId: profId,
+        ctvAcceptedDeals,
+      });
+      setValues(result.values);
+      setPrefilled(new Set(result.filled));
+    }
+  };
+
+  const chooseDocStage = (nextStage: ContractDocStage) => {
+    const nextKind: 'CONTRACT' | 'ACCEPTANCE' = nextStage === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT';
+    setDocStage(nextStage);
+    setKind(nextKind);
+    setTitle(formatStageTitle(nextStage, koc, deal, partner, brand));
+    if (nextStage === 'HDNT' && !brand.trim()) {
+      setBrand('UPBASE');
+    }
+    let nextParent: ContractRecord | undefined;
+    if (nextStage === 'BBNT') {
+      nextParent = findBestParentForAcceptance(deal, koc);
+      setParentId(nextParent?.id || '');
+      const freshBd = buildJobAcceptanceBreakdown(dealWithActiveProfile || deal, koc, nextParent || parentRecord);
+      setDraftVideoFee(freshBd.videoItem.feeNetVnd);
+      setDraftAddons(freshBd.addonItems);
+    } else if (nextStage === 'SOW') {
+      nextParent = findFrameworkForKoc(koc, deal);
+      setParentId(nextParent?.id || '');
+      const freshBd = buildJobAcceptanceBreakdown(dealWithActiveProfile || deal, koc, nextParent || parentRecord);
       setDraftVideoFee(freshBd.videoItem.feeNetVnd);
       setDraftAddons(freshBd.addonItems);
     } else {
       setParentId('');
     }
-    const next = deal ? templateFor(koc, k, deal, data.templates) : (data.templates.find(t => t.kind === k)?.id || '');
-    setTemplate(null); setValues({}); setTemplateId(next);
+    const nextTpl = templateFor(koc, nextKind, dealWithActiveProfile || deal, data.templates, nextStage);
+    setTemplate(null);
+    setValues({});
+    setTemplateId(nextTpl);
   };
 
   const switchSourceMode = (nextOwnForm: boolean) => {
@@ -445,9 +769,16 @@ export function ContractForm({
     reader.readAsDataURL(file);
   };
 
-  const templates = data.templates.filter(t => t.kind === kind && t.active !== false);
+  const official11Set = useMemo(() => new Set<string>(OFFICIAL_3STAGE_TEMPLATE_IDS), []);
+  const templates = data.templates.filter(
+    t =>
+      t.active !== false &&
+      (t.scope === 'KOC_CUSTOM' || official11Set.has(t.id) || t.id === templateId) &&
+      t.kind === kind,
+  );
   // SOW phải gắn với hợp đồng nguyên tắc gốc của KOC
   const isSow = templateId.endsWith('-SOW');
+  const isHdnt = templateId.endsWith('-HDNT');
   const parents = data.records.filter(r =>
     !isAcceptance(r.templateId) &&
     r.id !== record?.id &&
@@ -511,20 +842,20 @@ export function ContractForm({
     const selectedTpl = data.templates.find(t => t.id === templateId);
     return evaluateContractRules({
       koc,
-      deal,
+      deal: dealWithActiveProfile || deal,
       totalValue: numericTotal,
       advanceAmount: numericAdvance,
       hasCustomTerms: isKocOwnForm || hasCustomTerms,
       isKolForm: isKocOwnForm || selectedTpl?.scope === 'KOC_CUSTOM',
       availableTemplates: data.templates,
     });
-  }, [koc, deal, numericTotal, numericAdvance, hasCustomTerms, isKocOwnForm, templateId, data.templates]);
+  }, [koc, dealWithActiveProfile, deal, numericTotal, numericAdvance, hasCustomTerms, isKocOwnForm, templateId, data.templates]);
 
   const canSubmitForm =
     !busy &&
     Boolean(template) &&
     Boolean(title.trim()) &&
-    Boolean(brand.trim()) &&
+    (isHdnt || Boolean(brand.trim())) &&
     Boolean(partner.trim()) &&
     (!isKocOwnForm || Boolean(customFile)) &&
     (!isSow || Boolean(parentId));
@@ -539,7 +870,7 @@ export function ContractForm({
           : values;
         onSave({
           title: title.trim(),
-          brand: brand.trim(),
+          brand: brand.trim() || 'UPBASE',
           partner: partner.trim(),
           templateId,
           parentId,
@@ -670,22 +1001,69 @@ export function ContractForm({
               </div>
 
               <div className="grid gap-3.5 md:grid-cols-2">
-                <Field label="Booking" htmlFor="ct-deal">
-                  <Select id="ct-deal" value={dealId} onChange={e => chooseDeal(e.target.value)} disabled={editing && !!record?.dealId}>
-                    <option value="">Không gắn booking</option>
-                    {dealOptions.map(d => <option key={d.id} value={d.id}>{d.dealCode} · {d.kocStageName} · {d.brandName}</option>)}
-                  </Select>
-                </Field>
-                <Field label="Loại hồ sơ">
+                <Field label="Giai đoạn hồ sơ (3 bước chuẩn)" className="md:col-span-2">
                   <div>
                     {editing ? (
-                      <span className="text-[13.5px] text-ink">{kind === 'CONTRACT' ? 'Hợp đồng' : 'Biên bản nghiệm thu'}</span>
+                      <span className="text-[13.5px] font-medium text-ink">
+                        {docStage === 'BBNT'
+                          ? '3. Biên bản nghiệm thu (Theo Job)'
+                          : docStage === 'SOW'
+                            ? '2. Phụ lục SOW (Theo Job)'
+                            : '1. Hợp đồng nguyên tắc (Theo KOC)'}
+                      </span>
                     ) : (
-                      <Segmented items={[{ key: 'CONTRACT', label: 'Hợp đồng' }, { key: 'ACCEPTANCE', label: 'Biên bản nghiệm thu' }]} value={kind} onChange={chooseKind} />
+                      <Segmented
+                        items={[
+                          { key: 'HDNT', label: '1. HĐNT Khung (Theo KOC)' },
+                          { key: 'SOW', label: '2. Phụ lục SOW (Theo Job)' },
+                          { key: 'BBNT', label: '3. Nghiệm thu BBNT (Theo Job)' },
+                        ]}
+                        value={docStage === 'HD' ? 'HDNT' : docStage}
+                        onChange={v => chooseDocStage(v as ContractDocStage)}
+                      />
                     )}
                   </div>
                 </Field>
-                <Field label={isKocOwnForm ? 'Phân loại pháp nhân / Mẫu đối chiếu' : 'Mẫu pháp chế'} htmlFor="ct-template">
+                <Field label="Booking (Job)" htmlFor="ct-deal">
+                  <Select id="ct-deal" value={dealId} onChange={e => chooseDeal(e.target.value)} disabled={editing && !!record?.dealId}>
+                    <option value="">{docStage === 'HDNT' ? 'Không gắn booking (Ký HĐNT khung cho KOC)' : 'Chọn booking / Job...'}</option>
+                    {dealOptions.map(d => <option key={d.id} value={d.id}>{d.dealCode} · {d.kocStageName} · {d.brandName}</option>)}
+                  </Select>
+                </Field>
+                <Field label="KOC / Nhà sáng tạo" htmlFor="ct-koc">
+                  <Select
+                    id="ct-koc"
+                    value={koc?.id || selectedKocId}
+                    onChange={e => chooseKocDirectly(e.target.value)}
+                    disabled={editing && !!record?.kocId}
+                  >
+                    <option value="">Chọn KOC từ danh bạ...</option>
+                    {kocs.map(k => (
+                      <option key={k.id} value={k.id}>
+                        {k.stageName} ({k.channelId}) · {k.realName || k.companyName || 'Chưa rõ tên thật'}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                {kocLegalProfiles.length > 0 && (
+                  <Field label="Pháp nhân ký kết của KOC (Bên B)" htmlFor="ct-legal-profile" className="md:col-span-2">
+                    <Select
+                      id="ct-legal-profile"
+                      value={activeLegalProfile?.id || selectedLegalProfileId}
+                      onChange={e => chooseLegalProfile(e.target.value)}
+                    >
+                      {kocLegalProfiles.map(prof => (
+                        <option key={prof.id} value={prof.id}>
+                          [{LEGAL_TYPE_LABEL[prof.legalType]}] {prof.holderName}
+                          {prof.taxCode ? ` · MST: ${prof.taxCode}` : ''}
+                          {prof.cccd ? ` · CCCD: ${prof.cccd}` : ''}
+                          {prof.bankAccountNumber ? ` · STK: ${prof.bankAccountNumber} (${prof.bankName || ''})` : ''}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                )}
+                <Field label={isKocOwnForm ? 'Phân loại pháp nhân / Mẫu đối chiếu' : 'Mẫu pháp chế (Bộ 11 mẫu chuẩn)'} htmlFor="ct-template">
                   <Select
                     id="ct-template"
                     required
@@ -696,11 +1074,16 @@ export function ContractForm({
                       setTemplate(null);
                       setValues({});
                       setTemplateId(nextTpl);
-                      if (nextTpl.endsWith('-SOW') && !parentId) {
-                        const matchingHdnt = data.records.find(
-                          r => r.templateId.endsWith('-HDNT') && ((targetKocId && r.kocId === targetKocId) || (partner && r.partner === partner)),
-                        );
-                        if (matchingHdnt) setParentId(matchingHdnt.id);
+                      if (nextTpl.endsWith('-SOW')) {
+                        setDocStage('SOW');
+                        if (!parentId) {
+                          const matchingHdnt = findFrameworkForKoc(koc, deal);
+                          if (matchingHdnt) setParentId(matchingHdnt.id);
+                        }
+                      } else if (nextTpl.endsWith('-HDNT')) {
+                        setDocStage('HDNT');
+                      } else if (isAcceptance(nextTpl)) {
+                        setDocStage('BBNT');
                       }
                     }}
                   >
@@ -714,7 +1097,7 @@ export function ContractForm({
                         ))}
                       </optgroup>
                     )}
-                    <optgroup label="Mẫu chuẩn Upbase">
+                    <optgroup label="Bộ 11 mẫu chuẩn Upbase (Ver072026)">
                       {(editing ? data.templates : templates)
                         .filter(t => !kocTemplates.some(kt => kt.id === t.id))
                         .map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -722,10 +1105,18 @@ export function ContractForm({
                   </Select>
                 </Field>
                 <Field label="Tên hồ sơ" htmlFor="ct-title">
-                  <Input id="ct-title" required maxLength={180} value={title} onChange={e => setTitle(e.target.value)} placeholder="Hợp đồng video · Tên KOC · Nhãn hàng" />
+                  <Input id="ct-title" required maxLength={180} value={title} onChange={e => setTitle(e.target.value)} placeholder="Hợp đồng nguyên tắc / Phụ lục SOW · Tên KOC" />
                 </Field>
-                <Field label="Nhãn hàng" htmlFor="ct-brand">
-                  <Input id="ct-brand" required maxLength={120} list="ct-brands" value={brand} onChange={e => setBrand(e.target.value)} />
+                <Field label={isHdnt ? 'Phạm vi / Nhãn hàng (HĐNT dùng chung)' : 'Nhãn hàng'} htmlFor="ct-brand">
+                  <Input
+                    id="ct-brand"
+                    required={!isHdnt}
+                    maxLength={120}
+                    list="ct-brands"
+                    value={brand}
+                    onChange={e => setBrand(e.target.value)}
+                    placeholder={isHdnt ? 'UPBASE (Áp dụng cho mọi nhãn hàng)' : 'Chọn hoặc nhập tên nhãn hàng'}
+                  />
                   <datalist id="ct-brands">{data.actor.brands.map(b => <option key={b} value={b} />)}</datalist>
                 </Field>
                 <Field label="Đối tác (Bên B)" htmlFor="ct-partner">
@@ -744,7 +1135,7 @@ export function ContractForm({
                   </Field>
                 )}
                 {(kind === 'ACCEPTANCE' || isSow) && (
-                  <Field label={isSow ? 'Hợp đồng nguyên tắc' : 'Phụ lục SOW / Hợp đồng gốc của Job'} htmlFor="ct-parent" className="md:col-span-2">
+                  <Field label={isSow ? 'Hợp đồng nguyên tắc gốc của KOC' : 'Phụ lục SOW / Hợp đồng gốc của Job'} htmlFor="ct-parent" className="md:col-span-2">
                     <Select
                       id="ct-parent"
                       value={parentId}
@@ -756,8 +1147,8 @@ export function ContractForm({
                           if (!brand.trim()) setBrand(pRec.brand);
                           if (!partner.trim()) setPartner(pRec.partner);
                           if (pRec.dealId && !dealId) chooseDeal(pRec.dealId);
-                          if (!title.trim()) setTitle([isSow ? 'SOW booking video' : 'Nghiệm thu video', pRec.partner, pRec.brand].filter(Boolean).join(' · '));
-                          const freshBd = buildJobAcceptanceBreakdown(deal, koc, pRec);
+                          if (!title.trim()) setTitle(formatStageTitle(docStage, koc, deal, pRec.partner, pRec.brand));
+                          const freshBd = buildJobAcceptanceBreakdown(dealWithActiveProfile || deal, koc, pRec);
                           setDraftVideoFee(freshBd.videoItem.feeNetVnd);
                           setDraftAddons(freshBd.addonItems);
                           const inferredTpl = isSow ? '' : inferAcceptanceTemplate(pRec.templateId);
@@ -769,11 +1160,13 @@ export function ContractForm({
                             const pTpl = data.templates.find(t => t.id === pRec.templateId);
                             const result = prefill(fields, {}, {
                               koc,
-                              deal,
+                              deal: dealWithActiveProfile || deal,
                               brand: brand || pRec.brand,
                               existingRecords: data.records,
                               parentRecord: pRec,
                               parentFields: pTpl ? uniqueFields(pTpl) : [],
+                              legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
+                              ctvAcceptedDeals,
                             });
                             setValues(result.values);
                             setPrefilled(new Set(result.filled));
@@ -781,7 +1174,7 @@ export function ContractForm({
                         }
                       }}
                     >
-                      <option value="">{isSow ? 'Chọn hợp đồng nguyên tắc' : 'Chọn Phụ lục SOW / Hợp đồng của Job'}</option>
+                      <option value="">{isSow ? 'Chọn hợp đồng nguyên tắc của KOC' : 'Chọn Phụ lục SOW / Hợp đồng của Job'}</option>
                       {parents.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
                     </Select>
                   </Field>
@@ -880,9 +1273,13 @@ export function ContractForm({
             </div>
           </Panel>
 
-          {kind === 'ACCEPTANCE' && (
+          {(kind === 'ACCEPTANCE' || isSow) && (
             <Panel
-              title="Kiểm tra Bản nháp Nghiệm thu theo Phụ lục Job (Video + Dịch vụ đi kèm)"
+              title={
+                isSow
+                  ? 'Phân bổ 3 hạng mục Phụ lục SOW (Video chính + Mã quảng cáo + Sử dụng hình ảnh)'
+                  : 'Kiểm tra Bản nháp Nghiệm thu theo Phụ lục Job (Video + Dịch vụ đi kèm)'
+              }
               actions={
                 <div className="flex flex-wrap items-center gap-1.5">
                   <Button

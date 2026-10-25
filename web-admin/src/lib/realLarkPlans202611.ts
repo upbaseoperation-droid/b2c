@@ -1,7 +1,7 @@
 // Dữ liệu thực tế Tháng 11/2026 (2026/11) đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking
 // App Token: W6vRbbuOVar3qtsV18dlan1xgXb
 // Bảng 4.1 Plan order tổng: tblvgyOkneDKOVsB (66 gian hàng B2C phụ trách = true)
-// Bảng 4.1.1 Input plan: tblWvkHgK4fQF83t (201 dòng phân rã tuần trên 23 gian hàng B2C)
+// Bảng 4.1.1 Input plan: tblWvkHgK4fQF83t (201 dòng phân rã tuần W45-W49 trên 23 gian hàng B2C)
 
 import type { InputPlanBreakdownState, LarkbaseBookingPlanRecordItem } from './types';
 
@@ -24,20 +24,25 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 0,
     "targetGmv": 1393137373,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCiglOyG). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 0,
       "foc": 0,
       "cast": 0,
@@ -134,7 +139,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 94716000,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -143,7 +148,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCiglOyG",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-BABETIKTOKE2EO",
@@ -164,13 +169,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 113,
     "targetGmv": 309000001,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCig8Cbt) & Bảng 4.1.1 (6 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-BABETIKTOKE2EO-411-FOC",
@@ -198,7 +206,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 24
         },
         "self": {
           "reviewVoice": 0,
@@ -247,7 +255,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 24
         },
         "self": {
           "reviewVoice": 0,
@@ -296,7 +304,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 24
         },
         "self": {
           "reviewVoice": 0,
@@ -345,7 +353,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 24
         },
         "self": {
           "reviewVoice": 0,
@@ -441,7 +449,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "staffWeeklySlices": [
       {
         "staffName": "Trần Thị Hảo",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Chuyên viên FOC (0đ)",
         "rowCount": 4,
         "weeklyBreakdown": [
           {
@@ -450,7 +458,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 24
             },
             "self": {
               "reviewVoice": 0,
@@ -499,7 +507,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 24
             },
             "self": {
               "reviewVoice": 0,
@@ -548,7 +556,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 24
             },
             "self": {
               "reviewVoice": 0,
@@ -597,7 +605,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 24
             },
             "self": {
               "reviewVoice": 0,
@@ -946,8 +954,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 96,
       "foc": 96,
       "cast": 0,
@@ -1046,7 +1056,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 59471508,
     "targetAffiliateContents": 96,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -1055,7 +1065,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCig8Cbt",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-BANIPHARSHOPEEE2ES",
@@ -1075,13 +1085,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 3000000,
     "totalTargetContents": 51,
     "targetGmv": 423860276,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigGJKj) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-BANIPHARSHOPEEE2ES-411-SELF",
@@ -1128,11 +1141,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 5,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 1,
           "videoToLive": 0,
-          "nhacText": 0,
+          "nhacText": 1,
           "budgetNet": 0
         },
         "live": {
@@ -1146,8 +1159,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "reupQty": 0
           },
           "threads": {
-            "affQty": 0,
-            "budgetNet": 0,
+            "affQty": 2,
+            "budgetNet": 400000,
             "reupQty": 0
           },
           "facebook": {
@@ -1177,11 +1190,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 4,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 1,
           "videoToLive": 0,
-          "nhacText": 0,
+          "nhacText": 1,
           "budgetNet": 0
         },
         "live": {
@@ -1195,8 +1208,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "reupQty": 0
           },
           "threads": {
-            "affQty": 0,
-            "budgetNet": 0,
+            "affQty": 3,
+            "budgetNet": 600000,
             "reupQty": 0
           },
           "facebook": {
@@ -1226,9 +1239,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 4,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 1,
           "videoToLive": 0,
           "nhacText": 0,
           "budgetNet": 0
@@ -1244,8 +1257,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "reupQty": 0
           },
           "threads": {
-            "affQty": 0,
-            "budgetNet": 0,
+            "affQty": 4,
+            "budgetNet": 800000,
             "reupQty": 0
           },
           "facebook": {
@@ -1275,11 +1288,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 4,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 1,
           "videoToLive": 0,
-          "nhacText": 0,
+          "nhacText": 1,
           "budgetNet": 0
         },
         "live": {
@@ -1293,8 +1306,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "reupQty": 0
           },
           "threads": {
-            "affQty": 0,
-            "budgetNet": 0,
+            "affQty": 3,
+            "budgetNet": 600000,
             "reupQty": 0
           },
           "facebook": {
@@ -1324,11 +1337,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 4,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 1,
           "videoToLive": 0,
-          "nhacText": 0,
+          "nhacText": 1,
           "budgetNet": 0
         },
         "live": {
@@ -1342,8 +1355,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "reupQty": 0
           },
           "threads": {
-            "affQty": 0,
-            "budgetNet": 0,
+            "affQty": 3,
+            "budgetNet": 600000,
             "reupQty": 0
           },
           "facebook": {
@@ -1368,7 +1381,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "staffWeeklySlices": [
       {
         "staffName": "Nguyễn Thị Quỳnh Nhi",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Content / Self-channel PIC",
         "rowCount": 5,
         "weeklyBreakdown": [
           {
@@ -1380,11 +1393,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 5,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 1,
               "videoToLive": 0,
-              "nhacText": 0,
+              "nhacText": 1,
               "budgetNet": 0
             },
             "live": {
@@ -1398,8 +1411,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 2,
+                "budgetNet": 400000,
                 "reupQty": 0
               },
               "facebook": {
@@ -1429,11 +1442,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 4,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 1,
               "videoToLive": 0,
-              "nhacText": 0,
+              "nhacText": 1,
               "budgetNet": 0
             },
             "live": {
@@ -1447,8 +1460,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 3,
+                "budgetNet": 600000,
                 "reupQty": 0
               },
               "facebook": {
@@ -1478,9 +1491,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 4,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 1,
               "videoToLive": 0,
               "nhacText": 0,
               "budgetNet": 0
@@ -1496,8 +1509,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 4,
+                "budgetNet": 800000,
                 "reupQty": 0
               },
               "facebook": {
@@ -1527,11 +1540,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 4,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 1,
               "videoToLive": 0,
-              "nhacText": 0,
+              "nhacText": 1,
               "budgetNet": 0
             },
             "live": {
@@ -1545,8 +1558,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 3,
+                "budgetNet": 600000,
                 "reupQty": 0
               },
               "facebook": {
@@ -1576,11 +1589,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 4,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 1,
               "videoToLive": 0,
-              "nhacText": 0,
+              "nhacText": 1,
               "budgetNet": 0
             },
             "live": {
@@ -1594,8 +1607,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 3,
+                "budgetNet": 600000,
                 "reupQty": 0
               },
               "facebook": {
@@ -1621,8 +1634,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 15,
       "foc": 0,
       "cast": 15,
@@ -1717,7 +1732,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 3000000,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 421631990,
     "targetAffiliateContents": 15,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -1726,7 +1741,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigGJKj",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-BANIPHARTIKTOKE2ES",
@@ -1747,13 +1762,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 111250000,
     "totalTargetContents": 75,
     "targetGmv": 1031343287,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigwbNQ) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-BANIPHARTIKTOKE2ES-411-KL1",
@@ -1761,7 +1779,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL1",
-        "tierLabel": "Bậc Cast KL1 (0 - 300K)",
+        "tierLabel": "Bậc Cast KL1 (0 - 500K)",
         "salaryGrade": "KL1",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 5,
@@ -1779,7 +1797,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL2",
-        "tierLabel": "Bậc Cast KL2 (300K - 1M)",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
         "salaryGrade": "KL2",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 5,
@@ -1797,12 +1815,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL3",
-        "tierLabel": "Bậc Cast KL3 (1M - 2M)",
+        "tierLabel": "Bậc Cast KL3 (1.5M - 3M)",
         "salaryGrade": "KL3",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 5,
         "unitCost": 2000000,
-        "benchmarkCost": 1500000,
+        "benchmarkCost": 2000000,
         "totalBudget": 10000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 50000000,
@@ -1815,12 +1833,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL6",
-        "tierLabel": "Bậc Cast KL6 (7M - 15M)",
+        "tierLabel": "Bậc Cast KL6 (10M - 30M)",
         "salaryGrade": "KL6",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 12000000,
-        "benchmarkCost": 11000000,
+        "benchmarkCost": 15000000,
         "totalBudget": 12000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 60000000,
@@ -1833,12 +1851,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL7",
-        "tierLabel": "Bậc Cast KL7 (Trên 15M)",
+        "tierLabel": "Bậc Cast KL7 (Trên 30M)",
         "salaryGrade": "KL7",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
         "unitCost": 35000000,
-        "benchmarkCost": 25000000,
+        "benchmarkCost": 35000000,
         "totalBudget": 70000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 350000000,
@@ -1866,19 +1884,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "weeklyBreakdown": [
       {
         "week": "W45 [30.10-05.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 1,
+            "budgetNet": 250000
+          },
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 1000000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 2000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
+          "videoRemix": 1,
+          "videoToLive": 5,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1900000
         },
         "live": {
           "sessions": 0,
@@ -1915,19 +1946,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W46 [06.11-12.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 1,
+            "budgetNet": 250000
+          },
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 1000000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 2000000
+          },
+          "KL7": {
+            "qty": 1,
+            "budgetNet": 35000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "videoRemix": 1,
+          "videoToLive": 10,
+          "nhacText": 1,
+          "budgetNet": 2050000
         },
         "live": {
           "sessions": 0,
@@ -1964,19 +2012,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W47 [13.11-19.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 1,
+            "budgetNet": 250000
+          },
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 1000000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 2000000
+          },
+          "KL6": {
+            "qty": 1,
+            "budgetNet": 12000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "videoRemix": 1,
+          "videoToLive": 5,
+          "nhacText": 1,
+          "budgetNet": 3150000
         },
         "live": {
           "sessions": 0,
@@ -2013,19 +2078,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W48 [20.11-26.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 1,
+            "budgetNet": 250000
+          },
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 1000000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 2000000
+          },
+          "KL7": {
+            "qty": 1,
+            "budgetNet": 35000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 4,
           "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "videoRemix": 1,
+          "videoToLive": 3,
+          "nhacText": 1,
+          "budgetNet": 3150000
         },
         "live": {
           "sessions": 0,
@@ -2062,19 +2144,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W49 [27.11-03.12]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 1,
+            "budgetNet": 250000
+          },
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 1000000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 2000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 5,
           "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "videoRemix": 1,
+          "videoToLive": 2,
+          "nhacText": 1,
+          "budgetNet": 2750000
         },
         "live": {
           "sessions": 0,
@@ -2118,7 +2213,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 1,
+                "budgetNet": 250000
+              },
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -2167,7 +2275,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 1,
+                "budgetNet": 250000
+              },
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2000000
+              },
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 35000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -2216,7 +2341,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 1,
+                "budgetNet": 250000
+              },
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2000000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 12000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -2265,7 +2407,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 1,
+                "budgetNet": 250000
+              },
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2000000
+              },
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 35000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -2314,7 +2473,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W49 [27.11-03.12]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 1,
+                "budgetNet": 250000
+              },
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -2365,7 +2537,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "staffName": "Nguyễn Thị Quỳnh Nhi",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Content / Self-channel PIC",
         "rowCount": 5,
         "weeklyBreakdown": [
           {
@@ -2377,12 +2549,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
+              "videoRemix": 1,
+              "videoToLive": 5,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1900000
             },
             "live": {
               "sessions": 0,
@@ -2426,12 +2598,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "videoRemix": 1,
+              "videoToLive": 10,
+              "nhacText": 1,
+              "budgetNet": 2050000
             },
             "live": {
               "sessions": 0,
@@ -2475,12 +2647,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "videoRemix": 1,
+              "videoToLive": 5,
+              "nhacText": 1,
+              "budgetNet": 3150000
             },
             "live": {
               "sessions": 0,
@@ -2524,12 +2696,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 4,
               "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "videoRemix": 1,
+              "videoToLive": 3,
+              "nhacText": 1,
+              "budgetNet": 3150000
             },
             "live": {
               "sessions": 0,
@@ -2573,12 +2745,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 5,
               "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "videoRemix": 1,
+              "videoToLive": 2,
+              "nhacText": 1,
+              "budgetNet": 2750000
             },
             "live": {
               "sessions": 0,
@@ -2618,8 +2790,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 18,
       "foc": 0,
       "cast": 18,
@@ -2632,15 +2806,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "liveCostGross": 0,
       "liveCostNet": 0,
       "tiers": {
-        "KL1": 0,
-        "KL2": 0,
-        "KL3": 0,
+        "KL1": 5,
+        "KL2": 5,
+        "KL3": 5,
         "KL4": 0,
         "KL5": 0,
-        "KL6": 0,
-        "KL7": 0
+        "KL6": 1,
+        "KL7": 2
       },
-      "kl4PlusTarget": 0,
+      "kl4PlusTarget": 3,
       "focBreakdown": {
         "tapBrand": 0,
         "tap": 0,
@@ -2715,7 +2889,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 98250000,
     "budgetSelfChannel": 13000000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 512470580,
     "targetAffiliateContents": 18,
     "targetSelfChannelContents": 50,
     "currentVersionCode": "v1.0",
@@ -2724,7 +2898,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigwbNQ",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-BYEBYEBLEMISHSHOPEEE2ES",
@@ -2744,20 +2918,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 22727273,
     "totalTargetContents": 45,
     "targetGmv": 158657637,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCig8p3o). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-BYEBYEBLEMISHSHOPEEE2ES-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 15,
+        "unitCost": 1212121,
+        "benchmarkCost": 800000,
+        "totalBudget": 18181818,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 90909090,
+        "assignedStaff": "Lê Thanh Hải",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 15,
       "foc": 0,
       "cast": 15,
@@ -2850,7 +3048,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 18181818,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 137160000,
     "targetAffiliateContents": 15,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -2859,7 +3057,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCig8p3o",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-BYEBYEBLEMISHTIKTOKE2ES",
@@ -2880,20 +3078,79 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 134242421,
     "totalTargetContents": 199,
     "targetGmv": 2534553327,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigBxGA). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-BYEBYEBLEMISHTIKTOKE2ES-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 17,
+        "unitCost": 7367796,
+        "benchmarkCost": 800000,
+        "totalBudget": 125252525,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 626262625,
+        "assignedStaff": "Lê Thanh Hải",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-BYEBYEBLEMISHTIKTOKE2ES-41-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 160,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
+      },
+      {
+        "id": "PO-2026-11-BYEBYEBLEMISHTIKTOKE2ES-41-SELF",
+        "channel": "SELF_CHANNEL",
+        "platform": "Kênh Brand tự xây (Self-channel)",
+        "category": "SELF_CHANNEL",
+        "tierCode": "Review voice",
+        "tierLabel": "Sản xuất Video Kênh Brand",
+        "contentFormat": "Review voice / Video to live / Remix",
+        "qty": 22,
+        "unitCost": 408632,
+        "benchmarkCost": 500000,
+        "totalBudget": 8989896,
+        "expectedRoiMultiplier": 3.5,
+        "targetGmv": 31464636,
+        "assignedStaff": "Lê Thanh Hải",
+        "notes": "Chỉ tiêu Kênh tự xây từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 177,
       "foc": 160,
       "cast": 17,
@@ -2988,7 +3245,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 125252525,
     "budgetSelfChannel": 8989896,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 927465000,
     "targetAffiliateContents": 177,
     "targetSelfChannelContents": 22,
     "currentVersionCode": "v1.0",
@@ -2997,7 +3254,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigBxGA",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-CINDYBLOOMTIKTOKE2EC",
@@ -3018,20 +3275,79 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 55600000,
     "totalTargetContents": 305,
     "targetGmv": 2320941176,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigYZ27). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-CINDYBLOOMTIKTOKE2EC-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 17,
+        "unitCost": 2941176,
+        "benchmarkCost": 800000,
+        "totalBudget": 50000000,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 250000000,
+        "assignedStaff": "Bùi Ngọc Ánh",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-CINDYBLOOMTIKTOKE2EC-41-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 200,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
+      },
+      {
+        "id": "PO-2026-11-CINDYBLOOMTIKTOKE2EC-41-SELF",
+        "channel": "SELF_CHANNEL",
+        "platform": "Kênh Brand tự xây (Self-channel)",
+        "category": "SELF_CHANNEL",
+        "tierCode": "Review voice",
+        "tierLabel": "Sản xuất Video Kênh Brand",
+        "contentFormat": "Review voice / Video to live / Remix",
+        "qty": 56,
+        "unitCost": 100000,
+        "benchmarkCost": 500000,
+        "totalBudget": 5600000,
+        "expectedRoiMultiplier": 3.5,
+        "targetGmv": 19600000,
+        "assignedStaff": "Bùi Ngọc Ánh",
+        "notes": "Chỉ tiêu Kênh tự xây từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 217,
       "foc": 200,
       "cast": 17,
@@ -3128,7 +3444,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 50000000,
     "budgetSelfChannel": 5600000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 674445962,
     "targetAffiliateContents": 217,
     "targetSelfChannelContents": 56,
     "currentVersionCode": "v1.0",
@@ -3137,7 +3453,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigYZ27",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-DOCILEESHOPEEE2ES",
@@ -3157,20 +3473,61 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 4545455,
     "totalTargetContents": 70,
     "targetGmv": 61000000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigPIQI). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-DOCILEESHOPEEE2ES-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 50,
+        "unitCost": 90909,
+        "benchmarkCost": 800000,
+        "totalBudget": 4545455,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 22727275,
+        "assignedStaff": "Đinh Thị Bích Liên",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-DOCILEESHOPEEE2ES-41-SELF",
+        "channel": "SELF_CHANNEL",
+        "platform": "Kênh Brand tự xây (Self-channel)",
+        "category": "SELF_CHANNEL",
+        "tierCode": "Review voice",
+        "tierLabel": "Sản xuất Video Kênh Brand",
+        "contentFormat": "Review voice / Video to live / Remix",
+        "qty": 20,
+        "unitCost": 0,
+        "benchmarkCost": 500000,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 3.5,
+        "targetGmv": 0,
+        "assignedStaff": "Đinh Thị Bích Liên",
+        "notes": "Chỉ tiêu Kênh tự xây từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 50,
       "foc": 0,
       "cast": 50,
@@ -3265,7 +3622,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 4545455,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 75600000,
     "targetAffiliateContents": 50,
     "targetSelfChannelContents": 20,
     "currentVersionCode": "v1.0",
@@ -3274,7 +3631,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigPIQI",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-DOCILEETIKTOKE2ES",
@@ -3294,20 +3651,61 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 76000000,
     "totalTargetContents": 70,
     "targetGmv": 1259665848,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigeFUC). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-DOCILEETIKTOKE2ES-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 35,
+        "unitCost": 1818182,
+        "benchmarkCost": 800000,
+        "totalBudget": 63636364,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 318181820,
+        "assignedStaff": "Đinh Thị Bích Liên",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-DOCILEETIKTOKE2ES-41-SELF",
+        "channel": "SELF_CHANNEL",
+        "platform": "Kênh Brand tự xây (Self-channel)",
+        "category": "SELF_CHANNEL",
+        "tierCode": "Review voice",
+        "tierLabel": "Sản xuất Video Kênh Brand",
+        "contentFormat": "Review voice / Video to live / Remix",
+        "qty": 15,
+        "unitCost": 218182,
+        "benchmarkCost": 500000,
+        "totalBudget": 3272727,
+        "expectedRoiMultiplier": 3.5,
+        "targetGmv": 11454545,
+        "assignedStaff": "Đinh Thị Bích Liên",
+        "notes": "Chỉ tiêu Kênh tự xây từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 35,
       "foc": 0,
       "cast": 35,
@@ -3402,7 +3800,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 63636364,
     "budgetSelfChannel": 3272727,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 248050000,
     "targetAffiliateContents": 35,
     "targetSelfChannelContents": 15,
     "currentVersionCode": "v1.0",
@@ -3411,7 +3809,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigeFUC",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-DYNIKTIKTOKE2EC",
@@ -3431,20 +3829,62 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 157272727,
     "totalTargetContents": 73,
     "targetGmv": 235551760,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigHsCL). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-DYNIKTIKTOKE2EC-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 8,
+        "unitCost": 19659091,
+        "benchmarkCost": 800000,
+        "totalBudget": 157272727,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 786363635,
+        "assignedStaff": "Hoàng Hải Long",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-DYNIKTIKTOKE2EC-41-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 65,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 73,
       "foc": 65,
       "cast": 8,
@@ -3541,7 +3981,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 157272727,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 105566327,
     "targetAffiliateContents": 73,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -3550,7 +3990,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigHsCL",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-EUPCSHOPEEE2EC",
@@ -3570,20 +4010,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 6818182,
     "totalTargetContents": 55,
     "targetGmv": 909750000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCiguMX1). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-EUPCSHOPEEE2EC-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 55,
+        "unitCost": 123967,
+        "benchmarkCost": 800000,
+        "totalBudget": 6818182,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 34090910,
+        "assignedStaff": "Dương Thị Hồng Nhung",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 55,
       "foc": 0,
       "cast": 55,
@@ -3678,7 +4142,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 6818182,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 287227970,
     "targetAffiliateContents": 55,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -3687,7 +4151,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCiguMX1",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-EUPCTIKTOKE2EC",
@@ -3712,13 +4176,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 385100000,
     "totalTargetContents": 294,
     "targetGmv": 4269999998,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigxddU) & Bảng 4.1.1 (30 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-EUPCTIKTOKE2EC-411-KL1",
@@ -3726,7 +4193,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL1",
-        "tierLabel": "Bậc Cast KL1 (0 - 300K)",
+        "tierLabel": "Bậc Cast KL1 (0 - 500K)",
         "salaryGrade": "KL1",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 49,
@@ -3744,12 +4211,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL3",
-        "tierLabel": "Bậc Cast KL3 (1M - 2M)",
+        "tierLabel": "Bậc Cast KL3 (1.5M - 3M)",
         "salaryGrade": "KL3",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 7,
         "unitCost": 1500000,
-        "benchmarkCost": 1500000,
+        "benchmarkCost": 2000000,
         "totalBudget": 10500000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 52500000,
@@ -3762,12 +4229,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL4",
-        "tierLabel": "Bậc Cast KL4 (2M - 4M)",
+        "tierLabel": "Bậc Cast KL4 (3M - 5M)",
         "salaryGrade": "KL4",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 6,
         "unitCost": 3000000,
-        "benchmarkCost": 3000000,
+        "benchmarkCost": 4000000,
         "totalBudget": 18000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 90000000,
@@ -3780,12 +4247,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL5",
-        "tierLabel": "Bậc Cast KL5 (4M - 7M)",
+        "tierLabel": "Bậc Cast KL5 (5M - 10M)",
         "salaryGrade": "KL5",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 15,
         "unitCost": 5000000,
-        "benchmarkCost": 5500000,
+        "benchmarkCost": 7000000,
         "totalBudget": 75000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 375000000,
@@ -3798,12 +4265,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL6",
-        "tierLabel": "Bậc Cast KL6 (7M - 15M)",
+        "tierLabel": "Bậc Cast KL6 (10M - 30M)",
         "salaryGrade": "KL6",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 3,
         "unitCost": 10000000,
-        "benchmarkCost": 11000000,
+        "benchmarkCost": 15000000,
         "totalBudget": 30000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 150000000,
@@ -3816,12 +4283,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL7",
-        "tierLabel": "Bậc Cast KL7 (Trên 15M)",
+        "tierLabel": "Bậc Cast KL7 (Trên 30M)",
         "salaryGrade": "KL7",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 5,
         "unitCost": 38000000,
-        "benchmarkCost": 25000000,
+        "benchmarkCost": 35000000,
         "totalBudget": 190000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 950000000,
@@ -3884,19 +4351,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "weeklyBreakdown": [
       {
         "week": "W45 [30.10-05.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 8,
+            "budgetNet": 2400000
+          },
+          "KL5": {
+            "qty": 3,
+            "budgetNet": 15000000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 1500000
+          },
+          "KL4": {
+            "qty": 1,
+            "budgetNet": 3000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 35
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 3,
+          "budgetNet": 2700000
         },
         "live": {
           "sessions": 0,
@@ -3916,7 +4400,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "facebook": {
             "affQty": 0,
             "budgetNet": 0,
-            "reupQty": 0
+            "reupQty": 2
           },
           "instagram": {
             "affQty": 0,
@@ -3933,19 +4417,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W46 [06.11-12.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 11,
+            "budgetNet": 3300000
+          },
+          "KL5": {
+            "qty": 4,
+            "budgetNet": 20000000
+          },
+          "KL6": {
+            "qty": 2,
+            "budgetNet": 20000000
+          },
+          "KL7": {
+            "qty": 2,
+            "budgetNet": 65000000
+          },
+          "KL3": {
+            "qty": 2,
+            "budgetNet": 3000000
+          },
+          "KL4": {
+            "qty": 1,
+            "budgetNet": 3000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 40
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 6,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 5,
+          "budgetNet": 5900000
         },
         "live": {
           "sessions": 0,
@@ -3965,7 +4474,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "facebook": {
             "affQty": 0,
             "budgetNet": 0,
-            "reupQty": 0
+            "reupQty": 2
           },
           "instagram": {
             "affQty": 0,
@@ -3982,19 +4491,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W47 [13.11-19.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 14,
+            "budgetNet": 4200000
+          },
+          "KL5": {
+            "qty": 4,
+            "budgetNet": 20000000
+          },
+          "KL7": {
+            "qty": 2,
+            "budgetNet": 95000000
+          },
+          "KL3": {
+            "qty": 2,
+            "budgetNet": 3000000
+          },
+          "KL4": {
+            "qty": 2,
+            "budgetNet": 6000000
+          },
+          "KL6": {
+            "qty": 1,
+            "budgetNet": 10000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 40
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 8,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "videoToLive": 1,
+          "nhacText": 3,
+          "budgetNet": 6200000
         },
         "live": {
           "sessions": 0,
@@ -4002,19 +4536,19 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "multiPlatform": {
           "shopee": {
-            "affQty": 0,
-            "budgetNet": 0,
+            "affQty": 5,
+            "budgetNet": 1000000,
             "reupQty": 0
           },
           "threads": {
-            "affQty": 0,
-            "budgetNet": 0,
+            "affQty": 10,
+            "budgetNet": 1500000,
             "reupQty": 0
           },
           "facebook": {
             "affQty": 0,
             "budgetNet": 0,
-            "reupQty": 0
+            "reupQty": 2
           },
           "instagram": {
             "affQty": 0,
@@ -4031,19 +4565,40 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W48 [20.11-26.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 10,
+            "budgetNet": 3000000
+          },
+          "KL5": {
+            "qty": 4,
+            "budgetNet": 20000000
+          },
+          "KL3": {
+            "qty": 2,
+            "budgetNet": 3000000
+          },
+          "KL4": {
+            "qty": 1,
+            "budgetNet": 3000000
+          },
+          "KL7": {
+            "qty": 1,
+            "budgetNet": 30000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 35
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 9,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 2,
+          "budgetNet": 6000000
         },
         "live": {
           "sessions": 0,
@@ -4051,19 +4606,19 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "multiPlatform": {
           "shopee": {
-            "affQty": 0,
-            "budgetNet": 0,
+            "affQty": 5,
+            "budgetNet": 1000000,
             "reupQty": 0
           },
           "threads": {
-            "affQty": 0,
-            "budgetNet": 0,
+            "affQty": 10,
+            "budgetNet": 1500000,
             "reupQty": 0
           },
           "facebook": {
             "affQty": 0,
             "budgetNet": 0,
-            "reupQty": 0
+            "reupQty": 2
           },
           "instagram": {
             "affQty": 0,
@@ -4080,19 +4635,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W49 [27.11-03.12]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 6,
+            "budgetNet": 1800000
+          },
+          "KL4": {
+            "qty": 1,
+            "budgetNet": 3000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 5,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 1,
+          "budgetNet": 4100000
         },
         "live": {
           "sessions": 0,
@@ -4100,19 +4664,19 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "multiPlatform": {
           "shopee": {
-            "affQty": 0,
-            "budgetNet": 0,
+            "affQty": 5,
+            "budgetNet": 1000000,
             "reupQty": 0
           },
           "threads": {
-            "affQty": 0,
-            "budgetNet": 0,
+            "affQty": 10,
+            "budgetNet": 1500000,
             "reupQty": 0
           },
           "facebook": {
             "affQty": 0,
             "budgetNet": 0,
-            "reupQty": 0
+            "reupQty": 2
           },
           "instagram": {
             "affQty": 0,
@@ -4136,7 +4700,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 1,
+                "budgetNet": 300000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 5000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -4147,8 +4720,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 1,
+              "budgetNet": 700000
             },
             "live": {
               "sessions": 0,
@@ -4185,19 +4758,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 2,
+                "budgetNet": 600000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 5000000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 10000000
+              },
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 35000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 2,
+              "budgetNet": 2100000
             },
             "live": {
               "sessions": 0,
@@ -4234,19 +4824,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 900000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 5000000
+              },
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 35000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 1,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 2800000
             },
             "live": {
               "sessions": 0,
@@ -4283,19 +4886,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 2,
+                "budgetNet": 600000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 5000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 1,
+              "budgetNet": 2800000
             },
             "live": {
               "sessions": 0,
@@ -4332,19 +4944,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W49 [27.11-03.12]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 2,
+                "budgetNet": 600000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 2100000
             },
             "live": {
               "sessions": 0,
@@ -4635,7 +5252,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "staffName": "Trần Thị Hảo",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Chuyên viên FOC (0đ)",
         "rowCount": 4,
         "weeklyBreakdown": [
           {
@@ -4644,7 +5261,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 35
             },
             "self": {
               "reviewVoice": 0,
@@ -4693,7 +5310,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 40
             },
             "self": {
               "reviewVoice": 0,
@@ -4742,7 +5359,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 40
             },
             "self": {
               "reviewVoice": 0,
@@ -4791,7 +5408,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 35
             },
             "self": {
               "reviewVoice": 0,
@@ -4892,19 +5509,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 900000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL5": {
+                "qty": 2,
+                "budgetNet": 10000000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 2,
+              "budgetNet": 2000000
             },
             "live": {
               "sessions": 0,
@@ -4941,19 +5575,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 4,
+                "budgetNet": 1200000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 5000000
+              },
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 30000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 2,
+              "budgetNet": 2600000
             },
             "live": {
               "sessions": 0,
@@ -4990,19 +5641,40 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 4,
+                "budgetNet": 1200000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL5": {
+                "qty": 3,
+                "budgetNet": 15000000
+              },
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 60000000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 2,
+              "budgetNet": 2200000
             },
             "live": {
               "sessions": 0,
@@ -5039,19 +5711,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 900000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 5000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 1,
+              "budgetNet": 2000000
             },
             "live": {
               "sessions": 0,
@@ -5088,19 +5773,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W49 [27.11-03.12]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 900000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 1,
+              "budgetNet": 800000
             },
             "live": {
               "sessions": 0,
@@ -5144,7 +5834,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 4,
+                "budgetNet": 1200000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -5176,7 +5871,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "facebook": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 2
               },
               "instagram": {
                 "affQty": 0,
@@ -5193,19 +5888,40 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 5,
+                "budgetNet": 1500000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3000000
+              },
+              "KL5": {
+                "qty": 2,
+                "budgetNet": 10000000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 10000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 1,
+              "budgetNet": 1200000
             },
             "live": {
               "sessions": 0,
@@ -5225,7 +5941,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "facebook": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 2
               },
               "instagram": {
                 "affQty": 0,
@@ -5242,19 +5958,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 7,
+                "budgetNet": 2100000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3000000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 10000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 1,
+              "budgetNet": 1200000
             },
             "live": {
               "sessions": 0,
@@ -5262,19 +5995,19 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             },
             "multiPlatform": {
               "shopee": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 5,
+                "budgetNet": 1000000,
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 10,
+                "budgetNet": 1500000,
                 "reupQty": 0
               },
               "facebook": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 2
               },
               "instagram": {
                 "affQty": 0,
@@ -5291,19 +6024,40 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 5,
+                "budgetNet": 1500000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3000000
+              },
+              "KL5": {
+                "qty": 2,
+                "budgetNet": 10000000
+              },
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 30000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1200000
             },
             "live": {
               "sessions": 0,
@@ -5311,19 +6065,19 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             },
             "multiPlatform": {
               "shopee": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 5,
+                "budgetNet": 1000000,
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 10,
+                "budgetNet": 1500000,
                 "reupQty": 0
               },
               "facebook": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 2
               },
               "instagram": {
                 "affQty": 0,
@@ -5340,19 +6094,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W49 [27.11-03.12]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 1,
+                "budgetNet": 300000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1200000
             },
             "live": {
               "sessions": 0,
@@ -5360,19 +6123,19 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             },
             "multiPlatform": {
               "shopee": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 5,
+                "budgetNet": 1000000,
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 10,
+                "budgetNet": 1500000,
                 "reupQty": 0
               },
               "facebook": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 2
               },
               "instagram": {
                 "affQty": 0,
@@ -5392,8 +6155,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 237,
       "foc": 150,
       "cast": 87,
@@ -5406,15 +6171,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "liveCostGross": 0,
       "liveCostNet": 0,
       "tiers": {
-        "KL1": 0,
+        "KL1": 49,
         "KL2": 0,
-        "KL3": 0,
-        "KL4": 0,
-        "KL5": 0,
-        "KL6": 0,
-        "KL7": 0
+        "KL3": 7,
+        "KL4": 6,
+        "KL5": 15,
+        "KL6": 3,
+        "KL7": 5
       },
-      "kl4PlusTarget": 0,
+      "kl4PlusTarget": 29,
       "focBreakdown": {
         "tapBrand": 0,
         "tap": 0,
@@ -5495,7 +6260,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 353200000,
     "budgetSelfChannel": 31900000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 1508222219,
     "targetAffiliateContents": 237,
     "targetSelfChannelContents": 57,
     "currentVersionCode": "v1.0",
@@ -5504,7 +6269,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigxddU",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-EKSEPTIONSHOPEEE2EO",
@@ -5524,20 +6289,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 13636364,
     "totalTargetContents": 83,
     "targetGmv": 193005650,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigtM7h). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-EKSEPTIONSHOPEEE2EO-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 15,
+        "unitCost": 909091,
+        "benchmarkCost": 800000,
+        "totalBudget": 13636364,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 68181820,
+        "assignedStaff": "Lê Phương Thảo",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 15,
       "foc": 0,
       "cast": 15,
@@ -5632,7 +6421,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 13636364,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 136972080,
     "targetAffiliateContents": 15,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -5641,7 +6430,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigtM7h",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-EKSEPTIONTIKTOKE2EO",
@@ -5661,20 +6450,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 132,
     "targetGmv": 549999993,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCig62B9). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-EKSEPTIONTIKTOKE2EO-41-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 100,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 100,
       "foc": 100,
       "cast": 0,
@@ -5771,7 +6584,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 110473000,
     "targetAffiliateContents": 100,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -5780,7 +6593,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCig62B9",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-FRESHTIKTOKE2EC",
@@ -5799,15 +6612,18 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "totalTargetBudget": 178000000,
-    "totalTargetContents": 714,
+    "totalTargetContents": 720,
     "targetGmv": 1884000000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigR2F4) & Bảng 4.1.1 (8 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-FRESHTIKTOKE2EC-411-KL2",
@@ -5815,7 +6631,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL2",
-        "tierLabel": "Bậc Cast KL2 (300K - 1M)",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
         "salaryGrade": "KL2",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
@@ -5833,12 +6649,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL3",
-        "tierLabel": "Bậc Cast KL3 (1M - 2M)",
+        "tierLabel": "Bậc Cast KL3 (1.5M - 3M)",
         "salaryGrade": "KL3",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
         "unitCost": 2500000,
-        "benchmarkCost": 1500000,
+        "benchmarkCost": 2000000,
         "totalBudget": 5000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 25000000,
@@ -5851,12 +6667,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL6",
-        "tierLabel": "Bậc Cast KL6 (7M - 15M)",
+        "tierLabel": "Bậc Cast KL6 (10M - 30M)",
         "salaryGrade": "KL6",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 16000000,
-        "benchmarkCost": 11000000,
+        "benchmarkCost": 15000000,
         "totalBudget": 16000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 80000000,
@@ -5869,12 +6685,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL7",
-        "tierLabel": "Bậc Cast KL7 (Trên 15M)",
+        "tierLabel": "Bậc Cast KL7 (Trên 30M)",
         "salaryGrade": "KL7",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
         "unitCost": 68500000,
-        "benchmarkCost": 25000000,
+        "benchmarkCost": 35000000,
         "totalBudget": 137000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 685000000,
@@ -5924,15 +6740,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 150
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 10,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1000000
         },
         "live": {
           "sessions": 0,
@@ -5969,19 +6785,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W46 [06.11-12.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 2000000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 2500000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 150
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 5,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "videoToLive": 10,
+          "nhacText": 1,
+          "budgetNet": 3000000
         },
         "live": {
           "sessions": 0,
@@ -6018,19 +6843,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W47 [13.11-19.11]",
-        "tiers": {},
+        "tiers": {
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 2500000
+          },
+          "KL6": {
+            "qty": 1,
+            "budgetNet": 16000000
+          },
+          "KL7": {
+            "qty": 1,
+            "budgetNet": 37000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 200
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 4,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "videoToLive": 10,
+          "nhacText": 1,
+          "budgetNet": 2000000
         },
         "live": {
           "sessions": 0,
@@ -6067,19 +6905,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W48 [20.11-26.11]",
-        "tiers": {},
+        "tiers": {
+          "KL7": {
+            "qty": 1,
+            "budgetNet": 100000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 150
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 4,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "videoToLive": 10,
+          "nhacText": 1,
+          "budgetNet": 2000000
         },
         "live": {
           "sessions": 0,
@@ -6179,12 +7022,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 10,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1000000
             },
             "live": {
               "sessions": 0,
@@ -6221,19 +7064,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 2000000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2500000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 5,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "videoToLive": 10,
+              "nhacText": 1,
+              "budgetNet": 3000000
             },
             "live": {
               "sessions": 0,
@@ -6270,19 +7122,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2500000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 16000000
+              },
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 37000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 4,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "videoToLive": 10,
+              "nhacText": 1,
+              "budgetNet": 2000000
             },
             "live": {
               "sessions": 0,
@@ -6319,19 +7184,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 100000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 4,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "videoToLive": 10,
+              "nhacText": 1,
+              "budgetNet": 2000000
             },
             "live": {
               "sessions": 0,
@@ -6419,7 +7289,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "staffName": "Trần Thị Hảo",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Chuyên viên FOC (0đ)",
         "rowCount": 4,
         "weeklyBreakdown": [
           {
@@ -6428,7 +7298,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 150
             },
             "self": {
               "reviewVoice": 0,
@@ -6477,7 +7347,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 150
             },
             "self": {
               "reviewVoice": 0,
@@ -6526,7 +7396,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 200
             },
             "self": {
               "reviewVoice": 0,
@@ -6575,7 +7445,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 150
             },
             "self": {
               "reviewVoice": 0,
@@ -6672,11 +7542,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 656,
       "foc": 656,
-      "cast": 0,
+      "cast": 6,
       "affCostGross": 190080000,
       "affCostNet": 160000000,
       "selfVideos": 58,
@@ -6687,14 +7559,14 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "liveCostNet": 0,
       "tiers": {
         "KL1": 0,
-        "KL2": 0,
-        "KL3": 0,
+        "KL2": 1,
+        "KL3": 2,
         "KL4": 0,
         "KL5": 0,
-        "KL6": 0,
-        "KL7": 0
+        "KL6": 1,
+        "KL7": 2
       },
-      "kl4PlusTarget": 0,
+      "kl4PlusTarget": 3,
       "focBreakdown": {
         "tapBrand": 6,
         "tap": 0,
@@ -6770,8 +7642,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 160000000,
     "budgetSelfChannel": 18000000,
-    "budgetAdsTotal": 0,
-    "targetAffiliateContents": 656,
+    "budgetAdsTotal": 556072762,
+    "targetAffiliateContents": 662,
     "targetSelfChannelContents": 58,
     "currentVersionCode": "v1.0",
     "isVersionLocked": false,
@@ -6779,7 +7651,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigR2F4",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-HLATIKTOKE2EC",
@@ -6799,20 +7671,79 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 19090916,
     "totalTargetContents": 98,
     "targetGmv": 51500000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigBGmC). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-HLATIKTOKE2EC-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 25,
+        "unitCost": 654546,
+        "benchmarkCost": 800000,
+        "totalBudget": 16363643,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 81818215,
+        "assignedStaff": "Ôn Ngọc Hà",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-HLATIKTOKE2EC-41-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 45,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
+      },
+      {
+        "id": "PO-2026-11-HLATIKTOKE2EC-41-SELF",
+        "channel": "SELF_CHANNEL",
+        "platform": "Kênh Brand tự xây (Self-channel)",
+        "category": "SELF_CHANNEL",
+        "tierCode": "Review voice",
+        "tierLabel": "Sản xuất Video Kênh Brand",
+        "contentFormat": "Review voice / Video to live / Remix",
+        "qty": 8,
+        "unitCost": 340909,
+        "benchmarkCost": 500000,
+        "totalBudget": 2727273,
+        "expectedRoiMultiplier": 3.5,
+        "targetGmv": 9545456,
+        "assignedStaff": "Ôn Ngọc Hà",
+        "notes": "Chỉ tiêu Kênh tự xây từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 70,
       "foc": 45,
       "cast": 25,
@@ -6909,7 +7840,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 16363643,
     "budgetSelfChannel": 2727273,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 36402371,
     "targetAffiliateContents": 70,
     "targetSelfChannelContents": 8,
     "currentVersionCode": "v1.0",
@@ -6918,7 +7849,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigBGmC",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-MISSSAIGONTIKTOKE2EC",
@@ -6938,13 +7869,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 81500000,
     "totalTargetContents": 266,
     "targetGmv": 844200000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigKOCB) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-MISSSAIGONTIKTOKE2EC-411-KL3",
@@ -6952,12 +7886,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL3",
-        "tierLabel": "Bậc Cast KL3 (1M - 2M)",
+        "tierLabel": "Bậc Cast KL3 (1.5M - 3M)",
         "salaryGrade": "KL3",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 2500000,
-        "benchmarkCost": 1500000,
+        "benchmarkCost": 2000000,
         "totalBudget": 2500000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 12500000,
@@ -6970,12 +7904,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL4",
-        "tierLabel": "Bậc Cast KL4 (2M - 4M)",
+        "tierLabel": "Bậc Cast KL4 (3M - 5M)",
         "salaryGrade": "KL4",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 4,
         "unitCost": 3500000,
-        "benchmarkCost": 3000000,
+        "benchmarkCost": 4000000,
         "totalBudget": 14000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 70000000,
@@ -6988,12 +7922,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL5",
-        "tierLabel": "Bậc Cast KL5 (4M - 7M)",
+        "tierLabel": "Bậc Cast KL5 (5M - 10M)",
         "salaryGrade": "KL5",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
         "unitCost": 5500000,
-        "benchmarkCost": 5500000,
+        "benchmarkCost": 7000000,
         "totalBudget": 11000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 55000000,
@@ -7006,17 +7940,35 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL6",
-        "tierLabel": "Bậc Cast KL6 (7M - 15M)",
+        "tierLabel": "Bậc Cast KL6 (10M - 30M)",
         "salaryGrade": "KL6",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 3,
         "unitCost": 16666667,
-        "benchmarkCost": 11000000,
+        "benchmarkCost": 15000000,
         "totalBudget": 50000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 250000000,
         "assignedStaff": "Lê Phương Thảo",
         "notes": "Phân rã trên Lark 4.1.1 Input plan"
+      },
+      {
+        "id": "PO-2026-11-MISSSAIGONTIKTOKE2EC-411-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 244,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
       },
       {
         "id": "PO-2026-11-MISSSAIGONTIKTOKE2EC-411-SELF",
@@ -7088,19 +8040,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W46 [06.11-12.11]",
-        "tiers": {},
+        "tiers": {
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 2500000
+          },
+          "KL4": {
+            "qty": 2,
+            "budgetNet": 7000000
+          },
+          "KL6": {
+            "qty": 2,
+            "budgetNet": 35000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 1,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 2,
+          "budgetNet": 1700000
         },
         "live": {
           "sessions": 0,
@@ -7137,19 +8102,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W47 [13.11-19.11]",
-        "tiers": {},
+        "tiers": {
+          "KL4": {
+            "qty": 1,
+            "budgetNet": 3500000
+          },
+          "KL5": {
+            "qty": 2,
+            "budgetNet": 11000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 1,
+          "budgetNet": 1200000
         },
         "live": {
           "sessions": 0,
@@ -7186,19 +8160,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W48 [20.11-26.11]",
-        "tiers": {},
+        "tiers": {
+          "KL4": {
+            "qty": 1,
+            "budgetNet": 3500000
+          },
+          "KL6": {
+            "qty": 1,
+            "budgetNet": 15000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 3,
           "videoToLive": 0,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1100000
         },
         "live": {
           "sessions": 0,
@@ -7242,12 +8225,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 500000
         },
         "live": {
           "sessions": 0,
@@ -7340,19 +8323,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2500000
+              },
+              "KL4": {
+                "qty": 2,
+                "budgetNet": 7000000
+              },
+              "KL6": {
+                "qty": 2,
+                "budgetNet": 35000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 1,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 2,
+              "budgetNet": 1700000
             },
             "live": {
               "sessions": 0,
@@ -7389,19 +8385,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3500000
+              },
+              "KL5": {
+                "qty": 2,
+                "budgetNet": 11000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 1,
+              "budgetNet": 1200000
             },
             "live": {
               "sessions": 0,
@@ -7438,19 +8443,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3500000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 15000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 3,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1100000
             },
             "live": {
               "sessions": 0,
@@ -7494,12 +8508,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 500000
             },
             "live": {
               "sessions": 0,
@@ -7539,8 +8553,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 254,
       "foc": 244,
       "cast": 10,
@@ -7555,13 +8571,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "tiers": {
         "KL1": 0,
         "KL2": 0,
-        "KL3": 0,
-        "KL4": 0,
-        "KL5": 0,
-        "KL6": 0,
+        "KL3": 1,
+        "KL4": 4,
+        "KL5": 2,
+        "KL6": 3,
         "KL7": 0
       },
-      "kl4PlusTarget": 0,
+      "kl4PlusTarget": 9,
       "focBreakdown": {
         "tapBrand": 0,
         "tap": 0,
@@ -7637,7 +8653,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 77000000,
     "budgetSelfChannel": 4500000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 356730000,
     "targetAffiliateContents": 254,
     "targetSelfChannelContents": 12,
     "currentVersionCode": "v1.0",
@@ -7646,7 +8662,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigKOCB",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-MISSSAIGONSHOPEEE2EC",
@@ -7666,20 +8682,25 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 0,
     "targetGmv": 642449990,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigJhb4). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 0,
       "foc": 0,
       "cast": 0,
@@ -7774,7 +8795,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 111659984,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -7783,7 +8804,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigJhb4",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-ZIAJASHOPEEE2ES",
@@ -7804,13 +8825,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 18181818,
     "totalTargetContents": 133,
     "targetGmv": 231614053,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigPBFh) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-ZIAJASHOPEEE2ES-411-MULTI",
@@ -7907,14 +8931,14 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "reupQty": 0
           },
           "threads": {
-            "affQty": 0,
-            "budgetNet": 0,
+            "affQty": 35,
+            "budgetNet": 4000000,
             "reupQty": 0
           },
           "facebook": {
-            "affQty": 0,
-            "budgetNet": 0,
-            "reupQty": 0
+            "affQty": 1,
+            "budgetNet": 8000000,
+            "reupQty": 2
           },
           "instagram": {
             "affQty": 0,
@@ -7956,13 +8980,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "reupQty": 0
           },
           "threads": {
-            "affQty": 0,
-            "budgetNet": 0,
+            "affQty": 15,
+            "budgetNet": 1000000,
             "reupQty": 0
           },
           "facebook": {
-            "affQty": 0,
-            "budgetNet": 0,
+            "affQty": 1,
+            "budgetNet": 2000000,
             "reupQty": 0
           },
           "instagram": {
@@ -8005,14 +9029,14 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "reupQty": 0
           },
           "threads": {
-            "affQty": 0,
-            "budgetNet": 0,
+            "affQty": 20,
+            "budgetNet": 3000000,
             "reupQty": 0
           },
           "facebook": {
             "affQty": 0,
-            "budgetNet": 0,
-            "reupQty": 0
+            "budgetNet": 2000000,
+            "reupQty": 1
           },
           "instagram": {
             "affQty": 0,
@@ -8159,14 +9183,14 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 35,
+                "budgetNet": 4000000,
                 "reupQty": 0
               },
               "facebook": {
-                "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "affQty": 1,
+                "budgetNet": 8000000,
+                "reupQty": 2
               },
               "instagram": {
                 "affQty": 0,
@@ -8208,13 +9232,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 15,
+                "budgetNet": 1000000,
                 "reupQty": 0
               },
               "facebook": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 1,
+                "budgetNet": 2000000,
                 "reupQty": 0
               },
               "instagram": {
@@ -8257,14 +9281,14 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 20,
+                "budgetNet": 3000000,
                 "reupQty": 0
               },
               "facebook": {
                 "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "budgetNet": 2000000,
+                "reupQty": 1
               },
               "instagram": {
                 "affQty": 0,
@@ -8333,8 +9357,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 75,
       "foc": 0,
       "cast": 75,
@@ -8432,7 +9458,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 18181818,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 576127318,
     "targetAffiliateContents": 75,
     "targetSelfChannelContents": 18,
     "currentVersionCode": "v1.0",
@@ -8441,7 +9467,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigPBFh",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-ZIAJATIKTOKE2ES",
@@ -8463,13 +9489,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 67636364,
     "totalTargetContents": 69,
     "targetGmv": 681750893,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigZHcW) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-ZIAJATIKTOKE2ES-411-KL2",
@@ -8477,7 +9506,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL2",
-        "tierLabel": "Bậc Cast KL2 (300K - 1M)",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
         "salaryGrade": "KL2",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 4,
@@ -8495,12 +9524,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL3",
-        "tierLabel": "Bậc Cast KL3 (1M - 2M)",
+        "tierLabel": "Bậc Cast KL3 (1.5M - 3M)",
         "salaryGrade": "KL3",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 3,
         "unitCost": 1666667,
-        "benchmarkCost": 1500000,
+        "benchmarkCost": 2000000,
         "totalBudget": 5000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 25000000,
@@ -8513,12 +9542,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL4",
-        "tierLabel": "Bậc Cast KL4 (2M - 4M)",
+        "tierLabel": "Bậc Cast KL4 (3M - 5M)",
         "salaryGrade": "KL4",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
         "unitCost": 4000000,
-        "benchmarkCost": 3000000,
+        "benchmarkCost": 4000000,
         "totalBudget": 8000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 40000000,
@@ -8531,12 +9560,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL6",
-        "tierLabel": "Bậc Cast KL6 (7M - 15M)",
+        "tierLabel": "Bậc Cast KL6 (10M - 30M)",
         "salaryGrade": "KL6",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 3,
         "unitCost": 11666667,
-        "benchmarkCost": 11000000,
+        "benchmarkCost": 15000000,
         "totalBudget": 35000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 175000000,
@@ -8549,12 +9578,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL7",
-        "tierLabel": "Bậc Cast KL7 (Trên 15M)",
+        "tierLabel": "Bậc Cast KL7 (Trên 30M)",
         "salaryGrade": "KL7",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 0,
-        "unitCost": 25000000,
-        "benchmarkCost": 25000000,
+        "unitCost": 35000000,
+        "benchmarkCost": 35000000,
         "totalBudget": 15000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 75000000,
@@ -8582,19 +9611,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "weeklyBreakdown": [
       {
         "week": "W45 [30.10-05.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 500000
+          },
+          "KL4": {
+            "qty": 1,
+            "budgetNet": 4000000
+          },
+          "KL6": {
+            "qty": 1,
+            "budgetNet": 10000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 1,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1200000
         },
         "live": {
           "sessions": 0,
@@ -8631,19 +9673,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W46 [06.11-12.11]",
-        "tiers": {},
+        "tiers": {
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 2000000
+          },
+          "KL6": {
+            "qty": 2,
+            "budgetNet": 25000000
+          },
+          "KL7": {
+            "qty": 0,
+            "budgetNet": 15000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 6,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "videoToLive": 3,
+          "nhacText": 2,
+          "budgetNet": 2450000
         },
         "live": {
           "sessions": 0,
@@ -8680,19 +9735,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W47 [13.11-19.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 500000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 1500000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 6,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "videoToLive": 2,
+          "nhacText": 1,
+          "budgetNet": 2500000
         },
         "live": {
           "sessions": 0,
@@ -8729,19 +9793,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W48 [20.11-26.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 500000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 1500000
+          },
+          "KL4": {
+            "qty": 1,
+            "budgetNet": 4000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 6,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "videoToLive": 3,
+          "nhacText": 1,
+          "budgetNet": 2450000
         },
         "live": {
           "sessions": 0,
@@ -8778,19 +9855,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W49 [27.11-03.12]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 500000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 1,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 800000
         },
         "live": {
           "sessions": 0,
@@ -8834,7 +9916,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 500000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 4000000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 10000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -8883,7 +9978,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2000000
+              },
+              "KL6": {
+                "qty": 2,
+                "budgetNet": 25000000
+              },
+              "KL7": {
+                "qty": 0,
+                "budgetNet": 15000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -8932,7 +10040,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 500000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -8981,7 +10098,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 500000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 4000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -9030,7 +10160,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W49 [27.11-03.12]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 500000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -9081,7 +10216,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "staffName": "Nguyễn Ngọc Linh",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Content / Self-channel PIC",
         "rowCount": 5,
         "weeklyBreakdown": [
           {
@@ -9093,12 +10228,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 1,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1200000
             },
             "live": {
               "sessions": 0,
@@ -9142,12 +10277,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 6,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "videoToLive": 3,
+              "nhacText": 2,
+              "budgetNet": 2450000
             },
             "live": {
               "sessions": 0,
@@ -9191,12 +10326,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 6,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "videoToLive": 2,
+              "nhacText": 1,
+              "budgetNet": 2500000
             },
             "live": {
               "sessions": 0,
@@ -9240,12 +10375,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 6,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "videoToLive": 3,
+              "nhacText": 1,
+              "budgetNet": 2450000
             },
             "live": {
               "sessions": 0,
@@ -9289,12 +10424,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 1,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 800000
             },
             "live": {
               "sessions": 0,
@@ -9334,8 +10469,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 12,
       "foc": 0,
       "cast": 12,
@@ -9349,14 +10486,14 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "liveCostNet": 0,
       "tiers": {
         "KL1": 0,
-        "KL2": 0,
-        "KL3": 0,
-        "KL4": 0,
+        "KL2": 4,
+        "KL3": 3,
+        "KL4": 2,
         "KL5": 0,
-        "KL6": 0,
+        "KL6": 3,
         "KL7": 0
       },
-      "kl4PlusTarget": 0,
+      "kl4PlusTarget": 5,
       "focBreakdown": {
         "tapBrand": 0,
         "tap": 0,
@@ -9434,7 +10571,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 59090909,
     "budgetSelfChannel": 8545455,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 524465321,
     "targetAffiliateContents": 12,
     "targetSelfChannelContents": 37,
     "currentVersionCode": "v1.0",
@@ -9443,7 +10580,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigZHcW",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-KARMARTSHOPEEE2EC",
@@ -9461,20 +10598,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 27272727,
     "totalTargetContents": 90,
     "targetGmv": 267579000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigy6lN). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-KARMARTSHOPEEE2EC-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 60,
+        "unitCost": 454545,
+        "benchmarkCost": 800000,
+        "totalBudget": 27272727,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 136363635,
+        "assignedStaff": "Chưa phân công",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 60,
       "foc": 0,
       "cast": 60,
@@ -9567,7 +10728,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 27272727,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 133380000,
     "targetAffiliateContents": 60,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -9576,7 +10737,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigy6lN",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-KUTIESKINMAMATIKTOKE2ES",
@@ -9597,13 +10758,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 90181818,
     "totalTargetContents": 111,
     "targetGmv": 2014453700,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigziNh) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-KUTIESKINMAMATIKTOKE2ES-411-KL1",
@@ -9611,7 +10775,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL1",
-        "tierLabel": "Bậc Cast KL1 (0 - 300K)",
+        "tierLabel": "Bậc Cast KL1 (0 - 500K)",
         "salaryGrade": "KL1",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 16,
@@ -9629,7 +10793,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL2",
-        "tierLabel": "Bậc Cast KL2 (300K - 1M)",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
         "salaryGrade": "KL2",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 23,
@@ -9647,12 +10811,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL3",
-        "tierLabel": "Bậc Cast KL3 (1M - 2M)",
+        "tierLabel": "Bậc Cast KL3 (1.5M - 3M)",
         "salaryGrade": "KL3",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 9,
         "unitCost": 2000000,
-        "benchmarkCost": 1500000,
+        "benchmarkCost": 2000000,
         "totalBudget": 18000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 90000000,
@@ -9665,12 +10829,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL4",
-        "tierLabel": "Bậc Cast KL4 (2M - 4M)",
+        "tierLabel": "Bậc Cast KL4 (3M - 5M)",
         "salaryGrade": "KL4",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
         "unitCost": 3800000,
-        "benchmarkCost": 3000000,
+        "benchmarkCost": 4000000,
         "totalBudget": 7600000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 38000000,
@@ -9683,12 +10847,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL6",
-        "tierLabel": "Bậc Cast KL6 (7M - 15M)",
+        "tierLabel": "Bậc Cast KL6 (10M - 30M)",
         "salaryGrade": "KL6",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 20000000,
-        "benchmarkCost": 11000000,
+        "benchmarkCost": 15000000,
         "totalBudget": 20000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 100000000,
@@ -9716,19 +10880,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "weeklyBreakdown": [
       {
         "week": "W45 [30.10-05.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 5,
+            "budgetNet": 5400000
+          },
+          "KL1": {
+            "qty": 3,
+            "budgetNet": 1200000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 2000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
+          "videoRemix": 4,
+          "videoToLive": 2,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 2400000
         },
         "live": {
           "sessions": 0,
@@ -9765,19 +10942,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W46 [06.11-12.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 5,
+            "budgetNet": 5600000
+          },
+          "KL1": {
+            "qty": 4,
+            "budgetNet": 1600000
+          },
+          "KL3": {
+            "qty": 2,
+            "budgetNet": 4000000
+          },
+          "KL6": {
+            "qty": 1,
+            "budgetNet": 20000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
-          "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
+          "reviewVoice": 2,
+          "videoAi": 2,
+          "videoRemix": 4,
+          "videoToLive": 2,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 4200000
         },
         "live": {
           "sessions": 0,
@@ -9814,19 +11008,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W47 [13.11-19.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 5,
+            "budgetNet": 5800000
+          },
+          "KL1": {
+            "qty": 3,
+            "budgetNet": 1200000
+          },
+          "KL3": {
+            "qty": 2,
+            "budgetNet": 4000000
+          },
+          "KL4": {
+            "qty": 2,
+            "budgetNet": 7600000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
-          "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
+          "reviewVoice": 3,
+          "videoAi": 2,
+          "videoRemix": 4,
+          "videoToLive": 2,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 4200000
         },
         "live": {
           "sessions": 0,
@@ -9863,19 +11074,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W48 [20.11-26.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 5,
+            "budgetNet": 5800000
+          },
+          "KL1": {
+            "qty": 3,
+            "budgetNet": 1200000
+          },
+          "KL3": {
+            "qty": 3,
+            "budgetNet": 6000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
-          "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
+          "reviewVoice": 4,
+          "videoAi": 2,
+          "videoRemix": 4,
+          "videoToLive": 2,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 4200000
         },
         "live": {
           "sessions": 0,
@@ -9912,19 +11136,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W49 [27.11-03.12]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 3,
+            "budgetNet": 3581818
+          },
+          "KL1": {
+            "qty": 3,
+            "budgetNet": 1200000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 2000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
+          "videoRemix": 4,
+          "videoToLive": 2,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 4000000
         },
         "live": {
           "sessions": 0,
@@ -9968,19 +11205,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 2,
+                "budgetNet": 2400000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
+              "videoRemix": 4,
+              "videoToLive": 2,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 2400000
             },
             "live": {
               "sessions": 0,
@@ -10017,19 +11259,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 3,
+                "budgetNet": 3600000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
-              "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
+              "reviewVoice": 2,
+              "videoAi": 2,
+              "videoRemix": 4,
+              "videoToLive": 2,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 4200000
             },
             "live": {
               "sessions": 0,
@@ -10066,19 +11313,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 4,
+                "budgetNet": 4800000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
-              "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
+              "reviewVoice": 3,
+              "videoAi": 2,
+              "videoRemix": 4,
+              "videoToLive": 2,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 4200000
             },
             "live": {
               "sessions": 0,
@@ -10115,19 +11367,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 4,
+                "budgetNet": 4800000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
-              "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
+              "reviewVoice": 4,
+              "videoAi": 2,
+              "videoRemix": 4,
+              "videoToLive": 2,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 4200000
             },
             "live": {
               "sessions": 0,
@@ -10164,19 +11421,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W49 [27.11-03.12]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 2,
+                "budgetNet": 2581818
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
+              "videoRemix": 4,
+              "videoToLive": 2,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 4000000
             },
             "live": {
               "sessions": 0,
@@ -10220,7 +11482,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 1200000
+              },
+              "KL2": {
+                "qty": 3,
+                "budgetNet": 3000000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -10269,7 +11544,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 4,
+                "budgetNet": 1600000
+              },
+              "KL2": {
+                "qty": 2,
+                "budgetNet": 2000000
+              },
+              "KL3": {
+                "qty": 2,
+                "budgetNet": 4000000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 20000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -10318,7 +11610,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 1200000
+              },
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 2,
+                "budgetNet": 4000000
+              },
+              "KL4": {
+                "qty": 2,
+                "budgetNet": 7600000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -10367,7 +11676,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 1200000
+              },
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 3,
+                "budgetNet": 6000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -10416,7 +11738,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W49 [27.11-03.12]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 1200000
+              },
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -10468,8 +11803,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 51,
       "foc": 0,
       "cast": 51,
@@ -10482,15 +11819,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "liveCostGross": 0,
       "liveCostNet": 0,
       "tiers": {
-        "KL1": 0,
-        "KL2": 0,
-        "KL3": 0,
-        "KL4": 0,
+        "KL1": 16,
+        "KL2": 23,
+        "KL3": 9,
+        "KL4": 2,
         "KL5": 0,
-        "KL6": 0,
+        "KL6": 1,
         "KL7": 0
       },
-      "kl4PlusTarget": 0,
+      "kl4PlusTarget": 3,
       "focBreakdown": {
         "tapBrand": 0,
         "tap": 0,
@@ -10567,7 +11904,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 71181818,
     "budgetSelfChannel": 19000000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 909993043,
     "targetAffiliateContents": 51,
     "targetSelfChannelContents": 60,
     "currentVersionCode": "v1.0",
@@ -10576,7 +11913,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigziNh",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-KUTIESKINMAMASHOPEEE2ES",
@@ -10596,20 +11933,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 60,
     "targetGmv": 796636903,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigt5bq). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-KUTIESKINMAMASHOPEEE2ES-41-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 20,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 20,
       "foc": 20,
       "cast": 0,
@@ -10706,7 +12067,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 715621488,
     "targetAffiliateContents": 20,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -10715,7 +12076,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigt5bq",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-LIPITTIKTOKE2EC",
@@ -10735,13 +12096,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 68500000,
     "totalTargetContents": 155,
     "targetGmv": 1145720000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigVfV5) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-LIPITTIKTOKE2EC-411-KL1",
@@ -10749,7 +12113,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL1",
-        "tierLabel": "Bậc Cast KL1 (0 - 300K)",
+        "tierLabel": "Bậc Cast KL1 (0 - 500K)",
         "salaryGrade": "KL1",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 5,
@@ -10767,7 +12131,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL2",
-        "tierLabel": "Bậc Cast KL2 (300K - 1M)",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
         "salaryGrade": "KL2",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 4,
@@ -10785,12 +12149,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL3",
-        "tierLabel": "Bậc Cast KL3 (1M - 2M)",
+        "tierLabel": "Bậc Cast KL3 (1.5M - 3M)",
         "salaryGrade": "KL3",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 5,
         "unitCost": 2000000,
-        "benchmarkCost": 1500000,
+        "benchmarkCost": 2000000,
         "totalBudget": 10000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 50000000,
@@ -10803,12 +12167,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL4",
-        "tierLabel": "Bậc Cast KL4 (2M - 4M)",
+        "tierLabel": "Bậc Cast KL4 (3M - 5M)",
         "salaryGrade": "KL4",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
         "unitCost": 4000000,
-        "benchmarkCost": 3000000,
+        "benchmarkCost": 4000000,
         "totalBudget": 8000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 40000000,
@@ -10821,12 +12185,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL5",
-        "tierLabel": "Bậc Cast KL5 (4M - 7M)",
+        "tierLabel": "Bậc Cast KL5 (5M - 10M)",
         "salaryGrade": "KL5",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 3,
         "unitCost": 7000000,
-        "benchmarkCost": 5500000,
+        "benchmarkCost": 7000000,
         "totalBudget": 21000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 105000000,
@@ -10839,17 +12203,35 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL6",
-        "tierLabel": "Bậc Cast KL6 (7M - 15M)",
+        "tierLabel": "Bậc Cast KL6 (10M - 30M)",
         "salaryGrade": "KL6",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 15000000,
-        "benchmarkCost": 11000000,
+        "benchmarkCost": 15000000,
         "totalBudget": 15000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 75000000,
         "assignedStaff": "Trần Hải Phượng",
         "notes": "Phân rã trên Lark 4.1.1 Input plan"
+      },
+      {
+        "id": "PO-2026-11-LIPITTIKTOKE2EC-411-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 120,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
       },
       {
         "id": "PO-2026-11-LIPITTIKTOKE2EC-411-SELF",
@@ -10872,19 +12254,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "weeklyBreakdown": [
       {
         "week": "W45 [30.10-05.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 1200000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1000000
         },
         "live": {
           "sessions": 0,
@@ -10921,19 +12308,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W46 [06.11-12.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 2,
+            "budgetNet": 666667
+          },
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 1000000
+          },
+          "KL3": {
+            "qty": 2,
+            "budgetNet": 4000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 2,
+          "budgetNet": 2500000
         },
         "live": {
           "sessions": 0,
@@ -10970,19 +12370,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W47 [13.11-19.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 3,
+            "budgetNet": 933333
+          },
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 1200000
+          },
+          "KL3": {
+            "qty": 3,
+            "budgetNet": 6000000
+          },
+          "KL5": {
+            "qty": 1,
+            "budgetNet": 6000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 1,
+          "budgetNet": 2000000
         },
         "live": {
           "sessions": 0,
@@ -11019,19 +12436,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W48 [20.11-26.11]",
-        "tiers": {},
+        "tiers": {
+          "KL4": {
+            "qty": 2,
+            "budgetNet": 8000000
+          },
+          "KL5": {
+            "qty": 2,
+            "budgetNet": 15000000
+          },
+          "KL6": {
+            "qty": 1,
+            "budgetNet": 15000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1500000
         },
         "live": {
           "sessions": 0,
@@ -11068,19 +12498,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W49 [27.11-03.12]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 1000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 500000
         },
         "live": {
           "sessions": 0,
@@ -11124,19 +12559,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1200000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1000000
             },
             "live": {
               "sessions": 0,
@@ -11173,19 +12613,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 2,
+                "budgetNet": 666667
+              },
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 2,
+                "budgetNet": 4000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 2,
+              "budgetNet": 2500000
             },
             "live": {
               "sessions": 0,
@@ -11222,19 +12675,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 933333
+              },
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1200000
+              },
+              "KL3": {
+                "qty": 3,
+                "budgetNet": 6000000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 6000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 1,
+              "budgetNet": 2000000
             },
             "live": {
               "sessions": 0,
@@ -11271,19 +12741,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL4": {
+                "qty": 2,
+                "budgetNet": 8000000
+              },
+              "KL5": {
+                "qty": 2,
+                "budgetNet": 15000000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 15000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1500000
             },
             "live": {
               "sessions": 0,
@@ -11320,19 +12803,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W49 [27.11-03.12]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 500000
             },
             "live": {
               "sessions": 0,
@@ -11372,8 +12860,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 140,
       "foc": 120,
       "cast": 20,
@@ -11386,15 +12876,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "liveCostGross": 0,
       "liveCostNet": 0,
       "tiers": {
-        "KL1": 0,
-        "KL2": 0,
-        "KL3": 0,
-        "KL4": 0,
-        "KL5": 0,
-        "KL6": 0,
+        "KL1": 5,
+        "KL2": 4,
+        "KL3": 5,
+        "KL4": 2,
+        "KL5": 3,
+        "KL6": 1,
         "KL7": 0
       },
-      "kl4PlusTarget": 0,
+      "kl4PlusTarget": 6,
       "focBreakdown": {
         "tapBrand": 0,
         "tap": 0,
@@ -11470,7 +12960,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 60000000,
     "budgetSelfChannel": 8500000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 232692309,
     "targetAffiliateContents": 140,
     "targetSelfChannelContents": 15,
     "currentVersionCode": "v1.0",
@@ -11479,7 +12969,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigVfV5",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-MERACINETIKTOKE2ES",
@@ -11499,13 +12989,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 20090909,
     "totalTargetContents": 35,
     "targetGmv": 1180000000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigEgRK) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-MERACINETIKTOKE2ES-411-KL1",
@@ -11513,7 +13006,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL1",
-        "tierLabel": "Bậc Cast KL1 (0 - 300K)",
+        "tierLabel": "Bậc Cast KL1 (0 - 500K)",
         "salaryGrade": "KL1",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
@@ -11531,12 +13024,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL3",
-        "tierLabel": "Bậc Cast KL3 (1M - 2M)",
+        "tierLabel": "Bậc Cast KL3 (1.5M - 3M)",
         "salaryGrade": "KL3",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
         "unitCost": 2250000,
-        "benchmarkCost": 1500000,
+        "benchmarkCost": 2000000,
         "totalBudget": 4500000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 22500000,
@@ -11549,12 +13042,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL4",
-        "tierLabel": "Bậc Cast KL4 (2M - 4M)",
+        "tierLabel": "Bậc Cast KL4 (3M - 5M)",
         "salaryGrade": "KL4",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 4500000,
-        "benchmarkCost": 3000000,
+        "benchmarkCost": 4000000,
         "totalBudget": 4500000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 22500000,
@@ -11589,10 +13082,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 2,
           "nhacText": 0,
           "budgetNet": 0
         },
@@ -11631,17 +13124,26 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W46 [06.11-12.11]",
-        "tiers": {},
+        "tiers": {
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 3000000
+          },
+          "KL4": {
+            "qty": 1,
+            "budgetNet": 4500000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 6,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 2,
           "nhacText": 0,
           "budgetNet": 0
         },
@@ -11680,17 +13182,22 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W47 [13.11-19.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 2,
+            "budgetNet": 1000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 7,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 2,
           "nhacText": 0,
           "budgetNet": 0
         },
@@ -11729,17 +13236,22 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W48 [20.11-26.11]",
-        "tiers": {},
+        "tiers": {
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 1500000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 6,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 2,
           "nhacText": 0,
           "budgetNet": 0
         },
@@ -11788,7 +13300,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "reviewVoice": 0,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 2,
           "nhacText": 0,
           "budgetNet": 0
         },
@@ -11841,10 +13353,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 2,
               "nhacText": 0,
               "budgetNet": 0
             },
@@ -11883,17 +13395,26 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 3000000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 4500000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 6,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 2,
               "nhacText": 0,
               "budgetNet": 0
             },
@@ -11932,17 +13453,22 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 2,
+                "budgetNet": 1000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 7,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 2,
               "nhacText": 0,
               "budgetNet": 0
             },
@@ -11981,17 +13507,22 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 6,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 2,
               "nhacText": 0,
               "budgetNet": 0
             },
@@ -12040,7 +13571,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 2,
               "nhacText": 0,
               "budgetNet": 0
             },
@@ -12082,8 +13613,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 5,
       "foc": 0,
       "cast": 5,
@@ -12096,15 +13629,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "liveCostGross": 0,
       "liveCostNet": 0,
       "tiers": {
-        "KL1": 0,
+        "KL1": 2,
         "KL2": 0,
-        "KL3": 0,
-        "KL4": 0,
+        "KL3": 2,
+        "KL4": 1,
         "KL5": 0,
         "KL6": 0,
         "KL7": 0
       },
-      "kl4PlusTarget": 0,
+      "kl4PlusTarget": 1,
       "focBreakdown": {
         "tapBrand": 0,
         "tap": 0,
@@ -12176,7 +13709,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 9090909,
     "budgetSelfChannel": 11000000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 290400000,
     "targetAffiliateContents": 5,
     "targetSelfChannelContents": 30,
     "currentVersionCode": "v1.0",
@@ -12185,7 +13718,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigEgRK",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-MINETIKTOKE2EC",
@@ -12206,13 +13739,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 104772728,
     "totalTargetContents": 135,
     "targetGmv": 1159253334,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigeNvO) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-MINETIKTOKE2EC-411-KL1",
@@ -12220,7 +13756,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL1",
-        "tierLabel": "Bậc Cast KL1 (0 - 300K)",
+        "tierLabel": "Bậc Cast KL1 (0 - 500K)",
         "salaryGrade": "KL1",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 0,
@@ -12238,7 +13774,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL2",
-        "tierLabel": "Bậc Cast KL2 (300K - 1M)",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
         "salaryGrade": "KL2",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 7,
@@ -12256,12 +13792,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL3",
-        "tierLabel": "Bậc Cast KL3 (1M - 2M)",
+        "tierLabel": "Bậc Cast KL3 (1.5M - 3M)",
         "salaryGrade": "KL3",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 20,
         "unitCost": 2487500,
-        "benchmarkCost": 1500000,
+        "benchmarkCost": 2000000,
         "totalBudget": 49750000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 248750000,
@@ -12274,12 +13810,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL5",
-        "tierLabel": "Bậc Cast KL5 (4M - 7M)",
+        "tierLabel": "Bậc Cast KL5 (5M - 10M)",
         "salaryGrade": "KL5",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 5000000,
-        "benchmarkCost": 5500000,
+        "benchmarkCost": 7000000,
         "totalBudget": 5000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 25000000,
@@ -12292,17 +13828,35 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL6",
-        "tierLabel": "Bậc Cast KL6 (7M - 15M)",
+        "tierLabel": "Bậc Cast KL6 (10M - 30M)",
         "salaryGrade": "KL6",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
         "unitCost": 20000000,
-        "benchmarkCost": 11000000,
+        "benchmarkCost": 15000000,
         "totalBudget": 40000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 200000000,
         "assignedStaff": "Lại Ngọc Huyền",
         "notes": "Phân rã trên Lark 4.1.1 Input plan"
+      },
+      {
+        "id": "PO-2026-11-MINETIKTOKE2EC-411-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 30,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
       },
       {
         "id": "PO-2026-11-MINETIKTOKE2EC-411-SELF",
@@ -12325,19 +13879,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "weeklyBreakdown": [
       {
         "week": "W45 [30.10-05.11]",
-        "tiers": {},
+        "tiers": {
+          "KL3": {
+            "qty": 3,
+            "budgetNet": 7875000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 4,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 1,
+          "budgetNet": 2050000
         },
         "live": {
           "sessions": 0,
@@ -12374,19 +13933,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W46 [06.11-12.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 5,
+            "budgetNet": 5000000
+          },
+          "KL3": {
+            "qty": 3,
+            "budgetNet": 5625000
+          },
+          "KL5": {
+            "qty": 1,
+            "budgetNet": 5000000
+          },
+          "KL6": {
+            "qty": 2,
+            "budgetNet": 40000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 8,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 4,
+          "budgetNet": 4150000
         },
         "live": {
           "sessions": 0,
@@ -12423,19 +13999,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W47 [13.11-19.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 0,
+            "budgetNet": 1250000
+          },
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 0
+          },
+          "KL3": {
+            "qty": 9,
+            "budgetNet": 22000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 6,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 2,
+          "budgetNet": 2650000
         },
         "live": {
           "sessions": 0,
@@ -12472,19 +14061,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W48 [20.11-26.11]",
-        "tiers": {},
+        "tiers": {
+          "KL3": {
+            "qty": 3,
+            "budgetNet": 9375000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 6,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 2,
+          "budgetNet": 2650000
         },
         "live": {
           "sessions": 0,
@@ -12521,19 +14115,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W49 [27.11-03.12]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 0,
+            "budgetNet": 1000000
+          },
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 0
+          },
+          "KL3": {
+            "qty": 2,
+            "budgetNet": 4875000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 3,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 2,
+          "budgetNet": 1750000
         },
         "live": {
           "sessions": 0,
@@ -12577,19 +14184,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
-            "tiers": {},
+            "tiers": {
+              "KL3": {
+                "qty": 3,
+                "budgetNet": 7875000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 4,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 1,
+              "budgetNet": 2050000
             },
             "live": {
               "sessions": 0,
@@ -12626,19 +14238,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 5,
+                "budgetNet": 5000000
+              },
+              "KL3": {
+                "qty": 3,
+                "budgetNet": 5625000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 5000000
+              },
+              "KL6": {
+                "qty": 2,
+                "budgetNet": 40000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 8,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 4,
+              "budgetNet": 4150000
             },
             "live": {
               "sessions": 0,
@@ -12675,19 +14304,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 0,
+                "budgetNet": 1250000
+              },
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 0
+              },
+              "KL3": {
+                "qty": 9,
+                "budgetNet": 22000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 6,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 2,
+              "budgetNet": 2650000
             },
             "live": {
               "sessions": 0,
@@ -12724,19 +14366,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL3": {
+                "qty": 3,
+                "budgetNet": 9375000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 6,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 2,
+              "budgetNet": 2650000
             },
             "live": {
               "sessions": 0,
@@ -12773,19 +14420,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W49 [27.11-03.12]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 0,
+                "budgetNet": 1000000
+              },
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 0
+              },
+              "KL3": {
+                "qty": 2,
+                "budgetNet": 4875000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 3,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 2,
+              "budgetNet": 1750000
             },
             "live": {
               "sessions": 0,
@@ -12825,8 +14485,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 60,
       "foc": 30,
       "cast": 30,
@@ -12840,14 +14502,14 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "liveCostNet": 0,
       "tiers": {
         "KL1": 0,
-        "KL2": 0,
-        "KL3": 0,
+        "KL2": 7,
+        "KL3": 20,
         "KL4": 0,
-        "KL5": 0,
-        "KL6": 0,
+        "KL5": 1,
+        "KL6": 2,
         "KL7": 0
       },
-      "kl4PlusTarget": 0,
+      "kl4PlusTarget": 3,
       "focBreakdown": {
         "tapBrand": 0,
         "tap": 0,
@@ -12927,7 +14589,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 92727273,
     "budgetSelfChannel": 12045455,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 401567372,
     "targetAffiliateContents": 60,
     "targetSelfChannelContents": 45,
     "currentVersionCode": "v1.0",
@@ -12936,7 +14598,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigeNvO",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-NABIZAMSHOPEEE2ES",
@@ -12956,20 +14618,61 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 5000000,
     "totalTargetContents": 35,
     "targetGmv": 162500000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigHdiS). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-NABIZAMSHOPEEE2ES-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 5,
+        "unitCost": 1000000,
+        "benchmarkCost": 800000,
+        "totalBudget": 5000000,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 25000000,
+        "assignedStaff": "Nguyễn Thị Quỳnh Nhi",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-NABIZAMSHOPEEE2ES-41-SELF",
+        "channel": "SELF_CHANNEL",
+        "platform": "Kênh Brand tự xây (Self-channel)",
+        "category": "SELF_CHANNEL",
+        "tierCode": "Review voice",
+        "tierLabel": "Sản xuất Video Kênh Brand",
+        "contentFormat": "Review voice / Video to live / Remix",
+        "qty": 30,
+        "unitCost": 0,
+        "benchmarkCost": 500000,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 3.5,
+        "targetGmv": 0,
+        "assignedStaff": "Nguyễn Thị Quỳnh Nhi",
+        "notes": "Chỉ tiêu Kênh tự xây từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 5,
       "foc": 0,
       "cast": 5,
@@ -13064,7 +14767,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 5000000,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 183600000,
     "targetAffiliateContents": 5,
     "targetSelfChannelContents": 30,
     "currentVersionCode": "v1.0",
@@ -13073,7 +14776,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigHdiS",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-NABIZAMTIKTOKE2ES",
@@ -13094,13 +14797,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 545455,
     "totalTargetContents": 220,
     "targetGmv": 131016001,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigF1VN) & Bảng 4.1.1 (9 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-NABIZAMTIKTOKE2ES-411-FOC",
@@ -13145,15 +14851,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 35
         },
         "self": {
           "reviewVoice": 0,
-          "videoAi": 0,
+          "videoAi": 2,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 10,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 120000
         },
         "live": {
           "sessions": 0,
@@ -13194,15 +14900,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 40
         },
         "self": {
           "reviewVoice": 0,
-          "videoAi": 0,
+          "videoAi": 2,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 20,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 120000
         },
         "live": {
           "sessions": 0,
@@ -13243,15 +14949,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 40
         },
         "self": {
           "reviewVoice": 0,
-          "videoAi": 0,
+          "videoAi": 2,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 10,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 120000
         },
         "live": {
           "sessions": 0,
@@ -13292,15 +14998,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 35
         },
         "self": {
           "reviewVoice": 0,
-          "videoAi": 0,
+          "videoAi": 2,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 10,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 120000
         },
         "live": {
           "sessions": 0,
@@ -13345,11 +15051,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "self": {
           "reviewVoice": 0,
-          "videoAi": 0,
+          "videoAi": 2,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 10,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 120000
         },
         "live": {
           "sessions": 0,
@@ -13388,7 +15094,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "staffWeeklySlices": [
       {
         "staffName": "Trần Thị Hảo",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Chuyên viên FOC (0đ)",
         "rowCount": 4,
         "weeklyBreakdown": [
           {
@@ -13397,7 +15103,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 35
             },
             "self": {
               "reviewVoice": 0,
@@ -13446,7 +15152,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 40
             },
             "self": {
               "reviewVoice": 0,
@@ -13495,7 +15201,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 40
             },
             "self": {
               "reviewVoice": 0,
@@ -13544,7 +15250,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 35
             },
             "self": {
               "reviewVoice": 0,
@@ -13640,7 +15346,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "staffName": "Nguyễn Thị Quỳnh Nhi",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Content / Self-channel PIC",
         "rowCount": 5,
         "weeklyBreakdown": [
           {
@@ -13653,11 +15359,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             },
             "self": {
               "reviewVoice": 0,
-              "videoAi": 0,
+              "videoAi": 2,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 10,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 120000
             },
             "live": {
               "sessions": 0,
@@ -13702,11 +15408,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             },
             "self": {
               "reviewVoice": 0,
-              "videoAi": 0,
+              "videoAi": 2,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 20,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 120000
             },
             "live": {
               "sessions": 0,
@@ -13751,11 +15457,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             },
             "self": {
               "reviewVoice": 0,
-              "videoAi": 0,
+              "videoAi": 2,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 10,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 120000
             },
             "live": {
               "sessions": 0,
@@ -13800,11 +15506,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             },
             "self": {
               "reviewVoice": 0,
-              "videoAi": 0,
+              "videoAi": 2,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 10,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 120000
             },
             "live": {
               "sessions": 0,
@@ -13849,11 +15555,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             },
             "self": {
               "reviewVoice": 0,
-              "videoAi": 0,
+              "videoAi": 2,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 10,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 120000
             },
             "live": {
               "sessions": 0,
@@ -13893,8 +15599,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 150,
       "foc": 150,
       "cast": 0,
@@ -13991,7 +15699,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 545455,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 180659196,
     "targetAffiliateContents": 150,
     "targetSelfChannelContents": 70,
     "currentVersionCode": "v1.0",
@@ -14000,7 +15708,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigF1VN",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-NUCOSTIKTOKE2ES",
@@ -14020,20 +15728,79 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 97222227,
     "totalTargetContents": 145,
     "targetGmv": 646079998,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoatFxX). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-NUCOSTIKTOKE2ES-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 9,
+        "unitCost": 9315376,
+        "benchmarkCost": 800000,
+        "totalBudget": 83838384,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 419191920,
+        "assignedStaff": "Nguyễn Thị Mai Anh",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-NUCOSTIKTOKE2ES-41-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 80,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
+      },
+      {
+        "id": "PO-2026-11-NUCOSTIKTOKE2ES-41-SELF",
+        "channel": "SELF_CHANNEL",
+        "platform": "Kênh Brand tự xây (Self-channel)",
+        "category": "SELF_CHANNEL",
+        "tierCode": "Review voice",
+        "tierLabel": "Sản xuất Video Kênh Brand",
+        "contentFormat": "Review voice / Video to live / Remix",
+        "qty": 40,
+        "unitCost": 334596,
+        "benchmarkCost": 500000,
+        "totalBudget": 13383843,
+        "expectedRoiMultiplier": 3.5,
+        "targetGmv": 46843451,
+        "assignedStaff": "Nguyễn Thị Mai Anh",
+        "notes": "Chỉ tiêu Kênh tự xây từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 89,
       "foc": 80,
       "cast": 9,
@@ -14132,7 +15899,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 83838384,
     "budgetSelfChannel": 13383843,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 181499996,
     "targetAffiliateContents": 89,
     "targetSelfChannelContents": 40,
     "currentVersionCode": "v1.0",
@@ -14141,7 +15908,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoatFxX",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-REVISIONTIKTOKE2EO",
@@ -14161,20 +15928,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 60,
     "targetGmv": 459692299,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaGP0h). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-REVISIONTIKTOKE2EO-41-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 30,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 30,
       "foc": 30,
       "cast": 0,
@@ -14271,7 +16062,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 72600000,
     "targetAffiliateContents": 30,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -14280,7 +16071,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaGP0h",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-SCCSAIGONCOSMETICSSHOPEEE2EC",
@@ -14300,20 +16091,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 5454545,
     "totalTargetContents": 14,
     "targetGmv": 432340400,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoagI2v). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-SCCSAIGONCOSMETICSSHOPEEE2EC-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 8,
+        "unitCost": 0,
+        "benchmarkCost": 800000,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 0,
+        "assignedStaff": "Bùi Ngọc Ánh",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 8,
       "foc": 0,
       "cast": 8,
@@ -14410,7 +16225,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 351000000,
     "targetAffiliateContents": 8,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -14419,7 +16234,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoagI2v",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-LOCCITANEVIETNAMTIKTOKE2EC",
@@ -14440,20 +16255,61 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 2863636,
     "totalTargetContents": 83,
     "targetGmv": 1755747126,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoa1jP4). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-LOCCITANEVIETNAMTIKTOKE2EC-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 15,
+        "unitCost": 100000,
+        "benchmarkCost": 800000,
+        "totalBudget": 1500000,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 7500000,
+        "assignedStaff": "Lê Thanh Hải",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-LOCCITANEVIETNAMTIKTOKE2EC-41-SELF",
+        "channel": "SELF_CHANNEL",
+        "platform": "Kênh Brand tự xây (Self-channel)",
+        "category": "SELF_CHANNEL",
+        "tierCode": "Review voice",
+        "tierLabel": "Sản xuất Video Kênh Brand",
+        "contentFormat": "Review voice / Video to live / Remix",
+        "qty": 20,
+        "unitCost": 68182,
+        "benchmarkCost": 500000,
+        "totalBudget": 1363636,
+        "expectedRoiMultiplier": 3.5,
+        "targetGmv": 4772726,
+        "assignedStaff": "Lê Thanh Hải",
+        "notes": "Chỉ tiêu Kênh tự xây từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 15,
       "foc": 0,
       "cast": 15,
@@ -14551,7 +16407,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 1500000,
     "budgetSelfChannel": 1363636,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 633845690,
     "targetAffiliateContents": 15,
     "targetSelfChannelContents": 20,
     "currentVersionCode": "v1.0",
@@ -14560,7 +16416,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoa1jP4",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-REVISIONSHOPEEE2EO",
@@ -14578,20 +16434,25 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 20,
     "targetGmv": 61222488,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaQrmI). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 0,
       "foc": 0,
       "cast": 0,
@@ -14686,7 +16547,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 24804219,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -14695,7 +16556,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaQrmI",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-VENUSTIKTOKE2EC",
@@ -14715,20 +16576,79 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 235353533,
     "totalTargetContents": 450,
     "targetGmv": 1706000016,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoa7y9P). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-VENUSTIKTOKE2EC-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 20,
+        "unitCost": 9595960,
+        "benchmarkCost": 800000,
+        "totalBudget": 191919190,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 959595950,
+        "assignedStaff": "Bùi Ngọc Ánh",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-VENUSTIKTOKE2EC-41-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 350,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
+      },
+      {
+        "id": "PO-2026-11-VENUSTIKTOKE2EC-41-SELF",
+        "channel": "SELF_CHANNEL",
+        "platform": "Kênh Brand tự xây (Self-channel)",
+        "category": "SELF_CHANNEL",
+        "tierCode": "Review voice",
+        "tierLabel": "Sản xuất Video Kênh Brand",
+        "contentFormat": "Review voice / Video to live / Remix",
+        "qty": 20,
+        "unitCost": 404040,
+        "benchmarkCost": 500000,
+        "totalBudget": 8080808,
+        "expectedRoiMultiplier": 3.5,
+        "targetGmv": 28282828,
+        "assignedStaff": "Bùi Ngọc Ánh",
+        "notes": "Chỉ tiêu Kênh tự xây từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chờ chốt)",
       "videoAff": 370,
       "foc": 350,
       "cast": 20,
@@ -14827,7 +16747,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 191919190,
     "budgetSelfChannel": 8080808,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 356950002,
     "targetAffiliateContents": 370,
     "targetSelfChannelContents": 20,
     "currentVersionCode": "v1.0",
@@ -14836,7 +16756,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoa7y9P",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-CATHYDOLLTIKTOKE2EC",
@@ -14855,15 +16775,18 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "totalTargetBudget": 46818181,
-    "totalTargetContents": 262,
+    "totalTargetContents": 269,
     "targetGmv": 543139998,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaXgOR) & Bảng 4.1.1 (8 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-CATHYDOLLTIKTOKE2EC-411-KL2",
@@ -14871,7 +16794,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL2",
-        "tierLabel": "Bậc Cast KL2 (300K - 1M)",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
         "salaryGrade": "KL2",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 4,
@@ -14889,12 +16812,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL3",
-        "tierLabel": "Bậc Cast KL3 (1M - 2M)",
+        "tierLabel": "Bậc Cast KL3 (1.5M - 3M)",
         "salaryGrade": "KL3",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 3000000,
-        "benchmarkCost": 1500000,
+        "benchmarkCost": 2000000,
         "totalBudget": 3000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 15000000,
@@ -14907,12 +16830,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL5",
-        "tierLabel": "Bậc Cast KL5 (4M - 7M)",
+        "tierLabel": "Bậc Cast KL5 (5M - 10M)",
         "salaryGrade": "KL5",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 7500000,
-        "benchmarkCost": 5500000,
+        "benchmarkCost": 7000000,
         "totalBudget": 7500000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 37500000,
@@ -14925,12 +16848,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL6",
-        "tierLabel": "Bậc Cast KL6 (7M - 15M)",
+        "tierLabel": "Bậc Cast KL6 (10M - 30M)",
         "salaryGrade": "KL6",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 26000000,
-        "benchmarkCost": 11000000,
+        "benchmarkCost": 15000000,
         "totalBudget": 26000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 130000000,
@@ -14976,19 +16899,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "weeklyBreakdown": [
       {
         "week": "W45 [30.10-05.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 1000000
+          },
+          "KL5": {
+            "qty": 1,
+            "budgetNet": 7500000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 50
         },
         "self": {
           "reviewVoice": 0,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 1,
           "videoToLive": 0,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 150000
         },
         "live": {
           "sessions": 0,
@@ -15025,19 +16957,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W46 [06.11-12.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 1000000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 3000000
+          },
+          "KL6": {
+            "qty": 1,
+            "budgetNet": 26000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 50
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 2,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 2,
+          "budgetNet": 4000000
         },
         "live": {
           "sessions": 0,
@@ -15074,19 +17019,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W47 [13.11-19.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 500000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 50
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 2,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 2,
+          "budgetNet": 4000000
         },
         "live": {
           "sessions": 0,
@@ -15123,19 +17073,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W48 [20.11-26.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 1000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 50
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 2,
           "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "nhacText": 2,
+          "budgetNet": 3000000
         },
         "live": {
           "sessions": 0,
@@ -15228,7 +17183,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 7500000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -15237,10 +17201,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "self": {
               "reviewVoice": 0,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 1,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 150000
             },
             "live": {
               "sessions": 0,
@@ -15277,19 +17241,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 3000000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 26000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 2,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 2,
+              "budgetNet": 4000000
             },
             "live": {
               "sessions": 0,
@@ -15326,19 +17303,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 500000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 2,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 2,
+              "budgetNet": 4000000
             },
             "live": {
               "sessions": 0,
@@ -15375,19 +17357,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 2,
               "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "nhacText": 2,
+              "budgetNet": 3000000
             },
             "live": {
               "sessions": 0,
@@ -15475,7 +17462,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "staffName": "Trần Thị Hảo",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Chuyên viên FOC (0đ)",
         "rowCount": 4,
         "weeklyBreakdown": [
           {
@@ -15484,7 +17471,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 50
             },
             "self": {
               "reviewVoice": 0,
@@ -15533,7 +17520,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 50
             },
             "self": {
               "reviewVoice": 0,
@@ -15582,7 +17569,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 50
             },
             "self": {
               "reviewVoice": 0,
@@ -15631,7 +17618,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 50
             },
             "self": {
               "reviewVoice": 0,
@@ -15728,11 +17715,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 232,
       "foc": 232,
-      "cast": 0,
+      "cast": 7,
       "affCostGross": 43200000,
       "affCostNet": 36363636,
       "selfVideos": 22,
@@ -15743,14 +17732,14 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "liveCostNet": 0,
       "tiers": {
         "KL1": 0,
-        "KL2": 0,
-        "KL3": 0,
+        "KL2": 4,
+        "KL3": 1,
         "KL4": 0,
-        "KL5": 0,
-        "KL6": 0,
+        "KL5": 1,
+        "KL6": 1,
         "KL7": 0
       },
-      "kl4PlusTarget": 0,
+      "kl4PlusTarget": 2,
       "focBreakdown": {
         "tapBrand": 32,
         "tap": 0,
@@ -15828,8 +17817,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 36363636,
     "budgetSelfChannel": 10454545,
-    "budgetAdsTotal": 0,
-    "targetAffiliateContents": 232,
+    "budgetAdsTotal": 259563454,
+    "targetAffiliateContents": 239,
     "targetSelfChannelContents": 22,
     "currentVersionCode": "v1.0",
     "isVersionLocked": false,
@@ -15837,7 +17826,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaXgOR",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-CM24TIKTOKE2EC",
@@ -15858,13 +17847,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 49560000,
     "totalTargetContents": 184,
     "targetGmv": 578000000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoayA8W) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-CM24TIKTOKE2EC-411-KL7",
@@ -15872,17 +17864,35 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL7",
-        "tierLabel": "Bậc Cast KL7 (Trên 15M)",
+        "tierLabel": "Bậc Cast KL7 (Trên 30M)",
         "salaryGrade": "KL7",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 45000000,
-        "benchmarkCost": 25000000,
+        "benchmarkCost": 35000000,
         "totalBudget": 45000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 225000000,
         "assignedStaff": "Vũ Hoài Lâm",
         "notes": "Phân rã trên Lark 4.1.1 Input plan"
+      },
+      {
+        "id": "PO-2026-11-CM24TIKTOKE2EC-411-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 150,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
       },
       {
         "id": "PO-2026-11-CM24TIKTOKE2EC-411-SELF",
@@ -15954,19 +17964,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W46 [06.11-12.11]",
-        "tiers": {},
+        "tiers": {
+          "KL7": {
+            "qty": 1,
+            "budgetNet": 45000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
+          "videoRemix": 3,
+          "videoToLive": 4,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1320000
         },
         "live": {
           "sessions": 0,
@@ -16010,12 +18025,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
+          "videoRemix": 4,
+          "videoToLive": 4,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1520000
         },
         "live": {
           "sessions": 0,
@@ -16059,12 +18074,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
+          "videoRemix": 4,
+          "videoToLive": 4,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1520000
         },
         "live": {
           "sessions": 0,
@@ -16110,10 +18125,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "self": {
           "reviewVoice": 0,
           "videoAi": 0,
-          "videoRemix": 0,
+          "videoRemix": 1,
           "videoToLive": 0,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 200000
         },
         "live": {
           "sessions": 0,
@@ -16152,7 +18167,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "staffWeeklySlices": [
       {
         "staffName": "Nguyễn Ngọc Linh",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Content / Self-channel PIC",
         "rowCount": 4,
         "weeklyBreakdown": [
           {
@@ -16213,12 +18228,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
+              "videoRemix": 3,
+              "videoToLive": 4,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1320000
             },
             "live": {
               "sessions": 0,
@@ -16262,12 +18277,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
+              "videoRemix": 4,
+              "videoToLive": 4,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1520000
             },
             "live": {
               "sessions": 0,
@@ -16311,12 +18326,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
+              "videoRemix": 4,
+              "videoToLive": 4,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1520000
             },
             "live": {
               "sessions": 0,
@@ -16362,10 +18377,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "self": {
               "reviewVoice": 0,
               "videoAi": 0,
-              "videoRemix": 0,
+              "videoRemix": 1,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 200000
             },
             "live": {
               "sessions": 0,
@@ -16458,7 +18473,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 45000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -16657,8 +18677,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 151,
       "foc": 150,
       "cast": 1,
@@ -16677,9 +18699,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "KL4": 0,
         "KL5": 0,
         "KL6": 0,
-        "KL7": 0
+        "KL7": 1
       },
-      "kl4PlusTarget": 0,
+      "kl4PlusTarget": 1,
       "focBreakdown": {
         "tapBrand": 0,
         "tap": 0,
@@ -16756,7 +18778,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 45000000,
     "budgetSelfChannel": 4560000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 187550001,
     "targetAffiliateContents": 151,
     "targetSelfChannelContents": 27,
     "currentVersionCode": "v1.0",
@@ -16765,7 +18787,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoayA8W",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-BAEGAYULSHOPEEE2EO",
@@ -16783,20 +18805,25 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 1,
     "targetGmv": 6800000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaOCq5). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 0,
       "foc": 0,
       "cast": 0,
@@ -16891,7 +18918,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 10800008,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -16900,7 +18927,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaOCq5",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-CM24SHOPEEE2EC",
@@ -16920,13 +18947,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 2,
     "targetGmv": 14000580,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoagpq2) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-CM24SHOPEEE2EC-411-MULTI",
@@ -17020,7 +19050,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "shopee": {
             "affQty": 0,
             "budgetNet": 0,
-            "reupQty": 0
+            "reupQty": 10
           },
           "threads": {
             "affQty": 0,
@@ -17069,7 +19099,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "shopee": {
             "affQty": 0,
             "budgetNet": 0,
-            "reupQty": 0
+            "reupQty": 10
           },
           "threads": {
             "affQty": 0,
@@ -17079,7 +19109,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "facebook": {
             "affQty": 0,
             "budgetNet": 0,
-            "reupQty": 0
+            "reupQty": 1
           },
           "instagram": {
             "affQty": 0,
@@ -17118,7 +19148,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "shopee": {
             "affQty": 0,
             "budgetNet": 0,
-            "reupQty": 0
+            "reupQty": 5
           },
           "threads": {
             "affQty": 0,
@@ -17128,7 +19158,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "facebook": {
             "affQty": 0,
             "budgetNet": 0,
-            "reupQty": 0
+            "reupQty": 1
           },
           "instagram": {
             "affQty": 0,
@@ -17167,7 +19197,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "shopee": {
             "affQty": 0,
             "budgetNet": 0,
-            "reupQty": 0
+            "reupQty": 5
           },
           "threads": {
             "affQty": 0,
@@ -17272,7 +19302,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "shopee": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 10
               },
               "threads": {
                 "affQty": 0,
@@ -17321,7 +19351,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "shopee": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 10
               },
               "threads": {
                 "affQty": 0,
@@ -17331,7 +19361,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "facebook": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 1
               },
               "instagram": {
                 "affQty": 0,
@@ -17370,7 +19400,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "shopee": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 5
               },
               "threads": {
                 "affQty": 0,
@@ -17380,7 +19410,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "facebook": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 1
               },
               "instagram": {
                 "affQty": 0,
@@ -17419,7 +19449,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "shopee": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 5
               },
               "threads": {
                 "affQty": 0,
@@ -17449,8 +19479,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 2,
       "foc": 0,
       "cast": 2,
@@ -17545,7 +19577,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 116158407,
     "targetAffiliateContents": 2,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -17554,7 +19586,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoagpq2",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-MINESHOPEEE2EC",
@@ -17574,20 +19606,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 35,
     "targetGmv": 35636497,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoasYQC). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-MINESHOPEEE2EC-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 5,
+        "unitCost": 0,
+        "benchmarkCost": 800000,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 0,
+        "assignedStaff": "Phạm Thị Thu Hằng",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chờ chốt)",
       "videoAff": 5,
       "foc": 0,
       "cast": 5,
@@ -17682,7 +19738,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 137231981,
     "targetAffiliateContents": 5,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -17691,7 +19747,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoasYQC",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-NATURALCARESHOPEEE2EC",
@@ -17711,20 +19767,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 9090909,
     "totalTargetContents": 34,
     "targetGmv": 81000004,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoak0R2). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-NATURALCARESHOPEEE2EC-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 34,
+        "unitCost": 267380,
+        "benchmarkCost": 800000,
+        "totalBudget": 9090909,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 45454545,
+        "assignedStaff": "Hoàng Hải Long",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 34,
       "foc": 0,
       "cast": 34,
@@ -17819,7 +19899,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 9090909,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 108800011,
     "targetAffiliateContents": 34,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -17828,7 +19908,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoak0R2",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-NATURALCARETIKTOKE2EC",
@@ -17850,13 +19930,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 351111112,
     "totalTargetContents": 303,
     "targetGmv": 1116716481,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoach1j) & Bảng 4.1.1 (8 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-NATURALCARETIKTOKE2EC-411-FOC",
@@ -17884,7 +19967,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 60
         },
         "self": {
           "reviewVoice": 0,
@@ -17933,7 +20016,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 60
         },
         "self": {
           "reviewVoice": 0,
@@ -17982,7 +20065,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 65
         },
         "self": {
           "reviewVoice": 0,
@@ -18031,7 +20114,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 60
         },
         "self": {
           "reviewVoice": 0,
@@ -18127,7 +20210,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "staffWeeklySlices": [
       {
         "staffName": "Trần Thị Hảo",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Chuyên viên FOC (0đ)",
         "rowCount": 4,
         "weeklyBreakdown": [
           {
@@ -18136,7 +20219,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 60
             },
             "self": {
               "reviewVoice": 0,
@@ -18185,7 +20268,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 60
             },
             "self": {
               "reviewVoice": 0,
@@ -18234,7 +20317,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 65
             },
             "self": {
               "reviewVoice": 0,
@@ -18283,7 +20366,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 60
             },
             "self": {
               "reviewVoice": 0,
@@ -18632,8 +20715,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 280,
       "foc": 245,
       "cast": 35,
@@ -18731,7 +20816,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 338383835,
     "budgetSelfChannel": 12727277,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 337310097,
     "targetAffiliateContents": 280,
     "targetSelfChannelContents": 23,
     "currentVersionCode": "v1.0",
@@ -18740,7 +20825,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoach1j",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-BADLABSHOPEEE2ES",
@@ -18760,20 +20845,61 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 6818182,
     "totalTargetContents": 70,
     "targetGmv": 4002480,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaBSpA). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-BADLABSHOPEEE2ES-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 50,
+        "unitCost": 136364,
+        "benchmarkCost": 800000,
+        "totalBudget": 6818182,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 34090910,
+        "assignedStaff": "Hoàng Hải Long",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-BADLABSHOPEEE2ES-41-SELF",
+        "channel": "SELF_CHANNEL",
+        "platform": "Kênh Brand tự xây (Self-channel)",
+        "category": "SELF_CHANNEL",
+        "tierCode": "Review voice",
+        "tierLabel": "Sản xuất Video Kênh Brand",
+        "contentFormat": "Review voice / Video to live / Remix",
+        "qty": 20,
+        "unitCost": 0,
+        "benchmarkCost": 500000,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 3.5,
+        "targetGmv": 0,
+        "assignedStaff": "Hoàng Hải Long",
+        "notes": "Chỉ tiêu Kênh tự xây từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 50,
       "foc": 0,
       "cast": 50,
@@ -18866,7 +20992,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 6818182,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 56160000,
     "targetAffiliateContents": 50,
     "targetSelfChannelContents": 20,
     "currentVersionCode": "v1.0",
@@ -18875,7 +21001,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaBSpA",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-BADLABTIKTOKE2ES",
@@ -18895,20 +21021,79 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 209950000,
     "totalTargetContents": 166,
     "targetGmv": 653400000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoa1PpG). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-BADLABTIKTOKE2ES-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 13,
+        "unitCost": 15384615,
+        "benchmarkCost": 800000,
+        "totalBudget": 200000000,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 1000000000,
+        "assignedStaff": "Hoàng Hải Long",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-BADLABTIKTOKE2ES-41-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 130,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
+      },
+      {
+        "id": "PO-2026-11-BADLABTIKTOKE2ES-41-SELF",
+        "channel": "SELF_CHANNEL",
+        "platform": "Kênh Brand tự xây (Self-channel)",
+        "category": "SELF_CHANNEL",
+        "tierCode": "Review voice",
+        "tierLabel": "Sản xuất Video Kênh Brand",
+        "contentFormat": "Review voice / Video to live / Remix",
+        "qty": 23,
+        "unitCost": 432609,
+        "benchmarkCost": 500000,
+        "totalBudget": 9950000,
+        "expectedRoiMultiplier": 3.5,
+        "targetGmv": 34825000,
+        "assignedStaff": "Hoàng Hải Long",
+        "notes": "Chỉ tiêu Kênh tự xây từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 143,
       "foc": 130,
       "cast": 13,
@@ -19003,7 +21188,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 200000000,
     "budgetSelfChannel": 9950000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 290400000,
     "targetAffiliateContents": 143,
     "targetSelfChannelContents": 23,
     "currentVersionCode": "v1.0",
@@ -19012,7 +21197,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoa1PpG",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-REJURANTIKTOKE2EO",
@@ -19033,20 +21218,62 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 16363636,
     "totalTargetContents": 221,
     "targetGmv": 287414557,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaRHks). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-REJURANTIKTOKE2EO-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 1,
+        "unitCost": 16363636,
+        "benchmarkCost": 800000,
+        "totalBudget": 16363636,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 81818180,
+        "assignedStaff": "Lê Thanh Hải",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-REJURANTIKTOKE2EO-41-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 210,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 211,
       "foc": 210,
       "cast": 1,
@@ -19143,7 +21370,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 16363636,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 181500000,
     "targetAffiliateContents": 211,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -19152,7 +21379,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaRHks",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-HERBALCARESHOPEEE2EC",
@@ -19172,20 +21399,25 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 0,
     "targetGmv": 21084692,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaqhxl). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 0,
       "foc": 0,
       "cast": 0,
@@ -19280,7 +21512,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 85466124,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -19289,7 +21521,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaqhxl",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-HERBALCARETIKTOKE2EC",
@@ -19309,13 +21541,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 81100000,
     "totalTargetContents": 100,
     "targetGmv": 346510000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoadDko) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-HERBALCARETIKTOKE2EC-411-KL2",
@@ -19323,7 +21558,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL2",
-        "tierLabel": "Bậc Cast KL2 (300K - 1M)",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
         "salaryGrade": "KL2",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
@@ -19341,12 +21576,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL3",
-        "tierLabel": "Bậc Cast KL3 (1M - 2M)",
+        "tierLabel": "Bậc Cast KL3 (1.5M - 3M)",
         "salaryGrade": "KL3",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
         "unitCost": 2000000,
-        "benchmarkCost": 1500000,
+        "benchmarkCost": 2000000,
         "totalBudget": 4000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 20000000,
@@ -19359,12 +21594,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL4",
-        "tierLabel": "Bậc Cast KL4 (2M - 4M)",
+        "tierLabel": "Bậc Cast KL4 (3M - 5M)",
         "salaryGrade": "KL4",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 3000000,
-        "benchmarkCost": 3000000,
+        "benchmarkCost": 4000000,
         "totalBudget": 3000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 15000000,
@@ -19377,12 +21612,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL5",
-        "tierLabel": "Bậc Cast KL5 (4M - 7M)",
+        "tierLabel": "Bậc Cast KL5 (5M - 10M)",
         "salaryGrade": "KL5",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
         "unitCost": 5300000,
-        "benchmarkCost": 5500000,
+        "benchmarkCost": 7000000,
         "totalBudget": 10600000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 53000000,
@@ -19395,12 +21630,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL6",
-        "tierLabel": "Bậc Cast KL6 (7M - 15M)",
+        "tierLabel": "Bậc Cast KL6 (10M - 30M)",
         "salaryGrade": "KL6",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
         "unitCost": 11000000,
-        "benchmarkCost": 11000000,
+        "benchmarkCost": 15000000,
         "totalBudget": 22000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 110000000,
@@ -19413,17 +21648,35 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL7",
-        "tierLabel": "Bậc Cast KL7 (Trên 15M)",
+        "tierLabel": "Bậc Cast KL7 (Trên 30M)",
         "salaryGrade": "KL7",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 33000000,
-        "benchmarkCost": 25000000,
+        "benchmarkCost": 35000000,
         "totalBudget": 33000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 165000000,
         "assignedStaff": "Trần Hải Phượng",
         "notes": "Phân rã trên Lark 4.1.1 Input plan"
+      },
+      {
+        "id": "PO-2026-11-HERBALCARETIKTOKE2EC-411-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 60,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
       },
       {
         "id": "PO-2026-11-HERBALCARETIKTOKE2EC-411-SELF",
@@ -19446,19 +21699,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "weeklyBreakdown": [
       {
         "week": "W45 [30.10-05.11]",
-        "tiers": {},
+        "tiers": {
+          "KL4": {
+            "qty": 1,
+            "budgetNet": 3000000
+          },
+          "KL5": {
+            "qty": 1,
+            "budgetNet": 5300000
+          },
+          "KL6": {
+            "qty": 1,
+            "budgetNet": 12000000
+          },
+          "KL7": {
+            "qty": 1,
+            "budgetNet": 33000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 4,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1320000
         },
         "live": {
           "sessions": 0,
@@ -19495,19 +21765,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W46 [06.11-12.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 1200000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 2000000
+          },
+          "KL5": {
+            "qty": 1,
+            "budgetNet": 5300000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 4,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1320000
         },
         "live": {
           "sessions": 0,
@@ -19544,19 +21827,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W47 [13.11-19.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 1200000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 2000000
+          },
+          "KL6": {
+            "qty": 1,
+            "budgetNet": 10000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 4,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1320000
         },
         "live": {
           "sessions": 0,
@@ -19600,12 +21896,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
-          "nhacText": 0,
-          "budgetNet": 0
+          "videoToLive": 4,
+          "nhacText": 1,
+          "budgetNet": 2020000
         },
         "live": {
           "sessions": 0,
@@ -19649,12 +21945,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 4,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 720000
         },
         "live": {
           "sessions": 0,
@@ -19698,19 +21994,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
-            "tiers": {},
+            "tiers": {
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3000000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 5300000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 12000000
+              },
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 33000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 4,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1320000
             },
             "live": {
               "sessions": 0,
@@ -19747,19 +22060,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1200000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2000000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 5300000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 4,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1320000
             },
             "live": {
               "sessions": 0,
@@ -19796,19 +22122,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1200000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2000000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 10000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 4,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1320000
             },
             "live": {
               "sessions": 0,
@@ -19852,12 +22191,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
-              "nhacText": 0,
-              "budgetNet": 0
+              "videoToLive": 4,
+              "nhacText": 1,
+              "budgetNet": 2020000
             },
             "live": {
               "sessions": 0,
@@ -19901,12 +22240,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 4,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 720000
             },
             "live": {
               "sessions": 0,
@@ -19946,8 +22285,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 70,
       "foc": 60,
       "cast": 10,
@@ -19961,14 +22302,14 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "liveCostNet": 0,
       "tiers": {
         "KL1": 0,
-        "KL2": 0,
-        "KL3": 0,
-        "KL4": 0,
-        "KL5": 0,
-        "KL6": 0,
-        "KL7": 0
+        "KL2": 2,
+        "KL3": 2,
+        "KL4": 1,
+        "KL5": 2,
+        "KL6": 2,
+        "KL7": 1
       },
-      "kl4PlusTarget": 0,
+      "kl4PlusTarget": 6,
       "focBreakdown": {
         "tapBrand": 0,
         "tap": 0,
@@ -20044,7 +22385,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 75000000,
     "budgetSelfChannel": 6100000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 136184030,
     "targetAffiliateContents": 70,
     "targetSelfChannelContents": 30,
     "currentVersionCode": "v1.0",
@@ -20053,10 +22394,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoadDko",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
-    "id": "PO-2026-11-PHCARETIKTOKE2ECH",
+    "id": "PO-2026-11-PHCARETIKTOKE2EC",
     "title": "Kế hoạch T11 - pHCare_TikTok_E2E-CH",
     "brandName": "pHCare",
     "storeId": "store-b2c-69-phcare-tiktok-e2e-c",
@@ -20073,20 +22414,79 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 331818182,
     "totalTargetContents": 472,
     "targetGmv": 2813975999,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoawZpF). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-PHCARETIKTOKE2EC-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 30,
+        "unitCost": 6060606,
+        "benchmarkCost": 800000,
+        "totalBudget": 181818182,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 909090910,
+        "assignedStaff": "Hoàng Diệu Thùy",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-PHCARETIKTOKE2EC-41-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 400,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
+      },
+      {
+        "id": "PO-2026-11-PHCARETIKTOKE2EC-41-SELF",
+        "channel": "SELF_CHANNEL",
+        "platform": "Kênh Brand tự xây (Self-channel)",
+        "category": "SELF_CHANNEL",
+        "tierCode": "Review voice",
+        "tierLabel": "Sản xuất Video Kênh Brand",
+        "contentFormat": "Review voice / Video to live / Remix",
+        "qty": 40,
+        "unitCost": 681818,
+        "benchmarkCost": 500000,
+        "totalBudget": 27272727,
+        "expectedRoiMultiplier": 3.5,
+        "targetGmv": 95454545,
+        "assignedStaff": "Hoàng Diệu Thùy",
+        "notes": "Chỉ tiêu Kênh tự xây từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 430,
       "foc": 400,
       "cast": 30,
@@ -20185,7 +22585,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 181818182,
     "budgetSelfChannel": 27272727,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 481358975,
     "targetAffiliateContents": 430,
     "targetSelfChannelContents": 40,
     "currentVersionCode": "v1.0",
@@ -20194,7 +22594,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoawZpF",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-VENUSSHOPEEE2EC",
@@ -20214,20 +22614,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 18383838,
     "totalTargetContents": 170,
     "targetGmv": 141838700,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoajoTQ). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-VENUSSHOPEEE2EC-41-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 90,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 90,
       "foc": 90,
       "cast": 0,
@@ -20324,7 +22748,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 237599998,
     "targetAffiliateContents": 90,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -20333,7 +22757,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoajoTQ",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-THEVIGOTIKTOKE2EO",
@@ -20351,20 +22775,25 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 0,
     "targetGmv": 0,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaTpp2). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chờ chốt)",
       "videoAff": 0,
       "foc": 0,
       "cast": 0,
@@ -20464,7 +22893,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaTpp2",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-TMCLEANSHOPEEE2EC",
@@ -20484,20 +22913,25 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 0,
     "targetGmv": 59000000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoayzJa). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 0,
       "foc": 0,
       "cast": 0,
@@ -20592,7 +23026,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 91655254,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -20601,7 +23035,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoayzJa",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-TMCLEANTIKTOKE2EC",
@@ -20621,20 +23055,61 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 98000004,
     "totalTargetContents": 46,
     "targetGmv": 790243906,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaHhIe). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-TMCLEANTIKTOKE2EC-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 8,
+        "unitCost": 10000000,
+        "benchmarkCost": 800000,
+        "totalBudget": 80000000,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 400000000,
+        "assignedStaff": "Nguyễn Thị Mai Anh",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-TMCLEANTIKTOKE2EC-41-SELF",
+        "channel": "SELF_CHANNEL",
+        "platform": "Kênh Brand tự xây (Self-channel)",
+        "category": "SELF_CHANNEL",
+        "tierCode": "Review voice",
+        "tierLabel": "Sản xuất Video Kênh Brand",
+        "contentFormat": "Review voice / Video to live / Remix",
+        "qty": 35,
+        "unitCost": 342857,
+        "benchmarkCost": 500000,
+        "totalBudget": 12000004,
+        "expectedRoiMultiplier": 3.5,
+        "targetGmv": 42000014,
+        "assignedStaff": "Nguyễn Thị Mai Anh",
+        "notes": "Chỉ tiêu Kênh tự xây từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 8,
       "foc": 0,
       "cast": 8,
@@ -20729,7 +23204,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 80000000,
     "budgetSelfChannel": 12000004,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 354076721,
     "targetAffiliateContents": 8,
     "targetSelfChannelContents": 35,
     "currentVersionCode": "v1.0",
@@ -20738,7 +23213,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaHhIe",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-CATHYDOLLSHOPEEE2EC",
@@ -20758,20 +23233,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 13636364,
     "totalTargetContents": 97,
     "targetGmv": 60000000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tc9sg). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-CATHYDOLLSHOPEEE2EC-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 75,
+        "unitCost": 181818,
+        "benchmarkCost": 800000,
+        "totalBudget": 13636364,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 68181820,
+        "assignedStaff": "Phạm Thị Thu Hằng",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 75,
       "foc": 0,
       "cast": 75,
@@ -20866,7 +23365,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 13636364,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 89100000,
     "targetAffiliateContents": 75,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -20875,7 +23374,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tc9sg",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-HDTSHOPEEE2EC",
@@ -20895,20 +23394,62 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 22727273,
     "totalTargetContents": 55,
     "targetGmv": 37944918,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tTkaF). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-HDTSHOPEEE2EC-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 5,
+        "unitCost": 3636364,
+        "benchmarkCost": 800000,
+        "totalBudget": 18181818,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 90909090,
+        "assignedStaff": "Hà Thị Thủy",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      },
+      {
+        "id": "PO-2026-11-HDTSHOPEEE2EC-41-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 20,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 25,
       "foc": 20,
       "cast": 5,
@@ -21005,7 +23546,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 18181818,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 94446609,
     "targetAffiliateContents": 25,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -21014,7 +23555,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tTkaF",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-HDTTIKTOKE2EC",
@@ -21036,13 +23577,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 129959091,
     "totalTargetContents": 273,
     "targetGmv": 721280000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0t95DR) & Bảng 4.1.1 (14 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-HDTTIKTOKE2EC-411-KL1",
@@ -21050,7 +23594,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL1",
-        "tierLabel": "Bậc Cast KL1 (0 - 300K)",
+        "tierLabel": "Bậc Cast KL1 (0 - 500K)",
         "salaryGrade": "KL1",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
@@ -21068,7 +23612,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL2",
-        "tierLabel": "Bậc Cast KL2 (300K - 1M)",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
         "salaryGrade": "KL2",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 8,
@@ -21086,12 +23630,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL3",
-        "tierLabel": "Bậc Cast KL3 (1M - 2M)",
+        "tierLabel": "Bậc Cast KL3 (1.5M - 3M)",
         "salaryGrade": "KL3",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 8,
         "unitCost": 1625000,
-        "benchmarkCost": 1500000,
+        "benchmarkCost": 2000000,
         "totalBudget": 13000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 65000000,
@@ -21104,12 +23648,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL4",
-        "tierLabel": "Bậc Cast KL4 (2M - 4M)",
+        "tierLabel": "Bậc Cast KL4 (3M - 5M)",
         "salaryGrade": "KL4",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 5,
         "unitCost": 3500000,
-        "benchmarkCost": 3000000,
+        "benchmarkCost": 4000000,
         "totalBudget": 17500000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 87500000,
@@ -21122,12 +23666,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL5",
-        "tierLabel": "Bậc Cast KL5 (4M - 7M)",
+        "tierLabel": "Bậc Cast KL5 (5M - 10M)",
         "salaryGrade": "KL5",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 3,
         "unitCost": 7000000,
-        "benchmarkCost": 5500000,
+        "benchmarkCost": 7000000,
         "totalBudget": 21000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 105000000,
@@ -21140,12 +23684,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL6",
-        "tierLabel": "Bậc Cast KL6 (7M - 15M)",
+        "tierLabel": "Bậc Cast KL6 (10M - 30M)",
         "salaryGrade": "KL6",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
         "unitCost": 15000000,
-        "benchmarkCost": 11000000,
+        "benchmarkCost": 15000000,
         "totalBudget": 30000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 150000000,
@@ -21158,12 +23702,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL7",
-        "tierLabel": "Bậc Cast KL7 (Trên 15M)",
+        "tierLabel": "Bậc Cast KL7 (Trên 30M)",
         "salaryGrade": "KL7",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 30000000,
-        "benchmarkCost": 25000000,
+        "benchmarkCost": 35000000,
         "totalBudget": 30000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 150000000,
@@ -21209,19 +23753,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "weeklyBreakdown": [
       {
         "week": "W45 [30.10-05.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 1,
+            "budgetNet": 250000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 1500000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 50
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 3,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 990000
         },
         "live": {
           "sessions": 0,
@@ -21258,19 +23811,40 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W46 [06.11-12.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 1,
+            "budgetNet": 250000
+          },
+          "KL2": {
+            "qty": 2,
+            "budgetNet": 2000000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 2000000
+          },
+          "KL4": {
+            "qty": 2,
+            "budgetNet": 7000000
+          },
+          "KL5": {
+            "qty": 2,
+            "budgetNet": 14000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 50
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
+          "videoRemix": 2,
+          "videoToLive": 7,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 2560000
         },
         "live": {
           "sessions": 0,
@@ -21307,19 +23881,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W47 [13.11-19.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 2,
+            "budgetNet": 2000000
+          },
+          "KL3": {
+            "qty": 3,
+            "budgetNet": 4500000
+          },
+          "KL4": {
+            "qty": 1,
+            "budgetNet": 3500000
+          },
+          "KL6": {
+            "qty": 2,
+            "budgetNet": 30000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 50
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 4,
           "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
+          "videoRemix": 2,
+          "videoToLive": 6,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 2880000
         },
         "live": {
           "sessions": 0,
@@ -21356,19 +23947,40 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W48 [20.11-26.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 2,
+            "budgetNet": 2000000
+          },
+          "KL3": {
+            "qty": 2,
+            "budgetNet": 3000000
+          },
+          "KL4": {
+            "qty": 1,
+            "budgetNet": 3500000
+          },
+          "KL5": {
+            "qty": 1,
+            "budgetNet": 7000000
+          },
+          "KL7": {
+            "qty": 1,
+            "budgetNet": 30000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 50
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 6,
           "videoAi": 0,
-          "videoRemix": 0,
-          "videoToLive": 0,
+          "videoRemix": 1,
+          "videoToLive": 3,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 3540000
         },
         "live": {
           "sessions": 0,
@@ -21405,7 +24017,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W49 [27.11-03.12]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 2,
+            "budgetNet": 2000000
+          },
+          "KL3": {
+            "qty": 1,
+            "budgetNet": 2000000
+          },
+          "KL4": {
+            "qty": 1,
+            "budgetNet": 3500000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
@@ -21415,9 +24040,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "reviewVoice": 0,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 1,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 30000
         },
         "live": {
           "sessions": 0,
@@ -21456,7 +24081,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "staffWeeklySlices": [
       {
         "staffName": "Trần Thị Hảo",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Chuyên viên FOC (0đ)",
         "rowCount": 4,
         "weeklyBreakdown": [
           {
@@ -21465,7 +24090,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 50
             },
             "self": {
               "reviewVoice": 0,
@@ -21514,7 +24139,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 50
             },
             "self": {
               "reviewVoice": 0,
@@ -21563,7 +24188,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 50
             },
             "self": {
               "reviewVoice": 0,
@@ -21612,7 +24237,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 50
             },
             "self": {
               "reviewVoice": 0,
@@ -21713,19 +24338,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 1,
+                "budgetNet": 250000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 3,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 990000
             },
             "live": {
               "sessions": 0,
@@ -21762,19 +24396,40 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 1,
+                "budgetNet": 250000
+              },
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2000000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3500000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 7000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
+              "videoRemix": 2,
+              "videoToLive": 7,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 2560000
             },
             "live": {
               "sessions": 0,
@@ -21811,19 +24466,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 2,
+                "budgetNet": 3000000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3500000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 15000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 4,
               "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
+              "videoRemix": 2,
+              "videoToLive": 6,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 2880000
             },
             "live": {
               "sessions": 0,
@@ -21860,19 +24532,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 6,
               "videoAi": 0,
-              "videoRemix": 0,
-              "videoToLive": 0,
+              "videoRemix": 1,
+              "videoToLive": 3,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 3540000
             },
             "live": {
               "sessions": 0,
@@ -21909,7 +24590,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W49 [27.11-03.12]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -21919,9 +24605,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 1,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 30000
             },
             "live": {
               "sessions": 0,
@@ -22014,7 +24700,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3500000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 7000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -22063,7 +24762,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 15000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -22112,7 +24824,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3500000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 7000000
+              },
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 30000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -22161,7 +24894,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W49 [27.11-03.12]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2000000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3500000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -22213,8 +24959,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 230,
       "foc": 200,
       "cast": 30,
@@ -22227,15 +24975,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "liveCostGross": 0,
       "liveCostNet": 0,
       "tiers": {
-        "KL1": 0,
-        "KL2": 0,
-        "KL3": 0,
-        "KL4": 0,
-        "KL5": 0,
-        "KL6": 0,
-        "KL7": 0
+        "KL1": 2,
+        "KL2": 8,
+        "KL3": 8,
+        "KL4": 5,
+        "KL5": 3,
+        "KL6": 2,
+        "KL7": 1
       },
-      "kl4PlusTarget": 0,
+      "kl4PlusTarget": 11,
       "focBreakdown": {
         "tapBrand": 0,
         "tap": 0,
@@ -22312,7 +25060,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 120000000,
     "budgetSelfChannel": 9959091,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 427116345,
     "targetAffiliateContents": 230,
     "targetSelfChannelContents": 40,
     "currentVersionCode": "v1.0",
@@ -22321,7 +25069,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0t95DR",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-DULUXSHOPEEE2EC",
@@ -22341,20 +25089,43 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 9090909,
     "totalTargetContents": 50,
     "targetGmv": 3836797,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tWp0I). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-DULUXSHOPEEE2EC-41-SELF",
+        "channel": "SELF_CHANNEL",
+        "platform": "Kênh Brand tự xây (Self-channel)",
+        "category": "SELF_CHANNEL",
+        "tierCode": "Review voice",
+        "tierLabel": "Sản xuất Video Kênh Brand",
+        "contentFormat": "Review voice / Video to live / Remix",
+        "qty": 20,
+        "unitCost": 0,
+        "benchmarkCost": 500000,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 3.5,
+        "targetGmv": 0,
+        "assignedStaff": "Phạm Huyền Thương",
+        "notes": "Chỉ tiêu Kênh tự xây từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 0,
       "foc": 0,
       "cast": 0,
@@ -22449,7 +25220,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 30092029,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 20,
     "currentVersionCode": "v1.0",
@@ -22458,7 +25229,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tWp0I",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-DULUXTIKTOKE2EC",
@@ -22478,20 +25249,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 9090909,
     "totalTargetContents": 33,
     "targetGmv": 36135000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tNPio). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-DULUXTIKTOKE2EC-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 33,
+        "unitCost": 275482,
+        "benchmarkCost": 800000,
+        "totalBudget": 9090909,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 45454545,
+        "assignedStaff": "Phạm Huyền Thương",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chờ chốt)",
       "videoAff": 33,
       "foc": 0,
       "cast": 33,
@@ -22586,7 +25381,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 9090909,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 31362885,
     "targetAffiliateContents": 33,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -22595,7 +25390,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tNPio",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-ORGALIFESHOPEEE2EC",
@@ -22616,13 +25411,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 4545455,
     "totalTargetContents": 57,
     "targetGmv": 35881065,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tJtDS) & Bảng 4.1.1 (3 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-ORGALIFESHOPEEE2EC-411-SELF",
@@ -22652,7 +25450,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
@@ -22701,7 +25499,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
@@ -22750,7 +25548,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
@@ -22892,7 +25690,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "staffWeeklySlices": [
       {
         "staffName": "Phạm Huyền Thương",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Content / Self-channel PIC",
         "rowCount": 3,
         "weeklyBreakdown": [
           {
@@ -22904,7 +25702,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
@@ -22953,7 +25751,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
@@ -23002,7 +25800,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
@@ -23145,8 +25943,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 0,
       "foc": 0,
       "cast": 0,
@@ -23242,7 +26042,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 38486950,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 5,
     "currentVersionCode": "v1.0",
@@ -23251,7 +26051,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tJtDS",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-ORGALIFETIKTOKE2EC",
@@ -23272,13 +26072,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 99454545,
     "totalTargetContents": 674,
     "targetGmv": 335780866,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tCqJF) & Bảng 4.1.1 (7 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-ORGALIFETIKTOKE2EC-411-KL2",
@@ -23286,7 +26089,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL2",
-        "tierLabel": "Bậc Cast KL2 (300K - 1M)",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
         "salaryGrade": "KL2",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
@@ -23304,12 +26107,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL3",
-        "tierLabel": "Bậc Cast KL3 (1M - 2M)",
+        "tierLabel": "Bậc Cast KL3 (1.5M - 3M)",
         "salaryGrade": "KL3",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 4,
         "unitCost": 3325000,
-        "benchmarkCost": 1500000,
+        "benchmarkCost": 2000000,
         "totalBudget": 13300000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 66500000,
@@ -23322,12 +26125,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL4",
-        "tierLabel": "Bậc Cast KL4 (2M - 4M)",
+        "tierLabel": "Bậc Cast KL4 (3M - 5M)",
         "salaryGrade": "KL4",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 2,
         "unitCost": 4000000,
-        "benchmarkCost": 3000000,
+        "benchmarkCost": 4000000,
         "totalBudget": 8000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 40000000,
@@ -23340,12 +26143,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL5",
-        "tierLabel": "Bậc Cast KL5 (4M - 7M)",
+        "tierLabel": "Bậc Cast KL5 (5M - 10M)",
         "salaryGrade": "KL5",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 0,
-        "unitCost": 5500000,
-        "benchmarkCost": 5500000,
+        "unitCost": 7000000,
+        "benchmarkCost": 7000000,
         "totalBudget": 25000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 125000000,
@@ -23358,17 +26161,35 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL6",
-        "tierLabel": "Bậc Cast KL6 (7M - 15M)",
+        "tierLabel": "Bậc Cast KL6 (10M - 30M)",
         "salaryGrade": "KL6",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 5,
         "unitCost": 5940000,
-        "benchmarkCost": 11000000,
+        "benchmarkCost": 15000000,
         "totalBudget": 29700000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 148500000,
         "assignedStaff": "Nguyễn Thị Quỳnh Nhi",
         "notes": "Phân rã trên Lark 4.1.1 Input plan"
+      },
+      {
+        "id": "PO-2026-11-ORGALIFETIKTOKE2EC-411-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 638,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
       },
       {
         "id": "PO-2026-11-ORGALIFETIKTOKE2EC-411-SELF",
@@ -23391,19 +26212,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "weeklyBreakdown": [
       {
         "week": "W45 [30.10-05.11]",
-        "tiers": {},
+        "tiers": {
+          "KL6": {
+            "qty": 2,
+            "budgetNet": 19000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 433333
         },
         "live": {
           "sessions": 0,
@@ -23440,19 +26266,36 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W46 [06.11-12.11]",
-        "tiers": {},
+        "tiers": {
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 1000000
+          },
+          "KL3": {
+            "qty": 2,
+            "budgetNet": 4000000
+          },
+          "KL5": {
+            "qty": 0,
+            "budgetNet": 12500000
+          },
+          "KL6": {
+            "qty": 1,
+            "budgetNet": 0
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1800000
         },
         "live": {
           "sessions": 0,
@@ -23489,19 +26332,32 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W47 [13.11-19.11]",
-        "tiers": {},
+        "tiers": {
+          "KL3": {
+            "qty": 2,
+            "budgetNet": 9300000
+          },
+          "KL6": {
+            "qty": 2,
+            "budgetNet": 10700000
+          },
+          "KL5": {
+            "qty": 0,
+            "budgetNet": 12500000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1350000
         },
         "live": {
           "sessions": 0,
@@ -23538,19 +26394,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W48 [20.11-26.11]",
-        "tiers": {},
+        "tiers": {
+          "KL4": {
+            "qty": 2,
+            "budgetNet": 8000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1350000
         },
         "live": {
           "sessions": 0,
@@ -23594,12 +26455,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 900000
         },
         "live": {
           "sessions": 0,
@@ -23643,19 +26504,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
-            "tiers": {},
+            "tiers": {
+              "KL6": {
+                "qty": 2,
+                "budgetNet": 19000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 433333
             },
             "live": {
               "sessions": 0,
@@ -23692,19 +26558,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 1000000
+              },
+              "KL3": {
+                "qty": 2,
+                "budgetNet": 4000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1800000
             },
             "live": {
               "sessions": 0,
@@ -23741,19 +26616,28 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL3": {
+                "qty": 2,
+                "budgetNet": 9300000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 10700000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1350000
             },
             "live": {
               "sessions": 0,
@@ -23790,19 +26674,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL4": {
+                "qty": 2,
+                "budgetNet": 8000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1350000
             },
             "live": {
               "sessions": 0,
@@ -23846,12 +26735,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 900000
             },
             "live": {
               "sessions": 0,
@@ -23944,7 +26833,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL5": {
+                "qty": 0,
+                "budgetNet": 12500000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 0
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -23993,7 +26891,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL5": {
+                "qty": 0,
+                "budgetNet": 12500000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 0
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -24143,8 +27050,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 650,
       "foc": 638,
       "cast": 12,
@@ -24158,14 +27067,14 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "liveCostNet": 9090909,
       "tiers": {
         "KL1": 0,
-        "KL2": 0,
-        "KL3": 0,
-        "KL4": 0,
+        "KL2": 1,
+        "KL3": 4,
+        "KL4": 2,
         "KL5": 0,
-        "KL6": 0,
+        "KL6": 5,
         "KL7": 0
       },
-      "kl4PlusTarget": 0,
+      "kl4PlusTarget": 7,
       "focBreakdown": {
         "tapBrand": 0,
         "tap": 38,
@@ -24242,7 +27151,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 84000000,
     "budgetSelfChannel": 6363636,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 134822201,
     "targetAffiliateContents": 650,
     "targetSelfChannelContents": 10,
     "currentVersionCode": "v1.0",
@@ -24251,7 +27160,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tCqJF",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-FEELCLEANSSHOPEEE2ES",
@@ -24271,20 +27180,25 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 8,
     "targetGmv": 11000000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tZscI). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 0,
       "foc": 0,
       "cast": 0,
@@ -24381,7 +27295,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 40500000,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -24390,7 +27304,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tZscI",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-FEELCLEANSTIKTOKE2ES",
@@ -24410,13 +27324,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 80303032,
     "totalTargetContents": 48,
     "targetGmv": 279334999,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tU1wI) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-FEELCLEANSTIKTOKE2ES-411-KL1",
@@ -24424,7 +27341,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL1",
-        "tierLabel": "Bậc Cast KL1 (0 - 300K)",
+        "tierLabel": "Bậc Cast KL1 (0 - 500K)",
         "salaryGrade": "KL1",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 10,
@@ -24442,7 +27359,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL2",
-        "tierLabel": "Bậc Cast KL2 (300K - 1M)",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
         "salaryGrade": "KL2",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 5,
@@ -24460,12 +27377,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL6",
-        "tierLabel": "Bậc Cast KL6 (7M - 15M)",
+        "tierLabel": "Bậc Cast KL6 (10M - 30M)",
         "salaryGrade": "KL6",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 12000000,
-        "benchmarkCost": 11000000,
+        "benchmarkCost": 15000000,
         "totalBudget": 12000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 60000000,
@@ -24478,12 +27395,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "platform": "TikTok Affiliate (Paid KOC)",
         "category": "KOC_TIER",
         "tierCode": "KL7",
-        "tierLabel": "Bậc Cast KL7 (Trên 15M)",
+        "tierLabel": "Bậc Cast KL7 (Trên 30M)",
         "salaryGrade": "KL7",
         "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
         "qty": 1,
         "unitCost": 38000000,
-        "benchmarkCost": 25000000,
+        "benchmarkCost": 35000000,
         "totalBudget": 38000000,
         "expectedRoiMultiplier": 5,
         "targetGmv": 190000000,
@@ -24494,7 +27411,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "weeklyBreakdown": [
       {
         "week": "W45 [30.10-05.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 2,
+            "budgetNet": 600000
+          },
+          "KL2": {
+            "qty": 1,
+            "budgetNet": 500000
+          },
+          "KL7": {
+            "qty": 1,
+            "budgetNet": 38000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
@@ -24543,7 +27473,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W46 [06.11-12.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 2,
+            "budgetNet": 600000
+          },
+          "KL2": {
+            "qty": 2,
+            "budgetNet": 1000000
+          },
+          "KL6": {
+            "qty": 1,
+            "budgetNet": 12000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
@@ -24592,7 +27535,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W47 [13.11-19.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 2,
+            "budgetNet": 600000
+          },
+          "KL2": {
+            "qty": 2,
+            "budgetNet": 1000000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
@@ -24641,7 +27593,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W48 [20.11-26.11]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 2,
+            "budgetNet": 600000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
@@ -24690,7 +27647,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       },
       {
         "week": "W49 [27.11-03.12]",
-        "tiers": {},
+        "tiers": {
+          "KL1": {
+            "qty": 2,
+            "budgetNet": 600000
+          }
+        },
         "foc": {
           "tapBrand": 0,
           "tap": 0,
@@ -24746,7 +27708,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 2,
+                "budgetNet": 600000
+              },
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 500000
+              },
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 38000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -24795,7 +27770,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W46 [06.11-12.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 2,
+                "budgetNet": 600000
+              },
+              "KL2": {
+                "qty": 2,
+                "budgetNet": 1000000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 12000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -24844,7 +27832,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 2,
+                "budgetNet": 600000
+              },
+              "KL2": {
+                "qty": 2,
+                "budgetNet": 1000000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -24893,7 +27890,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W48 [20.11-26.11]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 2,
+                "budgetNet": 600000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -24942,7 +27944,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W49 [27.11-03.12]",
-            "tiers": {},
+            "tiers": {
+              "KL1": {
+                "qty": 2,
+                "budgetNet": 600000
+              }
+            },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -24994,8 +28001,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 17,
       "foc": 0,
       "cast": 17,
@@ -25008,15 +28017,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "liveCostGross": 18000000,
       "liveCostNet": 15151515,
       "tiers": {
-        "KL1": 0,
-        "KL2": 0,
+        "KL1": 10,
+        "KL2": 5,
         "KL3": 0,
         "KL4": 0,
         "KL5": 0,
-        "KL6": 0,
-        "KL7": 0
+        "KL6": 1,
+        "KL7": 1
       },
-      "kl4PlusTarget": 0,
+      "kl4PlusTarget": 2,
       "focBreakdown": {
         "tapBrand": 0,
         "tap": 0,
@@ -25090,7 +28099,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 56060606,
     "budgetSelfChannel": 9090911,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 99095380,
     "targetAffiliateContents": 17,
     "targetSelfChannelContents": 28,
     "currentVersionCode": "v1.0",
@@ -25099,7 +28108,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tU1wI",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-CLUBCLIOSHOPEEE2EO",
@@ -25120,20 +28129,44 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 50,
     "targetGmv": 463822419,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tGOM4). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-CLUBCLIOSHOPEEE2EO-41-KL2",
+        "channel": "TIKTOK",
+        "platform": "TikTok Affiliate (Paid KOC)",
+        "category": "KOC_TIER",
+        "tierCode": "KL2",
+        "tierLabel": "Bậc Cast KL2 (500K - 1.5M)",
+        "salaryGrade": "KL2",
+        "contentFormat": "Review trực tiếp / Gắn giỏ hàng",
+        "qty": 50,
+        "unitCost": 0,
+        "benchmarkCost": 800000,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 5,
+        "targetGmv": 0,
+        "assignedStaff": "Nguyễn Thị Ngọc Tâm",
+        "notes": "Chỉ tiêu Paid Cast từ bảng 4.1 Plan order tổng (Chưa phân rã 4.1.1)"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chờ chốt)",
       "videoAff": 50,
       "foc": 0,
       "cast": 50,
@@ -25230,7 +28263,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 567000000,
     "targetAffiliateContents": 50,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -25239,7 +28272,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tGOM4",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-CLUBCLIOTIKTOKE2EO",
@@ -25261,13 +28294,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 48181819,
     "totalTargetContents": 156,
     "targetGmv": 628700000,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0taLAF) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-CLUBCLIOTIKTOKE2EO-411-FOC",
@@ -25295,7 +28331,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 25
         },
         "self": {
           "reviewVoice": 0,
@@ -25344,7 +28380,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 25
         },
         "self": {
           "reviewVoice": 0,
@@ -25393,7 +28429,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 25
         },
         "self": {
           "reviewVoice": 0,
@@ -25442,7 +28478,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "foc": {
           "tapBrand": 0,
           "tap": 0,
-          "tapUp": 0
+          "tapUp": 25
         },
         "self": {
           "reviewVoice": 0,
@@ -25538,7 +28574,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "staffWeeklySlices": [
       {
         "staffName": "Trần Thị Hảo",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Chuyên viên FOC (0đ)",
         "rowCount": 4,
         "weeklyBreakdown": [
           {
@@ -25547,7 +28583,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 25
             },
             "self": {
               "reviewVoice": 0,
@@ -25596,7 +28632,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 25
             },
             "self": {
               "reviewVoice": 0,
@@ -25645,7 +28681,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 25
             },
             "self": {
               "reviewVoice": 0,
@@ -25694,7 +28730,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 0
+              "tapUp": 25
             },
             "self": {
               "reviewVoice": 0,
@@ -25791,8 +28827,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chờ chốt)",
       "videoAff": 146,
       "foc": 135,
       "cast": 11,
@@ -25891,7 +28929,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 43636364,
     "budgetSelfChannel": 4545455,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 178836721,
     "targetAffiliateContents": 146,
     "targetSelfChannelContents": 10,
     "currentVersionCode": "v1.0",
@@ -25900,7 +28938,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0taLAF",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-CHULALASHOPEEE2EC",
@@ -25920,20 +28958,43 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 15,
     "targetGmv": 6599988,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tEtwy). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
-    "items": [],
+    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "items": [
+      {
+        "id": "PO-2026-11-CHULALASHOPEEE2EC-41-SELF",
+        "channel": "SELF_CHANNEL",
+        "platform": "Kênh Brand tự xây (Self-channel)",
+        "category": "SELF_CHANNEL",
+        "tierCode": "Review voice",
+        "tierLabel": "Sản xuất Video Kênh Brand",
+        "contentFormat": "Review voice / Video to live / Remix",
+        "qty": 15,
+        "unitCost": 0,
+        "benchmarkCost": 500000,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 3.5,
+        "targetGmv": 0,
+        "assignedStaff": "Lương Nguyễn Trang Nhung",
+        "notes": "Chỉ tiêu Kênh tự xây từ bảng 4.1 Plan order tổng"
+      }
+    ],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 0,
       "foc": 0,
       "cast": 0,
@@ -26028,7 +29089,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 53281461,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 15,
     "currentVersionCode": "v1.0",
@@ -26037,7 +29098,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tEtwy",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-CHULALATIKTOKE2EC",
@@ -26058,14 +29119,35 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 124545455,
     "totalTargetContents": 176,
     "targetGmv": 287660640,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tM73R) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
+      {
+        "id": "PO-2026-11-CHULALATIKTOKE2EC-411-FOC",
+        "channel": "TIKTOK",
+        "platform": "TAP & Gửi mẫu tự nhiên (FOC 0đ)",
+        "category": "KOC_TIER",
+        "tierCode": "TAP UpAffiliate",
+        "tierLabel": "Gửi mẫu miễn phí (0đ Cast)",
+        "salaryGrade": "TAP UpAffiliate",
+        "contentFormat": "Unboxing / Trải nghiệm mẫu thật",
+        "qty": 100,
+        "unitCost": 0,
+        "benchmarkCost": 0,
+        "totalBudget": 0,
+        "expectedRoiMultiplier": 0,
+        "targetGmv": 0,
+        "assignedStaff": "Trần Thị Hảo",
+        "notes": "Chỉ tiêu FOC từ bảng 4.1 Plan order tổng"
+      },
       {
         "id": "PO-2026-11-CHULALATIKTOKE2EC-411-SELF",
         "channel": "SELF_CHANNEL",
@@ -26094,12 +29176,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 3,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1000000
         },
         "live": {
           "sessions": 0,
@@ -26143,12 +29225,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 3,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 2000000
         },
         "live": {
           "sessions": 0,
@@ -26192,12 +29274,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 3,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 3000000
         },
         "live": {
           "sessions": 0,
@@ -26241,12 +29323,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 3,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 3000000
         },
         "live": {
           "sessions": 0,
@@ -26290,12 +29372,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 1,
           "videoAi": 0,
           "videoRemix": 0,
-          "videoToLive": 0,
+          "videoToLive": 3,
           "nhacText": 0,
-          "budgetNet": 0
+          "budgetNet": 1000000
         },
         "live": {
           "sessions": 0,
@@ -26334,7 +29416,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "staffWeeklySlices": [
       {
         "staffName": "Nguyễn Ngọc Huyền",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Content / Self-channel PIC",
         "rowCount": 5,
         "weeklyBreakdown": [
           {
@@ -26346,12 +29428,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 3,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1000000
             },
             "live": {
               "sessions": 0,
@@ -26395,12 +29477,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 3,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 2000000
             },
             "live": {
               "sessions": 0,
@@ -26444,12 +29526,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 3,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 3000000
             },
             "live": {
               "sessions": 0,
@@ -26493,12 +29575,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 3,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 3000000
             },
             "live": {
               "sessions": 0,
@@ -26542,12 +29624,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 0,
+              "videoToLive": 3,
               "nhacText": 0,
-              "budgetNet": 0
+              "budgetNet": 1000000
             },
             "live": {
               "sessions": 0,
@@ -26587,8 +29669,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 147,
       "foc": 100,
       "cast": 47,
@@ -26686,7 +29770,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 102727273,
     "budgetSelfChannel": 9090909,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 152217935,
     "targetAffiliateContents": 147,
     "targetSelfChannelContents": 25,
     "currentVersionCode": "v1.0",
@@ -26695,7 +29779,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tM73R",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-ROYALCANINTIKTOKE2ES",
@@ -26715,20 +29799,25 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 0,
     "targetGmv": 0,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tLzWI). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": false,
+      "growthLockLabel": "Chưa chốt",
       "videoAff": 0,
       "foc": 0,
       "cast": 0,
@@ -26824,7 +29913,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tLzWI",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "PO-2026-11-ORGALIFEMALLSHOPEEE2EC",
@@ -26844,13 +29933,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 19999574,
     "totalTargetContents": 101,
     "targetGmv": 32503779,
+    "deliveredContents": 0,
+    "spentBudget": 0,
+    "actualGmv": 0,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tH4PV) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-24T16:20:00.000Z",
+    "updatedAt": "2026-10-25T01:45:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-ORGALIFEMALLSHOPEEE2EC-411-SELF",
@@ -26880,7 +29972,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 2,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
@@ -26929,7 +30021,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
@@ -26978,7 +30070,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
@@ -27027,7 +30119,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           "tapUp": 0
         },
         "self": {
-          "reviewVoice": 0,
+          "reviewVoice": 3,
           "videoAi": 0,
           "videoRemix": 0,
           "videoToLive": 0,
@@ -27120,7 +30212,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "staffWeeklySlices": [
       {
         "staffName": "Phạm Huyền Thương",
-        "roleLabel": "Booking PIC",
+        "roleLabel": "Content / Self-channel PIC",
         "rowCount": 4,
         "weeklyBreakdown": [
           {
@@ -27132,7 +30224,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
@@ -27181,7 +30273,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
@@ -27230,7 +30322,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
@@ -27279,7 +30371,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 0,
+              "reviewVoice": 3,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
@@ -27373,8 +30465,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-24T16:20:00.000Z",
+      "importedAt": "2026-10-25T01:45:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
+      "isGrowthLocked": true,
+      "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 70,
       "foc": 0,
       "cast": 70,
@@ -27469,7 +30563,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 38576736,
     "targetAffiliateContents": 70,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -27478,7 +30572,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tH4PV",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-24T16:20:00.000Z"
+    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
   }
 ];
 
@@ -27505,7 +30599,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 94716000,
     "targetGmv": 1393137373,
     "totalTargetVideos": 0,
     "affiliatePaidVideos": 0,
@@ -27530,7 +30624,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCiglOyG). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCig8Cbt",
@@ -27554,7 +30648,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 59471508,
     "targetGmv": 309000001,
     "totalTargetVideos": 113,
     "affiliatePaidVideos": 0,
@@ -27579,7 +30673,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCig8Cbt) & Bảng 4.1.1 (6 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigGJKj",
@@ -27603,7 +30697,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 3564000,
     "budgetNet": 3000000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 421631990,
     "targetGmv": 423860276,
     "totalTargetVideos": 51,
     "affiliatePaidVideos": 15,
@@ -27628,7 +30722,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigGJKj) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigwbNQ",
@@ -27652,19 +30746,19 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 132165000,
     "budgetNet": 111250000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 512470580,
     "targetGmv": 1031343287,
     "totalTargetVideos": 75,
     "affiliatePaidVideos": 18,
     "affiliatePaidBudgetNet": 98250000,
     "kocTierBreakdown": {
-      "kl1": 0,
-      "kl2": 0,
-      "kl3": 0,
+      "kl1": 5,
+      "kl2": 5,
+      "kl3": 5,
       "kl4": 0,
       "kl5": 0,
-      "kl6": 0,
-      "kl7": 0
+      "kl6": 1,
+      "kl7": 2
     },
     "focFreeVideos": 0,
     "focPic": "Trần Thị Hảo",
@@ -27677,7 +30771,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigwbNQ) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCig8p3o",
@@ -27701,7 +30795,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 27000000,
     "budgetNet": 22727273,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 137160000,
     "targetGmv": 158657637,
     "totalTargetVideos": 45,
     "affiliatePaidVideos": 15,
@@ -27726,7 +30820,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCig8p3o). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigBxGA",
@@ -27751,7 +30845,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 159479996,
     "budgetNet": 134242421,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 927465000,
     "targetGmv": 2534553327,
     "totalTargetVideos": 199,
     "affiliatePaidVideos": 17,
@@ -27776,7 +30870,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigBxGA). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigYZ27",
@@ -27801,7 +30895,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 66052800,
     "budgetNet": 55600000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 674445962,
     "targetGmv": 2320941176,
     "totalTargetVideos": 305,
     "affiliatePaidVideos": 17,
@@ -27826,7 +30920,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigYZ27). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigPIQI",
@@ -27850,7 +30944,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 5400000,
     "budgetNet": 4545455,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 75600000,
     "targetGmv": 61000000,
     "totalTargetVideos": 70,
     "affiliatePaidVideos": 50,
@@ -27875,7 +30969,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigPIQI). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigeFUC",
@@ -27899,7 +30993,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 90288000,
     "budgetNet": 76000000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 248050000,
     "targetGmv": 1259665848,
     "totalTargetVideos": 70,
     "affiliatePaidVideos": 35,
@@ -27924,7 +31018,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigeFUC). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigHsCL",
@@ -27948,7 +31042,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 186840000,
     "budgetNet": 157272727,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 105566327,
     "targetGmv": 235551760,
     "totalTargetVideos": 73,
     "affiliatePaidVideos": 8,
@@ -27973,7 +31067,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigHsCL). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCiguMX1",
@@ -27997,7 +31091,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 8100000,
     "budgetNet": 6818182,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 287227970,
     "targetGmv": 909750000,
     "totalTargetVideos": 55,
     "affiliatePaidVideos": 55,
@@ -28022,7 +31116,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCiguMX1). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigxddU",
@@ -28047,19 +31141,19 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 457498800,
     "budgetNet": 385100000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 1508222219,
     "targetGmv": 4269999998,
     "totalTargetVideos": 294,
     "affiliatePaidVideos": 87,
     "affiliatePaidBudgetNet": 353200000,
     "kocTierBreakdown": {
-      "kl1": 0,
+      "kl1": 49,
       "kl2": 0,
-      "kl3": 0,
-      "kl4": 0,
-      "kl5": 0,
-      "kl6": 0,
-      "kl7": 0
+      "kl3": 7,
+      "kl4": 6,
+      "kl5": 15,
+      "kl6": 3,
+      "kl7": 5
     },
     "focFreeVideos": 150,
     "focPic": "Trần Thị Hảo",
@@ -28072,7 +31166,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigxddU) & Bảng 4.1.1 (30 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigtM7h",
@@ -28096,7 +31190,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 16200000,
     "budgetNet": 13636364,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 136972080,
     "targetGmv": 193005650,
     "totalTargetVideos": 83,
     "affiliatePaidVideos": 15,
@@ -28121,7 +31215,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigtM7h). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCig62B9",
@@ -28145,7 +31239,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 110473000,
     "targetGmv": 549999993,
     "totalTargetVideos": 132,
     "affiliatePaidVideos": 0,
@@ -28170,7 +31264,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCig62B9). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigR2F4",
@@ -28194,19 +31288,19 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 211464000,
     "budgetNet": 178000000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 556072762,
     "targetGmv": 1884000000,
-    "totalTargetVideos": 714,
-    "affiliatePaidVideos": 0,
+    "totalTargetVideos": 720,
+    "affiliatePaidVideos": 6,
     "affiliatePaidBudgetNet": 160000000,
     "kocTierBreakdown": {
       "kl1": 0,
-      "kl2": 0,
-      "kl3": 0,
+      "kl2": 1,
+      "kl3": 2,
       "kl4": 0,
       "kl5": 0,
-      "kl6": 0,
-      "kl7": 0
+      "kl6": 1,
+      "kl7": 2
     },
     "focFreeVideos": 656,
     "focPic": "Trần Thị Hảo",
@@ -28219,7 +31313,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigR2F4) & Bảng 4.1.1 (8 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigBGmC",
@@ -28243,7 +31337,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 22680008,
     "budgetNet": 19090916,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 36402371,
     "targetGmv": 51500000,
     "totalTargetVideos": 98,
     "affiliatePaidVideos": 25,
@@ -28268,7 +31362,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigBGmC). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigKOCB",
@@ -28292,7 +31386,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 96822000,
     "budgetNet": 81500000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 356730000,
     "targetGmv": 844200000,
     "totalTargetVideos": 266,
     "affiliatePaidVideos": 10,
@@ -28300,10 +31394,10 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
-      "kl3": 0,
-      "kl4": 0,
-      "kl5": 0,
-      "kl6": 0,
+      "kl3": 1,
+      "kl4": 4,
+      "kl5": 2,
+      "kl6": 3,
       "kl7": 0
     },
     "focFreeVideos": 244,
@@ -28317,7 +31411,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigKOCB) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigJhb4",
@@ -28341,7 +31435,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 111659984,
     "targetGmv": 642449990,
     "totalTargetVideos": 0,
     "affiliatePaidVideos": 0,
@@ -28366,7 +31460,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigJhb4). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigPBFh",
@@ -28390,7 +31484,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 21600000,
     "budgetNet": 18181818,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 576127318,
     "targetGmv": 231614053,
     "totalTargetVideos": 133,
     "affiliatePaidVideos": 75,
@@ -28415,7 +31509,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigPBFh) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigZHcW",
@@ -28439,18 +31533,18 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 80352000,
     "budgetNet": 67636364,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 524465321,
     "targetGmv": 681750893,
     "totalTargetVideos": 69,
     "affiliatePaidVideos": 12,
     "affiliatePaidBudgetNet": 59090909,
     "kocTierBreakdown": {
       "kl1": 0,
-      "kl2": 0,
-      "kl3": 0,
-      "kl4": 0,
+      "kl2": 4,
+      "kl3": 3,
+      "kl4": 2,
       "kl5": 0,
-      "kl6": 0,
+      "kl6": 3,
       "kl7": 0
     },
     "focFreeVideos": 0,
@@ -28464,7 +31558,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigZHcW) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigy6lN",
@@ -28488,7 +31582,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 32400000,
     "budgetNet": 27272727,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 133380000,
     "targetGmv": 267579000,
     "totalTargetVideos": 90,
     "affiliatePaidVideos": 60,
@@ -28513,7 +31607,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigy6lN). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigziNh",
@@ -28537,18 +31631,18 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 107136000,
     "budgetNet": 90181818,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 909993043,
     "targetGmv": 2014453700,
     "totalTargetVideos": 111,
     "affiliatePaidVideos": 51,
     "affiliatePaidBudgetNet": 71181818,
     "kocTierBreakdown": {
-      "kl1": 0,
-      "kl2": 0,
-      "kl3": 0,
-      "kl4": 0,
+      "kl1": 16,
+      "kl2": 23,
+      "kl3": 9,
+      "kl4": 2,
       "kl5": 0,
-      "kl6": 0,
+      "kl6": 1,
       "kl7": 0
     },
     "focFreeVideos": 0,
@@ -28562,7 +31656,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigziNh) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigt5bq",
@@ -28586,7 +31680,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 715621488,
     "targetGmv": 796636903,
     "totalTargetVideos": 60,
     "affiliatePaidVideos": 0,
@@ -28611,7 +31705,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigt5bq). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigVfV5",
@@ -28635,18 +31729,18 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 81378000,
     "budgetNet": 68500000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 232692309,
     "targetGmv": 1145720000,
     "totalTargetVideos": 155,
     "affiliatePaidVideos": 20,
     "affiliatePaidBudgetNet": 60000000,
     "kocTierBreakdown": {
-      "kl1": 0,
-      "kl2": 0,
-      "kl3": 0,
-      "kl4": 0,
-      "kl5": 0,
-      "kl6": 0,
+      "kl1": 5,
+      "kl2": 4,
+      "kl3": 5,
+      "kl4": 2,
+      "kl5": 3,
+      "kl6": 1,
       "kl7": 0
     },
     "focFreeVideos": 120,
@@ -28660,7 +31754,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigVfV5) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigEgRK",
@@ -28684,16 +31778,16 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 23868000,
     "budgetNet": 20090909,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 290400000,
     "targetGmv": 1180000000,
     "totalTargetVideos": 35,
     "affiliatePaidVideos": 5,
     "affiliatePaidBudgetNet": 9090909,
     "kocTierBreakdown": {
-      "kl1": 0,
+      "kl1": 2,
       "kl2": 0,
-      "kl3": 0,
-      "kl4": 0,
+      "kl3": 2,
+      "kl4": 1,
       "kl5": 0,
       "kl6": 0,
       "kl7": 0
@@ -28709,7 +31803,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigEgRK) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigeNvO",
@@ -28734,18 +31828,18 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 124470000,
     "budgetNet": 104772728,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 401567372,
     "targetGmv": 1159253334,
     "totalTargetVideos": 135,
     "affiliatePaidVideos": 30,
     "affiliatePaidBudgetNet": 92727273,
     "kocTierBreakdown": {
       "kl1": 0,
-      "kl2": 0,
-      "kl3": 0,
+      "kl2": 7,
+      "kl3": 20,
       "kl4": 0,
-      "kl5": 0,
-      "kl6": 0,
+      "kl5": 1,
+      "kl6": 2,
       "kl7": 0
     },
     "focFreeVideos": 30,
@@ -28759,7 +31853,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigeNvO) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigHdiS",
@@ -28783,7 +31877,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 5940000,
     "budgetNet": 5000000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 183600000,
     "targetGmv": 162500000,
     "totalTargetVideos": 35,
     "affiliatePaidVideos": 5,
@@ -28808,7 +31902,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigHdiS). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigF1VN",
@@ -28832,7 +31926,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 648000,
     "budgetNet": 545455,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 180659196,
     "targetGmv": 131016001,
     "totalTargetVideos": 220,
     "affiliatePaidVideos": 0,
@@ -28857,7 +31951,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigF1VN) & Bảng 4.1.1 (9 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoatFxX",
@@ -28881,7 +31975,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 115500005,
     "budgetNet": 97222227,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 181499996,
     "targetGmv": 646079998,
     "totalTargetVideos": 145,
     "affiliatePaidVideos": 9,
@@ -28906,7 +32000,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoatFxX). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaGP0h",
@@ -28930,7 +32024,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 72600000,
     "targetGmv": 459692299,
     "totalTargetVideos": 60,
     "affiliatePaidVideos": 0,
@@ -28955,7 +32049,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaGP0h). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoagI2v",
@@ -28979,7 +32073,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 6480000,
     "budgetNet": 5454545,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 351000000,
     "targetGmv": 432340400,
     "totalTargetVideos": 14,
     "affiliatePaidVideos": 8,
@@ -29004,7 +32098,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoagI2v). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoa1jP4",
@@ -29029,7 +32123,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 3402000,
     "budgetNet": 2863636,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 633845690,
     "targetGmv": 1755747126,
     "totalTargetVideos": 83,
     "affiliatePaidVideos": 15,
@@ -29054,7 +32148,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoa1jP4). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaQrmI",
@@ -29078,7 +32172,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 24804219,
     "targetGmv": 61222488,
     "totalTargetVideos": 20,
     "affiliatePaidVideos": 0,
@@ -29103,7 +32197,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaQrmI). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoa7y9P",
@@ -29127,7 +32221,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 279599998,
     "budgetNet": 235353533,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 356950002,
     "targetGmv": 1706000016,
     "totalTargetVideos": 450,
     "affiliatePaidVideos": 20,
@@ -29152,7 +32246,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoa7y9P). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaXgOR",
@@ -29176,18 +32270,18 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 55620000,
     "budgetNet": 46818181,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 259563454,
     "targetGmv": 543139998,
-    "totalTargetVideos": 262,
-    "affiliatePaidVideos": 0,
+    "totalTargetVideos": 269,
+    "affiliatePaidVideos": 7,
     "affiliatePaidBudgetNet": 36363636,
     "kocTierBreakdown": {
       "kl1": 0,
-      "kl2": 0,
-      "kl3": 0,
+      "kl2": 4,
+      "kl3": 1,
       "kl4": 0,
-      "kl5": 0,
-      "kl6": 0,
+      "kl5": 1,
+      "kl6": 1,
       "kl7": 0
     },
     "focFreeVideos": 232,
@@ -29201,7 +32295,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaXgOR) & Bảng 4.1.1 (8 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoayA8W",
@@ -29225,7 +32319,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 58877280,
     "budgetNet": 49560000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 187550001,
     "targetGmv": 578000000,
     "totalTargetVideos": 184,
     "affiliatePaidVideos": 1,
@@ -29237,7 +32331,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
       "kl4": 0,
       "kl5": 0,
       "kl6": 0,
-      "kl7": 0
+      "kl7": 1
     },
     "focFreeVideos": 150,
     "focPic": "Trần Thị Hảo",
@@ -29250,7 +32344,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoayA8W) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaOCq5",
@@ -29274,7 +32368,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 10800008,
     "targetGmv": 6800000,
     "totalTargetVideos": 1,
     "affiliatePaidVideos": 0,
@@ -29299,7 +32393,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaOCq5). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoagpq2",
@@ -29323,7 +32417,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 116158407,
     "targetGmv": 14000580,
     "totalTargetVideos": 2,
     "affiliatePaidVideos": 2,
@@ -29348,7 +32442,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoagpq2) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoasYQC",
@@ -29372,7 +32466,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 137231981,
     "targetGmv": 35636497,
     "totalTargetVideos": 35,
     "affiliatePaidVideos": 5,
@@ -29397,7 +32491,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoasYQC). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoak0R2",
@@ -29421,7 +32515,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 10800000,
     "budgetNet": 9090909,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 108800011,
     "targetGmv": 81000004,
     "totalTargetVideos": 34,
     "affiliatePaidVideos": 34,
@@ -29446,7 +32540,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoak0R2). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoach1j",
@@ -29470,7 +32564,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 417120002,
     "budgetNet": 351111112,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 337310097,
     "targetGmv": 1116716481,
     "totalTargetVideos": 303,
     "affiliatePaidVideos": 35,
@@ -29495,7 +32589,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoach1j) & Bảng 4.1.1 (8 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaBSpA",
@@ -29519,7 +32613,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 8100000,
     "budgetNet": 6818182,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 56160000,
     "targetGmv": 4002480,
     "totalTargetVideos": 70,
     "affiliatePaidVideos": 50,
@@ -29544,7 +32638,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaBSpA). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoa1PpG",
@@ -29568,7 +32662,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 249420600,
     "budgetNet": 209950000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 290400000,
     "targetGmv": 653400000,
     "totalTargetVideos": 166,
     "affiliatePaidVideos": 13,
@@ -29593,7 +32687,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoa1PpG). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaRHks",
@@ -29618,7 +32712,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 19440000,
     "budgetNet": 16363636,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 181500000,
     "targetGmv": 287414557,
     "totalTargetVideos": 221,
     "affiliatePaidVideos": 1,
@@ -29643,7 +32737,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaRHks). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaqhxl",
@@ -29667,7 +32761,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 85466124,
     "targetGmv": 21084692,
     "totalTargetVideos": 0,
     "affiliatePaidVideos": 0,
@@ -29692,7 +32786,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaqhxl). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoadDko",
@@ -29716,19 +32810,19 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 96346800,
     "budgetNet": 81100000,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 136184030,
     "targetGmv": 346510000,
     "totalTargetVideos": 100,
     "affiliatePaidVideos": 10,
     "affiliatePaidBudgetNet": 75000000,
     "kocTierBreakdown": {
       "kl1": 0,
-      "kl2": 0,
-      "kl3": 0,
-      "kl4": 0,
-      "kl5": 0,
-      "kl6": 0,
-      "kl7": 0
+      "kl2": 2,
+      "kl3": 2,
+      "kl4": 1,
+      "kl5": 2,
+      "kl6": 2,
+      "kl7": 1
     },
     "focFreeVideos": 60,
     "focPic": "Trần Thị Hảo",
@@ -29741,14 +32835,14 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoadDko) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoawZpF",
     "larkRecordId": "recvxESIoawZpF",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "planId": "PO-2026-11-PHCARETIKTOKE2ECH",
+    "planId": "PO-2026-11-PHCARETIKTOKE2EC",
     "month": "2026/11",
     "week": "Tháng 11/2026 (W45-W49)",
     "versionCode": "v1.0",
@@ -29765,7 +32859,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 394200000,
     "budgetNet": 331818182,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 481358975,
     "targetGmv": 2813975999,
     "totalTargetVideos": 472,
     "affiliatePaidVideos": 30,
@@ -29790,7 +32884,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoawZpF). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoajoTQ",
@@ -29814,7 +32908,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 21840000,
     "budgetNet": 18383838,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 237599998,
     "targetGmv": 141838700,
     "totalTargetVideos": 170,
     "affiliatePaidVideos": 0,
@@ -29839,7 +32933,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoajoTQ). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaTpp2",
@@ -29888,7 +32982,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaTpp2). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoayzJa",
@@ -29912,7 +33006,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 91655254,
     "targetGmv": 59000000,
     "totalTargetVideos": 0,
     "affiliatePaidVideos": 0,
@@ -29937,7 +33031,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoayzJa). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaHhIe",
@@ -29961,7 +33055,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 116424005,
     "budgetNet": 98000004,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 354076721,
     "targetGmv": 790243906,
     "totalTargetVideos": 46,
     "affiliatePaidVideos": 8,
@@ -29986,7 +33080,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaHhIe). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tc9sg",
@@ -30010,7 +33104,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 16200000,
     "budgetNet": 13636364,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 89100000,
     "targetGmv": 60000000,
     "totalTargetVideos": 97,
     "affiliatePaidVideos": 75,
@@ -30035,7 +33129,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tc9sg). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tTkaF",
@@ -30059,7 +33153,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 27000000,
     "budgetNet": 22727273,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 94446609,
     "targetGmv": 37944918,
     "totalTargetVideos": 55,
     "affiliatePaidVideos": 5,
@@ -30084,7 +33178,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tTkaF). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0t95DR",
@@ -30108,19 +33202,19 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 154391400,
     "budgetNet": 129959091,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 427116345,
     "targetGmv": 721280000,
     "totalTargetVideos": 273,
     "affiliatePaidVideos": 30,
     "affiliatePaidBudgetNet": 120000000,
     "kocTierBreakdown": {
-      "kl1": 0,
-      "kl2": 0,
-      "kl3": 0,
-      "kl4": 0,
-      "kl5": 0,
-      "kl6": 0,
-      "kl7": 0
+      "kl1": 2,
+      "kl2": 8,
+      "kl3": 8,
+      "kl4": 5,
+      "kl5": 3,
+      "kl6": 2,
+      "kl7": 1
     },
     "focFreeVideos": 200,
     "focPic": "Trần Thị Hảo",
@@ -30133,7 +33227,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0t95DR) & Bảng 4.1.1 (14 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tWp0I",
@@ -30157,7 +33251,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 10800000,
     "budgetNet": 9090909,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 30092029,
     "targetGmv": 3836797,
     "totalTargetVideos": 50,
     "affiliatePaidVideos": 0,
@@ -30182,7 +33276,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tWp0I). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tNPio",
@@ -30206,7 +33300,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 10800000,
     "budgetNet": 9090909,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 31362885,
     "targetGmv": 36135000,
     "totalTargetVideos": 33,
     "affiliatePaidVideos": 33,
@@ -30231,7 +33325,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tNPio). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tJtDS",
@@ -30255,7 +33349,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 5400000,
     "budgetNet": 4545455,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 38486950,
     "targetGmv": 35881065,
     "totalTargetVideos": 57,
     "affiliatePaidVideos": 0,
@@ -30280,7 +33374,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tJtDS) & Bảng 4.1.1 (3 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tCqJF",
@@ -30304,18 +33398,18 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 118152000,
     "budgetNet": 99454545,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 134822201,
     "targetGmv": 335780866,
     "totalTargetVideos": 674,
     "affiliatePaidVideos": 12,
     "affiliatePaidBudgetNet": 84000000,
     "kocTierBreakdown": {
       "kl1": 0,
-      "kl2": 0,
-      "kl3": 0,
-      "kl4": 0,
+      "kl2": 1,
+      "kl3": 4,
+      "kl4": 2,
       "kl5": 0,
-      "kl6": 0,
+      "kl6": 5,
       "kl7": 0
     },
     "focFreeVideos": 638,
@@ -30329,7 +33423,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tCqJF) & Bảng 4.1.1 (7 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tZscI",
@@ -30353,7 +33447,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 40500000,
     "targetGmv": 11000000,
     "totalTargetVideos": 8,
     "affiliatePaidVideos": 0,
@@ -30378,7 +33472,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tZscI). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tU1wI",
@@ -30402,19 +33496,19 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 95400002,
     "budgetNet": 80303032,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 99095380,
     "targetGmv": 279334999,
     "totalTargetVideos": 48,
     "affiliatePaidVideos": 17,
     "affiliatePaidBudgetNet": 56060606,
     "kocTierBreakdown": {
-      "kl1": 0,
-      "kl2": 0,
+      "kl1": 10,
+      "kl2": 5,
       "kl3": 0,
       "kl4": 0,
       "kl5": 0,
-      "kl6": 0,
-      "kl7": 0
+      "kl6": 1,
+      "kl7": 1
     },
     "focFreeVideos": 0,
     "focPic": "Trần Thị Hảo",
@@ -30427,7 +33521,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tU1wI) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tGOM4",
@@ -30452,7 +33546,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 567000000,
     "targetGmv": 463822419,
     "totalTargetVideos": 50,
     "affiliatePaidVideos": 50,
@@ -30477,7 +33571,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tGOM4). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0taLAF",
@@ -30502,7 +33596,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 57240000,
     "budgetNet": 48181819,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 178836721,
     "targetGmv": 628700000,
     "totalTargetVideos": 156,
     "affiliatePaidVideos": 11,
@@ -30527,7 +33621,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0taLAF) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tEtwy",
@@ -30551,7 +33645,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 53281461,
     "targetGmv": 6599988,
     "totalTargetVideos": 15,
     "affiliatePaidVideos": 0,
@@ -30576,7 +33670,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tEtwy). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tM73R",
@@ -30600,7 +33694,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 147960000,
     "budgetNet": 124545455,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 152217935,
     "targetGmv": 287660640,
     "totalTargetVideos": 176,
     "affiliatePaidVideos": 47,
@@ -30625,7 +33719,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tM73R) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tLzWI",
@@ -30674,7 +33768,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tLzWI). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tH4PV",
@@ -30698,7 +33792,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-24T09:00:00.000Z",
     "budgetGross": 23759494,
     "budgetNet": 19999574,
-    "budgetAdsTotal": 0,
+    "budgetAdsTotal": 38576736,
     "targetGmv": 32503779,
     "totalTargetVideos": 101,
     "affiliatePaidVideos": 70,
@@ -30723,6 +33817,6 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tH4PV) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-24T16:20:00.000Z"
+    "syncedAt": "2026-10-25T01:45:00.000Z"
   }
 ];

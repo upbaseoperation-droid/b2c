@@ -39,6 +39,7 @@ import {
   validateBreakdown,
   type WeeklyDistributionMode,
 } from '../../lib/planBreakdownRules';
+import { PullHangingJobsModal } from './PullHangingJobsModal';
 
 interface PlanWeeklyBreakdownProps {
   plan: InputPlanBreakdownState;
@@ -239,6 +240,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
   const [grossMode, setGrossMode] = useState(false);
   const [activeTab, setActiveTab] = useState<WorkstreamTab>('ALL');
   const [selectedStaffSlice, setSelectedStaffSlice] = useState<string>('ALL_STORE');
+  const [pullModalOpen, setPullModalOpen] = useState(false);
   const refs = useRef(new Map<string, HTMLInputElement>());
   const detailAnchorRef = useRef<HTMLDivElement>(null);
 
@@ -837,6 +839,13 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               </div>
             )}
 
+            <button
+              type="button"
+              onClick={() => setPullModalOpen(true)}
+              className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-2xs font-semibold text-amber-900 hover:bg-amber-100 transition cursor-pointer"
+            >
+              Kéo Job còn treo từ tháng cũ
+            </button>
             {!effectiveReadOnly && hasRef && (
               <button
                 type="button"
@@ -1837,6 +1846,13 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
           />
         </div>
       )}
+
+      <PullHangingJobsModal
+        open={pullModalOpen}
+        onClose={() => setPullModalOpen(false)}
+        plan={plan}
+        onNotify={msg => onNotify?.(msg)}
+      />
     </div>
   );
 };

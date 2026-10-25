@@ -3,8 +3,10 @@ import { requestActor } from '@/lib/server/requestActor';
 import { readMasterCatalog } from '@/lib/server/masterCatalogStore';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
 import { filterScopedBrands } from '@/lib/rbacScope';
-import { brandKey } from '@/lib/brands/types';
-import { EMPTY_PRODUCT_CATALOG, sanitizeProductCatalog, type BrandProductCatalog } from '@/lib/productCatalog';
+import { brandKey, type BrandProfile } from '@/lib/brands/types';
+import { listProfiles } from '@/lib/brands/store';
+import { INITIAL_PUSH_PRODUCTS } from '@/lib/mockData';
+import { EMPTY_PRODUCT_CATALOG, mergeBrandSourcesIntoCatalog, sanitizeProductCatalog, type BrandProductCatalog } from '@/lib/productCatalog';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -28,14 +30,29 @@ async function assertBrandAccess(req: NextRequest, brand: string) {
   return user;
 }
 
-// GET /api/product-catalog?brand=... — danh mục sản phẩm của một Brand
+// GET /api/product-catalog?brand=... — danh mục sản phẩm của một Brand (tự động đồng bộ từ Hồ sơ Brand & Sản phẩm đẩy)
 export async function GET(req: NextRequest) {
   try {
     const brand = (req.nextUrl.searchParams.get('brand') || '').trim();
     if (!brand) throw new RecordError('Thiếu tên Brand.', 400);
     await assertBrandAccess(req, brand);
     const rec = await readRecord<BrandProductCatalog>(keyOf(brand), EMPTY_PRODUCT_CATALOG);
-    return NextResponse.json({ data: sanitizeProductCatalog(rec.data), revision: rec.revision }, { headers });
+    const sanitized = sanitizeProductCatalog(rec.data);
+    let profileProducts: BrandProfile['products'] = [];
+    let bannedPhrases: string[] = [];
+    try {
+      const allProfiles = await listProfiles();
+      const targetKey = brandKey(brand);
+      const profile = allProfiles.find(p => p.key === targetKey || brandKey(p.brandName) === targetKey);
+      if (profile) {
+        profileProducts = profile.products || [];
+        bannedPhrases = (profile.contentRules?.banned || []).map(b => b.phrase).filter(Boolean);
+      }
+    } catch {
+      // Nếu Brand chưa có trong store thì vẫn làm giàu từ INITIAL_PUSH_PRODUCTS
+    }
+    const enriched = mergeBrandSourcesIntoCatalog(sanitized, brand, profileProducts, bannedPhrases, INITIAL_PUSH_PRODUCTS);
+    return NextResponse.json({ data: enriched, revision: rec.revision }, { headers });
   } catch (e) {
     return fail(e);
   }

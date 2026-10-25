@@ -145,6 +145,21 @@ export function detectSubjectKind(koc?: KocItem, deal?: BookingDealItem): Subjec
     (koc?.niche && /CTV/i.test(koc.niche));
   if (isCtv) return 'CTV';
 
+  // 2. Ưu tiên pháp nhân đã chọn riêng trên Deal / Job (1 KOC - N Hồ sơ pháp lý)
+  const snapType = deal?.legalProfileSnapshot?.legalType;
+  if (snapType === 'COMPANY') return 'COM';
+  if (snapType === 'HOUSEHOLD') return 'HKD';
+  if (snapType === 'INDIVIDUAL') return 'IND';
+
+  if (deal?.legalProfileId && koc?.legalProfiles?.length) {
+    const matchedProfile = koc.legalProfiles.find(lp => lp.id === deal.legalProfileId);
+    if (matchedProfile?.legalType === 'COMPANY') return 'COM';
+    if (matchedProfile?.legalType === 'HOUSEHOLD') return 'HKD';
+    if (matchedProfile?.legalType === 'INDIVIDUAL') return 'IND';
+  }
+
+  if (deal?.vatRatePercent && deal.vatRatePercent > 0) return 'COM';
+
   if (!koc) return 'IND';
   if (extendedKoc?.legalType === 'COMPANY' || koc.ocrDocumentType === 'BUSINESS_LICENSE') return 'COM';
   if (extendedKoc?.legalType === 'HOUSEHOLD' || koc.ocrDocumentType === 'BUSINESS_HOUSEHOLD') return 'HKD';

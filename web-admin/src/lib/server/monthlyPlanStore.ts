@@ -16,6 +16,7 @@ import type {
 } from '../types';
 import { brandPlanSectionsOf, FULL_BRAND_PLAN_ACCESS, type BrandPlanAccess } from '../brandPlanAccess';
 import { INITIAL_MONTHLY_PLANS } from '../monthlyPlanData';
+import { REAL_MONTHLY_PLANS_OCT_2026 } from '../realLarkPlans202610';
 import { REAL_MONTHLY_PLANS_NOV_2026 } from '../realLarkPlans202611';
 import { checkBreakdownForSubmit } from '../planBreakdownRules';
 import type { PlanChatMessage, UserMessageType } from '../planChat';
@@ -156,22 +157,36 @@ function sameValue(a: unknown, b: unknown) {
   return stableStringify(a) === stableStringify(b);
 }
 
-export async function assertPlanAccess(plan: InputPlanBreakdownState, actor: UserProfile, action: 'read' | 'write' | 'approve' = 'read') {
-  const { data } = await readMasterCatalog();
-  if (!isPlanManagedByUser(plan, actor, data.stores) || !await actionAllowed(actor, 'plan_target_month', action)) throw new PlanStoreError('FORBIDDEN', 'Không có quyền với kế hoạch này.');
-  // A client cannot grant itself another brand by putting its own name into plan.pic.
+function checkPlanAccessWithCatalog(
+  plan: InputPlanBreakdownState,
+  actor: UserProfile,
+  action: 'read' | 'write' | 'approve',
+  catalog: { stores: StorePortfolioItem[]; brands: { name: string }[] },
+  allowed: boolean
+) {
+  if (!isPlanManagedByUser(plan, actor, catalog.stores) || !allowed) {
+    throw new PlanStoreError('FORBIDDEN', 'Không có quyền với kế hoạch này.');
+  }
   if (action !== 'read' && !isStaffGlobalAdminOrManager(actor)) {
     const targetStore = plan.storeId || plan.storeName;
     if (targetStore) {
-      const store = data.stores.find(s => s.id === plan.storeId || s.storeName === plan.storeName);
+      const store = catalog.stores.find(s => s.id === plan.storeId || s.storeName === plan.storeName);
       if (!store || !isStoreManagedByUser(store, actor)) throw new PlanStoreError('FORBIDDEN', 'Gian hàng không thuộc phạm vi được giao.');
     }
     const targetBrand = plan.brandName || plan.parentBrand;
     if (targetBrand) {
-      const brand = data.brands.find(b => brandKey(b.name) === brandKey(targetBrand));
-      if (!brand || !isBrandManagedByUser(brand, actor, data.stores)) throw new PlanStoreError('FORBIDDEN', 'Thương hiệu không thuộc phạm vi được giao.');
+      const brand = catalog.brands.find(b => brandKey(b.name) === brandKey(targetBrand));
+      if (!brand || !isBrandManagedByUser(brand as never, actor, catalog.stores)) throw new PlanStoreError('FORBIDDEN', 'Thương hiệu không thuộc phạm vi được giao.');
     }
   }
+}
+
+export async function assertPlanAccess(plan: InputPlanBreakdownState, actor: UserProfile, action: 'read' | 'write' | 'approve' = 'read') {
+  const [{ data }, allowed] = await Promise.all([
+    readMasterCatalog(),
+    actionAllowed(actor, 'plan_target_month', action),
+  ]);
+  checkPlanAccessWithCatalog(plan, actor, action, data, allowed);
 }
 export async function assertPlanIdAccess(id: string, actor: UserProfile, action: 'read' | 'write' = 'read') {
   const row = await prisma.monthlyPlan.findUnique({ where: { id }, include: planInclude });
@@ -184,39 +199,51 @@ export async function assertPlanIdAccess(id: string, actor: UserProfile, action:
  * Quyền với Plan tháng của Brand của một kế hoạch: PIC gian / quản lý sửa cả plan;
  * người chỉ giữ vị trí Plan / Strategy hoặc Key Visual / SIS của gian sửa đúng phần đó; còn lại chỉ xem nếu có quyền xem.
  */
-async function brandPlanAccessFor(plan: InputPlanBreakdownState, actor: UserProfile, stores: StorePortfolioItem[]): Promise<BrandPlanAccess> {
+function brandPlanAccessSync(
+  plan: InputPlanBreakdownState,
+  actor: UserProfile,
+  catalog: { stores: StorePortfolioItem[]; brands: { name: string }[] },
+  canWrite: boolean,
+  canRead: boolean
+): BrandPlanAccess {
   try {
-    await assertPlanAccess(plan, actor, 'write');
+    checkPlanAccessWithCatalog(plan, actor, 'write', catalog, canWrite);
     return FULL_BRAND_PLAN_ACCESS;
   } catch (err) {
     if (!(err instanceof PlanStoreError) || err.code !== 'FORBIDDEN') throw err;
   }
-  const store = stores.find(s => (plan.storeId && s.id === plan.storeId) || (plan.storeName && s.storeName === plan.storeName));
+  const store = catalog.stores.find(s => (plan.storeId && s.id === plan.storeId) || (plan.storeName && s.storeName === plan.storeName));
   const sections = brandPlanSectionsOf(store, actor.name);
   if (sections.length > 0) return { full: false, sections };
-  await assertPlanAccess(plan, actor, 'read');
+  checkPlanAccessWithCatalog(plan, actor, 'read', catalog, canRead);
   return { full: false, sections: [] };
 }
 
 export async function resolveBrandPlanAccess(id: string, actor: UserProfile): Promise<{ plan: InputPlanBreakdownState; access: BrandPlanAccess }> {
-  const row = await prisma.monthlyPlan.findUnique({ where: { id }, include: planInclude });
+  const [row, { data }, canWrite, canRead] = await Promise.all([
+    prisma.monthlyPlan.findUnique({ where: { id }, include: planInclude }),
+    readMasterCatalog(),
+    actionAllowed(actor, 'plan_target_month', 'write'),
+    actionAllowed(actor, 'plan_target_month', 'read'),
+  ]);
   if (!row || row.deletedAt) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
   const plan = toStored(row).plan;
-  const { data } = await readMasterCatalog();
-  return { plan, access: await brandPlanAccessFor(plan, actor, data.stores) };
+  return { plan, access: brandPlanAccessSync(plan, actor, data, canWrite, canRead) };
 }
 
 /** Kế hoạch mở được ở màn Plan tháng của Brand: kế hoạch trong phạm vi + kế hoạch của gian mình giữ vị trí Plan / Strategy, Key Visual / SIS. */
 export async function listBrandPlanPlans(actor: UserProfile): Promise<{ plan: InputPlanBreakdownState; access: BrandPlanAccess }[]> {
-  const [rows, { data }] = await Promise.all([
+  const [rows, { data }, canWrite, canRead] = await Promise.all([
     prisma.monthlyPlan.findMany({ where: { deletedAt: null }, include: planInclude, orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }] }),
     readMasterCatalog(),
+    actionAllowed(actor, 'plan_target_month', 'write'),
+    actionAllowed(actor, 'plan_target_month', 'read'),
   ]);
   const out: { plan: InputPlanBreakdownState; access: BrandPlanAccess }[] = [];
   for (const row of rows) {
     const plan = toStored(row).plan;
     try {
-      out.push({ plan, access: await brandPlanAccessFor(plan, actor, data.stores) });
+      out.push({ plan, access: brandPlanAccessSync(plan, actor, data, canWrite, canRead) });
     } catch (err) {
       if (!(err instanceof PlanStoreError) || err.code !== 'FORBIDDEN') throw err;
     }
@@ -247,8 +274,13 @@ export async function listMonthlyPlans(actor: UserProfile): Promise<StoredMonthl
         orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
       });
     }
-  } else if (rows.filter(r => r.month === '2026/11').length !== REAL_MONTHLY_PLANS_NOV_2026.length || !rows.some(r => r.id === 'PO-2026-11-CLUBCLIOTIKTOKE2EO')) {
-    await syncRealNov2026LarkPlans();
+  } else if (
+    rows.filter(r => r.month === '2026/10').length !== REAL_MONTHLY_PLANS_OCT_2026.length ||
+    rows.filter(r => r.month === '2026/11').length !== REAL_MONTHLY_PLANS_NOV_2026.length ||
+    !rows.some(r => r.id === REAL_MONTHLY_PLANS_OCT_2026[0]?.id) ||
+    !rows.some(r => r.id === REAL_MONTHLY_PLANS_NOV_2026[0]?.id)
+  ) {
+    await syncRealLarkPlans();
     rows = await prisma.monthlyPlan.findMany({
       where: { deletedAt: null },
       include: planInclude,
@@ -258,14 +290,15 @@ export async function listMonthlyPlans(actor: UserProfile): Promise<StoredMonthl
   return rows.map(toStored).filter(row => isPlanManagedByUser(row.plan, actor, data.stores));
 }
 
-async function syncRealNov2026LarkPlans() {
+async function syncRealLarkPlans() {
   try {
-    const validIds = REAL_MONTHLY_PLANS_NOV_2026.map(p => p.id);
+    const allRealPlans = [...REAL_MONTHLY_PLANS_OCT_2026, ...REAL_MONTHLY_PLANS_NOV_2026];
+    const validIds = allRealPlans.map(p => p.id);
     await prisma.monthlyPlan.updateMany({
-      where: { month: '2026/11', deletedAt: null, id: { notIn: validIds } },
-      data: { deletedAt: new Date() }
+      where: { month: { in: ['2026/10', '2026/11'] }, id: { notIn: validIds } },
+      data: { deletedAt: new Date(), larkRecordId: null }
     });
-    for (const plan of REAL_MONTHLY_PLANS_NOV_2026) {
+    for (const plan of allRealPlans) {
       const { working } = splitPlan(plan);
       await prisma.monthlyPlan.upsert({
         where: { id: plan.id },

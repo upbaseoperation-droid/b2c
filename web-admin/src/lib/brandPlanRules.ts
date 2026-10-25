@@ -2,9 +2,9 @@ import type { InputPlanBreakdownState, PlanTierKey, PlanWeekRow } from './types'
 import { SELF_TYPES, TIER_KEYS, resolveWeekRows, weekLabelsForMonth } from './planBreakdownRules';
 
 /**
- * Plan thÃ¡ng cá»§a Brand (file "Monthly Content & Key Visual Plan"):
- * 01 Äá»‹nh hÆ°á»›ng Â· 02 KPI Â· 03 Key Visual Â· 04 TikTok Shop Â· 05 Shopee Â· Pillar.
- * Báº£ng sá»‘ lÆ°á»£ng / ngÃ¢n sÃ¡ch theo tuáº§n khÃ´ng nháº­p tay mÃ  cá»™ng tá»« cÃ¡c dÃ²ng Chi tiáº¿t Content.
+ * Plan tháng của Brand (file "Monthly Content & Key Visual Plan"):
+ * 01 Định hướng · 02 KPI · 03 Key Visual · 04 TikTok Shop · 05 Shopee · Pillar.
+ * Bảng số lượng / ngân sách theo tuần không nhập tay mà cộng từ các dòng Chi tiết Content.
  */
 
 export type PlanChannel = 'TIKTOK' | 'SHOPEE';
@@ -22,20 +22,20 @@ export const SOURCES = Object.keys(SOURCE_LABEL) as ContentSource[];
 export const KL_OPTIONS = ['TAP', ...TIER_KEYS] as const;
 
 export const DIRECTION_FIELDS: { key: string; label: string }[] = [
-  { key: 'role', label: 'Vai trÃ² trong plan nÄƒm' },
-  { key: 'goal', label: 'Má»¥c tiÃªu & rÃ o cáº£n cáº§n xá»­ lÃ½' },
+  { key: 'role', label: 'Vai trò trong plan năm' },
+  { key: 'goal', label: 'Mục tiêu & rào cản cần xử lý' },
   { key: 'heroSku', label: 'Hero SKU / USP / RTB' },
   { key: 'seasonal', label: 'Seasonal opportunity' },
   { key: 'bigIdea', label: 'Big idea / monthly theme' },
-  { key: 'review', label: 'Review / bÃ i há»c thÃ¡ng trÆ°á»›c' },
-  { key: 'audience', label: 'Tá»‡p khÃ¡ch hÃ ng & insight' },
-  { key: 'offer', label: 'Combo / deal / quÃ  táº·ng' },
-  { key: 'campaign', label: 'Campaign / má»‘c sale' },
+  { key: 'review', label: 'Review / bài học tháng trước' },
+  { key: 'audience', label: 'Tệp khách hàng & insight' },
+  { key: 'offer', label: 'Combo / deal / quà tặng' },
+  { key: 'campaign', label: 'Campaign / mốc sale' },
   { key: 'keyMessage', label: 'Key message' },
 ];
 
 export const KEY_VISUAL_FIELDS: { key: string; label: string; long?: boolean }[] = [
-  { key: 'theme', label: 'Chá»§ Ä‘á»' },
+  { key: 'theme', label: 'Chủ đề' },
   { key: 'font', label: 'Font' },
   { key: 'moodboard', label: 'Moodboard', long: true },
   { key: 'proposalLink', label: 'Link proposal' },
@@ -85,35 +85,35 @@ export interface KpiRowDef {
   group: string;
   label: string;
   unit: KpiUnit;
-  /** input: nháº­p tay Â· derived: tÃ­nh tá»« cÃ¡c dÃ²ng khÃ¡c */
+  /** input: nhập tay · derived: tính từ các dòng khác */
   kind: 'input' | 'derived';
 }
 
 export const KPI_ROWS: KpiRowDef[] = [
-  { key: 'gmv', group: 'Chá»‰ sá»‘ chÃ­nh', label: 'GMV nhÃ  bÃ¡n', unit: 'vnd', kind: 'input' },
-  { key: 'nmv', group: 'Chá»‰ sá»‘ chÃ­nh', label: 'NMV nhÃ  bÃ¡n', unit: 'vnd', kind: 'input' },
-  { key: 'orders', group: 'Chá»‰ sá»‘ chÃ­nh', label: 'ÄÆ¡n hÃ ng', unit: 'int', kind: 'input' },
-  { key: 'traffic', group: 'Chá»‰ sá»‘ chÃ­nh', label: 'LÆ°á»£t truy cáº­p', unit: 'int', kind: 'input' },
-  { key: 'cr', group: 'Chá»‰ sá»‘ chÃ­nh', label: 'Tá»· lá»‡ chuyá»ƒn Ä‘á»•i (CR)', unit: 'pct', kind: 'derived' },
-  { key: 'aov', group: 'Chá»‰ sá»‘ chÃ­nh', label: 'GiÃ¡ trung bÃ¬nh/Ä‘Æ¡n hÃ ng (AOV)', unit: 'vnd', kind: 'derived' },
-  { key: 'cancelRate', group: 'Chá»‰ sá»‘ chÃ­nh', label: 'Tá»· lá»‡ há»§y', unit: 'pct', kind: 'input' },
-  { key: 'promoCost', group: 'Chá»‰ sá»‘ chÃ­nh', label: 'Tá»•ng chi phÃ­ thÃºc Ä‘áº©y (-VAT)', unit: 'vnd', kind: 'derived' },
-  { key: 'promoPct', group: 'Chá»‰ sá»‘ chÃ­nh', label: '% Chi phÃ­ thÃºc Ä‘áº©y / NMV', unit: 'pct', kind: 'derived' },
-  { key: 'gmvActivities', group: 'Doanh thu cÃ¡c hoáº¡t Ä‘á»™ng', label: 'GMV tá»« cÃ¡c hoáº¡t Ä‘á»™ng', unit: 'vnd', kind: 'derived' },
-  { key: 'gmvVideo', group: 'Doanh thu cÃ¡c hoáº¡t Ä‘á»™ng', label: 'GMV video', unit: 'vnd', kind: 'input' },
-  { key: 'gmvLive', group: 'Doanh thu cÃ¡c hoáº¡t Ä‘á»™ng', label: 'GMV Livestream', unit: 'vnd', kind: 'input' },
-  { key: 'gmvCard', group: 'Doanh thu cÃ¡c hoáº¡t Ä‘á»™ng', label: 'GMV Tháº» sáº£n pháº©m', unit: 'vnd', kind: 'input' },
-  { key: 'mktTotal', group: 'Chi phÃ­ Marketing thÃºc Ä‘áº©y', label: 'Tá»•ng chi phÃ­ Marketing (-VAT)', unit: 'vnd', kind: 'derived' },
-  { key: 'costBookingVideo', group: 'Chi phÃ­ Marketing thÃºc Ä‘áº©y', label: 'Chi phÃ­ booking video affiliate', unit: 'vnd', kind: 'input' },
-  { key: 'costSelfVideo', group: 'Chi phÃ­ Marketing thÃºc Ä‘áº©y', label: 'Chi phÃ­ video self channel', unit: 'vnd', kind: 'input' },
-  { key: 'costAds', group: 'Chi phÃ­ Marketing thÃºc Ä‘áº©y', label: 'Chi phÃ­ ads', unit: 'vnd', kind: 'input' },
-  { key: 'costBookingLive', group: 'Chi phÃ­ Marketing thÃºc Ä‘áº©y', label: 'Chi phÃ­ booking livestream affiliate', unit: 'vnd', kind: 'input' },
-  { key: 'costSelfLive', group: 'Chi phÃ­ Marketing thÃºc Ä‘áº©y', label: 'Chi phÃ­ livestream self channel', unit: 'vnd', kind: 'input' },
-  { key: 'costDisplay', group: 'Chi phÃ­ Marketing thÃºc Ä‘áº©y', label: 'Chi phÃ­ gÃ³i dá»‹ch vá»¥ hiá»ƒn thá»‹', unit: 'vnd', kind: 'input' },
-  { key: 'costOther', group: 'Chi phÃ­ Marketing thÃºc Ä‘áº©y', label: 'Chi phÃ­ khÃ¡c (net)', unit: 'vnd', kind: 'input' },
-  { key: 'otherTotal', group: 'Chi phÃ­ khÃ¡c (ghi nháº­n chung vá»›i phÃ­ sÃ n)', label: 'Tá»•ng chi phÃ­ khÃ¡c', unit: 'vnd', kind: 'derived' },
-  { key: 'affFee', group: 'Chi phÃ­ khÃ¡c (ghi nháº­n chung vá»›i phÃ­ sÃ n)', label: 'Chi phÃ­ tiáº¿p thá»‹ liÃªn káº¿t', unit: 'vnd', kind: 'input' },
-  { key: 'affFeeAds', group: 'Chi phÃ­ khÃ¡c (ghi nháº­n chung vá»›i phÃ­ sÃ n)', label: 'Chi phÃ­ tiáº¿p thá»‹ liÃªn káº¿t (cÃ³ cháº¡y ads)', unit: 'vnd', kind: 'input' },
+  { key: 'gmv', group: 'Chỉ số chính', label: 'GMV nhà bán', unit: 'vnd', kind: 'input' },
+  { key: 'nmv', group: 'Chỉ số chính', label: 'NMV nhà bán', unit: 'vnd', kind: 'input' },
+  { key: 'orders', group: 'Chỉ số chính', label: 'Đơn hàng', unit: 'int', kind: 'input' },
+  { key: 'traffic', group: 'Chỉ số chính', label: 'Lượt truy cập', unit: 'int', kind: 'input' },
+  { key: 'cr', group: 'Chỉ số chính', label: 'Tỷ lệ chuyển đổi (CR)', unit: 'pct', kind: 'derived' },
+  { key: 'aov', group: 'Chỉ số chính', label: 'Giá trung bình/đơn hàng (AOV)', unit: 'vnd', kind: 'derived' },
+  { key: 'cancelRate', group: 'Chỉ số chính', label: 'Tỷ lệ hủy', unit: 'pct', kind: 'input' },
+  { key: 'promoCost', group: 'Chỉ số chính', label: 'Tổng chi phí thúc đẩy (-VAT)', unit: 'vnd', kind: 'derived' },
+  { key: 'promoPct', group: 'Chỉ số chính', label: '% Chi phí thúc đẩy / NMV', unit: 'pct', kind: 'derived' },
+  { key: 'gmvActivities', group: 'Doanh thu các hoạt động', label: 'GMV từ các hoạt động', unit: 'vnd', kind: 'derived' },
+  { key: 'gmvVideo', group: 'Doanh thu các hoạt động', label: 'GMV video', unit: 'vnd', kind: 'input' },
+  { key: 'gmvLive', group: 'Doanh thu các hoạt động', label: 'GMV Livestream', unit: 'vnd', kind: 'input' },
+  { key: 'gmvCard', group: 'Doanh thu các hoạt động', label: 'GMV Thẻ sản phẩm', unit: 'vnd', kind: 'input' },
+  { key: 'mktTotal', group: 'Chi phí Marketing thúc đẩy', label: 'Tổng chi phí Marketing (-VAT)', unit: 'vnd', kind: 'derived' },
+  { key: 'costBookingVideo', group: 'Chi phí Marketing thúc đẩy', label: 'Chi phí booking video affiliate', unit: 'vnd', kind: 'input' },
+  { key: 'costSelfVideo', group: 'Chi phí Marketing thúc đẩy', label: 'Chi phí video self channel', unit: 'vnd', kind: 'input' },
+  { key: 'costAds', group: 'Chi phí Marketing thúc đẩy', label: 'Chi phí ads', unit: 'vnd', kind: 'input' },
+  { key: 'costBookingLive', group: 'Chi phí Marketing thúc đẩy', label: 'Chi phí booking livestream affiliate', unit: 'vnd', kind: 'input' },
+  { key: 'costSelfLive', group: 'Chi phí Marketing thúc đẩy', label: 'Chi phí livestream self channel', unit: 'vnd', kind: 'input' },
+  { key: 'costDisplay', group: 'Chi phí Marketing thúc đẩy', label: 'Chi phí gói dịch vụ hiển thị', unit: 'vnd', kind: 'input' },
+  { key: 'costOther', group: 'Chi phí Marketing thúc đẩy', label: 'Chi phí khác (net)', unit: 'vnd', kind: 'input' },
+  { key: 'otherTotal', group: 'Chi phí khác (ghi nhận chung với phí sàn)', label: 'Tổng chi phí khác', unit: 'vnd', kind: 'derived' },
+  { key: 'affFee', group: 'Chi phí khác (ghi nhận chung với phí sàn)', label: 'Chi phí tiếp thị liên kết', unit: 'vnd', kind: 'input' },
+  { key: 'affFeeAds', group: 'Chi phí khác (ghi nhận chung với phí sàn)', label: 'Chi phí tiếp thị liên kết (có chạy ads)', unit: 'vnd', kind: 'input' },
 ];
 
 export type KpiColumn = 'shopee' | 'tiktok';
@@ -128,7 +128,7 @@ const sumKnown = (vals: KpiCell[]): KpiCell => {
 };
 const div = (a: KpiCell, b: KpiCell): KpiCell => (a !== null && b !== null && b !== 0 ? a / b : null);
 
-/** TÃ­nh toÃ n bá»™ báº£ng KPI. Ã” thiáº¿u dá»¯ liá»‡u giá»¯ null (hiá»ƒn thá»‹ "â€”"), khÃ´ng tá»± Ä‘iá»n sá»‘. */
+/** Tính toàn bộ bảng KPI. Ô thiếu dữ liệu giữ null (hiển thị "—"), không tự điền số. */
 export function computeKpi(inputs: KpiInputs): KpiTable {
   const table: KpiTable = {};
   const get = (key: string, col: KpiColumn): KpiCell => num(inputs[key]?.[col]);
@@ -157,7 +157,7 @@ export function computeKpi(inputs: KpiInputs): KpiTable {
   totals.promoPct = div(totals.promoCost, totals.nmv);
   totals.gmvActivities = sumKnown([totals.gmvVideo, totals.gmvLive, totals.gmvCard]);
   totals.otherTotal = sumKnown([totals.affFee, totals.affFeeAds]);
-  // Tá»· lá»‡ há»§y tá»•ng: bÃ¬nh quÃ¢n theo sá»‘ Ä‘Æ¡n cá»§a tá»«ng sÃ n
+  // Tỷ lệ hủy tổng: bình quân theo số đơn của từng sàn
   const o1 = table.orders.shopee;
   const o2 = table.orders.tiktok;
   const c1 = table.cancelRate.shopee;
@@ -168,7 +168,7 @@ export function computeKpi(inputs: KpiInputs): KpiTable {
   return table;
 }
 
-/* ------------------------------------------------- Tá»•ng quan TikTok Shop */
+/* ------------------------------------------------- Tổng quan TikTok Shop */
 
 export interface OverviewMetricDef {
   key: string;
@@ -182,31 +182,31 @@ export const OVERVIEW_GROUPS = ['Video self channel', 'Video affiliate', 'Livest
 
 export const OVERVIEW_METRICS: OverviewMetricDef[] = [
   { key: 'self_rev', group: 'Video self channel', label: 'Doanh thu video self channel', unit: 'vnd', kind: 'input' },
-  { key: 'self_count', group: 'Video self channel', label: 'Sá»‘ ná»™i dung self (áº£nh trÆ°á»£t)', unit: 'int', kind: 'input' },
-  { key: 'self_cost', group: 'Video self channel', label: 'Chi phÃ­ video self channel', unit: 'vnd', kind: 'input' },
-  { key: 'self_ratio', group: 'Video self channel', label: 'GMV / chi phÃ­ (há»‡ sá»‘, khÃ´ng pháº£i lá»£i nhuáº­n)', unit: 'ratio', kind: 'derived' },
+  { key: 'self_count', group: 'Video self channel', label: 'Số nội dung self (ảnh trượt)', unit: 'int', kind: 'input' },
+  { key: 'self_cost', group: 'Video self channel', label: 'Chi phí video self channel', unit: 'vnd', kind: 'input' },
+  { key: 'self_ratio', group: 'Video self channel', label: 'GMV / chi phí (hệ số, không phải lợi nhuận)', unit: 'ratio', kind: 'derived' },
   { key: 'aff_rev', group: 'Video affiliate', label: 'Doanh thu video affiliate', unit: 'vnd', kind: 'input' },
-  { key: 'aff_total', group: 'Video affiliate', label: 'Tá»•ng video AFF (booking + TAP)', unit: 'int', kind: 'input' },
-  { key: 'aff_koc', group: 'Video affiliate', label: 'KOC: KL1â€“KL5', unit: 'int', kind: 'input' },
-  { key: 'aff_kol', group: 'Video affiliate', label: 'KOL: KL6â€“KL7', unit: 'int', kind: 'input' },
+  { key: 'aff_total', group: 'Video affiliate', label: 'Tổng video AFF (booking + TAP)', unit: 'int', kind: 'input' },
+  { key: 'aff_koc', group: 'Video affiliate', label: 'KOC: KL1–KL5', unit: 'int', kind: 'input' },
+  { key: 'aff_kol', group: 'Video affiliate', label: 'KOL: KL6–KL7', unit: 'int', kind: 'input' },
   { key: 'aff_tap', group: 'Video affiliate', label: 'TAP', unit: 'int', kind: 'input' },
-  { key: 'aff_aware', group: 'Video affiliate', label: 'Awareness + Engagement (nhÃ£n má»¥c tiÃªu)', unit: 'int', kind: 'input' },
-  { key: 'aff_brand', group: 'Video affiliate', label: 'Branding (nhÃ£n má»¥c tiÃªu)', unit: 'int', kind: 'input' },
-  { key: 'aff_cost', group: 'Video affiliate', label: 'Chi phÃ­ booking video affiliate', unit: 'vnd', kind: 'input' },
-  { key: 'aff_ratio', group: 'Video affiliate', label: 'GMV / chi phÃ­ (há»‡ sá»‘, khÃ´ng pháº£i lá»£i nhuáº­n)', unit: 'ratio', kind: 'derived' },
+  { key: 'aff_aware', group: 'Video affiliate', label: 'Awareness + Engagement (nhãn mục tiêu)', unit: 'int', kind: 'input' },
+  { key: 'aff_brand', group: 'Video affiliate', label: 'Branding (nhãn mục tiêu)', unit: 'int', kind: 'input' },
+  { key: 'aff_cost', group: 'Video affiliate', label: 'Chi phí booking video affiliate', unit: 'vnd', kind: 'input' },
+  { key: 'aff_ratio', group: 'Video affiliate', label: 'GMV / chi phí (hệ số, không phải lợi nhuận)', unit: 'ratio', kind: 'derived' },
   { key: 'live_rev', group: 'Livestream self channel', label: 'Doanh thu livestream self channel', unit: 'vnd', kind: 'input' },
-  { key: 'live_orders', group: 'Livestream self channel', label: 'Sá»‘ Ä‘Æ¡n hÃ ng livestream self channel', unit: 'int', kind: 'input' },
+  { key: 'live_orders', group: 'Livestream self channel', label: 'Số đơn hàng livestream self channel', unit: 'int', kind: 'input' },
   { key: 'live_aov', group: 'Livestream self channel', label: 'AOV livestream self channel', unit: 'vnd', kind: 'derived' },
-  { key: 'live_avg', group: 'Livestream self channel', label: 'GMV trung bÃ¬nh/phiÃªn live', unit: 'vnd', kind: 'derived' },
-  { key: 'live_sessions', group: 'Livestream self channel', label: 'Sá»‘ phiÃªn livestream self channel (2h)', unit: 'int', kind: 'input' },
-  { key: 'live_cost', group: 'Livestream self channel', label: 'Chi phÃ­ livestream self channel', unit: 'vnd', kind: 'input' },
-  { key: 'live_ratio', group: 'Livestream self channel', label: 'GMV / chi phÃ­ (há»‡ sá»‘, khÃ´ng pháº£i lá»£i nhuáº­n)', unit: 'ratio', kind: 'derived' },
+  { key: 'live_avg', group: 'Livestream self channel', label: 'GMV trung bình/phiên live', unit: 'vnd', kind: 'derived' },
+  { key: 'live_sessions', group: 'Livestream self channel', label: 'Số phiên livestream self channel (2h)', unit: 'int', kind: 'input' },
+  { key: 'live_cost', group: 'Livestream self channel', label: 'Chi phí livestream self channel', unit: 'vnd', kind: 'input' },
+  { key: 'live_ratio', group: 'Livestream self channel', label: 'GMV / chi phí (hệ số, không phải lợi nhuận)', unit: 'ratio', kind: 'derived' },
   { key: 'laff_rev', group: 'Livestream affiliate', label: 'Doanh thu livestream affiliate', unit: 'vnd', kind: 'input' },
-  { key: 'laff_orders', group: 'Livestream affiliate', label: 'Sá»‘ Ä‘Æ¡n hÃ ng livestream affiliate', unit: 'int', kind: 'input' },
+  { key: 'laff_orders', group: 'Livestream affiliate', label: 'Số đơn hàng livestream affiliate', unit: 'int', kind: 'input' },
   { key: 'laff_aov', group: 'Livestream affiliate', label: 'AOV livestream affiliate', unit: 'vnd', kind: 'derived' },
-  { key: 'laff_sessions', group: 'Livestream affiliate', label: 'Sá»‘ phiÃªn livestream affiliate', unit: 'int', kind: 'input' },
-  { key: 'laff_cost', group: 'Livestream affiliate', label: 'Chi phÃ­ booking livestream affiliate', unit: 'vnd', kind: 'input' },
-  { key: 'laff_ratio', group: 'Livestream affiliate', label: 'GMV / chi phÃ­ (há»‡ sá»‘, khÃ´ng pháº£i lá»£i nhuáº­n)', unit: 'ratio', kind: 'derived' },
+  { key: 'laff_sessions', group: 'Livestream affiliate', label: 'Số phiên livestream affiliate', unit: 'int', kind: 'input' },
+  { key: 'laff_cost', group: 'Livestream affiliate', label: 'Chi phí booking livestream affiliate', unit: 'vnd', kind: 'input' },
+  { key: 'laff_ratio', group: 'Livestream affiliate', label: 'GMV / chi phí (hệ số, không phải lợi nhuận)', unit: 'ratio', kind: 'derived' },
 ];
 
 export type OverviewInputs = Record<string, number | null | undefined>;
@@ -225,7 +225,7 @@ export function computeOverview(inputs: OverviewInputs): Record<string, KpiCell>
   };
 }
 
-/* ------------------------------------------------------------- Dá»¯ liá»‡u */
+/* ------------------------------------------------------------- Dữ liệu */
 
 export interface BrandPlanPillar {
   id: string;
@@ -235,7 +235,7 @@ export interface BrandPlanPillar {
   message: string;
   angle: string;
   format: string;
-  /** Tá»· trá»ng video dá»± kiáº¿n (0â€“100) */
+  /** Tỷ trọng video dự kiến (0–100) */
   sharePct: number | null;
 }
 
@@ -248,7 +248,7 @@ export interface BrandPlanRow {
   /** Nhóm sản phẩm trong danh mục sản phẩm của Brand. */
   productGroupId: string;
   source: ContentSource;
-  /** Báº­c KL hoáº·c TAP (chá»‰ dÃ¹ng cho Video affiliate) */
+  /** Bậc KL hoặc TAP (chỉ dùng cho Video affiliate) */
   kl: string;
   kocCriteria: string;
   pillarId: string;
@@ -257,7 +257,7 @@ export interface BrandPlanRow {
   type: string;
   production: string;
   qty: number | null;
-  /** NgÃ¢n sÃ¡ch Net (chÆ°a VAT) */
+  /** Ngân sách Net (chưa VAT) */
   budget: number | null;
   pic: string;
   note: string;
@@ -357,7 +357,7 @@ export function newRow(channel: PlanChannel, week: string, source: ContentSource
   };
 }
 
-/** LÃ m sáº¡ch dá»¯ liá»‡u nháº­n tá»« mÃ¡y khÃ¡ch (giá»›i háº¡n Ä‘á»™ dÃ i, kiá»ƒu dá»¯ liá»‡u). */
+/** Làm sạch dữ liệu nhận từ máy khách (giới hạn độ dài, kiểu dữ liệu). */
 export function sanitizeBrandPlan(input: Partial<BrandPlanData> | undefined): BrandPlanData {
   const s = (v: unknown, max = 2000) => (typeof v === 'string' ? v.slice(0, max) : '');
   const n = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
@@ -448,11 +448,11 @@ export function sanitizeBrandPlan(input: Partial<BrandPlanData> | undefined): Br
   };
 }
 
-/* ------------------------------------------------- Cá»™ng theo tuáº§n */
+/* ------------------------------------------------- Cộng theo tuần */
 
 export interface WeekAggregate {
   week: string;
-  /** Video affiliate theo báº­c (gá»“m TAP) */
+  /** Video affiliate theo bậc (gồm TAP) */
   affByKl: Record<string, { qty: number; budget: number }>;
   affQty: number;
   affBudget: number;
@@ -544,7 +544,7 @@ export function sumWeeks(weeks: WeekAggregate[]): ChannelTotals {
   return t;
 }
 
-/** Nháº­n ra sÃ n cá»§a gian hÃ ng tá»« tÃªn gian hÃ ng; khÃ´ng nháº­n ra thÃ¬ tráº£ null. */
+/** Nhận ra sàn của gian hàng từ tên gian hàng; không nhận ra thì trả null. */
 export function detectChannel(plan: Pick<InputPlanBreakdownState, 'storeName' | 'title' | 'storeId'>): PlanChannel | null {
   const text = `${plan.storeName || ''} ${plan.title || ''} ${plan.storeId || ''}`.toLowerCase();
   if (/tiktok|tts|\bttshop\b/.test(text)) return 'TIKTOK';
@@ -552,7 +552,7 @@ export function detectChannel(plan: Pick<InputPlanBreakdownState, 'storeName' | 
   return null;
 }
 
-/* --------------------------------------------------------- Kiá»ƒm tra */
+/* --------------------------------------------------------- Kiểm tra */
 
 export interface BrandPlanIssue {
   level: 'error' | 'warning';
@@ -573,14 +573,14 @@ export function diagnoseBrandPlan(plan: InputPlanBreakdownState, data: BrandPlan
 
   // Pillar
   const ids = data.pillars.map(p => p.id.trim()).filter(Boolean);
-  if (new Set(ids).size !== ids.length) issues.push({ level: 'error', scope: 'Pillar', text: 'CÃ³ mÃ£ pillar bá»‹ trÃ¹ng.' });
+  if (new Set(ids).size !== ids.length) issues.push({ level: 'error', scope: 'Pillar', text: 'Có mã pillar bị trùng.' });
   data.pillars.forEach((p, i) => {
-    if (!p.id.trim() || !p.name.trim()) issues.push({ level: 'error', scope: 'Pillar', text: `DÃ²ng pillar ${i + 1} chÆ°a cÃ³ mÃ£ hoáº·c tÃªn.` });
+    if (!p.id.trim() || !p.name.trim()) issues.push({ level: 'error', scope: 'Pillar', text: `Dòng pillar ${i + 1} chưa có mã hoặc tên.` });
   });
   const shareKnown = data.pillars.filter(p => p.sharePct !== null);
   if (shareKnown.length > 0) {
     const sum = shareKnown.reduce((s, p) => s + (p.sharePct as number), 0);
-    if (Math.abs(sum - 100) > 0.5) issues.push({ level: 'warning', scope: 'Pillar', text: `Tá»•ng tá»· trá»ng pillar lÃ  ${fmtN(sum)}%, cáº§n báº±ng 100%.` });
+    if (Math.abs(sum - 100) > 0.5) issues.push({ level: 'warning', scope: 'Pillar', text: `Tổng tỷ trọng pillar là ${fmtN(sum)}%, cần bằng 100%.` });
   }
 
   const missing = { sku: 0, pillar: 0, pic: 0, qty: 0, kl: 0, week: 0, badWeek: 0, badPillar: 0 };
@@ -594,14 +594,14 @@ export function diagnoseBrandPlan(plan: InputPlanBreakdownState, data: BrandPlan
     if (!(n0(r.qty) > 0)) missing.qty++;
     if (r.source === 'AFFILIATE' && !r.kl) missing.kl++;
   }
-  if (missing.week) issues.push({ level: 'error', scope: 'Chi tiáº¿t Content', text: `${missing.week} dÃ²ng chÆ°a chá»n tuáº§n.` });
-  if (missing.badWeek) issues.push({ level: 'error', scope: 'Chi tiáº¿t Content', text: `${missing.badWeek} dÃ²ng cÃ³ tuáº§n khÃ´ng thuá»™c thÃ¡ng ${plan.month}.` });
-  if (missing.kl) issues.push({ level: 'error', scope: 'Chi tiáº¿t Content', text: `${missing.kl} dÃ²ng Video affiliate chÆ°a chá»n báº­c KL / TAP.` });
-  if (missing.qty) issues.push({ level: 'error', scope: 'Chi tiáº¿t Content', text: `${missing.qty} dÃ²ng chÆ°a cÃ³ sá»‘ lÆ°á»£ng.` });
-  if (missing.badPillar) issues.push({ level: 'error', scope: 'Chi tiáº¿t Content', text: `${missing.badPillar} dÃ²ng dÃ¹ng pillar Ä‘Ã£ bá»‹ xÃ³a khá»i danh sÃ¡ch.` });
-  if (missing.sku) issues.push({ level: 'warning', scope: 'Chi tiáº¿t Content', text: `${missing.sku} dÃ²ng chÆ°a nháº­p SKU / combo.` });
-  if (missing.pillar) issues.push({ level: 'warning', scope: 'Chi tiáº¿t Content', text: `${missing.pillar} dÃ²ng chÆ°a chá»n pillar.` });
-  if (missing.pic) issues.push({ level: 'warning', scope: 'Chi tiáº¿t Content', text: `${missing.pic} dÃ²ng chÆ°a gÃ¡n PIC.` });
+  if (missing.week) issues.push({ level: 'error', scope: 'Chi tiết Content', text: `${missing.week} dòng chưa chọn tuần.` });
+  if (missing.badWeek) issues.push({ level: 'error', scope: 'Chi tiết Content', text: `${missing.badWeek} dòng có tuần không thuộc tháng ${plan.month}.` });
+  if (missing.kl) issues.push({ level: 'error', scope: 'Chi tiết Content', text: `${missing.kl} dòng Video affiliate chưa chọn bậc KL / TAP.` });
+  if (missing.qty) issues.push({ level: 'error', scope: 'Chi tiết Content', text: `${missing.qty} dòng chưa có số lượng.` });
+  if (missing.badPillar) issues.push({ level: 'error', scope: 'Chi tiết Content', text: `${missing.badPillar} dòng dùng pillar đã bị xóa khỏi danh sách.` });
+  if (missing.sku) issues.push({ level: 'warning', scope: 'Chi tiết Content', text: `${missing.sku} dòng chưa nhập SKU / combo.` });
+  if (missing.pillar) issues.push({ level: 'warning', scope: 'Chi tiết Content', text: `${missing.pillar} dòng chưa chọn pillar.` });
+  if (missing.pic) issues.push({ level: 'warning', scope: 'Chi tiết Content', text: `${missing.pic} dòng chưa gán PIC.` });
 
   // Mốc Key Visual: thứ tự Ref → Order → Draft → Duyệt → Treo
   data.milestones.forEach(m => {
@@ -653,61 +653,61 @@ export function diagnoseBrandPlan(plan: InputPlanBreakdownState, data: BrandPlan
   for (const c of costChecks) {
     const planned = kpi[c.key]?.[c.col] ?? null;
     if (!c.has && planned === null) continue;
-    const scope = `KPI Â· ${c.col === 'tiktok' ? 'TikTok Shop' : 'Shopee'}`;
+    const scope = `KPI · ${c.col === 'tiktok' ? 'TikTok Shop' : 'Shopee'}`;
     if (planned === null) {
-      if (c.actual > 0) issues.push({ level: 'warning', scope, text: `ChÆ°a nháº­p chi phÃ­ ${c.label} trong KPI, trong khi dÃ²ng Chi tiáº¿t Content Ä‘Ã£ cÃ³ ${fmtN(c.actual)}Ä‘.` });
+      if (c.actual > 0) issues.push({ level: 'warning', scope, text: `Chưa nhập chi phí ${c.label} trong KPI, trong khi dòng Chi tiết Content đã có ${fmtN(c.actual)}đ.` });
     } else if (Math.round(planned) !== Math.round(c.actual)) {
-      issues.push({ level: 'warning', scope, text: `Chi phÃ­ ${c.label}: KPI ${fmtN(planned)}Ä‘, cá»™ng tá»« Chi tiáº¿t Content ${fmtN(c.actual)}Ä‘ (lá»‡ch ${fmtN(planned - c.actual)}Ä‘).` });
+      issues.push({ level: 'warning', scope, text: `Chi phí ${c.label}: KPI ${fmtN(planned)}đ, cộng từ Chi tiết Content ${fmtN(c.actual)}đ (lệch ${fmtN(planned - c.actual)}đ).` });
     }
   }
   for (const col of ['tiktok', 'shopee'] as KpiColumn[]) {
     const gmv = kpi.gmv[col];
     const act = kpi.gmvActivities[col];
     if (gmv !== null && act !== null && Math.round(gmv) < Math.round(act)) {
-      issues.push({ level: 'warning', scope: `KPI Â· ${col === 'tiktok' ? 'TikTok Shop' : 'Shopee'}`, text: `GMV cÃ¡c hoáº¡t Ä‘á»™ng (${fmtN(act)}Ä‘) lá»›n hÆ¡n GMV nhÃ  bÃ¡n (${fmtN(gmv)}Ä‘).` });
+      issues.push({ level: 'warning', scope: `KPI · ${col === 'tiktok' ? 'TikTok Shop' : 'Shopee'}`, text: `GMV các hoạt động (${fmtN(act)}đ) lớn hơn GMV nhà bán (${fmtN(gmv)}đ).` });
     }
     const nmv = kpi.nmv[col];
-    if (gmv !== null && nmv !== null && nmv > gmv) issues.push({ level: 'error', scope: `KPI Â· ${col === 'tiktok' ? 'TikTok Shop' : 'Shopee'}`, text: 'NMV lá»›n hÆ¡n GMV nhÃ  bÃ¡n.' });
+    if (gmv !== null && nmv !== null && nmv > gmv) issues.push({ level: 'error', scope: `KPI · ${col === 'tiktok' ? 'TikTok Shop' : 'Shopee'}`, text: 'NMV lớn hơn GMV nhà bán.' });
   }
 
-  // Tá»•ng quan TikTok Shop
+  // Tổng quan TikTok Shop
   const ov = computeOverview(data.overview);
   const hasTik = data.rows.some(r => r.channel === 'TIKTOK');
   const ovChecks: [string, string, number][] = [
-    ['aff_total', 'Tá»•ng video AFF', tikTotals.affQty],
-    ['aff_cost', 'Chi phÃ­ booking video affiliate', tikTotals.affBudget],
-    ['self_count', 'Sá»‘ ná»™i dung self', tikTotals.selfQty],
-    ['self_cost', 'Chi phÃ­ video self channel', tikTotals.selfBudget],
-    ['live_sessions', 'Sá»‘ phiÃªn livestream self', tikTotals.liveSelfQty],
-    ['live_cost', 'Chi phÃ­ livestream self', tikTotals.liveSelfBudget],
-    ['laff_sessions', 'Sá»‘ phiÃªn livestream affiliate', tikTotals.liveAffQty],
-    ['laff_cost', 'Chi phÃ­ booking livestream affiliate', tikTotals.liveAffBudget],
+    ['aff_total', 'Tổng video AFF', tikTotals.affQty],
+    ['aff_cost', 'Chi phí booking video affiliate', tikTotals.affBudget],
+    ['self_count', 'Số nội dung self', tikTotals.selfQty],
+    ['self_cost', 'Chi phí video self channel', tikTotals.selfBudget],
+    ['live_sessions', 'Số phiên livestream self', tikTotals.liveSelfQty],
+    ['live_cost', 'Chi phí livestream self', tikTotals.liveSelfBudget],
+    ['laff_sessions', 'Số phiên livestream affiliate', tikTotals.liveAffQty],
+    ['laff_cost', 'Chi phí booking livestream affiliate', tikTotals.liveAffBudget],
   ];
   for (const [key, label, actual] of ovChecks) {
     const planned = ov[key];
     if (planned === null || planned === undefined) continue;
     if (Math.round(planned) !== Math.round(actual) && (hasTik || planned > 0)) {
-      issues.push({ level: 'warning', scope: 'TikTok Shop Â· Tá»•ng quan', text: `${label}: tá»•ng quan ${fmtN(planned)}, cá»™ng tá»« Chi tiáº¿t Content ${fmtN(actual)}.` });
+      issues.push({ level: 'warning', scope: 'TikTok Shop · Tổng quan', text: `${label}: tổng quan ${fmtN(planned)}, cộng từ Chi tiết Content ${fmtN(actual)}.` });
     }
   }
   const affParts = [ov.aff_koc, ov.aff_kol, ov.aff_tap];
   if (ov.aff_total !== null && affParts.every(v => v !== null)) {
     const sum = (affParts as number[]).reduce((s, v) => s + v, 0);
-    if (sum !== ov.aff_total) issues.push({ level: 'error', scope: 'TikTok Shop Â· Tá»•ng quan', text: `KOC + KOL + TAP = ${fmtN(sum)} khÃ¡c Tá»•ng video AFF ${fmtN(ov.aff_total as number)}.` });
+    if (sum !== ov.aff_total) issues.push({ level: 'error', scope: 'TikTok Shop · Tổng quan', text: `KOC + KOL + TAP = ${fmtN(sum)} khác Tổng video AFF ${fmtN(ov.aff_total as number)}.` });
   }
   const videoGmv = kpi.gmvVideo.tiktok;
   if (videoGmv !== null && ov.self_rev !== null && ov.aff_rev !== null && Math.round(videoGmv) !== Math.round((ov.self_rev as number) + (ov.aff_rev as number))) {
-    issues.push({ level: 'warning', scope: 'TikTok Shop Â· Tá»•ng quan', text: `GMV video á»Ÿ KPI (${fmtN(videoGmv)}Ä‘) khÃ¡c doanh thu video self + affiliate (${fmtN((ov.self_rev as number) + (ov.aff_rev as number))}Ä‘).` });
+    issues.push({ level: 'warning', scope: 'TikTok Shop · Tổng quan', text: `GMV video ở KPI (${fmtN(videoGmv)}đ) khác doanh thu video self + affiliate (${fmtN((ov.self_rev as number) + (ov.aff_rev as number))}đ).` });
   }
 
-  // Äá»‘i chiáº¿u vá»›i phÃ¢n rÃ£ 4.1.1: chá»‰ khi nháº­n ra sÃ n cá»§a gian hÃ ng
+  // Đối chiếu với phân rã 4.1.1: chỉ khi nhận ra sàn của gian hàng
   const channel = channelHint ?? detectChannel(plan);
   const breakdown = resolveWeekRows(plan);
   const hasBreakdown = breakdown.some(r => Object.values(r.tiers || {}).some(t => n0(t?.qty) > 0));
   if (!channel) {
-    if (data.rows.length > 0) issues.push({ level: 'warning', scope: 'Äá»‘i chiáº¿u 4.1.1', text: 'ChÆ°a nháº­n ra sÃ n cá»§a gian hÃ ng nÃ y (TikTok Shop hay Shopee) nÃªn chÆ°a Ä‘á»‘i chiáº¿u vá»›i phÃ¢n rÃ£ 4.1.1.' });
+    if (data.rows.length > 0) issues.push({ level: 'warning', scope: 'Đối chiếu 4.1.1', text: 'Chưa nhận ra sàn của gian hàng này (TikTok Shop hay Shopee) nên chưa đối chiếu với phân rã 4.1.1.' });
   } else if (!hasBreakdown) {
-    if (data.rows.some(r => r.channel === channel)) issues.push({ level: 'warning', scope: 'Äá»‘i chiáº¿u 4.1.1', text: 'Káº¿ hoáº¡ch chÆ°a cÃ³ sá»‘ phÃ¢n rÃ£ 4.1.1 Ä‘á»ƒ Ä‘á»‘i chiáº¿u.' });
+    if (data.rows.some(r => r.channel === channel)) issues.push({ level: 'warning', scope: 'Đối chiếu 4.1.1', text: 'Kế hoạch chưa có số phân rã 4.1.1 để đối chiếu.' });
   } else {
     const label = CHANNEL_LABEL[channel];
     const agg = aggregateWeeks(data.rows, channel, weeks);
@@ -717,18 +717,18 @@ export function diagnoseBrandPlan(plan: InputPlanBreakdownState, data: BrandPlan
       const diffs: string[] = [];
       for (const k of TIER_KEYS as PlanTierKey[]) {
         const want = n0(b.tiers?.[k]?.qty);
-        if (want !== w.affByKl[k].qty) diffs.push(`${k} cáº§n ${fmtN(want)}, plan ${fmtN(w.affByKl[k].qty)}`);
+        if (want !== w.affByKl[k].qty) diffs.push(`${k} cần ${fmtN(want)}, plan ${fmtN(w.affByKl[k].qty)}`);
       }
       const tapWant = n0(b.foc?.tapBrand) + n0(b.foc?.tap) + n0(b.foc?.tapUp);
-      if (tapWant !== w.affByKl.TAP.qty) diffs.push(`TAP cáº§n ${fmtN(tapWant)}, plan ${fmtN(w.affByKl.TAP.qty)}`);
+      if (tapWant !== w.affByKl.TAP.qty) diffs.push(`TAP cần ${fmtN(tapWant)}, plan ${fmtN(w.affByKl.TAP.qty)}`);
       const castBudget = TIER_KEYS.reduce((s, k) => s + n0(b.tiers?.[k]?.budgetNet), 0);
-      if (Math.round(castBudget) !== Math.round(w.affBudget)) diffs.push(`ngÃ¢n sÃ¡ch booking cáº§n ${fmtN(castBudget)}Ä‘, plan ${fmtN(w.affBudget)}Ä‘`);
+      if (Math.round(castBudget) !== Math.round(w.affBudget)) diffs.push(`ngân sách booking cần ${fmtN(castBudget)}đ, plan ${fmtN(w.affBudget)}đ`);
       const selfWant = SELF_TYPES.reduce((s, t) => s + n0(b.self?.[t.key]), 0);
-      if (selfWant !== w.selfQty) diffs.push(`video self cáº§n ${fmtN(selfWant)}, plan ${fmtN(w.selfQty)}`);
-      if (Math.round(n0(b.self?.budgetNet)) !== Math.round(w.selfBudget)) diffs.push(`ngÃ¢n sÃ¡ch self cáº§n ${fmtN(n0(b.self?.budgetNet))}Ä‘, plan ${fmtN(w.selfBudget)}Ä‘`);
+      if (selfWant !== w.selfQty) diffs.push(`video self cần ${fmtN(selfWant)}, plan ${fmtN(w.selfQty)}`);
+      if (Math.round(n0(b.self?.budgetNet)) !== Math.round(w.selfBudget)) diffs.push(`ngân sách self cần ${fmtN(n0(b.self?.budgetNet))}đ, plan ${fmtN(w.selfBudget)}đ`);
       const liveQty = w.liveAffQty + w.liveSelfQty;
-      if (n0(b.live?.sessions) !== liveQty) diffs.push(`phiÃªn live cáº§n ${fmtN(n0(b.live?.sessions))}, plan ${fmtN(liveQty)}`);
-      if (diffs.length) issues.push({ level: 'error', scope: `Äá»‘i chiáº¿u 4.1.1 Â· ${label}`, text: `${w.week}: ${diffs.join('; ')}.` });
+      if (n0(b.live?.sessions) !== liveQty) diffs.push(`phiên live cần ${fmtN(n0(b.live?.sessions))}, plan ${fmtN(liveQty)}`);
+      if (diffs.length) issues.push({ level: 'error', scope: `Đối chiếu 4.1.1 · ${label}`, text: `${w.week}: ${diffs.join('; ')}.` });
     }
   }
   return issues;

@@ -135,8 +135,6 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
         purposeId: 'SCRIPT_REVIEW',
         moduleTitle: `Soạn kịch bản (${selectedBrand} - ${activeProduct})`,
         sourceTag: 'SCRIPT_REVIEW',
-        customSystemInstruction:
-          'Bạn là chuyên viên Content Marketing B2C. Hãy viết kịch bản video TikTok 45-60s ngắn gọn, đi thẳng vào thực tế công dụng, tuyệt đối tránh các từ sáo rỗng ("thần thánh", "siêu phẩm", "cứu tinh", "đột phá", "cam kết 100%"). Định dạng 4 phần rõ ràng: 1. Hook 3s; 2. Nỗi đau / Tình huống; 3. Giải pháp & Cách dùng; 4. Lời kêu gọi hành động CTA.',
         inputContextText: [
           `Thương hiệu: ${selectedBrand}`,
           `Sản phẩm: ${activeProduct}`,
@@ -146,6 +144,7 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
           `USP chính: ${usps}`,
           banned ? `Từ cấm không được nhắc: ${banned}` : '',
           disclaimer ? `Khuyến cáo bắt buộc: ${disclaimer}` : '',
+          `Định dạng kịch bản 4 phần: 1. Hook 3s; 2. Nỗi đau / Tình huống; 3. Giải pháp & Cách dùng; 4. Lời kêu gọi hành động CTA.`,
         ].filter(Boolean).join('\n'),
       });
 
@@ -171,7 +170,7 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
     <Modal
       open={open}
       onClose={onClose}
-      title="Trợ lý Sáng tạo & Soát xét Kịch bản"
+      title="Góc nội dung & Soát xét kịch bản"
       size="xl"
       footer={
         <div className="flex items-center justify-between w-full">

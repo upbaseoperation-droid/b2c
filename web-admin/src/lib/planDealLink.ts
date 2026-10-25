@@ -102,6 +102,22 @@ export function planJobToBookingDeal(
 
   const adsAddon = (job.addons || []).find(a => a.type === 'ADS_CODE' && a.status !== 'DROPPED');
   const sparkCode = (job.sparkAdsCode || adsAddon?.evidence || '').trim();
+  const effectiveEntity = job.entityType || amountBreakdown.entityType || 'INDIVIDUAL';
+  const advanceFromPipeline8 =
+    job.advancePayment?.status &&
+    job.advancePayment.status !== 'NONE' &&
+    typeof job.advancePayment.amount === 'number' &&
+    job.advancePayment.amount > 0
+      ? job.advancePayment.amount
+      : 0;
+  const advanceFromPayment =
+    job.payment.status !== 'NONE' &&
+    typeof job.payment.amount === 'number' &&
+    job.payment.amount > 0 &&
+    job.payment.amount < amountBreakdown.contractDisplayValue
+      ? job.payment.amount
+      : 0;
+  const commPct = job.commissionPct ?? deal.commissionPct ?? undefined;
 
   return {
     id: `PJ-${job.id}`,
@@ -136,17 +152,11 @@ export function planJobToBookingDeal(
     bookingPic: job.pic || deal.pic,
     // Giá chưa VAT + phần DROPPED (nơi dùng tự trừ droppedCostVnd); VAT của Công ty cộng ở bước tính thuế theo vatRatePercent.
     totalValue: amountBreakdown.netAmount + droppedNet,
-    vatRatePercent: amountBreakdown.entityType === 'COMPANY' ? amountBreakdown.vatPct : undefined,
+    vatRatePercent: effectiveEntity === 'COMPANY' ? amountBreakdown.vatPct : undefined,
     videoAssetCostVnd: isPackageAllIn ? totalNet : videoNet,
     addonsCostVnd: isPackageAllIn ? 0 : addonsNet,
     droppedCostVnd: droppedNet,
-    advanceAmount:
-      job.payment.status !== 'NONE' &&
-      typeof job.payment.amount === 'number' &&
-      job.payment.amount > 0 &&
-      job.payment.amount < amountBreakdown.contractDisplayValue
-        ? job.payment.amount
-        : 0,
+    advanceAmount: advanceFromPipeline8 || advanceFromPayment,
     finalAmount: amountBreakdown.contractDisplayValue,
     deadlinePost: job.deadline,
     tiktokVideoUrl: job.airLink || undefined,
@@ -159,6 +169,33 @@ export function planJobToBookingDeal(
     contractAppendixCode: job.appendixNo || `PL-${job.code}`,
     contractScanUrl: job.appendixUrl || undefined,
     signedContractUrl: job.appendixUrl || undefined,
+    legalProfileId: job.legalProfileId || undefined,
+    kocIdCardNumber: job.payeeTaxOrCccd || undefined,
+    kocBankName: job.payeeBankName || undefined,
+    kocBankAccount: job.payeeBankAccount || undefined,
+    kocBankHolder: job.payeeBankHolder || job.payeeLegalName || undefined,
+    legalProfileSnapshot:
+      job.entityType || job.payeeLegalName || job.payeeTaxOrCccd || job.payeeBankAccount
+        ? {
+            profileCode: job.legalProfileId || `LP-${job.code}`,
+            legalType: effectiveEntity,
+            holderName: job.payeeLegalName || deal.kocName || handle,
+            legalId: job.payeeTaxOrCccd || '',
+            taxAccountType:
+              effectiveEntity === 'COMPANY'
+                ? `(VAT ${amountBreakdown.vatPct}%) Tài khoản doanh nghiệp`
+                : effectiveEntity === 'HOUSEHOLD'
+                  ? 'Hộ kinh doanh xuất hóa đơn'
+                  : '(Thuế TNCN 10%) Tài khoản cá nhân',
+            bankName: job.payeeBankName || undefined,
+            bankAccount: job.payeeBankAccount || undefined,
+            bankHolderName: job.payeeBankHolder || job.payeeLegalName || undefined,
+            frameworkContractCode: frameworkContractNo || undefined,
+          }
+        : undefined,
+    organicCommissionPct: commPct,
+    adsCommissionPct: commPct,
+    pricingDisplayMode: isPackageAllIn ? 'PACKAGE_TOTAL' : 'ITEMIZED_SOW',
     rightsTerms,
     viewsCount: job.acceptance.views ?? job.performance.d30.views ?? 0,
     affiliateGmv: job.performance.d30.gmv ?? 0,
@@ -223,6 +260,41 @@ export function recordSigned(r: ContractRecord): { signed: boolean; at: string }
   const last = [...(r.signing || [])].reverse().find(s => !['CANCELLED', 'REJECTED'].includes(s.status));
   if (last && last.status === 'COMPLETED') return { signed: true, at: (last.syncedAt || last.linkedAt || '').slice(0, 10) };
   return { signed: false, at: '' };
+}
+
+/**
+ * Ghép Số hiệu văn bản chuẩn từ các token trên bộ 11 mẫu mới (`token:[dd.mm.yy]`, `token:[BRAND]`, `token:[ID KOC]`):
+ * - HĐNT: `ddmmyy/HĐNT/UPBASE-ID KOC`
+ * - Phụ lục SOW: `ddmmyy/SOW/UPBASE-BRAND-ID KOC`
+ * - Biên bản nghiệm thu: `ddmmyy/BBNT/UPBASE-BRAND-ID KOC` (hoặc `ddmmyy/BBNT/UPBASE-ID KOC` với CTV)
+ */
+export function formatContractRecordNumber(r: ContractRecord): string {
+  const vals = r.values || {};
+  const explicitKey = Object.keys(vals).find(
+    k => /^(token:)?\[?\s*(số|so)\b.*(hợp đồng|phụ lục|sow)/i.test(k) && (vals[k] || '').trim(),
+  );
+  if (explicitKey && vals[explicitKey]?.trim()) {
+    return vals[explicitKey].trim();
+  }
+  const docDate = (vals['token:[dd.mm.yy]'] || '').trim();
+  const brandToken = (vals['token:[BRAND]'] || r.brand || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const kocToken = (vals['token:[ID KOC]'] || r.dealCode || '').trim();
+  if (docDate && kocToken) {
+    if (r.templateId.endsWith('-HDNT')) {
+      return `${docDate}/HĐNT/UPBASE-${kocToken}`;
+    }
+    if (r.templateId.endsWith('-SOW')) {
+      return `${docDate}/SOW/UPBASE-${brandToken || 'BRAND'}-${kocToken}`;
+    }
+    if (r.templateId === 'CTV-VID-BBNT' || r.templateId === 'CTV-BBNT') {
+      return `${docDate}/BBNT/UPBASE-${kocToken}`;
+    }
+    if (r.templateId.includes('BBNT')) {
+      return `${docDate}/BBNT/UPBASE-${brandToken || 'BRAND'}-${kocToken}`;
+    }
+    return `${docDate}/HĐDV/UPBASE-${brandToken || 'BRAND'}-${kocToken}`;
+  }
+  return r.id;
 }
 
 export interface DealDocumentState {

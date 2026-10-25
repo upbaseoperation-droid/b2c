@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
     const expectedCartUrl: string | undefined = body.expectedCartUrl;
     const requiredHashtags: string[] | undefined = body.requiredHashtags;
     const requiredUspKeywords: string[] | undefined = body.requiredUspKeywords;
+    const customForbiddenClaims: string[] | undefined = body.customForbiddenClaims;
     const brandName: string | undefined = body.brandName;
     const minDurationSeconds: number | undefined = body.minDurationSeconds;
 
@@ -83,6 +84,7 @@ export async function POST(req: NextRequest) {
         expectedCartUrl,
         requiredHashtags,
         requiredUspKeywords,
+        customForbiddenClaims,
         brandName,
         minDurationSeconds,
       },

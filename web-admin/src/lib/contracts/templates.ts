@@ -3,7 +3,8 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import JSZip from 'jszip';
-import type { AcceptanceScreenshotItem, ContractCategory, ContractField, DocBlock, DocParagraph, DocTable, DocTableCell, FieldGroup, FieldKind, FieldSource, LegalTemplate, TemplateVersionHistoryItem } from './types';
+import { OFFICIAL_3STAGE_TEMPLATE_IDS, type AcceptanceScreenshotItem, type ContractCategory, type ContractField, type DocBlock, type DocParagraph, type DocTable, type DocTableCell, type FieldGroup, type FieldKind, type FieldSource, type LegalTemplate, type TemplateVersionHistoryItem } from './types';
+export { OFFICIAL_3STAGE_TEMPLATE_IDS };
 import { requireCondition } from './domain';
 import prisma from '../prisma';
 import { OFFICIAL_TEMPLATES_SNAPSHOT } from './builtInTemplatesSnapshot';
@@ -72,7 +73,7 @@ function extractFields(xml: string, part: string): ContractField[] {
     rows.forEach(({ cells }, r) => {
       const filled = cells.filter(c => c.text);
       const context = filled.map(c => c.text).filter(t => t !== ':').join(' · ');
-      if (!context || context.length > 600) return;
+      if (!context || context.length > 950) return;
       if (filled.length === 1 && /^Sau đây gọi tắt là/.test(filled[0].text)) return;
       const add = (cellIndex: number, title: string, required: boolean) => {
         const cell = cells[cellIndex]; const first = firstParagraph(cell.offset, cell.xml.length); if (first < 0) return;
@@ -155,7 +156,7 @@ type PartyRule = [RegExp, (subject: string) => string, FieldSource | undefined, 
 const PARTY_TITLES: PartyRule[] = [
   [/^BÊN B$/i, s => (s === 'Công ty' ? 'Tên công ty' : s === 'Hộ kinh doanh' ? 'Tên hộ kinh doanh' : 'Họ tên Bên B'), 'partyName', 'text'],
   [/^CCCD chủ hộ/i, () => 'CCCD chủ hộ (số, ngày cấp, nơi cấp)', 'cccd', 'text'],
-  [/^CCCD/i, () => 'Số CCCD', 'cccd', 'text'],
+  [/^CCCD/i, s => (s === 'Công ty' ? 'Mã số thuế / Số ĐKKD' : 'Số CCCD'), 'cccd', 'text'],
   [/^Mã số thuế/i, () => 'Mã số thuế', 'taxCode', 'text'],
   [/^Địa chỉ/i, () => 'Địa chỉ', 'address', 'long'],
   [/^Số điện thoại/i, () => 'Số điện thoại', 'phone', 'text'],
@@ -179,13 +180,13 @@ const PROSE: ProseRule[] = [
   [/Thực hiện phiên livestream/i, ['Sản phẩm livestream', 'Nhãn hiệu', 'Nền tảng livestream', 'Kênh livestream', 'Khung giờ livestream', 'Ngày phát sóng livestream', 'Thời lượng lên hình tối thiểu (phút)'], 'SCOPE', ['text', 'text', 'text', 'text', 'text', 'date', 'number'], ['product', 'brand', undefined, 'channelLink', undefined, 'airDate', undefined]],
   [/Triển khai trên nền tảng/i, ['Nền tảng livestream', 'Kênh livestream', 'Khung giờ livestream', 'Ngày phát sóng livestream', 'Thời lượng lên hình tối thiểu (phút)'], 'SCOPE', ['text', 'text', 'text', 'date', 'number'], [undefined, 'channelLink', undefined, 'airDate', undefined]],
   [/Cho phép Bên A sử dụng hình ảnh/i, ['Thời hạn sử dụng hình ảnh livestream (tháng)'], 'SCOPE', ['number'], []],
+  [/Hoa hồng organic/i, ['Hoa hồng organic (%)'], 'MONEY', ['number'], []],
+  [/Hoa hồng chạy ads/i, ['Hoa hồng chạy ads (%)'], 'MONEY', ['number'], []],
   [/hưởng hoa hồng affiliate với tỷ lệ/i, ['Hoa hồng affiliate livestream (%)'], 'MONEY', ['number'], []],
   [/Tham dự sự kiện/, ['Số giờ tham dự sự kiện', 'Ngày tham dự sự kiện'], 'SCOPE', ['number', 'date'], []],
   [/Đăng 1 post trên Facebook/, ['Trang Facebook đăng bài'], 'SCOPE', ['text'], []],
-  [/Hoa hồng organic/, ['Hoa hồng organic (%)'], 'MONEY', ['number'], []],
-  [/Hoa hồng chạy ads/, ['Hoa hồng chạy ads (%)'], 'MONEY', ['number'], []],
   [/Lần 1.*tạm ứng/, ['Số tiền tạm ứng lần 1', 'Hạn tạm ứng (ngày làm việc)'], 'MONEY', ['money', 'number'], ['advanceAmount', undefined]],
-  [/Lần 2/, ['Hạn thanh toán lần 2 (ngày làm việc)'], 'MONEY', ['number'], []],
+  [/Lần 2|thanh toán (?:số tiền|phần giá trị) còn lại trong vòng/i, ['Hạn thanh toán lần 2 (ngày làm việc)'], 'MONEY', ['number'], []],
   [/tổng giá trị là/, ['Số tiền còn phải thanh toán', 'Số tiền bằng chữ'], 'MONEY', ['money', 'text'], ['remainingAmount', 'amountInWords']],
   [/Phí dịch vụ Bên A phải thanh toán/, ['Phí dịch vụ phải thanh toán'], 'MONEY', ['money'], ['netTotal']],
   [/THÁNG\s*(?:\.{2,}|…)|tháng\s*(?:\.{2,}|…)/i, ['Tháng nghiệm thu', 'Năm nghiệm thu (chữ số cuối)'], 'DATE', ['number', 'number'], ['signMonth', 'signYearDigit']],
@@ -220,16 +221,16 @@ function describeEach(fields: ContractField[], subject: string): ContractField[]
       const isSettlementRow = /^(Tổng giá trị|Thuế TNCN|Thuế VAT|Giá trị đã tạm ứng|Chi phí phát sinh|Giá trị Bên A còn phải thanh toán)/i.test(f.label);
       if (isSettlementRow) {
         const title = f.label.replace(/^\d+(\.\d+)? · /, '').replace(/ · (Chi phí|Nội dung|Thành tiền)$/i, '');
-        const net = (/chưa bao gồm thuế|thực nhận|^Tổng giá trị nghiệm thu$/i.test(title)) && !/Phụ lục|VAT/i.test(title);
+        const net = (/chưa bao gồm thuế|thực nhận|^Tổng giá trị nghiệm thu$/i.test(title)) && !/VAT/i.test(title);
         const source: FieldSource | undefined =
-          net ? 'netTotal'
+          /^Thuế TNCN/i.test(title) ? 'pitAmount'
+          : /^Thuế VAT/i.test(title) ? 'vatAmount'
+          : /^Giá trị đã tạm ứng/i.test(title) ? 'advanceAmount'
+          : /^Chi phí phát sinh/i.test(title) ? 'adjustmentAmount'
+          : /^Giá trị Bên A còn phải thanh toán/i.test(title) ? 'remainingAmount'
+          : net ? 'netTotal'
           : /chưa bao gồm thuế VAT/i.test(title) ? 'lineTotal'
-          : /đã bao gồm thuế|Tổng giá trị Hợp đồng/i.test(title) ? 'grossTotal'
-          : /Thuế TNCN/i.test(title) ? 'pitAmount'
-          : /Thuế VAT/i.test(title) ? 'vatAmount'
-          : /Giá trị đã tạm ứng/i.test(title) ? 'advanceAmount'
-          : /Chi phí phát sinh/i.test(title) ? 'adjustmentAmount'
-          : /Giá trị Bên A còn phải thanh toán/i.test(title) ? 'remainingAmount'
+          : /đã bao gồm (?:thuế|VAT)|Tổng giá trị Hợp đồng/i.test(title) ? 'grossTotal'
           : undefined;
         return { ...f, title, group: 'MONEY', kind: 'money', source };
       }

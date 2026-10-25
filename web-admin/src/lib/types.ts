@@ -638,6 +638,10 @@ export interface KocLegalProfile {
   taxAccountType: string; // VD: (Thuế TNCN 10%) Tài khoản cá nhân | Hộ kinh doanh xuất hóa đơn | (VAT 8%) Tài khoản doanh nghiệp
   holderName: string; // Họ tên cá nhân đứng tên hợp đồng / Tên Hộ kinh doanh / Tên Công ty MCN
   representativeName?: string; // Người đại diện pháp luật (nếu là Công ty/HKD) hoặc Người ủy quyền
+  representativeTitle?: string; // Chức vụ người đại diện (VD: Giám đốc, Tổng Giám Đốc)
+  authorizationNumber?: string; // Số văn bản ủy quyền (nếu ký theo ủy quyền)
+  authorizationDate?: string; // Ngày văn bản ủy quyền
+  bankHolderName?: string; // Tên chủ tài khoản ngân hàng (nếu khác holderName)
   relationshipNote?: string; // Chính chủ KOC | Người thân nhận ủy quyền | Công ty MCN quản lý | Hộ kinh doanh cá thể
   cccd?: string; // Số CCCD/CMND (9 hoặc 12 số)
   cccdIssueDate?: string;
@@ -648,6 +652,13 @@ export interface KocLegalProfile {
   bankName?: string; // Ngân hàng thụ hưởng gắn với pháp nhân này
   bankAccount?: string; // Số tài khoản ngân hàng thụ hưởng
   bankBranch?: string;
+  bankAccountNumber?: string;
+  taxRateLabel?: string;
+  vatRatePercent?: number;
+  pitRatePercent?: number;
+  contactPhone?: string;
+  contactEmail?: string;
+  relationshipToKoc?: string;
   isOcrVerified?: boolean;
   // Hợp đồng nguyên tắc (HĐNT) gắn liền với pháp nhân này
   frameworkContractCode?: string; // VD: HDNT-2026-0028
@@ -897,15 +908,28 @@ export interface BookingDealItem {
   kocBankHolder?: string; // Tên chủ tài khoản
   legalProfileId?: string; // Khóa ngoại trỏ tới Hồ sơ pháp lý (KocLegalProfile) được chọn cho Job này
   legalProfileSnapshot?: {
-    profileCode: string;
+    profileCode?: string;
     legalType: 'INDIVIDUAL' | 'HOUSEHOLD' | 'COMPANY';
     holderName: string;
-    legalId: string;
-    taxAccountType: string;
+    legalId?: string;
+    taxCode?: string;
+    cccd?: string;
+    taxRateLabel?: string;
+    vatRatePercent?: number;
+    bankAccountNumber?: string;
+    taxAccountType?: string;
     bankName?: string;
     bankAccount?: string;
+    bankHolderName?: string;
+    representativeName?: string;
+    representativeTitle?: string;
+    registeredAddress?: string;
+    cccdIssueDate?: string;
+    cccdIssuePlace?: string;
     frameworkContractCode?: string;
   }; // Snapshot bất biến (job_creator_*) tại thời điểm chốt Deal & duyệt chi
+  organicCommissionPct?: number; // % Hoa hồng affiliate organic trên Phụ lục SOW
+  adsCommissionPct?: number; // % Hoa hồng affiliate chạy quảng cáo trên Phụ lục SOW
 
   // 2. Gửi mẫu & Cảnh báo leo thang
   shippingOrderCreatedAt?: string; // Thời điểm Content nộp đủ thông tin gửi mẫu
@@ -1694,6 +1718,11 @@ export interface ScriptReviewItem {
   submittedAt: string;
   feedbackNotes?: string;
   draftVideoUrl?: string;
+  reviewMode?: 'DIRECTIVE' | 'VETTING_GUARDRAILS';
+  klCode?: string;
+  mandatoryShots?: string;
+  forbiddenClaims?: string;
+  rightsGuardrails?: string;
 }
 
 export interface LeaderboardItem {
@@ -2079,7 +2108,12 @@ export interface BrandScriptItem {
   revisionCount: number; // Max 2 revisions
   remainingHours: number; // SLA countdown
   brandFeedback?: string;
-  draftVideoUrl?: string; // Watermarked draft video
+  draftVideoUrl?: string;
+  reviewMode?: 'DIRECTIVE' | 'VETTING_GUARDRAILS';
+  klCode?: string;
+  mandatoryShots?: string;
+  forbiddenClaims?: string;
+  rightsGuardrails?: string; // Watermarked draft video
   publishedVideoUrl?: string;
   views?: number;
   gmv?: number;
@@ -2526,6 +2560,11 @@ export interface ContentItemModel {
   approvedAt?: string;
   publicationsCount?: number;
   publications?: PublicationItemModel[];
+  reviewMode?: 'DIRECTIVE' | 'VETTING_GUARDRAILS';
+  klCode?: string;
+  mandatoryShots?: string;
+  forbiddenClaims?: string;
+  rightsGuardrails?: string;
 }
 
 export interface PublicationItemModel {
@@ -3461,7 +3500,12 @@ export interface SelfChannelVideoTask {
   // Bước 4 SOP: Video Deliverables, Drive tổng gian hàng & Link đăng kênh Brand
   videoDeliverables?: {
     currentVersion: number;
-    draftVideoUrl?: string; // Link Drive / Capcut / Video preview
+    draftVideoUrl?: string;
+  reviewMode?: 'DIRECTIVE' | 'VETTING_GUARDRAILS';
+  klCode?: string;
+  mandatoryShots?: string;
+  forbiddenClaims?: string;
+  rightsGuardrails?: string; // Link Drive / Capcut / Video preview
     finalVideoUrl?: string; // Link video chính thức đạt nghiệm thu (file sạch không logo)
     storeDriveFolderUrl?: string; // Link thư mục Drive tổng của Gian hàng bàn giao cho Brand/Media
     publishedChannelUrl?: string; // Link bài đăng thực tế trên kênh TikTok / Shopee Video của Brand

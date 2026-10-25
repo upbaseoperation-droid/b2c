@@ -290,6 +290,12 @@ export interface DealJob {
   usp: string;
   /** Claim cấm / Từ khóa cấm Do & Don't kế thừa từ Nhóm sản phẩm hoặc Brief */
   forbiddenClaims?: string;
+  /** Chế độ làm việc: Định hướng kịch bản chi tiết (FOC/KL1-KL5) vs Khung tham số kiểm duyệt (KL6-KL7) */
+  briefMode?: 'DIRECTIVE' | 'VETTING_GUARDRAILS';
+  /** Yêu cầu khung hình & hiện diện sản phẩm bắt buộc (cho KL6-KL7) */
+  mandatoryShots?: string;
+  /** Điều khoản bản quyền, Mã Spark Ads & Độc quyền ngành hàng (cho KL6-KL7) */
+  rightsGuardrails?: string;
   cta: string;
   briefUrl: string;
   week: string;
@@ -354,6 +360,8 @@ export interface DealJob {
     note: string;
     at: string;
     scriptUrl?: string;
+    /** Vòng 1: B2C kiểm duyệt kịch bản / khung tham số nội bộ trước khi gửi Brand (SLA 24h) */
+    internalScriptAuditStatus?: 'NONE' | 'PASSED' | 'CHANGES';
     /** Vòng 1: B2C kiểm duyệt video demo nội bộ trước khi đẩy Google Sheet cho Brand (Pipeline 12.1) */
     internalDemoAuditStatus?: 'NONE' | 'PASSED' | 'CHANGES';
     demoStatus?: ScriptStatus;
@@ -375,6 +383,9 @@ export interface DealJob {
   lifecycleStatus?: JobLifecycleStatus;
   lifecycleNote?: string;
   rolledOverToMonth?: string;
+  /** Mã kế hoạch và kỳ tháng gốc nếu Job này được kéo từ tháng cũ sang chỉ để theo dõi & xử lý nốt (không tính vào ngân sách tháng mới) */
+  sourcePlanId?: string;
+  sourcePlanMonth?: string;
   replacedByKocHandle?: string;
   performance: { d14: DealPerformance; d30: DealPerformance; d60: DealPerformance };
 }
@@ -663,6 +674,9 @@ export interface NewJobInput {
   hook?: string;
   usp?: string;
   forbiddenClaims?: string;
+  briefMode?: 'DIRECTIVE' | 'VETTING_GUARDRAILS';
+  mandatoryShots?: string;
+  rightsGuardrails?: string;
   cta?: string;
   briefUrl?: string;
   week?: string;
@@ -688,6 +702,9 @@ export interface NewJobInput {
   productGroupId?: string;
   productGroupName?: string;
   productName?: string;
+  cartUrl?: string;
+  affiliateUrl?: string;
+  commissionPct?: number | null;
 }
 
 export function createDealJob(input: NewJobInput): DealJob {
@@ -705,6 +722,9 @@ export function createDealJob(input: NewJobInput): DealJob {
     hook: input.hook || '',
     usp: input.usp || '',
     forbiddenClaims: input.forbiddenClaims || undefined,
+    briefMode: input.briefMode || undefined,
+    mandatoryShots: input.mandatoryShots || undefined,
+    rightsGuardrails: input.rightsGuardrails || undefined,
     cta: input.cta || '',
     briefUrl: input.briefUrl || '',
     week: input.week || '',
@@ -731,14 +751,14 @@ export function createDealJob(input: NewJobInput): DealJob {
     productGroupId: input.productGroupId || '',
     productGroupName: input.productGroupName || '',
     productName: input.productName || '',
-    cartUrl: '',
-    affiliateUrl: '',
-    commissionPct: null,
+    cartUrl: input.cartUrl || '',
+    affiliateUrl: input.affiliateUrl || '',
+    commissionPct: typeof input.commissionPct === 'number' ? input.commissionPct : null,
     appendixNo: '',
     appendixDate: '',
     appendixUrl: '',
     sample: { status: 'NONE', trackingNo: '', at: '' },
-    script: { status: 'NONE', note: '', at: '', scriptUrl: '', demoStatus: 'NONE', demoUrl: '' },
+    script: { status: 'NONE', note: '', at: '', scriptUrl: '', internalScriptAuditStatus: 'NONE', internalDemoAuditStatus: 'NONE', demoStatus: 'NONE', demoUrl: '' },
     deadline: '',
     airLink: '',
     airedAt: '',
@@ -906,11 +926,17 @@ export interface NewDealInput {
   hook?: string;
   usp?: string;
   forbiddenClaims?: string;
+  briefMode?: 'DIRECTIVE' | 'VETTING_GUARDRAILS';
+  mandatoryShots?: string;
+  rightsGuardrails?: string;
   cta?: string;
   briefUrl?: string;
   productGroupId?: string;
   productGroupName?: string;
   productName?: string;
+  cartUrl?: string;
+  affiliateUrl?: string;
+  commissionPct?: number | null;
   legalProfileId?: string;
   entityType?: LegalEntityType;
   payeeLegalName?: string;
@@ -950,6 +976,9 @@ export function createDeal(input: NewDealInput): PlanDeal {
     hook: input.hook || '',
     usp: input.usp || '',
     forbiddenClaims: input.forbiddenClaims || undefined,
+    briefMode: input.briefMode || undefined,
+    mandatoryShots: input.mandatoryShots || undefined,
+    rightsGuardrails: input.rightsGuardrails || undefined,
     cta: input.cta || '',
     briefUrl: input.briefUrl || '',
     week: input.week || '',
@@ -963,6 +992,9 @@ export function createDeal(input: NewDealInput): PlanDeal {
     payeeBankAccount: input.payeeBankAccount || '',
     payeeBankHolder: input.payeeBankHolder || '',
     videoFee: itemFee(item),
+    cartUrl: input.cartUrl || '',
+    affiliateUrl: input.affiliateUrl || '',
+    commissionPct: input.commissionPct ?? null,
     productGroupId: input.productGroupId || '',
     productGroupName: input.productGroupName || '',
     productName: input.productName || '',
@@ -982,9 +1014,9 @@ export function createDeal(input: NewDealInput): PlanDeal {
     productGroupId: initialJob.productGroupId,
     productGroupName: initialJob.productGroupName,
     productName: initialJob.productName,
-    cartUrl: '',
-    affiliateUrl: '',
-    commissionPct: null,
+    cartUrl: input.cartUrl || '',
+    affiliateUrl: input.affiliateUrl || '',
+    commissionPct: typeof input.commissionPct === 'number' ? input.commissionPct : null,
     appendixNo: '',
     appendixDate: '',
     appendixUrl: '',
@@ -1425,7 +1457,7 @@ export function dealIssues(deals: PlanDeal[], now = today()): DealIssue[] {
     for (const j of jobs) {
       if (j.lifecycleStatus && j.lifecycleStatus !== 'ACTIVE') continue;
       const total = jobTotalFee(j);
-      if (!j.slotId && !j.briefCode && !j.angle?.trim()) {
+      if (!j.sourcePlanMonth && !j.slotId && !j.briefCode && !j.angle?.trim()) {
         out.push({ level: 'warning', dealCode: j.code, text: 'Job chưa chọn dòng Định hướng / Brief từ Plan.' });
       }
       // Miễn phạt SLA cho B2C khi Hàng mẫu rơi vào diện Brand hết hàng (9.4) hoặc Lỗi sản phẩm (9.5)
@@ -1576,7 +1608,7 @@ export function budgetIssues(deals: PlanDeal[], quota: QuotaLine[]): DealIssue[]
   for (const d of deals) {
     const key = d.grade === 'TAP UpAffiliate' ? 'FOC' : d.grade;
     const activeFee = (d.jobs || [])
-      .filter(j => !j.lifecycleStatus || j.lifecycleStatus === 'ACTIVE')
+      .filter(j => (!j.lifecycleStatus || j.lifecycleStatus === 'ACTIVE') && !j.sourcePlanMonth)
       .reduce((s, j) => s + jobTotalFee(j), 0);
     spent.set(key, (spent.get(key) || 0) + activeFee);
     if (key !== 'FOC') totalStoreSpent += activeFee;
@@ -1617,25 +1649,50 @@ export interface DealSummary {
   paid: number;
   byStage: Record<DealStage, number>;
   gmv30: number;
+  carryOverJobsCount: number;
+  carryOverAiredCount: number;
+  carryOverFee: number;
 }
 
 export function summarizeDeals(deals: PlanDeal[]): DealSummary {
   const byStage = Object.fromEntries(STAGES.map(s => [s.key, 0])) as Record<DealStage, number>;
+  let count = 0;
   let jobsCount = 0;
   let totalFee = 0;
   let paid = 0;
   let gmv30 = 0;
+  let carryOverJobsCount = 0;
+  let carryOverAiredCount = 0;
+  let carryOverFee = 0;
   for (const d of deals) {
     const jobs = d.jobs && d.jobs.length > 0 ? d.jobs : [];
-    jobsCount += jobs.length;
+    const hasCurrentMonthJob = jobs.some(j => !j.sourcePlanMonth);
+    if (hasCurrentMonthJob) count++;
     for (const j of jobs) {
       byStage[jobStageOf(j)]++;
+      if (j.sourcePlanMonth) {
+        carryOverJobsCount++;
+        if (j.airLink.trim() || j.airedAt) carryOverAiredCount++;
+        carryOverFee += jobTotalFee(j);
+        continue;
+      }
+      jobsCount++;
       totalFee += jobTotalFee(j);
       if (j.payment.status === 'PAID') paid += j.payment.amount ?? jobTotalFee(j);
       gmv30 += j.performance.d30.gmv || 0;
     }
   }
-  return { count: deals.length, jobsCount, totalFee, paid, byStage, gmv30 };
+  return {
+    count,
+    jobsCount,
+    totalFee,
+    paid,
+    byStage,
+    gmv30,
+    carryOverJobsCount,
+    carryOverAiredCount,
+    carryOverFee,
+  };
 }
 
 export function pushEvent(d: PlanDeal, actor: string, text: string): PlanDeal {
@@ -1845,6 +1902,8 @@ export function sanitizeDealBoard(input: Partial<DealBoardData> | undefined): De
           lifecycleStatus: oneOf(j?.lifecycleStatus, ['ACTIVE', 'REPLACED', 'REPLACED_KOC', 'ROLLED_OVER', 'ROLLED_OVER_NEXT_MONTH', 'CANCELLED'] as const, 'ACTIVE'),
           lifecycleNote: s(j?.lifecycleNote, 500) || undefined,
           rolledOverToMonth: s(j?.rolledOverToMonth, 20) || undefined,
+          sourcePlanId: s(j?.sourcePlanId, 120) || undefined,
+          sourcePlanMonth: s(j?.sourcePlanMonth, 20) || undefined,
           replacedByKocHandle: s(j?.replacedByKocHandle, 120) || undefined,
           performance: { d14: perf(j?.performance?.d14), d30: perf(j?.performance?.d30), d60: perf(j?.performance?.d60) },
         }))

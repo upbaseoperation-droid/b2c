@@ -9,24 +9,40 @@ import {
   addKocToSlot,
   BRIEF_FORMAT_OPTIONS,
   CONTENT_ROWS,
+  DEFAULT_KL67_MANDATORY_SHOTS,
+  DEFAULT_KL67_RIGHTS_GUARDRAILS,
   diagnoseContentPlan,
   ensureSequentialBriefCodes,
   formatBriefCode,
   generateMissingSlotsFromBreakdown,
   isBriefReady,
   isPlaced,
+  isVettingGuardrailRow,
   newSlot,
   removeKocFromSlot,
   requiredGrid,
+  resolveBriefMode,
   slotKocHandles,
   slotSpecsFromBrandPlan,
+  slotSpecsFromOneSheetPlan,
   slotTargetQty,
   syncSlotsFromBrandPlan,
+  type ContentBriefMode,
   type ContentPlanData,
   type ContentRowKey,
   type ContentSlot,
 } from '../../lib/contentPlanRules';
-import type { BrandProductCatalog } from '../../lib/productCatalog';
+import { buildBrandOneSheetPlanData } from '../../lib/oneSheetPlanBuilder';
+import type { BrandMonthlyPlanItem, BrandOneSheetPlanData } from '../../lib/types';
+import {
+  findCatalogProduct,
+  listAllCatalogProducts,
+  resolveEffectiveProductGuidelines,
+  resolveEffectiveProductLinks,
+  resolveEffectiveSampleQuota,
+  type BrandProductCatalog,
+  type CatalogProduct,
+} from '../../lib/productCatalog';
 import { usePlanRecord } from '../../lib/usePlanRecord';
 import { detectChannel, type BrandPlanData, type PlanChannel } from '../../lib/brandPlanRules';
 import { CreatorMatchModal } from './CreatorMatchModal';
@@ -103,7 +119,12 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
       .sort((a, b) => (a.storeName || a.title).localeCompare(b.storeName || b.title));
   }, [plans, activeMonth, search]);
 
-  const plan = useMemo(() => plans.find(p => p.id === selectedId) || null, [plans, selectedId]);
+  const activePlanId = useMemo(() => {
+    if (selectedId && visiblePlans.some(p => p.id === selectedId)) return selectedId;
+    return visiblePlans[0]?.id ?? null;
+  }, [selectedId, visiblePlans]);
+
+  const plan = useMemo(() => plans.find(p => p.id === activePlanId) || null, [plans, activePlanId]);
   const { data, status, update, saveNow } = usePlanRecord<ContentPlanData>('/api/content-plan', plan?.id ?? null, EMPTY, msg => notify(msg, 'warning'));
   const slots = useMemo(() => ensureSequentialBriefCodes(data.slots || []), [data.slots]);
 
@@ -128,7 +149,35 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
   }, [plan?.brandName]);
 
   const req = useMemo(() => (plan ? requiredGrid(plan) : null), [plan]);
-  const diag = useMemo(() => (plan ? diagnoseContentPlan(plan, slots) : null), [plan, slots]);
+  const diag = useMemo(() => (plan ? diagnoseContentPlan(plan, slots, catalog) : null), [plan, slots, catalog]);
+  const storeChannel: PlanChannel = useMemo(() => (plan ? detectChannel(plan) || 'TIKTOK' : 'TIKTOK'), [plan]);
+  const targetPlatformLabel = storeChannel === 'SHOPEE' ? 'Shopee' : 'TikTok Shop';
+
+  const buildCatalogSelectionPatch = (groupId: string, productId?: string) => {
+    const grp = catalog.groups.find(g => g.id === groupId);
+    const prod: CatalogProduct | undefined =
+      (productId && grp?.products.find(p => p.id === productId)) ||
+      (productId && findCatalogProduct(catalog, productId, groupId)?.product) ||
+      grp?.products[0];
+    const effGuide = resolveEffectiveProductGuidelines(catalog, groupId || prod && findCatalogProduct(catalog, prod.id)?.group.id || '', prod);
+    const effLinks = resolveEffectiveProductLinks(catalog, prod);
+    const matchedCart = effLinks.cartLinks.find(l => l.platform === targetPlatformLabel) || effLinks.cartLinks[0];
+    const matchedAff = effLinks.affiliateLinks.find(l => l.platform === targetPlatformLabel) || effLinks.affiliateLinks[0];
+    const resolvedGroupName = grp?.name || (prod ? findCatalogProduct(catalog, prod.id)?.group.name : '') || '';
+    const displayProduct = prod ? (resolvedGroupName && resolvedGroupName !== prod.name ? `${resolvedGroupName} · ${prod.name}` : prod.name) : resolvedGroupName;
+    return {
+      productGroupId: groupId || (prod ? findCatalogProduct(catalog, prod.id)?.group.id || '' : ''),
+      productId: prod?.id || '',
+      sku: prod?.sku || prod?.name || '',
+      product: displayProduct,
+      usp: effGuide.usp,
+      forbiddenClaims: effGuide.forbiddenClaims,
+      detectKeywords: effGuide.detectKeywords,
+      cartUrl: matchedCart?.url || '',
+      affiliateUrl: matchedAff?.url || '',
+      commissionPct: matchedAff?.commissionPct ?? null,
+    };
+  };
 
   const rowsShown = useMemo(() => {
     if (!req) return [];
@@ -139,7 +188,22 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
 
   // --- kéo thả ---
   const placeSlot = (id: string, week: string, row: ContentRowKey) => {
-    setSlots(slots.map(s => (s.id === id ? { ...s, week, row, updatedAt: new Date().toISOString() } : s)));
+    const vetting = isVettingGuardrailRow(row);
+    setSlots(
+      slots.map(s =>
+        s.id === id
+          ? {
+              ...s,
+              week,
+              row,
+              briefMode: vetting ? 'VETTING_GUARDRAILS' : s.briefMode,
+              mandatoryShots: vetting ? s.mandatoryShots || DEFAULT_KL67_MANDATORY_SHOTS : s.mandatoryShots,
+              rightsGuardrails: vetting ? s.rightsGuardrails || DEFAULT_KL67_RIGHTS_GUARDRAILS : s.rightsGuardrails,
+              updatedAt: new Date().toISOString(),
+            }
+          : s
+      )
+    );
   };
   const unplaceSlot = (id: string) => {
     setSlots(slots.map(s => (s.id === id ? { ...s, week: null, row: null, updatedAt: new Date().toISOString() } : s)));
@@ -148,7 +212,9 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
   // --- khởi tạo các dòng Brief mẫu theo khung tuần × bậc KL (mỗi ô thiếu N video -> 1 dòng Brief có SL mục tiêu = N) ---
   const handleGenerateAllPlanBriefs = () => {
     if (!plan) return;
-    const { slots: next, addedCount, addedVideos } = generateMissingSlotsFromBreakdown(plan, slots, currentUserName);
+    const defaultHero = listAllCatalogProducts(catalog)[0];
+    const defaultProdLabel = defaultHero ? `${defaultHero.group.name} · ${defaultHero.product.name}` : '';
+    const { slots: next, addedCount, addedVideos } = generateMissingSlotsFromBreakdown(plan, slots, currentUserName, defaultProdLabel);
     if (addedCount === 0) {
       notify(`Các dòng Brief đã phủ đủ tổng số video theo phân rã tuần.`, 'info');
       return;
@@ -162,12 +228,21 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
   const [addForm, setAddForm] = useState({
     pillar: CONTENT_PILLARS[0].name,
     qty: 5,
+    briefMode: 'DIRECTIVE' as ContentBriefMode,
     productGroupId: '',
+    productId: '',
+    sku: '',
     product: '',
+    cartUrl: '',
+    affiliateUrl: '',
+    commissionPct: null as number | null,
+    detectKeywords: '',
     angle: '',
     hook: '',
     usp: '',
     forbiddenClaims: '',
+    mandatoryShots: '',
+    rightsGuardrails: '',
     cta: '',
     format: BRIEF_FORMAT_OPTIONS[0] as string,
     briefUrl: '',
@@ -182,7 +257,16 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
       const have = slots.filter(s => s.week === week && s.row === row).reduce((sum, s) => sum + slotTargetQty(s), 0);
       defaultQty = Math.max(1, need - have || need || 1);
     }
-    setAddForm(f => ({ ...f, qty: defaultQty, week: week || '', row: row || '' }));
+    const isVetting = isVettingGuardrailRow(row);
+    setAddForm(f => ({
+      ...f,
+      qty: defaultQty,
+      week: week || '',
+      row: row || '',
+      briefMode: isVetting ? 'VETTING_GUARDRAILS' : 'DIRECTIVE',
+      mandatoryShots: isVetting ? f.mandatoryShots || DEFAULT_KL67_MANDATORY_SHOTS : f.mandatoryShots,
+      rightsGuardrails: isVetting ? f.rightsGuardrails || DEFAULT_KL67_RIGHTS_GUARDRAILS : f.rightsGuardrails,
+    }));
     setAddOpen(true);
   };
 
@@ -196,9 +280,18 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
       angle: addForm.angle,
       product: addForm.product,
       productGroupId: addForm.productGroupId || undefined,
+      productId: addForm.productId || undefined,
+      sku: addForm.sku || undefined,
+      cartUrl: addForm.cartUrl || undefined,
+      affiliateUrl: addForm.affiliateUrl || undefined,
+      commissionPct: addForm.commissionPct,
+      detectKeywords: addForm.detectKeywords || undefined,
       hook: addForm.hook,
       usp: addForm.usp,
       forbiddenClaims: addForm.forbiddenClaims,
+      briefMode: addForm.briefMode,
+      mandatoryShots: addForm.mandatoryShots || undefined,
+      rightsGuardrails: addForm.rightsGuardrails || undefined,
       cta: addForm.cta,
       format: addForm.format,
       briefUrl: addForm.briefUrl,
@@ -217,13 +310,22 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
   const [editForm, setEditForm] = useState({
     briefCode: '',
     targetQty: 1,
+    briefMode: 'DIRECTIVE' as ContentBriefMode,
     pillar: '',
     productGroupId: '',
+    productId: '',
+    sku: '',
     product: '',
+    cartUrl: '',
+    affiliateUrl: '',
+    commissionPct: null as number | null,
+    detectKeywords: '',
     angle: '',
     hook: '',
     usp: '',
     forbiddenClaims: '',
+    mandatoryShots: '',
+    rightsGuardrails: '',
     cta: '',
     format: '',
     briefUrl: '',
@@ -232,17 +334,28 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
   const [deleting, setDeleting] = useState<ContentSlot | null>(null);
 
   const openEdit = (s: ContentSlot) => {
+    const matched = findCatalogProduct(catalog, s.productId || s.sku || s.product, s.productGroupId);
+    const effMode = resolveBriefMode(s);
     setEditing(s);
     setEditForm({
       briefCode: s.briefCode || '',
       targetQty: slotTargetQty(s),
+      briefMode: effMode,
       pillar: s.pillar,
-      productGroupId: s.productGroupId || '',
+      productGroupId: s.productGroupId || matched?.group.id || '',
+      productId: s.productId || matched?.product.id || '',
+      sku: s.sku || matched?.product.sku || '',
       product: s.product,
+      cartUrl: s.cartUrl || '',
+      affiliateUrl: s.affiliateUrl || '',
+      commissionPct: typeof s.commissionPct === 'number' ? s.commissionPct : null,
+      detectKeywords: s.detectKeywords || '',
       angle: s.angle,
       hook: s.hook || '',
       usp: s.usp || '',
       forbiddenClaims: s.forbiddenClaims || '',
+      mandatoryShots: s.mandatoryShots || (effMode === 'VETTING_GUARDRAILS' ? DEFAULT_KL67_MANDATORY_SHOTS : ''),
+      rightsGuardrails: s.rightsGuardrails || (effMode === 'VETTING_GUARDRAILS' ? DEFAULT_KL67_RIGHTS_GUARDRAILS : ''),
       cta: s.cta || '',
       format: s.format || BRIEF_FORMAT_OPTIONS[0],
       briefUrl: s.briefUrl || '',
@@ -251,7 +364,10 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
   };
   const saveEdit = () => {
     if (!editing) return;
-    const ready = Boolean(editForm.product.trim() && (editForm.angle.trim() || editForm.hook.trim() || editForm.usp.trim()));
+    const isVetting = editForm.briefMode === 'VETTING_GUARDRAILS';
+    const ready = isVetting
+      ? Boolean(editForm.product.trim() && (editForm.usp.trim() || editForm.forbiddenClaims.trim() || editForm.mandatoryShots.trim()))
+      : Boolean(editForm.product.trim() && (editForm.angle.trim() || editForm.hook.trim() || editForm.usp.trim()));
     setSlots(
       slots.map(s =>
         s.id === editing.id
@@ -259,13 +375,22 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
               ...s,
               briefCode: editForm.briefCode.trim() || s.briefCode,
               targetQty: Math.max(1, Math.min(500, Math.floor(editForm.targetQty) || 1)),
+              briefMode: editForm.briefMode,
               pillar: editForm.pillar,
               productGroupId: editForm.productGroupId || undefined,
+              productId: editForm.productId || undefined,
+              sku: editForm.sku.trim() || undefined,
               product: editForm.product.trim(),
+              cartUrl: editForm.cartUrl.trim() || undefined,
+              affiliateUrl: editForm.affiliateUrl.trim() || undefined,
+              commissionPct: typeof editForm.commissionPct === 'number' ? editForm.commissionPct : undefined,
+              detectKeywords: editForm.detectKeywords.trim() || undefined,
               angle: editForm.angle.trim(),
               hook: editForm.hook.trim() || undefined,
               usp: editForm.usp.trim() || undefined,
               forbiddenClaims: editForm.forbiddenClaims.trim() || undefined,
+              mandatoryShots: editForm.mandatoryShots.trim() || undefined,
+              rightsGuardrails: editForm.rightsGuardrails.trim() || undefined,
               cta: editForm.cta.trim() || undefined,
               format: editForm.format.trim() || undefined,
               briefUrl: editForm.briefUrl.trim() || undefined,
@@ -295,6 +420,12 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
         angle: s.angle,
         product: s.product,
         productGroupId: s.productGroupId,
+        productId: s.productId,
+        sku: s.sku,
+        cartUrl: s.cartUrl,
+        affiliateUrl: s.affiliateUrl,
+        commissionPct: s.commissionPct,
+        detectKeywords: s.detectKeywords,
         hook: s.hook,
         usp: s.usp,
         forbiddenClaims: s.forbiddenClaims,
@@ -362,7 +493,6 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
         fetch('/api/master-data', { cache: 'no-store' }),
       ]);
       const planBody = await planRes.json().catch(() => null);
-      if (!planRes.ok) throw new Error(planBody?.error || `Lỗi ${planRes.status}`);
       const catalogBody = await catalogRes.json().catch(() => null);
       const stores = ((catalogBody?.data?.stores as StorePortfolioItem[]) || []).filter(Boolean);
       const slugOf = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -372,11 +502,59 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
         notify('Chưa xác định gian hàng này bán trên TikTok Shop hay Shopee nên chưa lấy được content từ plan của Brand.', 'warning');
         return;
       }
-      const brandPlan = planBody.data as BrandPlanData;
-      if (!brandPlan.rows.some(r => r.channel === channel)) {
-        notify('Plan tháng của Brand chưa có dòng Chi tiết Content cho sàn này.', 'info');
+
+      const brandPlan = (planBody?.data as BrandPlanData | undefined) || null;
+      const hasLegacyRows = Boolean(brandPlan && Array.isArray(brandPlan.rows) && brandPlan.rows.some(r => r.channel === channel));
+
+      // Tìm oneSheetPlanData từ plan gian hàng hoặc từ bộ nhớ Kế hoạch theo Brand
+      let resolvedOneSheet: BrandOneSheetPlanData | undefined = plan.oneSheetPlanData;
+      let resolvedBrandPlanItem: BrandMonthlyPlanItem | null = null;
+      if (!resolvedOneSheet && typeof window !== 'undefined') {
+        try {
+          const raw = window.localStorage.getItem('b2c_brand_monthly_plans_v1');
+          if (raw) {
+            const savedBrandPlans = JSON.parse(raw) as BrandMonthlyPlanItem[];
+            const parentBrand = (plan.parentBrand || plan.brandName || '').split('_')[0].trim();
+            resolvedBrandPlanItem =
+              savedBrandPlans.find(
+                bp => slugOf(bp.brandName) === slugOf(parentBrand) || slugOf(parentBrand).includes(slugOf(bp.brandName))
+              ) || null;
+            if (resolvedBrandPlanItem?.oneSheetPlanData) {
+              resolvedOneSheet = resolvedBrandPlanItem.oneSheetPlanData;
+            }
+          }
+        } catch {
+          /* bỏ qua lỗi đọc localStorage */
+        }
+      }
+
+      if (!hasLegacyRows) {
+        const oneSheet =
+          resolvedOneSheet ||
+          buildBrandOneSheetPlanData({
+            brandName: (plan.parentBrand || plan.brandName || '').split('_')[0].trim(),
+            month: plan.month,
+            brandPlan: resolvedBrandPlanItem,
+            storePlans: plans,
+            storePortfolios: stores,
+          });
+        const { specs, skipped } = slotSpecsFromOneSheetPlan(oneSheet, plan, channel, catalog);
+        if (specs.length === 0) {
+          notify('Plan tháng của Brand chưa có dòng Chi tiết Content cho sàn này.', 'info');
+          return;
+        }
+        const result = syncSlotsFromBrandPlan(slots, specs, currentUserName);
+        setSlots(result.slots);
+        const parts = [`thêm ${result.added}`, `cập nhật ${result.updated}`];
+        if (result.removed) parts.push(`bỏ ${result.removed} content không còn trong plan`);
+        if (result.manualKept) parts.push(`giữ ${result.manualKept} content bạn đã kéo sang chỗ khác`);
+        if (result.keptOrphans) parts.push(`${result.keptOrphans} content đã gán KOC nhưng dòng plan không còn`);
+        const skip = skipped.live + skipped.noWeek + skipped.noTier;
+        if (skip) parts.push(`bỏ qua ${skip}`);
+        notify(`Đã lấy từ Kế hoạch theo Brand (Biểu mẫu 01→05): ${parts.join(', ')}.`, result.keptOrphans || skip ? 'warning' : 'success');
         return;
       }
+
       let groups: { id: string; name: string; usp?: string; forbiddenClaims?: string }[] = [];
       try {
         const gRes = await fetch('/api/product-catalog?brand=' + encodeURIComponent(plan.brandName), { cache: 'no-store' });
@@ -392,17 +570,17 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
       } catch {
         /* không có danh mục thì ghi sản phẩm theo SKU của dòng plan */
       }
-      const { specs, skipped } = slotSpecsFromBrandPlan(brandPlan.rows, brandPlan.pillars, channel, groups);
+      const { specs, skipped } = slotSpecsFromBrandPlan(brandPlan!.rows, brandPlan!.pillars, channel, groups);
       const result = syncSlotsFromBrandPlan(slots, specs, currentUserName);
       setSlots(result.slots);
       const parts = [`thêm ${result.added}`, `cập nhật ${result.updated}`];
       if (result.removed) parts.push(`bỏ ${result.removed} content không còn trong plan`);
       if (result.manualKept) parts.push(`giữ ${result.manualKept} content bạn đã kéo sang chỗ khác`);
       if (result.keptOrphans) parts.push(`${result.keptOrphans} content đã gán KOC nhưng dòng plan không còn`);
-      if (brandPlan.approval?.status !== 'APPROVED') parts.push('plan của Brand chưa được duyệt');
+      if (brandPlan!.approval?.status !== 'APPROVED') parts.push('plan của Brand chưa được duyệt');
       const skip = skipped.live + skipped.noWeek + skipped.noTier;
       if (skip) parts.push(`bỏ qua ${skip} (livestream ${skipped.live}, chưa chọn tuần ${skipped.noWeek}, chưa chọn bậc ${skipped.noTier})`);
-      notify(`Đã lấy từ plan Brand: ${parts.join(', ')}.`, result.keptOrphans || skip || brandPlan.approval?.status !== 'APPROVED' ? 'warning' : 'success');
+      notify(`Đã lấy từ plan Brand: ${parts.join(', ')}.`, result.keptOrphans || skip || brandPlan!.approval?.status !== 'APPROVED' ? 'warning' : 'success');
     } catch (err) {
       notify(err instanceof Error ? err.message : 'Không lấy được plan tháng của Brand.', 'error');
     } finally {
@@ -480,6 +658,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
 
   const chip = (s: ContentSlot) => {
     const ready = isBriefReady(s);
+    const vetting = resolveBriefMode(s) === 'VETTING_GUARDRAILS';
     const code = formatBriefCode(s);
     const qty = slotTargetQty(s);
     const handles = slotKocHandles(s);
@@ -493,25 +672,52 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
         }}
         onDragEnd={() => setDragId(null)}
         title={CONTENT_PILLARS.find(p => p.name === s.pillar)?.definition}
-        className="cursor-grab rounded border border-line bg-surface px-1.5 py-1 text-2xs active:cursor-grabbing"
+        className="group cursor-grab rounded border border-line bg-surface px-2 py-1.5 text-2xs hover:border-accent/40 active:cursor-grabbing"
       >
-        <button type="button" onClick={() => openEdit(s)} className="block w-full text-left">
-          <div className="flex items-center justify-between gap-1">
-            <span className="font-semibold text-ink">
-              {code} · {qty} video
+        <div className="flex items-center justify-between gap-1">
+          <button type="button" onClick={() => openEdit(s)} className="truncate font-semibold text-ink hover:text-accent">
+            {code} · {qty} video
+          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            {vetting && (
+              <span className="rounded bg-accent-soft px-1 py-0.5 text-3xs font-semibold text-accent">
+                Khung duyệt
+              </span>
+            )}
+            <span className={`text-3xs ${ready ? 'text-positive font-medium' : 'text-ink-3'}`}>
+              {vetting ? (ready ? 'Đủ tham số' : 'Thiếu tham số') : ready ? 'Brief đủ' : 'Nháp'}
             </span>
-            <span className={`text-3xs ${ready ? 'text-positive' : 'text-ink-3'}`}>{ready ? 'Brief đủ' : 'Nháp'}</span>
+            {s.row !== 'SELF' && (
+              <button
+                type="button"
+                title="Gán KOC cho dòng Brief này"
+                onClick={e => {
+                  e.stopPropagation();
+                  setMatchSlotId(s.id);
+                }}
+                className="rounded p-0.5 text-ink-3 hover:bg-accent-soft hover:text-accent"
+              >
+                <UserPlus className="h-3 w-3" />
+              </button>
+            )}
           </div>
-          <div className="truncate font-medium text-ink">{s.pillar}</div>
+        </div>
+        <button type="button" onClick={() => openEdit(s)} className="mt-0.5 block w-full text-left">
+          <div className="truncate font-medium text-ink">{vetting ? `Kiểm duyệt KOL · ${s.pillar}` : s.pillar}</div>
           <div className="truncate text-ink-3">{s.product || s.angle || 'Chưa ghi sản phẩm'}</div>
-          {s.angle && s.product && <div className="truncate text-ink-3">{s.angle}</div>}
-          {s.pic && <div className="truncate text-ink-3">{s.pic}</div>}
+          {vetting ? (
+            (s.mandatoryShots || s.usp) && (
+              <div className="truncate text-ink-3">Tham số: {s.mandatoryShots || s.usp}</div>
+            )
+          ) : (
+            s.angle && s.product && <div className="truncate text-ink-3">{s.angle}</div>
+          )}
           {handles.length > 0 && (
-            <div className="truncate font-medium text-accent">
+            <div className="mt-0.5 truncate font-medium text-accent">
               {handles.map(h => `@${h.replace(/^@/, '')}`).join(', ')} ({handles.length}/{qty})
             </div>
           )}
-          {handles.length === 0 && s.rejectedKoc && <div className="truncate text-critical">Brand từ chối @{s.rejectedKoc.handle}</div>}
+          {handles.length === 0 && s.rejectedKoc && <div className="mt-0.5 truncate text-critical">Brand từ chối @{s.rejectedKoc.handle}</div>}
         </button>
       </div>
     );
@@ -520,7 +726,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
       <aside className="space-y-3 rounded-lg border border-line bg-surface p-3">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-2">
           <Select value={activeMonth} onChange={e => setMonth(e.target.value)}>
             {months.length === 0 && <option value="">Chưa có tháng</option>}
             {months.map(m => (
@@ -542,7 +748,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
               key={p.id}
               type="button"
               onClick={() => setSelectedId(p.id)}
-              className={`w-full rounded-md border px-3 py-2 text-left transition ${p.id === selectedId ? 'border-accent bg-accent-soft' : 'border-line hover:bg-sunken'}`}
+              className={`w-full rounded-md border px-3 py-2 text-left transition ${p.id === activePlanId ? 'border-accent bg-accent-soft' : 'border-line hover:bg-sunken'}`}
             >
               <div className="truncate text-[13px] font-medium text-ink">{p.storeName || p.title}</div>
               <div className="mt-0.5 flex items-center justify-between text-2xs text-ink-3">
@@ -560,23 +766,25 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
         ) : (
           <>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2 min-w-0">
                 <h2 className="truncate text-base font-semibold text-ink">{plan.storeName || plan.title}</h2>
-                <div className="mt-0.5 text-xs text-ink-3">
+                <span className="rounded bg-sunken px-2 py-0.5 text-xs text-ink-2">
                   {plan.month} · {plan.pic || 'Chưa giao'} · {PLAN_STATUS_LABEL[plan.status || 'DRAFT'] || plan.status}
-                  {saveLabel[status] ? ` · ${saveLabel[status]}` : ''}
-                </div>
+                </span>
+                {saveLabel[status] && (
+                  <span className="rounded bg-sunken px-2 py-0.5 text-2xs text-ink-3">{saveLabel[status]}</span>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {req.hasData && diag.placedVideos < diag.totalRequired && (
-                  <Button size="md" variant="secondary" onClick={handleGenerateAllPlanBriefs}>
+                  <Button size="sm" variant="secondary" onClick={handleGenerateAllPlanBriefs}>
                     Khởi tạo dòng Brief theo khung tuần × bậc
                   </Button>
                 )}
-                <Button size="md" variant="secondary" onClick={pullFromBrandPlan} disabled={pulling}>
+                <Button size="sm" variant="secondary" onClick={pullFromBrandPlan} disabled={pulling}>
                   {pulling ? 'Đang lấy…' : 'Lấy từ plan Brand'}
                 </Button>
-                <Button size="md" variant="secondary" icon={Send} onClick={openSend} disabled={bookingRows.length === 0}>
+                <Button size="sm" variant="secondary" icon={Send} onClick={openSend} disabled={bookingRows.length === 0}>
                   Gửi Brand
                 </Button>
                 {status === 'error' && (
@@ -584,7 +792,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
                     Lưu lại
                   </Button>
                 )}
-                <Button size="md" variant="primary" icon={Plus} onClick={() => openAdd()}>
+                <Button size="sm" variant="primary" icon={Plus} onClick={() => openAdd()}>
                   Thêm dòng Brief
                 </Button>
               </div>
@@ -713,6 +921,10 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
               </div>
 
               <div className="space-y-3 rounded-lg border border-line bg-surface p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-ink">Tỷ trọng nhóm Pillar & Kiểm tra ({diag.issues.length})</span>
+                  <span className="text-2xs text-ink-3 tabular-nums">{diag.byPillarGroup.length} nhóm</span>
+                </div>
                 <div className="space-y-1.5">
                   {diag.byPillarGroup.length === 0 && <div className="text-xs text-ink-3">Chưa có dòng Brief nào.</div>}
                   {diag.byPillarGroup.map(g => (
@@ -725,6 +937,53 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
                     </div>
                   ))}
                 </div>
+
+                {diag.byProduct.length > 0 && (
+                  <div className="space-y-1.5 border-t border-line pt-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-ink">Phân bổ theo Sản phẩm đẩy & Hạn mức mẫu</span>
+                      <span className="text-2xs text-ink-3 tabular-nums">{diag.byProduct.length} SKU</span>
+                    </div>
+                    <div className="max-h-40 space-y-1.5 overflow-y-auto pr-1">
+                      {diag.byProduct.map(p => {
+                        const share = diag.totalBriefVideos > 0 ? Math.min(100, Math.round((p.plannedVideos / diag.totalBriefVideos) * 100)) : 0;
+                        const isOut = p.status === 'OUT_OF_STOCK' || p.status === 'STOPPED';
+                        const overSample = p.sampleQuota !== null && p.focVideos > p.sampleQuota;
+                        return (
+                          <div key={p.key} className="rounded border border-line bg-canvas/60 px-2.5 py-1.5 text-2xs">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="shrink-0 rounded bg-accent-soft px-1.5 py-0.5 text-3xs font-semibold text-accent">
+                                  {p.role}
+                                </span>
+                                <span className="truncate font-medium text-ink" title={p.productName}>
+                                  {p.productName}
+                                </span>
+                                {isOut && (
+                                  <span className="shrink-0 rounded bg-critical/10 px-1.5 py-0.5 text-3xs font-semibold text-critical">
+                                    Hết hàng
+                                  </span>
+                                )}
+                              </div>
+                              <span className="shrink-0 tabular-nums font-medium text-ink">
+                                {p.plannedVideos} video · {p.assignedKocs} KOC
+                              </span>
+                            </div>
+                            <div className="mt-1 flex items-center gap-2">
+                              <div className="h-1.5 flex-1 overflow-hidden rounded bg-sunken">
+                                <div className={`h-full ${isOut || overSample ? 'bg-critical' : 'bg-accent'}`} style={{ width: `${share}%` }} />
+                              </div>
+                              <span className={`shrink-0 tabular-nums ${overSample ? 'font-semibold text-critical' : 'text-ink-3'}`}>
+                                {p.sampleQuota !== null ? `FOC: ${p.focVideos}/${p.sampleQuota} mẫu` : `FOC: ${p.focVideos}`}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {diag.issues.length > 0 && (
                   <ul className="max-h-48 space-y-1 overflow-y-auto border-t border-line pt-2 text-xs">
                     {diag.issues.slice(0, 12).map((i, idx) => (
@@ -772,30 +1031,70 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
             <Input inputMode="numeric" value={String(addForm.qty)} onChange={e => setAddForm({ ...addForm, qty: parseInt(e.target.value.replace(/\D/g, ''), 10) || 0 })} />
           </Field>
           {catalog.groups.length > 0 && (
-            <Field label="Chọn nhóm sản phẩm đẩy (Danh mục 2 tầng)" className="col-span-2">
-              <Select
-                value={addForm.productGroupId}
-                onChange={e => {
-                  const g = catalog.groups.find(x => x.id === e.target.value);
-                  setAddForm({
-                    ...addForm,
-                    productGroupId: e.target.value,
-                    product: g ? g.name : addForm.product,
-                    usp: g?.usp || addForm.usp,
-                    forbiddenClaims: g?.forbiddenClaims || addForm.forbiddenClaims,
-                  });
-                }}
-              >
-                <option value="">— Tự nhập hoặc chọn nhóm sản phẩm —</option>
-                {catalog.groups.map(g => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
+            <>
+              <Field label="Nhóm sản phẩm đẩy (Tầng 1)">
+                <Select
+                  value={addForm.productGroupId}
+                  onChange={e => {
+                    const nextGroupId = e.target.value;
+                    if (!nextGroupId) {
+                      setAddForm({ ...addForm, productGroupId: '', productId: '' });
+                      return;
+                    }
+                    const sel = buildCatalogSelectionPatch(nextGroupId);
+                    setAddForm({
+                      ...addForm,
+                      ...sel,
+                      cta: addForm.cta || (sel.cartUrl ? 'Nhấn vào giỏ hàng góc trái mua chính hãng' : ''),
+                    });
+                  }}
+                >
+                  <option value="">— Chọn nhóm sản phẩm —</option>
+                  {catalog.groups.map(g => (
+                    <option key={g.id} value={g.id}>
+                      {g.name} ({g.products.length} SKU)
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Sản phẩm / SKU / Combo cụ thể (Tầng 2)">
+                <Select
+                  value={addForm.productId}
+                  onChange={e => {
+                    const nextProdId = e.target.value;
+                    if (!nextProdId) {
+                      setAddForm({ ...addForm, productId: '' });
+                      return;
+                    }
+                    const sel = buildCatalogSelectionPatch(addForm.productGroupId, nextProdId);
+                    setAddForm({
+                      ...addForm,
+                      ...sel,
+                      cta: addForm.cta || (sel.cartUrl ? 'Nhấn vào giỏ hàng góc trái mua chính hãng' : ''),
+                    });
+                  }}
+                >
+                  <option value="">— Chọn SKU đơn hoặc Combo —</option>
+                  {(addForm.productGroupId
+                    ? (catalog.groups.find(g => g.id === addForm.productGroupId)?.products || []).map(product => ({
+                        group: catalog.groups.find(g => g.id === addForm.productGroupId)!,
+                        product,
+                      }))
+                    : listAllCatalogProducts(catalog)
+                  ).map(({ group, product }) => {
+                    const roleTag = product.productType === 'HARD_BUNDLE' || product.productType === 'ROUTINE_COMBO' ? '[COMBO]' : `[${product.role || 'HERO'}]`;
+                    const stockTag = product.status === 'OUT_OF_STOCK' ? ' · HẾT HÀNG' : '';
+                    return (
+                      <option key={product.id} value={product.id}>
+                        {roleTag} {product.name} {product.sku ? `(${product.sku})` : ''} — {group.name}{stockTag}
+                      </option>
+                    );
+                  })}
+                </Select>
+              </Field>
+            </>
           )}
-          <Field label="Sản phẩm">
+          <Field label="Tên sản phẩm hiển thị trên Brief">
             <Input value={addForm.product} onChange={e => setAddForm({ ...addForm, product: e.target.value })} />
           </Field>
           <Field label="Định dạng quay">
@@ -807,18 +1106,88 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
               ))}
             </Select>
           </Field>
-          <Field label="Góc nội dung (Angle)" className="col-span-2">
-            <Input value={addForm.angle} onChange={e => setAddForm({ ...addForm, angle: e.target.value })} />
+          <Field label={`Link giỏ hàng gắn video (${targetPlatformLabel})`}>
+            <Input value={addForm.cartUrl} placeholder="https://..." onChange={e => setAddForm({ ...addForm, cartUrl: e.target.value })} />
           </Field>
-          <Field label="Câu mở đầu 3 giây đầu (Hook 3s)" className="col-span-2">
-            <Input value={addForm.hook} onChange={e => setAddForm({ ...addForm, hook: e.target.value })} />
+          <Field label="Link Commission / Affiliate">
+            <Input value={addForm.affiliateUrl} placeholder="https://affiliate..." onChange={e => setAddForm({ ...addForm, affiliateUrl: e.target.value })} />
           </Field>
-          <Field label="Thông điệp USP sản phẩm bắt buộc" className="col-span-2">
-            <Input value={addForm.usp} onChange={e => setAddForm({ ...addForm, usp: e.target.value })} />
+          <Field label="% Hoa hồng Affiliate áp dụng">
+            <Input
+              inputMode="decimal"
+              value={addForm.commissionPct !== null ? String(addForm.commissionPct) : ''}
+              placeholder="VD: 12"
+              onChange={e => {
+                const v = parseFloat(e.target.value.replace(',', '.'));
+                setAddForm({ ...addForm, commissionPct: Number.isFinite(v) ? v : null });
+              }}
+            />
           </Field>
-          <Field label="Claim cấm / Từ khóa cấm (Do & Don't)" className="col-span-2">
-            <Input value={addForm.forbiddenClaims} onChange={e => setAddForm({ ...addForm, forbiddenClaims: e.target.value })} />
+          <Field label="Chế độ làm việc với KOC (Theo phân khúc KL)" className="col-span-2">
+            <Select
+              value={addForm.briefMode}
+              onChange={e => {
+                const nextMode = e.target.value as ContentBriefMode;
+                setAddForm({
+                  ...addForm,
+                  briefMode: nextMode,
+                  mandatoryShots:
+                    nextMode === 'VETTING_GUARDRAILS' && !addForm.mandatoryShots
+                      ? DEFAULT_KL67_MANDATORY_SHOTS
+                      : addForm.mandatoryShots,
+                  rightsGuardrails:
+                    nextMode === 'VETTING_GUARDRAILS' && !addForm.rightsGuardrails
+                      ? DEFAULT_KL67_RIGHTS_GUARDRAILS
+                      : addForm.rightsGuardrails,
+                });
+              }}
+            >
+              <option value="DIRECTIVE">Định hướng kịch bản chi tiết (Áp dụng: FOC, Self, KL1–KL5)</option>
+              <option value="VETTING_GUARDRAILS">Chỉ giao Tham số kiểm duyệt &amp; Ranh giới Brand (Áp dụng: KL6–KL7, KOL tự lên kịch bản)</option>
+            </Select>
           </Field>
+          {addForm.briefMode === 'VETTING_GUARDRAILS' ? (
+            <div className="col-span-2 space-y-3 rounded-lg border border-accent/40 bg-accent-soft/20 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-accent">
+                  Bộ tham số kiểm duyệt KOL (KL6 / KL7 — Không áp đặt Angle/Hook mẫu)
+                </span>
+                <span className="rounded bg-surface px-2 py-0.5 text-2xs font-medium text-ink-2 border border-line">
+                  KOL tự đề xuất kịch bản theo chất kênh
+                </span>
+              </div>
+              <Field label="1. Thông điệp cốt lõi tối thiểu phải nhắc (Key USP)">
+                <Textarea rows={2} value={addForm.usp} onChange={e => setAddForm({ ...addForm, usp: e.target.value })} />
+              </Field>
+              <Field label="2. Từ cấm & Ranh giới thương hiệu bắt buộc tránh (Do & Don't)">
+                <Textarea rows={2} value={addForm.forbiddenClaims} onChange={e => setAddForm({ ...addForm, forbiddenClaims: e.target.value })} />
+              </Field>
+              <Field label="3. Yêu cầu khung hình & Hiện diện sản phẩm bắt buộc">
+                <Textarea rows={2} value={addForm.mandatoryShots} onChange={e => setAddForm({ ...addForm, mandatoryShots: e.target.value })} />
+              </Field>
+              <Field label="4. Điều khoản bản quyền, Mã Spark Ads & Độc quyền đi kèm">
+                <Input value={addForm.rightsGuardrails} onChange={e => setAddForm({ ...addForm, rightsGuardrails: e.target.value })} />
+              </Field>
+              <Field label="Gợi ý chủ đề / Bối cảnh tham khảo (Không bắt buộc)">
+                <Input value={addForm.angle} placeholder="Để trống nếu KOL tự đề xuất hoàn toàn" onChange={e => setAddForm({ ...addForm, angle: e.target.value })} />
+              </Field>
+            </div>
+          ) : (
+            <>
+              <Field label="Góc nội dung (Angle)" className="col-span-2">
+                <Input value={addForm.angle} onChange={e => setAddForm({ ...addForm, angle: e.target.value })} />
+              </Field>
+              <Field label="Câu mở đầu 3 giây đầu (Hook 3s)" className="col-span-2">
+                <Input value={addForm.hook} onChange={e => setAddForm({ ...addForm, hook: e.target.value })} />
+              </Field>
+              <Field label="Thông điệp USP sản phẩm bắt buộc" className="col-span-2">
+                <Input value={addForm.usp} onChange={e => setAddForm({ ...addForm, usp: e.target.value })} />
+              </Field>
+              <Field label="Claim cấm / Từ khóa cấm (Do & Don't)" className="col-span-2">
+                <Input value={addForm.forbiddenClaims} onChange={e => setAddForm({ ...addForm, forbiddenClaims: e.target.value })} />
+              </Field>
+            </>
+          )}
           <Field label="Xếp vào tuần">
             <Select value={addForm.week} onChange={e => setAddForm({ ...addForm, week: e.target.value })}>
               <option value="">Để trong kho, xếp sau</option>
@@ -830,7 +1199,21 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
             </Select>
           </Field>
           <Field label="Bậc">
-            <Select value={addForm.row} disabled={!addForm.week} onChange={e => setAddForm({ ...addForm, row: e.target.value as ContentRowKey })}>
+            <Select
+              value={addForm.row}
+              disabled={!addForm.week}
+              onChange={e => {
+                const nextRow = e.target.value as ContentRowKey;
+                const isVetting = isVettingGuardrailRow(nextRow);
+                setAddForm({
+                  ...addForm,
+                  row: nextRow,
+                  briefMode: isVetting ? 'VETTING_GUARDRAILS' : 'DIRECTIVE',
+                  mandatoryShots: isVetting ? addForm.mandatoryShots || DEFAULT_KL67_MANDATORY_SHOTS : addForm.mandatoryShots,
+                  rightsGuardrails: isVetting ? addForm.rightsGuardrails || DEFAULT_KL67_RIGHTS_GUARDRAILS : addForm.rightsGuardrails,
+                });
+              }}
+            >
               <option value="">Chọn bậc</option>
               {CONTENT_ROWS.map(r => (
                 <option key={r.key} value={r.key}>
@@ -917,28 +1300,68 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
             />
           </Field>
           {catalog.groups.length > 0 && (
-            <Field label="Chọn nhóm sản phẩm đẩy (Danh mục 2 tầng)" className="col-span-2">
-              <Select
-                value={editForm.productGroupId}
-                onChange={e => {
-                  const g = catalog.groups.find(x => x.id === e.target.value);
-                  setEditForm({
-                    ...editForm,
-                    productGroupId: e.target.value,
-                    product: g ? g.name : editForm.product,
-                    usp: g?.usp || editForm.usp,
-                    forbiddenClaims: g?.forbiddenClaims || editForm.forbiddenClaims,
-                  });
-                }}
-              >
-                <option value="">— Tự nhập hoặc chọn nhóm sản phẩm —</option>
-                {catalog.groups.map(g => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
+            <>
+              <Field label="Nhóm sản phẩm đẩy (Tầng 1)">
+                <Select
+                  value={editForm.productGroupId}
+                  onChange={e => {
+                    const nextGroupId = e.target.value;
+                    if (!nextGroupId) {
+                      setEditForm({ ...editForm, productGroupId: '', productId: '' });
+                      return;
+                    }
+                    const sel = buildCatalogSelectionPatch(nextGroupId);
+                    setEditForm({
+                      ...editForm,
+                      ...sel,
+                      cta: editForm.cta || (sel.cartUrl ? 'Nhấn vào giỏ hàng góc trái mua chính hãng' : ''),
+                    });
+                  }}
+                >
+                  <option value="">— Chọn nhóm sản phẩm —</option>
+                  {catalog.groups.map(g => (
+                    <option key={g.id} value={g.id}>
+                      {g.name} ({g.products.length} SKU)
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Sản phẩm / SKU / Combo cụ thể (Tầng 2)">
+                <Select
+                  value={editForm.productId}
+                  onChange={e => {
+                    const nextProdId = e.target.value;
+                    if (!nextProdId) {
+                      setEditForm({ ...editForm, productId: '' });
+                      return;
+                    }
+                    const sel = buildCatalogSelectionPatch(editForm.productGroupId, nextProdId);
+                    setEditForm({
+                      ...editForm,
+                      ...sel,
+                      cta: editForm.cta || (sel.cartUrl ? 'Nhấn vào giỏ hàng góc trái mua chính hãng' : ''),
+                    });
+                  }}
+                >
+                  <option value="">— Chọn SKU đơn hoặc Combo —</option>
+                  {(editForm.productGroupId
+                    ? (catalog.groups.find(g => g.id === editForm.productGroupId)?.products || []).map(product => ({
+                        group: catalog.groups.find(g => g.id === editForm.productGroupId)!,
+                        product,
+                      }))
+                    : listAllCatalogProducts(catalog)
+                  ).map(({ group, product }) => {
+                    const roleTag = product.productType === 'HARD_BUNDLE' || product.productType === 'ROUTINE_COMBO' ? '[COMBO]' : `[${product.role || 'HERO'}]`;
+                    const stockTag = product.status === 'OUT_OF_STOCK' ? ' · HẾT HÀNG' : '';
+                    return (
+                      <option key={product.id} value={product.id}>
+                        {roleTag} {product.name} {product.sku ? `(${product.sku})` : ''} — {group.name}{stockTag}
+                      </option>
+                    );
+                  })}
+                </Select>
+              </Field>
+            </>
           )}
           <Field label="Content pillar">
             <Select value={editForm.pillar} onChange={e => setEditForm({ ...editForm, pillar: e.target.value })}>
@@ -949,10 +1372,27 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
               ))}
             </Select>
           </Field>
-          <Field label="Sản phẩm">
+          <Field label="Tên sản phẩm hiển thị trên Brief">
             <Input value={editForm.product} onChange={e => setEditForm({ ...editForm, product: e.target.value })} />
           </Field>
-          <Field label="Định dạng quay" className="col-span-2">
+          <Field label={`Link giỏ hàng gắn video (${targetPlatformLabel})`}>
+            <Input value={editForm.cartUrl} placeholder="https://..." onChange={e => setEditForm({ ...editForm, cartUrl: e.target.value })} />
+          </Field>
+          <Field label="Link Commission / Affiliate">
+            <Input value={editForm.affiliateUrl} placeholder="https://affiliate..." onChange={e => setEditForm({ ...editForm, affiliateUrl: e.target.value })} />
+          </Field>
+          <Field label="% Hoa hồng Affiliate áp dụng">
+            <Input
+              inputMode="decimal"
+              value={editForm.commissionPct !== null ? String(editForm.commissionPct) : ''}
+              placeholder="VD: 12"
+              onChange={e => {
+                const v = parseFloat(e.target.value.replace(',', '.'));
+                setEditForm({ ...editForm, commissionPct: Number.isFinite(v) ? v : null });
+              }}
+            />
+          </Field>
+          <Field label="Định dạng quay">
             <Select value={editForm.format} onChange={e => setEditForm({ ...editForm, format: e.target.value })}>
               {BRIEF_FORMAT_OPTIONS.map(f => (
                 <option key={f} value={f}>
@@ -961,29 +1401,85 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
               ))}
             </Select>
           </Field>
-          <div className="col-span-2">
-            <div className="mb-1 flex items-center justify-between">
-              <span className="text-xs font-medium text-ink">Góc nội dung (Angle)</span>
-              <button
-                type="button"
-                onClick={() => setCopilotOpen(true)}
-                className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
-              >
-                <Lightbulb className="h-3 w-3" />
-                Gợi ý góc quay & Hook 3s
-              </button>
+          <Field label="Từ khóa nhận diện tự động khi nghiệm thu">
+            <Input value={editForm.detectKeywords} placeholder="Tên SKU, tên gọi tắt..." onChange={e => setEditForm({ ...editForm, detectKeywords: e.target.value })} />
+          </Field>
+          <Field label="Chế độ làm việc với KOC (Theo phân khúc KL)" className="col-span-2">
+            <Select
+              value={editForm.briefMode}
+              onChange={e => {
+                const nextMode = e.target.value as ContentBriefMode;
+                setEditForm({
+                  ...editForm,
+                  briefMode: nextMode,
+                  mandatoryShots:
+                    nextMode === 'VETTING_GUARDRAILS' && !editForm.mandatoryShots
+                      ? DEFAULT_KL67_MANDATORY_SHOTS
+                      : editForm.mandatoryShots,
+                  rightsGuardrails:
+                    nextMode === 'VETTING_GUARDRAILS' && !editForm.rightsGuardrails
+                      ? DEFAULT_KL67_RIGHTS_GUARDRAILS
+                      : editForm.rightsGuardrails,
+                });
+              }}
+            >
+              <option value="DIRECTIVE">Định hướng kịch bản chi tiết (Áp dụng: FOC, Self, KL1–KL5)</option>
+              <option value="VETTING_GUARDRAILS">Chỉ giao Tham số kiểm duyệt &amp; Ranh giới Brand (Áp dụng: KL6–KL7, KOL tự lên kịch bản)</option>
+            </Select>
+          </Field>
+          {editForm.briefMode === 'VETTING_GUARDRAILS' ? (
+            <div className="col-span-2 space-y-3 rounded-lg border border-accent/40 bg-accent-soft/20 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-accent">
+                  Bộ tham số kiểm duyệt KOL (KL6 / KL7 — Không áp đặt Angle/Hook mẫu)
+                </span>
+                <span className="rounded bg-surface px-2 py-0.5 text-2xs font-medium text-ink-2 border border-line">
+                  KOL tự đề xuất kịch bản theo chất kênh
+                </span>
+              </div>
+              <Field label="1. Thông điệp cốt lõi tối thiểu phải nhắc (Key USP)">
+                <Textarea rows={2} value={editForm.usp} onChange={e => setEditForm({ ...editForm, usp: e.target.value })} />
+              </Field>
+              <Field label="2. Từ cấm & Ranh giới thương hiệu bắt buộc tránh (Do & Don't)">
+                <Textarea rows={2} value={editForm.forbiddenClaims} onChange={e => setEditForm({ ...editForm, forbiddenClaims: e.target.value })} />
+              </Field>
+              <Field label="3. Yêu cầu khung hình & Hiện diện sản phẩm bắt buộc">
+                <Textarea rows={2} value={editForm.mandatoryShots} onChange={e => setEditForm({ ...editForm, mandatoryShots: e.target.value })} />
+              </Field>
+              <Field label="4. Điều khoản bản quyền, Mã Spark Ads & Độc quyền đi kèm">
+                <Input value={editForm.rightsGuardrails} onChange={e => setEditForm({ ...editForm, rightsGuardrails: e.target.value })} />
+              </Field>
+              <Field label="Gợi ý chủ đề / Bối cảnh tham khảo (Không bắt buộc)">
+                <Input value={editForm.angle} placeholder="Để trống nếu KOL tự đề xuất hoàn toàn" onChange={e => setEditForm({ ...editForm, angle: e.target.value })} />
+              </Field>
             </div>
-            <Input value={editForm.angle} onChange={e => setEditForm({ ...editForm, angle: e.target.value })} />
-          </div>
-          <Field label="Câu mở đầu 3 giây đầu (Hook 3s)" className="col-span-2">
-            <Input value={editForm.hook} onChange={e => setEditForm({ ...editForm, hook: e.target.value })} />
-          </Field>
-          <Field label="Thông điệp USP sản phẩm bắt buộc" className="col-span-2">
-            <Textarea rows={2} value={editForm.usp} onChange={e => setEditForm({ ...editForm, usp: e.target.value })} />
-          </Field>
-          <Field label="Claim cấm / Từ khóa cấm (Do & Don't)" className="col-span-2">
-            <Textarea rows={2} value={editForm.forbiddenClaims} onChange={e => setEditForm({ ...editForm, forbiddenClaims: e.target.value })} />
-          </Field>
+          ) : (
+            <>
+              <div className="col-span-2">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-xs font-medium text-ink">Góc nội dung (Angle)</span>
+                  <button
+                    type="button"
+                    onClick={() => setCopilotOpen(true)}
+                    className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
+                  >
+                    <Lightbulb className="h-3 w-3" />
+                    Gợi ý góc quay & Hook 3s
+                  </button>
+                </div>
+                <Input value={editForm.angle} onChange={e => setEditForm({ ...editForm, angle: e.target.value })} />
+              </div>
+              <Field label="Câu mở đầu 3 giây đầu (Hook 3s)" className="col-span-2">
+                <Input value={editForm.hook} onChange={e => setEditForm({ ...editForm, hook: e.target.value })} />
+              </Field>
+              <Field label="Thông điệp USP sản phẩm bắt buộc" className="col-span-2">
+                <Textarea rows={2} value={editForm.usp} onChange={e => setEditForm({ ...editForm, usp: e.target.value })} />
+              </Field>
+              <Field label="Claim cấm / Từ khóa cấm (Do & Don't)" className="col-span-2">
+                <Textarea rows={2} value={editForm.forbiddenClaims} onChange={e => setEditForm({ ...editForm, forbiddenClaims: e.target.value })} />
+              </Field>
+            </>
+          )}
           <Field label="Lời kêu gọi hành động (CTA)">
             <Input value={editForm.cta} onChange={e => setEditForm({ ...editForm, cta: e.target.value })} />
           </Field>

@@ -825,6 +825,83 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 - **Phạm vi rà soát mở rộng sang phần khác:** Đã rà soát toàn bộ 24 điểm sử dụng `<PageActions>` và `<PageHeaderNav>` trên khắp các màn hình, kiểm tra `tsc --noEmit` và `npm run build` đạt `0 errors`.
 
 ---
+
+### BUG-046 — Lỗi Mã Hóa Tiếng Việt (Mojibake UTF-8), Cắt Cụt Thanh Tab `Kịch bản & Video`, Treo `"Đang tải…"` Do Truy Vấn N+1, Lệch Cột Bảng Tổng Cộng & Lỗi Bố Cục Trên Toàn Phân Hệ `Kịch bản & Video`
+- **Ngày phát hiện:** 25/10/2026 (Người dùng gửi ảnh chụp màn hình thực tế tại `b2c-theta.vercel.app` và yêu cầu audit chi tiết toàn bộ bố cục phân hệ **Kịch bản & Video**).
+- **Phân hệ / File liên quan:** `web-admin/src/lib/brandPlanRules.ts`, `web-admin/src/components/views/BrandMonthlyPlanForm.tsx`, `web-admin/src/components/views/ContentPlanBoard.tsx`, `web-admin/src/components/views/ContentView.tsx`, `web-admin/src/components/content/ContentCopilotModal.tsx`, `web-admin/src/components/ui/index.tsx`, `web-admin/src/lib/server/monthlyPlanStore.ts`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Lỗi mã hóa chữ tiếng Việt (Mojibake UTF-8 sang Latin-1) trong `brandPlanRules.ts`:**
+     - 90 dòng chuỗi tiếng Việt trong `DIRECTION_FIELDS`, `KEY_VISUAL_FIELDS`, `KPI_ROWS`, `OVERVIEW_METRICS` và `diagnoseBrandPlan` bị lưu sai bảng mã (`Vai trÃ² trong plan nÄƒm`, `Má»¥c tiÃªu & rÃ o cáº£n cáº§n xá»­ lÃ½`, `Review / bÃ i há» c thÃ¡ng trÆ°á»›c`, `Tá»‡p khÃ¡ch hÃ ng & insight`, `Combo / deal / quÃ  táº·ng`...).
+  2. **Dãy 6 tab con của `Kịch bản & Video` bị ép nghẹt và chồng chéo thanh công cụ (`ContentView.tsx` & `ui/index.tsx`):**
+     - Trong `ui/index.tsx` (`<Tabs>`), `list` đặt `sm:flex-1` (`flex-basis: 0%`) nằm chung một hàng `sm:flex-row` với khối `actions` chứa 5 nút của `ContentView.tsx` (~760px), làm ép `TabList` co lại còn ~320px (`Chờ du...`) hoặc tạo thành 2 tầng nút bấm chồng lên thanh thao tác riêng của `BrandMonthlyPlanForm` và `ContentPlanBoard`.
+  3. **Treo trạng thái `"Đang tải..."` kéo dài khi mở `Plan tháng của Brand` (`listBrandPlanPlans` & `resolveBrandPlanAccess`):**
+     - Trong `monthlyPlanStore.ts`, `listBrandPlanPlans` lặp tuần tự qua 98 bản ghi kế hoạch (`for (const row of rows)`) và ở mỗi vòng lặp lại gọi `assertPlanAccess`, phát sinh 2 truy vấn DB (`readMasterCatalog` + `actionAllowed`) mỗi dòng ($\approx 196+$ truy vấn tuần tự tới Supabase).
+  4. **Lệch cột dòng Tổng cộng (`colSpan={11}`) và khoảng trống lưới trên `BrandMonthlyPlanForm.tsx`:**
+     - Bảng `Chi tiết Content` (tab `4. TikTok Shop` & `5. Shopee`) có **16 cột** (12 cột trước `Số lượng`), nhưng dòng Tổng cộng cuối bảng dùng `colSpan={11}`, khiến tổng số lượng video bị nhảy sang cột `Sản xuất` và tổng ngân sách bị nhảy sang cột `Số lượng`.
+     - Tab `3. Key Visual` trộn 4 ô `<Input>` đơn (`!f.long`) xen kẽ với 3 ô `<Textarea>` (`md:col-span-2`) làm xuất hiện 2 khoảng trống nửa hàng bên phải; tab `4. TikTok Shop → Tổng quan` xếp 3 thẻ (`Doanh số` 7 dòng, `Chi phí` 3 dòng, `Triển khai` 12 dòng) vào lưới `xl:grid-cols-2` phẳng làm thẻ `Triển khai` nằm lẻ ở hàng 2 bên cạnh khoảng trống lớn.
+  5. **Khung thống kê thiếu tiêu đề trên `ContentPlanBoard.tsx` và chưa đồng bộ Design System / `RULE-API-01` trên `ContentView.tsx` & `ContentCopilotModal.tsx`:**
+     - Khung bên phải cạnh `Kho dòng Brief chưa xếp tuần` trên `ContentPlanBoard.tsx` không có tiêu đề khối; thẻ chip Brief trong bảng ma trận tuần chưa có nút gán nhanh KOC (`UserPlus`).
+     - Các tab `Kho nội dung`, `Chờ duyệt kịch bản`, `Video nháp KOC`, `Đối soát bài đăng` trong `ContentView.tsx` còn dùng lớp CSS cũ (`card-enterprise`, `badge-amber`, `bg-slate-50`), có dòng phụ đề xám dưới tiêu đề video nháp, và truyền trực tiếp `customSystemInstruction` cứng trong `ContentView.tsx` / `ContentCopilotModal.tsx` (vi phạm `RULE-API-01`).
+- **Cách khắc phục:**
+  1. Khôi phục chuẩn UTF-8 toàn bộ 90 dòng chuỗi tiếng Việt trong `web-admin/src/lib/brandPlanRules.ts`.
+  2. Chuyển `<Tabs>` (`ui/index.tsx`) sang `flex flex-wrap items-end justify-between` và chuyển 4 nút công cụ toàn cục của `ContentView.tsx` lên `<PageActions>` trên `TopHeader`, giúp dãy 6 tab con (`Plan tháng của Brand`, `Kế hoạch content`, `Kho nội dung`, `Chờ duyệt kịch bản`, `Video nháp KOC`, `Đối soát bài đăng`) nằm gọn trên 1 hàng ngang duy nhất.
+  3. Tối ưu `listBrandPlanPlans` và `resolveBrandPlanAccess` trong `monthlyPlanStore.ts`: nạp `readMasterCatalog` và quyền `actionAllowed` 1 lần duy nhất bằng `Promise.all`, sau đó kiểm tra quyền đồng bộ trong bộ nhớ (`brandPlanAccessSync`).
+  4. Trên `BrandMonthlyPlanForm.tsx`:
+     - Sửa dòng Tổng cộng bảng `Chi tiết Content` từ `colSpan={11}` thành `colSpan={12}` khớp chính xác 16 cột; cố định (`sticky right-0`) cột thao tác trên bảng `Chi tiết Content` và bảng `Pillar`; bổ sung dòng tổng tỷ trọng (%) và tổng số video cuối bảng `Pillar`.
+     - Sắp xếp lại lưới `3. Key Visual` (4 ô ngắn trên 1 hàng `xl:grid-cols-4`, 3 ô dài bên dưới `lg:grid-cols-3`) và cân bằng 2 cột `Tổng quan TikTok` (cột trái: `Doanh số` + `Chi phí`, cột phải: `Triển khai`).
+  5. Trên `ContentPlanBoard.tsx`, `ContentView.tsx` và `ContentCopilotModal.tsx`:
+     - Bổ sung tiêu đề `Tỷ trọng nhóm Pillar & Kiểm tra` và nút gán nhanh KOC (`UserPlus`) ngay trên thẻ Brief trong `ContentPlanBoard.tsx`.
+     - Chuẩn hóa toàn bộ 4 tab `CONTENT_ITEMS`, `SCRIPTS`, `DRAFT_VIDEOS`, `PUBLICATIONS` sang `<Panel>`, `<Button>`, `<Status>`, gỡ dòng phụ đề xám ở `DRAFT_VIDEOS`, sửa chữ ký `<ConfirmDialog>` và bỏ `customSystemInstruction` cứng để đọc tập trung từ Trung tâm Cấu hình API (`RULE-API-01`).
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm tra toàn bộ 6 tab con và các hộp thoại trong phân hệ `Kịch bản & Video`, chạy unit test và kiểm tra `tsc --noEmit` & `npm run build` đạt 0 lỗi.
+
+---
+
+### BUG-047 — Phân Tán 3 Nơi Nhập `Kế Hoạch Theo Brand`, Mất Trạng Thái Khi Lưu Từ Footer Modal, Thiếu Ô Nhập Trong Chế Độ Sửa Của `BrandOneSheetPlanView` & Đứt Luồng Đồng Bộ Xuống `Kế Hoạch Content`
+- **Ngày phát hiện:** 25/10/2026 (Người dùng phản ánh màn hình `Kế hoạch tháng → Kế hoạch theo Brand` bị rối, phải kéo ngang cắt mất cột Brand, chỗ nhập plan thiếu thân thiện và yêu cầu kiểm toán toàn diện UI/UX luồng quy trình).
+- **Phân hệ / File liên quan:** `web-admin/src/components/views/MonthlyPlanHub.tsx`, `web-admin/src/components/views/BrandOneSheetPlanView.tsx`, `web-admin/src/components/views/ContentView.tsx`, `web-admin/src/components/views/ContentPlanBoard.tsx`, `web-admin/src/lib/contentPlanRules.ts`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Phân tán 3 nơi nhập Kế hoạch Brand & bảng `BRAND_PLANS` bị tràn ngang cắt mất tên Brand (`MonthlyPlanHub.tsx` & `ContentView.tsx`):**
+     - Trước đây có tới 3 lối vào rời rạc (`Kế hoạch theo Brand` trong `MonthlyPlanHub.tsx`, nút `One-Sheet` trong `4.1.1`, và tab `Plan tháng của Brand` trong `ContentView.tsx`).
+     - Bảng `BRAND_PLANS` trong `MonthlyPlanHub.tsx` có 10 cột rộng (`min-w-[200px]`..`min-w-[240px]`), không khóa `sticky left-0` cho cột Brand, hiển thị mã kỹ thuật (`P1..P5`, `3 Pos`) và không hiển thị số liệu tổng hợp tự động từ Plan các gian hàng (`TikTok`, `Shopee`).
+  2. **Mất dữ liệu vừa gõ trong `BrandOneSheetPlanView` khi bấm nút Lưu ở chân Modal hoặc chuyển Tab (`MonthlyPlanHub.tsx` & `BrandOneSheetPlanView.tsx`):**
+     - `BrandOneSheetPlanView` giữ `formData` trong `useState` nội bộ và chỉ gọi `onSave` khi bấm nút `"Lưu"` nhỏ bên trong component con. Nếu người dùng sửa dữ liệu ở Tab 1 (`Biểu mẫu Kế hoạch Brand 01 → 05`) rồi chuyển sang Tab 2 (`Phân công 3 vị trí`) hoặc bấm nút `"Lưu kế hoạch Brand"` / `"Duyệt kế hoạch Brand"` ở chân Modal, toàn bộ dữ liệu vừa sửa ở Tab 1 bị mất.
+  3. **Chế độ Chỉnh sửa (`isEditMode`) trong `BrandOneSheetPlanView.tsx` chỉ cho sửa 1–2 cột ở bảng 04.3, 05.1 và 05.3:**
+     - Khi bấm `"Thêm dòng Content TikTok"` (Mục 04.3), `"Thêm Pillar"` (Mục 05.1) hoặc `"Thêm dòng Lịch Air Shopee"` (Mục 05.3), 80% các cột (`SKU / Combo`, `Nguồn`, `Nhóm KL`, `Tệp KOC`, `Pillar`, `SL`, `Ngân sách`, `PIC`, `Format`, `Phương thức SX`...) vẫn render văn bản tĩnh (`<td>` thường) và Mục 05 không có nút xóa dòng.
+     - Thanh chọn mục `01 → 05` không cố định (`sticky`), khiến khi cuộn xuống mục 04–05 người dùng mất thanh điều hướng.
+  4. **Đứt cầu nối dữ liệu từ `Kế hoạch theo Brand (01 → 05)` sang nút `"Lấy từ plan Brand"` tại `Kế hoạch Content` (`ContentPlanBoard.tsx` & `contentPlanRules.ts`):**
+     - `pullFromBrandPlan` trong `ContentPlanBoard.tsx` chỉ đọc `/api/brand-plan` (cấu trúc `BrandPlanData` cũ) mà không đọc `oneSheetPlanData` (`BrandOneSheetPlanData`) đã lưu từ `MonthlyPlanHub.tsx`. Ngoài ra `brandMonthlyPlans` trong `MonthlyPlanHub.tsx` chưa lưu bền vững vào `localStorage` và chưa đồng bộ `oneSheetPlanData` sang các `MonthlyPlan` của gian hàng thuộc Brand.
+- **Cách khắc phục:**
+  1. Gỡ bỏ tab trùng lặp `Plan tháng của Brand` khỏi `ContentView.tsx`, hợp nhất về một đầu mối duy nhất tại `Kế hoạch tháng → Kế hoạch theo Brand` (`MonthlyPlanHub.tsx`) với bảng `table-fixed` không tràn ngang, cột Brand `sticky left-0`, tự động cộng gộp số liệu từ Plan các gian hàng (`brandStoreRollupMap`), nút nhảy nhanh `TikTok ↗` / `Shopee ↗` sang bảng `4.1.1` của từng gian và nút `"Nhập Plan"` mở thẳng chế độ sửa.
+  2. Bổ sung `defaultEditMode` và callback đồng bộ tức thời `onChangeOneSheetData` trong `BrandOneSheetPlanView.tsx` (gọi qua `updateFormData` ở mọi thao tác sửa/thêm/xóa dòng) để `editingBrandPlan` của Modal luôn giữ bản mới nhất khi chuyển Tab hoặc bấm Lưu/Duyệt ở chân Modal; đồng thời lưu bền vững vào `localStorage` (`b2c_brand_monthly_plans_v1`) và đồng bộ `oneSheetPlanData` xuống các gian hàng của Brand.
+  3. Mở khóa chỉnh sửa 100% các cột của Mục `04.3`, `05.1`, `05.3` khi `isEditMode === true` kèm nút xóa dòng (`Trash2`) và cố định thanh điều hướng `01 → 05` (`sticky top-0 z-20`).
+  4. Xây dựng hàm `slotSpecsFromOneSheetPlan` trong `contentPlanRules.ts` và đấu nối vào `pullFromBrandPlan` trong `ContentPlanBoard.tsx` để chuyển đổi trực tiếp các dòng `tiktokContentRows` / `shopeeContentRows` / `contentPillars` từ `BrandOneSheetPlanData` thành các ô kế hoạch tuần trên `Kế hoạch Content`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm tra toàn bộ luồng `Kế hoạch tháng (Gian hàng & Brand)` -> `Kế hoạch Content` -> `Đợt đề xuất KOC`, vượt qua `tsc --noEmit` và `npm run build` với `0 errors`.
+
+---
+
+### BUG-048 — Đứt Gãy Chiều Sản Phẩm 2 Tầng (`Nhóm SP → SKU/Combo`) Giữa `Hồ Sơ Brand` / `Sản Phẩm Đẩy` Với `Plan Tháng Của Brand`, `Kế Hoạch Content` & `Kho Nội Dung`
+- **Ngày phát hiện:** 25/10/2026 (Người dùng yêu cầu phân tích và hợp nhất các chiều sản phẩm đang làm với quy trình phân hệ **Kịch bản & Video**).
+- **Phân hệ / File liên quan:** `web-admin/src/lib/productCatalog.ts`, `web-admin/src/app/api/product-catalog/route.ts`, `web-admin/src/lib/contentPlanRules.ts`, `web-admin/src/components/views/BrandMonthlyPlanForm.tsx`, `web-admin/src/components/views/ContentPlanBoard.tsx`, `web-admin/src/components/views/ContentView.tsx`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Đứt gãy 3 nguồn dữ liệu Sản phẩm (`Hồ sơ Brand`, `Sản phẩm đẩy` và `/api/product-catalog`):**
+     - `/api/product-catalog` trả về `EMPTY_PRODUCT_CATALOG` (`{ groups: [] }`) nếu chưa nhập tay từ đầu, dù `BrandProfile.products[]` (`getProfile`) và `INITIAL_PUSH_PRODUCTS` đã có sẵn đầy đủ SKU, giá, % hoa hồng, tồn kho mẫu, USP và từ cấm của từng Brand.
+  2. **Chỉ nối Tầng 1 (`productGroupId`), bỏ rơi Tầng 2 (`CatalogProduct` — SKU đơn / Combo / Link giỏ hàng / % Hoa hồng) khi lập `Kế hoạch Content`:**
+     - `ContentPlanBoard.tsx` chỉ cho chọn `Nhóm sản phẩm đẩy` (Tầng 1) mà không có bộ chọn `Sản phẩm / SKU / Combo cụ thể` (Tầng 2), dẫn tới không kế thừa được `Link giỏ hàng` theo đúng sàn (`TikTok Shop` vs `Shopee`), `% Hoa hồng Affiliate`, `Từ khóa nhận diện BBNT` và tồn kho mẫu (`resolveEffectiveSampleQuota`).
+  3. **Thiếu bảng đối soát phân bổ Video & Hạn mức mẫu FOC theo từng Sản phẩm đẩy trên `ContentPlanBoard.tsx`:**
+     - Khung kiểm tra bên phải của `ContentPlanBoard.tsx` chỉ thống kê theo nhóm Pillar mà chưa thống kê số lượng video và suất FOC đã xếp trên từng `HERO` SKU / Combo, cũng như chưa cảnh báo khi xếp video vào SKU đang `OUT_OF_STOCK` hoặc vượt `monthlySampleQuota`.
+  4. **Đứt luồng từ `Kế hoạch Content` sang các tab thực thi (`Kho nội dung` & `Chờ duyệt kịch bản`) trong `ContentView.tsx`:**
+     - `CONTENT_ITEMS` và `SCRIPTS` trong `ContentView.tsx` chỉ hiển thị dữ liệu tĩnh mà chưa có bộ lọc theo Thương hiệu / Sản phẩm và nút đồng bộ trực tiếp các dòng Brief (`BR-01..BR-N`) đã gán KOC từ `ContentPlanBoard`.
+- **Cách khắc phục:**
+  1. Xây dựng hàm `mergeBrandSourcesIntoCatalog` trong `web-admin/src/lib/productCatalog.ts` và tích hợp vào `GET /api/product-catalog` (`web-admin/src/app/api/product-catalog/route.ts`), tự động làm giàu danh mục 2 tầng (`ProductGroup → CatalogProduct`) từ `BrandProfile.products` và `INITIAL_PUSH_PRODUCTS` (kèm đầy đủ `sku`, `role`, `productType`, `monthlySampleQuota`, `usp`, `forbiddenClaims`, `cartLinks`, `affiliateLinks`).
+  2. Nối trọn vẹn 2 tầng sản phẩm trên `BrandMonthlyPlanForm.tsx` và `ContentPlanBoard.tsx`:
+     - Tự động chuyển tab `4. TikTok Shop` / `5. Shopee` theo sàn của gian hàng trên `BrandMonthlyPlanForm.tsx`; gợi ý danh sách SKU cho ô `Sản phẩm chính` ở `3. Key Visual`; tự động điền SKU đầu tiên và USP khi chọn Nhóm SP hoặc SKU/Combo ở bảng `Chi tiết Content`.
+     - Bổ sung bộ chọn Tầng 2 `Sản phẩm / SKU / Combo cụ thể` (`productId`), `Link giỏ hàng gắn video` (`cartUrl`), `% Hoa hồng Affiliate` (`commissionPct`) và `Từ khóa nhận diện tự động` (`detectKeywords`) vào hộp thoại Thêm/Sửa Brief trên `ContentPlanBoard.tsx` và hàm đồng bộ `slotSpecsFromBrandPlan` (`contentPlanRules.ts`).
+  3. Bổ sung hàm tổng hợp `byProduct` (`ProductAllocationSummary`) trong `diagnoseContentPlan` (`contentPlanRules.ts`) và hiển thị khối **Phân bổ theo Sản phẩm đẩy & Hạn mức mẫu** ngay trên khung bên phải của `ContentPlanBoard.tsx` (cảnh báo tức thời khi SKU hết hàng, vượt hạn mức mẫu FOC hoặc bỏ sót SKU `[HERO]`).
+  4. Bổ sung thanh lọc Thương hiệu / Sản phẩm và nút **"Đồng bộ từ Kế hoạch Content"** (`handleSyncFromContentPlans`) trên `Kho nội dung` (`CONTENT_ITEMS`) và `Chờ duyệt kịch bản` (`SCRIPTS`) tại `ContentView.tsx`.
+  5. Bổ sung cơ chế **2 chế độ làm việc với KOC theo phân khúc bậc KL** (`ContentBriefMode`: `'DIRECTIVE'` cho `FOC`, `SELF`, `KL1..KL5` vs `'VETTING_GUARDRAILS'` tự động kích hoạt cho `KL6`, `KL7`) trên `contentPlanRules.ts`, `ContentPlanBoard.tsx`, `ContentView.tsx` và `ScriptReviewModal.tsx`: không bắt buộc áp đặt `Angle` / `Hook 3s` mẫu cho KOL lớn (`KL6`/`KL7`), chỉ giao và đối soát theo 4 tham số kiểm duyệt ranh giới (`Key USP`, `Từ cấm & Ranh giới Brand`, `Yêu cầu khung hình & Hiện diện sản phẩm mandatoryShots`, `Điều khoản bản quyền/Spark Ads rightsGuardrails`).
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm tra xuyên suốt 8 tab của phân hệ `Kịch bản & Video`, kiểm tra `tsc --noEmit` và `npm run build` đạt `0 errors`.
+
+---
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

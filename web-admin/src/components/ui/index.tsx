@@ -115,12 +115,12 @@ export interface TabItem<K extends string> {
  * không bao giờ bị nút đè lên. Tối đa một nút primary; thao tác thứ ba trở đi vào `ActionMenu`.
  */
 export function Tabs<K extends string>({ items, value, onChange, className, actions }: { items: TabItem<K>[]; value: K; onChange: (k: K) => void; className?: string; actions?: React.ReactNode }) {
-  const list = <TabList items={items} value={value} onChange={onChange} className={actions ? 'w-full sm:w-auto sm:flex-1' : cx('border-b border-line', className)} />;
+  const list = <TabList items={items} value={value} onChange={onChange} className={actions ? 'max-w-full' : cx('border-b border-line', className)} />;
   if (!actions) return list;
   return (
-    <div className={cx('flex flex-col sm:flex-row sm:items-end justify-between gap-2 sm:gap-4 border-b border-line', className)}>
+    <div className={cx('flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-line', className)}>
       {list}
-      <div className="flex flex-wrap items-center gap-2 shrink-0 pb-2">{actions}</div>
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0 pb-2 ml-auto">{actions}</div>
     </div>
   );
 }

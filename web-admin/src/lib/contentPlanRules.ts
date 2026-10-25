@@ -1,12 +1,38 @@
 // Kế hoạch content theo tháng: mỗi video trong kế hoạch (4.1.1) tương ứng 1 Brief Content (ContentSlot), xếp vào tuần × bậc.
-import type { InputPlanBreakdownState } from './types';
+import type { BrandOneSheetPlanData, InputPlanBreakdownState } from './types';
 import { FOC_TYPES, SELF_TYPES, resolveWeekRows } from './planBreakdownRules';
 import { KL_TIERS, type KlCode } from './klTiers';
 import { CONTENT_PILLARS, pillarGroupOf } from './contentPillars';
 import type { BrandPlanPillar, BrandPlanRow, PlanChannel } from './brandPlanRules';
+import {
+  findCatalogProduct,
+  listAllCatalogProducts,
+  resolveEffectiveProductGuidelines,
+  resolveEffectiveProductLinks,
+  resolveEffectiveSampleQuota,
+  type BrandProductCatalog,
+  type ProductGroup,
+} from './productCatalog';
 
 export type ContentRowKey = KlCode | 'FOC' | 'SELF' | 'LIVE_AFF';
 export type ContentBriefStatus = 'DRAFT' | 'READY';
+/**
+ * Chế độ làm việc với KOC theo phân khúc:
+ * - DIRECTIVE: Định hướng kịch bản chi tiết (Pillar + Angle + Hook 3s + Format) cho FOC, SELF, KL1..KL5.
+ * - VETTING_GUARDRAILS: Chỉ giao Bộ tham số kiểm duyệt & Ranh giới Brand (USP cốt lõi + Từ cấm + Yêu cầu hiện diện sản phẩm + Điều khoản bản quyền) cho KL6 (10M-30M) & KL7 (>30M).
+ */
+export type ContentBriefMode = 'DIRECTIVE' | 'VETTING_GUARDRAILS';
+
+export const VETTING_GUARDRAIL_ROWS: ContentRowKey[] = ['KL6', 'KL7'];
+
+export const isVettingGuardrailRow = (row?: ContentRowKey | null | string): boolean =>
+  row === 'KL6' || row === 'KL7';
+
+export const DEFAULT_KL67_MANDATORY_SHOTS =
+  'Lộ diện rõ bao bì sản phẩm tối thiểu 5 giây đầu/giữa video; quay cận kết cấu thực tế khi sử dụng; phát âm đúng tên thương hiệu';
+
+export const DEFAULT_KL67_RIGHTS_GUARDRAILS =
+  'Cấp mã Spark Ads tối thiểu 30 ngày từ ngày nghiệm thu; giữ video công khai tối thiểu 60 ngày; không nhắc tên đối thủ trực tiếp trong video';
 
 export const CONTENT_ROWS: { key: ContentRowKey; label: string }[] = [
   ...KL_TIERS.map(t => ({ key: t.code as ContentRowKey, label: t.label })),
@@ -46,6 +72,12 @@ export interface ContentSlot {
   format?: string;
   /** Link tài liệu Brief chi tiết gửi KOC (Docs / Drive / Canva). */
   briefUrl?: string;
+  /** Chế độ Brief: Định hướng kịch bản (DIRECTIVE) hoặc Khung tham số kiểm duyệt cho KL6/KL7 (VETTING_GUARDRAILS). */
+  briefMode?: ContentBriefMode;
+  /** Yêu cầu khung hình & hiện diện sản phẩm bắt buộc (dùng cho KL6/KL7 hoặc quy chuẩn quay). */
+  mandatoryShots?: string;
+  /** Điều khoản bản quyền, mã Spark Ads, thời hạn giữ video & độc quyền (dùng cho KL6/KL7). */
+  rightsGuardrails?: string;
   /** Trạng thái hoàn thiện Brief Content. */
   briefStatus?: ContentBriefStatus;
   /** Tuần đã xếp, null nếu chưa xếp. */
@@ -61,8 +93,20 @@ export interface ContentSlot {
   rejectedKoc?: { handle: string; reason?: string; at: string };
   /** PIC phụ trách content này (lấy từ plan tháng của Brand). */
   pic?: string;
-  /** Nhóm sản phẩm (danh mục sản phẩm của Brand) của content này. */
+  /** Nhóm sản phẩm Tầng 1 (danh mục sản phẩm của Brand) của content này. */
   productGroupId?: string;
+  /** ID sản phẩm / SKU cụ thể Tầng 2 trong danh mục sản phẩm. */
+  productId?: string;
+  /** Mã SKU hoặc tên Combo cụ thể Tầng 2. */
+  sku?: string;
+  /** Link giỏ hàng (PDP) đúng theo Sàn/Gian hàng để KOC gắn giỏ. */
+  cartUrl?: string;
+  /** Link hoa hồng Affiliate (Open/Designated) để KOC lấy link gắn giỏ. */
+  affiliateUrl?: string;
+  /** % Hoa hồng Affiliate áp dụng cho SKU/Combo này. */
+  commissionPct?: number | null;
+  /** Từ khóa nhận diện tự động sản phẩm khi đối soát BBNT. */
+  detectKeywords?: string;
   /** Dòng Chi tiết Content của plan tháng của Brand đã sinh ra content này, và thứ tự trong dòng đó. */
   planRowId?: string;
   planRowIndex?: number;
@@ -141,9 +185,23 @@ export function removeKocFromSlot(s: ContentSlot, handleToRemove: string): Conte
   };
 }
 
-/** Kiểm tra 1 dòng Brief Content đã có đủ thông tin cốt lõi (Sản phẩm + Góc nội dung Angle) để giao cho Job/KOC chưa. */
-export const isBriefReady = (s: ContentSlot): boolean =>
-  s.briefStatus === 'READY' || Boolean(s.product.trim() && (s.angle.trim() || (s.hook || '').trim() || (s.usp || '').trim()));
+/** Xác định chế độ làm việc thực tế của 1 dòng ContentSlot (`DIRECTIVE` cho KL1-KL5/FOC/SELF, `VETTING_GUARDRAILS` cho KL6-KL7). */
+export const resolveBriefMode = (s: Pick<ContentSlot, 'briefMode' | 'row'>): ContentBriefMode =>
+  s.briefMode || (isVettingGuardrailRow(s.row) ? 'VETTING_GUARDRAILS' : 'DIRECTIVE');
+
+/**
+ * Kiểm tra 1 dòng Brief Content đã có đủ thông tin cốt lõi để giao cho Job/KOC chưa:
+ * - Nhóm KL6/KL7 (`VETTING_GUARDRAILS`): Chỉ cần có Sản phẩm + ít nhất 1 tham số kiểm duyệt (USP bắt buộc / Từ cấm / Yêu cầu hiện diện sản phẩm), KHÔNG bắt buộc Angle/Hook 3s.
+ * - Nhóm KL1-KL5, FOC, SELF (`DIRECTIVE`): Cần có Sản phẩm + (Angle hoặc Hook 3s hoặc USP).
+ */
+export const isBriefReady = (s: ContentSlot): boolean => {
+  if (s.briefStatus === 'READY') return true;
+  if (!s.product.trim()) return false;
+  if (resolveBriefMode(s) === 'VETTING_GUARDRAILS') {
+    return Boolean((s.usp || '').trim() || (s.forbiddenClaims || '').trim() || (s.mandatoryShots || '').trim());
+  }
+  return Boolean(s.angle.trim() || (s.hook || '').trim() || (s.usp || '').trim());
+};
 
 /** Lấy mã hiển thị chuẩn của dòng Brief Content (VD: BR-01 .. BR-10). */
 export const formatBriefCode = (s: ContentSlot, indexZeroBased?: number): string => {
@@ -187,11 +245,20 @@ export function newSlot(input: {
   cta?: string;
   format?: string;
   briefUrl?: string;
+  briefMode?: ContentBriefMode;
+  mandatoryShots?: string;
+  rightsGuardrails?: string;
   note?: string;
   week?: string | null;
   row?: ContentRowKey | null;
   pic?: string;
   productGroupId?: string;
+  productId?: string;
+  sku?: string;
+  cartUrl?: string;
+  affiliateUrl?: string;
+  commissionPct?: number | null;
+  detectKeywords?: string;
   createdBy: string;
 }): ContentSlot {
   const now = new Date().toISOString();
@@ -201,7 +268,16 @@ export function newSlot(input: {
   const hook = input.hook?.trim() || '';
   const usp = input.usp?.trim() || '';
   const forbiddenClaims = input.forbiddenClaims?.trim() || '';
+  const isVetting = input.briefMode === 'VETTING_GUARDRAILS' || (!input.briefMode && isVettingGuardrailRow(input.row));
+  const briefMode: ContentBriefMode = isVetting ? 'VETTING_GUARDRAILS' : 'DIRECTIVE';
+  const mandatoryShots =
+    input.mandatoryShots?.trim() || (isVetting ? DEFAULT_KL67_MANDATORY_SHOTS : '');
+  const rightsGuardrails =
+    input.rightsGuardrails?.trim() || (isVetting ? DEFAULT_KL67_RIGHTS_GUARDRAILS : '');
   const targetQty = Math.max(1, Math.floor(input.targetQty || 1));
+  const ready = isVetting
+    ? Boolean(product && (usp || forbiddenClaims || mandatoryShots))
+    : Boolean(product && (angle || hook || usp));
   return {
     id: `CS-${Date.now().toString(36)}-${seq}-${Math.random().toString(36).slice(2, 6)}`,
     briefCode: input.briefCode?.trim() || undefined,
@@ -215,12 +291,21 @@ export function newSlot(input: {
     cta: input.cta?.trim() || undefined,
     format: input.format?.trim() || undefined,
     briefUrl: input.briefUrl?.trim() || undefined,
-    briefStatus: product && (angle || hook || usp) ? 'READY' : 'DRAFT',
+    briefMode,
+    mandatoryShots: mandatoryShots || undefined,
+    rightsGuardrails: rightsGuardrails || undefined,
+    briefStatus: ready ? 'READY' : 'DRAFT',
     note: input.note?.trim() || undefined,
     week: input.week ?? null,
     row: input.row ?? null,
     pic: input.pic?.trim() || undefined,
     productGroupId: input.productGroupId?.trim() || undefined,
+    productId: input.productId?.trim() || undefined,
+    sku: input.sku?.trim() || undefined,
+    cartUrl: input.cartUrl?.trim() || undefined,
+    affiliateUrl: input.affiliateUrl?.trim() || undefined,
+    commissionPct: typeof input.commissionPct === 'number' ? input.commissionPct : undefined,
+    detectKeywords: input.detectKeywords?.trim() || undefined,
     createdBy: input.createdBy,
     createdAt: now,
     updatedAt: now,
@@ -296,6 +381,20 @@ export function generateMissingSlotsFromBreakdown(
   return { slots: ensureSequentialBriefCodes(next), addedCount, addedVideos };
 }
 
+export interface ProductAllocationSummary {
+  key: string;
+  groupName: string;
+  productName: string;
+  sku: string;
+  role: string;
+  status: 'ACTIVE' | 'OUT_OF_STOCK' | 'STOPPED';
+  plannedVideos: number;
+  focVideos: number;
+  assignedKocs: number;
+  sampleQuota: number | null;
+  sampleRemaining: number | null;
+}
+
 export interface ContentDiagnostics {
   totalRequired: number;
   /** Số dòng Định hướng / Brief mẫu (VD: 10 dòng Brief). */
@@ -307,10 +406,15 @@ export interface ContentDiagnostics {
   unplaced: number;
   readyBriefs: number;
   byPillarGroup: { group: string; count: number; share: number }[];
+  byProduct: ProductAllocationSummary[];
   issues: { severity: 'warning' | 'info'; message: string }[];
 }
 
-export function diagnoseContentPlan(plan: InputPlanBreakdownState, slots: ContentSlot[]): ContentDiagnostics {
+export function diagnoseContentPlan(
+  plan: InputPlanBreakdownState,
+  slots: ContentSlot[],
+  catalog?: BrandProductCatalog
+): ContentDiagnostics {
   const { weeks, grid } = requiredGrid(plan);
   const totalRequired = weeks.reduce((s, w) => s + Object.values(grid[w] || {}).reduce((a, b) => a + (b || 0), 0), 0);
   const totalBriefVideos = slots.reduce((sum, s) => sum + slotTargetQty(s), 0);
@@ -333,8 +437,19 @@ export function diagnoseContentPlan(plan: InputPlanBreakdownState, slots: Conten
   }
   const noInfo = slots.filter(s => !s.product.trim()).length;
   if (noInfo > 0) issues.push({ severity: 'info', message: `${noInfo} dòng Brief chưa ghi sản phẩm` });
-  const noAngle = slots.filter(s => !s.angle.trim() && !(s.hook || '').trim()).length;
-  if (noAngle > 0) issues.push({ severity: 'info', message: `${noAngle} dòng Brief chưa có góc tiếp cận (Angle / Hook 3s)` });
+  const directiveSlots = slots.filter(s => resolveBriefMode(s) === 'DIRECTIVE');
+  const vettingSlots = slots.filter(s => resolveBriefMode(s) === 'VETTING_GUARDRAILS');
+  const noAngle = directiveSlots.filter(s => !s.angle.trim() && !(s.hook || '').trim()).length;
+  if (noAngle > 0) issues.push({ severity: 'info', message: `${noAngle} dòng Brief định hướng (KL1–KL5/FOC/Self) chưa có góc tiếp cận (Angle / Hook 3s)` });
+  const noGuardrails = vettingSlots.filter(
+    s => !(s.usp || '').trim() && !(s.forbiddenClaims || '').trim() && !(s.mandatoryShots || '').trim()
+  ).length;
+  if (noGuardrails > 0) {
+    issues.push({
+      severity: 'info',
+      message: `${noGuardrails} dòng KL6/KL7 chưa khai báo tham số kiểm duyệt (Key USP / Từ cấm / Yêu cầu hiện diện sản phẩm)`,
+    });
+  }
 
   const counts = new Map<string, number>();
   for (const s of slots) {
@@ -347,6 +462,91 @@ export function diagnoseContentPlan(plan: InputPlanBreakdownState, slots: Conten
   if (slots.length >= 3 && byPillarGroup[0] && byPillarGroup[0].share > 0.6) {
     issues.push({ severity: 'warning', message: `Nhóm pillar "${byPillarGroup[0].group}" chiếm ${Math.round(byPillarGroup[0].share * 100)}% tổng số video, nội dung dễ bị lặp` });
   }
+
+  // Phân bổ theo Sản phẩm đẩy & Hạn mức mẫu FOC
+  const prodMap = new Map<string, ProductAllocationSummary>();
+  if (catalog) {
+    for (const { group, product } of listAllCatalogProducts(catalog)) {
+      const sampleRes = resolveEffectiveSampleQuota(catalog, product);
+      prodMap.set(`prd:${product.id}`, {
+        key: `prd:${product.id}`,
+        groupName: group.name,
+        productName: product.name,
+        sku: product.sku || '',
+        role: product.productType === 'HARD_BUNDLE' || product.productType === 'ROUTINE_COMBO' ? 'COMBO' : product.role || 'HERO',
+        status: product.status || 'ACTIVE',
+        plannedVideos: 0,
+        focVideos: 0,
+        assignedKocs: 0,
+        sampleQuota: sampleRes.remaining,
+        sampleRemaining: sampleRes.remaining,
+      });
+    }
+  }
+
+  for (const s of slots) {
+    const qty = slotTargetQty(s);
+    const isFoc = s.row === 'FOC';
+    const kocsCount = slotKocHandles(s).length;
+    const matched = catalog ? findCatalogProduct(catalog, s.productId || s.sku || s.product, s.productGroupId) : null;
+    if (matched) {
+      const k = `prd:${matched.product.id}`;
+      const existing = prodMap.get(k);
+      if (existing) {
+        existing.plannedVideos += qty;
+        if (isFoc) existing.focVideos += qty;
+        existing.assignedKocs += kocsCount;
+        if (existing.sampleQuota !== null) {
+          existing.sampleRemaining = Math.max(0, existing.sampleQuota - existing.focVideos);
+        }
+      }
+    } else if (s.product.trim()) {
+      const k = `raw:${s.product.trim().toLowerCase()}`;
+      const existing = prodMap.get(k) || {
+        key: k,
+        groupName: '',
+        productName: s.product.trim(),
+        sku: s.sku || '',
+        role: 'HERO',
+        status: 'ACTIVE' as const,
+        plannedVideos: 0,
+        focVideos: 0,
+        assignedKocs: 0,
+        sampleQuota: null,
+        sampleRemaining: null,
+      };
+      existing.plannedVideos += qty;
+      if (isFoc) existing.focVideos += qty;
+      existing.assignedKocs += kocsCount;
+      prodMap.set(k, existing);
+    }
+  }
+
+  const byProduct = Array.from(prodMap.values())
+    .filter(p => p.plannedVideos > 0 || p.role === 'HERO' || p.role === 'COMBO')
+    .sort((a, b) => b.plannedVideos - a.plannedVideos);
+
+  for (const p of byProduct) {
+    if (p.plannedVideos > 0 && (p.status === 'OUT_OF_STOCK' || p.status === 'STOPPED')) {
+      issues.push({
+        severity: 'warning',
+        message: `Sản phẩm "${p.productName}" đang ${p.status === 'OUT_OF_STOCK' ? 'tạm hết hàng' : 'ngừng bán'} nhưng vẫn xếp ${p.plannedVideos} video trong kế hoạch.`,
+      });
+    }
+    if (p.sampleQuota !== null && p.focVideos > p.sampleQuota) {
+      issues.push({
+        severity: 'warning',
+        message: `Sản phẩm "${p.productName}" xếp ${p.focVideos} suất FOC vượt hạn mức mẫu tháng (${p.sampleQuota} mẫu).`,
+      });
+    }
+    if (slots.length > 0 && p.plannedVideos === 0 && p.role === 'HERO' && p.status === 'ACTIVE') {
+      issues.push({
+        severity: 'info',
+        message: `Sản phẩm chủ lực [HERO] "${p.productName}" chưa được phân bổ dòng Brief nào trong tháng.`,
+      });
+    }
+  }
+
   const order = { warning: 0, info: 1 } as const;
   issues.sort((a, b) => order[a.severity] - order[b.severity]);
 
@@ -359,6 +559,7 @@ export function diagnoseContentPlan(plan: InputPlanBreakdownState, slots: Conten
     unplaced: slots.length - placed.length,
     readyBriefs,
     byPillarGroup,
+    byProduct,
     issues,
   };
 }
@@ -377,6 +578,12 @@ export interface BrandPlanSlotSpec {
   angle: string;
   product: string;
   productGroupId?: string;
+  productId?: string;
+  sku?: string;
+  cartUrl?: string;
+  affiliateUrl?: string;
+  commissionPct?: number | null;
+  detectKeywords?: string;
   usp?: string;
   forbiddenClaims?: string;
   pic: string;
@@ -393,12 +600,22 @@ export function slotSpecsFromBrandPlan(
   rows: BrandPlanRow[],
   pillars: BrandPlanPillar[],
   channel: PlanChannel,
-  groups: { id: string; name: string; usp?: string; forbiddenClaims?: string }[] = []
+  groups: (ProductGroup | { id: string; name: string; usp?: string; forbiddenClaims?: string; products?: ProductGroup['products'] })[] = []
 ): { specs: BrandPlanSlotSpec[]; skipped: { live: number; noWeek: number; noTier: number } } {
   const specs: BrandPlanSlotSpec[] = [];
   const skipped = { live: 0, noWeek: 0, noTier: 0 };
   const pillarName = (id: string) => pillars.find(p => p.id === id)?.name || '';
   const groupObj = (id: string) => groups.find(g => g.id === id);
+  const catalogForLookup: BrandProductCatalog = {
+    groups: groups.map(g => ({
+      id: g.id,
+      name: g.name,
+      usp: g.usp || '',
+      forbiddenClaims: g.forbiddenClaims || '',
+      products: Array.isArray(g.products) ? g.products : [],
+    })),
+  };
+  const targetPlatform = channel === 'SHOPEE' ? 'Shopee' : 'TikTok Shop';
   for (const r of rows) {
     if (r.channel !== channel) continue;
     const qty = Math.floor(r.qty || 0);
@@ -421,6 +638,11 @@ export function slotSpecsFromBrandPlan(
       continue;
     }
     const grp = groupObj(r.productGroupId);
+    const matched = findCatalogProduct(catalogForLookup, r.sku, r.productGroupId);
+    const effGuide = resolveEffectiveProductGuidelines(catalogForLookup, r.productGroupId, matched?.product);
+    const effLinks = resolveEffectiveProductLinks(catalogForLookup, matched?.product);
+    const matchedCart = effLinks.cartLinks.find(l => l.platform === targetPlatform) || effLinks.cartLinks[0];
+    const matchedAff = effLinks.affiliateLinks.find(l => l.platform === targetPlatform) || effLinks.affiliateLinks[0];
     specs.push({
       planRowId: r.id,
       planRowIndex: 0,
@@ -430,12 +652,133 @@ export function slotSpecsFromBrandPlan(
       pillar: pillarName(r.pillarId),
       angle: r.angle.trim(),
       product: [grp?.name || '', r.sku.trim()].filter(Boolean).join(' · '),
-      productGroupId: r.productGroupId || undefined,
-      usp: grp?.usp?.trim() || undefined,
-      forbiddenClaims: grp?.forbiddenClaims?.trim() || undefined,
+      productGroupId: r.productGroupId || matched?.group.id || undefined,
+      productId: matched?.product.id || undefined,
+      sku: matched?.product.sku || r.sku.trim() || undefined,
+      cartUrl: matchedCart?.url || undefined,
+      affiliateUrl: matchedAff?.url || undefined,
+      commissionPct: matchedAff?.commissionPct ?? null,
+      detectKeywords: effGuide.detectKeywords || undefined,
+      usp: effGuide.usp || grp?.usp?.trim() || undefined,
+      forbiddenClaims: effGuide.forbiddenClaims || grp?.forbiddenClaims?.trim() || undefined,
       pic: r.pic.trim(),
     });
   }
+  return { specs, skipped };
+}
+
+/**
+ * Chuyển đổi dữ liệu Biểu mẫu 1-Sheet Trình Brand (`BrandOneSheetPlanData` — Mục 04.3 TikTok & 05.3 Shopee)
+ * sang danh sách `BrandPlanSlotSpec` để đồng bộ trực tiếp vào bảng `Kế hoạch Content`.
+ */
+export function slotSpecsFromOneSheetPlan(
+  oneSheet: BrandOneSheetPlanData,
+  plan: InputPlanBreakdownState,
+  channel: PlanChannel,
+  catalog?: BrandProductCatalog
+): { specs: BrandPlanSlotSpec[]; skipped: { live: number; noWeek: number; noTier: number } } {
+  const specs: BrandPlanSlotSpec[] = [];
+  const skipped = { live: 0, noWeek: 0, noTier: 0 };
+  const { weeks, grid } = requiredGrid(plan);
+  const targetPlatform = channel === 'SHOPEE' ? 'Shopee' : 'TikTok Shop';
+  const buildProductFields = (rawSkuOrCombo: string) => {
+    const trimmed = (rawSkuOrCombo || '').trim();
+    if (!catalog || !trimmed) return { product: trimmed };
+    const matched = findCatalogProduct(catalog, trimmed);
+    if (!matched) return { product: trimmed };
+    const effGuide = resolveEffectiveProductGuidelines(catalog, matched.group.id, matched.product);
+    const effLinks = resolveEffectiveProductLinks(catalog, matched.product);
+    const matchedCart = effLinks.cartLinks.find(l => l.platform === targetPlatform) || effLinks.cartLinks[0];
+    const matchedAff = effLinks.affiliateLinks.find(l => l.platform === targetPlatform) || effLinks.affiliateLinks[0];
+    return {
+      product: trimmed,
+      productGroupId: matched.group.id,
+      productId: matched.product.id,
+      sku: matched.product.sku || matched.product.name,
+      cartUrl: matchedCart?.url || undefined,
+      affiliateUrl: matchedAff?.url || undefined,
+      commissionPct: matchedAff?.commissionPct ?? null,
+      detectKeywords: effGuide.detectKeywords || undefined,
+      usp: effGuide.usp || undefined,
+      forbiddenClaims: effGuide.forbiddenClaims || undefined,
+    };
+  };
+
+  const resolvePlanWeek = (rawWeek: string): string => {
+    const m = rawWeek.match(/W[1-5]/i);
+    const code = m ? m[0].toUpperCase() : 'W1';
+    return weeks.find(w => w.toUpperCase().startsWith(code)) || weeks[0] || code;
+  };
+
+  const resolveDefaultTierForWeek = (weekKey: string): ContentRowKey => {
+    const cell = grid[weekKey] || {};
+    for (const t of KL_TIERS) {
+      if ((cell[t.code] || 0) > 0) return t.code;
+    }
+    if ((cell.FOC || 0) > 0) return 'FOC';
+    return 'KL2';
+  };
+
+  if (channel === 'TIKTOK') {
+    for (const r of oneSheet.tiktokContentRows || []) {
+      const qty = Math.floor(r.qty || 0);
+      if (qty <= 0) continue;
+      const week = resolvePlanWeek(r.weekAndAirDate || 'W1');
+      let row: ContentRowKey = 'KL2';
+      if (r.touchpointSource === 'Video self' || r.contentType === 'Ảnh trượt') {
+        row = 'SELF';
+      } else if (r.touchpointSource === 'Livestream' || r.contentType === 'Livestream') {
+        row = 'LIVE_AFF';
+      } else {
+        const klMatch = (r.klGroup || '').toUpperCase().match(/KL[1-7]/);
+        if (klMatch && KL_CODES.has(klMatch[0])) {
+          row = klMatch[0] as ContentRowKey;
+        } else if (/^TAP|FOC/i.test((r.klGroup || '').trim())) {
+          row = 'FOC';
+        } else {
+          row = resolveDefaultTierForWeek(week);
+        }
+      }
+      specs.push({
+        planRowId: r.id,
+        planRowIndex: 0,
+        targetQty: qty,
+        week,
+        row,
+        pillar: (r.pillar || CONTENT_PILLARS[0].name).trim(),
+        angle: (r.angleAndBrief || '').trim(),
+        ...buildProductFields(r.skuOrCombo || ''),
+        pic: (r.pic || oneSheet.preparedBy || plan.pic || '').trim(),
+      });
+    }
+  } else {
+    const pillarMap = new Map(
+      (oneSheet.contentPillars || []).map(p => [p.pillarId, p.pillarName])
+    );
+    for (const r of oneSheet.shopeeContentRows || []) {
+      const qty = Math.floor(r.qty || 0);
+      if (qty <= 0) continue;
+      const week = resolvePlanWeek(r.week || 'W1');
+      let row: ContentRowKey = 'SELF';
+      if (/aff|koc/i.test(`${r.touchpointSource} ${r.productionMethod}`)) {
+        row = resolveDefaultTierForWeek(week);
+      } else if (/live/i.test(r.touchpointSource)) {
+        row = 'LIVE_AFF';
+      }
+      specs.push({
+        planRowId: r.id,
+        planRowIndex: 0,
+        targetQty: qty,
+        week,
+        row,
+        pillar: (pillarMap.get(r.pillarId) || r.pillarId || CONTENT_PILLARS[0].name).trim(),
+        angle: (r.angleAndBrief || '').trim(),
+        ...buildProductFields(r.skuOrCombo || ''),
+        pic: (oneSheet.preparedBy || plan.pic || '').trim(),
+      });
+    }
+  }
+
   return { specs, skipped };
 }
 
@@ -492,6 +835,12 @@ export function syncSlotsFromBrandPlan(slots: ContentSlot[], specs: BrandPlanSlo
       pillar: spec.pillar || s.pillar,
       pic: spec.pic || s.pic,
       productGroupId: spec.productGroupId || s.productGroupId,
+      productId: spec.productId || s.productId,
+      sku: spec.sku || s.sku,
+      cartUrl: s.cartUrl || spec.cartUrl,
+      affiliateUrl: s.affiliateUrl || spec.affiliateUrl,
+      commissionPct: s.commissionPct ?? spec.commissionPct,
+      detectKeywords: s.detectKeywords || spec.detectKeywords,
       usp: s.usp || spec.usp,
       forbiddenClaims: s.forbiddenClaims || spec.forbiddenClaims,
     };
@@ -504,6 +853,11 @@ export function syncSlotsFromBrandPlan(slots: ContentSlot[], specs: BrandPlanSlo
       merged.pillar !== s.pillar ||
       merged.pic !== s.pic ||
       merged.productGroupId !== s.productGroupId ||
+      merged.productId !== s.productId ||
+      merged.sku !== s.sku ||
+      merged.cartUrl !== s.cartUrl ||
+      merged.commissionPct !== s.commissionPct ||
+      merged.detectKeywords !== s.detectKeywords ||
       merged.usp !== s.usp ||
       merged.forbiddenClaims !== s.forbiddenClaims;
     if (changed) {
@@ -520,6 +874,12 @@ export function syncSlotsFromBrandPlan(slots: ContentSlot[], specs: BrandPlanSlo
       pillar: spec.pillar,
       angle: spec.angle,
       product: spec.product,
+      productId: spec.productId,
+      sku: spec.sku,
+      cartUrl: spec.cartUrl,
+      affiliateUrl: spec.affiliateUrl,
+      commissionPct: spec.commissionPct,
+      detectKeywords: spec.detectKeywords,
       usp: spec.usp,
       forbiddenClaims: spec.forbiddenClaims,
       week: spec.week,

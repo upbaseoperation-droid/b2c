@@ -16,7 +16,7 @@ import { Button, Chips, DataTable, EmptyState, FilterBar, Modal, PageActions, Pa
 import type { Column } from '../ui';
 import { ApiError, contractApi, type ContractBootstrap } from '../contracts/api';
 import { browserDemoEnabled, downloadBrowserDemo, enableBrowserDemo } from '../contracts/browserDemo';
-import { contractStatus, isAcceptance } from '../contracts/contractUi';
+import { contractStatus, isAcceptance, OFFICIAL_3STAGE_TEMPLATE_IDS } from '../contracts/contractUi';
 import { ContractCatalogView, CATEGORY_LABELS } from '../contracts/ContractCatalogView';
 import { ContractDetail } from '../contracts/ContractDetail';
 import { ContractDocumentViewer } from '../contracts/ContractDocumentViewer';
@@ -111,7 +111,8 @@ export function ContractManagementView({
       const deal = deals.find(d => d.id === intent.dealId);
       const koc = kocs.find(k => k.id === deal?.kocId);
       const subject = detectSubjectKind(koc, deal);
-      const existing = latest(data.records.filter(r => r.dealId === intent.dealId && documentOfTemplate(r.templateId) === doc));
+      const sameKocForDoc = (r: ContractRecord) => r.dealId === intent.dealId || Boolean(deal?.kocId && r.kocId === deal.kocId);
+      const existing = latest(data.records.filter(r => documentOfTemplate(r.templateId) === doc && (doc === 'HDNT' ? sameKocForDoc(r) : r.dealId === intent.dealId)));
       if (existing) setScreen({ mode: 'detail', id: existing.id });
       else {
         const templateId = doc === 'HDNT' ? `${subject}-HDNT` : doc === 'SOW' ? `${subject}-SOW` : `${subject}-VID-BBNT`;
@@ -123,12 +124,14 @@ export function ContractManagementView({
           const framework = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && sameKoc(r)));
           const sow = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'SOW' && r.dealId === intent.dealId));
           const parentId = doc === 'SOW' ? framework?.id : doc === 'BBNT' ? sow?.id || framework?.id : undefined;
-          setScreen({ mode: 'form', init: { dealId: intent.dealId, kind: doc === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', templateId, parentId } });
+          setScreen({ mode: 'form', init: { dealId: intent.dealId, kind: doc === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', docStage: doc, templateId, parentId } });
         }
       }
     } else {
       const existing = latest(data.records.filter(r => r.dealId === intent.dealId && !isAcceptance(r.templateId)));
-      setScreen(existing ? { mode: 'detail', id: existing.id } : { mode: 'form', init: { dealId: intent.dealId, kind: 'CONTRACT' } });
+      const deal = deals.find(d => d.id === intent.dealId);
+      const framework = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && (r.dealId === intent.dealId || Boolean(deal?.kocId && r.kocId === deal.kocId))));
+      setScreen(existing ? { mode: 'detail', id: existing.id } : { mode: 'form', init: { dealId: intent.dealId, kind: 'CONTRACT', docStage: framework ? 'SOW' : 'HDNT', parentId: framework?.id } });
     }
   }
 
@@ -171,6 +174,7 @@ export function ContractManagementView({
   const needAcceptance = (r: ContractRecord) =>
     r.signing.at(-1)?.status === 'COMPLETED' &&
     !isAcceptance(r.templateId) &&
+    !(r.templateId.endsWith('-HDNT') && r.templateId !== 'CTV-HDNT') &&
     !(data?.records || []).some(child => child.parentId === r.id);
 
   const matches: Record<Filter, (r: ContractRecord) => boolean> = {
@@ -317,7 +321,7 @@ export function ContractManagementView({
               onChange={v => setScreen(v === 'CATALOG' ? { mode: 'catalog' } : { mode: 'list' })}
               items={[
                 { key: 'RECORDS', label: `Hồ sơ hợp đồng (${data.records.length})` },
-                { key: 'CATALOG', label: `Biểu mẫu chuẩn (${data.templates.length})` },
+                { key: 'CATALOG', label: `Bộ 11 biểu mẫu chuẩn (${data.templates.filter(t => t.scope === 'KOC_CUSTOM' || OFFICIAL_3STAGE_TEMPLATE_IDS.includes(t.id as never)).length})` },
               ]}
             />
           </div>

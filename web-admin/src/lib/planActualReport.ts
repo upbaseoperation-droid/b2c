@@ -2,8 +2,12 @@
 // Kế hoạch: Kế hoạch tháng 4.1.1 (chỉ tiêu theo KL, phân rã tuần). Thực tế: Listing (đã list / đã chốt) và Deal board (job, air, nghiệm thu, cam kết, đã chi).
 import type { InputPlanBreakdownState, KocListingItem } from './types';
 import { BATCH_CYCLE_SPECS, computeBatchProgress, computeProgress, type QuotaKey } from './listingBoardRules';
-import { resolveWeekRows, TIER_KEYS } from './planBreakdownRules';
+import { resolveWeekRows, SELF_TYPES, TIER_KEYS } from './planBreakdownRules';
 import { isJobAcceptanceCleared, jobTotalFee, type DealBoardData, type DealJob } from './dealBoardRules';
+import {
+  computeSelfPlanTarget,
+  type SelfChannelBoardData,
+} from './selfChannelBoardRules';
 import { KL_TIERS } from './klTiers';
 
 /** done: đạt · running: đang trong kỳ · overdue: đã qua hạn mà chưa đạt · upcoming: chưa tới · none: kỳ này không có chỉ tiêu */
@@ -97,7 +101,9 @@ function dealGradeKey(grade: string): QuotaKey | null {
   return KL_TIERS.some(t => t.code === grade) ? (grade as QuotaKey) : null;
 }
 
-const isActiveJob = (j: DealJob) => !j.lifecycleStatus || j.lifecycleStatus === 'ACTIVE';
+const isActiveJob = (j: DealJob, currentMonth?: string) =>
+  (!j.lifecycleStatus || j.lifecycleStatus === 'ACTIVE') &&
+  (!j.sourcePlanMonth || !currentMonth || j.sourcePlanMonth === currentMonth);
 const isAired = (j: DealJob) => Boolean(j.airedAt || j.airLink.trim());
 
 /** Đã chi của 1 job = tạm ứng đã chi + tất toán đã chi, không vượt tổng phí (tránh cộng trùng khi phiếu tất toán ghi cả phần đã ứng). */
@@ -116,7 +122,8 @@ export function buildPlanActualReport(
   plan: InputPlanBreakdownState,
   listing: KocListingItem[],
   board: DealBoardData,
-  today: string
+  today: string,
+  selfBoard?: SelfChannelBoardData
 ): PlanActualStoreReport {
   // Theo KL: chỉ tiêu + listing lấy từ cùng hàm của bảng Listing để hai màn khớp số
   const progress = computeProgress(plan, listing);
@@ -128,7 +135,7 @@ export function buildPlanActualReport(
   for (const d of board.deals || []) {
     const key = dealGradeKey(d.grade);
     for (const j of d.jobs || []) {
-      if (!isActiveJob(j)) continue;
+      if (!isActiveJob(j, plan.month)) continue;
       jobs.push({ job: j, key });
       if (!key) continue;
       if (!tiers.has(key)) tiers.set(key, emptyTier(key, key === 'FOC' ? 'FOC (0đ)' : key));
@@ -140,7 +147,34 @@ export function buildPlanActualReport(
       row.paid += jobPaidAmount(j);
     }
   }
-  const order: QuotaKey[] = [...TIER_KEYS, 'FOC'];
+
+  // Tích hợp Self-channel (Kênh Brand) nếu có chỉ tiêu hoặc có video thực tế
+  const selfTarget = computeSelfPlanTarget(plan);
+  const activeSelfJobs = (selfBoard?.jobs || []).filter(
+    j => !j.lifecycleStatus || j.lifecycleStatus === 'ACTIVE'
+  );
+  if (selfTarget.totalQty > 0 || selfTarget.totalBudgetNet > 0 || activeSelfJobs.length > 0) {
+    const selfRow: TierActualRow = {
+      key: 'SELF',
+      label: 'Self-channel (Kênh Brand)',
+      planQty: selfTarget.totalQty,
+      planBudget: selfTarget.totalBudgetNet,
+      listed: activeSelfJobs.length,
+      confirmed: activeSelfJobs.filter(
+        j => j.videoQaStatus === 'INTERNAL_QA_PASSED' || j.videoQaStatus === 'BRAND_APPROVED'
+      ).length,
+      jobs: activeSelfJobs.length,
+      aired: activeSelfJobs.filter(j => Boolean(j.airedAt || j.airLink.trim())).length,
+      accepted: activeSelfJobs.filter(j => j.acceptanceStatus === 'PASSED').length,
+      committed: activeSelfJobs.reduce((s, j) => s + (j.feeGross || 0), 0),
+      paid: activeSelfJobs
+        .filter(j => j.paymentStatus === 'PAID')
+        .reduce((s, j) => s + (j.feeGross || 0), 0),
+    };
+    tiers.set('SELF', selfRow);
+  }
+
+  const order: QuotaKey[] = [...TIER_KEYS, 'FOC', 'SELF'];
   const tierRows = order.filter(k => tiers.has(k)).map(k => tiers.get(k)!);
   const total = emptyTier('FOC', 'Tổng');
   for (const r of tierRows) {
@@ -177,17 +211,29 @@ export function buildPlanActualReport(
     };
   });
 
-  // Theo tuần: video KOC (KL + FOC) trong phân rã tuần so với job có hạn air / đã air trong tuần
+  // Theo tuần: video KOC (KL + FOC + Self-channel) trong phân rã tuần so với job có hạn air / đã air trong tuần
   const weeks: WeekActualRow[] = [];
   for (const r of resolveWeekRows(plan)) {
     const range = weekRange(r.week, plan.month);
     if (!range) continue;
+    const selfWeekQty = SELF_TYPES.reduce((s, st) => s + (r.self?.[st.key] || 0), 0);
+    const selfWeekBudget = r.self?.budgetNet || 0;
     const planQty =
-      TIER_KEYS.reduce((s, k) => s + (r.tiers?.[k]?.qty || 0), 0) + (r.foc?.tapBrand || 0) + (r.foc?.tap || 0) + (r.foc?.tapUp || 0);
-    const planBudget = TIER_KEYS.reduce((s, k) => s + (r.tiers?.[k]?.budgetNet || 0), 0);
+      TIER_KEYS.reduce((s, k) => s + (r.tiers?.[k]?.qty || 0), 0) +
+      (r.foc?.tapBrand || 0) +
+      (r.foc?.tap || 0) +
+      (r.foc?.tapUp || 0) +
+      selfWeekQty;
+    const planBudget =
+      TIER_KEYS.reduce((s, k) => s + (r.tiers?.[k]?.budgetNet || 0), 0) +
+      selfWeekBudget;
     const inRange = (day: string) => Boolean(day) && day.slice(0, 10) >= range.start && day.slice(0, 10) <= range.end;
-    const scheduled = jobs.filter(x => inRange(x.job.deadline)).length;
-    const aired = jobs.filter(x => inRange(x.job.airedAt)).length;
+    const scheduled =
+      jobs.filter(x => inRange(x.job.deadline)).length +
+      activeSelfJobs.filter(j => inRange(j.deadline)).length;
+    const aired =
+      jobs.filter(x => inRange(x.job.airedAt)).length +
+      activeSelfJobs.filter(j => inRange(j.airedAt)).length;
     let state: ProgressState;
     if (planQty === 0) state = 'none';
     else if (range.end < today) state = aired >= planQty ? 'done' : 'overdue';
@@ -197,9 +243,13 @@ export function buildPlanActualReport(
   }
   const ended = weeks.filter(w => w.end < today);
   const lastEndedWeekEnd = ended.length ? ended[ended.length - 1].end : '';
+  const airedToDate = lastEndedWeekEnd
+    ? jobs.filter(x => x.job.airedAt && x.job.airedAt.slice(0, 10) <= lastEndedWeekEnd).length +
+      activeSelfJobs.filter(j => j.airedAt && j.airedAt.slice(0, 10) <= lastEndedWeekEnd).length
+    : 0;
   const dueToDate = {
     planQty: ended.reduce((s, w) => s + w.planQty, 0),
-    aired: lastEndedWeekEnd ? jobs.filter(x => x.job.airedAt && x.job.airedAt.slice(0, 10) <= lastEndedWeekEnd).length : 0,
+    aired: airedToDate,
     lastEndedWeekEnd,
   };
 

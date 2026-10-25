@@ -3,11 +3,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, Plus, Search, Trash2 } from 'lucide-react';
 import type { InputPlanBreakdownState, StorePortfolioItem } from '../../lib/types';
-import { Button, ConfirmDialog, Field, Input, Select, Textarea } from '../ui';
+import { Button, ConfirmDialog, Field, Input, Modal, Select, Textarea } from '../ui';
 import { CONTENT_PILLARS } from '../../lib/contentPillars';
 import { weekLabelsForMonth } from '../../lib/planBreakdownRules';
 import { usePlanRecord } from '../../lib/usePlanRecord';
 import { SECTION_FIELDS, SECTION_LABEL, type BrandPlanAccess } from '../../lib/brandPlanAccess';
+import {
+  EMPTY_PRODUCT_CATALOG,
+  findCatalogProduct,
+  listAllCatalogProducts,
+  resolveEffectiveProductGuidelines,
+  resolveEffectiveSampleQuota,
+  type BrandProductCatalog,
+} from '../../lib/productCatalog';
+import { ProductCatalogView } from './ProductCatalogView';
 import {
   APPROVAL_LABEL,
   CHANNEL_LABEL,
@@ -80,7 +89,7 @@ const NumInput: React.FC<{ value: number | null | undefined; onChange: (v: numbe
   <Input
     type="number"
     min={0}
-    className={`h-8 text-right ${className}`}
+    className={`h-8 text-right tabular-nums ${className}`}
     placeholder={placeholder}
     value={value === null || value === undefined ? '' : Math.round(value * scale * 1e6) / 1e6}
     onChange={e => {
@@ -92,8 +101,8 @@ const NumInput: React.FC<{ value: number | null | undefined; onChange: (v: numbe
   />
 );
 
-const TH = 'whitespace-nowrap border-b border-line bg-sunken px-2 py-2 text-left text-2xs font-medium text-ink-3';
-const TD = 'border-b border-line px-2 py-1.5 align-top text-[13px] text-ink';
+const TH = 'whitespace-nowrap border-b border-line bg-sunken px-2.5 py-2 text-left text-2xs font-medium text-ink-3';
+const TD = 'border-b border-line px-2.5 py-1.5 align-top text-[13px] text-ink';
 
 export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ currentUserName = 'Nhân viên', currentUserRole, onNotify }) => {
   const notify = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => onNotify?.(msg, type);
@@ -141,7 +150,12 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
       .sort((a, b) => (a.storeName || a.title).localeCompare(b.storeName || b.title));
   }, [plans, activeMonth, search]);
 
-  const plan = useMemo(() => plans.find(p => p.id === selectedId) || null, [plans, selectedId]);
+  const activePlanId = useMemo(() => {
+    if (selectedId && visiblePlans.some(p => p.id === selectedId)) return selectedId;
+    return visiblePlans[0]?.id ?? null;
+  }, [selectedId, visiblePlans]);
+
+  const plan = useMemo(() => plans.find(p => p.id === activePlanId) || null, [plans, activePlanId]);
   const { data, status, update, saveNow } = usePlanRecord<BrandPlanData>('/api/brand-plan', plan?.id ?? null, EMPTY_BRAND_PLAN, msg => notify(msg, 'warning'));
 
   const [catalogStores, setCatalogStores] = useState<StorePortfolioItem[]>([]);
@@ -178,12 +192,19 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
 
   const channelHint: PlanChannel | null = catalogStore ? (catalogStore.platform === 'TikTok Shop' ? 'TIKTOK' : catalogStore.platform === 'Shopee Mall' ? 'SHOPEE' : null) : null;
 
-  // Nhóm sản phẩm của Brand (Dữ liệu gốc › Danh mục sản phẩm)
+  // Nhóm sản phẩm & Danh mục SKU/Combo của Brand (Chiều Sản phẩm xuyên tháng)
+  const [brandCatalog, setBrandCatalog] = useState<BrandProductCatalog>(EMPTY_PRODUCT_CATALOG);
   const [productGroups, setProductGroups] = useState<{ id: string; name: string }[] | null>(null);
+  const [catalogModalOpen, setCatalogModalOpen] = useState(false);
   const planBrand = plan?.brandName || '';
+  const allPlanBrandNames = useMemo(
+    () => Array.from(new Set(plans.map(p => p.brandName).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [plans]
+  );
   const [prevPlanBrand, setPrevPlanBrand] = useState(planBrand);
   if (planBrand !== prevPlanBrand) {
     setPrevPlanBrand(planBrand);
+    setBrandCatalog(EMPTY_PRODUCT_CATALOG);
     setProductGroups(null);
   }
   useEffect(() => {
@@ -194,7 +215,9 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
         const res = await fetch(`/api/product-catalog?brand=${encodeURIComponent(planBrand)}`, { cache: 'no-store' });
         const body = await res.json().catch(() => null);
         if (!res.ok || cancelled) return;
-        setProductGroups(((body?.data?.groups as { id: string; name: string }[]) || []).map(g => ({ id: g.id, name: g.name })));
+        const cat = (body?.data as BrandProductCatalog) || EMPTY_PRODUCT_CATALOG;
+        setBrandCatalog(cat);
+        setProductGroups((cat.groups || []).map(g => ({ id: g.id, name: g.name })));
       } catch {
         /* không tải được danh mục thì bỏ qua phần kiểm nhóm sản phẩm */
       }
@@ -208,6 +231,13 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
   const issues = useMemo(() => (plan ? diagnoseBrandPlan(plan, data, members, channelHint, productGroups) : []), [plan, data, members, channelHint, productGroups]);
   const errorCount = issues.filter(i => i.level === 'error').length;
   const channelOfStore = channelHint ?? (plan ? detectChannel(plan) : null);
+
+  const [prevPlanIdForTab, setPrevPlanIdForTab] = useState(plan?.id || '');
+  if ((plan?.id || '') !== prevPlanIdForTab) {
+    setPrevPlanIdForTab(plan?.id || '');
+    if (channelOfStore === 'TIKTOK' && tab === 'SHOPEE') setTab('TIKTOK');
+    else if (channelOfStore === 'SHOPEE' && tab === 'TIKTOK') setTab('SHOPEE');
+  }
 
   const normalizeName = (s: string) =>
     s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -266,7 +296,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
     { key: 'KEY_VISUAL', label: '3. Key Visual' },
     { key: 'TIKTOK', label: '4. TikTok Shop' },
     { key: 'SHOPEE', label: '5. Shopee' },
-    { key: 'PILLAR', label: 'Pillar' },
+    { key: 'PILLAR', label: `Pillar (${data.pillars.length})` },
     { key: 'CHECK', label: issues.length ? `Kiểm tra (${issues.length})` : 'Kiểm tra' },
   ];
   const tabs = sectionOnly
@@ -277,10 +307,9 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
   /* ------------------------------------------------------- 1. Định hướng */
   const renderDirection = () => {
     const ownerMode: StrategyOwnerMode = data.strategyOwnerMode || 'CONTENT_TEAM';
-    const hasBookingLeader = Boolean(catalogStore?.bookingLeader && catalogStore.bookingLeader.trim());
     return (
       <div className="space-y-4">
-        <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-2.5">
+        <div className="rounded-lg border border-line bg-sunken/40 p-3">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <Field label="Chủ trì chiến lược (1 Dự Án — 1 Strategy Owner)">
               <Select
@@ -301,18 +330,6 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
               <Input value={data.statusNote} onChange={e => patch({ statusNote: e.target.value })} />
             </Field>
           </div>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-ink-2">
-            <span className="rounded border border-line bg-surface px-2 py-1 font-medium text-ink">
-              {ownerMode === 'BRAND_TEAM'
-                ? 'Brand Team: Strategy Owner tổng thể · Content Team: Book KOL KL5–KL7 & Hero Content · Booking Team: Book KOC KL1–KL4 & FOC'
-                : 'Content Team: Strategy Owner tổng thể · Content Team: Book KOL KL5–KL7 · Booking Team: Book KOC KL1–KL4 & FOC'}
-            </span>
-            <span className="rounded border border-line bg-surface px-2 py-1 text-ink-2">
-              {hasBookingLeader
-                ? `Luồng duyệt 2 cấp: Chuyên viên → Trưởng nhóm (${catalogStore?.bookingLeader}) sơ duyệt → Giám đốc Marketing (Đặng Thị Yến Nhi)`
-                : 'Gian hàng không có Leader: Chuyên viên trình duyệt trực tiếp Giám đốc Marketing (Đặng Thị Yến Nhi)'}
-            </span>
-          </div>
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {DIRECTION_FIELDS.map(f => (
@@ -330,13 +347,13 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
     let lastGroup = '';
     return (
       <div className="space-y-3">
-        <div className="overflow-x-auto rounded-lg border border-line">
+        <div className="overflow-x-auto rounded-lg border border-line bg-surface">
           <table className="w-full min-w-[640px] border-collapse">
             <thead>
               <tr>
                 <th className={TH}>Chỉ số</th>
-                <th className={`${TH} w-[190px]`}>Target Shopee</th>
-                <th className={`${TH} w-[190px]`}>Target TikTok Shop</th>
+                <th className={`${TH} w-[190px] ${channelOfStore === 'SHOPEE' ? 'text-accent font-semibold' : ''}`}>Target Shopee</th>
+                <th className={`${TH} w-[190px] ${channelOfStore === 'TIKTOK' ? 'text-accent font-semibold' : ''}`}>Target TikTok Shop</th>
                 <th className={`${TH} w-[170px] text-right`}>Total</th>
               </tr>
             </thead>
@@ -349,7 +366,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                   <React.Fragment key={r.key}>
                     {header && (
                       <tr>
-                        <td colSpan={4} className="border-b border-line bg-sunken/60 px-2 py-1.5 text-xs font-semibold text-ink">
+                        <td colSpan={4} className="border-b border-line bg-sunken/60 px-2.5 py-1.5 text-xs font-semibold text-ink">
                           {header}
                         </td>
                       </tr>
@@ -368,11 +385,11 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                               {r.unit === 'pct' && <span className="text-xs text-ink-3">%</span>}
                             </div>
                           ) : (
-                            <div className="px-1 text-right text-ink-2">{show(cell?.[col], r.unit)}</div>
+                            <div className="px-1 text-right tabular-nums text-ink-2">{show(cell?.[col], r.unit)}</div>
                           )}
                         </td>
                       ))}
-                      <td className={`${TD} text-right font-medium`}>{show(cell?.total, r.unit)}</td>
+                      <td className={`${TD} text-right tabular-nums font-medium`}>{show(cell?.total, r.unit)}</td>
                     </tr>
                   </React.Fragment>
                 );
@@ -394,80 +411,98 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
     return d === null ? null : d;
   };
 
-  const renderKeyVisual = () => (
-    <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {KEY_VISUAL_FIELDS.map(f => (
-          <Field key={f.key} label={f.label} className={f.long ? 'md:col-span-2' : ''}>
-            {f.long ? (
+  const renderKeyVisual = () => {
+    const shortFields = KEY_VISUAL_FIELDS.filter(f => !f.long);
+    const longFields = KEY_VISUAL_FIELDS.filter(f => f.long);
+    const allCatProducts = listAllCatalogProducts(brandCatalog);
+    return (
+      <div className="space-y-5">
+        <datalist id="brand-plan-main-products">
+          {allCatProducts.map(({ group, product }) => (
+            <option key={product.id} value={product.name} label={`${group.name} · ${product.sku || product.role}`} />
+          ))}
+        </datalist>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {shortFields.map(f => (
+            <Field key={f.key} label={f.label}>
+              <Input
+                list={f.key === 'mainProduct' ? 'brand-plan-main-products' : undefined}
+                value={data.keyVisual[f.key] || ''}
+                onChange={e => patch({ keyVisual: { ...data.keyVisual, [f.key]: e.target.value } })}
+              />
+            </Field>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+          {longFields.map(f => (
+            <Field key={f.key} label={f.label}>
               <Textarea rows={3} value={data.keyVisual[f.key] || ''} onChange={e => patch({ keyVisual: { ...data.keyVisual, [f.key]: e.target.value } })} />
-            ) : (
-              <Input value={data.keyVisual[f.key] || ''} onChange={e => patch({ keyVisual: { ...data.keyVisual, [f.key]: e.target.value } })} />
-            )}
-          </Field>
-        ))}
-      </div>
+            </Field>
+          ))}
+        </div>
 
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="text-sm font-semibold text-ink">Mốc Key Visual</div>
-          <Button size="md" variant="primary" icon={Plus} onClick={() => patch({ milestones: [...data.milestones, newMilestone(data.milestones.length === 0 ? 'Master' : '')] })}>
-            Thêm phiên bản
-          </Button>
-        </div>
-        <div className="overflow-x-auto rounded-lg border border-line">
-          <table className="w-full min-w-[980px] border-collapse">
-            <thead>
-              <tr>
-                <th className={TH}>Phiên bản</th>
-                {MILESTONE_DATES.map(d => (
-                  <th key={d.key} className={TH}>
-                    {d.label}
-                  </th>
-                ))}
-                <th className={TH}>Ghi chú</th>
-                <th className={TH} />
-              </tr>
-            </thead>
-            <tbody>
-              {data.milestones.length === 0 && (
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-sm font-semibold text-ink">Mốc Key Visual</div>
+            <Button size="sm" variant="primary" icon={Plus} onClick={() => patch({ milestones: [...data.milestones, newMilestone(data.milestones.length === 0 ? 'Master' : '')] })}>
+              Thêm phiên bản
+            </Button>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-line bg-surface">
+            <table className="w-full min-w-[980px] border-collapse">
+              <thead>
                 <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center text-sm text-ink-3">
-                    Chưa có phiên bản nào.
-                  </td>
+                  <th className={TH}>Phiên bản</th>
+                  {MILESTONE_DATES.map(d => (
+                    <th key={d.key} className={TH}>
+                      {d.label}
+                    </th>
+                  ))}
+                  <th className={TH}>Ghi chú</th>
+                  <th className={`${TH} w-[48px] text-center`}>Xóa</th>
                 </tr>
-              )}
-              {data.milestones.map(m => (
-                <tr key={m.id}>
-                  <td className={`${TD} w-[160px]`}>
-                    <Input className="h-8" value={m.name} placeholder="Master, Adapt 11.11…" onChange={e => patchMilestone(m.id, { name: e.target.value })} />
-                  </td>
-                  {MILESTONE_DATES.map((d, i) => {
-                    const prev = i > 0 ? MILESTONE_DATES[i - 1] : null;
-                    const days = prev ? gap(m[prev.key], m[d.key]) : null;
-                    return (
-                      <td key={d.key} className={`${TD} w-[140px]`}>
-                        <Input type="date" className="h-8" value={m[d.key]} onChange={e => patchMilestone(m.id, { [d.key]: e.target.value })} />
-                        {days !== null && <div className={`mt-0.5 text-2xs ${days < 0 ? 'text-critical' : 'text-ink-3'}`}>{days < 0 ? `Trước ${prev!.label} ${-days} ngày` : `Sau ${prev!.label} ${days} ngày`}</div>}
-                      </td>
-                    );
-                  })}
-                  <td className={`${TD} w-[220px]`}>
-                    <Textarea rows={2} value={m.note} onChange={e => patchMilestone(m.id, { note: e.target.value })} />
-                  </td>
-                  <td className={`${TD} w-[44px]`}>
-                    <button type="button" aria-label="Xóa phiên bản" className="rounded p-1.5 text-ink-3 hover:bg-sunken hover:text-critical" onClick={() => patch({ milestones: data.milestones.filter(x => x.id !== m.id) })}>
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.milestones.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-3 py-8 text-center text-sm text-ink-3">
+                      Chưa có phiên bản nào.
+                    </td>
+                  </tr>
+                )}
+                {data.milestones.map(m => (
+                  <tr key={m.id}>
+                    <td className={`${TD} w-[160px]`}>
+                      <Input className="h-8" value={m.name} placeholder="Master, Adapt 11.11…" onChange={e => patchMilestone(m.id, { name: e.target.value })} />
+                    </td>
+                    {MILESTONE_DATES.map((d, i) => {
+                      const prev = i > 0 ? MILESTONE_DATES[i - 1] : null;
+                      const days = prev ? gap(m[prev.key], m[d.key]) : null;
+                      return (
+                        <td key={d.key} className={`${TD} w-[140px]`}>
+                          <Input type="date" className="h-8" value={m[d.key]} onChange={e => patchMilestone(m.id, { [d.key]: e.target.value })} />
+                          {days !== null && <div className={`mt-0.5 text-2xs ${days < 0 ? 'text-critical' : 'text-ink-3'}`}>{days < 0 ? `Trước ${prev!.label} ${-days} ngày` : `Sau ${prev!.label} ${days} ngày`}</div>}
+                        </td>
+                      );
+                    })}
+                    <td className={`${TD} w-[220px]`}>
+                      <Textarea rows={2} value={m.note} onChange={e => patchMilestone(m.id, { note: e.target.value })} />
+                    </td>
+                    <td className={`${TD} w-[48px] text-center`}>
+                      <button type="button" aria-label="Xóa phiên bản" className="rounded p-1.5 text-ink-3 hover:bg-sunken hover:text-critical" onClick={() => patch({ milestones: data.milestones.filter(x => x.id !== m.id) })}>
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
+
   /* ------------------------------------------------------------- Pillar */
   const pillarName = (id: string) => data.pillars.find(p => p.id === id)?.name || '';
   const pillarQty = useMemo(() => {
@@ -476,6 +511,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
     return m;
   }, [data.rows]);
   const pillarTotalQty = Array.from(pillarQty.values()).reduce((s, v) => s + v, 0);
+  const pillarTotalShare = data.pillars.reduce((s, p) => s + (p.sharePct || 0), 0);
 
   const patchPillar = (index: number, next: Partial<BrandPlanPillar>) => patch({ pillars: data.pillars.map((p, i) => (i === index ? { ...p, ...next } : p)) });
   const [pillarPick, setPillarPick] = useState('');
@@ -492,10 +528,10 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
   const renderPillars = () => (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Button size="md" variant="primary" icon={Plus} onClick={() => patch({ pillars: [...data.pillars, { ...newPillar(), id: `P${String(data.pillars.length + 1).padStart(2, '0')}` }] })}>
+        <Button size="sm" variant="primary" icon={Plus} onClick={() => patch({ pillars: [...data.pillars, { ...newPillar(), id: `P${String(data.pillars.length + 1).padStart(2, '0')}` }] })}>
           Thêm pillar
         </Button>
-        <Select value={pillarPick} onChange={e => setPillarPick(e.target.value)} className="max-w-[240px]">
+        <Select value={pillarPick} onChange={e => setPillarPick(e.target.value)} className="max-w-[260px]">
           <option value="">Chọn từ danh mục pillar</option>
           {CONTENT_PILLARS.map(p => (
             <option key={p.name} value={p.name}>
@@ -503,19 +539,24 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
             </option>
           ))}
         </Select>
-        <Button size="md" variant="secondary" disabled={!pillarPick} onClick={addPillarFromCatalog}>
-          Thêm
+        <Button size="sm" variant="secondary" disabled={!pillarPick} onClick={addPillarFromCatalog}>
+          Thêm từ danh mục
         </Button>
       </div>
-      <div className="overflow-x-auto rounded-lg border border-line">
-        <table className="w-full min-w-[1100px] border-collapse">
+      <div className="overflow-x-auto rounded-lg border border-line bg-surface">
+        <table className="w-full min-w-[1320px] border-collapse">
           <thead>
             <tr>
-              {['Pillar ID', 'Tên pillar', 'Mục tiêu / hành vi', 'Insight / rào cản', 'Thông điệp / RTB', 'Angle ưu tiên', 'Format phù hợp', 'Tỷ trọng video (%)', 'Số video tháng', ''].map(h => (
-                <th key={h} className={TH}>
-                  {h}
-                </th>
-              ))}
+              <th className={`${TH} w-[84px]`}>Pillar ID</th>
+              <th className={`${TH} w-[170px]`}>Tên pillar</th>
+              <th className={`${TH} w-[200px]`}>Mục tiêu / hành vi</th>
+              <th className={`${TH} w-[200px]`}>Insight / rào cản</th>
+              <th className={`${TH} w-[200px]`}>Thông điệp / RTB</th>
+              <th className={`${TH} w-[200px]`}>Angle ưu tiên</th>
+              <th className={`${TH} w-[150px]`}>Format phù hợp</th>
+              <th className={`${TH} w-[115px] text-right`}>Tỷ trọng (%)</th>
+              <th className={`${TH} w-[110px] text-right`}>SL video</th>
+              <th className={`${TH} sticky right-0 z-10 w-[52px] border-l border-line bg-sunken text-center`}>Xóa</th>
             </tr>
           </thead>
           <tbody>
@@ -529,29 +570,29 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
             {data.pillars.map((p, i) => {
               const q = pillarQty.get(p.id) || 0;
               return (
-                <tr key={i}>
-                  <td className={`${TD} w-[80px]`}>
-                    <Input className="h-8" value={p.id} onChange={e => patchPillar(i, { id: e.target.value.toUpperCase() })} />
+                <tr key={i} className="group hover:bg-canvas">
+                  <td className={`${TD} w-[84px]`}>
+                    <Input className="h-8 font-mono" value={p.id} onChange={e => patchPillar(i, { id: e.target.value.toUpperCase() })} />
                   </td>
-                  <td className={`${TD} w-[160px]`}>
+                  <td className={`${TD} w-[170px]`}>
                     <Input className="h-8" value={p.name} onChange={e => patchPillar(i, { name: e.target.value })} />
                   </td>
                   {(['goal', 'insight', 'message', 'angle'] as const).map(k => (
-                    <td key={k} className={`${TD} w-[190px]`}>
+                    <td key={k} className={`${TD} w-[200px]`}>
                       <Textarea rows={2} value={p[k]} onChange={e => patchPillar(i, { [k]: e.target.value })} />
                     </td>
                   ))}
-                  <td className={`${TD} w-[140px]`}>
+                  <td className={`${TD} w-[150px]`}>
                     <Input className="h-8" value={p.format} onChange={e => patchPillar(i, { format: e.target.value })} />
                   </td>
-                  <td className={`${TD} w-[110px]`}>
+                  <td className={`${TD} w-[115px]`}>
                     <NumInput value={p.sharePct} onChange={v => patchPillar(i, { sharePct: v })} />
                   </td>
-                  <td className={`${TD} w-[110px] text-right`}>
+                  <td className={`${TD} w-[110px] text-right tabular-nums`}>
                     {fmt(q)}
                     {pillarTotalQty > 0 && <div className="text-2xs text-ink-3">{Math.round((q / pillarTotalQty) * 100)}%</div>}
                   </td>
-                  <td className={`${TD} w-[40px]`}>
+                  <td className={`${TD} sticky right-0 z-10 w-[52px] border-l border-line bg-surface text-center group-hover:bg-canvas`}>
                     <button
                       type="button"
                       aria-label="Xóa pillar"
@@ -571,6 +612,18 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                 </tr>
               );
             })}
+            {data.pillars.length > 0 && (
+              <tr className="bg-sunken/40">
+                <td colSpan={7} className={`${TD} text-right font-semibold`}>
+                  Tổng cộng ({data.pillars.length} pillar)
+                </td>
+                <td className={`${TD} text-right tabular-nums font-semibold ${pillarTotalShare > 0 && Math.round(pillarTotalShare) !== 100 ? 'text-warning' : 'text-ink'}`}>
+                  {fmt(pillarTotalShare)}%
+                </td>
+                <td className={`${TD} text-right tabular-nums font-semibold`}>{fmt(pillarTotalQty)}</td>
+                <td className={`${TD} sticky right-0 z-10 border-l border-line bg-sunken/40`} />
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -578,6 +631,30 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
   );
 
   /* ---------------------------------------------------- Kênh TikTok/Shopee */
+  const renderOverviewCard = (group: (typeof OVERVIEW_GROUPS)[number], ov: ReturnType<typeof computeOverview>) => (
+    <div key={group} className="rounded-lg border border-line bg-surface">
+      <div className="border-b border-line bg-sunken px-3 py-2 text-xs font-semibold text-ink">{group}</div>
+      <div className="space-y-1.5 p-3">
+        {OVERVIEW_METRICS.filter(m => m.group === group).map(m => (
+          <div key={m.key} className="grid grid-cols-[minmax(0,1fr)_150px] items-center gap-2">
+            <div className="text-[13px] text-ink">{m.label}</div>
+            {m.kind === 'input' ? (
+              <NumInput value={data.overview[m.key]} onChange={v => patch({ overview: { ...data.overview, [m.key]: v } })} />
+            ) : (
+              <div className="px-2 text-right tabular-nums text-[13px] text-ink-2">{show(ov[m.key], m.unit)}</div>
+            )}
+          </div>
+        ))}
+        <Textarea
+          rows={2}
+          placeholder="Ghi chú"
+          value={data.overviewNotes[group] || ''}
+          onChange={e => patch({ overviewNotes: { ...data.overviewNotes, [group]: e.target.value } })}
+        />
+      </div>
+    </div>
+  );
+
   const renderChannel = (channel: PlanChannel) => {
     const agg = aggregateWeeks(data.rows, channel, weeks);
     const tot = sumWeeks(agg);
@@ -612,30 +689,8 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
         {channel === 'TIKTOK' && (
           <div className="space-y-3">
             <div className="text-sm font-semibold text-ink">Tổng quan</div>
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-              {OVERVIEW_GROUPS.map(group => (
-                <div key={group} className="rounded-lg border border-line">
-                  <div className="border-b border-line bg-sunken px-3 py-2 text-xs font-semibold text-ink">{group}</div>
-                  <div className="space-y-1.5 p-3">
-                    {OVERVIEW_METRICS.filter(m => m.group === group).map(m => (
-                      <div key={m.key} className="grid grid-cols-[minmax(0,1fr)_150px] items-center gap-2">
-                        <div className="text-[13px] text-ink">{m.label}</div>
-                        {m.kind === 'input' ? (
-                          <NumInput value={data.overview[m.key]} onChange={v => patch({ overview: { ...data.overview, [m.key]: v } })} />
-                        ) : (
-                          <div className="px-2 text-right text-[13px] text-ink-2">{show(ov[m.key], m.unit)}</div>
-                        )}
-                      </div>
-                    ))}
-                    <Textarea
-                      rows={2}
-                      placeholder="Ghi chú"
-                      value={data.overviewNotes[group] || ''}
-                      onChange={e => patch({ overviewNotes: { ...data.overviewNotes, [group]: e.target.value } })}
-                    />
-                  </div>
-                </div>
-              ))}
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-2 items-start">
+              {OVERVIEW_GROUPS.map(group => renderOverviewCard(group, ov))}
             </div>
           </div>
         )}
@@ -644,7 +699,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
           <>
             <div className="space-y-2">
               <div className="text-sm font-semibold text-ink">Số lượng theo tuần</div>
-              <div className="overflow-x-auto rounded-lg border border-line">
+              <div className="overflow-x-auto rounded-lg border border-line bg-surface">
                 <table className="w-full min-w-[820px] border-collapse">
                   <thead>
                     <tr>
@@ -661,21 +716,21 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                     {agg.map(w => (
                       <tr key={w.week}>
                         <td className={TD}>{w.week}</td>
-                        <td className={`${TD} text-right font-medium`}>{fmt(w.affQty)}</td>
+                        <td className={`${TD} text-right tabular-nums font-medium`}>{fmt(w.affQty)}</td>
                         {KL_OPTIONS.map(k => (
-                          <td key={k} className={`${TD} text-right text-ink-2`}>
+                          <td key={k} className={`${TD} text-right tabular-nums text-ink-2`}>
                             {w.affByKl[k].qty ? fmt(w.affByKl[k].qty) : '—'}
                           </td>
                         ))}
                       </tr>
                     ))}
-                    <tr>
+                    <tr className="bg-sunken/40">
                       <td className={`${TD} font-semibold`}>Tổng tháng</td>
-                      <td className={`${TD} text-right font-semibold`}>{fmt(tot.affQty)}</td>
+                      <td className={`${TD} text-right tabular-nums font-semibold`}>{fmt(tot.affQty)}</td>
                       {KL_OPTIONS.map(k => {
                         const s = agg.reduce((a, w) => a + w.affByKl[k].qty, 0);
                         return (
-                          <td key={k} className={`${TD} text-right font-semibold`}>
+                          <td key={k} className={`${TD} text-right tabular-nums font-semibold`}>
                             {s ? fmt(s) : '—'}
                           </td>
                         );
@@ -688,7 +743,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
 
             <div className="space-y-2">
               <div className="text-sm font-semibold text-ink">Ngân sách theo tuần (Net)</div>
-              <div className="overflow-x-auto rounded-lg border border-line">
+              <div className="overflow-x-auto rounded-lg border border-line bg-surface">
                 <table className="w-full min-w-[820px] border-collapse">
                   <thead>
                     <tr>
@@ -705,21 +760,21 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                     {agg.map(w => (
                       <tr key={w.week}>
                         <td className={TD}>{w.week}</td>
-                        <td className={`${TD} text-right font-medium`}>{fmt(w.affBudget)}</td>
+                        <td className={`${TD} text-right tabular-nums font-medium`}>{fmt(w.affBudget)}</td>
                         {KL_OPTIONS.map(k => (
-                          <td key={k} className={`${TD} text-right text-ink-2`}>
+                          <td key={k} className={`${TD} text-right tabular-nums text-ink-2`}>
                             {w.affByKl[k].budget ? fmt(w.affByKl[k].budget) : '—'}
                           </td>
                         ))}
                       </tr>
                     ))}
-                    <tr>
+                    <tr className="bg-sunken/40">
                       <td className={`${TD} font-semibold`}>Tổng tháng</td>
-                      <td className={`${TD} text-right font-semibold`}>{fmt(tot.affBudget)}</td>
+                      <td className={`${TD} text-right tabular-nums font-semibold`}>{fmt(tot.affBudget)}</td>
                       {KL_OPTIONS.map(k => {
                         const s = agg.reduce((a, w) => a + w.affByKl[k].budget, 0);
                         return (
-                          <td key={k} className={`${TD} text-right font-semibold`}>
+                          <td key={k} className={`${TD} text-right tabular-nums font-semibold`}>
                             {s ? fmt(s) : '—'}
                           </td>
                         );
@@ -734,7 +789,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
 
         <div className="space-y-2">
           <div className="text-sm font-semibold text-ink">Target theo tuần</div>
-          <div className="overflow-x-auto rounded-lg border border-line">
+          <div className="overflow-x-auto rounded-lg border border-line bg-surface">
             <table className="w-full min-w-[820px] border-collapse">
               <thead>
                 <tr>
@@ -758,8 +813,8 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                   return (
                     <tr key={w.week}>
                       <td className={TD}>{w.week}</td>
-                      <td className={`${TD} text-right`}>{fmt(qty)}</td>
-                      <td className={`${TD} text-right`}>{fmt(cost)}</td>
+                      <td className={`${TD} text-right tabular-nums`}>{fmt(qty)}</td>
+                      <td className={`${TD} text-right tabular-nums`}>{fmt(cost)}</td>
                       {channel === 'SHOPEE' && (
                         <td className={TD}>
                           <NumInput value={views} onChange={v => setTarget(w.week, { views: v })} />
@@ -768,8 +823,8 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                       <td className={TD}>
                         <NumInput value={gmv} onChange={v => setTarget(w.week, { gmv: v })} />
                       </td>
-                      {channel === 'SHOPEE' && <td className={`${TD} text-right text-ink-2`}>{views !== null && qty > 0 ? fmt(views / qty) : '—'}</td>}
-                      <td className={`${TD} text-right text-ink-2`}>
+                      {channel === 'SHOPEE' && <td className={`${TD} text-right tabular-nums text-ink-2`}>{views !== null && qty > 0 ? fmt(views / qty) : '—'}</td>}
+                      <td className={`${TD} text-right tabular-nums text-ink-2`}>
                         {ratio === null ? '—' : channel === 'TIKTOK' ? `${(ratio * 100).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}%` : ratio.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}
                       </td>
                     </tr>
@@ -784,20 +839,34 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="text-sm font-semibold text-ink">Chi tiết Content</div>
             <div className="flex items-center gap-2">
-              <Button size="md" variant="primary" icon={Plus} onClick={() => addRow(weeks[0] || '', channel === 'SHOPEE' ? 'SELF' : 'AFFILIATE')}>
+              <Button size="sm" variant="secondary" onClick={() => setCatalogModalOpen(true)}>
+                Danh mục SP &amp; Combo ({planBrand || 'Brand'})
+              </Button>
+              <Button size="sm" variant="primary" icon={Plus} onClick={() => addRow(weeks[0] || '', channel === 'SHOPEE' ? 'SELF' : 'AFFILIATE')}>
                 Thêm dòng
               </Button>
             </div>
           </div>
-          <div className="overflow-x-auto rounded-lg border border-line">
-            <table className="w-full min-w-[1700px] border-collapse">
+          <div className="overflow-x-auto rounded-lg border border-line bg-surface">
+            <table className="w-full min-w-[1780px] border-collapse">
               <thead>
                 <tr>
-                  {['Tuần', 'Ngày air', 'Nhóm sản phẩm', 'SKU / combo', 'Nguồn / điểm chạm', 'Bậc KL', 'Tệp KOC / tiêu chí chọn', 'Pillar', 'Mục tiêu', 'Angle / brief', 'Type', 'Sản xuất', 'Số lượng', 'Ngân sách (Net)', 'PIC', ''].map(h => (
-                    <th key={h} className={TH}>
-                      {h}
-                    </th>
-                  ))}
+                  <th className={`${TH} w-[150px]`}>Tuần</th>
+                  <th className={`${TH} w-[95px]`}>Ngày air</th>
+                  <th className={`${TH} w-[170px]`}>Nhóm sản phẩm</th>
+                  <th className={`${TH} w-[210px]`}>SKU / Combo</th>
+                  <th className={`${TH} w-[155px]`}>Nguồn / điểm chạm</th>
+                  <th className={`${TH} w-[135px]`}>Bậc KL</th>
+                  <th className={`${TH} w-[200px]`}>Tệp KOC / tiêu chí chọn</th>
+                  <th className={`${TH} w-[170px]`}>Pillar</th>
+                  <th className={`${TH} w-[120px]`}>Mục tiêu</th>
+                  <th className={`${TH} w-[230px]`}>Angle / brief</th>
+                  <th className={`${TH} w-[105px]`}>Type</th>
+                  <th className={`${TH} w-[105px]`}>Sản xuất</th>
+                  <th className={`${TH} w-[90px] text-right`}>Số lượng</th>
+                  <th className={`${TH} w-[135px] text-right`}>Ngân sách (Net)</th>
+                  <th className={`${TH} w-[135px]`}>PIC</th>
+                  <th className={`${TH} sticky right-0 z-10 w-[72px] border-l border-line bg-sunken text-center`}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -811,8 +880,12 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                 {rows.map(r => {
                   const rowEditable = !locked && canEditRow(r);
                   const lockTitle = rowEditable ? undefined : `Chỉ PIC (${r.pic || 'chưa gán'}) hoặc Leader/Quản lý mới có quyền chỉnh sửa dòng này`;
+                  const groupObj = (brandCatalog.groups || []).find(g => g.id === r.productGroupId);
+                  const groupProducts = groupObj?.products || [];
+                  const matchedProd = findCatalogProduct(brandCatalog, r.sku, r.productGroupId)?.product;
+                  const sampleCheck = resolveEffectiveSampleQuota(brandCatalog, matchedProd);
                   return (
-                    <tr key={r.id} className={rowEditable ? '' : 'bg-sunken/40'} title={lockTitle}>
+                    <tr key={r.id} className={`group ${rowEditable ? 'hover:bg-canvas' : 'bg-sunken/40'}`} title={lockTitle}>
                       <td className={`${TD} w-[150px]`}>
                         <Select value={r.week} disabled={!rowEditable} onChange={e => patchRow(r.id, { week: e.target.value })}>
                           <option value="">Chọn tuần</option>
@@ -824,11 +897,28 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                           {r.week && !weeks.includes(r.week) && <option value={r.week}>{r.week}</option>}
                         </Select>
                       </td>
-                      <td className={`${TD} w-[100px]`}>
+                      <td className={`${TD} w-[95px]`}>
                         <Input className="h-8" value={r.airDate} disabled={!rowEditable} placeholder="dd/mm" onChange={e => patchRow(r.id, { airDate: e.target.value })} />
                       </td>
                       <td className={`${TD} w-[170px]`}>
-                        <Select value={r.productGroupId} disabled={!rowEditable} onChange={e => patchRow(r.id, { productGroupId: e.target.value })}>
+                        <Select
+                          value={r.productGroupId}
+                          disabled={!rowEditable}
+                          onChange={e => {
+                            const nextGroupId = e.target.value;
+                            const nextGroup = (brandCatalog.groups || []).find(g => g.id === nextGroupId);
+                            const defaultProd = nextGroup?.products?.[0];
+                            const nextPatch: Partial<BrandPlanRow> = { productGroupId: nextGroupId };
+                            if (defaultProd && !r.sku.trim()) {
+                              nextPatch.sku = defaultProd.name;
+                            }
+                            if (nextGroup && !r.angle.trim()) {
+                              const eff = resolveEffectiveProductGuidelines(brandCatalog, nextGroupId, defaultProd);
+                              if (eff.usp) nextPatch.angle = eff.usp;
+                            }
+                            patchRow(r.id, nextPatch);
+                          }}
+                        >
                           <option value="">Chọn nhóm</option>
                           {(productGroups || []).map(g => (
                             <option key={g.id} value={g.id}>
@@ -838,10 +928,60 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                           {r.productGroupId && !(productGroups || []).some(g => g.id === r.productGroupId) && <option value={r.productGroupId}>Nhóm không còn trong danh mục</option>}
                         </Select>
                       </td>
-                      <td className={`${TD} w-[170px]`}>
-                        <Input className="h-8" value={r.sku} disabled={!rowEditable} onChange={e => patchRow(r.id, { sku: e.target.value })} />
+                      <td className={`${TD} w-[210px]`}>
+                        <div className="space-y-1">
+                          {groupProducts.length > 0 && (
+                            <Select
+                              value={matchedProd?.name || ''}
+                              disabled={!rowEditable}
+                              onChange={e => {
+                                const val = e.target.value;
+                                if (!val) return;
+                                const picked = groupProducts.find(p => p.name === val);
+                                const nextPatch: Partial<BrandPlanRow> = { sku: val };
+                                if (picked && !r.angle.trim()) {
+                                  const eff = resolveEffectiveProductGuidelines(brandCatalog, r.productGroupId, picked);
+                                  if (eff.usp) nextPatch.angle = eff.usp;
+                                }
+                                patchRow(r.id, nextPatch);
+                              }}
+                            >
+                              <option value="">-- Móc từ Danh mục SP/Combo --</option>
+                              {groupProducts.map(p => {
+                                const isC = p.productType === 'HARD_BUNDLE' || p.productType === 'ROUTINE_COMBO';
+                                const tag = isC ? '[COMBO]' : `[${p.role || 'HERO'}]`;
+                                const stTag = p.status === 'OUT_OF_STOCK' ? ' · [HẾT HÀNG]' : p.status === 'STOPPED' ? ' · [NGỪNG BÁN]' : '';
+                                return (
+                                  <option key={p.id} value={p.name}>
+                                    {tag} {p.name || p.sku}{stTag}
+                                  </option>
+                                );
+                              })}
+                            </Select>
+                          )}
+                          <Input
+                            className="h-8"
+                            value={r.sku}
+                            disabled={!rowEditable}
+                            placeholder={groupProducts.length > 0 ? 'Hoặc gõ tên SKU / Combo' : 'Nhập tên SKU / Combo'}
+                            onChange={e => patchRow(r.id, { sku: e.target.value })}
+                          />
+                          {matchedProd && (
+                            <div className="flex flex-wrap items-center gap-1 text-2xs text-ink-3">
+                              <span className="font-medium text-ink-2">
+                                {matchedProd.productType === 'HARD_BUNDLE'
+                                  ? 'Combo sàn'
+                                  : matchedProd.productType === 'ROUTINE_COMBO'
+                                    ? `Routine (${(matchedProd.bundleComponents || []).length} món)`
+                                    : matchedProd.role || 'HERO'}
+                              </span>
+                              {sampleCheck.remaining !== null && <span>· Mẫu: {sampleCheck.remaining}</span>}
+                              {sampleCheck.hasOutOfStockComponent && <span className="font-semibold text-critical">· Hết hàng!</span>}
+                            </div>
+                          )}
+                        </div>
                       </td>
-                      <td className={`${TD} w-[160px]`}>
+                      <td className={`${TD} w-[155px]`}>
                         <Select value={r.source} disabled={!rowEditable} onChange={e => patchRow(r.id, { source: e.target.value as ContentSource, kl: e.target.value === 'AFFILIATE' ? r.kl : '' })}>
                           {SOURCES.map(s => (
                             <option key={s} value={s}>
@@ -850,7 +990,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                           ))}
                         </Select>
                       </td>
-                      <td className={`${TD} w-[125px]`}>
+                      <td className={`${TD} w-[135px]`}>
                         {r.source === 'AFFILIATE' ? (
                           <div className="space-y-1">
                             <Select value={r.kl} disabled={!rowEditable} onChange={e => patchRow(r.id, { kl: e.target.value })}>
@@ -890,22 +1030,22 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                       <td className={`${TD} w-[120px]`}>
                         <Input className="h-8" value={r.goal} disabled={!rowEditable} onChange={e => patchRow(r.id, { goal: e.target.value })} />
                       </td>
-                      <td className={`${TD} w-[240px]`}>
+                      <td className={`${TD} w-[230px]`}>
                         <Textarea rows={2} value={r.angle} disabled={!rowEditable} onChange={e => patchRow(r.id, { angle: e.target.value })} />
                       </td>
-                      <td className={`${TD} w-[100px]`}>
+                      <td className={`${TD} w-[105px]`}>
                         <Input className="h-8" value={r.type} disabled={!rowEditable} onChange={e => patchRow(r.id, { type: e.target.value })} />
                       </td>
-                      <td className={`${TD} w-[100px]`}>
+                      <td className={`${TD} w-[105px]`}>
                         <Input className="h-8" value={r.production} disabled={!rowEditable} placeholder="VJ / Remix" onChange={e => patchRow(r.id, { production: e.target.value })} />
                       </td>
                       <td className={`${TD} w-[90px]`}>
                         <NumInput value={r.qty} className={rowEditable ? '' : 'cursor-not-allowed bg-sunken'} onChange={v => rowEditable && patchRow(r.id, { qty: v })} />
                       </td>
-                      <td className={`${TD} w-[130px]`}>
+                      <td className={`${TD} w-[135px]`}>
                         <NumInput value={r.budget} className={rowEditable ? '' : 'cursor-not-allowed bg-sunken'} onChange={v => rowEditable && patchRow(r.id, { budget: v })} />
                       </td>
-                      <td className={`${TD} w-[130px]`}>
+                      <td className={`${TD} w-[135px]`}>
                         <Input
                           className={`h-8 ${!rowEditable ? 'cursor-not-allowed bg-sunken' : ''}`}
                           value={r.pic}
@@ -914,8 +1054,8 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                           onChange={e => patchRow(r.id, { pic: e.target.value })}
                         />
                       </td>
-                      <td className={`${TD} w-[70px]`}>
-                        <div className="flex items-center">
+                      <td className={`${TD} sticky right-0 z-10 w-[72px] border-l border-line ${rowEditable ? 'bg-surface group-hover:bg-canvas' : 'bg-sunken/40'}`}>
+                        <div className="flex items-center justify-center">
                           <button
                             type="button"
                             aria-label="Nhân đôi dòng"
@@ -940,13 +1080,14 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                   );
                 })}
                 {rows.length > 0 && (
-                  <tr>
-                    <td colSpan={11} className={`${TD} text-right font-semibold`}>
+                  <tr className="bg-sunken/40">
+                    <td colSpan={12} className={`${TD} text-right font-semibold`}>
                       Tổng {hasAff ? `(affiliate ${fmt(tot.affQty)}, self ${fmt(tot.selfQty)}, live ${fmt(tot.liveAffQty + tot.liveSelfQty)})` : ''}
                     </td>
-                    <td className={`${TD} text-right font-semibold`}>{fmt(tot.totalQty)}</td>
-                    <td className={`${TD} text-right font-semibold`}>{fmt(tot.totalBudget)}</td>
-                    <td colSpan={2} className={TD} />
+                    <td className={`${TD} text-right tabular-nums font-semibold`}>{fmt(tot.totalQty)}</td>
+                    <td className={`${TD} text-right tabular-nums font-semibold`}>{fmt(tot.totalBudget)}</td>
+                    <td className={TD} />
+                    <td className={`${TD} sticky right-0 z-10 border-l border-line bg-sunken/40`} />
                   </tr>
                 )}
               </tbody>
@@ -961,10 +1102,10 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
   /* ------------------------------------------------------------ Kiểm tra */
   const renderChecks = () => (
     <div className="space-y-2">
-      {issues.length === 0 && <div className="rounded-lg border border-line px-4 py-8 text-center text-sm text-ink-3">Không có cảnh báo nào.</div>}
+      {issues.length === 0 && <div className="rounded-lg border border-line bg-surface px-4 py-8 text-center text-sm text-ink-3">Không có cảnh báo nào.</div>}
       {issues.map((i, idx) => (
-        <div key={idx} className={`rounded-md border px-3 py-2 text-[13px] ${i.level === 'error' ? 'border-critical text-critical' : 'border-line text-ink'}`}>
-          <span className="mr-2 font-medium">{i.scope}</span>
+        <div key={idx} className={`rounded-md border px-3 py-2 text-[13px] ${i.level === 'error' ? 'border-critical bg-critical-soft/30 text-critical' : 'border-line bg-surface text-ink'}`}>
+          <span className="mr-2 font-medium">{i.scope}:</span>
           {i.text}
         </div>
       ))}
@@ -974,7 +1115,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
       <aside className="space-y-3 rounded-lg border border-line bg-surface p-3">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-2">
           <Select value={activeMonth} onChange={e => setMonth(e.target.value)}>
             {months.length === 0 && <option value="">Chưa có tháng</option>}
             {months.map(m => (
@@ -996,7 +1137,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
               key={p.id}
               type="button"
               onClick={() => setSelectedId(p.id)}
-              className={`w-full rounded-md border px-3 py-2 text-left transition ${p.id === selectedId ? 'border-accent bg-accent-soft' : 'border-line hover:bg-sunken'}`}
+              className={`w-full rounded-md border px-3 py-2 text-left transition ${p.id === activePlanId ? 'border-accent bg-accent-soft' : 'border-line hover:bg-sunken'}`}
             >
               <div className="truncate text-[13px] font-medium text-ink">{p.storeName || p.title}</div>
               <div className="mt-0.5 flex items-center justify-between text-2xs text-ink-3">
@@ -1019,40 +1160,42 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
               ))}
             </datalist>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2 min-w-0">
                 <h2 className="truncate text-base font-semibold text-ink">{plan.storeName || plan.title}</h2>
-                <div className="mt-0.5 text-xs text-ink-3">
+                <span className="rounded bg-sunken px-2 py-0.5 text-xs text-ink-2">
                   {plan.brandName} · {plan.month} · {plan.pic || 'Chưa giao'}
                   {channelOfStore ? ` · ${CHANNEL_LABEL[channelOfStore]}` : ''}
-                  {saveLabel[status] ? ` · ${saveLabel[status]}` : ''}
-                </div>
+                </span>
+                {saveLabel[status] && (
+                  <span className="rounded bg-sunken px-2 py-0.5 text-2xs text-ink-3">{saveLabel[status]}</span>
+                )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className={`text-xs ${approvalStatus === 'CHANGES' ? 'text-critical' : 'text-ink-2'}`}>
                   {APPROVAL_LABEL[approvalStatus]}
                   {data.approval.decidedBy && approvalStatus !== 'PENDING' ? ` · ${data.approval.decidedBy}` : ''}
                   {approvalStatus === 'PENDING' && data.approval.submittedBy ? ` · ${data.approval.submittedBy} gửi` : ''}
                 </span>
                 {access.full && (approvalStatus === 'DRAFT' || approvalStatus === 'CHANGES') && (
-                  <Button size="md" variant="primary" disabled={errorCount > 0} title={errorCount > 0 ? 'Còn lỗi ở tab Kiểm tra' : undefined} onClick={() => changeApproval('PENDING')}>
+                  <Button size="sm" variant="primary" disabled={errorCount > 0} title={errorCount > 0 ? 'Còn lỗi ở tab Kiểm tra' : undefined} onClick={() => changeApproval('PENDING')}>
                     {catalogStore?.bookingLeader ? `Gửi Trưởng nhóm (${catalogStore.bookingLeader})` : 'Trình duyệt Giám đốc Marketing'}
                   </Button>
                 )}
                 {access.full && approvalStatus === 'PENDING' && (
                   <>
-                    <Button size="md" variant="primary" onClick={() => changeApproval('APPROVED')}>
+                    <Button size="sm" variant="primary" onClick={() => changeApproval('APPROVED')}>
                       Duyệt
                     </Button>
-                    <Button size="md" variant="secondary" disabled={!decisionNote.trim()} title={decisionNote.trim() ? undefined : 'Nhập lý do cần sửa'} onClick={() => changeApproval('CHANGES', decisionNote.trim())}>
+                    <Button size="sm" variant="secondary" disabled={!decisionNote.trim()} title={decisionNote.trim() ? undefined : 'Nhập lý do cần sửa'} onClick={() => changeApproval('CHANGES', decisionNote.trim())}>
                       Yêu cầu sửa
                     </Button>
-                    <Button size="md" variant="secondary" onClick={() => changeApproval('DRAFT')}>
+                    <Button size="sm" variant="secondary" onClick={() => changeApproval('DRAFT')}>
                       Rút lại
                     </Button>
                   </>
                 )}
                 {access.full && approvalStatus === 'APPROVED' && (
-                  <Button size="md" variant="secondary" disabled={!decisionNote.trim()} title={decisionNote.trim() ? undefined : 'Nhập lý do mở lại'} onClick={() => changeApproval('CHANGES', decisionNote.trim())}>
+                  <Button size="sm" variant="secondary" disabled={!decisionNote.trim()} title={decisionNote.trim() ? undefined : 'Nhập lý do mở lại'} onClick={() => changeApproval('CHANGES', decisionNote.trim())}>
                     Mở lại để sửa
                   </Button>
                 )}
@@ -1092,13 +1235,13 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
               </div>
             )}
             <div className={locked ? 'pointer-events-none select-none opacity-60' : ''}>
-            {activeTab === 'DIRECTION' && renderDirection()}
-            {activeTab === 'KPI' && renderKpi()}
-            {activeTab === 'KEY_VISUAL' && renderKeyVisual()}
-            {activeTab === 'TIKTOK' && renderChannel('TIKTOK')}
-            {activeTab === 'SHOPEE' && renderChannel('SHOPEE')}
-            {activeTab === 'PILLAR' && renderPillars()}
-            {activeTab === 'CHECK' && renderChecks()}
+              {activeTab === 'DIRECTION' && renderDirection()}
+              {activeTab === 'KPI' && renderKpi()}
+              {activeTab === 'KEY_VISUAL' && renderKeyVisual()}
+              {activeTab === 'TIKTOK' && renderChannel('TIKTOK')}
+              {activeTab === 'SHOPEE' && renderChannel('SHOPEE')}
+              {activeTab === 'PILLAR' && renderPillars()}
+              {activeTab === 'CHECK' && renderChecks()}
             </div>
           </>
         )}
@@ -1125,6 +1268,26 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
         }}
         onCancel={() => setPendingDeletePillar(null)}
       />
+
+      <Modal
+        open={catalogModalOpen}
+        onClose={() => setCatalogModalOpen(false)}
+        title={`Danh mục Sản phẩm & Combo — ${planBrand || 'Brand'}`}
+        size="xl"
+      >
+        <ProductCatalogView
+          brandNames={allPlanBrandNames}
+          legacyProducts={[]}
+          initialBrand={planBrand}
+          onCatalogSaved={(savedBrand, nextCat) => {
+            if (savedBrand === planBrand) {
+              setBrandCatalog(nextCat);
+              setProductGroups((nextCat.groups || []).map(g => ({ id: g.id, name: g.name })));
+            }
+          }}
+          onNotify={onNotify}
+        />
+      </Modal>
     </div>
   );
 };

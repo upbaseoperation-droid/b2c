@@ -9,6 +9,7 @@ import type {
   LarkbaseBookingPlanRecordItem,
   PlanVersionSnapshot
 } from '../types';
+import { REAL_LARKBASE_RECORDS_OCT_2026, REAL_MONTHLY_PLANS_OCT_2026 } from '../realLarkPlans202610';
 import { REAL_LARKBASE_RECORDS_NOV_2026, REAL_MONTHLY_PLANS_NOV_2026 } from '../realLarkPlans202611';
 
 // 8 gian hàng có Trưởng nhóm Nguyễn Thị Ngọc Tâm sơ duyệt (Cột 55 File 4.1.1)
@@ -39,206 +40,7 @@ export function resolveBookingLeader(storeName: string, rawLeader?: string | nul
 
 // Dữ liệu chuẩn từ bảng Larkbase B2C Booking Plan (File 4.1 & 4.1.1) khi chạy local hoặc chưa cấu hình biến môi trường Bitable
 const FALLBACK_APPROVED_LARKBASE_RECORDS: LarkbaseBookingPlanRecordItem[] = [
-  {
-    id: 'LARK-PLAN-202610-CLIO-V12',
-    larkRecordId: 'recB2cClio202610v12',
-    larkAppToken: 'bascnUpbaseB2CPlan41',
-    larkTableId: 'tblBookingInputPlan411',
-    planId: 'PLAN-2026-10-CLIO-TTS',
-    month: '2026/10',
-    week: 'Tháng 10/2026 (W40-W44)',
-    versionCode: 'v1.2',
-    versionName: 'v1.2 — Top-up Mega Sale 10.10 (Kéo từ Larkbase)',
-    storeId: 'STORE-CLIO-TTS',
-    storeName: 'ClubClio TikTok Shop',
-    brandName: 'ClubClio',
-    platform: 'TikTok Shop',
-    isB2cManaged: true,
-    b2cPic: 'Lương Thị Như Quỳnh',
-    bookingLeader: 'Nguyễn Thị Ngọc Tâm',
-    approvalStatus: 'APPROVED',
-    larkApprovalInstanceId: 'LARK-APPR-20261009-018',
-    approvedBy: 'Đặng Thị Yến Nhi',
-    approvedAt: '2026-10-09T14:30:00.000Z',
-    budgetGross: 198000000,
-    budgetNet: 180000000,
-    budgetAdsTotal: 65000000,
-    targetGmv: 920000000,
-    totalTargetVideos: 105,
-    affiliatePaidVideos: 55,
-    affiliatePaidBudgetNet: 148000000,
-    kocTierBreakdown: {
-      kl1: 15,
-      kl2: 18,
-      kl3: 12,
-      kl4: 6,
-      kl5: 3,
-      kl6: 1,
-      kl7: 0
-    },
-    focFreeVideos: 25,
-    focPic: 'Trần Thị Hảo',
-    selfChannelVideos: 15,
-    selfChannelBudgetNet: 18000000,
-    multiPlatformVideos: 10,
-    multiPlatformBudgetNet: 14000000,
-    liveSessions: 8,
-    liveBudgetNet: 0,
-    changeReason: 'Growth bổ sung 30M Net cho Cushion Kill Cover đợt sale 10.10 trên Larkbase',
-    syncSource: 'API_PULL',
-    syncedBy: 'Hệ thống API Larkbase',
-    syncedAt: '2026-10-14T08:15:00.000Z'
-  },
-  {
-    id: 'LARK-PLAN-202610-REJURAN-V11',
-    larkRecordId: 'recB2cRejuran202610v11',
-    larkAppToken: 'bascnUpbaseB2CPlan41',
-    larkTableId: 'tblBookingInputPlan411',
-    planId: 'PLAN-2026-10-REJURAN-TTS',
-    month: '2026/10',
-    week: 'Tháng 10/2026 (W40-W44)',
-    versionCode: 'v1.1',
-    versionName: 'v1.1 — Điều chỉnh cơ cấu KOC Bác sĩ/Chuyên gia',
-    storeId: 'STORE-REJURAN-TTS',
-    storeName: 'Rejuran Vietnam TikTok',
-    brandName: 'Rejuran',
-    platform: 'TikTok Shop',
-    isB2cManaged: true,
-    b2cPic: 'Phạm Thị Thu Hằng',
-    bookingLeader: 'Nguyễn Thị Ngọc Tâm',
-    approvalStatus: 'APPROVED',
-    larkApprovalInstanceId: 'LARK-APPR-20261007-042',
-    approvedBy: 'Đặng Thị Yến Nhi',
-    approvedAt: '2026-10-07T10:20:00.000Z',
-    budgetGross: 242000000,
-    budgetNet: 220000000,
-    budgetAdsTotal: 80000000,
-    targetGmv: 1150000000,
-    totalTargetVideos: 82,
-    affiliatePaidVideos: 42,
-    affiliatePaidBudgetNet: 185000000,
-    kocTierBreakdown: {
-      kl1: 5,
-      kl2: 10,
-      kl3: 12,
-      kl4: 8,
-      kl5: 5,
-      kl6: 2,
-      kl7: 0
-    },
-    focFreeVideos: 15,
-    focPic: 'Trần Thị Hảo',
-    selfChannelVideos: 15,
-    selfChannelBudgetNet: 22500000,
-    multiPlatformVideos: 10,
-    multiPlatformBudgetNet: 12500000,
-    liveSessions: 6,
-    liveBudgetNet: 0,
-    changeReason: 'Tăng tỷ trọng KL4-KL5 nhóm Bác sĩ da liễu theo phê duyệt trên Larkbase',
-    syncSource: 'API_PULL',
-    syncedBy: 'Hệ thống API Larkbase',
-    syncedAt: '2026-10-14T08:15:00.000Z'
-  },
-  {
-    id: 'LARK-PLAN-202610-LOCCITANE-V10',
-    larkRecordId: 'recB2cLoccitane202610v10',
-    larkAppToken: 'bascnUpbaseB2CPlan41',
-    larkTableId: 'tblBookingInputPlan411',
-    planId: 'PLAN-2026-10-LOCCITANE-TTS',
-    month: '2026/10',
-    week: 'Tháng 10/2026 (W40-W44)',
-    versionCode: 'v1.0',
-    versionName: 'v1.0 — Bản chốt đầu tháng (Baseline Larkbase)',
-    storeId: 'STORE-LOCCITANE-TTS',
-    storeName: "L'Occitane En Provence",
-    brandName: "L'Occitane",
-    platform: 'TikTok Shop',
-    isB2cManaged: true,
-    b2cPic: 'Hoàng Hải Long',
-    bookingLeader: 'Nguyễn Thị Ngọc Tâm',
-    approvalStatus: 'APPROVED',
-    larkApprovalInstanceId: 'LARK-APPR-20261002-009',
-    approvedBy: 'Đặng Thị Yến Nhi',
-    approvedAt: '2026-10-02T16:00:00.000Z',
-    budgetGross: 165000000,
-    budgetNet: 150000000,
-    budgetAdsTotal: 50000000,
-    targetGmv: 780000000,
-    totalTargetVideos: 68,
-    affiliatePaidVideos: 36,
-    affiliatePaidBudgetNet: 120000000,
-    kocTierBreakdown: {
-      kl1: 6,
-      kl2: 10,
-      kl3: 10,
-      kl4: 6,
-      kl5: 3,
-      kl6: 1,
-      kl7: 0
-    },
-    focFreeVideos: 12,
-    focPic: 'Trần Thị Hảo',
-    selfChannelVideos: 12,
-    selfChannelBudgetNet: 18000000,
-    multiPlatformVideos: 8,
-    multiPlatformBudgetNet: 12000000,
-    liveSessions: 5,
-    liveBudgetNet: 0,
-    changeReason: 'Phê duyệt Baseline đầu tháng 10/2026 trên Larkbase File 4.1.1',
-    syncSource: 'API_PULL',
-    syncedBy: 'Hệ thống API Larkbase',
-    syncedAt: '2026-10-14T08:15:00.000Z'
-  },
-  {
-    id: 'LARK-PLAN-202610-BLANC101-V10',
-    larkRecordId: 'recB2cBlanc101202610v10',
-    larkAppToken: 'bascnUpbaseB2CPlan41',
-    larkTableId: 'tblBookingInputPlan411',
-    planId: 'PLAN-2026-10-BLANC101-TTS',
-    month: '2026/10',
-    week: 'Tháng 10/2026 (W40-W44)',
-    versionCode: 'v1.0',
-    versionName: 'v1.0 — Bản chốt đầu tháng (Duyệt trực tiếp Lead B2C)',
-    storeId: 'STORE-BLANC101-TTS',
-    storeName: 'Blanc101 Vietnam TikTok',
-    brandName: 'Blanc101',
-    platform: 'TikTok Shop',
-    isB2cManaged: true,
-    b2cPic: 'Lê Phương Thảo',
-    bookingLeader: undefined, // Gian hàng không có Leader trung gian, trình trực tiếp Đặng Thị Yến Nhi
-    approvalStatus: 'APPROVED',
-    larkApprovalInstanceId: 'LARK-APPR-20261003-015',
-    approvedBy: 'Đặng Thị Yến Nhi',
-    approvedAt: '2026-10-03T09:45:00.000Z',
-    budgetGross: 132000000,
-    budgetNet: 120000000,
-    budgetAdsTotal: 40000000,
-    targetGmv: 620000000,
-    totalTargetVideos: 90,
-    affiliatePaidVideos: 40,
-    affiliatePaidBudgetNet: 95000000,
-    kocTierBreakdown: {
-      kl1: 12,
-      kl2: 14,
-      kl3: 8,
-      kl4: 4,
-      kl5: 2,
-      kl6: 0,
-      kl7: 0
-    },
-    focFreeVideos: 30,
-    focPic: 'Trần Thị Hảo',
-    selfChannelVideos: 12,
-    selfChannelBudgetNet: 15000000,
-    multiPlatformVideos: 8,
-    multiPlatformBudgetNet: 10000000,
-    liveSessions: 4,
-    liveBudgetNet: 0,
-    changeReason: 'Chuyên viên Lê Phương Thảo trình trực tiếp Trưởng phòng Đặng Thị Yến Nhi duyệt trên Larkbase',
-    syncSource: 'API_PULL',
-    syncedBy: 'Hệ thống API Larkbase',
-    syncedAt: '2026-10-14T08:15:00.000Z'
-  },
+  ...REAL_LARKBASE_RECORDS_OCT_2026,
   ...REAL_LARKBASE_RECORDS_NOV_2026
 ];
 
@@ -262,11 +64,11 @@ const TIER_BENCHMARK_NET: Record<keyof LarkbaseBookingPlanRecordItem['kocTierBre
  * sang cấu trúc Kế hoạch tháng (`InputPlanBreakdownState`) đầy đủ 4 đầu việc B2C & Snapshot phiên bản.
  */
 export function convertLarkbaseRecordToMonthlyPlan(record: LarkbaseBookingPlanRecordItem): InputPlanBreakdownState {
-  const realNovMatch = REAL_MONTHLY_PLANS_NOV_2026.find(
+  const realMatch = [...REAL_MONTHLY_PLANS_OCT_2026, ...REAL_MONTHLY_PLANS_NOV_2026].find(
     p => p.id === record.planId || (record.larkRecordId && p.larkRecordId === record.larkRecordId)
   );
-  if (realNovMatch) {
-    return realNovMatch;
+  if (realMatch) {
+    return realMatch;
   }
 
   const items: InputPlanRowItem[] = [];

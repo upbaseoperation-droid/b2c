@@ -32,7 +32,7 @@ import {
 } from '../ui';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
-import { GROUP_ORDER, ROLE_LABEL, uniqueFields } from './contractUi';
+import { GROUP_ORDER, OFFICIAL_3STAGE_TEMPLATE_IDS, ROLE_LABEL, uniqueFields } from './contractUi';
 
 export const CATEGORY_LABELS: Record<ContractCategory, string> = {
   BOOKING_VIDEO: 'Hợp đồng Booking Video',
@@ -139,10 +139,15 @@ export function ContractCatalogView({
   const [uploadFile, setUploadFile] = useState<{ name: string; base64: string } | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const official11Set = useMemo(() => new Set<string>(OFFICIAL_3STAGE_TEMPLATE_IDS), []);
+  const activeCatalogTemplates = useMemo(
+    () => data.templates.filter(t => t.scope === 'KOC_CUSTOM' || official11Set.has(t.id)),
+    [data.templates, official11Set],
+  );
 
   const filteredTemplates = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return data.templates.filter(t => {
+    return activeCatalogTemplates.filter(t => {
       const scope = t.scope || 'GLOBAL';
       if (scopeFilter !== 'ALL' && scope !== scopeFilter) return false;
       const cat = t.category || (t.id.startsWith('CTV-') ? 'CTV_FRAMEWORK' : t.kind === 'ACCEPTANCE' ? 'ACCEPTANCE_SETTLEMENT' : 'BOOKING_VIDEO');
@@ -150,7 +155,7 @@ export function ContractCatalogView({
       if (!q) return true;
       return `${t.id} ${t.name} ${t.subject} ${t.version} ${t.filename} ${t.description || ''} ${t.kocName || ''} ${t.kocId || ''} ${t.legalNotes || ''}`.toLowerCase().includes(q);
     });
-  }, [data.templates, categoryFilter, scopeFilter, search]);
+  }, [activeCatalogTemplates, categoryFilter, scopeFilter, search]);
 
   if (!filteredTemplates.some(t => t.id === selectedId) && filteredTemplates[0] && selectedId !== filteredTemplates[0].id) {
     setSelectedId(filteredTemplates[0].id);
@@ -178,8 +183,8 @@ export function ContractCatalogView({
   }, [selectedId, onNotify]);
 
   const scopeChips = useMemo(() => [
-    { key: 'ALL' as const, label: 'Tất cả nguồn', count: data.templates.length },
-    { key: 'GLOBAL' as const, label: 'Mẫu chuẩn Upbase', count: data.templates.filter(t => (t.scope || 'GLOBAL') === 'GLOBAL').length },
+    { key: 'ALL' as const, label: 'Tất cả nguồn', count: activeCatalogTemplates.length },
+    { key: 'GLOBAL' as const, label: 'Bộ 11 mẫu chuẩn Upbase', count: activeCatalogTemplates.filter(t => (t.scope || 'GLOBAL') === 'GLOBAL').length },
     { key: 'KOC_CUSTOM' as const, label: 'Mẫu duyệt theo KOC', count: data.templates.filter(t => t.scope === 'KOC_CUSTOM').length },
   ], [data.templates]);
 
@@ -187,11 +192,11 @@ export function ContractCatalogView({
     const getCat = (t: LegalTemplate): ContractCategory =>
       t.category || (t.id.startsWith('CTV-') ? 'CTV_FRAMEWORK' : t.kind === 'ACCEPTANCE' ? 'ACCEPTANCE_SETTLEMENT' : 'BOOKING_VIDEO');
     return [
-      { key: 'ALL' as const, label: 'Tất cả danh mục', count: data.templates.length },
-      { key: 'BOOKING_VIDEO' as const, label: CATEGORY_LABELS.BOOKING_VIDEO, count: data.templates.filter(t => getCat(t) === 'BOOKING_VIDEO').length },
-      { key: 'ACCEPTANCE_SETTLEMENT' as const, label: CATEGORY_LABELS.ACCEPTANCE_SETTLEMENT, count: data.templates.filter(t => getCat(t) === 'ACCEPTANCE_SETTLEMENT').length },
-      { key: 'CTV_FRAMEWORK' as const, label: CATEGORY_LABELS.CTV_FRAMEWORK, count: data.templates.filter(t => getCat(t) === 'CTV_FRAMEWORK').length },
-      { key: 'LIVESTREAM_APPENDIX' as const, label: CATEGORY_LABELS.LIVESTREAM_APPENDIX, count: data.templates.filter(t => getCat(t) === 'LIVESTREAM_APPENDIX').length },
+      { key: 'ALL' as const, label: 'Tất cả danh mục', count: activeCatalogTemplates.length },
+      { key: 'BOOKING_VIDEO' as const, label: CATEGORY_LABELS.BOOKING_VIDEO, count: activeCatalogTemplates.filter(t => getCat(t) === 'BOOKING_VIDEO').length },
+      { key: 'ACCEPTANCE_SETTLEMENT' as const, label: CATEGORY_LABELS.ACCEPTANCE_SETTLEMENT, count: activeCatalogTemplates.filter(t => getCat(t) === 'ACCEPTANCE_SETTLEMENT').length },
+      { key: 'CTV_FRAMEWORK' as const, label: CATEGORY_LABELS.CTV_FRAMEWORK, count: activeCatalogTemplates.filter(t => getCat(t) === 'CTV_FRAMEWORK').length },
+
     ];
   }, [data.templates]);
 

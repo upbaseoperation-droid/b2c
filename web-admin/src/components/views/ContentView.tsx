@@ -2,26 +2,37 @@
 
 import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
-import { Button, ConfirmDialog, Field, Input, Modal, Select, Tabs, Textarea } from '../ui';
+import { Button, ConfirmDialog, Field, Input, Modal, PageActions, Panel, Select, Status, Tabs, Textarea } from '../ui';
 import { ContentPlanBoard } from './ContentPlanBoard';
+import { PlanSelfChannelBoard } from './PlanSelfChannelBoard';
 import { BrandMonthlyPlanForm } from './BrandMonthlyPlanForm';
-import { 
-  CheckCircle, 
-  RotateCcw, 
-  Clock, 
-  Eye, 
-  Video, 
-  Layers, 
-  Share2,
+import { ProductCatalogView } from './ProductCatalogView';
+import { INITIAL_MASTER_PRODUCTS } from '../../lib/masterCatalog';
+import {
+  CheckCircle,
+  Clock,
+  Eye,
+  Video,
+  Layers,
   ExternalLink,
   FileText,
   Plus,
   Lightbulb,
   ShieldAlert,
-  RefreshCw
+  RefreshCw,
 } from 'lucide-react';
-import { ScriptReviewItem, ContentItemModel, PublicationItemModel, KocItem, BookingDealItem } from '../../lib/types';
+import { ScriptReviewItem, ContentItemModel, PublicationItemModel, KocItem, BookingDealItem, InputPlanBreakdownState } from '../../lib/types';
 import { INITIAL_SCRIPTS, INITIAL_CONTENT_ITEMS, INITIAL_PUBLICATIONS, INITIAL_DEALS } from '../../lib/mockData';
+import {
+  DEFAULT_KL67_MANDATORY_SHOTS,
+  DEFAULT_KL67_RIGHTS_GUARDRAILS,
+  formatBriefCode,
+  isBriefReady,
+  resolveBriefMode,
+  slotKocHandles,
+  type ContentBriefMode,
+  type ContentPlanData,
+} from '../../lib/contentPlanRules';
 import { generateAiAngleSuggestions } from '../../lib/contentAngleData';
 import { analyzeScriptWithAi } from '../../lib/aiScriptAnalyzer';
 import { executeOperationalReport } from '../../lib/operationalReportService';
@@ -41,7 +52,7 @@ interface ContentViewProps {
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
-type ContentSubTab = 'BRAND_PLAN' | 'CONTENT_PLAN' | 'CONTENT_ITEMS' | 'SCRIPTS' | 'DRAFT_VIDEOS' | 'PUBLICATIONS';
+type ContentSubTab = 'BRAND_PLAN' | 'PRODUCT_CATALOG' | 'CONTENT_PLAN' | 'SELF_CHANNEL_BOARD' | 'CONTENT_ITEMS' | 'SCRIPTS' | 'DRAFT_VIDEOS' | 'PUBLICATIONS';
 
 const PILLAR_OPTIONS = [
   'Nỗi đau - Giải pháp',
@@ -58,7 +69,15 @@ const FORMAT_OPTIONS = [
   'Mở hộp âm thanh thực',
 ];
 
-export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotification, onNavigateToAngles, currentUserName, currentUserRole, onNotify, kocs, deals }) => {
+export const ContentView: React.FC<ContentViewProps> = ({
+  onScriptApprovedNotification,
+  onNavigateToAngles,
+  currentUserName,
+  currentUserRole,
+  onNotify,
+  kocs,
+  deals,
+}) => {
   const { profiles } = useBrandProfiles();
   const [scripts, setScripts] = useState<ScriptReviewItem[]>(INITIAL_SCRIPTS);
   const [contentItems, setContentItems] = useState<ContentItemModel[]>(INITIAL_CONTENT_ITEMS);
@@ -71,6 +90,138 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
   const [isVideoInspectorOpen, setIsVideoInspectorOpen] = useState(false);
   const [inspectInitialUrl, setInspectInitialUrl] = useState<string>('');
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [filterBrand, setFilterBrand] = useState<string>('ALL');
+  const [filterProduct, setFilterProduct] = useState<string>('');
+  const [isSyncingPlans, setIsSyncingPlans] = useState<boolean>(false);
+
+  const handleSyncFromContentPlans = async () => {
+    setIsSyncingPlans(true);
+    try {
+      const res = await fetch('/api/monthly-plans', { cache: 'no-store' });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !Array.isArray(body?.plans)) {
+        onNotify?.('Không tải được danh sách kế hoạch để đồng bộ.', 'error');
+        return;
+      }
+      const allPlans = (body.plans as { plan: InputPlanBreakdownState }[]).map(p => p.plan);
+      const targetPlans = filterBrand !== 'ALL' ? allPlans.filter(p => p.brandName === filterBrand) : allPlans.slice(0, 8);
+      const addedItems: ContentItemModel[] = [];
+      const addedScripts: ScriptReviewItem[] = [];
+      const existingContentIds = new Set(contentItems.map(c => c.id));
+      const existingScriptIds = new Set(scripts.map(s => s.id));
+
+      for (const p of targetPlans) {
+        const cpRes = await fetch(`/api/content-plan?planId=${encodeURIComponent(p.id)}`, { cache: 'no-store' });
+        const cpBody = await cpRes.json().catch(() => null);
+        const cpData = (cpBody?.data as ContentPlanData) || { slots: [] };
+        for (const s of cpData.slots || []) {
+          const handles = slotKocHandles(s);
+          if (!isBriefReady(s) && handles.length === 0) continue;
+          const code = formatBriefCode(s);
+          const effMode = resolveBriefMode(s);
+          const isVetting = effMode === 'VETTING_GUARDRAILS';
+          const cntId = `cnt-plan-${p.id}-${s.id}`;
+          const creatorLabel = handles.length > 0 ? handles.map(h => `@${h}`).join(', ') : s.pic || p.pic || 'KOC Kế hoạch';
+          const campTitle = `${p.brandName} (${p.storeName || p.title}) — ${s.product || 'Sản phẩm đẩy'}`;
+          if (!existingContentIds.has(cntId)) {
+            existingContentIds.add(cntId);
+            addedItems.push({
+              id: cntId,
+              contentCode: `${code}-${p.month.replace('/', '')}`,
+              bookingDealId: `plan-${p.id}`,
+              dealCode: `${code}_${(p.brandName || 'B2C').slice(0, 4).toUpperCase()}`,
+              campaignTitle: campTitle,
+              creatorName: creatorLabel,
+              pillar: s.pillar,
+              angle: isVetting ? (s.angle || 'KOL tự đề xuất kịch bản theo chất kênh (Kiểm duyệt theo khung tham số)') : (s.angle || s.product || s.pillar),
+              format: 'VIDEO_SHORT_60S',
+              channel: 'TIKTOK',
+              scriptHook: isVetting ? (s.hook || 'KOL tự do sáng tạo mở đầu (Không áp đặt Hook mẫu)') : (s.hook || `Mở đầu 3s theo góc: ${s.angle || s.pillar}`),
+              scriptPainPoint: s.forbiddenClaims ? `Tránh từ cấm: ${s.forbiddenClaims}` : 'Tình huống thực tế của khách hàng mục tiêu',
+              scriptUsp: s.usp || s.product || 'Nêu bật USP sản phẩm chủ lực theo Guideline Brand',
+              scriptCta: s.cta || (s.cartUrl ? `Bấm giỏ hàng chính hãng (${s.cartUrl})` : 'Nhấn vào giỏ hàng góc trái mua chính hãng'),
+              scriptStatus: handles.length > 0 ? 'PENDING' : 'APPROVED',
+              revisionCount: 0,
+              demoStatus: 'NOT_SUBMITTED',
+              qcStatus: isBriefReady(s) ? 'PASS' : 'PENDING',
+              reviewMode: effMode,
+              klCode: s.row || undefined,
+              mandatoryShots: s.mandatoryShots,
+              forbiddenClaims: s.forbiddenClaims,
+              rightsGuardrails: s.rightsGuardrails,
+              qcChecklistNotes: [
+                isVetting ? 'Chế độ: Kiểm duyệt khung tham số (KL6/KL7)' : '',
+                s.sku ? `SKU: ${s.sku}` : '',
+                typeof s.commissionPct === 'number' ? `Hoa hồng: ${s.commissionPct}%` : '',
+                s.mandatoryShots ? `Khung hình: ${s.mandatoryShots}` : '',
+                s.week ? `Tuần: ${s.week.split(' ')[0]} · Bậc: ${s.row || ''}` : '',
+              ].filter(Boolean).join(' · ') || undefined,
+            });
+          }
+          if (handles.length > 0) {
+            for (const h of handles) {
+              const scrId = `scr-plan-${p.id}-${s.id}-${h.toLowerCase()}`;
+              if (existingScriptIds.has(scrId)) continue;
+              existingScriptIds.add(scrId);
+              addedScripts.push({
+                id: scrId,
+                dealCode: `${code}_${h.toUpperCase().slice(0, 6)}`,
+                kocId: `koc-${h}`,
+                kocName: `@${h}`,
+                kocTier: s.row === 'KL7' ? 'TIER_1_CELEB' : s.row === 'KL6' ? 'TIER_2_MACRO' : 'TIER_3_MICRO',
+                campaignTitle: campTitle,
+                pillar: s.pillar,
+                videoDuration: '45s - 60s',
+                hook: isVetting ? (s.hook || 'KOL tự đề xuất mở đầu theo phong cách kênh') : (s.hook || s.angle || `Hook 3s cho ${s.product || p.brandName}`),
+                painPoint: s.forbiddenClaims ? `Từ cấm & Ranh giới Brand: ${s.forbiddenClaims}` : 'Nỗi đau khách hàng mục tiêu',
+                solutionAndUsp: s.usp || s.product || 'Giải pháp & USP sản phẩm đẩy',
+                callToAction: s.cta || 'Nhấn vào giỏ hàng góc trái mua chính hãng',
+                status: 'PENDING',
+                remainingHours: 24,
+                submittedBy: s.pic || p.pic || currentUserName || 'Chuyên viên Content',
+                submittedAt: `Đồng bộ từ ${code}`,
+                reviewMode: effMode,
+                klCode: s.row || undefined,
+                mandatoryShots: s.mandatoryShots,
+                forbiddenClaims: s.forbiddenClaims,
+                rightsGuardrails: s.rightsGuardrails,
+              });
+            }
+          }
+        }
+      }
+
+      if (addedItems.length === 0 && addedScripts.length === 0) {
+        onNotify?.('Chưa có dòng Brief mới nào (đã điền sản phẩm/góc quay hoặc đã gán KOC) trong Kế hoạch Content cần đồng bộ thêm.', 'info');
+        return;
+      }
+      if (addedItems.length > 0) setContentItems(prev => [...addedItems, ...prev]);
+      if (addedScripts.length > 0) setScripts(prev => [...addedScripts, ...prev]);
+      onNotify?.(`Đã đồng bộ ${addedItems.length} Brief nội dung và ${addedScripts.length} kịch bản KOC từ Kế hoạch Content.`, 'success');
+    } catch {
+      onNotify?.('Lỗi khi đồng bộ từ Kế hoạch Content.', 'error');
+    } finally {
+      setIsSyncingPlans(false);
+    }
+  };
+
+  const filteredContentItems = useMemo(() => {
+    const q = filterProduct.trim().toLowerCase();
+    return contentItems.filter(item => {
+      if (filterBrand !== 'ALL' && !item.campaignTitle.toLowerCase().includes(filterBrand.toLowerCase())) return false;
+      if (q && !`${item.campaignTitle} ${item.angle} ${item.scriptUsp} ${item.creatorName} ${item.qcChecklistNotes || ''}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [contentItems, filterBrand, filterProduct]);
+
+  const filteredScripts = useMemo(() => {
+    const q = filterProduct.trim().toLowerCase();
+    return scripts.filter(item => {
+      if (filterBrand !== 'ALL' && !item.campaignTitle.toLowerCase().includes(filterBrand.toLowerCase())) return false;
+      if (q && !`${item.campaignTitle} ${item.hook} ${item.solutionAndUsp} ${item.kocName}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [scripts, filterBrand, filterProduct]);
 
   // State tạo kịch bản / brief mới
   const [isCreateScriptOpen, setIsCreateScriptOpen] = useState(false);
@@ -81,6 +232,9 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
   const [newPillar, setNewPillar] = useState<string>(PILLAR_OPTIONS[0]);
   const [newFormat, setNewFormat] = useState<string>(FORMAT_OPTIONS[0]);
   const [newAngleName, setNewAngleName] = useState<string>('');
+  const [newBriefMode, setNewBriefMode] = useState<ContentBriefMode>('DIRECTIVE');
+  const [newMandatoryShots, setNewMandatoryShots] = useState<string>(DEFAULT_KL67_MANDATORY_SHOTS);
+  const [newRightsGuardrails, setNewRightsGuardrails] = useState<string>(DEFAULT_KL67_RIGHTS_GUARDRAILS);
   const [newHook, setNewHook] = useState<string>('');
   const [newPainPoint, setNewPainPoint] = useState<string>('');
   const [newUsp, setNewUsp] = useState<string>('');
@@ -142,8 +296,6 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
         purposeId: 'SCRIPT_REVIEW',
         moduleTitle: `Soạn kịch bản (${newBrandName} - ${newProductName})`,
         sourceTag: 'SCRIPT_REVIEW',
-        customSystemInstruction:
-          'Bạn là nhân sự Content B2C. Viết kịch bản TikTok 4 phần ngắn gọn, thực tế, đi thẳng vào công dụng và cách dùng sản phẩm. Cấm dùng từ sáo rỗng quảng cáo ("đột phá", "siêu phẩm", "cứu tinh", "thần thánh", "chuẩn khoa học", "chuyển hóa rõ rệt", "sai lầm nghiêm trọng"). Tránh toàn bộ từ cấm của nhãn hàng. Trả về đúng JSON 5 trường: {"angle": "Tên góc tiếp cận", "hook": "Câu mở đầu 3s", "painPoint": "Tình huống thực tế của khách", "usp": "Cách dùng và điểm chính của sản phẩm", "cta": "Hướng dẫn bấm giỏ hàng kèm khuyến cáo pháp lý nếu có"}.',
         inputContextText: [
           `Thương hiệu: ${newBrandName}`,
           `Sản phẩm: ${newProductName}`,
@@ -152,6 +304,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
           `Điểm chính của sản phẩm: ${usps || 'Hàng chính hãng, thông tin thành phần rõ ràng'}`,
           `Từ cấm không được dùng: ${bannedWords || 'Cam kết 100%, trị dứt điểm, thuốc đặc trị'}`,
           disclaimer ? `Câu khuyến cáo pháp lý bắt buộc: ${disclaimer}` : '',
+          `Định dạng trả về JSON 5 trường: {"angle": "Tên góc tiếp cận", "hook": "Câu mở đầu 3s", "painPoint": "Tình huống thực tế của khách", "usp": "Cách dùng và điểm chính của sản phẩm", "cta": "Hướng dẫn bấm giỏ hàng kèm khuyến cáo pháp lý nếu có"}`,
         ].filter(Boolean).join('\n'),
       });
 
@@ -191,8 +344,11 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
   };
 
   const handleSaveNewScript = (targetQueue: 'BOTH' | 'CONTENT_ONLY') => {
-    if (!newHook.trim() || !newUsp.trim()) return;
+    const isVetting = newBriefMode === 'VETTING_GUARDRAILS';
+    if (!newUsp.trim() && (!isVetting || !newMandatoryShots.trim())) return;
+    if (!isVetting && !newHook.trim()) return;
     const nowTag = Date.now().toString().slice(-3);
+    const bannedStr = (selectedBrandProfile?.contentRules?.banned || []).map(b => b.phrase).join(', ');
     const newItem: ContentItemModel = {
       id: `cnt-${Date.now()}`,
       contentCode: `CNT-26-${nowTag}`,
@@ -201,18 +357,31 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
       campaignTitle: `${newBrandName} - ${newProductName}`,
       creatorName: newCreatorName.trim() || 'KOC UpBase',
       pillar: newPillar,
-      angle: newAngleName.trim() || `${newPillar} - ${newProductName}`,
+      angle: isVetting
+        ? (newAngleName.trim() || 'KOL tự đề xuất kịch bản theo chất kênh (Kiểm duyệt khung tham số KL6/KL7)')
+        : (newAngleName.trim() || `${newPillar} - ${newProductName}`),
       format: 'VIDEO_SHORT_60S',
       channel: 'TIKTOK',
-      scriptHook: newHook.trim(),
-      scriptPainPoint: newPainPoint.trim(),
+      scriptHook: isVetting ? (newHook.trim() || 'KOL tự do sáng tạo mở đầu (Không áp đặt Hook mẫu)') : newHook.trim(),
+      scriptPainPoint: isVetting
+        ? (newPainPoint.trim() || (bannedStr ? `Từ cấm bắt buộc tránh: ${bannedStr}` : 'Không vi phạm ranh giới hình ảnh thương hiệu'))
+        : newPainPoint.trim(),
       scriptUsp: newUsp.trim(),
       scriptCta: newCta.trim(),
       scriptStatus: targetQueue === 'BOTH' ? 'PENDING' : 'APPROVED',
       revisionCount: 0,
       demoStatus: 'NOT_SUBMITTED',
       qcStatus: draftCompliance && draftCompliance.overallScore >= 80 ? 'PASS' : 'PENDING',
-      qcChecklistNotes: draftCompliance ? draftCompliance.summaryVerdict : undefined,
+      reviewMode: newBriefMode,
+      klCode: isVetting ? 'KL6' : undefined,
+      mandatoryShots: isVetting ? newMandatoryShots.trim() : undefined,
+      forbiddenClaims: isVetting ? (newPainPoint.trim() || bannedStr) : undefined,
+      rightsGuardrails: isVetting ? newRightsGuardrails.trim() : undefined,
+      qcChecklistNotes: isVetting
+        ? `Chế độ: Kiểm duyệt khung tham số (KL6/KL7) · Khung hình: ${newMandatoryShots.trim()}`
+        : draftCompliance
+          ? draftCompliance.summaryVerdict
+          : undefined,
     };
 
     setContentItems(prev => [newItem, ...prev]);
@@ -223,18 +392,23 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
         dealCode: newItem.dealCode,
         kocId: `koc-${nowTag}`,
         kocName: newItem.creatorName,
-        kocTier: 'TIER_3_MICRO',
+        kocTier: isVetting ? 'TIER_2_MACRO' : 'TIER_3_MICRO',
         campaignTitle: newItem.campaignTitle,
         pillar: newPillar,
         videoDuration: '45s - 60s',
-        hook: newHook.trim(),
-        painPoint: newPainPoint.trim(),
+        hook: newItem.scriptHook,
+        painPoint: newItem.scriptPainPoint,
         solutionAndUsp: newUsp.trim(),
         callToAction: newCta.trim(),
         status: 'PENDING',
         remainingHours: 24,
         submittedBy: newItem.creatorName,
         submittedAt: 'Vừa tạo',
+        reviewMode: newBriefMode,
+        klCode: isVetting ? 'KL6' : undefined,
+        mandatoryShots: isVetting ? newMandatoryShots.trim() : undefined,
+        forbiddenClaims: isVetting ? (newPainPoint.trim() || bannedStr) : undefined,
+        rightsGuardrails: isVetting ? newRightsGuardrails.trim() : undefined,
       };
       setScripts(prev => [reviewItem, ...prev]);
       setActiveSubTab('SCRIPTS');
@@ -257,376 +431,481 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
     setScripts(prev => prev.map(item => item.id === scriptId ? {
       ...item,
       status: 'REVISION_REQUESTED',
-      feedbackNotes: notes
+      feedbackNotes: notes,
     } : item));
   };
 
   return (
     <div className="space-y-4">
-      {/* Thanh tab và các nút thao tác trực tiếp, không giấu vào menu 3 chấm */}
+      <PageActions>
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={FileText}
+          onClick={() => setIsScriptReportOpen(true)}
+        >
+          Rà soát kịch bản & từ cấm
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={Video}
+          onClick={() => {
+            setInspectInitialUrl('');
+            setIsVideoInspectorOpen(true);
+          }}
+        >
+          Nghiệm thu video
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={Lightbulb}
+          onClick={() => setIsCopilotOpen(true)}
+        >
+          Gợi ý & Soát xét
+        </Button>
+        <Button
+          size="sm"
+          variant="primary"
+          icon={Plus}
+          onClick={handleOpenCreateScript}
+        >
+          Tạo kịch bản / Brief
+        </Button>
+      </PageActions>
+
       <Tabs<ContentSubTab>
         value={activeSubTab}
         onChange={setActiveSubTab}
         items={[
           { key: 'BRAND_PLAN', label: 'Plan tháng của Brand' },
-    { key: 'CONTENT_PLAN', label: 'Kế hoạch content' },
+          { key: 'PRODUCT_CATALOG', label: 'Sản phẩm & Combo của Brand' },
+          { key: 'CONTENT_PLAN', label: 'Kế hoạch content' },
+          { key: 'SELF_CHANNEL_BOARD', label: 'Sản xuất & Nghiệm thu Self-channel' },
           { key: 'CONTENT_ITEMS', label: 'Kho nội dung', count: contentItems.length },
           { key: 'SCRIPTS', label: 'Chờ duyệt kịch bản', count: scripts.filter(s => s.status === 'PENDING').length },
           { key: 'DRAFT_VIDEOS', label: 'Video nháp KOC' },
           { key: 'PUBLICATIONS', label: 'Đối soát bài đăng', count: publications.length },
         ]}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            {onNavigateToAngles && (
-              <Button
-                variant="secondary"
-                icon={Layers}
-                onClick={onNavigateToAngles}
-              >
-                Góc nội dung (Hồ sơ Brand)
-              </Button>
-            )}
-            <Button
-              variant="secondary"
-              icon={FileText}
-              onClick={() => setIsScriptReportOpen(true)}
-            >
-              Rà soát kịch bản & từ cấm
-            </Button>
-            <Button
-              variant="secondary"
-              icon={Video}
-              onClick={() => {
-                setInspectInitialUrl('');
-                setIsVideoInspectorOpen(true);
-              }}
-            >
-              Nghiệm thu video
-            </Button>
-            <Button
-              variant="secondary"
-              icon={Lightbulb}
-              onClick={() => setIsCopilotOpen(true)}
-            >
-              Gợi ý & Soát xét
-            </Button>
-            <Button
-              variant="primary"
-              icon={Plus}
-              onClick={handleOpenCreateScript}
-            >
-              Tạo kịch bản / Brief
-            </Button>
-          </div>
-        }
       />
 
-      {activeSubTab === 'BRAND_PLAN' && <BrandMonthlyPlanForm currentUserName={currentUserName} currentUserRole={currentUserRole} onNotify={onNotify} />}
-      {activeSubTab === 'CONTENT_PLAN' && <ContentPlanBoard kocs={kocs} deals={deals} currentUserName={currentUserName} onNotify={onNotify} />}
-
-      {/* View 0: Content Items Master Grid */}
-      {activeSubTab === 'CONTENT_ITEMS' && (
-        <div className="space-y-4 animate-in fade-in duration-150">
-          <div className="card-enterprise overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50/70">
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <Layers className="w-4 h-4 text-accent" />
-                <span>Kho sản phẩm nội dung — Quản trị tách biệt với booking</span>
-              </h3>
-              <div className="flex items-center gap-2">
-                {onNavigateToAngles && (
-                  <Button size="sm" variant="secondary" icon={Lightbulb} onClick={onNavigateToAngles}>
-                    Thẻ Brief & Góc SP
-                  </Button>
-                )}
-                <Button size="sm" variant="primary" icon={Plus} onClick={handleOpenCreateScript}>
-                  Soạn kịch bản mới
-                </Button>
-              </div>
-            </div>
-
-            <div className="divide-y divide-slate-200">
-              {contentItems.map((item) => (
-                <div key={item.id} className="p-5 hover:bg-slate-50/60 transition space-y-3">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                      <span className="font-code text-accent font-semibold text-xs">{item.contentCode}</span>
-                      <span className="text-ink-3 text-xs">· BO: <strong className="text-ink font-code">{item.dealCode}</strong></span>
-                      <span className="text-ink font-semibold text-sm">{item.creatorName}</span>
-                      <span className="text-2xs text-ink-3">· {item.pillar} · {item.format}</span>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`px-2.5 py-0.5 rounded-full text-2xs font-semibold ${
-                        item.qcStatus === 'PASS' 
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                          : 'bg-amber-50 text-amber-700 border border-amber-200'
-                      }`}>
-                        QC: {item.qcStatus === 'PASS' ? 'Đạt chuẩn xuất bản' : 'Cần thẩm định'}
-                      </span>
-                      <span className="text-2xs text-slate-500">Sửa: {item.revisionCount}/2 lần</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5 text-xs">
-                    <div className="text-slate-600 font-medium">Góc tiếp cận: <strong className="text-slate-900">{item.angle}</strong></div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1 text-2xs">
-                      <div><span className="text-accent font-semibold">Mở đầu:</span> <span className="text-slate-700">{item.scriptHook}</span></div>
-                      <div><span className="text-rose-700 font-semibold">Nỗi đau:</span> <span className="text-slate-700">{item.scriptPainPoint}</span></div>
-                      <div><span className="text-emerald-700 font-semibold">Giải pháp/USP:</span> <span className="text-slate-700">{item.scriptUsp}</span></div>
-                      <div><span className="text-blue-700 font-semibold">CTA:</span> <span className="text-slate-700">{item.scriptCta}</span></div>
-                    </div>
-                    {item.qcChecklistNotes && (
-                      <div className="pt-2 border-t border-slate-200 text-2xs text-emerald-700">
-                        <strong>Ghi chú QC:</strong> {item.qcChecklistNotes}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+      {activeSubTab === 'BRAND_PLAN' && (
+        <BrandMonthlyPlanForm
+          currentUserName={currentUserName}
+          currentUserRole={currentUserRole}
+          onNotify={onNotify}
+        />
       )}
 
-      {/* View 1: Scripts Review Queue */}
+      {activeSubTab === 'PRODUCT_CATALOG' && (
+        <ProductCatalogView
+          brandNames={Array.from(
+            new Set([
+              ...profiles.map(p => p.brandName),
+              ...INITIAL_MASTER_PRODUCTS.map(p => p.brandName),
+            ].filter(Boolean))
+          )}
+          legacyProducts={INITIAL_MASTER_PRODUCTS}
+          onNotify={onNotify}
+        />
+      )}
+
+      {activeSubTab === 'CONTENT_PLAN' && (
+        <ContentPlanBoard
+          kocs={kocs}
+          deals={deals}
+          currentUserName={currentUserName}
+          onNotify={onNotify}
+        />
+      )}
+
+      {activeSubTab === 'SELF_CHANNEL_BOARD' && (
+        <PlanSelfChannelBoard
+          currentUserName={currentUserName}
+          onNotify={onNotify}
+        />
+      )}
+
+      {/* Kho nội dung */}
+      {activeSubTab === 'CONTENT_ITEMS' && (
+        <Panel
+          flush
+          title={`Kho sản phẩm nội dung — Quản trị tách biệt với booking (${filteredContentItems.length}/${contentItems.length})`}
+          actions={
+            <>
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={RefreshCw}
+                disabled={isSyncingPlans}
+                onClick={() => void handleSyncFromContentPlans()}
+              >
+                {isSyncingPlans ? 'Đang đồng bộ...' : 'Đồng bộ từ Kế hoạch Content'}
+              </Button>
+              {onNavigateToAngles && (
+                <Button size="sm" variant="secondary" icon={Layers} onClick={onNavigateToAngles}>
+                  Hồ sơ Brand & Góc SP
+                </Button>
+              )}
+              <Button size="sm" variant="secondary" icon={Lightbulb} onClick={() => setIsCopilotOpen(true)}>
+                Gợi ý & Soát xét
+              </Button>
+              <Button size="sm" variant="primary" icon={Plus} onClick={handleOpenCreateScript}>
+                Soạn kịch bản mới
+              </Button>
+            </>
+          }
+        >
+          <div className="flex flex-wrap items-center gap-2 border-b border-line bg-sunken/30 px-4 py-2.5">
+            <Select value={filterBrand} onChange={e => setFilterBrand(e.target.value)} className="max-w-[220px]">
+              <option value="ALL">Tất cả Thương hiệu (Brand)</option>
+              {profiles.map(p => (
+                <option key={p.key} value={p.brandName}>
+                  {p.brandName}
+                </option>
+              ))}
+            </Select>
+            <Input
+              value={filterProduct}
+              onChange={e => setFilterProduct(e.target.value)}
+              placeholder="Lọc theo Sản phẩm / SKU / Góc tiếp cận / KOC..."
+              className="max-w-[320px]"
+            />
+          </div>
+          <div className="divide-y divide-line">
+            {filteredContentItems.length === 0 && (
+              <div className="px-4 py-10 text-center text-xs text-ink-3">
+                Không có nội dung nào khớp bộ lọc. Bấm &ldquo;Đồng bộ từ Kế hoạch Content&rdquo; hoặc &ldquo;Soạn kịch bản mới&rdquo;.
+              </div>
+            )}
+            {filteredContentItems.map((item) => (
+              <div key={item.id} className="p-4 sm:p-5 hover:bg-canvas transition space-y-3">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                    <span className="font-code text-accent font-semibold text-xs">{item.contentCode}</span>
+                    <span className="text-ink-3 text-xs">
+                      · BO: <strong className="text-ink font-code">{item.dealCode}</strong>
+                    </span>
+                    <span className="text-ink font-semibold text-sm">{item.creatorName}</span>
+                    <span className="text-2xs text-ink-3">· {item.campaignTitle} · {item.pillar} · {item.format}</span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {item.reviewMode === 'VETTING_GUARDRAILS' && (
+                      <span className="rounded bg-accent-soft px-2 py-0.5 text-2xs font-semibold text-accent">
+                        Kiểm duyệt khung ({item.klCode || 'KL6/KL7'})
+                      </span>
+                    )}
+                    <Status tone={item.qcStatus === 'PASS' ? 'positive' : 'warning'}>
+                      QC: {item.qcStatus === 'PASS' ? 'Đạt chuẩn xuất bản' : 'Cần thẩm định'}
+                    </Status>
+                    <span className="text-2xs text-ink-3 tabular-nums">Sửa: {item.revisionCount}/2 lần</span>
+                  </div>
+                </div>
+
+                <div className="bg-sunken/50 p-3.5 rounded-lg border border-line space-y-1.5 text-xs">
+                  <div className="text-ink-2 font-medium">
+                    Góc tiếp cận: <strong className="text-ink">{item.angle}</strong>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1 text-2xs">
+                    <div>
+                      <span className="text-accent font-semibold">Mở đầu:</span>{' '}
+                      <span className="text-ink-2">{item.scriptHook}</span>
+                    </div>
+                    <div>
+                      <span className="text-critical font-semibold">Nỗi đau:</span>{' '}
+                      <span className="text-ink-2">{item.scriptPainPoint}</span>
+                    </div>
+                    <div>
+                      <span className="text-positive font-semibold">Giải pháp/USP:</span>{' '}
+                      <span className="text-ink-2">{item.scriptUsp}</span>
+                    </div>
+                    <div>
+                      <span className="text-ink font-semibold">CTA:</span>{' '}
+                      <span className="text-ink-2">{item.scriptCta}</span>
+                    </div>
+                  </div>
+                  {item.qcChecklistNotes && (
+                    <div className="pt-2 border-t border-line text-2xs text-positive">
+                      <strong>Ghi chú QC:</strong> {item.qcChecklistNotes}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      )}
+
+      {/* Chờ duyệt kịch bản */}
       {activeSubTab === 'SCRIPTS' && (
-        <div className="card-enterprise overflow-hidden">
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface">
-            <h3 className="text-sm font-semibold text-ink">Hàng chờ thẩm định kịch bản KOC</h3>
-            <div className="flex flex-wrap items-center gap-2">
+        <Panel
+          flush
+          title={`Hàng chờ thẩm định kịch bản KOC (${filteredScripts.length}/${scripts.length})`}
+          actions={
+            <>
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={RefreshCw}
+                disabled={isSyncingPlans}
+                onClick={() => void handleSyncFromContentPlans()}
+              >
+                {isSyncingPlans ? 'Đang đồng bộ...' : 'Đồng bộ từ Kế hoạch Content'}
+              </Button>
               <Button size="sm" variant="secondary" icon={FileText} onClick={() => setIsScriptReportOpen(true)}>
                 Rà soát từ cấm hàng loạt
               </Button>
               <Button size="sm" variant="primary" icon={Plus} onClick={handleOpenCreateScript}>
                 Thêm kịch bản chờ duyệt
               </Button>
-            </div>
+            </>
+          }
+        >
+          <div className="flex flex-wrap items-center gap-2 border-b border-line bg-sunken/30 px-4 py-2.5">
+            <Select value={filterBrand} onChange={e => setFilterBrand(e.target.value)} className="max-w-[220px]">
+              <option value="ALL">Tất cả Thương hiệu (Brand)</option>
+              {profiles.map(p => (
+                <option key={p.key} value={p.brandName}>
+                  {p.brandName}
+                </option>
+              ))}
+            </Select>
+            <Input
+              value={filterProduct}
+              onChange={e => setFilterProduct(e.target.value)}
+              placeholder="Lọc theo Sản phẩm / SKU / Hook / KOC..."
+              className="max-w-[320px]"
+            />
           </div>
-
-          <div className="divide-y divide-slate-200">
-            {scripts.map((item) => (
+          <div className="divide-y divide-line">
+            {filteredScripts.length === 0 && (
+              <div className="px-4 py-10 text-center text-xs text-ink-3">
+                Không có kịch bản nào khớp bộ lọc.
+              </div>
+            )}
+            {filteredScripts.map((item) => (
               <div
                 key={item.id}
                 onClick={() => setSelectedScript(item)}
-                className="p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-slate-50/70 transition cursor-pointer group"
+                className="p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-canvas transition cursor-pointer group"
               >
-                <div className="space-y-1.5 max-w-xl">
-                  <div className="flex items-center gap-2">
+                <div className="space-y-1.5 max-w-2xl">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-ink text-sm group-hover:text-accent transition-colors">
                       {item.kocName}
                     </span>
+                    {(item.reviewMode === 'VETTING_GUARDRAILS' || item.kocTier === 'TIER_1_CELEB' || item.kocTier === 'TIER_2_MACRO') && (
+                      <span className="rounded bg-accent-soft px-2 py-0.5 text-2xs font-semibold text-accent">
+                        Kiểm duyệt theo khung tham số ({item.klCode || 'KL6/KL7'})
+                      </span>
+                    )}
                     <span className="text-2xs text-ink-3">
-                      · {item.pillar} · <span className="font-code text-ink-2">{item.dealCode}</span>
+                      · {item.campaignTitle} · {item.pillar} · <span className="font-code text-ink-2">{item.dealCode}</span>
                     </span>
                   </div>
-                  <div className="text-xs font-semibold text-slate-800">
+                  <div className="text-xs font-semibold text-ink">
                     Mở đầu 3s: &ldquo;{item.hook}&rdquo;
                   </div>
-                  <div className="text-xs text-slate-600">
+                  <div className="text-xs text-ink-2">
                     USP: {item.solutionAndUsp}
                   </div>
-                  <div className="text-2xs text-slate-500 pt-0.5">
-                    Nộp bởi: <strong className="text-slate-700">{item.submittedBy}</strong> • {item.submittedAt}
+                  <div className="text-2xs text-ink-3 pt-0.5">
+                    Nộp bởi: <strong className="text-ink-2">{item.submittedBy}</strong> • {item.submittedAt}
                     {item.feedbackNotes && (
-                      <span className="text-amber-700 block mt-1 font-semibold">Ghi chú sửa: {item.feedbackNotes}</span>
+                      <span className="text-warning block mt-1 font-semibold">Ghi chú sửa: {item.feedbackNotes}</span>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-2.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                   {item.status === 'PENDING' ? (
                     <>
-                      <span className="badge-amber px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" />
+                      <Status tone="warning">
+                        <Clock className="w-3.5 h-3.5 mr-1 inline" />
                         SLA còn {item.remainingHours}h
-                      </span>
-                      <button
+                      </Status>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon={Eye}
                         onClick={() => setSelectedScript(item)}
-                        className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-xs"
                       >
-                        <Eye className="w-3.5 h-3.5" />
                         Thẩm định kịch bản
-                      </button>
+                      </Button>
                     </>
                   ) : item.status === 'APPROVED' ? (
-                    <span className="badge-emerald px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5">
-                      <CheckCircle className="w-4 h-4" />
-                      Đã duyệt
-                    </span>
+                    <Status tone="positive">Đã duyệt</Status>
                   ) : (
-                    <span className="badge-amber px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5">
-                      <RotateCcw className="w-4 h-4" />
-                      Cần sửa
-                    </span>
+                    <Status tone="warning">Cần sửa</Status>
                   )}
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Panel>
       )}
 
-      {/* View 2: Draft Videos Review */}
+      {/* Video nháp KOC */}
       {activeSubTab === 'DRAFT_VIDEOS' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="card-enterprise p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-slate-900 text-sm">Chanh Beauty Review — Video nháp 60s UV Test</span>
-              <span className="badge-amber px-2 py-0.5 rounded text-2xs font-semibold">Chờ nghiệm thu</span>
+          <div className="rounded-xl border border-line bg-surface p-4 sm:p-5 space-y-3 shadow-2xs">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-semibold text-ink text-sm">Chanh Beauty Review — Video nháp 60s UV Test</span>
+              <Status tone={approvedDraftVideos.has('DF-VID-1') ? 'positive' : 'warning'}>
+                {approvedDraftVideos.has('DF-VID-1') ? 'Đã duyệt lên sóng' : 'Chờ nghiệm thu'}
+              </Status>
             </div>
-            <div className="aspect-video bg-sunken border border-line rounded-xl flex flex-col items-center justify-center text-ink-2 text-xs p-4 text-center">
-              <Video className="w-10 h-10 text-accent mb-2 opacity-80" />
-              <p className="font-semibold text-ink">Video nháp v1: Test Camera UV 8h ngoài trời</p>
-              <p className="text-2xs text-ink-3 mt-1">KOC đã gắn nhãn giỏ hàng và hashtag #UpBeauty #MegaSale1010</p>
+            <div className="aspect-video bg-sunken border border-line rounded-lg flex flex-col items-center justify-center text-ink-2 text-xs p-4 text-center gap-1.5">
+              <Video className="w-9 h-9 text-accent opacity-80" />
+              <div className="font-semibold text-ink">Video nháp v1: Test Camera UV 8h ngoài trời</div>
+              <div className="rounded bg-surface px-2.5 py-1 text-2xs text-ink-2 border border-line">
+                #UpBeauty #MegaSale1010 · Đã gắn giỏ hàng
+              </div>
             </div>
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-slate-500">Thời lượng: <strong className="text-slate-900">62 giây</strong></span>
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-xs text-ink-2">
+                Thời lượng: <strong className="text-ink tabular-nums">62 giây</strong>
+              </span>
               {approvedDraftVideos.has('DF-VID-1') ? (
-                <span className="badge-emerald px-3 py-1 text-xs font-semibold inline-flex items-center gap-1.5">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Đã duyệt lên sóng</span>
-                </span>
+                <Status tone="positive">Đã duyệt lên sóng</Status>
               ) : (
-                <button
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={CheckCircle}
                   onClick={() => setApprovingDraftVideo('DF-VID-1')}
-                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-xs"
                 >
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  <span>Duyệt video lên sóng</span>
-                </button>
+                  Duyệt video lên sóng
+                </Button>
               )}
             </div>
           </div>
 
-          <div className="card-enterprise p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-slate-900 text-sm">Minh Đan Daily — Video review thu đông</span>
-              <span className="badge-emerald px-2 py-0.5 rounded text-2xs font-semibold">Đã lên sóng</span>
+          <div className="rounded-xl border border-line bg-surface p-4 sm:p-5 space-y-3 shadow-2xs">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-semibold text-ink text-sm">Minh Đan Daily — Video review thu đông</span>
+              <Status tone="positive">Đã lên sóng</Status>
             </div>
-            <div className="aspect-video bg-sunken border border-line rounded-xl flex flex-col items-center justify-center text-ink-2 text-xs p-4 text-center">
-              <Video className="w-10 h-10 text-positive mb-2 opacity-80" />
-              <p className="font-semibold text-ink">TikTok: @danxinhdaily/video/74182910293847</p>
-              <p className="text-2xs text-positive mt-1">Lượt xem hiện tại: 42.000 • GMV: 68.000.000&nbsp;₫</p>
+            <div className="aspect-video bg-sunken border border-line rounded-lg flex flex-col items-center justify-center text-ink-2 text-xs p-4 text-center gap-1.5">
+              <Video className="w-9 h-9 text-positive opacity-80" />
+              <div className="font-semibold text-ink">TikTok: @danxinhdaily/video/74182910293847</div>
+              <div className="rounded bg-surface px-2.5 py-1 text-2xs text-positive font-medium border border-line tabular-nums">
+                42.000 lượt xem · GMV: 68.000.000 ₫
+              </div>
             </div>
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-slate-500">Nghiệm thu: <strong className="text-slate-900">Đạt chỉ tiêu</strong></span>
-              <span className="text-xs text-emerald-700 font-semibold">Đủ điều kiện tất toán đợt 2</span>
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-xs text-ink-2">
+                Nghiệm thu: <strong className="text-ink">Đạt chỉ tiêu</strong>
+              </span>
+              <span className="text-xs text-positive font-semibold">Đủ điều kiện tất toán đợt 2</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* View 4: Publications (Bài Đăng Thực Tế & Đối Soát Mã Ads) */}
+      {/* Đối soát bài đăng */}
       {activeSubTab === 'PUBLICATIONS' && (
-        <div className="space-y-4 animate-in fade-in duration-150">
-          <div className="card-enterprise overflow-hidden">
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface">
-              <div>
-                <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
-                  <Share2 className="w-4 h-4 text-emerald-600" />
-                  <span>Bài đăng thực tế & bàn giao mã Spark Ads</span>
-                </h3>
-              </div>
-              <button
-                onClick={() => {
-                  setInspectInitialUrl('');
-                  setIsVideoInspectorOpen(true);
-                }}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto"
-              >
-                <Video className="w-3.5 h-3.5" />
-                <span>Kiểm tra & Nghiệm thu link video mới</span>
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1100px] text-left text-xs border-collapse">
-                <thead className="bg-slate-50 text-slate-700 border-b border-slate-200 text-2xs font-semibold">
-                  <tr>
-                    <th className="p-3.5 pl-6 w-[220px] min-w-[220px]">Mã & KOC</th>
-                    <th className="p-3.5 w-[200px] min-w-[200px]">Link bài đăng & kênh</th>
-                    <th className="p-3.5 w-[220px] min-w-[220px]">Mã ủy quyền Spark Ads</th>
-                    <th className="p-3.5 w-[140px] min-w-[140px] font-mono">Lượt xem / Thích</th>
-                    <th className="p-3.5 w-[160px] min-w-[160px] font-mono">GMV thực nhận</th>
-                    <th className="p-3.5 w-[140px] min-w-[140px]">Hiệu quả</th>
-                    <th className="p-3.5 pr-6 text-right w-[160px] min-w-[160px] sm:sticky sm:right-0 bg-slate-50 border-l border-slate-200">Đối soát</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {publications.map((pub) => (
-                    <tr key={pub.id} className="hover:bg-blue-50/30 transition">
-                      <td className="p-3.5 pl-6">
-                        <span className="font-mono text-emerald-700 font-semibold block text-2xs">{pub.publicationCode}</span>
-                        <span className="font-semibold text-slate-900 text-xs">{pub.creatorName}</span>
-                        <div className="text-2xs text-slate-500">Mã nội dung: {pub.contentCode}</div>
-                      </td>
-                      <td className="p-3.5">
-                        <a
-                          href={pub.platformPostUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="font-mono text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 text-2xs"
+        <Panel
+          flush
+          title="Bài đăng thực tế & bàn giao mã Spark Ads"
+          actions={
+            <Button
+              size="sm"
+              variant="primary"
+              icon={Video}
+              onClick={() => {
+                setInspectInitialUrl('');
+                setIsVideoInspectorOpen(true);
+              }}
+            >
+              Kiểm tra & Nghiệm thu link video mới
+            </Button>
+          }
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1060px] text-left text-xs border-collapse">
+              <thead className="bg-sunken text-ink-3 border-b border-line text-2xs font-medium">
+                <tr>
+                  <th className="p-3.5 pl-5 w-[220px] min-w-[220px]">Mã & KOC</th>
+                  <th className="p-3.5 w-[200px] min-w-[200px]">Link bài đăng & kênh</th>
+                  <th className="p-3.5 w-[220px] min-w-[220px]">Mã ủy quyền Spark Ads</th>
+                  <th className="p-3.5 w-[140px] min-w-[140px] text-right">Lượt xem / Thích</th>
+                  <th className="p-3.5 w-[160px] min-w-[160px] text-right">GMV thực nhận</th>
+                  <th className="p-3.5 w-[140px] min-w-[140px] text-right">Hiệu quả</th>
+                  <th className="p-3.5 pr-5 text-right w-[160px] min-w-[160px] sm:sticky sm:right-0 sm:z-10 bg-sunken border-l border-line">
+                    Đối soát
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {publications.map((pub) => (
+                  <tr key={pub.id} className="group hover:bg-canvas transition">
+                    <td className="p-3.5 pl-5">
+                      <span className="font-mono text-positive font-semibold block text-2xs">{pub.publicationCode}</span>
+                      <span className="font-semibold text-ink text-xs">{pub.creatorName}</span>
+                      <div className="text-2xs text-ink-3">Mã nội dung: {pub.contentCode}</div>
+                    </td>
+                    <td className="p-3.5">
+                      <a
+                        href={pub.platformPostUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-accent hover:underline inline-flex items-center gap-1 text-2xs"
+                      >
+                        <span>{pub.platform}</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                      <span className="text-2xs text-ink-3 block mt-0.5">Ngày đăng: {pub.publishedAt}</span>
+                    </td>
+                    <td className="p-3.5 font-mono">
+                      {pub.sparkAdsCode ? (
+                        <div className="text-2xs font-medium text-ink">
+                          {pub.sparkAdsCode} ({pub.sparkAdsExpiryDays} ngày)
+                        </div>
+                      ) : (
+                        <span className="text-2xs text-ink-3">Chưa cấp</span>
+                      )}
+                      <span className="text-2xs text-ink-3 block mt-0.5">
+                        {pub.isMediaHandedOff ? 'Đã bàn giao nhóm Ads' : 'Chưa bàn giao Ads'}
+                      </span>
+                    </td>
+                    <td className="p-3.5 font-mono text-right tabular-nums">
+                      <div className="font-semibold text-ink">{(pub.viewsCount / 1000).toFixed(0)}k xem</div>
+                      <div className="text-2xs text-ink-3">{(pub.likesCount / 1000).toFixed(1)}k thích</div>
+                    </td>
+                    <td className="p-3.5 font-mono text-right tabular-nums">
+                      <div className="font-semibold text-positive whitespace-nowrap">
+                        {formatVndShort(pub.affiliateGmv)}
+                      </div>
+                      <div className="text-2xs text-ink-3">{pub.itemsSold} món bán</div>
+                    </td>
+                    <td className="p-3.5 font-mono text-right tabular-nums">
+                      <span className="text-xs font-semibold text-ink">ROI: {pub.roi}x</span>
+                      <div className="text-2xs text-ink-3 mt-0.5">CP: {formatVndShort(pub.costAttributed)}</div>
+                    </td>
+                    <td className="p-3.5 pr-5 text-right sm:sticky sm:right-0 sm:z-10 bg-surface group-hover:bg-canvas border-l border-line">
+                      <div className="flex flex-col items-end gap-1">
+                        <Status tone="positive">Đã đối soát</Status>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInspectInitialUrl(pub.platformPostUrl);
+                            setIsVideoInspectorOpen(true);
+                          }}
+                          className="text-2xs font-semibold text-accent hover:underline cursor-pointer"
                         >
-                          <span>{pub.platform}</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                        <span className="text-2xs text-slate-500 block mt-0.5">Ngày đăng: {pub.publishedAt}</span>
-                      </td>
-                      <td className="p-3.5 font-mono">
-                        {pub.sparkAdsCode ? (
-                          <div className="text-2xs font-medium text-ink">
-                            {pub.sparkAdsCode} ({pub.sparkAdsExpiryDays} ngày)
-                          </div>
-                        ) : (
-                          <span className="text-2xs text-slate-400">Chưa cấp</span>
-                        )}
-                        <span className="text-2xs text-slate-500 block mt-0.5">
-                          {pub.isMediaHandedOff ? 'Đã bàn giao nhóm Ads' : 'Chưa bàn giao Ads'}
-                        </span>
-                      </td>
-                      <td className="p-3.5 font-mono">
-                        <div className="font-semibold text-slate-900">{(pub.viewsCount / 1000).toFixed(0)}k xem</div>
-                        <div className="text-2xs text-slate-500">{(pub.likesCount / 1000).toFixed(1)}k thích</div>
-                      </td>
-                      <td className="p-3.5 font-mono">
-                        <div className="font-semibold text-emerald-600 whitespace-nowrap">
-                          {formatVndShort(pub.affiliateGmv)}
-                        </div>
-                        <div className="text-2xs text-slate-500">{pub.itemsSold} món bán</div>
-                      </td>
-                      <td className="p-3.5 font-mono">
-                        <span className="text-xs font-semibold text-ink">
-                          ROI: {pub.roi}x
-                        </span>
-                        <div className="text-2xs text-slate-500 mt-0.5">
-                          CP: {formatVndShort(pub.costAttributed)}
-                        </div>
-                      </td>
-                      <td className="p-3.5 pr-6 text-right sm:sticky sm:right-0 bg-surface group-hover:bg-canvas border-l border-slate-200 sm:shadow-[-3px_0_6px_rgba(0,0,0,0.03)]">
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Đã đối soát
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setInspectInitialUrl(pub.platformPostUrl);
-                              setIsVideoInspectorOpen(true);
-                            }}
-                            className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
-                          >
-                            Kiểm tra lại link
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                          Kiểm tra lại link
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
+        </Panel>
       )}
 
       {/* Script Review Modal */}
@@ -641,12 +920,11 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
       {/* Confirm Approve Draft Video Dialog */}
       <ConfirmDialog
         open={Boolean(approvingDraftVideo)}
-        onOpenChange={(open) => !open && setApprovingDraftVideo(null)}
         title="Xác nhận phê duyệt video nháp"
-        description="Bạn có chắc chắn muốn phê duyệt video nháp này? Trạng thái sẽ được chuyển sang đội ngũ booking để kiểm tra link lên sóng và hoàn tất nghiệm thu hợp đồng."
+        message="Bạn có chắc chắn muốn phê duyệt video nháp này? Trạng thái sẽ được chuyển sang đội ngũ booking để kiểm tra link lên sóng và hoàn tất nghiệm thu hợp đồng."
         confirmLabel="Phê duyệt lên sóng"
-        cancelLabel="Hủy"
-        variant="primary"
+        tone="default"
+        onCancel={() => setApprovingDraftVideo(null)}
         onConfirm={() => {
           if (approvingDraftVideo) {
             setApprovedDraftVideos(prev => new Set([...prev, approvingDraftVideo]));
@@ -670,7 +948,6 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
             p => `- Bài đăng ${p.publicationCode} (${p.contentCode}) | KOC: ${p.creatorName} | Kênh: ${p.platform} | Lượt xem: ${p.viewsCount.toLocaleString('vi-VN')} | GMV: ${formatVndShort(p.affiliateGmv)}`
           ),
         ].join('\n')}
-        customSystemPrompt="Rà soát toàn bộ kịch bản chờ duyệt để phát hiện từ ngữ nhạy cảm/vi phạm chính sách sàn (cam kết 100%, trị dứt điểm, thuốc đặc trị, trắng tức thì...), kiểm tra kịch bản sắp trễ SLA 24h, và đánh giá chất lượng mở đầu (Hook 3s) kèm khuyến nghị chỉnh sửa cụ thể cho từng KOC."
       />
 
       <TikTokVideoInspectorModal
@@ -727,8 +1004,12 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                   const nextBrand = e.target.value;
                   setNewBrandName(nextBrand);
                   const prof = findBrandProfile(profiles, nextBrand);
-                  const firstProd = prof?.products?.[0]?.name || `${nextBrand} - Sản phẩm trọng tâm`;
+                  const firstObj = prof?.products?.[0];
+                  const firstProd = firstObj?.name || `${nextBrand} - Sản phẩm trọng tâm`;
                   setNewProductName(firstProd);
+                  if (firstObj?.usps?.length) {
+                    setNewUsp(firstObj.usps.join(' · '));
+                  }
                 }}
               >
                 {profiles.map((p) => (
@@ -742,7 +1023,14 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
             <Field label="Sản phẩm (SKU)">
               <Select
                 value={newProductName}
-                onChange={(e) => setNewProductName(e.target.value)}
+                onChange={(e) => {
+                  const nextProd = e.target.value;
+                  setNewProductName(nextProd);
+                  const prodObj = selectedBrandProfile?.products?.find(p => p.name === nextProd);
+                  if (prodObj?.usps?.length) {
+                    setNewUsp(prodObj.usps.join(' · '));
+                  }
+                }}
               >
                 {brandProductOptions.map((prodName) => (
                   <option key={prodName} value={prodName}>
@@ -798,60 +1086,124 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
             </Field>
           </div>
 
-          <Field label="Tên góc tiếp cận (Angle)">
-            <Input
-              value={newAngleName}
-              onChange={(e) => setNewAngleName(e.target.value)}
-              placeholder="VD: Góc xử lý mẩn ngứa rôm sảy cho bé sau 3 ngày..."
-            />
+          <Field label="Cơ chế làm việc theo phân khúc KOC (KL)">
+            <Select
+              value={newBriefMode}
+              onChange={(e) => setNewBriefMode(e.target.value as ContentBriefMode)}
+            >
+              <option value="DIRECTIVE">Định hướng kịch bản chi tiết (Áp dụng: FOC, Self, KL1–KL5)</option>
+              <option value="VETTING_GUARDRAILS">Chỉ giao Tham số kiểm duyệt &amp; Ranh giới Brand (Áp dụng: KL6–KL7, KOL tự lên kịch bản)</option>
+            </Select>
           </Field>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Field label="1. Mở đầu 3 giây (Hook)">
-              <Textarea
-                rows={3}
-                value={newHook}
-                onChange={(e) => setNewHook(e.target.value)}
-                placeholder="Câu mở đầu giữ chân người xem trong 3 giây đầu..."
-              />
-            </Field>
+          {newBriefMode === 'VETTING_GUARDRAILS' ? (
+            <div className="space-y-3 rounded-lg border border-accent/40 bg-accent-soft/20 p-3.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-accent">
+                  Bộ tham số kiểm duyệt KOL (KL6 / KL7 — Không bắt buộc Hook/Angle định hướng)
+                </span>
+                <span className="rounded bg-surface px-2 py-0.5 text-2xs font-medium text-ink-2 border border-line">
+                  KOL tự sáng tạo kịch bản theo văn phong kênh
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Field label="1. Thông điệp cốt lõi tối thiểu phải nhắc (Key USP)">
+                  <Textarea
+                    rows={3}
+                    value={newUsp}
+                    onChange={(e) => setNewUsp(e.target.value)}
+                    placeholder="1-2 điểm USP cốt lõi KOL cần nhắc tự nhiên trong video..."
+                  />
+                </Field>
+                <Field label="2. Từ cấm & Ranh giới thương hiệu bắt buộc tránh (Do & Don't)">
+                  <Textarea
+                    rows={3}
+                    value={newPainPoint}
+                    onChange={(e) => setNewPainPoint(e.target.value)}
+                    placeholder="Từ cấm y tế/sàn, đối thủ cấm nhắc, trang phục/bối cảnh cần tránh..."
+                  />
+                </Field>
+                <Field label="3. Yêu cầu khung hình & Hiện diện sản phẩm tối thiểu">
+                  <Textarea
+                    rows={3}
+                    value={newMandatoryShots}
+                    onChange={(e) => setNewMandatoryShots(e.target.value)}
+                  />
+                </Field>
+                <Field label="4. Điều khoản gắn giỏ, Mã Spark Ads & Độc quyền">
+                  <Textarea
+                    rows={3}
+                    value={newRightsGuardrails}
+                    onChange={(e) => setNewRightsGuardrails(e.target.value)}
+                  />
+                </Field>
+              </div>
+              <Field label="Bản nháp ý tưởng / Outline do KOL gửi (nếu đã có để thẩm định)">
+                <Input
+                  value={newHook}
+                  onChange={(e) => setNewHook(e.target.value)}
+                  placeholder="Để trống nếu mới giao khung tham số; hoặc dán Outline của KOL để quét từ cấm..."
+                />
+              </Field>
+            </div>
+          ) : (
+            <>
+              <Field label="Tên góc tiếp cận (Angle)">
+                <Input
+                  value={newAngleName}
+                  onChange={(e) => setNewAngleName(e.target.value)}
+                  placeholder="VD: Góc xử lý mẩn ngứa rôm sảy cho bé sau 3 ngày..."
+                />
+              </Field>
 
-            <Field label="2. Nỗi đau / Tình huống khách hàng">
-              <Textarea
-                rows={3}
-                value={newPainPoint}
-                onChange={(e) => setNewPainPoint(e.target.value)}
-                placeholder="Vấn đề thực tế khách hàng đang gặp phải..."
-              />
-            </Field>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Field label="1. Mở đầu 3 giây (Hook)">
+                  <Textarea
+                    rows={3}
+                    value={newHook}
+                    onChange={(e) => setNewHook(e.target.value)}
+                    placeholder="Câu mở đầu giữ chân người xem trong 3 giây đầu..."
+                  />
+                </Field>
 
-            <Field label="3. Giải pháp & Điểm nổi bật (USP)">
-              <Textarea
-                rows={3}
-                value={newUsp}
-                onChange={(e) => setNewUsp(e.target.value)}
-                placeholder="Thành phần, công dụng chính theo hồ sơ thương hiệu..."
-              />
-            </Field>
+                <Field label="2. Nỗi đau / Tình huống khách hàng">
+                  <Textarea
+                    rows={3}
+                    value={newPainPoint}
+                    onChange={(e) => setNewPainPoint(e.target.value)}
+                    placeholder="Vấn đề thực tế khách hàng đang gặp phải..."
+                  />
+                </Field>
 
-            <Field label="4. Điều hướng giỏ hàng & Khuyến cáo (CTA)">
-              <Textarea
-                rows={3}
-                value={newCta}
-                onChange={(e) => setNewCta(e.target.value)}
-                placeholder="Kêu gọi bấm giỏ hàng kèm câu khuyến cáo pháp lý (nếu có)..."
-              />
-            </Field>
-          </div>
+                <Field label="3. Giải pháp & Điểm nổi bật (USP)">
+                  <Textarea
+                    rows={3}
+                    value={newUsp}
+                    onChange={(e) => setNewUsp(e.target.value)}
+                    placeholder="Thành phần, công dụng chính theo hồ sơ thương hiệu..."
+                  />
+                </Field>
+
+                <Field label="4. Điều hướng giỏ hàng & Khuyến cáo (CTA)">
+                  <Textarea
+                    rows={3}
+                    value={newCta}
+                    onChange={(e) => setNewCta(e.target.value)}
+                    placeholder="Kêu gọi bấm giỏ hàng kèm câu khuyến cáo pháp lý (nếu có)..."
+                  />
+                </Field>
+              </div>
+            </>
+          )}
 
           {draftCompliance && (
             <div
               className={`p-3 rounded-lg border text-xs space-y-1.5 ${
                 draftCompliance.complianceStatus === 'FAIL'
-                  ? 'bg-rose-50/80 border-rose-200 text-rose-800'
+                  ? 'bg-critical-soft/40 border-critical/40 text-critical'
                   : draftCompliance.complianceStatus === 'WARNING'
-                    ? 'bg-amber-50/80 border-amber-200 text-amber-800'
-                    : 'bg-emerald-50/80 border-emerald-200 text-emerald-800'
+                    ? 'bg-warning-soft/40 border-warning/40 text-ink'
+                    : 'bg-positive-soft/40 border-positive/40 text-positive'
               }`}
             >
               <div className="flex items-center justify-between gap-2 font-semibold">

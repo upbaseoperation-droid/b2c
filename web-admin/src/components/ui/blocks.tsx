@@ -371,8 +371,8 @@ export function ConfirmDialog({
   description?: React.ReactNode;
   confirmLabel: string;
   cancelLabel?: string;
-  tone?: 'default' | 'danger';
-  variant?: 'primary' | 'danger' | 'default';
+  tone?: 'default' | 'danger' | 'critical';
+  variant?: 'primary' | 'danger' | 'default' | 'critical';
   /** Có ô nhập lý do. `required`: không cho xác nhận khi trống. */
   reason?: { label: string; placeholder?: string; defaultValue?: string; required?: boolean };
   onConfirm: (reason?: string) => void;
@@ -392,7 +392,7 @@ export function ConfirmDialog({
     onCancel?.();
     onOpenChange?.(false);
   };
-  const effectiveTone = variant === 'danger' ? 'danger' : tone;
+  const effectiveTone = variant === 'danger' || variant === 'critical' || tone === 'danger' || tone === 'critical' ? 'danger' : 'default';
   const effectiveMessage = description !== undefined ? description : message;
   return (
     <Modal

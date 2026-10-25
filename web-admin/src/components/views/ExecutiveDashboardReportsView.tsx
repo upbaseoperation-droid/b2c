@@ -524,11 +524,79 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         const matchChannel = v.channelId.toLowerCase().includes(q);
         const matchStore = v.storeName.toLowerCase().includes(q);
         const matchPic = v.pic.toLowerCase().includes(q);
-        if (!matchCode && !matchChannel && !matchStore && !matchPic) return false;
+        const matchProd = (v.productName || '').toLowerCase().includes(q);
+        if (!matchCode && !matchChannel && !matchStore && !matchPic && !matchProd) return false;
       }
       return true;
     });
   }, [selectedBrand, selectedPlatform, videoFormatFilter, videoKlFilter, deferredVideoSearch]);
+
+  // Tổng hợp Hiệu quả theo Chiều Sản phẩm & Combo (Đảm bảo tổng chi phí & GMV không bị nhân đôi)
+  const productComboAnalytics = useMemo(() => {
+    const byProd = new Map<
+      string,
+      {
+        productName: string;
+        brandName: string;
+        storeName: string;
+        isCombo: boolean;
+        videoCount: number;
+        totalCost: number;
+        totalGmv: number;
+      }
+    >();
+    let singleVideos = 0;
+    let comboVideos = 0;
+    let singleCost = 0;
+    let comboCost = 0;
+    let singleGmv = 0;
+    let comboGmv = 0;
+
+    for (const v of filteredBookedVideos) {
+      const pName = (v.productName || 'Chưa phân loại').trim();
+      const isCombo = /combo|bộ|set|routine|\+|tặng/i.test(pName);
+      const cost = v.cost || 0;
+      const gmv = v.sellerGmv || 0;
+
+      if (isCombo) {
+        comboVideos += 1;
+        comboCost += cost;
+        comboGmv += gmv;
+      } else {
+        singleVideos += 1;
+        singleCost += cost;
+        singleGmv += gmv;
+      }
+
+      const key = `${v.brandName}__${pName}`;
+      const cur = byProd.get(key) || {
+        productName: pName,
+        brandName: v.brandName,
+        storeName: v.storeName,
+        isCombo,
+        videoCount: 0,
+        totalCost: 0,
+        totalGmv: 0,
+      };
+      cur.videoCount += 1;
+      cur.totalCost += cost;
+      cur.totalGmv += gmv;
+      byProd.set(key, cur);
+    }
+
+    const items = Array.from(byProd.values()).sort((a, b) => b.totalGmv - a.totalGmv || b.totalCost - a.totalCost);
+    return {
+      items,
+      singleVideos,
+      comboVideos,
+      singleCost,
+      comboCost,
+      singleGmv,
+      comboGmv,
+      singleRoas: singleCost > 0 ? Number((singleGmv / singleCost).toFixed(2)) : 0,
+      comboRoas: comboCost > 0 ? Number((comboGmv / comboCost).toFixed(2)) : 0,
+    };
+  }, [filteredBookedVideos]);
 
   // Sắp xếp bậc Khung lương (KL) chuẩn từ TAP 0đ -> KL1..KL7
   const sortedKlBreakdown = useMemo(() => {
@@ -2726,6 +2794,74 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* BÁO CÁO HIỆU QUẢ ĐẦU TƯ THEO CHIỀU SẢN PHẨM & COMBO (KHÔNG TRÙNG LẶP CHI PHÍ) */}
+          <div className="bg-surface rounded-xl border border-line overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-line flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold text-ink">
+                Hiệu Quả Đầu Tư Theo Chiều Sản Phẩm &amp; Combo ({productComboAnalytics.items.length} SKU / Combo)
+              </h3>
+              <div className="flex flex-wrap items-center gap-3 text-xs text-ink-2">
+                <span>
+                  SKU đơn lẻ: <strong className="text-ink">{productComboAnalytics.singleVideos} video</strong> · Chi:{' '}
+                  <strong className="text-ink">{formatVndShort(productComboAnalytics.singleCost)}</strong> · GMV:{' '}
+                  <strong className="text-positive">{formatVndShort(productComboAnalytics.singleGmv)}</strong> ({productComboAnalytics.singleRoas}x)
+                </span>
+                <span>|</span>
+                <span>
+                  Combo &amp; Routine: <strong className="text-ink">{productComboAnalytics.comboVideos} video</strong> · Chi:{' '}
+                  <strong className="text-ink">{formatVndShort(productComboAnalytics.comboCost)}</strong> · GMV:{' '}
+                  <strong className="text-positive">{formatVndShort(productComboAnalytics.comboGmv)}</strong> ({productComboAnalytics.comboRoas}x)
+                </span>
+              </div>
+            </div>
+            <div className="overflow-x-auto max-h-[320px]">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-canvas text-ink-2 uppercase border-b border-line sticky top-0 z-10">
+                  <tr>
+                    <th className="py-2.5 px-4 font-semibold">Sản Phẩm / Combo</th>
+                    <th className="py-2.5 px-3 font-semibold">Phân Loại</th>
+                    <th className="py-2.5 px-3 font-semibold">Thương Hiệu &amp; Gian Hàng</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Số Video</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Tổng Chi Phí</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Tổng GMV Seller</th>
+                    <th className="py-2.5 px-4 font-semibold text-right">ROAS / CIR</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {productComboAnalytics.items.slice(0, 15).map((item) => {
+                    const roas = item.totalCost > 0 ? Number((item.totalGmv / item.totalCost).toFixed(2)) : 0;
+                    const cir = item.totalGmv > 0 ? Number(((item.totalCost / item.totalGmv) * 100).toFixed(1)) : 0;
+                    return (
+                      <tr key={`${item.brandName}_${item.productName}`} className="hover:bg-canvas">
+                        <td className="py-2 px-4 font-medium text-ink">{item.productName}</td>
+                        <td className="py-2 px-3">
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-2xs font-semibold ${
+                              item.isCombo ? 'bg-accent-soft text-accent' : 'bg-sunken text-ink-2'
+                            }`}
+                          >
+                            {item.isCombo ? 'Combo / Routine' : 'SKU đơn lẻ'}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3">
+                          <div className="font-medium text-ink">{item.brandName}</div>
+                          <div className="text-2xs text-ink-3">{item.storeName}</div>
+                        </td>
+                        <td className="py-2 px-3 text-right font-mono font-semibold text-ink">{item.videoCount}</td>
+                        <td className="py-2 px-3 text-right font-mono font-semibold text-ink">{formatVndShort(item.totalCost)}</td>
+                        <td className="py-2 px-3 text-right font-mono font-semibold text-positive">{formatVndShort(item.totalGmv)}</td>
+                        <td className="py-2 px-4 text-right font-mono">
+                          <span className="font-semibold text-ink">{roas}x</span>
+                          <span className="ml-1.5 text-2xs text-ink-3">(CIR {cir}%)</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
 

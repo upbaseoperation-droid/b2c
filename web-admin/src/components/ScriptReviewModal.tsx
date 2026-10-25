@@ -420,54 +420,122 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
               </div>
             )}
 
-            {/* 4 Structural Script Sections */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-semibold text-slate-800">Nội dung kịch bản chi tiết</h4>
-
-              {/* Section 1: Hook */}
-              <div className="p-3.5 bg-blue-50/50 rounded-lg border border-blue-200/80 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-blue-700">Đoạn mở đầu (0–3 giây đầu)</span>
-                  <span className="text-2xs text-slate-500 font-medium">Tình huống mở đầu</span>
-                </div>
-                <p className="text-xs text-slate-800 leading-relaxed italic">&ldquo;{script.hook}&rdquo;</p>
-              </div>
-
-              {/* Section 2: Pain Point */}
-              <div className="p-3.5 bg-amber-50/50 rounded-lg border border-amber-200/80 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-amber-700">Vấn đề người dùng (3–15 giây)</span>
-                  <span className="text-2xs text-slate-500 font-medium">Tình trạng thường gặp</span>
-                </div>
-                <p className="text-xs text-slate-800 leading-relaxed">{script.painPoint}</p>
-              </div>
-
-              {/* Section 3: Solution & USP */}
-              <div className="p-3.5 bg-emerald-50/50 rounded-lg border border-emerald-200/80 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-emerald-700">
-                    Giới thiệu sản phẩm (15–45 giây)
+            {/* 4 Structural Script Sections or Vetting Guardrail Sections */}
+            {(script.reviewMode === 'VETTING_GUARDRAILS' || script.kocTier === 'TIER_1_CELEB' || script.kocTier === 'TIER_2_MACRO') ? (
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h4 className="text-xs font-semibold text-slate-800">
+                    Bộ tham số kiểm duyệt KOL ({script.klCode || 'KL6 / KL7'} — Không áp đặt Angle/Hook mẫu)
+                  </h4>
+                  <span className="rounded bg-accent-soft px-2 py-0.5 text-2xs font-semibold text-accent">
+                    KOL tự đề xuất kịch bản theo chất kênh
                   </span>
-                  <span className="text-2xs text-slate-500 font-medium">Công dụng &amp; thành phần chính</span>
                 </div>
-                <p className="text-xs text-slate-800 leading-relaxed">{script.solutionAndUsp}</p>
-              </div>
 
-              {/* Section 4: CTA */}
-              <div className="p-3.5 bg-accent-soft rounded-lg border border-line space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-accent">Điều hướng mua hàng (45–60 giây)</span>
-                  <span className="text-2xs text-slate-500 font-medium">Gắn giỏ hàng &amp; ưu đãi</span>
+                <div className="p-3.5 bg-emerald-50/50 rounded-lg border border-emerald-200/80 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-emerald-700">
+                      1. Thông điệp cốt lõi tối thiểu phải nhắc (Key USP)
+                    </span>
+                    <span className="text-2xs text-slate-500 font-medium">Truyền tải tự nhiên bằng ngôn từ KOL</span>
+                  </div>
+                  <p className="text-xs text-slate-800 leading-relaxed">{script.solutionAndUsp}</p>
                 </div>
-                <p className="text-xs text-slate-800 leading-relaxed">{script.callToAction}</p>
+
+                <div className="p-3.5 bg-rose-50/50 rounded-lg border border-rose-200/80 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-rose-700">
+                      2. Từ cấm &amp; Ranh giới thương hiệu bắt buộc tránh (Do &amp; Don&apos;t)
+                    </span>
+                    <span className="text-2xs text-slate-500 font-medium">An toàn pháp lý &amp; hình ảnh</span>
+                  </div>
+                  <p className="text-xs text-slate-800 leading-relaxed">
+                    {script.forbiddenClaims || script.painPoint || 'Tuân thủ danh mục từ cấm y tế/sàn và không nhắc tên đối thủ cạnh tranh trực tiếp.'}
+                  </p>
+                </div>
+
+                <div className="p-3.5 bg-blue-50/50 rounded-lg border border-blue-200/80 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-blue-700">
+                      3. Yêu cầu khung hình &amp; Hiện diện sản phẩm bắt buộc
+                    </span>
+                    <span className="text-2xs text-slate-500 font-medium">Quy chuẩn hình ảnh tối thiểu</span>
+                  </div>
+                  <p className="text-xs text-slate-800 leading-relaxed">
+                    {script.mandatoryShots || 'Lộ diện rõ bao bì sản phẩm tối thiểu 5 giây; quay cận kết cấu thực tế khi sử dụng; phát âm đúng tên thương hiệu.'}
+                  </p>
+                </div>
+
+                <div className="p-3.5 bg-accent-soft rounded-lg border border-line space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-accent">
+                      4. Điều khoản gắn giỏ hàng, Mã Spark Ads &amp; Độc quyền
+                    </span>
+                    <span className="text-2xs text-slate-500 font-medium">Quyền lợi thương mại</span>
+                  </div>
+                  <p className="text-xs text-slate-800 leading-relaxed">
+                    {script.rightsGuardrails ? `${script.rightsGuardrails} · ${script.callToAction}` : script.callToAction}
+                  </p>
+                </div>
+
+                {script.hook && (
+                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                    <span className="text-2xs font-semibold text-slate-600">Outline / Ý tưởng do KOL gửi:</span>
+                    <p className="text-xs text-slate-800 italic">&ldquo;{script.hook}&rdquo;</p>
+                  </div>
+                )}
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                <h4 className="text-xs font-semibold text-slate-800">Nội dung kịch bản chi tiết</h4>
+
+                {/* Section 1: Hook */}
+                <div className="p-3.5 bg-blue-50/50 rounded-lg border border-blue-200/80 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-blue-700">Đoạn mở đầu (0–3 giây đầu)</span>
+                    <span className="text-2xs text-slate-500 font-medium">Tình huống mở đầu</span>
+                  </div>
+                  <p className="text-xs text-slate-800 leading-relaxed italic">&ldquo;{script.hook}&rdquo;</p>
+                </div>
+
+                {/* Section 2: Pain Point */}
+                <div className="p-3.5 bg-amber-50/50 rounded-lg border border-amber-200/80 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-amber-700">Vấn đề người dùng (3–15 giây)</span>
+                    <span className="text-2xs text-slate-500 font-medium">Tình trạng thường gặp</span>
+                  </div>
+                  <p className="text-xs text-slate-800 leading-relaxed">{script.painPoint}</p>
+                </div>
+
+                {/* Section 3: Solution & USP */}
+                <div className="p-3.5 bg-emerald-50/50 rounded-lg border border-emerald-200/80 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-emerald-700">
+                      Giới thiệu sản phẩm (15–45 giây)
+                    </span>
+                    <span className="text-2xs text-slate-500 font-medium">Công dụng &amp; thành phần chính</span>
+                  </div>
+                  <p className="text-xs text-slate-800 leading-relaxed">{script.solutionAndUsp}</p>
+                </div>
+
+                {/* Section 4: CTA */}
+                <div className="p-3.5 bg-accent-soft rounded-lg border border-line space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-accent">Điều hướng mua hàng (45–60 giây)</span>
+                    <span className="text-2xs text-slate-500 font-medium">Gắn giỏ hàng &amp; ưu đãi</span>
+                  </div>
+                  <p className="text-xs text-slate-800 leading-relaxed">{script.callToAction}</p>
+                </div>
+              </div>
+            )}
 
             {/* Quality Audit Checklist */}
             <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2.5">
               <h4 className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
                 <CheckSquare className="w-4 h-4 text-emerald-600" />
-                Danh mục kiểm duyệt tiêu chuẩn nền tảng &amp; thương hiệu
+                {(script.reviewMode === 'VETTING_GUARDRAILS' || script.kocTier === 'TIER_1_CELEB' || script.kocTier === 'TIER_2_MACRO')
+                  ? 'Checklist kiểm duyệt theo Khung tham số (Dành cho KL6 / KL7)'
+                  : 'Danh mục kiểm duyệt tiêu chuẩn nền tảng & thương hiệu'}
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
@@ -477,7 +545,11 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                     onChange={(e) => setCheckUsp(e.target.checked)}
                     className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span>Đúng thông điệp sản phẩm &amp; quy chuẩn thương hiệu</span>
+                  <span>
+                    {(script.reviewMode === 'VETTING_GUARDRAILS' || script.kocTier === 'TIER_1_CELEB' || script.kocTier === 'TIER_2_MACRO')
+                      ? 'Truyền tải đủ Key USP cốt lõi (tôn trọng văn phong KOL)'
+                      : 'Đúng thông điệp sản phẩm & quy chuẩn thương hiệu'}
+                  </span>
                 </label>
                 <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
                   <input
@@ -486,7 +558,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                     onChange={(e) => setCheckNoBannedKeywords(e.target.checked)}
                     className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span>Không vi phạm từ cấm trong Hồ sơ thương hiệu</span>
+                  <span>Không vi phạm từ cấm &amp; ranh giới Do &amp; Don&apos;t của nhãn</span>
                 </label>
                 <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
                   <input
@@ -495,7 +567,11 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                     onChange={(e) => setCheckCallToAction(e.target.checked)}
                     className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span>Có lời kêu gọi nhấp giỏ hàng góc trái rõ ràng</span>
+                  <span>
+                    {(script.reviewMode === 'VETTING_GUARDRAILS' || script.kocTier === 'TIER_1_CELEB' || script.kocTier === 'TIER_2_MACRO')
+                      ? 'Đảm bảo khung hình lộ diện sản phẩm tối thiểu & gắn giỏ hàng'
+                      : 'Có lời kêu gọi nhấp giỏ hàng góc trái rõ ràng'}
+                  </span>
                 </label>
                 <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
                   <input
@@ -504,7 +580,11 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                     onChange={(e) => setCheckDuration(e.target.checked)}
                     className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span>Thời lượng quay thực tế đạt chuẩn (60–90s)</span>
+                  <span>
+                    {(script.reviewMode === 'VETTING_GUARDRAILS' || script.kocTier === 'TIER_1_CELEB' || script.kocTier === 'TIER_2_MACRO')
+                      ? 'Đạt cam kết mã Spark Ads, thời hạn giữ bài & độc quyền'
+                      : 'Thời lượng quay thực tế đạt chuẩn (60–90s)'}
+                  </span>
                 </label>
               </div>
             </div>

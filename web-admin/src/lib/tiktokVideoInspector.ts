@@ -172,6 +172,7 @@ export interface InspectVideoOptions {
   expectedCartUrl?: string;  // Link giỏ hàng mẫu hoặc Mã SP nhân viên cung cấp để đối chiếu
   requiredHashtags?: string[];
   requiredUspKeywords?: string[]; // Từ khóa thông điệp / USP bắt buộc phải có trong lời nói hoặc chữ trên video
+  customForbiddenClaims?: string[]; // Claim cấm / từ khóa cấm riêng của Sản phẩm / Brand trong Brief
   sparkAdsCode?: string;          // Mã ủy quyền quảng cáo Spark Ads KOC gửi kèm
   brandName?: string;
   minDurationSeconds?: number;
@@ -333,7 +334,10 @@ export function extractHashtagsAndMentions(caption: string): {
 /**
  * Quét từ cấm sàn & từ cấm Y tế trong caption + lời thoại video
  */
-export function scanBlacklistViolations(text: string): TikTokVideoContentCheck['violatedBlacklistWords'] {
+export function scanBlacklistViolations(
+  text: string,
+  customForbiddenClaims?: string[]
+): TikTokVideoContentCheck['violatedBlacklistWords'] {
   if (!text) return [];
   const normalized = text.toLowerCase();
   const found: TikTokVideoContentCheck['violatedBlacklistWords'] = [];
@@ -341,6 +345,22 @@ export function scanBlacklistViolations(text: string): TikTokVideoContentCheck['
   for (const rule of DEFAULT_BLACKLIST_RULES) {
     if (normalized.includes(rule.word.toLowerCase())) {
       found.push(rule);
+    }
+  }
+  if (Array.isArray(customForbiddenClaims)) {
+    for (const rawClaim of customForbiddenClaims) {
+      const cleaned = rawClaim
+        .replace(/^(cấm|không được|tránh|tuyệt đối không)\s+/i, '')
+        .trim();
+      if (cleaned.length >= 2 && normalized.includes(cleaned.toLowerCase())) {
+        if (!found.some(f => f.word.toLowerCase() === cleaned.toLowerCase())) {
+          found.push({
+            word: cleaned,
+            category: 'CHÍNH_SÁCH_SÀN',
+            suggestion: `Vi phạm Claim cấm của Sản phẩm/Brand trong Brief ("${rawClaim.trim()}")`,
+          });
+        }
+      }
     }
   }
   return found;
@@ -1462,7 +1482,10 @@ export async function inspectTikTokVideoUrl(
     (kw) => !matchedUspKeywords.includes(kw)
   );
 
-  const violatedBlacklistWords = scanBlacklistViolations(combinedSpokenAndText);
+  const violatedBlacklistWords = scanBlacklistViolations(
+    combinedSpokenAndText,
+    options.customForbiddenClaims
+  );
 
   const hasCartAnchor = Boolean(liveData.hasCartAnchor);
   const cartAnchorTitle = liveData.cartAnchorTitle || '';

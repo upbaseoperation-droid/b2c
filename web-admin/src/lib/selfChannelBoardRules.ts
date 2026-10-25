@@ -97,6 +97,10 @@ export interface SelfChannelJob {
   hook?: string;
   usp?: string;
   cta?: string;
+  forbiddenClaims?: string;
+  cartUrl?: string;
+  briefUrl?: string;
+  shippingAddress?: string;
   contentPic: string;
   contributorId?: string;
   contributorName: string;
@@ -255,6 +259,10 @@ export function sanitizeSelfChannelBoard(raw?: Partial<SelfChannelBoardData> | n
       hook: j.hook ? String(j.hook) : undefined,
       usp: j.usp ? String(j.usp) : undefined,
       cta: j.cta ? String(j.cta) : undefined,
+      forbiddenClaims: j.forbiddenClaims ? String(j.forbiddenClaims) : undefined,
+      cartUrl: j.cartUrl ? String(j.cartUrl) : undefined,
+      briefUrl: j.briefUrl ? String(j.briefUrl) : undefined,
+      shippingAddress: j.shippingAddress ? String(j.shippingAddress) : undefined,
       contentPic: String(j.contentPic || 'Nhân viên'),
       contributorId: j.contributorId ? String(j.contributorId) : undefined,
       contributorName: String(j.contributorName || ''),
@@ -330,29 +338,30 @@ export function sanitizeSelfChannelBoard(raw?: Partial<SelfChannelBoardData> | n
 
 export function selfJobStageOf(job: SelfChannelJob): SelfJobStage {
   if (
-    job.paymentStatus === 'PAID' ||
-    job.paymentStatus === 'REQUESTED' ||
-    job.acceptanceStatus === 'PASSED'
+    (!job.productName.trim() && !job.angle.trim()) ||
+    (job.productionMode === 'CTV_OUTSOURCE' && !job.contributorName.trim())
   ) {
-    return 'SETTLEMENT';
-  }
-  if (Boolean(job.airLink.trim() && job.airedAt.trim())) {
-    return 'ACCEPTANCE';
-  }
-  if (job.videoQaStatus === 'INTERNAL_QA_PASSED' || job.videoQaStatus === 'BRAND_APPROVED') {
-    return 'BRAND_AIR';
+    return 'BRIEF';
   }
   if (
-    job.scriptStatus === 'APPROVED' ||
-    job.scriptStatus === 'NOT_NEEDED' ||
-    Boolean(job.draftVideoUrl.trim())
+    (job.scriptStatus !== 'APPROVED' && job.scriptStatus !== 'NOT_NEEDED') ||
+    (job.productionMode === 'CTV_OUTSOURCE' &&
+      job.sampleStatus !== 'RECEIVED' &&
+      job.sampleStatus !== 'ON_HAND' &&
+      job.sampleStatus !== 'NOT_NEEDED')
   ) {
-    return 'PRODUCTION';
-  }
-  if (Boolean(job.contributorName.trim() || job.angle.trim())) {
     return 'SCRIPT';
   }
-  return 'BRIEF';
+  if (job.videoQaStatus !== 'INTERNAL_QA_PASSED' && job.videoQaStatus !== 'BRAND_APPROVED') {
+    return 'PRODUCTION';
+  }
+  if (!job.airLink.trim() || !job.airedAt.trim()) {
+    return 'BRAND_AIR';
+  }
+  if (job.acceptanceStatus !== 'PASSED') {
+    return 'ACCEPTANCE';
+  }
+  return 'SETTLEMENT';
 }
 
 export function selfJobAcceptanceBlocker(job: SelfChannelJob): string | null {
@@ -512,6 +521,10 @@ export function createSelfChannelJob(
     hook: partial.hook,
     usp: partial.usp,
     cta: partial.cta,
+    forbiddenClaims: partial.forbiddenClaims,
+    cartUrl: partial.cartUrl,
+    briefUrl: partial.briefUrl,
+    shippingAddress: partial.shippingAddress,
     contentPic: partial.contentPic || defaultPic,
     contributorId: partial.contributorId,
     contributorName: partial.contributorName || '',
@@ -523,7 +536,7 @@ export function createSelfChannelJob(
     bankHolder: partial.bankHolder,
     sampleStatus: partial.sampleStatus || (productionMode === 'INHOUSE' ? 'ON_HAND' : 'PENDING_SHIP'),
     trackingCode: partial.trackingCode,
-    scriptStatus: partial.scriptStatus || 'NOT_NEEDED',
+    scriptStatus: partial.scriptStatus || (partial.formatKey === 'nhacText' ? 'NOT_NEEDED' : 'DRAFT'),
     scriptUrl: partial.scriptUrl,
     scriptNote: partial.scriptNote,
     videoQaStatus: partial.videoQaStatus || 'WAITING_DRAFT',
@@ -568,6 +581,69 @@ export function createSelfChannelJob(
   };
 }
 
+/**
+ * Áp dụng thông tin CTV từ Danh bạ (Contributor) vào Job video:
+ * - Tự động điền Hợp đồng, CCCD/MST, Tài khoản ngân hàng, Thư mục Drive, Địa chỉ nhận mẫu.
+ * - Tự động đối chiếu SKU với danh sách hàng mẫu có sẵn tại nhà CTV (onHandProducts) để chuyển trạng thái sang ON_HAND.
+ * - Tự động áp đơn giá chuẩn của CTV (unitRateAllInOne / unitRateShootingOnly / unitRateEditOnly) nếu Job đang để 0đ.
+ */
+export function applyContributorToSelfJob(job: SelfChannelJob, ctv: Contributor): SelfChannelJob {
+  const defaultRate =
+    ctv.unitRateAllInOne || ctv.unitRateShootingOnly || ctv.unitRateEditOnly || ctv.unitRateScriptOnly || 0;
+  const nextFeeGross = job.feeGross > 0 ? job.feeGross : defaultRate;
+  const fin = computeJobFinancials(nextFeeGross, 'CTV_OUTSOURCE', job.withholdPit10 || nextFeeGross >= 2000000);
+
+  const skuLower = (job.skuCode || '').trim().toLowerCase();
+  const prodLower = (job.productName || '').trim().toLowerCase();
+  const hasSampleOnHand =
+    Array.isArray(ctv.onHandProducts) &&
+    ctv.onHandProducts.some(item => {
+      const code = item.trim().toLowerCase();
+      return Boolean(code && ((skuLower && skuLower.includes(code)) || (prodLower && prodLower.includes(code))));
+    });
+
+  const nextSampleStatus: SelfSampleStatus = hasSampleOnHand
+    ? 'ON_HAND'
+    : job.sampleStatus === 'NOT_NEEDED'
+    ? 'PENDING_SHIP'
+    : job.sampleStatus;
+
+  const formattedAddress = ctv.shippingAddress
+    ? `${ctv.shippingRecipientName || ctv.name} (${ctv.shippingPhone || ctv.phone || ''}) — ${ctv.shippingAddress}`
+    : job.shippingAddress;
+
+  return {
+    ...job,
+    productionMode: 'CTV_OUTSOURCE',
+    contributorId: ctv.id,
+    contributorName: ctv.name,
+    channelOrPhone: ctv.phone || ctv.channelLink || job.channelOrPhone,
+    contractNo: ctv.contractCode || job.contractNo || 'HD-CTV-2026',
+    legalId: ctv.cccd || ctv.taxCode || job.legalId || '',
+    bankName: ctv.bankName || job.bankName || 'Techcombank',
+    bankAccount: ctv.bankAccount || job.bankAccount || '',
+    bankHolder: ctv.bankAccountName || job.bankHolder || ctv.name,
+    finalDriveUrl: ctv.driveFolderUrl || job.finalDriveUrl,
+    shippingAddress: formattedAddress,
+    sampleStatus: nextSampleStatus,
+    feeGross: fin.feeGross,
+    withholdPit10: fin.withholdPit10,
+    pitTaxAmount: fin.pitTaxAmount,
+    netPayout: fin.netPayout,
+    paymentStatus: job.paymentStatus === 'NOT_APPLICABLE' ? 'NONE' : job.paymentStatus,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function inferFormatKeyFromSlot(formatText?: string): SelfFormatKey {
+  const f = (formatText || '').toLowerCase();
+  if (f.includes('ai') || f.includes('máy')) return 'videoAi';
+  if (f.includes('remix')) return 'videoRemix';
+  if (f.includes('live')) return 'videoToLive';
+  if (f.includes('nhạc') || f.includes('text')) return 'nhacText';
+  return 'reviewVoice';
+}
+
 export function generateSelfJobsFromPlanAndContent(
   plan: InputPlanBreakdownState,
   existingJobs: SelfChannelJob[],
@@ -577,6 +653,18 @@ export function generateSelfJobsFromPlanAndContent(
 ): { jobs: SelfChannelJob[]; addedCount: number } {
   const currentJobs = [...existingJobs];
   let addedCount = 0;
+  const weekRows = resolveWeekRows(plan);
+
+  // Tính đơn giá dự kiến theo từng tuần từ ngân sách Self-channel trong kế hoạch
+  const weekDefaultUnitFee = new Map<string, number>();
+  for (const r of weekRows) {
+    const budgetNet = Number(r.self?.budgetNet || 0);
+    const reviewVoiceTarget = Number(r.self?.reviewVoice || 0);
+    if (reviewVoiceTarget > 0 && budgetNet > 0) {
+      weekDefaultUnitFee.set(r.week, Math.round(budgetNet / reviewVoiceTarget));
+    }
+  }
+  const fallbackUnitFee = Array.from(weekDefaultUnitFee.values())[0] || 0;
 
   // Bước A: Duyệt các contentSlots có row === 'SELF'
   const selfSlots = (contentSlots || []).filter(s => s.row === 'SELF');
@@ -587,35 +675,72 @@ export function generateSelfJobsFromPlanAndContent(
     ).length;
     const missing = targetQty - existingCountForSlot;
     if (missing > 0) {
+      const slotWeek = slot.week || weekRows[0]?.week || '';
+      const inferredFormat = inferFormatKeyFromSlot(slot.format);
+      const slotMode: SelfProductionMode = inferredFormat === 'reviewVoice' ? 'CTV_OUTSOURCE' : 'INHOUSE';
+      const slotUnitFee =
+        Number(slot.kocFee) > 0
+          ? Number(slot.kocFee)
+          : slotMode === 'CTV_OUTSOURCE'
+          ? weekDefaultUnitFee.get(slotWeek) || fallbackUnitFee
+          : 0;
+      const assignedHandles = [
+        ...(Array.isArray(slot.kocHandles) ? slot.kocHandles : []),
+        ...(slot.kocHandle ? [slot.kocHandle] : []),
+      ]
+        .map(h => h.replace(/^@/, '').trim())
+        .filter(Boolean);
+
       for (let i = 0; i < missing; i++) {
-        const newJob = createSelfChannelJob(
+        let newJob = createSelfChannelJob(
           {
             briefSlotId: slot.id,
             briefCode: slot.briefCode,
             pillar: slot.pillar || '',
             angle: slot.angle || '',
-            productName: slot.productName || slot.product || '',
+            productName: slot.productName || slot.product || plan.storeName || '',
+            skuCode: slot.sku || undefined,
             hook: slot.hook || '',
             usp: slot.usp || '',
             cta: slot.cta || '',
-            week: slot.week || '',
-            formatKey: 'reviewVoice',
-            productionMode: 'CTV_OUTSOURCE',
+            forbiddenClaims: slot.forbiddenClaims || undefined,
+            cartUrl: slot.cartUrl || undefined,
+            briefUrl: slot.briefUrl || undefined,
+            week: slotWeek,
+            formatKey: inferredFormat,
+            productionMode: slotMode,
+            feeGross: slotUnitFee,
+            withholdPit10: slotMode === 'CTV_OUTSOURCE' && slotUnitFee >= 2000000,
             contentPic: slot.pic || plan.pic || actorName || 'Nhân viên',
-            sampleStatus: 'PENDING_SHIP',
-            scriptStatus: 'DRAFT',
+            sampleStatus: slotMode === 'CTV_OUTSOURCE' ? 'PENDING_SHIP' : 'ON_HAND',
+            scriptStatus: inferredFormat === 'nhacText' ? 'NOT_NEEDED' : 'DRAFT',
           },
           currentJobs,
           actorName
         );
+
+        const candidateHandle = assignedHandles[i] || assignedHandles[0];
+        if (candidateHandle && contributors.length > 0) {
+          const matchedCtv = contributors.find(
+            c =>
+              c.name.toLowerCase().includes(candidateHandle.toLowerCase()) ||
+              (c.channelLink && c.channelLink.toLowerCase().includes(candidateHandle.toLowerCase())) ||
+              (c.code || '').toLowerCase() === candidateHandle.toLowerCase()
+          );
+          if (matchedCtv) {
+            newJob = applyContributorToSelfJob(newJob, matchedCtv);
+          } else {
+            newJob.contributorName = candidateHandle;
+          }
+        }
+
         currentJobs.push(newJob);
         addedCount++;
       }
     }
   }
 
-  // Bước B: Duyệt resolveWeekRows(plan)
-  const weekRows = resolveWeekRows(plan);
+  // Bước B: Duyệt resolveWeekRows(plan) để bù phần chỉ tiêu tuần còn thiếu
   for (const r of weekRows) {
     const week = r.week;
     const budgetNet = Number(r.self?.budgetNet || 0);
@@ -799,8 +924,12 @@ export function summarizeSelfChannelBoard(
     const paidJobs = cJobs.filter(j => j.paymentStatus === 'PAID');
 
     const pendingGross = acceptedUnpaidJobs.reduce((s, j) => s + j.feeGross, 0);
-    const pendingPitTax = acceptedUnpaidJobs.reduce((s, j) => s + j.pitTaxAmount, 0);
-    const pendingNet = acceptedUnpaidJobs.reduce((s, j) => s + j.netPayout, 0);
+    const effectivePitTax =
+      pendingGross >= 2000000
+        ? Math.round(pendingGross * 0.1)
+        : acceptedUnpaidJobs.reduce((s, j) => s + j.pitTaxAmount, 0);
+    const pendingPitTax = effectivePitTax;
+    const pendingNet = Math.max(0, pendingGross - effectivePitTax);
     const paidGross = paidJobs.reduce((s, j) => s + j.feeGross, 0);
 
     const hasContract = Boolean(firstWithDetails.contractNo?.trim());

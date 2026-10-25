@@ -395,7 +395,18 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                       {p.representativeName && (
                         <div className="flex justify-between gap-2">
                           <span className="text-ink-3">Người đại diện:</span>
-                          <span className="font-medium text-ink text-right">{p.representativeName}</span>
+                          <span className="font-medium text-ink text-right">
+                            {p.representativeName}
+                            {p.representativeTitle ? ` (${p.representativeTitle})` : ''}
+                          </span>
+                        </div>
+                      )}
+                      {(p.authorizationNumber || p.authorizationDate) && (
+                        <div className="flex justify-between gap-2">
+                          <span className="text-ink-3">Văn bản ủy quyền:</span>
+                          <span className="text-ink-2 text-right">
+                            {[p.authorizationNumber, p.authorizationDate].filter(Boolean).join(' · ')}
+                          </span>
                         </div>
                       )}
                       {(p.cccdIssueDate || p.cccdIssuePlace) && (
@@ -441,7 +452,7 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                       </div>
                       <div className="flex justify-between gap-2">
                         <span className="text-ink-3">Chủ tài khoản:</span>
-                        <span className="font-medium text-ink text-right">{p.holderName}</span>
+                        <span className="font-medium text-ink text-right">{p.bankHolderName || p.holderName}</span>
                       </div>
                       <div className="flex justify-between gap-2">
                         <span className="text-ink-3">Xác thực giấy tờ:</span>
@@ -603,6 +614,15 @@ function LegalProfileFormModal({
   const [representativeName, setRepresentativeName] = useState(
     initialProfile?.representativeName || '',
   );
+  const [representativeTitle, setRepresentativeTitle] = useState(
+    initialProfile?.representativeTitle || '',
+  );
+  const [authorizationNumber, setAuthorizationNumber] = useState(
+    initialProfile?.authorizationNumber || '',
+  );
+  const [authorizationDate, setAuthorizationDate] = useState(
+    initialProfile?.authorizationDate || '',
+  );
   const [relationshipNote, setRelationshipNote] = useState(
     initialProfile?.relationshipNote || 'Chính chủ KOC',
   );
@@ -615,6 +635,9 @@ function LegalProfileFormModal({
   );
   const [bankName, setBankName] = useState(initialProfile?.bankName || 'Techcombank');
   const [bankAccount, setBankAccount] = useState(initialProfile?.bankAccount || '');
+  const [bankHolderName, setBankHolderName] = useState(
+    initialProfile?.bankHolderName || initialProfile?.holderName || '',
+  );
   const [frameworkContractCode, setFrameworkContractCode] = useState(
     initialProfile?.frameworkContractCode || '',
   );
@@ -652,6 +675,9 @@ function LegalProfileFormModal({
       taxAccountType: taxAccountType.trim(),
       holderName: holderName.trim() || koc.stageName,
       representativeName: representativeName.trim() || undefined,
+      representativeTitle: representativeTitle.trim() || undefined,
+      authorizationNumber: authorizationNumber.trim() || undefined,
+      authorizationDate: authorizationDate.trim() || undefined,
       relationshipNote: relationshipNote.trim() || undefined,
       cccd: cccd.trim() || undefined,
       cccdIssueDate: cccdIssueDate.trim() || undefined,
@@ -660,6 +686,7 @@ function LegalProfileFormModal({
       registeredAddress: registeredAddress.trim() || undefined,
       bankName: bankName.trim() || undefined,
       bankAccount: bankAccount.trim() || undefined,
+      bankHolderName: bankHolderName.trim() || holderName.trim() || undefined,
       isOcrVerified: Boolean(cccd.trim() || taxCode.trim() || initialProfile?.isOcrVerified),
       frameworkContractCode: frameworkContractCode.trim() || undefined,
       frameworkContractStatus,
@@ -775,6 +802,32 @@ function LegalProfileFormModal({
           </Field>
         </div>
 
+        {(legalType !== 'INDIVIDUAL' || relationshipNote.includes('ủy quyền')) && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Field label="Chức vụ người đại diện">
+              <Input
+                value={representativeTitle}
+                onChange={(e) => setRepresentativeTitle(e.target.value)}
+                placeholder={legalType === 'HOUSEHOLD' ? 'Chủ hộ kinh doanh' : 'Giám đốc'}
+              />
+            </Field>
+            <Field label="Số văn bản ủy quyền (Nếu ký thay)">
+              <Input
+                value={authorizationNumber}
+                onChange={(e) => setAuthorizationNumber(e.target.value)}
+                placeholder="VD: 01/2026/UQ"
+              />
+            </Field>
+            <Field label="Ngày văn bản ủy quyền">
+              <Input
+                value={authorizationDate}
+                onChange={(e) => setAuthorizationDate(e.target.value)}
+                placeholder="VD: 15/01/2026"
+              />
+            </Field>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Field label="Số CCCD / CMND (9 hoặc 12 số)">
             <Input
@@ -813,8 +866,8 @@ function LegalProfileFormModal({
           />
         </Field>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-line">
-          <Field label="Ngân hàng thụ hưởng (Gắn với pháp nhân này)">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-line">
+          <Field label="Ngân hàng thụ hưởng">
             <Input
               value={bankName}
               onChange={(e) => setBankName(e.target.value)}
@@ -827,6 +880,14 @@ function LegalProfileFormModal({
               value={bankAccount}
               onChange={(e) => setBankAccount(e.target.value)}
               placeholder="Nhập chính xác số tài khoản..."
+            />
+          </Field>
+
+          <Field label="Chủ tài khoản ngân hàng">
+            <Input
+              value={bankHolderName}
+              onChange={(e) => setBankHolderName(e.target.value)}
+              placeholder={holderName || 'Tên in hoa trên thẻ/tài khoản...'}
             />
           </Field>
         </div>

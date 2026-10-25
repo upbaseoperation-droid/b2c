@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRecord } from '@/lib/server/sharedRecords';
 import { listMonthlyPlans } from '@/lib/server/monthlyPlanStore';
-import { dealBoardKey, listingBoardKey } from '@/lib/server/boardKeys';
+import { dealBoardKey, listingBoardKey, selfChannelBoardKey } from '@/lib/server/boardKeys';
 import { EMPTY_DEAL_BOARD, sanitizeDealBoard, type DealBoardData } from '@/lib/dealBoardRules';
+import {
+  EMPTY_SELF_CHANNEL_BOARD,
+  sanitizeSelfChannelBoard,
+  type SelfChannelBoardData,
+} from '@/lib/selfChannelBoardRules';
 import { buildPlanActualReport, type PlanActualStoreReport } from '@/lib/planActualReport';
 import type { KocListingItem } from '@/lib/types';
 import { getPlanActor, handlePlanError, unauthorized } from '../monthly-plans/_shared';
@@ -28,11 +33,18 @@ export async function GET(request: NextRequest) {
       stored
         .filter(({ plan }) => plan.month === month)
         .map(async ({ plan }) => {
-          const [listing, board] = await Promise.all([
+          const [listing, board, selfBoard] = await Promise.all([
             readRecord<{ items: KocListingItem[] }>(listingBoardKey(plan.id), { items: [] }),
             readRecord<DealBoardData>(dealBoardKey(plan.id), EMPTY_DEAL_BOARD),
+            readRecord<SelfChannelBoardData>(selfChannelBoardKey(plan.id), EMPTY_SELF_CHANNEL_BOARD),
           ]);
-          return buildPlanActualReport(plan, listing.data.items || [], sanitizeDealBoard(board.data), today);
+          return buildPlanActualReport(
+            plan,
+            listing.data.items || [],
+            sanitizeDealBoard(board.data),
+            today,
+            sanitizeSelfChannelBoard(selfBoard.data)
+          );
         })
     );
     reports.sort((a, b) => a.storeName.localeCompare(b.storeName, 'vi'));

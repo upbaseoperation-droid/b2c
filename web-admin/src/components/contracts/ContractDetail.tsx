@@ -129,7 +129,9 @@ export function ContractDetail({
     <Button variant="primary" disabled={busy} onClick={() => setDialog('link')}>Liên kết luồng ký</Button>
   ) : canStartSigning && demo ? (
     <Button variant="primary" disabled={busy} onClick={() => onAction({ action: 'DEMO_SIGN_START' }, 'Đã bắt đầu lượt ký thử')}>Bắt đầu ký thử</Button>
-  ) : signing?.status === 'COMPLETED' && !isAcceptance(record.templateId) && !hasAcceptance && me.roles.includes('CREATOR') ? (
+  ) : signing?.status === 'COMPLETED' && isFrameworkWithSow && onCreateSow && me.roles.includes('CREATOR') ? (
+    <Button variant="primary" icon={FilePlus2} onClick={onCreateSow}>Tạo phụ lục SOW</Button>
+  ) : signing?.status === 'COMPLETED' && !isAcceptance(record.templateId) && !isFrameworkWithSow && !hasAcceptance && me.roles.includes('CREATOR') ? (
     <Button variant="primary" icon={FilePlus2} onClick={onCreateAcceptance}>Tạo biên bản nghiệm thu</Button>
   ) : null;
 

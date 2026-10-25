@@ -8,6 +8,7 @@ import { Button, Field, Input, Modal, Select, Textarea } from '../ui';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
 import { VideoProductScreenshotModal } from '../contracts/VideoProductScreenshotModal';
 import { DraftBbntPreviewModal } from '../contracts/DraftBbntPreviewModal';
+import { PullHangingJobsModal } from './PullHangingJobsModal';
 import { getKocLegalProfiles } from '../koc/kocUtils';
 import { usePlanRecord } from '../../lib/usePlanRecord';
 import { useListingBoard } from '../../lib/useListingBoard';
@@ -18,13 +19,28 @@ import {
   DOCUMENT_LABEL,
   documentOfTemplate,
   documentsOfJob,
+  formatContractRecordNumber,
   planJobToBookingDeal,
   recordSigned,
   type ContractDocument,
 } from '../../lib/planDealLink';
 import { columnOf, itemFee, itemGrade, planQuota } from '../../lib/listingBoardRules';
-import { ensureSequentialBriefCodes, isBriefReady, slotKocHandles, slotTargetQty, type ContentSlot } from '../../lib/contentPlanRules';
-import type { BrandProductCatalog } from '../../lib/productCatalog';
+import {
+  ensureSequentialBriefCodes,
+  isBriefReady,
+  isVettingGuardrailRow,
+  resolveBriefMode,
+  slotKocHandles,
+  slotTargetQty,
+  type ContentSlot,
+} from '../../lib/contentPlanRules';
+import {
+  findCatalogProduct,
+  resolveEffectiveProductGuidelines,
+  resolveEffectiveProductLinks,
+  resolveEffectiveSampleQuota,
+  type BrandProductCatalog,
+} from '../../lib/productCatalog';
 import { computeWindowPerformance, videoIdFromAirLink, type DailyVideoPerformanceRow } from '../../lib/upaffiliateDailyPerformance';
 import {
   BOOKING_LIST_COLUMNS,
@@ -177,6 +193,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
   const [bundlePaymentOpen, setBundlePaymentOpen] = useState(false);
   const [selectedBundleJobIds, setSelectedBundleJobIds] = useState<string[]>([]);
   const [bundlingLark, setBundlingLark] = useState(false);
+  const [pullHangingOpen, setPullHangingOpen] = useState(false);
   const [payeeQuickForm, setPayeeQuickForm] = useState<{
     bankName: string;
     bankAccount: string;
@@ -311,7 +328,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
   /** Số hợp đồng ghi trong hồ sơ (ô điền có chữ số hợp đồng, phụ lục hoặc SOW), không có thì dùng mã hồ sơ. */
   const numberOfRecord = (r: ContractRecord): string => {
     const key = Object.keys(r.values || {}).find(k => /^(token:)?\[?\s*(số|so)\b.*(hợp đồng|phụ lục|sow)/i.test(k) && (r.values[k] || '').trim());
-    return (key ? r.values[key] : '').trim() || r.id;
+    return (key ? r.values[key] : '').trim() || formatContractRecordNumber(r);
   };
 
   /** Hợp đồng nguyên tắc đã ký của KOC trong mô-đun Hợp đồng, nếu có. */
@@ -484,10 +501,17 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       hook: slot?.hook || '',
       usp: slot?.usp || group?.usp || '',
       forbiddenClaims: slot?.forbiddenClaims || group?.forbiddenClaims || '',
+      briefMode: slot ? resolveBriefMode(slot) : isVettingGuardrailRow(String(itemGrade(item))) ? 'VETTING_GUARDRAILS' : 'DIRECTIVE',
+      mandatoryShots: slot?.mandatoryShots || '',
+      rightsGuardrails: slot?.rightsGuardrails || '',
       cta: slot?.cta || '',
       briefUrl: slot?.briefUrl || '',
       productGroupId: group?.id || '',
       productGroupName: group?.name || slot?.product || '',
+      productName: slot?.sku || slot?.productName || '',
+      cartUrl: slot?.cartUrl || '',
+      affiliateUrl: slot?.affiliateUrl || '',
+      commissionPct: slot?.commissionPct ?? null,
       legalProfileId: defProfile?.id || '',
       entityType: defProfile?.legalType || 'INDIVIDUAL',
       payeeLegalName: defProfile?.holderName || '',
@@ -529,6 +553,9 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       hook: slot?.hook || '',
       usp: slot?.usp || group?.usp || '',
       forbiddenClaims: slot?.forbiddenClaims || group?.forbiddenClaims || '',
+      briefMode: slot ? resolveBriefMode(slot) : isVettingGuardrailRow(String(itemGrade(item))) ? 'VETTING_GUARDRAILS' : 'DIRECTIVE',
+      mandatoryShots: slot?.mandatoryShots || '',
+      rightsGuardrails: slot?.rightsGuardrails || '',
       cta: slot?.cta || '',
       briefUrl: slot?.briefUrl || '',
       week: slot?.week || '',
@@ -543,6 +570,10 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       videoFee: itemFee(item),
       productGroupId: group?.id || '',
       productGroupName: group?.name || slot?.product || '',
+      productName: slot?.sku || slot?.productName || '',
+      cartUrl: slot?.cartUrl || '',
+      affiliateUrl: slot?.affiliateUrl || '',
+      commissionPct: slot?.commissionPct ?? null,
     });
     patchDeal(targetDeal.id, cur =>
       pushEvent(
@@ -575,6 +606,9 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       hook: slot?.hook || '',
       usp: slot?.usp || group?.usp || '',
       forbiddenClaims: slot?.forbiddenClaims || group?.forbiddenClaims || '',
+      briefMode: slot ? resolveBriefMode(slot) : isVettingGuardrailRow(String(d.grade)) ? 'VETTING_GUARDRAILS' : 'DIRECTIVE',
+      mandatoryShots: slot?.mandatoryShots || '',
+      rightsGuardrails: slot?.rightsGuardrails || '',
       cta: slot?.cta || '',
       briefUrl: slot?.briefUrl || '',
       week: slot?.week || lastJob?.week || d.week || '',
@@ -595,7 +629,10 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       videoFee: lastJob?.videoFee ?? 0,
       productGroupId: group?.id || lastJob?.productGroupId || d.productGroupId || '',
       productGroupName: group?.name || slot?.product || lastJob?.productGroupName || d.productGroupName || '',
-      productName: lastJob?.productName || '',
+      productName: slot?.sku || slot?.productName || lastJob?.productName || '',
+      cartUrl: slot?.cartUrl || lastJob?.cartUrl || '',
+      affiliateUrl: slot?.affiliateUrl || lastJob?.affiliateUrl || '',
+      commissionPct: slot?.commissionPct ?? lastJob?.commissionPct ?? null,
     });
     patchDeal(d.id, cur =>
       pushEvent(
@@ -742,6 +779,18 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     if (!job.airLink.trim()) return;
     setInspecting(true);
     try {
+      const matchedCatalogProd = findCatalogProduct(catalog, job.productName, job.productGroupId)?.product;
+      const effJobLinks = resolveEffectiveProductLinks(catalog, matchedCatalogProd);
+      const effJobGuides = resolveEffectiveProductGuidelines(catalog, job.productGroupId, matchedCatalogProd);
+      const effectiveExpectedCartUrl = effJobLinks.isMultiComponentLinks
+        ? Array.from(new Set([job.cartUrl, ...effJobLinks.cartLinks.map(l => l.url)].filter(Boolean))).join('\n')
+        : job.cartUrl || undefined;
+      const customForbiddenClaims = [job.forbiddenClaims, effJobGuides.forbiddenClaims]
+        .filter(Boolean)
+        .join(',')
+        .split(/[,;\n]/)
+        .map(s => s.trim())
+        .filter(Boolean);
       const res = await fetch('/api/integrations/tiktok-koc/inspect-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -749,7 +798,14 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
           urls: [job.airLink.trim()],
           expectedHandle: d.kocHandle,
           expectedDeadline: job.deadline || undefined,
-          expectedCartUrl: job.cartUrl || undefined,
+          expectedCartUrl: effectiveExpectedCartUrl,
+          customForbiddenClaims,
+          requiredUspKeywords: [job.usp, findCatalogProduct(catalog, job.productName, job.productGroupId)?.product.detectKeywords]
+            .filter(Boolean)
+            .join(',')
+            .split(/[,;\n]/)
+            .map(s => s.trim())
+            .filter(Boolean),
           brandName: plan?.brandName,
         }),
       });
@@ -778,7 +834,29 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
           acceptance: {
             ...cur.acceptance,
             status: st,
-            checks: (r.checklist || []).map(c => ({ key: c.key, label: c.label, passed: c.passed, detail: c.detail })),
+            checks: [
+              ...(r.checklist || []).map(c => ({ key: c.key, label: c.label, passed: c.passed, detail: c.detail })),
+              ...(job.affiliateUrl || effJobLinks.affiliateLinks.length > 0
+                ? (() => {
+                    const matchedAff = effJobLinks.affiliateLinks.find(a => a.url === job.affiliateUrl);
+                    const airDate = (r.publishedDate || cur.airedAt || '').slice(0, 10);
+                    const isExpired = Boolean(matchedAff?.validTo && airDate && matchedAff.validTo < airDate);
+                    const hasAff = Boolean(job.affiliateUrl);
+                    return [
+                      {
+                        key: 'AFFILIATE_COMMISSION',
+                        label: 'Link Commission / Hoa hồng Affiliate',
+                        passed: hasAff && !isExpired,
+                        detail: !hasAff
+                          ? 'Chưa gắn Link Commission cho Job dù sản phẩm có cấu hình link hoa hồng'
+                          : isExpired
+                            ? `Cảnh báo: Link Commission đã hết hạn ngày ${matchedAff?.validTo} (trước ngày Air ${airDate})`
+                            : `Đã gắn Link Commission (${job.commissionPct !== null ? `${job.commissionPct}%` : 'Chưa ghi %'}) · ${matchedAff?.type === 'DESIGNATED' ? 'Hoa hồng chỉ định KOC' : 'Hoa hồng mở'}`,
+                      },
+                    ];
+                  })()
+                : []),
+            ],
             summary: r.verdictSummary || '',
             views: typeof r.viewsCount === 'number' ? r.viewsCount : null,
             isOnTime: typeof r.isOnTime === 'boolean' ? r.isOnTime : null,
@@ -1350,7 +1428,23 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     if (!job) return null;
 
     const setJob = (fn: (x: DealJob) => DealJob, log?: string) => patchJob(d.id, job.id, fn, log);
-    const prod = productsOfGroup(job.productGroupId).find(p => p.name === job.productName);
+    const prod =
+      productsOfGroup(job.productGroupId).find(p => p.name === job.productName) ||
+      findCatalogProduct(catalog, job.productName, job.productGroupId)?.product;
+    const effLinks = resolveEffectiveProductLinks(catalog, prod);
+    const sentCountsByProductKey: Record<string, number> = {};
+    for (const dealItem of deals) {
+      for (const jItem of dealItem.jobs || []) {
+        if (jItem.sample.status === 'SENT' || jItem.sample.status === 'RECEIVED') {
+          const found = findCatalogProduct(catalog, jItem.productName, jItem.productGroupId);
+          if (found) sentCountsByProductKey[found.product.id] = (sentCountsByProductKey[found.product.id] || 0) + 1;
+          const kName = (jItem.productName || '').trim().toLowerCase();
+          if (kName) sentCountsByProductKey[kName] = (sentCountsByProductKey[kName] || 0) + 1;
+        }
+      }
+    }
+    const sampleQuotaInfo = resolveEffectiveSampleQuota(catalog, prod, sentCountsByProductKey);
+    const substituteProd = prod?.substituteProductId ? findCatalogProduct(catalog, prod.substituteProductId) : null;
     const blocker = jobPaymentBlocker(job);
     const stage = jobStageOf(job);
     const fw = frameworks[normHandle(d.kocHandle)];
@@ -2171,25 +2265,37 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                   const s = slots.find(x => x.id === job.slotId);
                   if (!s) return;
                   const g = catalog.groups.find(x => x.id === s.productGroupId || (s.product && x.name === s.product));
+                  const nextGroupProds = g?.products || [];
+                  const matchedProd =
+                    nextGroupProds.find(p => p.id === s.productId) ||
+                    nextGroupProds.find(p => p.name === (s.sku || s.productName)) ||
+                    undefined;
                   setJob(
                     cur => ({
                       ...cur,
                       briefCode: s.briefCode || cur.briefCode,
+                      briefMode: resolveBriefMode(s),
                       pillar: s.pillar || cur.pillar,
                       angle: s.angle || cur.angle,
                       hook: s.hook || cur.hook,
                       usp: s.usp || g?.usp || cur.usp,
                       forbiddenClaims: s.forbiddenClaims || g?.forbiddenClaims || cur.forbiddenClaims,
+                      mandatoryShots: s.mandatoryShots || cur.mandatoryShots,
+                      rightsGuardrails: s.rightsGuardrails || cur.rightsGuardrails,
                       cta: s.cta || cur.cta,
                       briefUrl: s.briefUrl || cur.briefUrl,
                       week: s.week || cur.week,
                       pic: s.pic || cur.pic,
                       productGroupId: g?.id || cur.productGroupId,
                       productGroupName: g?.name || s.product || cur.productGroupName,
+                      productName: matchedProd?.name || s.sku || s.productName || cur.productName,
+                      cartUrl: s.cartUrl || cur.cartUrl,
+                      affiliateUrl: s.affiliateUrl || cur.affiliateUrl,
+                      commissionPct: s.commissionPct ?? cur.commissionPct,
                     }),
                     `Đồng bộ Brief ${s.briefCode || s.id} từ Plan cho ${job.code}`
                   );
-                  notify(`Đã đồng bộ Brief ${s.briefCode || ''} từ Plan vào ${job.code}.`, 'success');
+                  notify(`Đã đồng bộ Brief ${s.briefCode || ''} và sản phẩm từ Plan vào ${job.code}.`, 'success');
                 }}
               >
                 Đồng bộ lại từ Brief Plan
@@ -2198,7 +2304,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
           </div>
 
           <div className="space-y-3 rounded-md border border-line bg-sunken/50 p-3">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
               <Field
                 label={`Chọn dòng Định hướng / Brief mẫu từ Plan (${slots.length} dòng Brief · ${slots.reduce((sum, x) => sum + slotTargetQty(x), 0)} video)`}
                 className="md:col-span-2"
@@ -2213,22 +2319,34 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                       return;
                     }
                     const g = catalog.groups.find(x => x.id === s.productGroupId || (s.product && x.name === s.product));
+                    const nextGroupProds = g?.products || [];
+                    const matchedProd =
+                      nextGroupProds.find(p => p.id === s.productId) ||
+                      nextGroupProds.find(p => p.name === (s.sku || s.productName)) ||
+                      undefined;
                     setJob(
                       cur => ({
                         ...cur,
                         slotId: s.id,
                         briefCode: s.briefCode || cur.briefCode,
+                        briefMode: resolveBriefMode(s),
                         pillar: s.pillar || cur.pillar,
                         angle: s.angle || cur.angle,
                         hook: s.hook || cur.hook,
                         usp: s.usp || g?.usp || cur.usp,
                         forbiddenClaims: s.forbiddenClaims || g?.forbiddenClaims || cur.forbiddenClaims,
+                        mandatoryShots: s.mandatoryShots || cur.mandatoryShots,
+                        rightsGuardrails: s.rightsGuardrails || cur.rightsGuardrails,
                         cta: s.cta || cur.cta,
                         briefUrl: s.briefUrl || cur.briefUrl,
                         week: s.week || cur.week,
                         pic: s.pic || cur.pic,
                         productGroupId: g?.id || cur.productGroupId,
                         productGroupName: g?.name || s.product || cur.productGroupName,
+                        productName: matchedProd?.name || s.sku || s.productName || cur.productName,
+                        cartUrl: s.cartUrl || cur.cartUrl,
+                        affiliateUrl: s.affiliateUrl || cur.affiliateUrl,
+                        commissionPct: s.commissionPct ?? cur.commissionPct,
                       }),
                       `Gắn dòng Brief ${s.briefCode || s.id} vào ${job.code}`
                     );
@@ -2239,11 +2357,19 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                     const code = s.briefCode || `BR-${String(idx + 1).padStart(2, '0')}`;
                     const targetVideos = slotTargetQty(s);
                     const usedJobs = slotUsageCountMap.get(s.id) || 0;
-                    const readyLabel = isBriefReady(s) ? 'Đủ Brief' : 'Chưa soạn';
+                    const mode = resolveBriefMode(s);
+                    const readyLabel = isBriefReady(s)
+                      ? mode === 'VETTING_GUARDRAILS'
+                        ? 'Đủ Khung kiểm duyệt'
+                        : 'Đủ Brief'
+                      : 'Chưa soạn';
+                    const summaryText =
+                      mode === 'VETTING_GUARDRAILS'
+                        ? `[Khung kiểm duyệt KOL] ${s.usp || 'Chưa có USP'} · Cấm: ${s.forbiddenClaims || '—'}`
+                        : `${s.pillar || 'Chưa chọn trụ cột'} — ${s.angle || 'Chưa có góc nội dung'}`;
                     return (
                       <option key={s.id} value={s.id}>
-                        {code} · {s.week ? s.week.split(' ')[0] : 'Tuần ?'} · {s.row || 'Bậc ?'} ·{' '}
-                        {s.pillar || 'Chưa chọn trụ cột'} — {s.angle || 'Chưa có góc nội dung'} ({readyLabel}) [Đã gắn {usedJobs}/{targetVideos} video]
+                        {code} · {s.week ? s.week.split(' ')[0] : 'Tuần ?'} · {s.row || 'Bậc ?'} · {summaryText} ({readyLabel}) [Đã gắn {usedJobs}/{targetVideos} video]
                       </option>
                     );
                   })}
@@ -2256,66 +2382,149 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                   onChange={e => setJob(x => ({ ...x, briefCode: e.target.value }))}
                 />
               </Field>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <Field label="Trụ cột nội dung (Content Pillar)">
-                <Input
-                  value={job.pillar}
-                  placeholder="Review trải nghiệm thật / Giải quyết vấn đề..."
-                  onChange={e => setJob(x => ({ ...x, pillar: e.target.value }))}
-                />
-              </Field>
-              <Field label="Góc tiếp cận (Content Angle)">
-                <Input
-                  value={job.angle}
-                  placeholder="So sánh trước - sau 7 ngày / Test độ kiềm dầu..."
-                  onChange={e => setJob(x => ({ ...x, angle: e.target.value }))}
-                />
-              </Field>
-              <Field label="Link file Brief chi tiết">
-                <Input
-                  value={job.briefUrl}
-                  placeholder="https://docs.google.com/..."
-                  onChange={e => setJob(x => ({ ...x, briefUrl: e.target.value }))}
-                />
+              <Field label="Chế độ làm việc với KOC / KOL">
+                <Select
+                  value={job.briefMode || (isVettingGuardrailRow(String(d.grade)) ? 'VETTING_GUARDRAILS' : 'DIRECTIVE')}
+                  onChange={e =>
+                    setJob(x => ({
+                      ...x,
+                      briefMode: e.target.value as 'DIRECTIVE' | 'VETTING_GUARDRAILS',
+                    }))
+                  }
+                >
+                  <option value="DIRECTIVE">Định hướng kịch bản chi tiết (FOC / KL1–KL5)</option>
+                  <option value="VETTING_GUARDRAILS">Khung tham số kiểm duyệt KOL (KL6 / KL7)</option>
+                </Select>
               </Field>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <Field label="Câu mở đầu 3 giây đầu (Hook)">
-                <Textarea
-                  rows={2}
-                  value={job.hook}
-                  placeholder="Mở đầu giữ chân người xem 3s đầu..."
-                  onChange={e => setJob(x => ({ ...x, hook: e.target.value }))}
-                />
-              </Field>
-              <Field label="Điểm bán hàng chính (Key USP)">
-                <Textarea
-                  rows={2}
-                  value={job.usp}
-                  placeholder="Thành phần, công dụng, ưu đãi cần nhấn mạnh..."
-                  onChange={e => setJob(x => ({ ...x, usp: e.target.value }))}
-                />
-              </Field>
-              <Field label="Claim cấm / Từ khóa cấm (Do &amp; Don't)">
-                <Textarea
-                  rows={2}
-                  value={job.forbiddenClaims || ''}
-                  placeholder="Cấm cam kết trị dứt điểm 100%, cấm nhắc đối thủ..."
-                  onChange={e => setJob(x => ({ ...x, forbiddenClaims: e.target.value }))}
-                />
-              </Field>
-              <Field label="Kêu gọi hành động (CTA)">
-                <Textarea
-                  rows={2}
-                  value={job.cta}
-                  placeholder="Bấm giỏ hàng góc trái nhận voucher..."
-                  onChange={e => setJob(x => ({ ...x, cta: e.target.value }))}
-                />
-              </Field>
-            </div>
+            {(job.briefMode || (isVettingGuardrailRow(String(d.grade)) ? 'VETTING_GUARDRAILS' : 'DIRECTIVE')) === 'VETTING_GUARDRAILS' ? (
+              <div className="space-y-3 rounded-md border border-accent/40 bg-accent-soft/20 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <span className="font-semibold text-ink">
+                    Bộ tham số kiểm duyệt KOL ({d.grade || 'KL6 / KL7'} · Tôn trọng văn phong riêng của KOL — Kiểm soát ranh giới Brand &amp; Khung hình bắt buộc)
+                  </span>
+                  <Field label="Link file Guideline / Brief Brand" className="w-72">
+                    <Input
+                      value={job.briefUrl}
+                      placeholder="https://docs.google.com/..."
+                      onChange={e => setJob(x => ({ ...x, briefUrl: e.target.value }))}
+                    />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <Field label="1. Điểm bán hàng bắt buộc (Key USP)">
+                    <Textarea
+                      rows={2}
+                      value={job.usp}
+                      placeholder="Thông điệp cốt lõi, hoạt chất chính hoặc ưu đãi chiến dịch bắt buộc KOL nhắc tới..."
+                      onChange={e => setJob(x => ({ ...x, usp: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label="2. Từ cấm &amp; Ranh giới Brand (Do &amp; Don't)">
+                    <Textarea
+                      rows={2}
+                      value={job.forbiddenClaims || ''}
+                      placeholder="Cấm cam kết trị dứt điểm 100%, cấm nhắc tên đối thủ trực tiếp, cấm từ nhạy cảm y khoa..."
+                      onChange={e => setJob(x => ({ ...x, forbiddenClaims: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label="3. Yêu cầu khung hình &amp; Hiện diện sản phẩm bắt buộc (Mandatory Shots)">
+                    <Textarea
+                      rows={2}
+                      value={job.mandatoryShots || ''}
+                      placeholder="Có cảnh test texture trên da thật, rõ logo sản phẩm tối thiểu 3 giây, trang phục lịch sự..."
+                      onChange={e => setJob(x => ({ ...x, mandatoryShots: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label="4. Điều khoản bản quyền, Mã Spark Ads &amp; Độc quyền ngành hàng">
+                    <Textarea
+                      rows={2}
+                      value={job.rightsGuardrails || ''}
+                      placeholder="Cấp mã Spark Ads 30–60 ngày, giữ video tối thiểu 90 ngày, không nhận nhãn đối thủ cùng ngách trong ±7 ngày..."
+                      onChange={e => setJob(x => ({ ...x, rightsGuardrails: e.target.value }))}
+                    />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <Field label="Chủ đề / Định hướng tham khảo (Không bắt buộc)">
+                    <Input
+                      value={job.pillar}
+                      placeholder="Chủ đề gợi ý cho KOL (nếu có)..."
+                      onChange={e => setJob(x => ({ ...x, pillar: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Kêu gọi hành động &amp; Gắn giỏ (CTA)">
+                    <Input
+                      value={job.cta}
+                      placeholder="Gắn giỏ hàng góc trái / Link bio..."
+                      onChange={e => setJob(x => ({ ...x, cta: e.target.value }))}
+                    />
+                  </Field>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <Field label="Trụ cột nội dung (Content Pillar)">
+                    <Input
+                      value={job.pillar}
+                      placeholder="Review trải nghiệm thật / Giải quyết vấn đề..."
+                      onChange={e => setJob(x => ({ ...x, pillar: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Góc tiếp cận (Content Angle)">
+                    <Input
+                      value={job.angle}
+                      placeholder="So sánh trước - sau 7 ngày / Test độ kiềm dầu..."
+                      onChange={e => setJob(x => ({ ...x, angle: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Link file Brief chi tiết">
+                    <Input
+                      value={job.briefUrl}
+                      placeholder="https://docs.google.com/..."
+                      onChange={e => setJob(x => ({ ...x, briefUrl: e.target.value }))}
+                    />
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <Field label="Câu mở đầu 3 giây đầu (Hook)">
+                    <Textarea
+                      rows={2}
+                      value={job.hook}
+                      placeholder="Mở đầu giữ chân người xem 3s đầu..."
+                      onChange={e => setJob(x => ({ ...x, hook: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Điểm bán hàng chính (Key USP)">
+                    <Textarea
+                      rows={2}
+                      value={job.usp}
+                      placeholder="Thành phần, công dụng, ưu đãi cần nhấn mạnh..."
+                      onChange={e => setJob(x => ({ ...x, usp: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Claim cấm / Từ khóa cấm (Do &amp; Don't)">
+                    <Textarea
+                      rows={2}
+                      value={job.forbiddenClaims || ''}
+                      placeholder="Cấm cam kết trị dứt điểm 100%, cấm nhắc đối thủ..."
+                      onChange={e => setJob(x => ({ ...x, forbiddenClaims: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Kêu gọi hành động (CTA)">
+                    <Textarea
+                      rows={2}
+                      value={job.cta}
+                      placeholder="Bấm giỏ hàng góc trái nhận voucher..."
+                      onChange={e => setJob(x => ({ ...x, cta: e.target.value }))}
+                    />
+                  </Field>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -2324,6 +2533,8 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                 value={job.productGroupId}
                 onChange={e => {
                   const g = catalog.groups.find(x => x.id === e.target.value);
+                  const defCart = undefined as { url?: string } | undefined;
+                  const defAff = undefined as { url?: string; commissionPct?: number | null } | undefined;
                   setJob(x => ({
                     ...x,
                     productGroupId: g?.id || '',
@@ -2331,9 +2542,9 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                     usp: x.usp || g?.usp || '',
                     forbiddenClaims: x.forbiddenClaims || g?.forbiddenClaims || '',
                     productName: '',
-                    cartUrl: '',
-                    affiliateUrl: '',
-                    commissionPct: null,
+                    cartUrl: defCart?.url || '',
+                    affiliateUrl: defAff?.url || '',
+                    commissionPct: defAff?.commissionPct ?? null,
                   }));
                 }}
               >
@@ -2349,7 +2560,24 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
               <Select
                 value={job.productName}
                 disabled={!job.productGroupId}
-                onChange={e => setJob(x => ({ ...x, productName: e.target.value, cartUrl: '', affiliateUrl: '', commissionPct: null }))}
+                onChange={e => {
+                  const nextName = e.target.value;
+                  const nextProd = findCatalogProduct(catalog, nextName, job.productGroupId)?.product;
+                  const nextGuides = resolveEffectiveProductGuidelines(catalog, job.productGroupId, nextProd);
+                  const nextLinks = resolveEffectiveProductLinks(catalog, nextProd);
+                  const targetPlat = job.commercePlatform === 'SHOPEE' ? 'Shopee' : 'TikTok Shop';
+                  const defCart = nextLinks.cartLinks.find(l => l.platform === targetPlat) || nextLinks.cartLinks[0];
+                  const defAff = nextLinks.affiliateLinks.find(l => l.platform === targetPlat) || nextLinks.affiliateLinks[0];
+                  setJob(x => ({
+                    ...x,
+                    productName: nextName,
+                    usp: nextGuides.usp || x.usp,
+                    forbiddenClaims: nextGuides.forbiddenClaims || x.forbiddenClaims,
+                    cartUrl: defCart?.url || '',
+                    affiliateUrl: defAff?.url || '',
+                    commissionPct: defAff?.commissionPct ?? null,
+                  }));
+                }}
               >
                 <option value="">Chọn sản phẩm</option>
                 {productsOfGroup(job.productGroupId).map(p => (
@@ -2362,7 +2590,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
             <Field label="Link giỏ hàng">
               <Select value={job.cartUrl} disabled={!prod} onChange={e => setJob(x => ({ ...x, cartUrl: e.target.value }))}>
                 <option value="">Chọn link giỏ hàng</option>
-                {(prod?.cartLinks || []).map(l => (
+                {effLinks.cartLinks.map(l => (
                   <option key={l.id} value={l.url}>
                     {l.platform} · {l.storeName || l.url}
                   </option>
@@ -2374,12 +2602,12 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                 value={job.affiliateUrl}
                 disabled={!prod}
                 onChange={e => {
-                  const l = prod?.affiliateLinks.find(a => a.url === e.target.value);
+                  const l = effLinks.affiliateLinks.find(a => a.url === e.target.value);
                   setJob(x => ({ ...x, affiliateUrl: l?.url || '', commissionPct: l ? l.commissionPct : null }));
                 }}
               >
                 <option value="">Chọn link affiliate</option>
-                {(prod?.affiliateLinks || []).map(l => (
+                {effLinks.affiliateLinks.map(l => (
                   <option key={l.id} value={l.url}>
                     {l.label || l.platform} · {l.commissionPct === null ? 'chưa có hoa hồng' : `${l.commissionPct}%`}
                   </option>
@@ -2388,6 +2616,92 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
             </Field>
           </div>
           {job.affiliateUrl && <div className="text-xs text-ink-2">Hoa hồng đã chốt cho Job: {job.commissionPct === null ? '—' : `${job.commissionPct}%`}</div>}
+          {prod && (
+            <div className="space-y-2 rounded-md border border-line bg-sunken/40 p-2.5 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2 text-ink-2">
+                  <span className="font-semibold text-ink">
+                    {prod.productType === 'HARD_BUNDLE'
+                      ? 'Combo có link riêng trên sàn'
+                      : prod.productType === 'ROUTINE_COMBO'
+                        ? `Combo Routine (${(prod.bundleComponents || []).length} món lẻ)`
+                        : 'SKU đơn lẻ'}
+                  </span>
+                  <span>· Vai trò: <strong>{prod.role || 'HERO'}</strong></span>
+                  {prod.originalPrice ? <span>· Giá niêm yết: <strong>{fmt(prod.originalPrice)}đ</strong></span> : null}
+                  {prod.promoPrice ? <span>· Giá Deal: <strong>{fmt(prod.promoPrice)}đ</strong></span> : null}
+                  {sampleQuotaInfo.quota !== null && (
+                    <span>
+                      · Hàng mẫu tháng: Đã gửi <strong>{sampleQuotaInfo.sent}</strong> / Quota <strong>{sampleQuotaInfo.quota}</strong> (Còn lại:{' '}
+                      <strong className={sampleQuotaInfo.remaining === 0 ? 'text-critical' : 'text-ink'}>{sampleQuotaInfo.remaining}</strong> bộ)
+                    </span>
+                  )}
+                </div>
+              </div>
+              {effLinks.isMultiComponentLinks && effLinks.cartLinks.length > 0 && (
+                <div className="rounded border border-line bg-surface px-2.5 py-1.5 text-ink-2">
+                  <span className="font-semibold text-ink">Danh sách link các món trong Combo Routine ({effLinks.cartLinks.length} giỏ hàng): </span>
+                  {effLinks.cartLinks.map((cl, idx) => (
+                    <span key={cl.id} className="mr-2 inline-block">
+                      {idx + 1}. {cl.note || cl.platform}: <span className="underline">{cl.url}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {sampleQuotaInfo.hasOutOfStockComponent && (
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded border border-critical/40 bg-critical/10 px-2.5 py-1.5 text-critical">
+                  <span>
+                    Cảnh báo: Sản phẩm hoặc món thành phần ({sampleQuotaInfo.outOfStockComponentNames.join(', ')}) đang <strong>Tạm hết hàng</strong>.
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {job.sample.status !== 'OUT_OF_STOCK' && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() =>
+                          setJob(
+                            x => ({ ...x, sample: { ...x.sample, status: 'OUT_OF_STOCK', at: getVietnamDateYmd() } }),
+                            `Tạm dừng SLA ${job.code} do sản phẩm hết hàng`
+                          )
+                        }
+                      >
+                        Bật trạng thái Brand hết hàng (Dừng SLA)
+                      </Button>
+                    )}
+                    {substituteProd && (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => {
+                          const subGuides = resolveEffectiveProductGuidelines(catalog, substituteProd.group.id, substituteProd.product);
+                          const subLinks = resolveEffectiveProductLinks(catalog, substituteProd.product);
+                          const targetPlat = job.commercePlatform === 'SHOPEE' ? 'Shopee' : 'TikTok Shop';
+                          const defCart = subLinks.cartLinks.find(l => l.platform === targetPlat) || subLinks.cartLinks[0];
+                          const defAff = subLinks.affiliateLinks.find(l => l.platform === targetPlat) || subLinks.affiliateLinks[0];
+                          setJob(
+                            x => ({
+                              ...x,
+                              productGroupId: substituteProd.group.id,
+                              productGroupName: substituteProd.group.name,
+                              productName: substituteProd.product.name,
+                              usp: subGuides.usp || x.usp,
+                              forbiddenClaims: subGuides.forbiddenClaims || x.forbiddenClaims,
+                              cartUrl: defCart?.url || '',
+                              affiliateUrl: defAff?.url || '',
+                              commissionPct: defAff?.commissionPct ?? null,
+                            }),
+                            `Đổi sản phẩm của ${job.code} sang SKU thay thế "${substituteProd.product.name}"`
+                          );
+                        }}
+                      >
+                        Đổi sang SKU thay thế: {substituteProd.product.name}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 gap-3 border-t border-line pt-3 md:grid-cols-4">
             <Field label="Hàng mẫu (SLA gửi ≤ 2 ngày)">
@@ -3225,6 +3539,9 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                <Button size="sm" variant="secondary" onClick={() => setPullHangingOpen(true)}>
+                  Kéo Job còn treo từ tháng cũ
+                </Button>
                 <Button size="sm" variant="secondary" disabled={syncingLark32} onClick={() => void syncJobsToLark32BookingList()}>
                   {syncingLark32 ? 'Đang đồng bộ Lark 3.2…' : 'Đồng bộ Lark 3.2 List duyệt book (Cả FOC 0đ)'}
                 </Button>
@@ -3292,6 +3609,11 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                   {s.label}: {summary.byStage[s.key]} Job
                 </span>
               ))}
+              {summary.carryOverJobsCount > 0 && (
+                <span className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 font-medium text-amber-900">
+                  Job tồn tháng cũ xử lý tiếp: {summary.carryOverAiredCount}/{summary.carryOverJobsCount} đã Air ({fmt(summary.carryOverFee)}đ · Ngân sách thuộc tháng cũ)
+                </span>
+              )}
             </div>
 
             {issues.length > 0 && (
@@ -3489,6 +3811,11 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                                 >
                                   <td className={`${TD} pl-7 text-xs font-medium text-ink-2`}>
                                     <div>{job.code}</div>
+                                    {job.sourcePlanMonth && (
+                                      <div className="mt-0.5 inline-block rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-2xs font-semibold text-amber-900">
+                                        Tồn kỳ {job.sourcePlanMonth}
+                                      </div>
+                                    )}
                                     {job.isPostAirUpsell && <div className="text-2xs text-accent">Phụ lục sau Air</div>}
                                     {job.isLivestreamJob && <div className="text-2xs text-ink">Phiên Livestream</div>}
                                   </td>
@@ -3509,6 +3836,14 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                                         <div className="max-w-[200px] truncate text-2xs text-ink-3">
                                           {[displayPillar, displayAngle].filter(Boolean).join(' — ') || 'Đã gắn Brief'}
                                         </div>
+                                      </div>
+                                    ) : job.sourcePlanMonth ? (
+                                      <div>
+                                        <div className="text-xs font-semibold text-amber-900">
+                                          Kéo từ {job.sourcePlanMonth}
+                                          {job.week ? ` · ${job.week.split(' ')[0]}` : ''}
+                                        </div>
+                                        <div className="text-2xs text-ink-3">Ngân sách thuộc {job.sourcePlanMonth}</div>
                                       </div>
                                     ) : (
                                       <span className="text-xs text-critical">Chưa gắn Brief</span>
@@ -3838,7 +4173,19 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
         onClose={() => setScreenshotTarget(null)}
         initialVideoUrl={screenshotTarget?.job.airLink || ''}
         productName={
-          screenshotTarget?.job.productName ||
+          [
+            screenshotTarget?.job.productName ||
+              screenshotTarget?.job.productGroupName ||
+              screenshotTarget?.deal.productName ||
+              screenshotTarget?.deal.productGroupName ||
+              plan?.brandName ||
+              '',
+            screenshotTarget
+              ? findCatalogProduct(catalog, screenshotTarget.job.productName, screenshotTarget.job.productGroupId)?.product.detectKeywords
+              : '',
+          ]
+            .filter(Boolean)
+            .join(', ') ||
           screenshotTarget?.job.productGroupName ||
           screenshotTarget?.deal.productName ||
           screenshotTarget?.deal.productGroupName ||
@@ -3846,14 +4193,14 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
           ''
         }
         brandName={plan?.brandName || ''}
-        dealId={screenshotTarget ? `${screenshotTarget.deal.id}:${screenshotTarget.job.id}` : undefined}
-        dealCode={screenshotTarget ? `${screenshotTarget.deal.code}-${screenshotTarget.job.code}` : undefined}
+        dealId={screenshotTarget ? `PJ-${screenshotTarget.job.id}` : undefined}
+        dealCode={screenshotTarget ? screenshotTarget.job.code : undefined}
         authorHandle={screenshotTarget?.deal.kocHandle}
         existingScreenshots={
           screenshotTarget
             ? findSavedScreenshotsForContext({
-                dealId: `${screenshotTarget.deal.id}:${screenshotTarget.job.id}`,
-                dealCode: `${screenshotTarget.deal.code}-${screenshotTarget.job.code}`,
+                dealId: `PJ-${screenshotTarget.job.id}`,
+                dealCode: screenshotTarget.job.code,
                 authorHandle: screenshotTarget.deal.kocHandle,
                 videoUrl: screenshotTarget.job.airLink,
               })
@@ -3893,6 +4240,21 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
             : undefined
         }
       />
+
+      {plan && (
+        <PullHangingJobsModal
+          open={pullHangingOpen}
+          onClose={() => setPullHangingOpen(false)}
+          plan={plan}
+          canMergeIntoBreakdown={false}
+          onPulledSuccess={({ updatedDealBoardData }) => {
+            if (updatedDealBoardData) {
+              update(updatedDealBoardData as DealBoardData);
+            }
+          }}
+          onNotify={(msg, tone) => notify(msg, tone || 'info')}
+        />
+      )}
     </div>
   );
 };

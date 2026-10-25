@@ -3,3 +3,4 @@ const slug = (planId: string) => planId.toLowerCase().replace(/[^a-z0-9]+/g, '-'
 
 export const listingBoardKey = (planId: string) => `listing-board-${slug(planId)}`;
 export const dealBoardKey = (planId: string) => `deal-board-${slug(planId)}`;
+export const selfChannelBoardKey = (planId: string) => `self-channel-board-${slug(planId)}`;

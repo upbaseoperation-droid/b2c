@@ -64,6 +64,21 @@ export interface DocTable {
 }
 export type DocBlock = DocParagraph | DocTable;
 export type ContractCategory = 'BOOKING_VIDEO' | 'ACCEPTANCE_SETTLEMENT' | 'CTV_FRAMEWORK' | 'LIVESTREAM_APPENDIX';
+
+/** Danh sách 11 biểu mẫu chuẩn thế hệ mới (HĐNT -> Phụ lục SOW -> BBNT) áp dụng cho vận hành Booking B2C */
+export const OFFICIAL_3STAGE_TEMPLATE_IDS = [
+  'IND-HDNT',
+  'IND-SOW',
+  'IND-VID-BBNT',
+  'HKD-HDNT',
+  'HKD-SOW',
+  'HKD-VID-BBNT',
+  'COM-HDNT',
+  'COM-SOW',
+  'COM-VID-BBNT',
+  'CTV-HDNT',
+  'CTV-VID-BBNT',
+] as const;
 export interface TemplateVersionHistoryItem {
   version: string;
   hash: string;

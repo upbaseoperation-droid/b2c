@@ -4,11 +4,11 @@
  * Đảm bảo áp dụng chính xác 100% bộ 8 biểu mẫu chuẩn Ver052026 và quy tắc pháp lý BR-01, BR-03, BR-04, BR-05.
  */
 
-import type { BookingDealItem, KocItem } from '../../lib/types';
-import type { ContractField, ContractRecord, ContractRole, FieldGroup, LegalTemplate, ReviewStep } from '../../lib/contracts/types';
+import type { BookingDealItem, KocItem, KocLegalProfile } from '../../lib/types';
+import { OFFICIAL_3STAGE_TEMPLATE_IDS, type ContractField, type ContractRecord, type ContractRole, type FieldGroup, type LegalTemplate, type ReviewStep } from '../../lib/contracts/types';
 import type { StatusTone } from '../ui';
 import { formatNumber, getVietnamDateYmd } from '../../lib/format';
-import { legalTypeOf } from '../koc/kocUtils';
+import { getKocLegalProfiles, legalTypeOf } from '../koc/kocUtils';
 import { OFFICIAL_TEMPLATES_SNAPSHOT } from '../../lib/contracts/builtInTemplatesSnapshot';
 import {
   calculateContractTax,
@@ -25,6 +25,7 @@ export {
   detectSubjectKind,
   evaluateContractRules,
   numberToVietnameseWords,
+  OFFICIAL_3STAGE_TEMPLATE_IDS,
   type ContractRuleEvaluation,
   type SubjectKind,
   type TaxCalculationResult,
@@ -344,8 +345,56 @@ export function buildJobAcceptanceBreakdown(
   };
 }
 
+/**
+ * Xác định hồ sơ pháp lý đang áp dụng cho KOC / Booking (1 KOC -> N KocLegalProfile).
+ * Ưu tiên: legalProfileId chỉ định -> deal.legalProfileId -> deal.legalProfileSnapshot -> hồ sơ mặc định của KOC.
+ */
+export function resolveActiveLegalProfile(
+  koc?: KocItem,
+  deal?: BookingDealItem,
+  legalProfileId?: string,
+): KocLegalProfile | undefined {
+  const profiles = koc ? getKocLegalProfiles(koc) : [];
+  const targetId = legalProfileId || deal?.legalProfileId;
+  const matched =
+    (targetId ? profiles.find(p => p.id === targetId) : undefined) ||
+    (deal?.legalProfileSnapshot?.legalType
+      ? profiles.find(p => p.legalType === deal.legalProfileSnapshot?.legalType)
+      : undefined) ||
+    profiles.find(p => p.isDefault) ||
+    profiles[0];
+
+  const snap = deal?.legalProfileSnapshot;
+  if (!matched && !snap) return undefined;
+
+  return {
+    id: matched?.id || targetId || 'snap-profile',
+    profileCode: snap?.profileCode || matched?.profileCode || 'HSPL-01',
+    status: matched?.status || 'ACTIVE',
+    legalType: snap?.legalType || matched?.legalType || (koc ? legalTypeOf(koc) : 'INDIVIDUAL'),
+    holderName: snap?.holderName || matched?.holderName || koc?.companyName || koc?.realName || koc?.stageName || '',
+    taxCode: (snap?.legalType !== 'INDIVIDUAL' ? snap?.legalId : undefined) || matched?.taxCode || koc?.taxCode,
+    cccd: deal?.kocIdCardNumber || (snap?.legalType === 'INDIVIDUAL' ? snap?.legalId : undefined) || matched?.cccd || koc?.cccd,
+    cccdIssueDate: snap?.cccdIssueDate || matched?.cccdIssueDate || koc?.issueDate,
+    cccdIssuePlace: snap?.cccdIssuePlace || matched?.cccdIssuePlace || koc?.issuePlace,
+    representativeName: snap?.representativeName || matched?.representativeName || koc?.legalRepresentative,
+    representativeTitle: snap?.representativeTitle || matched?.representativeTitle,
+    authorizationNumber: matched?.authorizationNumber,
+    authorizationDate: matched?.authorizationDate,
+    registeredAddress: snap?.registeredAddress || matched?.registeredAddress || koc?.permanentAddress,
+    bankName: deal?.kocBankName || snap?.bankName || matched?.bankName || koc?.bankName,
+    bankAccount: deal?.kocBankAccount || snap?.bankAccount || matched?.bankAccount || koc?.bankAccount,
+    bankHolderName: deal?.kocBankHolder || snap?.bankHolderName || matched?.bankHolderName || snap?.holderName || matched?.holderName,
+    taxAccountType: snap?.taxAccountType || matched?.taxAccountType || koc?.taxAccountType || '',
+    relationshipNote: matched?.relationshipNote || 'Chính chủ KOC',
+    isDefault: matched?.isDefault ?? true,
+  };
+}
+
 /** Tên đối tác hiển thị trên hồ sơ: tên pháp lý nếu có, không thì tên kênh. */
-export function partnerName(koc: KocItem | undefined, deal?: BookingDealItem): string {
+export function partnerName(koc: KocItem | undefined, deal?: BookingDealItem, legalProfileId?: string): string {
+  const activeProfile = resolveActiveLegalProfile(koc, deal, legalProfileId);
+  if (activeProfile?.holderName?.trim()) return activeProfile.holderName.trim();
   if (!koc) return deal?.kocStageName || '';
   const type = legalTypeOf(koc);
   return (type === 'INDIVIDUAL' ? koc.realName : koc.companyName || koc.realName) || koc.stageName;
@@ -370,14 +419,25 @@ export function prefill(
     existingRecords?: ContractRecord[];
     parentRecord?: ContractRecord;
     parentFields?: ContractField[];
+    legalProfileId?: string;
+    ctvAcceptedDeals?: BookingDealItem[];
   }
 ) {
   const { koc, deal, existingRecords = [], parentRecord } = ctx;
   const d = ctx.today || new Date();
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const subjectKind = detectSubjectKind(koc, deal);
-  const type = koc ? legalTypeOf(koc) : 'INDIVIDUAL';
+  const activeProfile = resolveActiveLegalProfile(koc, deal, ctx.legalProfileId);
+  const baseSubjectKind = detectSubjectKind(koc, deal);
+  const subjectKind: SubjectKind =
+    baseSubjectKind === 'CTV'
+      ? 'CTV'
+      : activeProfile?.legalType === 'COMPANY'
+        ? 'COM'
+        : activeProfile?.legalType === 'HOUSEHOLD'
+          ? 'HKD'
+          : baseSubjectKind;
+  const type = activeProfile?.legalType || (koc ? legalTypeOf(koc) : 'INDIVIDUAL');
   const quantity = deal?.committedOutputsCount || 1;
   const todayDocDate = `${dd}.${mm}.${String(d.getFullYear()).slice(2)}`;
   const hasSeparateParentDateToken = fields.some(
@@ -517,10 +577,13 @@ export function prefill(
     return rawId;
   };
 
+  const resolvedCccd = activeProfile?.cccd || koc?.cccd || deal?.kocIdCardNumber || '';
+  const resolvedIssueDate = activeProfile?.cccdIssueDate || koc?.issueDate || '';
+  const resolvedIssuePlace = activeProfile?.cccdIssuePlace || koc?.issuePlace || '';
   const cccdWithIssue = (f: ContractField) =>
-    koc?.cccd && f.start !== undefined && (koc.issueDate || koc.issuePlace)
-      ? [koc.cccd, koc.issueDate && `cấp ngày ${koc.issueDate}`, koc.issuePlace && `tại ${koc.issuePlace}`].filter(Boolean).join(' ')
-      : koc?.cccd || parentValueBySource('cccd') || '';
+    resolvedCccd && f.start !== undefined && (resolvedIssueDate || resolvedIssuePlace)
+      ? [resolvedCccd, resolvedIssueDate && `cấp ngày ${resolvedIssueDate}`, resolvedIssuePlace && `tại ${resolvedIssuePlace}`].filter(Boolean).join(' ')
+      : resolvedCccd || parentValueBySource('cccd') || '';
 
   const effectiveBrand = ctx.brand || deal?.brandName || effectiveParentRecord?.brand || frameworkRecord?.brand || '';
   const brandCode =
@@ -532,22 +595,63 @@ export function prefill(
     const title = (f.title || f.label || '').toLowerCase();
     const context = (f.context || '').toLowerCase();
 
-    // 1. Phân loại theo source có sẵn (ưu tiên KOC/Deal, dự phòng từ SOW / HĐNT gốc)
+    // 1. Phân loại theo source có sẵn (ưu tiên Hồ sơ pháp lý được chọn / Deal / KOC, dự phòng từ SOW / HĐNT gốc)
     switch (f.source) {
       case 'partyName':
-        return (koc ? (type === 'INDIVIDUAL' ? koc.realName : koc.companyName || koc.realName || '') : '') || parentValueBySource('partyName') || effectiveParentRecord?.partner || frameworkRecord?.partner || '';
+        return (
+          activeProfile?.holderName ||
+          (koc ? (type === 'INDIVIDUAL' ? koc.realName : koc.companyName || koc.realName || '') : '') ||
+          deal?.kocStageName ||
+          parentValueBySource('partyName') ||
+          effectiveParentRecord?.partner ||
+          frameworkRecord?.partner ||
+          ''
+        );
       case 'ownerName':
-        return koc?.legalRepresentative || koc?.realName || koc?.stageName || parentValueBySource('ownerName') || '';
+        // Trên COM-HDNT và COM-SOW, dòng "Tên/Nghệ danh KOL/KOC/Talent" dùng source=ownerName -> ưu tiên Nghệ danh KOC
+        if (/nghệ danh|talent/i.test(title) || /nghệ danh|talent/i.test(f.label)) {
+          return (
+            koc?.stageName ||
+            deal?.kocStageName ||
+            parentValueByTitleContains('nghệ danh') ||
+            koc?.realName ||
+            ''
+          );
+        }
+        return (
+          activeProfile?.representativeName ||
+          koc?.legalRepresentative ||
+          koc?.realName ||
+          activeProfile?.holderName ||
+          parentValueBySource('ownerName') ||
+          ''
+        );
       case 'representative':
-        return koc?.legalRepresentative || koc?.realName || parentValueBySource('representative') || '';
+        return (
+          activeProfile?.representativeName ||
+          koc?.legalRepresentative ||
+          koc?.realName ||
+          parentValueBySource('representative') ||
+          ''
+        );
       case 'cccd':
+        // Trên COM-VID-BBNT, ô định danh doanh nghiệp mang nhãn gốc CCCD -> tự điền Mã số thuế doanh nghiệp
+        if (subjectKind === 'COM' || type === 'COMPANY') {
+          return (
+            activeProfile?.taxCode ||
+            koc?.taxCode ||
+            parentValueBySource('taxCode') ||
+            parentValueBySource('cccd') ||
+            cccdWithIssue(f)
+          );
+        }
         return cccdWithIssue(f);
       case 'taxCode':
-        return koc?.taxCode || parentValueBySource('taxCode') || '';
+        return activeProfile?.taxCode || koc?.taxCode || parentValueBySource('taxCode') || '';
       case 'address':
-        return koc?.permanentAddress || parentValueBySource('address') || '';
+        return activeProfile?.registeredAddress || koc?.permanentAddress || parentValueBySource('address') || '';
       case 'phone':
-        return koc?.phone || parentValueBySource('phone') || '';
+        return koc?.phone || deal?.sampleRecipientPhone || parentValueBySource('phone') || '';
       case 'email':
         return koc?.email || parentValueBySource('email') || '';
       case 'channelLink': {
@@ -562,6 +666,9 @@ export function prefill(
       }
       case 'bankAccountName':
         return (
+          deal?.kocBankHolder ||
+          activeProfile?.bankHolderName ||
+          activeProfile?.holderName ||
           effectiveParentRecord?.values['token:[Tên chủ tài khoản]'] ||
           frameworkRecord?.values['token:[Tên chủ tài khoản]'] ||
           parentValueBySource('bankAccountName') ||
@@ -571,6 +678,8 @@ export function prefill(
         );
       case 'bankAccountNumber':
         return (
+          deal?.kocBankAccount ||
+          activeProfile?.bankAccount ||
           koc?.bankAccount ||
           effectiveParentRecord?.values['token:[Số tài khoản]'] ||
           frameworkRecord?.values['token:[Số tài khoản]'] ||
@@ -579,6 +688,8 @@ export function prefill(
         );
       case 'bankName':
         return (
+          deal?.kocBankName ||
+          activeProfile?.bankName ||
           koc?.bankName ||
           effectiveParentRecord?.values['token:[Tại Ngân hàng]'] ||
           frameworkRecord?.values['token:[Tại Ngân hàng]'] ||
@@ -705,17 +816,33 @@ export function prefill(
     if (title.includes('bằng chữ') || context.includes('bằng chữ')) {
       return tax.amountInWords;
     }
+    // Hoa hồng organic (%) và Hoa hồng chạy ads (%) trên SOW
+    if (title.includes('hoa hồng organic')) {
+      const pct = deal?.organicCommissionPct ?? koc?.avgCommissionPct;
+      return pct !== undefined ? String(pct) : parentValueByTitleContains('hoa hồng organic') || '0';
+    }
+    if (title.includes('hoa hồng chạy ads')) {
+      const pct = deal?.adsCommissionPct ?? deal?.organicCommissionPct ?? koc?.avgCommissionPct;
+      return pct !== undefined ? String(pct) : parentValueByTitleContains('hoa hồng chạy ads') || '0';
+    }
+    if (title.includes('hoa hồng affiliate')) {
+      const pct = deal?.organicCommissionPct ?? koc?.avgCommissionPct;
+      return pct !== undefined ? String(pct) : '0';
+    }
     // Số tiền tạm ứng lần 1
     if (title.includes('tạm ứng lần 1') || context.includes('tạm ứng lần 1') || title.includes('lần 1 tạm ứng')) {
       return money(advanceAmount);
     }
     // Số tiền còn lại / thanh toán đợt 2
-    if (title.includes('còn lại') || title.includes('đợt 2') || title.includes('lần 2')) {
+    if ((title.includes('còn lại') || title.includes('đợt 2') || title.includes('lần 2')) && f.kind === 'money') {
       return money(tax.grossTotalContract - advanceAmount);
     }
-    // Số ngày tạm ứng / thanh toán
-    if (title.includes('hạn tạm ứng') || title.includes('hạn thanh toán')) {
-      return '05';
+    // Số ngày tạm ứng / thanh toán (kế thừa từ HĐNT khung nếu có, mặc định 05 ngày làm việc)
+    if (title.includes('hạn tạm ứng')) {
+      return parentValueByTitleContains('hạn tạm ứng') || '05';
+    }
+    if (title.includes('hạn thanh toán')) {
+      return parentValueByTitleContains('hạn thanh toán') || '05';
     }
     // Mã quảng cáo (Spark Ads) - Số ngày
     if (title.includes('mã quảng cáo') || context.includes('mã code để chạy quảng cáo')) {
@@ -741,23 +868,46 @@ export function prefill(
     if (title.includes('thời lượng lên hình tối thiểu')) {
       return '60';
     }
-    // CTV dòng 1
-    if (title === 'dòng 1 · nhãn hàng' && effectiveBrand) {
-      return effectiveBrand;
-    }
-    if (title === 'dòng 1 · link' && deal?.tiktokVideoUrl) {
-      return deal.tiktokVideoUrl;
-    }
-    if (title === 'dòng 1 · dạng video') {
-      return 'Video review / giới thiệu sản phẩm trên kênh TikTok';
+    // Bảng nghiệm thu tháng CTV-VID-BBNT (Dòng 1..5)
+    const ctvRowMatch = title.match(/^dòng\s+([1-5])\s*·\s*(.+)$/i);
+    if (ctvRowMatch) {
+      const rowIdx = Number(ctvRowMatch[1]) - 1;
+      const colName = ctvRowMatch[2].trim().toLowerCase();
+      const ctvDeals = ctx.ctvAcceptedDeals && ctx.ctvAcceptedDeals.length > 0 ? ctx.ctvAcceptedDeals : deal ? [deal] : [];
+      const rowDeal = ctvDeals[rowIdx];
+      if (colName === 'dạng video' && rowIdx === 0) {
+        return 'Video review / giới thiệu sản phẩm trên kênh TikTok';
+      }
+      if (rowDeal) {
+        const rowQty = rowDeal.committedOutputsCount || 1;
+        const rowTotal = Number(rowDeal.totalValue || 0);
+        const rowUnit = rowQty > 1 && rowTotal ? Math.round(rowTotal / rowQty) : rowTotal;
+        if (colName === 'nhãn hàng') return rowDeal.brandName || effectiveBrand || '';
+        if (colName === 'link') return rowDeal.tiktokVideoUrl || '';
+        if (colName === 'trạng thái') return rowDeal.tiktokVideoUrl ? 'Đã nghiệm thu' : 'Chờ nghiệm thu';
+        if (colName.startsWith('đơn giá') || colName.startsWith('mức giá')) return money(rowUnit);
+        if (colName === 'số lượng') return String(rowQty);
+        if (colName === 'thành tiền') return money(rowTotal);
+      }
     }
     // Ngày bắt đầu sử dụng hình ảnh
     if (title.includes('bắt đầu sử dụng hình ảnh')) {
       return `${dd}/${mm}/2026`;
     }
-    // Chức vụ đại diện công ty
+    // Chức vụ người đại diện công ty / hộ kinh doanh
     if (title.includes('chức vụ')) {
-      return type === 'COMPANY' ? 'Tổng Giám Đốc' : 'Chủ hộ kinh doanh';
+      return (
+        activeProfile?.representativeTitle ||
+        parentValueByTitleContains('chức vụ') ||
+        (type === 'COMPANY' ? 'Giám đốc' : 'Chủ hộ kinh doanh')
+      );
+    }
+    // Ủy quyền đại diện (COM-HDNT, COM-SOW)
+    if (title.includes('số văn bản ủy quyền')) {
+      return activeProfile?.authorizationNumber || parentValueByTitleContains('số văn bản ủy quyền') || '';
+    }
+    if (title.includes('ngày ủy quyền')) {
+      return formatYmdToVnDate(activeProfile?.authorizationDate) || parentValueByTitleContains('ngày ủy quyền') || '';
     }
     // Tháng nghiệm thu
     if (title.includes('tháng nghiệm thu')) {

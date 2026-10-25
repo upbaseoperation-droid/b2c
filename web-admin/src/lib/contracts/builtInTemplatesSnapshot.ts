@@ -455,7 +455,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng organic: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh tự nhiên từ video, được ghi nhận thông qua link/mã theo dõi của Bên B và không bao gồm doanh thu phát sinh từ ngân sách quảng cáo do Bên A hoặc bên thứ ba chi trả. ",
         "required": false,
-        "title": "Hoa hồng affiliate livestream (%)",
+        "title": "Hoa hồng organic (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -468,7 +468,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng chạy ads: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ video được sử dụng để chạy quảng cáo, với điều kiện doanh thu đó được ghi nhận thông qua link/mã theo dõi của Bên B và được Bên A xác nhận trong báo cáo đối soát.",
         "required": false,
-        "title": "Hoa hồng affiliate livestream (%) (2)",
+        "title": "Hoa hồng chạy ads (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -6066,7 +6066,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng organic: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh tự nhiên từ video, được ghi nhận thông qua link/mã theo dõi của Bên B và không bao gồm doanh thu phát sinh từ ngân sách quảng cáo do Bên A hoặc bên thứ ba chi trả. ",
         "required": false,
-        "title": "Hoa hồng affiliate livestream (%)",
+        "title": "Hoa hồng organic (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -6079,7 +6079,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng chạy ads: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ video được sử dụng để chạy quảng cáo, với điều kiện doanh thu đó được ghi nhận thông qua link/mã theo dõi của Bên B và được Bên A xác nhận trong báo cáo đối soát.",
         "required": false,
-        "title": "Hoa hồng affiliate livestream (%) (2)",
+        "title": "Hoa hồng chạy ads (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -11695,7 +11695,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng organic: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh tự nhiên từ video, được ghi nhận thông qua link/mã theo dõi của Bên B và không bao gồm doanh thu phát sinh từ ngân sách quảng cáo do Bên A hoặc bên thứ ba chi trả. ",
         "required": false,
-        "title": "Hoa hồng affiliate livestream (%)",
+        "title": "Hoa hồng organic (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -11708,7 +11708,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng chạy ads: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ video được sử dụng để chạy quảng cáo, với điều kiện doanh thu đó được ghi nhận thông qua link/mã theo dõi của Bên B và được Bên A xác nhận trong báo cáo đối soát. ",
         "required": false,
-        "title": "Hoa hồng affiliate livestream (%) (2)",
+        "title": "Hoa hồng chạy ads (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -20238,7 +20238,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Tổng Giá trị Phụ lục hợp đồng chưa bao gồm thuế TNCN",
         "group": "MONEY",
         "kind": "money",
-        "source": "pitAmount"
+        "source": "netTotal"
       },
       {
         "key": "word/document.xml:p94:cell",
@@ -36822,7 +36822,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": true,
         "start": 0,
         "end": 19,
-        "title": "Số CCCD",
+        "title": "Mã số thuế / Số ĐKKD",
         "group": "PARTY",
         "kind": "text",
         "source": "cccd"
@@ -41898,6 +41898,17 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "number"
       },
       {
+        "key": "word/document.xml:p67:cell",
+        "part": "word/document.xml",
+        "paragraph": 67,
+        "label": "Sử dụng hình ảnh và video trong · Thành tiền",
+        "context": "3 · Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải videoSử dụng hình ảnh: Bên A được sử dụng hình ảnh của Bên B (hình ảnh chụp riêng, không trích xuất từ video hoặc hình ảnh từ video) để gắn với sản phẩm trên listing gian hàng, phiên livestream, website, sàn TMĐT, landing page và các kênh truyền thông số khác, sau khi Bên B xác nhận cụ thể hình ảnh được phép sử dụng, phục vụ dự án truyền thông sản phẩm.Sử dụng video: Bên A được chủ động chỉnh sửa, cắt ghép, chuyển thể, lồng ghép, biên tập, tái sử dụng và đăng tải lại video do Bên B thực hiện trên website, landing page, sàn TMĐT, Facebook, TikTok, Instagram, YouTube và các kênh khác; đồng thời được cho phép KOC/KOL/người dùng duet, stitch, chia sẻ hoặc tái sử dụng video để phục vụ hoạt động truyền thông, quảng cáo, PR, livestream, affiliate và chiến dịch TMĐT của sản phẩm.",
+        "required": false,
+        "title": "Sử dụng hình ảnh và video trong · Thành tiền",
+        "group": "SCOPE",
+        "kind": "money"
+      },
+      {
         "key": "word/document.xml:p69:cell",
         "part": "word/document.xml",
         "paragraph": 69,
@@ -41942,7 +41953,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng organic: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh tự nhiên từ video, được ghi nhận thông qua link/mã theo dõi của Bên B và không bao gồm doanh thu phát sinh từ ngân sách quảng cáo do Bên A hoặc bên thứ ba chi trả. ",
         "required": false,
-        "title": "Hoa hồng affiliate livestream (%)",
+        "title": "Hoa hồng organic (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -41955,7 +41966,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng chạy ads: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ video được sử dụng để chạy quảng cáo, với điều kiện doanh thu đó được ghi nhận thông qua link/mã theo dõi của Bên B và được Bên A xác nhận trong báo cáo đối soát.",
         "required": false,
-        "title": "Hoa hồng affiliate livestream (%) (2)",
+        "title": "Hoa hồng chạy ads (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -43555,7 +43566,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 36,
+    "fieldCount": 37,
     "requiredFieldCount": 18,
     "history": [
       {
@@ -49047,6 +49058,17 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "number"
       },
       {
+        "key": "word/document.xml:p72:cell",
+        "part": "word/document.xml",
+        "paragraph": 72,
+        "label": "Sử dụng hình ảnh và video trong · Thành tiền",
+        "context": "3 · Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải videoSử dụng hình ảnh: Bên A được sử dụng hình ảnh của Bên B (hình ảnh chụp riêng, không trích xuất từ video hoặc hình ảnh từ video) để gắn với sản phẩm trên listing gian hàng, phiên livestream, website, sàn TMĐT, landing page và các kênh truyền thông số khác, sau khi Bên B xác nhận cụ thể hình ảnh được phép sử dụng, phục vụ dự án truyền thông sản phẩm.Sử dụng video: Bên A được chủ động chỉnh sửa, cắt ghép, chuyển thể, lồng ghép, biên tập, tái sử dụng và đăng tải lại video do Bên B thực hiện trên website, landing page, sàn TMĐT, Facebook, TikTok, Instagram, YouTube và các kênh khác; đồng thời được cho phép KOC/KOL/người dùng duet, stitch, chia sẻ hoặc tái sử dụng video để phục vụ hoạt động truyền thông, quảng cáo, PR, livestream, affiliate và chiến dịch TMĐT của sản phẩm.",
+        "required": false,
+        "title": "Sử dụng hình ảnh và video trong · Thành tiền",
+        "group": "SCOPE",
+        "kind": "money"
+      },
+      {
         "key": "word/document.xml:p75:cell",
         "part": "word/document.xml",
         "paragraph": 75,
@@ -49067,7 +49089,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng organic: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh tự nhiên từ video, được ghi nhận thông qua link/mã theo dõi của Bên B và không bao gồm doanh thu phát sinh từ ngân sách quảng cáo do Bên A hoặc bên thứ ba chi trả. ",
         "required": false,
-        "title": "Hoa hồng affiliate livestream (%)",
+        "title": "Hoa hồng organic (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -49080,7 +49102,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng chạy ads: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ video được sử dụng để chạy quảng cáo, với điều kiện doanh thu đó được ghi nhận thông qua link/mã theo dõi của Bên B và được Bên A xác nhận trong báo cáo đối soát.",
         "required": false,
-        "title": "Hoa hồng affiliate livestream (%) (2)",
+        "title": "Hoa hồng chạy ads (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -50780,7 +50802,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 36,
+    "fieldCount": 37,
     "requiredFieldCount": 19,
     "history": [
       {
@@ -56341,6 +56363,17 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "number"
       },
       {
+        "key": "word/document.xml:p77:cell",
+        "part": "word/document.xml",
+        "paragraph": 77,
+        "label": "Sử dụng hình ảnh và video trong · Thành tiền",
+        "context": "3 · Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải videoSử dụng hình ảnh: Bên A được sử dụng hình ảnh của KOL/KOC/Talent (hình ảnh chụp riêng, không trích xuất từ video hoặc hình ảnh từ video) để gắn với sản phẩm trên listing gian hàng, phiên livestream, website, sàn TMĐT, landing page và các kênh truyền thông số khác, sau khi Bên B xác nhận cụ thể hình ảnh được phép sử dụng, phục vụ dự án truyền thông sản phẩm.Sử dụng video: Bên A được chủ động chỉnh sửa, cắt ghép, chuyển thể, lồng ghép, biên tập, tái sử dụng và đăng tải lại video do Bên B thực hiện trên website, landing page, sàn TMĐT, Facebook, TikTok, Instagram, YouTube và các kênh khác; đồng thời được cho phép KOC/KOL/người dùng duet, stitch, chia sẻ hoặc tái sử dụng video để phục vụ hoạt động truyền thông, quảng cáo, PR, livestream, affiliate và chiến dịch TMĐT của sản phẩm.",
+        "required": false,
+        "title": "Sử dụng hình ảnh và video trong · Thành tiền",
+        "group": "SCOPE",
+        "kind": "money"
+      },
+      {
         "key": "word/document.xml:p79:cell",
         "part": "word/document.xml",
         "paragraph": 79,
@@ -56385,7 +56418,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng organic: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh tự nhiên từ video, được ghi nhận thông qua link/mã theo dõi của Bên B và không bao gồm doanh thu phát sinh từ ngân sách quảng cáo do Bên A hoặc bên thứ ba chi trả. ",
         "required": false,
-        "title": "Hoa hồng affiliate livestream (%)",
+        "title": "Hoa hồng organic (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -56398,7 +56431,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng chạy ads: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ video được sử dụng để chạy quảng cáo, với điều kiện doanh thu đó được ghi nhận thông qua link/mã theo dõi của Bên B và được Bên A xác nhận trong báo cáo đối soát.",
         "required": false,
-        "title": "Hoa hồng affiliate livestream (%) (2)",
+        "title": "Hoa hồng chạy ads (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -58142,7 +58175,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 41,
+    "fieldCount": 42,
     "requiredFieldCount": 19,
     "history": [
       {
@@ -58297,7 +58330,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": true,
         "start": 0,
         "end": 19,
-        "title": "Số CCCD",
+        "title": "Mã số thuế / Số ĐKKD",
         "group": "PARTY",
         "kind": "text",
         "source": "cccd"
@@ -58559,7 +58592,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị nghiệm thu · Thành tiền (VNĐ)(đã bao gồm VAT)",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p92:cell",
