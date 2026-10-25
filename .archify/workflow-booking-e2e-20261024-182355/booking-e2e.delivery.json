@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "receiptId": "74c25d46-32b8-4e8b-a6cf-a2d13bf34403",
+  "receiptId": "49c95fe6-32b2-460d-a88e-5634a6405447",
   "status": "current",
   "command": "deliver",
   "type": "workflow",
   "input": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\candidate.json",
   "output": "E:\\Upbase\\B2C\\.archify\\workflow-booking-e2e-20261024-182355\\booking-e2e.html",
   "specification": {
-    "sha256": "cafd5160badae67dc461812d9c0e4e495290c19709d8e94c7e76a4ce63396679",
-    "bytes": 27371
+    "sha256": "94b0326e014e2fee750e4f6ccbb17b8508c8da2a346eb54c9228b3aebe01a8b2",
+    "bytes": 26975
   },
   "artifact": {
-    "sha256": "1ed3a2ec74fc2cecd2ccf0b1497b8b27b93787303af37f94013af5020f0a54ef",
-    "bytes": 894155
+    "sha256": "7977dfb72f91624dad78e2e917fc590080e2824e978c1fd494f8c9eb92f3a6e7",
+    "bytes": 894742
   }
 }

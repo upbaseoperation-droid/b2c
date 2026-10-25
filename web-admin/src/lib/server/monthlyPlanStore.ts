@@ -276,7 +276,9 @@ export async function resolvePlanContext(id: string, actor: UserProfile): Promis
     actionAllowed(actor, 'plan_target_month', 'read'),
   ]);
   if (!stored) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
-  checkPlanAccessWithCatalog(stored.plan, actor, 'read', catalog, allowed);
+  // Pháp chế / Kế toán duyệt hợp đồng, tài chính, thanh toán trên bảng Deal của mọi gian (không xem nội dung kế hoạch tháng)
+  const backoffice = actor.role === 'LEGAL' || actor.role === 'FINANCE' || Boolean(actor.permissions?.includes('canApprovePayment'));
+  if (!backoffice) checkPlanAccessWithCatalog(stored.plan, actor, 'read', catalog, allowed);
   const store = planStoreOf(stored.plan, catalog);
   return {
     plan: stored.plan,

@@ -135,7 +135,7 @@ import {
 const STORE_ASSIGNMENT_FIELDS = [
   'b2cOwnerName', 'primaryPic', 'assignedStaff', 'assignedPic', 'b2cOwners', 'assignedMembers',
   'bookingLeader', 'hasBookingLeader', 'backupOwnerName', 'backupOwnerId', 'isBackupActive', 'backupReason', 'backupFrom', 'backupTo',
-  'previousPic', 'handoverEffectiveDate', 'assignmentNotes', 'staffCodes',
+  'previousPic', 'handoverEffectiveDate', 'assignmentNotes', 'staffCodes', 'contentPic', 'accountOwnerName',
 ] as const;
 function withoutAssignment(o: Partial<StorePortfolioItem> | undefined): Partial<StorePortfolioItem> {
   if (!o) return {};

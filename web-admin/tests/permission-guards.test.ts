@@ -43,9 +43,9 @@ test('Booking cùng làm: tạo deal của mình, chỉ sửa / xóa deal của 
   guardDealBoardSave(base, editJob(base, 'D2', j => ({ ...j, deadline: '2026-10-30' })), CO);
   blocked(() => guardDealBoardSave(base, editJob(base, 'D1', j => ({ ...j, deadline: '2026-10-30' })), CO));
   blocked(() => guardDealBoardSave(base, board(base.deals[1]), CO));
-  blocked(() => guardDealBoardSave(base, board(base.deals[0], { ...base.deals[1], pic: 'An' }), CO));
+  blocked(() => guardDealBoardSave(base, editJob(base, 'D2', j => ({ ...j, pic: 'An' })), CO));
   // Booking chính sửa / đổi người phụ trách mọi deal
-  guardDealBoardSave(base, board(base.deals[0], { ...base.deals[1], pic: 'An' }), MAIN);
+  guardDealBoardSave(base, editJob(base, 'D2', j => ({ ...j, pic: 'An' })), MAIN);
   // Người không thuộc nhóm Booking không sửa được gì
   blocked(() => guardDealBoardSave(base, editJob(base, 'D1', j => ({ ...j, deadline: '2026-10-30' })), ctx('Khách', ['PLAN_STRATEGY'])));
 });

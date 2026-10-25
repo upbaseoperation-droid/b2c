@@ -4,6 +4,7 @@ import { isPersonInField, type StaffCodeMap } from './staffIdentity';
 import {
   getMonthlyClosingStatus,
   isAirLinkLocked,
+  syncDealSummaryFields,
   type DealBoardData,
   type DealJob,
   type PlanDeal,
@@ -197,8 +198,9 @@ export function guardDealBoardSave(prev: DealBoardData, next: DealBoardData, c: 
     }
 
     // Deal đã có: phần thông tin deal (không tính Job)
-    const { jobs: _nj, ...dealHead } = d;
-    const { jobs: _oj, ...oldHead } = old;
+    // Ô tổng hợp của deal (phí, thanh toán, người phụ trách…) tính từ Job: tính lại trên cùng Job cũ cho cả hai bản rồi mới so
+    const { jobs: _nj, ...dealHead } = syncDealSummaryFields({ ...d, jobs: old.jobs });
+    const { jobs: _oj, ...oldHead } = syncDealSummaryFields(old);
     const headChanged = changedKeys(oldHead, dealHead);
     if (headChanged.length) {
       if (!ownerScope) throw new DealGuardError(`Deal ${d.code} do ${old.pic || 'người khác'} phụ trách, bạn không sửa được.`);

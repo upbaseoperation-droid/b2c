@@ -162,6 +162,8 @@ const RAW_PERMISSION_MATRIX: PermissionMatrixItem[] = [
       MANAGER: 'APPROVE',
       LEADER: 'SCOPED',
       MEMBER: 'VIEW',
+      // Booking chính sửa / gửi duyệt kế hoạch gian mình (máy chủ còn kiểm vị trí Booking chính)
+      BOOKING_MEMBER: 'SCOPED',
       BRAND_PARTNER: 'VIEW',
       KOC_PARTNER: 'DENIED',
       CTV_PARTNER: 'DENIED'

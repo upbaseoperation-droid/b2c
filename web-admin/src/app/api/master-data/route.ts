@@ -98,7 +98,7 @@ export async function PUT(req: NextRequest) {
 const ASSIGNMENT_FIELDS = [
   'b2cOwnerName', 'primaryPic', 'assignedStaff', 'assignedPic', 'b2cOwners', 'assignedMembers',
   'bookingLeader', 'hasBookingLeader', 'backupOwnerName', 'backupOwnerId', 'isBackupActive', 'backupReason', 'backupFrom', 'backupTo',
-  'previousPic', 'handoverEffectiveDate', 'assignmentNotes', 'staffCodes',
+  'previousPic', 'handoverEffectiveDate', 'assignmentNotes', 'staffCodes', 'contentPic', 'accountOwnerName',
 ] as const;
 /** Leader của gian chỉ đổi người cùng làm và dự phòng; Booking chính / Leader do Giám đốc đặt. */
 const LEADER_FIELDS = new Set<string>(['b2cOwners', 'assignedMembers', 'backupOwnerName', 'backupOwnerId', 'isBackupActive', 'backupReason', 'backupFrom', 'backupTo', 'assignmentNotes', 'staffCodes']);
