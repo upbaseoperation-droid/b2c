@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { syncContractToJob } from '@/lib/server/contractJobSync';
 import { createHash } from 'node:crypto';
 import { actorFromRequest, configuredActors, checkOrigin, DEMO_ACTORS } from '@/lib/contracts/access';
 import { canRead, createContract, editContract, submitContract, decideContract, assertCanSign, event, requireCondition, ContractError, inScope, signingChanged } from '@/lib/contracts/domain';
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
         }
       }
       const draft = createContract(input, actor); await archiveTemplate(input.templateId, input.templateHash);
-      const saved = await saveContract(draft); return NextResponse.json({ record: saved });
+      const saved = await saveContract(draft); await syncContractToJob(saved).catch(() => 0); return NextResponse.json({ record: saved });
     }
     requireCondition(typeof body.id === 'string', 'Thiếu mã hồ sơ.');
     const record = await getContract(body.id); requireCondition(canRead(record, actor), 'Không có quyền truy cập hồ sơ.', 403);
@@ -223,6 +224,9 @@ export async function POST(req: NextRequest) {
         attempt.error = message; event(next, actor, 'SYNC_ERROR', attempt.error);
       }
     } else throw new ContractError('Thao tác không hợp lệ.');
-    return NextResponse.json({ record: await saveContract(next, record.revision) });
+    const savedRecord = await saveContract(next, record.revision);
+    // Kết quả duyệt / trạng thái ký của Phụ lục SOW, BBNT tự cập nhật về Job trên bảng Deal
+    await syncContractToJob(savedRecord).catch(() => 0);
+    return NextResponse.json({ record: savedRecord });
   } catch (error) { return failure(error); }
 }

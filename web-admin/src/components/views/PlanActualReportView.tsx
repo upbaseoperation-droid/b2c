@@ -136,6 +136,20 @@ export const PlanActualReportView: React.FC<{ onNotify?: (msg: string, type?: 's
     { key: 'listed', header: 'Đã list', align: 'right', render: r => <div>{formatNumber(r.total.listed)}{sub(`Chốt ${formatNumber(r.total.confirmed)}`)}</div> },
     { key: 'aired', header: 'Đã air', align: 'right', render: r => <div>{formatNumber(r.total.aired)}{sub(`Nghiệm thu ${formatNumber(r.total.accepted)}`)}</div> },
     {
+      key: 'carry',
+      header: 'Chuyển tháng',
+      align: 'right',
+      render: r =>
+        !r.carryOver || (r.carryOver.movedOut === 0 && r.carryOver.carriedIn === 0) ? (
+          <span className="text-ink-3">—</span>
+        ) : (
+          <div>
+            {r.carryOver.movedOut > 0 && <div>{formatNumber(r.carryOver.movedOut)} chuyển tháng sau</div>}
+            {r.carryOver.carriedIn > 0 && sub(`${formatNumber(r.carryOver.carriedIn)} từ tháng trước · ${formatVndShort(r.carryOver.carriedInFee)}`)}
+          </div>
+        ),
+    },
+    {
       key: 'pace',
       header: 'Air đến tuần trước',
       width: 150,

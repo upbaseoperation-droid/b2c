@@ -166,9 +166,10 @@ export const PullHangingJobsModal: React.FC<PullHangingJobsModalProps> = ({
         updatedDealBoardRevision: body.revision,
       });
       onNotify?.(
-        `Đã kéo ${body.pulledCount || chosen.length} Job tồn tháng cũ sang kỳ ${plan.month} để xử lý tiếp (ngân sách giữ tại tháng gốc).`,
+        `Đã chuyển ${body.pulledCount || chosen.length} Job chưa lên sóng sang tháng ${plan.month}. Job tháng cũ ghi "Không hoàn thành"; ngân sách và thanh toán tính ở tháng ${plan.month}.`,
         'success'
       );
+      for (const w of (body.warnings as string[] | undefined) || []) onNotify?.(w, 'warning');
       onClose();
     } catch (err) {
       onNotify?.(err instanceof Error ? err.message : 'Không kéo được Job sang tháng mới.', 'error');
@@ -181,7 +182,7 @@ export const PullHangingJobsModal: React.FC<PullHangingJobsModalProps> = ({
     <Modal
       open={open}
       onClose={onClose}
-      title={`Kéo Job tồn tháng cũ sang xử lý tiếp (${plan.month}) — ${plan.storeName || plan.title}`}
+      title={`Chuyển Job chưa lên sóng sang tháng ${plan.month} — ${plan.storeName || plan.title}`}
       size="lg"
       footer={
         <>
@@ -196,7 +197,7 @@ export const PullHangingJobsModal: React.FC<PullHangingJobsModalProps> = ({
           >
             {submitting
               ? 'Đang kéo Job sang xử lý…'
-              : `Kéo ${selectedSummary.count} Job sang xử lý tiếp (${fmt(selectedSummary.totalFee)}đ · Giữ ngân sách tháng cũ)`}
+              : `Chuyển ${selectedSummary.count} Job sang tháng này (${fmt(selectedSummary.totalFee)}đ · tính ngân sách tháng ${plan.month})`}
           </Button>
         </>
       }
@@ -209,7 +210,7 @@ export const PullHangingJobsModal: React.FC<PullHangingJobsModalProps> = ({
               <span className="font-semibold text-ink">{plan.month}</span>
             </div>
             <div className="text-2xs text-ink-3">
-              Chỉ kéo Job sang để theo dõi &amp; xử lý nốt (lấy Link Air, nghiệm thu, đẩy thanh toán 6.1). Ngân sách vẫn hạch toán ở tháng gốc, không cộng vào hạn mức tháng {plan.month}.
+              Chỉ Job chưa lên sóng mới chuyển được. Job ở tháng cũ ghi &ldquo;Không hoàn thành (chuyển tháng sau)&rdquo;; bản sao là Job bình thường của tháng {plan.month}: tính ngân sách, nghiệm thu và đề nghị thanh toán ở tháng này. Hợp đồng / SOW, mẫu, kịch bản và tạm ứng đã chi được mang theo (tất toán sẽ trừ tạm ứng). Job đã lên sóng làm nốt ở tháng cũ.
             </div>
           </div>
           <Button size="sm" variant="secondary" disabled={loading} onClick={() => void loadCandidates()}>

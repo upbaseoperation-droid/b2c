@@ -112,6 +112,7 @@ export function KocListingBatchHubView({
   onNotify,
 }: KocListingBatchHubViewProps) {
   // Navigation sub-tabs
+  const [dealFocus, setDealFocus] = useState<{ planId: string; listingItemId: string; nonce: number } | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<'PLAN_BOARD' | 'DEAL_BOARD' | 'SELF_CHANNEL_BOARD' | 'STAFF_BRAND_SHEET' | 'LISTING_APPROVAL' | 'AIR_TRACKER'>('PLAN_BOARD');
 
   // Filters
@@ -181,8 +182,8 @@ export function KocListingBatchHubView({
       if (activePlanContext.openStaffSheet) {
         setActiveSubTab('STAFF_BRAND_SHEET');
       } else {
-        setActiveSubTab('LISTING_APPROVAL');
-        setIsKlMatrixExpanded(true);
+        // Danh sách đề xuất cũ (dữ liệu mẫu, không lưu) đã bỏ: mở bảng Listing thật theo kế hoạch
+        setActiveSubTab('PLAN_BOARD');
       }
     }
   }
@@ -1000,7 +1001,8 @@ export function KocListingBatchHubView({
 
   return (
     <div className="space-y-4">
-      {activeSubTab !== 'DEAL_BOARD' && activeSubTab !== 'SELF_CHANNEL_BOARD' && (
+      {/* Gợi ý KOC / Thêm KOC nằm trong bảng "Điều phối theo kế hoạch" (lưu máy chủ); bộ nút cũ chỉ còn cho Sheet cá nhân */}
+      {activeSubTab === 'STAFF_BRAND_SHEET' && (
         <PageActions>
           <ActionMenu
             items={[
@@ -1042,15 +1044,23 @@ export function KocListingBatchHubView({
           { key: 'DEAL_BOARD', label: 'Deal & nghiệm thu' },
           { key: 'SELF_CHANNEL_BOARD', label: 'Video kênh Brand & nghiệm thu' },
           { key: 'STAFF_BRAND_SHEET', label: 'Sheet Listing Cá Nhân (Theo Brand)' },
-          { key: 'LISTING_APPROVAL', label: 'Danh sách đề xuất', count: filteredListings.length },
-          { key: 'AIR_TRACKER', label: 'Video lên sóng', count: airListings.length },
         ]}
       />
 
       {activeSubTab === 'PLAN_BOARD' && (
-        <PlanListingBoard kocs={kocs} currentUserName={currentUserName} onNotify={onNotify} />
+        <PlanListingBoard
+          kocs={kocs}
+          stores={stores}
+          deals={deals}
+          currentUserName={currentUserName}
+          onNotify={onNotify}
+          onCreateDeal={(planId, listingItemId) => {
+            setDealFocus({ planId, listingItemId, nonce: Date.now() });
+            setActiveSubTab('DEAL_BOARD');
+          }}
+        />
       )}
-      {activeSubTab === 'DEAL_BOARD' && <PlanDealBoard kocs={kocs} currentUserName={currentUserName} onNotify={onNotify} onOpenContract={onOpenContractForPlanDeal} />}
+      {activeSubTab === 'DEAL_BOARD' && <PlanDealBoard kocs={kocs} currentUserName={currentUserName} onNotify={onNotify} onOpenContract={onOpenContractForPlanDeal} focus={dealFocus} />}
       {activeSubTab === 'SELF_CHANNEL_BOARD' && (
         <PlanSelfChannelBoard currentUserName={currentUserName} onNotify={onNotify} />
       )}

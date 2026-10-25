@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { formatVndShort } from '../../lib/format';
+import { formatVndShort, getVietnamDateYmd } from '../../lib/format';
 import { ActionMenu, Button, ConfirmDialog, Field, Input, Modal, PageActions, Panel, Select, Status, Tabs, Textarea } from '../ui';
 import { ContentPlanBoard } from './ContentPlanBoard';
 import { PlanSelfChannelBoard } from './PlanSelfChannelBoard';
@@ -556,62 +556,93 @@ export const ContentView: React.FC<ContentViewProps> = ({
     setIsCreateScriptOpen(false);
   };
 
+  /**
+   * Ghi kết quả duyệt kịch bản vòng 1 (B2C kiểm nội bộ) vào Job trên bảng Deal.
+   * Vòng 2 (Brand duyệt) ghi ở bảng Deal / kéo từ Sheet, không ghi ở đây.
+   * Trả lỗi để màn hình báo, không coi là đã duyệt khi máy chủ từ chối.
+   */
   const syncScriptDecisionToDealJob = async (
     scriptId: string,
     decision: 'APPROVED' | 'REVISION_REQUESTED',
     notes?: string,
-  ) => {
-    if (!scriptId.startsWith('scr-job-')) return;
+  ): Promise<string> => {
     const rawKey = scriptId.slice('scr-job-'.length);
     const [planId, dealId, jobId] = rawKey.split('__');
-    if (!planId || !dealId || !jobId) return;
-    try {
-      const dbRes = await fetch(`/api/deal-board?planId=${encodeURIComponent(planId)}`, { cache: 'no-store' });
-      const dbBody = await dbRes.json().catch(() => null);
-      const dbData = (dbBody?.data as DealBoardData) || null;
-      if (!dbData || !Array.isArray(dbData.deals)) return;
-      const todayStr = new Date().toISOString().slice(0, 10);
-      const nextDeals = dbData.deals.map(d => {
-        if (d.id !== dealId) return d;
-        const nextJobs = (d.jobs || []).map(j => {
-          if (j.id !== jobId) return j;
-          return {
-            ...j,
-            script: {
-              ...j.script,
-              internalScriptAuditStatus: decision === 'APPROVED' ? ('PASSED' as const) : ('CHANGES' as const),
-              status: decision === 'APPROVED' ? ('APPROVED' as const) : ('CHANGES' as const),
-              note: notes !== undefined ? notes : j.script.note,
-              at: todayStr,
-            },
-          };
+    if (!planId || !dealId || !jobId) return 'Không xác định được Job của kịch bản.';
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const dbRes = await fetch(`/api/deal-board?planId=${encodeURIComponent(planId)}`, { cache: 'no-store' });
+        const dbBody = await dbRes.json().catch(() => null);
+        if (!dbRes.ok) return dbBody?.error || 'Không tải được bảng Deal.';
+        const dbData = (dbBody?.data as DealBoardData) || null;
+        if (!dbData || !Array.isArray(dbData.deals)) return 'Không tải được bảng Deal.';
+        const todayStr = getVietnamDateYmd();
+        let found = false;
+        const nextDeals = dbData.deals.map(d => {
+          if (d.id !== dealId) return d;
+          const nextJobs = (d.jobs || []).map(j => {
+            if (j.id !== jobId) return j;
+            found = true;
+            return {
+              ...j,
+              script: {
+                ...j.script,
+                internalScriptAuditStatus: decision === 'APPROVED' ? ('PASSED' as const) : ('CHANGES' as const),
+                note: notes !== undefined ? notes : j.script.note,
+              },
+            };
+          });
+          return syncDealSummaryFields({ ...d, jobs: nextJobs, history: [...(d.history || []), { at: new Date().toISOString(), actor: 'Duyệt KB vòng 1', text: `${decision === 'APPROVED' ? 'Đạt' : 'Yêu cầu sửa'} kịch bản vòng 1 (${todayStr})` }] });
         });
-        return syncDealSummaryFields({ ...d, jobs: nextJobs });
-      });
-      await fetch('/api/deal-board', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId, data: { ...dbData, deals: nextDeals } }),
-      });
-    } catch {
-      // Ignore network errors while keeping UI responsive
+        if (!found) return 'Không tìm thấy Job trên bảng Deal.';
+        const putRes = await fetch('/api/deal-board', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ planId, revision: dbBody.revision, data: { ...dbData, deals: nextDeals } }),
+        });
+        if (putRes.status === 409 && attempt === 0) continue;
+        if (!putRes.ok) {
+          const body = await putRes.json().catch(() => null);
+          return body?.error || `Lỗi ${putRes.status} khi lưu kết quả duyệt.`;
+        }
+        return '';
+      } catch {
+        return 'Mất kết nối khi lưu kết quả duyệt.';
+      }
     }
+    return 'Bảng Deal vừa được người khác cập nhật, thử lại.';
   };
 
-  const handleApprove = (scriptId: string) => {
-    setScripts(prev => prev.map(item => (item.id === scriptId ? { ...item, status: 'APPROVED', remainingHours: 0 } : item)));
+  const handleApprove = async (scriptId: string) => {
     if (scriptId.startsWith('scr-job-')) {
+      const err = await syncScriptDecisionToDealJob(scriptId, 'APPROVED');
+      if (err) {
+        onNotify?.(`Chưa duyệt được: ${err}`, 'error');
+        return;
+      }
       const cntId = `cnt-job-${scriptId.slice('scr-job-'.length)}`;
       setContentItems(prev => prev.map(c => (c.id === cntId ? { ...c, scriptStatus: 'APPROVED' } : c)));
-      void syncScriptDecisionToDealJob(scriptId, 'APPROVED');
+      onNotify?.('Đã duyệt kịch bản vòng 1. Gửi Brand duyệt (vòng 2) trên bảng Deal / Google Sheet.', 'success');
     }
+    setScripts(prev => prev.map(item => (item.id === scriptId ? { ...item, status: 'APPROVED', remainingHours: 0 } : item)));
     const targetScript = scripts.find(s => s.id === scriptId);
     if (onScriptApprovedNotification && targetScript) {
       onScriptApprovedNotification(targetScript.dealCode);
     }
   };
 
-  const handleRequestRevision = (scriptId: string, notes: string) => {
+  const handleRequestRevision = async (scriptId: string, notes: string) => {
+    if (scriptId.startsWith('scr-job-')) {
+      const err = await syncScriptDecisionToDealJob(scriptId, 'REVISION_REQUESTED', notes);
+      if (err) {
+        onNotify?.(`Chưa gửi yêu cầu sửa được: ${err}`, 'error');
+        return;
+      }
+      const cntId = `cnt-job-${scriptId.slice('scr-job-'.length)}`;
+      setContentItems(prev =>
+        prev.map(c => (c.id === cntId ? { ...c, scriptStatus: 'REVISION_REQUESTED', revisionCount: c.revisionCount + 1 } : c)),
+      );
+    }
     setScripts(prev =>
       prev.map(item =>
         item.id === scriptId
@@ -623,13 +654,6 @@ export const ContentView: React.FC<ContentViewProps> = ({
           : item,
       ),
     );
-    if (scriptId.startsWith('scr-job-')) {
-      const cntId = `cnt-job-${scriptId.slice('scr-job-'.length)}`;
-      setContentItems(prev =>
-        prev.map(c => (c.id === cntId ? { ...c, scriptStatus: 'REVISION_REQUESTED', revisionCount: c.revisionCount + 1 } : c)),
-      );
-      void syncScriptDecisionToDealJob(scriptId, 'REVISION_REQUESTED', notes);
-    }
   };
 
   return (

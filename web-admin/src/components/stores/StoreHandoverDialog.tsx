@@ -152,7 +152,6 @@ export function StoreHandoverDialog({
       assignedPic: cleanPrimary,
       assignedMembers: allOwners,
       b2cOwners: allOwners,
-      backupOwnerName: cleanSupport[0] || undefined,
       hasBookingLeader: !isDirectLead,
       bookingLeader: isDirectLead ? undefined : leaderMode,
       assignmentNotes: isPrimaryChanged

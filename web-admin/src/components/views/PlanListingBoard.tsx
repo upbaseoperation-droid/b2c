@@ -2,11 +2,13 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Copy, Download, FileText, MessageSquare, Plus, RefreshCw, Search, Send } from 'lucide-react';
-import type { InputPlanBreakdownState, KocItem, KocListingItem, ListingBatchCycle } from '../../lib/types';
+import type { BookingDealItem, InputPlanBreakdownState, KocItem, KocListingItem, ListingBatchCycle, StorePortfolioItem } from '../../lib/types';
+import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 import { Button, Field, Input, Modal, Select, Status, Textarea } from '../ui';
 import { KL_TIERS, klBaseCost, type KlCode } from '../../lib/klTiers';
 import { useListingBoard } from '../../lib/useListingBoard';
 import { hasBrandApprovalBasis } from '../../lib/listingBoardGuard';
+import { SheetPullPreviewModal, type SheetPullChange } from './SheetPullPreviewModal';
 import { fetchClientMonthlyPlans, getCachedClientMonthlyPlans } from '../../lib/useMonthlyPlanSync';
 import type { ContentSlot } from '../../lib/contentPlanRules';
 import {
@@ -45,6 +47,11 @@ import {
 
 interface PlanListingBoardProps {
   kocs: KocItem[];
+  /** Cho bộ gợi ý KOC (lịch sử deal, gian hàng) */
+  stores?: StorePortfolioItem[];
+  deals?: BookingDealItem[];
+  /** Thẻ KOC đã chốt: sang bảng Deal và tạo Deal ngay */
+  onCreateDeal?: (planId: string, listingItemId: string) => void;
   currentUserName?: string;
   currentUserId?: string;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
@@ -61,7 +68,7 @@ const NEXT_ACTION: Partial<Record<BoardColumn, { to: BoardColumn; label: string 
   DROPPED: { to: 'DRAFT', label: 'Khôi phục' },
 };
 
-export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, currentUserName = 'Nhân viên', currentUserId = 'staff', onNotify }) => {
+export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, stores = [], deals = [], currentUserName = 'Nhân viên', currentUserId = 'staff', onNotify, onCreateDeal }) => {
   const notify = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => onNotify?.(msg, type);
 
   const [plans, setPlans] = useState<InputPlanBreakdownState[]>(() => getCachedClientMonthlyPlans() || []);
@@ -157,9 +164,12 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
 
   const pushToSheetFromListing = async () => {
     if (!plan) return;
-    const rows = buildBookingListRowsFromListingItems(plan, items, planSlots, kocs);
+    // Chỉ đẩy KOC thuộc đợt đã chọn (Đợt 1 = list ngày 10, Đợt 2 = ngày 20, Đợt 3 = ngày 30)
+    const batchOfDot = (['BATCH_10', 'BATCH_20', 'BATCH_30'] as const)[Math.min(2, Math.max(0, pushForm.dot - 1))];
+    const inBatch = items.filter(i => (i.batchCycle || 'BATCH_10') === batchOfDot);
+    const rows = buildBookingListRowsFromListingItems(plan, inBatch, planSlots, kocs);
     if (rows.length === 0) {
-      notify('Chưa có KOC nào trên bảng để đẩy lên Google Sheet.', 'warning');
+      notify(`Đợt ${pushForm.dot} chưa có KOC nào để đẩy lên Google Sheet.`, 'warning');
       return;
     }
     setPushing(true);
@@ -213,6 +223,28 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
     }
   };
 
+  // Kéo Sheet 2 bước: xem trước thay đổi / mâu thuẫn, xác nhận rồi mới ghi
+  const [pullPreview, setPullPreview] = useState<SheetPullChange[] | null>(null);
+  const previewPull = async () => {
+    if (!plan) return;
+    setPulling(true);
+    try {
+      const res = await fetch('/api/booking-list/pull-sheet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId: plan.id, sheetUrl: pullForm.sheetUrl.trim(), tab: pullForm.tab.trim(), dryRun: true }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        notify(body?.error || `Lỗi ${res.status}`, 'error');
+        return;
+      }
+      setPullPreview(body.changes || []);
+    } finally {
+      setPulling(false);
+    }
+  };
+
   const pullFromSheet = async () => {
     if (!plan) return;
     setPulling(true);
@@ -228,6 +260,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
         return;
       }
       await reload();
+      setPullPreview(null);
       setPullOpen(false);
 
       setPullReport({
@@ -451,10 +484,61 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
     );
     update([...items, ...created]);
     setAddOpen(false);
+    void warnDuplicates(created.map(c => c.kocHandle || ''));
     notify(
       `Đã thêm ${created.length} KOC vào ${gradeText(addGrade)} (${BATCH_CYCLE_SPECS.find(b => b.key === addBatch)?.shortLabel || addBatch})${addPreview.duplicates ? `, bỏ qua ${addPreview.duplicates} KOC đã có` : ''}${addPreview.over ? '. Ngân sách bậc này đang vượt.' : '.'}`,
       addPreview.over ? 'warning' : 'success'
     );
+  };
+
+  // Cảnh báo (không chặn) khi KOC vừa thêm đang được list ở gian khác cùng nhãn trong tháng
+  const warnDuplicates = async (handles: string[]) => {
+    if (!plan || handles.length === 0) return;
+    try {
+      await saveNow();
+      const res = await fetch(`/api/listing-board?planId=${encodeURIComponent(plan.id)}&view=duplicates`, { cache: 'no-store' });
+      const body = await res.json().catch(() => null);
+      const wanted = new Set(handles.map(h => h.replace(/^@/, '').toLowerCase()));
+      const hits = ((body?.duplicates as { handle: string; storeName: string; pic: string }[]) || []).filter(d => wanted.has(d.handle));
+      if (hits.length > 0) {
+        notify(`KOC đã được list ở gian khác cùng nhãn: ${hits.map(h => `@${h.handle} (${h.storeName}${h.pic ? ` · ${h.pic}` : ''})`).join(', ')}. Kiểm tra để tránh book trùng.`, 'warning');
+      }
+    } catch {
+      /* chỉ là cảnh báo */
+    }
+  };
+
+  // --- gợi ý KOC (chấm điểm theo lịch sử deal, lấp chỗ thiếu theo KL) đưa thẳng vào bảng này ---
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const planStore = useMemo(
+    () => (plan ? stores.find(s => (plan.storeId && s.id === plan.storeId) || (plan.storeName && s.storeName === plan.storeName)) : undefined),
+    [plan, stores]
+  );
+  const addSuggested = (newListings: Partial<KocListingItem>[], _store: StorePortfolioItem, batchCycle: ListingBatchCycle) => {
+    if (!plan) return;
+    const seen = new Set(items.filter(i => i.overallStatus !== 'DROPPED').map(i => (i.kocHandle || '').replace(/^@/, '').toLowerCase()));
+    const created = newListings
+      .filter(n => n.kocHandle && !seen.has(n.kocHandle.replace(/^@/, '').toLowerCase()))
+      .map(n =>
+        createListingItem({
+          plan,
+          grade: (n.salaryGrade as KlCode | 'TAP UpAffiliate') || 'KL1',
+          handle: n.kocHandle!,
+          koc: kocs.find(k => (k.channelId || '').replace(/^@/, '').toLowerCase() === n.kocHandle!.replace(/^@/, '').toLowerCase()),
+          fee: n.proposedFee,
+          actorId: currentUserId,
+          actorName: currentUserName,
+          batchCycle,
+        })
+      );
+    if (created.length === 0) {
+      notify('Các KOC gợi ý đã có trên bảng.', 'info');
+      return;
+    }
+    update([...items, ...created]);
+    setSuggestOpen(false);
+    void warnDuplicates(created.map(c => c.kocHandle || ''));
+    notify(`Đã thêm ${created.length} KOC gợi ý vào bảng (cột Nháp).`, 'success');
   };
 
   // --- sửa một KOC ---
@@ -644,6 +728,9 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                 <Button size="md" variant="secondary" icon={Download} onClick={() => void exportLark31()} disabled={items.length === 0}>
                   Xuất file 3.1
                 </Button>
+                <Button size="md" variant="secondary" icon={Search} onClick={() => setSuggestOpen(true)}>
+                  Gợi ý KOC
+                </Button>
                 <Button size="md" variant="primary" icon={Plus} onClick={() => openAdd()}>
                   Thêm KOC
                 </Button>
@@ -655,6 +742,19 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                 Kế hoạch 4.1.1 đang ở trạng thái <strong>{plan.status || 'DRAFT'}</strong> — Hệ thống mở khóa cho phép chuyên viên lập sớm Danh sách KOC Đợt 1 (ngày 10–20/T-1) và đẩy Google Sheet xin Brand duyệt trước.
               </div>
             )}
+
+            {(() => {
+              // Cảnh báo (không chặn): KOC đã chốt vượt chỉ tiêu / ngân sách của bậc — ví dụ khi bản 4.1 mới về thấp hơn plan nháp
+              const over = progress.tiers.filter(t => (t.requiredQty > 0 && t.confirmed > t.requiredQty) || (t.requiredBudget > 0 && t.confirmedBudget > t.requiredBudget));
+              if (over.length === 0) return null;
+              return (
+                <div className="rounded-lg border border-warning/40 bg-warning-soft px-3.5 py-2 text-xs text-ink">
+                  <strong>KOC đã chốt vượt chỉ tiêu kế hoạch:</strong>{' '}
+                  {over.map(t => `${t.label} ${fmt(t.confirmed)}/${fmt(t.requiredQty)} video · ${fmt(t.confirmedBudget)}/${fmt(t.requiredBudget)}đ`).join(' — ')}.
+                  {' '}Kiểm tra lại với kế hoạch 4.1 trước khi tạo thêm Deal.
+                </div>
+              );
+            })()}
 
             <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
               {[
@@ -956,6 +1056,16 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                                   title="KOC tăng giá hoặc đổi lịch -> Tạo tin nhắn thuyết phục & trình lại Brand duyệt"
                                 >
                                   Trình lại Brand
+                                </button>
+                              )}
+                              {col.key === 'CONFIRMED' && onCreateDeal && plan && (
+                                <button
+                                  type="button"
+                                  onClick={() => onCreateDeal(plan.id, it.id)}
+                                  className="rounded bg-accent px-2 py-0.5 text-2xs font-medium text-white hover:opacity-90"
+                                  title="Sang bảng Deal & nghiệm thu và tạo Deal cho KOC này (mở Deal nếu đã có)"
+                                >
+                                  Tạo Deal
                                 </button>
                               )}
                               {(col.key === 'NEGOTIATING' || col.key === 'CONFIRMED') && (
@@ -1500,6 +1610,30 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
         )}
       </Modal>
 
+      <SheetPullPreviewModal
+        open={pullPreview !== null}
+        changes={pullPreview || []}
+        busy={pulling}
+        onCancel={() => setPullPreview(null)}
+        onConfirm={() => void pullFromSheet()}
+      />
+
+      {plan && (
+        <StoreShortlistFilterModal
+          isOpen={suggestOpen}
+          onClose={() => setSuggestOpen(false)}
+          stores={stores}
+          kocs={kocs}
+          deals={deals}
+          existingListings={items}
+          initialStoreId={planStore?.id}
+          activePlan={plan}
+          currentUserName={currentUserName}
+          onAddToListingBatch={addSuggested}
+          onNotify={onNotify}
+        />
+      )}
+
       <Modal
         open={!!evidenceTarget}
         onClose={() => setEvidenceTarget(null)}
@@ -1545,8 +1679,8 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
             <Button variant="ghost" onClick={() => setPullOpen(false)}>
               Đóng
             </Button>
-            <Button variant="primary" icon={RefreshCw} disabled={pulling || !pullForm.sheetUrl.trim() || !pullForm.tab.trim()} onClick={() => void pullFromSheet()}>
-              {pulling ? 'Đang đọc…' : 'Lấy kết quả'}
+            <Button variant="primary" icon={RefreshCw} disabled={pulling || !pullForm.sheetUrl.trim() || !pullForm.tab.trim()} onClick={() => void previewPull()}>
+              {pulling ? 'Đang đọc…' : 'Xem trước kết quả'}
             </Button>
           </>
         }

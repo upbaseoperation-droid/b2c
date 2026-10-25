@@ -165,7 +165,11 @@ export interface LarkPaymentRequestSlip {
     syncMode: 'LIVE_LARK_API' | 'ANYCROSS_WEBHOOK' | 'SANDBOX_SIMULATED';
     approvalStatus: 'PENDING_LEADER' | 'PENDING_DIRECTOR' | 'PENDING_FINANCE' | 'APPROVED' | 'PAID';
     syncedAt: string;
+    /** Trạng thái thô lần cuối đọc từ Lark Approval (PENDING / APPROVED / REJECTED / CANCELED) */
+    lastLarkStatus?: string;
   };
+  /** Job trên bảng Deal của từng dòng phiếu, để trạng thái phiếu tự cập nhật về Job */
+  planJobRefs?: Array<{ planId: string; dealId: string; jobId: string }>;
 }
 
 // 8 gian hàng có Trưởng nhóm Nguyễn Thị Ngọc Tâm sơ duyệt (Cột 55 File 4.1.1)

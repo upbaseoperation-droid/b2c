@@ -131,6 +131,20 @@ import {
   InputPlanBreakdownState
 } from '../lib/types';
 
+/** Ô phân công lưu ở Dữ liệu gốc trên máy chủ; bản sửa tạm trên trình duyệt không được đè lên các ô này. */
+const STORE_ASSIGNMENT_FIELDS = [
+  'b2cOwnerName', 'primaryPic', 'assignedStaff', 'assignedPic', 'b2cOwners', 'assignedMembers',
+  'bookingLeader', 'hasBookingLeader', 'backupOwnerName', 'backupOwnerId', 'isBackupActive', 'backupReason', 'backupFrom', 'backupTo',
+  'previousPic', 'handoverEffectiveDate', 'assignmentNotes', 'staffCodes',
+] as const;
+function withoutAssignment(o: Partial<StorePortfolioItem> | undefined): Partial<StorePortfolioItem> {
+  if (!o) return {};
+  const copy: Record<string, unknown> = { ...o };
+  for (const f of STORE_ASSIGNMENT_FIELDS) delete copy[f];
+  return copy as Partial<StorePortfolioItem>;
+}
+
+
 const FrozenTabBody = React.memo(
   function FrozenTabBody({
     tabKey,
@@ -736,7 +750,7 @@ export default function App() {
       const raw = localStorage.getItem('upbase_store_overrides_v1');
       if (!raw) return INITIAL_STORE_PORTFOLIOS;
       const overrides = JSON.parse(raw) as Record<string, Partial<StorePortfolioItem>>;
-      return INITIAL_STORE_PORTFOLIOS.map(st => overrides[st.id] ? { ...st, ...overrides[st.id] } : st);
+      return INITIAL_STORE_PORTFOLIOS.map(st => overrides[st.id] ? { ...st, ...withoutAssignment(overrides[st.id]) } : st);
     } catch {
       return INITIAL_STORE_PORTFOLIOS;
     }
@@ -761,7 +775,7 @@ export default function App() {
       const overrides = customEvt.detail;
       if (overrides && typeof overrides === 'object') {
         setStorePortfolios(prev =>
-          prev.map(st => (overrides[st.id] ? { ...st, ...overrides[st.id] } : st))
+          prev.map(st => (overrides[st.id] ? { ...st, ...withoutAssignment(overrides[st.id]) } : st))
         );
       }
     };
@@ -1322,10 +1336,34 @@ export default function App() {
   };
 
   const handleUpdateStore = (updatedStore: StorePortfolioItem) => {
+    const current = storePortfolios.find(s => s.id === updatedStore.id);
+    // Phân công (Booking chính, cùng làm, Leader, dự phòng) lưu vào Dữ liệu gốc trên máy chủ: quyền đọc từ đây
+    const assignment: Record<string, unknown> = {};
+    for (const f of STORE_ASSIGNMENT_FIELDS) {
+      const next = (updatedStore as unknown as Record<string, unknown>)[f];
+      const prev = current ? (current as unknown as Record<string, unknown>)[f] : undefined;
+      if (JSON.stringify(next ?? null) !== JSON.stringify(prev ?? null)) assignment[f] = next ?? null;
+    }
+    if (Object.keys(assignment).length > 0) {
+      void fetch('/api/master-data', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storeId: updatedStore.id, assignment }),
+      })
+        .then(async res => {
+          const body = await res.json().catch(() => null);
+          if (!res.ok) throw new Error(body?.error || `Lỗi ${res.status}`);
+          if (body?.store) setStorePortfolios(prev => prev.map(s => (s.id === updatedStore.id ? { ...s, ...body.store } : s)));
+        })
+        .catch(err => {
+          showToast(`Chưa lưu được phân công gian ${updatedStore.storeName}: ${err instanceof Error ? err.message : 'lỗi mạng'}`);
+          if (current) setStorePortfolios(prev => prev.map(s => (s.id === updatedStore.id ? { ...s, ...Object.fromEntries(STORE_ASSIGNMENT_FIELDS.map(f => [f, (current as unknown as Record<string, unknown>)[f]])) } : s)));
+        });
+    }
     try {
       const raw = localStorage.getItem('upbase_store_overrides_v1');
       const overrides = raw ? (JSON.parse(raw) as Record<string, Partial<StorePortfolioItem>>) : {};
-      overrides[updatedStore.id] = updatedStore;
+      overrides[updatedStore.id] = withoutAssignment(updatedStore);
       localStorage.setItem('upbase_store_overrides_v1', JSON.stringify(overrides));
       pushSharedStateToDb('store-overrides-v1', overrides);
     } catch {

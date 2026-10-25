@@ -15,6 +15,7 @@ import { dealBoardKey } from '@/lib/server/boardKeys';
 import { assertCanViewBooking, resolvePlanContext } from '@/lib/server/monthlyPlanStore';
 import { EMPTY_DEAL_BOARD, jobPaymentBlocker, sanitizeDealBoard, type DealBoardData, type DealJob } from '@/lib/dealBoardRules';
 import { getPlanActor } from '@/app/api/monthly-plans/_shared';
+import { applySlipStatusToJobs } from '@/lib/server/slipJobSync';
 
 export const dynamic = 'force-dynamic';
 
@@ -239,7 +240,9 @@ export async function POST(request: NextRequest) {
     await seedInitialPaymentSlips();
     const existingSlips = await listPaymentSlips();
     const body = (await request.json()) as {
-      mode?: 'SYNC_LARK_32_BOOKING_LIST';
+      mode?: 'SYNC_LARK_32_BOOKING_LIST' | 'SYNC_LARK_STATUS';
+      /** SYNC_LARK_STATUS: mã phiếu cần hỏi trạng thái trên Lark */
+      slipCode?: string;
       jobs?: Array<{
         jobId: string;
         jobCode: string;
@@ -270,6 +273,39 @@ export async function POST(request: NextRequest) {
       note?: string;
       month?: string;
     };
+
+    // Hỏi trạng thái phiếu trên Lark Approval và đưa về Job (dùng khi chưa cấu hình nhận thông báo tự động từ Lark)
+    if (body.mode === 'SYNC_LARK_STATUS') {
+      const slip = existingSlips.find(s => s.slipCode === body.slipCode || s.id === body.slipCode);
+      if (!slip) return NextResponse.json({ success: false, error: 'SLIP_NOT_FOUND', message: 'Không tìm thấy phiếu trong sổ phiếu.' }, { status: 404 });
+      const config = getLarkPaymentIntegrationConfig();
+      let next = slip;
+      if (slip.larkSync.syncMode === 'LIVE_LARK_API' && config.hasLarkCredentials && slip.larkSync.approvalInstanceCode) {
+        const token = await fetchLarkAppAccessToken();
+        const res = await fetch(`https://${config.domain}/open-apis/approval/v4/instances/${encodeURIComponent(slip.larkSync.approvalInstanceCode)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json().catch(() => null);
+        if (json?.code !== 0) {
+          return NextResponse.json({ success: false, error: 'LARK_ERROR', message: `Lark trả lỗi: ${json?.msg || `HTTP ${res.status}`}` }, { status: 502 });
+        }
+        const larkStatus = String(json.data?.status || '');
+        const order = ['PENDING_LEADER', 'PENDING_DIRECTOR', 'PENDING_FINANCE', 'APPROVED', 'PAID'];
+        const reached = larkStatus === 'APPROVED' && order.indexOf(slip.larkSync.approvalStatus) < order.indexOf('APPROVED') ? 'APPROVED' : slip.larkSync.approvalStatus;
+        next = { ...slip, larkSync: { ...slip.larkSync, approvalStatus: reached as typeof slip.larkSync.approvalStatus, lastLarkStatus: larkStatus, syncedAt: new Date().toISOString() } };
+        await mutatePaymentSlips(list => list.map(x => (x.id === next.id ? next : x)));
+      }
+      const touched = await applySlipStatusToJobs(next);
+      const rejected = ['REJECTED', 'CANCELED', 'DELETED'].includes(next.larkSync.lastLarkStatus || '');
+      return NextResponse.json({
+        success: true,
+        slip: next,
+        touched,
+        message: rejected
+          ? `Phiếu ${next.slipCode} đã bị ${next.larkSync.lastLarkStatus === 'REJECTED' ? 'từ chối' : 'hủy'} trên Lark. Sửa hồ sơ rồi lập phiếu mới.`
+          : `Phiếu ${next.slipCode}: ${next.larkSync.approvalStatus}. Đã cập nhật ${touched} Job.`,
+      });
+    }
 
     if (body.mode === 'SYNC_LARK_32_BOOKING_LIST') {
       const jobs = Array.isArray(body.jobs) ? body.jobs : [];
@@ -665,6 +701,7 @@ export async function POST(request: NextRequest) {
     const simulated = syncMode === 'SANDBOX_SIMULATED';
 
     const slip: LarkPaymentRequestSlip = {
+      planJobRefs: refs.length ? refs : undefined,
       id: `SLIP-${Date.now()}`,
       slipCode,
       requestType,
@@ -832,6 +869,9 @@ export async function PATCH(request: NextRequest) {
       if (e instanceof RecordError) return NextResponse.json({ success: false, error: 'CONFLICT', message: e.message }, { status: e.status });
       throw e;
     }
+
+    // Bước duyệt mới của phiếu tự cập nhật về Job
+    await applySlipStatusToJobs(updatedSlip).catch(() => 0);
 
     return NextResponse.json({
       success: true,

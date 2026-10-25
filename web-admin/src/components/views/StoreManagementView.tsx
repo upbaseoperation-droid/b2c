@@ -316,6 +316,20 @@ export function StoreManagementView({
     }
     setStoreOverrides(prev => ({ ...prev, [updated.id]: updated }));
     onUpdateStore?.(updated);
+    // Đổi Booking chính: chỉ chuyển deal / Job chưa đề nghị thanh toán của người bị thay (máy chủ xử lý)
+    if (logEntry.fromPic && logEntry.toPic && logEntry.fromPic.toLowerCase() !== logEntry.toPic.toLowerCase()) {
+      void fetch('/api/deal-board', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'TRANSFER_OWNER', storeId: updated.id, storeName: updated.storeName, fromPic: logEntry.fromPic, toPic: logEntry.toPic }),
+      })
+        .then(async res => {
+          const body = await res.json().catch(() => null);
+          if (res.ok && body?.transferred) onNotify?.(`Đã chuyển ${body.transferred} Job chưa thanh toán của ${logEntry.fromPic} sang ${logEntry.toPic}.`, 'success');
+          else if (!res.ok) onNotify?.(`Chưa chuyển được deal: ${body?.error || res.status}`, 'warning');
+        })
+        .catch(() => undefined);
+    }
     const assign = resolveStoreStaffAssignment(updated);
     const supportText =
       assign.supportStaff.length > 0 ? ` · Hỗ trợ: ${assign.supportStaff.join(', ')}` : '';

@@ -22,6 +22,9 @@ import {
 import { getPlanActor, handlePlanError, unauthorized } from '../monthly-plans/_shared';
 import { assertCanViewBooking, resolvePlanContext } from '@/lib/server/monthlyPlanStore';
 import { DealGuardError, guardDealBoardSave } from '@/lib/dealBoardGuard';
+import { isPersonInField } from '@/lib/staffIdentity';
+import { transferDealOwner } from '@/lib/server/dealOwnerTransfer';
+import { storeCoBookings, storeLeader, storeMainBooking } from '@/lib/storePositions';
 
 export const dynamic = 'force-dynamic';
 
@@ -143,15 +146,11 @@ export async function GET(request: NextRequest) {
             if (j.lifecycleStatus === 'CANCELLED' || j.lifecycleStatus === 'REPLACED' || j.lifecycleStatus === 'REPLACED_KOC') {
               continue;
             }
-            const isExplicitRollover =
-              j.lifecycleStatus === 'ROLLED_OVER_NEXT_MONTH' || j.lifecycleStatus === 'ROLLED_OVER';
+            // Chỉ Job chưa lên sóng mới chuyển sang tháng sau; Job đã lên sóng ở lại tháng cũ để làm nốt
             const hasAir = Boolean(j.airLink.trim() || j.airedAt);
             const fee = jobTotalFee(j);
-            const isFullyDone =
-              hasAir &&
-              j.acceptance.status === 'PASSED' &&
-              (fee === 0 || j.payment.status === 'PAID');
-            if (!isExplicitRollover && isFullyDone) continue;
+            if (hasAir || j.payment.status !== 'NONE') continue;
+            if (j.lifecycleStatus && !['ACTIVE', 'ROLLED_OVER_NEXT_MONTH', 'ROLLED_OVER'].includes(j.lifecycleStatus)) continue;
             candidates.push({
               sourcePlanId: prevPlan.id,
               sourceMonth: prevPlan.month,
@@ -177,11 +176,7 @@ export async function GET(request: NextRequest) {
               paymentStatus: j.payment.status,
               acceptanceStatus: j.acceptance.status,
               isAired: hasAir,
-              reasonLabel: !hasAir
-                ? 'Chưa có Link Air'
-                : j.acceptance.status !== 'PASSED'
-                ? 'Đã Air · Chờ nghiệm thu'
-                : 'Đã nghiệm thu · Chờ thanh toán 6.1',
+              reasonLabel: j.advancePayment?.status === 'PAID' ? 'Chưa lên sóng · Đã tạm ứng (mang sang)' : 'Chưa lên sóng',
             });
           }
         }
@@ -211,6 +206,8 @@ export async function GET(request: NextRequest) {
         storeCodes: ctx.store?.staffCodes || {},
         selfAirAllowed: Boolean(ctx.brand?.selfAirAllowed),
         me: { id: actor.id, name: actor.name, staffCode: actor.staffCode, role: actor.role },
+        // Người đang thuộc nhóm Booking của gian (để cảnh báo deal "mồ côi")
+        bookers: ctx.store ? [storeMainBooking(ctx.store), ...storeCoBookings(ctx.store), storeLeader(ctx.store), ctx.store.backupOwnerName || ''].filter(Boolean) : [],
       });
     } catch (err) {
       return handlePlanError(err);
@@ -318,56 +315,6 @@ export async function PUT(request: NextRequest) {
       return { deals, closingState: incoming.closingState ?? previous.closingState };
     });
 
-    // Đồng bộ ngược tiến độ vận hành (Link Air, Nghiệm thu, Phụ lục, Thanh toán) về kế hoạch tháng gốc đối với các Job cũ kéo sang xử lý tiếp
-    const syncBackBySourcePlan = new Map<string, Map<string, DealJob>>();
-    for (const d of saved.data.deals) {
-      for (const j of d.jobs || []) {
-        if (!j.sourcePlanId) continue;
-        const origCode = j.dependsOnJobCode || j.code;
-        if (!origCode) continue;
-        if (!syncBackBySourcePlan.has(j.sourcePlanId)) {
-          syncBackBySourcePlan.set(j.sourcePlanId, new Map());
-        }
-        syncBackBySourcePlan.get(j.sourcePlanId)!.set(origCode, j);
-      }
-    }
-    for (const [srcPlanId, jobByCode] of syncBackBySourcePlan.entries()) {
-      try {
-        const srcRec = await readRecord<DealBoardData>(keyOf(srcPlanId), EMPTY_DEAL_BOARD);
-        await updateRecord<DealBoardData>(keyOf(srcPlanId), EMPTY_DEAL_BOARD, srcRec.revision, async prevSrc => {
-          const srcBoard = sanitizeDealBoard(prevSrc);
-          const nextDeals = srcBoard.deals.map(d => {
-            let changed = false;
-            const nextJobs = (d.jobs || []).map(origJob => {
-              const updatedJob = jobByCode.get(origJob.code);
-              if (!updatedJob) return origJob;
-              changed = true;
-              return {
-                ...origJob,
-                sample: updatedJob.sample,
-                script: updatedJob.script,
-                airLink: updatedJob.airLink,
-                airedAt: updatedJob.airedAt,
-                sparkAdsCode: updatedJob.sparkAdsCode,
-                acceptance: updatedJob.acceptance,
-                appendixNo: updatedJob.appendixNo || origJob.appendixNo,
-                appendixDate: updatedJob.appendixDate || origJob.appendixDate,
-                appendixUrl: updatedJob.appendixUrl || origJob.appendixUrl,
-                invoiceCheck: updatedJob.invoiceCheck ?? origJob.invoiceCheck,
-                advancePayment: updatedJob.advancePayment ?? origJob.advancePayment,
-                payment: updatedJob.payment,
-                performance: updatedJob.performance,
-              };
-            });
-            return changed ? syncDealSummaryFields({ ...d, jobs: nextJobs }) : d;
-          });
-          return { ...srcBoard, deals: nextDeals };
-        });
-      } catch {
-        // Không làm gián đoạn lưu bảng hiện tại nếu bảng tháng cũ đang khóa
-      }
-    }
-
     return NextResponse.json({ data: saved.data, revision: saved.revision });
   } catch (err) {
     if (err instanceof DealGuardError) return NextResponse.json({ error: err.message, code: 'FORBIDDEN_CHANGE' }, { status: err.status });
@@ -376,7 +323,9 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// POST /api/deal-board — Kéo các Job còn treo / chờ dời từ kế hoạch tháng cũ sang kế hoạch tháng mới
+// POST /api/deal-board — Chuyển Job chưa lên sóng của tháng cũ sang tháng mới (sao chép).
+// Job tháng cũ: "Không hoàn thành (chuyển tháng sau)", không tính thực tế tháng cũ.
+// Bản sao: Job bình thường của tháng mới (ngân sách, đề nghị thanh toán ở tháng mới), mang theo HĐ/SOW, mẫu, kịch bản, tạm ứng đã chi.
 export async function POST(request: NextRequest) {
   const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
@@ -387,15 +336,48 @@ export async function POST(request: NextRequest) {
       targetWeek?: string;
       targetDeadline?: string;
       items?: Array<{ sourcePlanId: string; dealId: string; jobId: string }>;
+      /** TRANSFER_OWNER: bàn giao gian — chỉ chuyển deal / Job chưa đề nghị thanh toán của người bị thay */
+      storeId?: string;
+      storeName?: string;
+      fromPic?: string;
+      toPic?: string;
+      fromMonth?: string;
     };
+    if (body.action === 'TRANSFER_OWNER') {
+      const fromPic = (body.fromPic || '').trim();
+      const toPic = (body.toPic || '').trim();
+      if (!fromPic || !toPic || fromPic.toLowerCase() === toPic.toLowerCase()) {
+        return NextResponse.json({ error: 'Thiếu người bàn giao / người nhận.' }, { status: 400 });
+      }
+      const norm = (v?: string) => (v || '').trim().toLowerCase();
+      const plans = (await listMonthlyPlans(actor))
+        .map(p => p.plan)
+        .filter(p => (body.storeId && p.storeId === body.storeId) || (body.storeName && norm(p.storeName) === norm(body.storeName)))
+        .filter(p => !body.fromMonth || p.month >= body.fromMonth);
+      let storeCodes: Record<string, string> | undefined;
+      for (const p of plans) {
+        const ctx = await resolvePlanContext(p.id, actor);
+        if (!ctx.global && !ctx.positions.has('LEADER')) {
+          return NextResponse.json({ error: 'Chỉ Giám đốc hoặc Leader của gian được bàn giao deal.' }, { status: 403 });
+        }
+        storeCodes = ctx.store?.staffCodes;
+      }
+      const transferred = await transferDealOwner({ planIds: plans.map(p => p.id), fromPic, toPic, actorName: actor.name, storeCodes });
+      return NextResponse.json({ transferred, plans: plans.length });
+    }
     if (body.action !== 'PULL_HANGING_JOBS' || !body.targetPlanId || !Array.isArray(body.items) || body.items.length === 0) {
       return NextResponse.json({ error: 'Yêu cầu kéo Job không hợp lệ.' }, { status: 400 });
     }
 
-    const targetPlan = await assertPlanIdAccess(body.targetPlanId, actor, 'write');
+    const targetCtx = await resolvePlanContext(body.targetPlanId, actor);
+    const targetPlan = targetCtx.plan;
+    const ownerLevel = (c: typeof targetCtx) => c.global || c.positions.has('BOOKING_MAIN') || c.positions.has('LEADER');
+    const executor = (c: typeof targetCtx) => c.positions.has('BOOKING_CO') || c.positions.has('BACKUP');
+    if (!ownerLevel(targetCtx) && !executor(targetCtx)) {
+      return NextResponse.json({ error: 'Chỉ nhóm Booking của gian được chuyển Job sang tháng này.' }, { status: 403 });
+    }
     const nowIso = new Date().toISOString();
 
-    // Nhóm các job cần kéo theo sourcePlanId
     const bySourcePlan = new Map<string, Set<string>>();
     for (const it of body.items) {
       if (!it.sourcePlanId || !it.jobId) continue;
@@ -403,16 +385,15 @@ export async function POST(request: NextRequest) {
       bySourcePlan.get(it.sourcePlanId)!.add(it.jobId);
     }
 
-    const pulledJobsInfo: Array<{
-      sourcePlanId: string;
-      sourceMonth: string;
-      sourceDeal: PlanDeal;
-      sourceJob: DealJob;
-    }> = [];
+    const pulled: Array<{ sourcePlanId: string; sourceMonth: string; sourceDeal: PlanDeal; sourceJob: DealJob }> = [];
 
-    // 1. Đọc từ kế hoạch tháng cũ: GIỮ NGUYÊN lifecycleStatus = 'ACTIVE' ở tháng cũ để ngân sách vẫn tính ở tháng cũ, chỉ ghi chú đang xử lý tiếp ở tháng mới
+    // 1. Tháng cũ: kiểm từng Job (chưa lên sóng, chưa đề nghị thanh toán, người kéo có quyền với Job) rồi đánh dấu chuyển tháng
     for (const [sourcePlanId, jobIdsSet] of bySourcePlan.entries()) {
-      const sourcePlan = await assertPlanIdAccess(sourcePlanId, actor, 'write');
+      const srcCtx = await resolvePlanContext(sourcePlanId, actor);
+      const sourcePlan = srcCtx.plan;
+      if (sourcePlan.month >= targetPlan.month) {
+        return NextResponse.json({ error: 'Chỉ chuyển Job từ tháng trước sang tháng sau.' }, { status: 400 });
+      }
       const sourceRec = await readRecord<DealBoardData>(keyOf(sourcePlanId), EMPTY_DEAL_BOARD);
       await updateRecord<DealBoardData>(keyOf(sourcePlanId), EMPTY_DEAL_BOARD, sourceRec.revision, async prev => {
         const board = sanitizeDealBoard(prev);
@@ -420,76 +401,65 @@ export async function POST(request: NextRequest) {
           let changed = false;
           const nextJobs = (d.jobs || []).map(j => {
             if (!jobIdsSet.has(j.id)) return j;
+            if (j.airLink.trim() || j.airedAt) throw new RecordError(`Job ${j.code} đã lên sóng, làm nốt ở tháng ${sourcePlan.month}.`, 400);
+            if (j.payment.status !== 'NONE') throw new RecordError(`Job ${j.code} đã có đề nghị thanh toán, không chuyển tháng được.`, 400);
+            if (j.lifecycleStatus === 'ROLLED_OVER_NEXT_MONTH' && j.rolledOverToMonth) {
+              throw new RecordError(`Job ${j.code} đã chuyển sang tháng ${j.rolledOverToMonth}.`, 409);
+            }
+            const mine = isPersonInField(actor, j.pic, srcCtx.store?.staffCodes) || isPersonInField(actor, d.pic, srcCtx.store?.staffCodes);
+            if (!ownerLevel(srcCtx) && !(executor(srcCtx) && mine)) {
+              throw new RecordError(`Job ${j.code} do ${j.pic || d.pic || 'người khác'} phụ trách, bạn không chuyển được.`, 403);
+            }
             changed = true;
-            pulledJobsInfo.push({
-              sourcePlanId: sourcePlan.id,
-              sourceMonth: sourcePlan.month,
-              sourceDeal: d,
-              sourceJob: j,
-            });
+            pulled.push({ sourcePlanId: sourcePlan.id, sourceMonth: sourcePlan.month, sourceDeal: d, sourceJob: j });
             return {
               ...j,
-              lifecycleStatus: 'ACTIVE' as const,
+              lifecycleStatus: 'ROLLED_OVER_NEXT_MONTH' as const,
               rolledOverToMonth: targetPlan.month,
-              lifecycleNote: `Đang theo dõi & xử lý hoàn tất tại kỳ ${targetPlan.month} (${actor.name})`,
+              lifecycleNote: `Không hoàn thành trong tháng ${sourcePlan.month} — chuyển sang ${targetPlan.month} (${actor.name})`,
             };
           });
           if (!changed) return d;
           return syncDealSummaryFields({
             ...d,
             jobs: nextJobs,
-            history: [
-              ...(d.history || []),
-              {
-                at: nowIso,
-                actor: actor.name,
-                text: `Kéo Job sang kỳ ${targetPlan.month} để xử lý tiếp (ngân sách giữ tại ${sourcePlan.month})`,
-              },
-            ],
+            history: [...(d.history || []), { at: nowIso, actor: actor.name, text: `Chuyển Job chưa lên sóng sang tháng ${targetPlan.month}` }],
           });
         });
         return { ...board, deals: nextDeals };
       });
     }
 
-    if (pulledJobsInfo.length === 0) {
-      return NextResponse.json({ error: 'Không tìm thấy Job hợp lệ để kéo sang tháng mới.' }, { status: 404 });
+    if (pulled.length === 0) {
+      return NextResponse.json({ error: 'Không tìm thấy Job hợp lệ để chuyển sang tháng mới.' }, { status: 404 });
     }
 
-    // 2. Đưa các Job đã chọn vào deal-board của kế hoạch tháng mới (gắn sourcePlanId & sourcePlanMonth để không lẹm ngân sách tháng mới)
+    // 2. Tháng mới: thêm bản sao như Job bình thường (giữ người phụ trách cũ)
     const targetRec = await readRecord<DealBoardData>(keyOf(targetPlan.id), EMPTY_DEAL_BOARD);
     const pulledSummaryByTier: Record<string, { qty: number; budgetNet: number }> = {};
-
     const savedTarget = await updateRecord<DealBoardData>(keyOf(targetPlan.id), EMPTY_DEAL_BOARD, targetRec.revision, async prev => {
       const board = sanitizeDealBoard(prev);
       const deals = [...board.deals];
       const usedDealCodes = new Set(deals.map(d => d.code));
-      const usedJobCodes = new Set<string>();
-      for (const d of deals) {
-        for (const j of d.jobs || []) usedJobCodes.add(j.code);
-      }
-
-      for (const { sourcePlanId, sourceMonth, sourceDeal, sourceJob } of pulledJobsInfo) {
-        if (usedJobCodes.has(sourceJob.code)) continue;
-        const newCode = sourceJob.code || `RO-${Date.now().toString(36).toUpperCase()}`;
-        usedJobCodes.add(newCode);
-
+      const carried = new Set(deals.flatMap(d => (d.jobs || []).map(j => j.carriedFromJobCode).filter(Boolean)));
+      for (const { sourcePlanId, sourceMonth, sourceDeal, sourceJob } of pulled) {
+        if (carried.has(sourceJob.code)) continue;
         const clonedJob: DealJob = {
           ...sourceJob,
           id: newJobId(),
-          code: newCode,
           week: body.targetWeek || sourceJob.week,
           deadline: body.targetDeadline || sourceJob.deadline,
-          dependsOnJobCode: sourceJob.code,
-          sourcePlanId,
-          sourcePlanMonth: sourceMonth,
+          carriedFromPlanId: sourcePlanId,
+          carriedFromMonth: sourceMonth,
+          carriedFromJobCode: sourceJob.code,
+          sourcePlanId: undefined,
+          sourcePlanMonth: undefined,
           lifecycleStatus: 'ACTIVE',
           rolledOverToMonth: undefined,
-          lifecycleNote: `Job tồn kỳ ${sourceMonth} — Xử lý tiếp (Ngân sách thuộc ${sourceMonth})`,
+          lifecycleNote: `Chuyển từ tháng ${sourceMonth} (chưa lên sóng)`,
         };
-
         const tierKey = /TAP|FOC/i.test(sourceDeal.grade) ? 'FOC' : sourceDeal.grade || 'KL1';
-        if (!pulledSummaryByTier[tierKey]) pulledSummaryByTier[tierKey] = { qty: 0, budgetNet: 0 };
+        pulledSummaryByTier[tierKey] ??= { qty: 0, budgetNet: 0 };
         pulledSummaryByTier[tierKey].qty += 1;
         pulledSummaryByTier[tierKey].budgetNet += jobTotalFee(clonedJob);
 
@@ -500,34 +470,35 @@ export async function POST(request: NextRequest) {
           dealCode = `${sourceDeal.code}-R${suffix}`;
         }
         usedDealCodes.add(dealCode);
-
-        const newDeal: PlanDeal = syncDealSummaryFields({
-          ...sourceDeal,
-          id: newDealId(),
-          code: dealCode,
-          week: clonedJob.week,
-          fee: jobTotalFee(clonedJob),
-          jobs: [clonedJob],
-          createdAt: nowIso,
-          createdBy: actor.name,
-          history: [
-            ...(sourceDeal.history || []),
-            {
-              at: nowIso,
-              actor: actor.name,
-              text: `Nhận Job ${clonedJob.code} kéo từ kế hoạch tháng ${sourceMonth}`,
-            },
-          ],
-        });
-        deals.unshift(newDeal);
+        deals.unshift(
+          syncDealSummaryFields({
+            ...sourceDeal,
+            id: newDealId(),
+            code: dealCode,
+            week: clonedJob.week,
+            fee: jobTotalFee(clonedJob),
+            jobs: [clonedJob],
+            createdAt: nowIso,
+            createdBy: actor.name,
+            history: [...(sourceDeal.history || []), { at: nowIso, actor: actor.name, text: `Nhận Job ${sourceJob.code} chuyển từ tháng ${sourceMonth}` }],
+          })
+        );
       }
-
       return { ...board, deals };
     });
 
+    // Cảnh báo (không chặn): ngân sách booking tháng mới sau khi nhận Job chuyển sang
+    const pulledTotal = Object.values(pulledSummaryByTier).reduce((s, t) => s + t.budgetNet, 0);
+    const committed = savedTarget.data.deals.reduce((s, d) => s + (d.jobs || []).filter(j => !j.lifecycleStatus || j.lifecycleStatus === 'ACTIVE').reduce((x, j) => x + jobTotalFee(j), 0), 0);
+    const budget = Number(targetPlan.budgetAffiliate || targetPlan.totalTargetBudget || 0);
+    const warnings = budget > 0 && committed > budget
+      ? [`Ngân sách booking tháng ${targetPlan.month} đã cam kết ${committed.toLocaleString('vi-VN')}đ, vượt kế hoạch ${budget.toLocaleString('vi-VN')}đ (Job chuyển sang: ${pulledTotal.toLocaleString('vi-VN')}đ).`]
+      : [];
+
     return NextResponse.json({
-      pulledCount: pulledJobsInfo.length,
+      pulledCount: pulled.length,
       pulledSummaryByTier,
+      warnings,
       data: savedTarget.data,
       revision: savedTarget.revision,
     });

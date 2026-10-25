@@ -8,6 +8,11 @@ import { actionAllowed } from '@/lib/server/accessPolicy';
 import { assignmentChanges, normalizeAssignments, type AssignmentLogEntry } from '@/lib/assignmentNormalize';
 import { staffIndex } from '@/lib/server/staffDirectory';
 import { userStaffCode } from '@/lib/staffIdentity';
+import { isStaffGlobalAdminOrManager } from '@/lib/rbacScope';
+import { storeCoBookings, storeMainBooking, storePositionsOf } from '@/lib/storePositions';
+import { transferDealOwner } from '@/lib/server/dealOwnerTransfer';
+import { listMonthlyPlans } from '@/lib/server/monthlyPlanStore';
+import type { StorePortfolioItem } from '@/lib/types';
 
 export const runtime = 'nodejs';
 const headers = { 'Cache-Control': 'no-store' };
@@ -86,5 +91,85 @@ export async function PUT(req: NextRequest) {
     });
     await appendAssignmentLog(changes).catch(() => undefined);
     return NextResponse.json({ ...result, canEdit: true }, { headers });
+  } catch (e) { return failure(e); }
+}
+
+/** Ô phân công trên gian được sửa qua bàn giao / phân công nhân sự (không cần quyền sửa toàn bộ danh mục). */
+const ASSIGNMENT_FIELDS = [
+  'b2cOwnerName', 'primaryPic', 'assignedStaff', 'assignedPic', 'b2cOwners', 'assignedMembers',
+  'bookingLeader', 'hasBookingLeader', 'backupOwnerName', 'backupOwnerId', 'isBackupActive', 'backupReason', 'backupFrom', 'backupTo',
+  'previousPic', 'handoverEffectiveDate', 'assignmentNotes', 'staffCodes',
+] as const;
+/** Leader của gian chỉ đổi người cùng làm và dự phòng; Booking chính / Leader do Giám đốc đặt. */
+const LEADER_FIELDS = new Set<string>(['b2cOwners', 'assignedMembers', 'backupOwnerName', 'backupOwnerId', 'isBackupActive', 'backupReason', 'backupFrom', 'backupTo', 'assignmentNotes', 'staffCodes']);
+
+// PATCH /api/master-data — lưu phân công một gian (bàn giao, người cùng làm, dự phòng) lên máy chủ, ghi nhật ký phân công
+export async function PATCH(req: NextRequest) {
+  try {
+    if (req.headers.get('origin') !== req.nextUrl.origin) throw new RecordError('Yêu cầu không xuất phát từ ứng dụng.', 403);
+    const user = await requestActor(req);
+    if (!user) throw new RecordError('Phiên không còn quyền truy cập.', 401);
+    const body = (await req.json().catch(() => null)) as { storeId?: string; assignment?: Record<string, unknown> } | null;
+    if (!body?.storeId || !body.assignment || typeof body.assignment !== 'object') throw new RecordError('Thiếu gian hàng hoặc phân công.');
+    const index = await staffIndex();
+    const global = isStaffGlobalAdminOrManager(user);
+    let changes: AssignmentLogEntry[] = [];
+    let savedStore: StorePortfolioItem | undefined;
+    let removedBookers: string[] = [];
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const current = await readRecord('master-catalog', DEFAULT_MASTER_CATALOG);
+      try {
+        const result = await updateRecord('master-catalog', DEFAULT_MASTER_CATALOG, current.revision, previous => {
+          const store = previous.stores.find(s => s.id === body.storeId);
+          if (!store) throw new RecordError('Không tìm thấy gian hàng.', 404);
+          const normalizedPrev = normalizeAssignments(previous, index).catalog;
+          const positions = storePositionsOf(user, normalizedPrev.stores.find(s => s.id === store.id));
+          const patch: Record<string, unknown> = {};
+          for (const f of ASSIGNMENT_FIELDS) {
+            if (!(f in body.assignment!)) continue;
+            const before = JSON.stringify((store as unknown as Record<string, unknown>)[f] ?? null);
+            const after = JSON.stringify(body.assignment![f] ?? null);
+            if (before === after) continue;
+            if (!global && !(positions.has('LEADER') && LEADER_FIELDS.has(f))) {
+              throw new RecordError(`Bạn không được đổi "${f}" của gian ${store.storeName}. Giám đốc đặt Booking chính và Leader; Leader gian đặt người cùng làm và dự phòng.`, 403);
+            }
+            patch[f] = body.assignment![f];
+          }
+          if (patch.backupFrom && patch.backupTo && String(patch.backupTo) < String(patch.backupFrom)) {
+            throw new RecordError('Ngày kết thúc dự phòng phải sau ngày bắt đầu.');
+          }
+          const nextCatalog = {
+            ...previous,
+            stores: previous.stores.map(s => (s.id === store.id ? ({ ...s, ...patch, updatedAt: new Date().toISOString() } as StorePortfolioItem) : s)),
+          };
+          const normalized = normalizeAssignments(nextCatalog, index).catalog;
+          changes = assignmentChanges(previous, normalized, { name: user.name, code: userStaffCode(user) || undefined });
+          savedStore = normalized.stores.find(s => s.id === store.id);
+          const before = new Set([storeMainBooking(store), ...storeCoBookings(store)].map(n => n.trim().toLowerCase()).filter(Boolean));
+          const after = new Set([storeMainBooking(savedStore!), ...storeCoBookings(savedStore!)].map(n => n.trim().toLowerCase()).filter(Boolean));
+          removedBookers = [storeMainBooking(store), ...storeCoBookings(store)].filter(n => n && before.has(n.trim().toLowerCase()) && !after.has(n.trim().toLowerCase()) && n.trim().toLowerCase() !== storeMainBooking(store).trim().toLowerCase());
+          return normalized;
+        });
+        await appendAssignmentLog(changes).catch(() => undefined);
+        // Người cùng làm bị gỡ khỏi gian: deal / Job chưa đề nghị thanh toán của họ chuyển về Booking chính
+        let reassigned = 0;
+        if (savedStore && removedBookers.length) {
+          const main = storeMainBooking(savedStore);
+          const planIds = (await listMonthlyPlans(user).catch(() => []))
+            .map(p => p.plan)
+            .filter(p => p.storeId === savedStore!.id || (p.storeName || '').trim().toLowerCase() === savedStore!.storeName.trim().toLowerCase())
+            .map(p => p.id);
+          for (const name of removedBookers) {
+            if (main && name.toLowerCase() !== main.toLowerCase()) {
+              reassigned += await transferDealOwner({ planIds, fromPic: name, toPic: main, actorName: user.name, storeCodes: savedStore.staffCodes }).catch(() => 0);
+            }
+          }
+        }
+        return NextResponse.json({ store: savedStore, revision: result.revision, changes: changes.length, reassigned }, { headers });
+      } catch (e) {
+        if (!(e instanceof RecordError) || e.status !== 409 || attempt === 2) throw e;
+      }
+    }
+    throw new RecordError('Dữ liệu gốc đang được cập nhật, thử lại.', 409);
   } catch (e) { return failure(e); }
 }

@@ -267,6 +267,8 @@ export interface DealJobPayment {
   larkApprovalCode: string;
   larkRecordId: string;
   larkSyncedAt: string;
+  /** Bước duyệt hiện tại của phiếu trên Lark (máy chủ cập nhật từ sổ phiếu / Lark Approval) */
+  larkApprovalStatus?: string;
   /** Ảnh chụp Bill chuyển khoản (UNC) gửi lại cho KOC trong 7 ngày sau khi thanh toán (`Các SLA B2C.md` dòng 86) */
   uncBillUrl?: string;
   uncSentToKocAt?: string;
@@ -394,6 +396,10 @@ export interface DealJob {
   /** Mã kế hoạch và kỳ tháng gốc nếu Job này được kéo từ tháng cũ sang chỉ để theo dõi & xử lý nốt (không tính vào ngân sách tháng mới) */
   sourcePlanId?: string;
   sourcePlanMonth?: string;
+  /** Job sao chép từ tháng trước (chưa lên sóng): là Job bình thường của tháng này, ngân sách và thanh toán tính ở tháng này */
+  carriedFromPlanId?: string;
+  carriedFromMonth?: string;
+  carriedFromJobCode?: string;
   replacedByKocHandle?: string;
   performance: { d14: DealPerformance; d30: DealPerformance; d60: DealPerformance };
 }
@@ -1770,6 +1776,7 @@ export function sanitizeDealBoard(input: Partial<DealBoardData> | undefined): De
     larkApprovalCode: s(pay?.larkApprovalCode, 80),
     larkRecordId: s(pay?.larkRecordId, 80),
     larkSyncedAt: s(pay?.larkSyncedAt, 40),
+    larkApprovalStatus: s(pay?.larkApprovalStatus, 40) || undefined,
     uncBillUrl: s(pay?.uncBillUrl, 1000),
     uncSentToKocAt: day(pay?.uncSentToKocAt),
   });
@@ -1942,6 +1949,9 @@ export function sanitizeDealBoard(input: Partial<DealBoardData> | undefined): De
           rolledOverToMonth: s(j?.rolledOverToMonth, 20) || undefined,
           sourcePlanId: s(j?.sourcePlanId, 120) || undefined,
           sourcePlanMonth: s(j?.sourcePlanMonth, 20) || undefined,
+          carriedFromPlanId: s(j?.carriedFromPlanId, 120) || undefined,
+          carriedFromMonth: s(j?.carriedFromMonth, 20) || undefined,
+          carriedFromJobCode: s(j?.carriedFromJobCode, 80) || undefined,
           replacedByKocHandle: s(j?.replacedByKocHandle, 120) || undefined,
           performance: { d14: perf(j?.performance?.d14), d30: perf(j?.performance?.d30), d60: perf(j?.performance?.d60) },
         }))

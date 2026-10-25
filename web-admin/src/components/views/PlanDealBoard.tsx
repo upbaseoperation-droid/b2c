@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Camera, ChevronDown, ChevronRight, FileText, Plus, Search, Send, Trash2 } from 'lucide-react';
 import type { BookingDealItem, InputPlanBreakdownState, KocItem } from '../../lib/types';
 import { isPersonInField } from '../../lib/staffIdentity';
+import { SheetPullPreviewModal, type SheetPullChange } from './SheetPullPreviewModal';
 import { getVietnamDateYmd } from '../../lib/format';
 import { Button, Field, Input, Modal, Select, Textarea } from '../ui';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
@@ -119,6 +120,8 @@ interface PlanDealBoardProps {
   onNotify?: (message: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   /** Mở hồ sơ hợp đồng nguyên tắc (theo KOC), SOW hoặc biên bản nghiệm thu (theo từng Job) trong mô-đun Hợp đồng. */
   onOpenContract?: (deal: BookingDealItem, document: ContractDocument) => void;
+  /** Mở bảng ở kế hoạch này và tạo Deal cho KOC đã chốt trên List (bấm "Tạo Deal" ở thẻ List) */
+  focus?: { planId: string; listingItemId: string; nonce: number } | null;
 }
 
 const fmt = (v: number) => Math.round(v).toLocaleString('vi-VN');
@@ -139,7 +142,7 @@ const TD = 'border-b border-line px-2 py-1.5 align-middle text-[13px] text-ink';
 
 type PlanLite = InputPlanBreakdownState;
 
-export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], currentUserName = 'Nhân viên', onNotify, onOpenContract }) => {
+export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], currentUserName = 'Nhân viên', onNotify, onOpenContract, focus }) => {
   const notify = useCallback((msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => onNotify?.(msg, type), [onNotify]);
 
   const [plans, setPlans] = useState<PlanLite[]>([]);
@@ -238,9 +241,30 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
   }, [plans, activeMonth, search]);
   const plan = useMemo(() => plans.find(p => p.id === selectedId) || null, [plans, selectedId]);
 
-  const { data, status, update, saveNow } = usePlanRecord<DealBoardData>('/api/deal-board', plan?.id ?? null, EMPTY_DEAL_BOARD, msg => notify(msg, 'warning'));
+  const { data, status, update, saveNow, reload } = usePlanRecord<DealBoardData>('/api/deal-board', plan?.id ?? null, EMPTY_DEAL_BOARD, msg => notify(msg, 'warning'));
+  const [syncingSlip, setSyncingSlip] = useState('');
+  /** Hỏi trạng thái phiếu trên Lark; máy chủ tự ghi bước duyệt / đã chi về Job rồi tải lại bảng. */
+  const syncLarkSlip = async (slipCode: string) => {
+    setSyncingSlip(slipCode);
+    try {
+      await saveNow();
+      const res = await fetch('/api/integrations/larkbase/payment-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'SYNC_LARK_STATUS', slipCode }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body?.success) throw new Error(body?.message || body?.error || `Lỗi ${res.status}`);
+      await reload();
+      notify(body.message || 'Đã cập nhật trạng thái từ Lark.', 'success');
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Không cập nhật được trạng thái từ Lark.', 'error');
+    } finally {
+      setSyncingSlip('');
+    }
+  };
   // Vị trí của người dùng trên gian (máy chủ là nơi chặn; giao diện chỉ khóa sẵn cho dễ dùng)
-  const [boardAccess, setBoardAccess] = useState<{ global: boolean; positions: string[]; isAccountPic: boolean; storeCodes: Record<string, string>; me: { id: string; name: string; staffCode?: string; role: string } } | null>(null);
+  const [boardAccess, setBoardAccess] = useState<{ global: boolean; positions: string[]; isAccountPic: boolean; storeCodes: Record<string, string>; me: { id: string; name: string; staffCode?: string; role: string }; bookers?: string[] } | null>(null);
   useEffect(() => {
     if (!plan?.id) return;
     let alive = true;
@@ -534,7 +558,8 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       actor: currentUserName,
       existingCodes: deals.map(d => d.code),
       week: slot?.week || '',
-      pic: slot?.pic || '',
+      // Deal thuộc người phụ trách KOC trên List (Booking cùng làm giữ deal của mình)
+      pic: item.assignedStaffName || slot?.pic || currentUserName,
       slotId: slot?.id,
       briefCode: slot?.briefCode || '',
       pillar: slot?.pillar || '',
@@ -570,6 +595,25 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     }
     openDealWithJob(deal.id, deal.jobs[0]?.id);
   };
+
+  // Bấm "Tạo Deal" ở thẻ List: chọn đúng kế hoạch, chờ bảng tải xong rồi tạo (hoặc mở Deal đã có) đúng 1 lần
+  const handledFocus = React.useRef(0);
+  useEffect(() => {
+    if (!focus || handledFocus.current === focus.nonce) return;
+    const target = plans.find(p => p.id === focus.planId);
+    if (!target) return;
+    if (selectedId !== focus.planId) {
+      setMonth(target.month);
+      setSelectedId(focus.planId);
+      return;
+    }
+    if (status === 'loading' || status === 'idle' || !items.some(i => i.id === focus.listingItemId)) return;
+    handledFocus.current = focus.nonce;
+    const existing = deals.find(d => d.listingItemId === focus.listingItemId);
+    if (existing) openDealWithJob(existing.id, existing.jobs[0]?.id);
+    else makeDeal(focus.listingItemId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus, plans, selectedId, status, items, deals]);
 
   /** Nếu KOC trên bảng List đã có Deal trong kế hoạch, cho phép gộp dòng List này thành 1 Job mới trong Deal đó. */
   const addListingItemAsJobToDeal = (itemId: string, targetDealId: string) => {
@@ -1428,7 +1472,9 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     }
   };
 
-  const pullStage2FromBrandSheet = async () => {
+  // Kéo Sheet 2 bước: xem trước thay đổi / mâu thuẫn rồi mới ghi
+  const [stage2Preview, setStage2Preview] = useState<SheetPullChange[] | null>(null);
+  const pullStage2FromBrandSheet = async (confirm = false) => {
     if (!plan) return;
     if (!stage2SheetUrl.trim()) {
       notify('Dán link Google Sheet của Brand trước khi kéo kết quả.', 'warning');
@@ -1436,6 +1482,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     }
     setStage2Syncing(true);
     try {
+      await saveNow();
       const tabValue = (stage2TabName || defaultBookingTabName(plan.month)).trim();
       const res = await fetch('/api/booking-list/pull-sheet', {
         method: 'POST',
@@ -1445,17 +1492,18 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
           sheetUrl: stage2SheetUrl.trim(),
           tab: tabValue,
           tabName: tabValue,
-          actor: currentUserName,
+          dryRun: !confirm,
         }),
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) throw new Error(body?.error || `Lỗi ${res.status}`);
-      // Tải lại Deal Board sau khi server đã cập nhật kết quả Brand duyệt KB/Demo
-      const dRes = await fetch(`/api/deal-board?planId=${encodeURIComponent(plan.id)}`, { cache: 'no-store' });
-      const dBody = await dRes.json().catch(() => null);
-      if (dRes.ok && dBody?.data) {
-        update(dBody.data as DealBoardData);
+      if (!confirm) {
+        setStage2Preview(body.changes || []);
+        return;
       }
+      // Tải lại Deal Board sau khi server đã cập nhật kết quả Brand duyệt KB/Demo
+      await reload();
+      setStage2Preview(null);
       notify(`Đã kéo kết quả Brand duyệt Kịch bản / Video Demo từ Google Sheet.`, 'success');
       setStage2SheetOpen(false);
     } catch (err) {
@@ -3453,15 +3501,15 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
               <Button
                 size="md"
                 variant="primary"
-                disabled={Boolean(blocker) || pushingLarkJobId === job.id}
-                title={blocker || undefined}
+                disabled={Boolean(blocker) || job.payment.status !== 'NONE' || pushingLarkJobId === job.id}
+                title={blocker || (job.payment.status !== 'NONE' ? 'Job đã có phiếu đề nghị thanh toán' : undefined)}
                 onClick={() => void pushJobToLarkPayment(d, job)}
               >
                 <Send className="mr-1.5 h-3.5 w-3.5" />
                 {pushingLarkJobId === job.id
                   ? 'Đang đẩy về Lark…'
-                  : job.payment.larkSlipCode
-                  ? 'Đẩy lại phiếu Lark'
+                  : job.payment.status !== 'NONE'
+                  ? 'Đã lập phiếu thanh toán'
                   : 'Đẩy về Lark (Thanh toán Job)'}
               </Button>
             </div>
@@ -3473,7 +3521,13 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                 Đã đồng bộ sang Lark cho Kế toán · Mã phiếu: <strong>{job.payment.larkSlipCode}</strong> · Mã duyệt:{' '}
                 <strong>{job.payment.larkApprovalCode || '—'}</strong> · Bản ghi Bảng 3.2: <strong>{job.payment.larkRecordId || '—'}</strong>
               </div>
-              {job.payment.larkSyncedAt && <span className="text-ink-3">{job.payment.larkSyncedAt.slice(0, 16).replace('T', ' ')}</span>}
+              <div className="flex items-center gap-2">
+                {job.payment.larkApprovalStatus && <span className="text-ink-2">Bước: {job.payment.larkApprovalStatus}</span>}
+                {job.payment.larkSyncedAt && <span className="text-ink-3">{job.payment.larkSyncedAt.slice(0, 16).replace('T', ' ')}</span>}
+                <Button size="sm" variant="secondary" disabled={syncingSlip === job.payment.larkSlipCode} onClick={() => void syncLarkSlip(job.payment.larkSlipCode)}>
+                  {syncingSlip === job.payment.larkSlipCode ? 'Đang cập nhật…' : 'Cập nhật từ Lark'}
+                </Button>
+              </div>
             </div>
           )}
 
@@ -3645,7 +3699,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Button size="sm" variant="secondary" onClick={() => setPullHangingOpen(true)}>
-                  Kéo Job còn treo từ tháng cũ
+                  Chuyển Job chưa lên sóng từ tháng trước
                 </Button>
                 <Button size="sm" variant="secondary" disabled={syncingLark32} onClick={() => void syncJobsToLark32BookingList()}>
                   {syncingLark32 ? 'Đang đồng bộ Lark 3.2…' : 'Đồng bộ Lark 3.2 List duyệt book (Cả FOC 0đ)'}
@@ -3731,6 +3785,20 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                 ))}
               </div>
             )}
+
+            {(() => {
+              // Cảnh báo deal "mồ côi": người phụ trách không còn thuộc nhóm Booking của gian (nghỉ việc / bị gỡ)
+              if (!boardAccess?.bookers || boardAccess.bookers.length === 0) return null;
+              const active = (d: PlanDeal) => (d.jobs || []).some(j => (!j.lifecycleStatus || j.lifecycleStatus === 'ACTIVE') && j.payment.status !== 'PAID');
+              const orphans = deals.filter(d => d.pic?.trim() && active(d) && !boardAccess.bookers!.some(b => isPersonInField({ id: '', name: b }, d.pic, boardAccess.storeCodes)));
+              if (orphans.length === 0) return null;
+              const names = Array.from(new Set(orphans.map(d => d.pic)));
+              return (
+                <div className="mb-3 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-xs text-ink">
+                  <strong>{orphans.length} deal</strong> có người phụ trách không còn ở nhóm Booking của gian ({names.join(', ')}). Leader hoặc Giám đốc bàn giao ở Phân công nhân sự để có người làm tiếp.
+                </div>
+              );
+            })()}
 
             <div className="space-y-2">
               <div className="text-sm font-semibold text-ink">KOC đã duyệt trên List KOC, chờ tạo Deal / Job ({confirmedNoDeal.length})</div>
@@ -4066,6 +4134,14 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
           </>
         )}
       </section>
+
+      <SheetPullPreviewModal
+        open={stage2Preview !== null}
+        changes={stage2Preview || []}
+        busy={stage2Syncing}
+        onCancel={() => setStage2Preview(null)}
+        onConfirm={() => void pullStage2FromBrandSheet(true)}
+      />
 
       <Modal open={Boolean(openDeal)} onClose={() => setOpenDealId(null)} title={openDeal ? `Quản lý Deal ${openDeal.code} & các Job` : 'Deal'} size="xl">
         {openDeal && !canEditDealFields(openDeal) && (

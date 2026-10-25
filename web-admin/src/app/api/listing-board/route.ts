@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
 import { dealBoardKey, listingBoardKey } from '@/lib/server/boardKeys';
-import { assertCanViewBooking, resolvePlanContext } from '@/lib/server/monthlyPlanStore';
+import { assertCanViewBooking, listMonthlyPlans, resolvePlanContext } from '@/lib/server/monthlyPlanStore';
+import { readRecordsBatch } from '@/lib/server/sharedRecords';
 import { columnOf, itemFee } from '@/lib/listingBoardRules';
 import { guardListingSave } from '@/lib/listingBoardGuard';
 import { DealGuardError } from '@/lib/dealBoardGuard';
@@ -25,6 +26,30 @@ export async function GET(request: NextRequest) {
   if (!actor) return unauthorized();
   const planId = request.nextUrl.searchParams.get('planId') || '';
   if (!planId) return NextResponse.json({ error: 'Thiếu mã kế hoạch.' }, { status: 400 });
+  // GET /api/listing-board?planId=...&view=duplicates — KOC của kế hoạch này đang được list ở gian khác cùng nhãn, cùng tháng (để cảnh báo)
+  if (request.nextUrl.searchParams.get('view') === 'duplicates') {
+    try {
+      const ctx = await resolvePlanContext(planId, actor);
+      assertCanViewBooking(ctx);
+      const norm = (v?: string) => (v || '').replace(/^@/, '').trim().toLowerCase();
+      const mine = await readRecord<ListingBoardData>(keyOf(planId), { items: [] });
+      const myHandles = new Set((mine.data.items || []).filter(i => i.overallStatus !== 'DROPPED').map(i => norm(i.kocHandle)).filter(Boolean));
+      const siblings = (await listMonthlyPlans(actor))
+        .map(p => p.plan)
+        .filter(p => p.id !== planId && p.month === ctx.plan.month && norm(p.brandName) === norm(ctx.plan.brandName));
+      const records = await readRecordsBatch<ListingBoardData>(siblings.map(p => keyOf(p.id)), { items: [] });
+      const duplicates: { handle: string; storeName: string; pic: string; status: string }[] = [];
+      for (const p of siblings) {
+        for (const it of records.get(keyOf(p.id))?.data.items || []) {
+          if (it.overallStatus === 'DROPPED' || !myHandles.has(norm(it.kocHandle))) continue;
+          duplicates.push({ handle: norm(it.kocHandle), storeName: p.storeName || p.title, pic: it.assignedStaffName || '', status: columnOf(it) });
+        }
+      }
+      return NextResponse.json({ duplicates });
+    } catch (err) {
+      return handlePlanError(err);
+    }
+  }
   try {
     assertCanViewBooking(await resolvePlanContext(planId, actor));
     const rec = await readRecord<ListingBoardData>(keyOf(planId), { items: [] });

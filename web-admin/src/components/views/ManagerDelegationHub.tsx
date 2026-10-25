@@ -429,47 +429,18 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
     let transferredCount = 0;
     if (isPicChanged && shouldTransferJobs) {
+      // Máy chủ chỉ chuyển deal / Job chưa đề nghị thanh toán của người bị thay; Job của người cùng làm giữ nguyên
       try {
-        const pRes = await fetch('/api/monthly-plans', { cache: 'no-store' });
-        const pBody = await pRes.json().catch(() => null);
-        const allPlans = ((pBody?.plans as Array<{ plan: { id: string; storeName?: string; brandName?: string } }>) || []).map(p => p.plan);
-        const matchedPlans = allPlans.filter(p => {
-          const pStore = (p.storeName || '').trim().toLowerCase();
-          const tStore = (targetStore.storeName || '').trim().toLowerCase();
-          if (pStore && tStore) return pStore === tStore;
-          return (p.brandName || '').trim().toLowerCase() === (targetStore.brandName || '').trim().toLowerCase();
+        const tRes = await fetch('/api/deal-board', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'TRANSFER_OWNER', storeId: targetStore.id, storeName: targetStore.storeName, fromPic: prevOwner, toPic: nextOwner }),
         });
-        for (const mp of matchedPlans) {
-          const dRes = await fetch(`/api/deal-board?planId=${encodeURIComponent(mp.id)}`, { cache: 'no-store' });
-          const dBody = await dRes.json().catch(() => null);
-          const board = dBody?.data as { deals?: Array<{ id: string; pic?: string; jobs?: Array<{ id: string; pic?: string; payment?: { status?: string } }> }> } | undefined;
-          const revision = typeof dBody?.revision === 'number' ? dBody.revision : 0;
-          if (dRes.ok && board?.deals && board.deals.length > 0) {
-            let planChanged = false;
-            const nextDeals = board.deals.map(deal => {
-              let dealChanged = false;
-              const nextJobs = (deal.jobs || []).map(job => {
-                if (job.payment?.status !== 'PAID') {
-                  transferredCount += 1;
-                  dealChanged = true;
-                  planChanged = true;
-                  return { ...job, pic: nextOwner };
-                }
-                return job;
-              });
-              return dealChanged ? { ...deal, pic: nextOwner, jobs: nextJobs } : deal;
-            });
-            if (planChanged) {
-              await fetch('/api/deal-board', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ planId: mp.id, revision, data: { ...board, deals: nextDeals } }),
-              });
-            }
-          }
-        }
+        const tBody = await tRes.json().catch(() => null);
+        if (tRes.ok) transferredCount = tBody?.transferred || 0;
+        else notify(`Chưa chuyển được deal: ${tBody?.error || tRes.status}`);
       } catch {
-        /* không chặn bàn giao khi không đọc được deal-board */
+        /* không chặn bàn giao khi không gọi được máy chủ */
       }
     }
 

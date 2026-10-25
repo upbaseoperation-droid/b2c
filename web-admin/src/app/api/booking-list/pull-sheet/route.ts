@@ -75,7 +75,12 @@ export async function POST(request: NextRequest) {
   const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
   try {
-    const body = (await request.json()) as { planId?: string; sheetUrl?: string; tab?: string; tabName?: string };
+    const body = (await request.json()) as { planId?: string; sheetUrl?: string; tab?: string; tabName?: string; dryRun?: boolean };
+    // dryRun: chỉ so Sheet với app, trả danh sách thay đổi và mâu thuẫn để người dùng xác nhận trước khi ghi
+    const dryRun = body.dryRun === true;
+    type PullChange = { handle: string; briefCode?: string; field: string; app: string; sheet: string; conflict?: string };
+    const changes: PullChange[] = [];
+    const feeText = (v: number | null | undefined) => (typeof v === 'number' ? `${v.toLocaleString('vi-VN')}đ` : '—');
     const planId = body.planId || '';
     const tab = (body.tab || body.tabName || '').trim();
     const spreadsheetId = parseSpreadsheetId(body.sheetUrl || '');
@@ -190,6 +195,15 @@ export async function POST(request: NextRequest) {
         }
         const r = applyBrandDecision(item, d.decision, { reason: d.reason, note: d.note, actor: actor.name });
         let updatedItem = r.item;
+        if (r.changed && d.decision !== 'NONE') {
+          changes.push({ handle, briefCode: bCode || undefined, field: 'Brand duyệt', app: item.brandApprovalStatus, sheet: d.decision });
+        }
+        if (d.decision === 'REJECTED' && columnOf(item) === 'CONFIRMED') {
+          changes.push({ handle, briefCode: bCode || undefined, field: 'Brand duyệt', app: 'Đã chốt', sheet: 'No', conflict: 'KOC đã chốt trong app nhưng Sheet ghi Brand từ chối — giữ nguyên, cần trao đổi lại với Brand.' });
+        }
+        if (columnOf(item) === 'CONFIRMED' && typeof d.fee === 'number' && d.fee !== (item.finalFee ?? item.proposedFee)) {
+          changes.push({ handle, briefCode: bCode || undefined, field: 'Giá net video', app: feeText(item.finalFee ?? item.proposedFee), sheet: feeText(d.fee), conflict: 'Giá trên Sheet khác giá đã chốt — không ghi đè.' });
+        }
         // Đồng bộ lại Giá net video nếu Brand sửa giá trên Sheet (nhưng không ghi đè item đã CONFIRMED — L4)
         if (
           columnOf(updatedItem) !== 'CONFIRMED' &&
@@ -197,6 +211,7 @@ export async function POST(request: NextRequest) {
           d.fee >= 0 &&
           d.fee !== (updatedItem.finalFee ?? updatedItem.proposedFee)
         ) {
+          changes.push({ handle, briefCode: bCode || undefined, field: 'Giá net video', app: feeText(updatedItem.finalFee ?? updatedItem.proposedFee), sheet: feeText(d.fee) });
           updatedItem = { ...updatedItem, proposedFee: d.fee, finalFee: d.fee };
         }
         if (!r.changed) c.unchanged += 1;
@@ -216,6 +231,10 @@ export async function POST(request: NextRequest) {
         }
         return updatedItem;
       });
+      if (dryRun) {
+        Object.assign(summary, c, { notOnSheet, rejectedHandles, restoredHandles, approvedHandles, consideringHandles, rejectedDetails });
+        break;
+      }
       try {
         await updateRecord<{ items: KocListingItem[] }>(listingKey(planId), { items: [] }, rec.revision, () => ({ items }));
         Object.assign(summary, c, { notOnSheet, rejectedHandles, restoredHandles, approvedHandles, consideringHandles, rejectedDetails });
@@ -226,7 +245,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Kế hoạch content: hỗ trợ 1 Brief - N KOC (removeKocFromSlot / addKocToSlot) và đồng bộ Sản phẩm/Giá nếu Brand sửa trên Sheet
-    if (summary.rejectedHandles.length > 0 || summary.restoredHandles.length > 0 || decisionsByComposite.size > 0) {
+    if (!dryRun && (summary.rejectedHandles.length > 0 || summary.restoredHandles.length > 0 || decisionsByComposite.size > 0)) {
       const latestListingRec = await readRecord<{ items: KocListingItem[] }>(listingKey(planId), { items: [] });
       const confirmedHandles = new Set(
         (latestListingRec.data.items || [])
@@ -307,6 +326,18 @@ export async function POST(request: NextRequest) {
           if (!d) return job;
           const nextJob = { ...job, script: { ...job.script } };
           let jobTouched = false;
+          if (d.airLink && job.airLink.trim() && d.airLink !== job.airLink.trim()) {
+            changes.push({ handle: h, briefCode: bCode || undefined, field: 'Link Air', app: job.airLink, sheet: d.airLink, conflict: 'Link Air trên Sheet khác link trong app — giữ link trong app.' });
+          }
+          // Kết quả Brand (vòng 2) chỉ nhận khi B2C đã duyệt nội bộ vòng 1
+          const scriptV1Ok = !job.script.scriptUrl?.trim() || job.script.internalScriptAuditStatus === 'PASSED';
+          const demoV1Ok = !job.script.demoUrl?.trim() || job.script.internalDemoAuditStatus === 'PASSED';
+          if (d.brandScriptDecision && d.brandScriptDecision !== job.script.status && !scriptV1Ok) {
+            changes.push({ handle: h, briefCode: bCode || undefined, field: 'Brand duyệt kịch bản', app: job.script.status, sheet: d.brandScriptDecision, conflict: 'Kịch bản chưa đạt duyệt nội bộ vòng 1 — chưa nhận kết quả Brand.' });
+          }
+          if (d.brandDemoDecision && d.brandDemoDecision !== job.script.demoStatus && !demoV1Ok) {
+            changes.push({ handle: h, briefCode: bCode || undefined, field: 'Brand duyệt demo', app: job.script.demoStatus || 'NONE', sheet: d.brandDemoDecision, conflict: 'Demo chưa đạt duyệt nội bộ vòng 1 — chưa nhận kết quả Brand.' });
+          }
           if (d.scriptLink && !nextJob.script.scriptUrl) {
             nextJob.script.scriptUrl = d.scriptLink;
             jobTouched = true;
@@ -320,12 +351,14 @@ export async function POST(request: NextRequest) {
             nextJob.airedAt = nextJob.airedAt || nowYmd;
             jobTouched = true;
           }
-          if (d.brandScriptDecision && d.brandScriptDecision !== nextJob.script.status) {
+          if (d.brandScriptDecision && d.brandScriptDecision !== nextJob.script.status && scriptV1Ok) {
+            changes.push({ handle: h, briefCode: bCode || undefined, field: 'Brand duyệt kịch bản', app: job.script.status, sheet: d.brandScriptDecision });
             nextJob.script.status = d.brandScriptDecision;
             nextJob.script.at = nowYmd;
             jobTouched = true;
           }
-          if (d.brandDemoDecision && d.brandDemoDecision !== nextJob.script.demoStatus) {
+          if (d.brandDemoDecision && d.brandDemoDecision !== nextJob.script.demoStatus && demoV1Ok) {
+            changes.push({ handle: h, briefCode: bCode || undefined, field: 'Brand duyệt demo', app: job.script.demoStatus || 'NONE', sheet: d.brandDemoDecision });
             nextJob.script.demoStatus = d.brandDemoDecision;
             jobTouched = true;
           }
@@ -341,7 +374,7 @@ export async function POST(request: NextRequest) {
         });
         return dealTouched ? syncDealSummaryFields({ ...deal, jobs: nextJobs }) : deal;
       });
-      if (stage2Count === 0) break;
+      if (stage2Count === 0 || dryRun) break;
       try {
         await updateRecord<DealBoardData>(dealKey(planId), EMPTY_DEAL_BOARD, rec.revision, prev => ({ ...prev, deals: nextDeals }));
         summary.stage2UpdatedJobs = stage2Count;
@@ -351,7 +384,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, ...summary });
+    for (const h of duplicateConflicts) {
+      changes.push({ handle: h, field: 'Brand duyệt', app: '', sheet: 'Nhiều dòng khác nhau', conflict: 'Sheet có nhiều dòng của KOC này với kết quả khác nhau — app lấy dòng cuối.' });
+    }
+    return NextResponse.json({
+      ok: true,
+      dryRun,
+      ...summary,
+      changes,
+      conflicts: changes.filter(c => c.conflict).length,
+    });
   } catch (err) {
     if (err instanceof GoogleSheetsError) return NextResponse.json({ error: err.message, code: err.code }, { status: err.status });
     if (err instanceof RecordError) return NextResponse.json({ error: err.message }, { status: err.status });

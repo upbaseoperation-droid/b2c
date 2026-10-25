@@ -332,6 +332,11 @@ export async function resolveBrandPlanAccess(id: string, actor: UserProfile): Pr
   return { plan: stored.plan, access: brandPlanAccessSync(stored.plan, actor, data, canWrite, canRead) };
 }
 
+/** Mã mọi kế hoạch (cho việc đồng bộ của hệ thống, không lọc theo người dùng). */
+export async function allPlanIdsForSync(): Promise<string[]> {
+  return (await loadAllStoredPlans()).map(r => r.plan.id);
+}
+
 async function loadAllStoredPlans(actorForSeed?: UserProfile): Promise<StoredMonthlyPlan[]> {
   if (cachedPlansState && Date.now() < cachedPlansState.expiresAt) {
     return cachedPlansState.list;

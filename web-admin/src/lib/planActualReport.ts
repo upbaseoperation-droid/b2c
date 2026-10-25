@@ -68,6 +68,8 @@ export interface PlanActualStoreReport {
   dueToDate: { planQty: number; aired: number; lastEndedWeekEnd: string };
   budget: { plan: number; committed: number; paid: number; isOver: boolean; isUnbudgeted: boolean };
   state: ProgressState;
+  /** Job chưa lên sóng chuyển sang tháng sau (không tính thực tế tháng này) và Job nhận từ tháng trước (tính ở tháng này) */
+  carryOver: { movedOut: number; movedOutFee: number; carriedIn: number; carriedInFee: number };
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -290,5 +292,20 @@ export function buildPlanActualReport(
     dueToDate,
     budget,
     state,
+    carryOver: board.deals.reduce(
+      (acc, d) => {
+        for (const j of d.jobs || []) {
+          if (j.lifecycleStatus === 'ROLLED_OVER_NEXT_MONTH') {
+            acc.movedOut += 1;
+            acc.movedOutFee += jobTotalFee(j);
+          } else if (j.carriedFromMonth && (!j.lifecycleStatus || j.lifecycleStatus === 'ACTIVE')) {
+            acc.carriedIn += 1;
+            acc.carriedInFee += jobTotalFee(j);
+          }
+        }
+        return acc;
+      },
+      { movedOut: 0, movedOutFee: 0, carriedIn: 0, carriedInFee: 0 }
+    ),
   };
 }
