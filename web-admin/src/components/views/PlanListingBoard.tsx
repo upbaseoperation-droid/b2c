@@ -54,6 +54,9 @@ interface PlanListingBoardProps {
   onCreateDeal?: (planId: string, listingItemId: string) => void;
   currentUserName?: string;
   currentUserId?: string;
+  initialPlanId?: string;
+  initialStoreName?: string;
+  initialMonth?: string;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
@@ -68,22 +71,45 @@ const NEXT_ACTION: Partial<Record<BoardColumn, { to: BoardColumn; label: string 
   DROPPED: { to: 'DRAFT', label: 'Khôi phục' },
 };
 
-export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, stores = [], deals = [], currentUserName = 'Nhân viên', currentUserId = 'staff', onNotify, onCreateDeal }) => {
+export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
+  kocs,
+  stores = [],
+  deals = [],
+  currentUserName = 'Nhân viên',
+  currentUserId = 'staff',
+  initialPlanId,
+  initialStoreName,
+  initialMonth,
+  onNotify,
+  onCreateDeal,
+}) => {
   const notify = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => onNotify?.(msg, type);
 
   const [plans, setPlans] = useState<InputPlanBreakdownState[]>(() => getCachedClientMonthlyPlans() || []);
   const [plansState, setPlansState] = useState<'loading' | 'ready' | 'error'>(() =>
     getCachedClientMonthlyPlans() ? 'ready' : 'loading'
   );
-  const [month, setMonth] = useState('');
+  const [month, setMonth] = useState(initialMonth || '');
   const [search, setSearch] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialPlanId || null);
   const [tierFilter, setTierFilter] = useState<QuotaKey | null>(null);
   const [batchFilter, setBatchFilter] = useState<ListingBatchCycle | null>(null);
   const [picFilter, setPicFilter] = useState('');
   const [groupFilter, setGroupFilter] = useState('');
   const [planSlots, setPlanSlots] = useState<ContentSlot[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialMonth && initialMonth !== month) {
+      setMonth(initialMonth);
+    }
+  }, [initialMonth]);
+
+  useEffect(() => {
+    if (initialPlanId && initialPlanId !== selectedId) {
+      setSelectedId(initialPlanId);
+    }
+  }, [initialPlanId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,7 +133,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, stores
 
   const listable = useMemo(() => plans.filter(isPlanListable), [plans]);
   const months = useMemo(() => Array.from(new Set(listable.map(p => p.month))).sort().reverse(), [listable]);
-  const activeMonth = month || months[0] || '';
+  const activeMonth = month || initialMonth || months[0] || '';
   const visiblePlans = useMemo(() => {
     const q = search.trim().toLowerCase();
     return listable
@@ -115,6 +141,18 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, stores
       .filter(p => !q || `${p.storeName || ''} ${p.brandName} ${p.pic || ''}`.toLowerCase().includes(q))
       .sort((a, b) => (a.storeName || a.title).localeCompare(b.storeName || b.title));
   }, [listable, activeMonth, search]);
+
+  // Tự động chọn kế hoạch đầu tiên hoặc theo context khi dữ liệu sẵn sàng
+  useEffect(() => {
+    if (visiblePlans.length === 0) return;
+    const currentFound = visiblePlans.find(p => p.id === selectedId);
+    if (!currentFound) {
+      const matchInitial =
+        (initialPlanId && visiblePlans.find(p => p.id === initialPlanId)) ||
+        (initialStoreName && visiblePlans.find(p => p.storeName === initialStoreName));
+      setSelectedId((matchInitial || visiblePlans[0]).id);
+    }
+  }, [visiblePlans, selectedId, initialPlanId, initialStoreName]);
 
   const plan = useMemo(() => listable.find(p => p.id === selectedId) || null, [listable, selectedId]);
   const { items, status, update, saveNow, reload } = useListingBoard(plan?.id ?? null, msg => notify(msg, 'warning'));
@@ -644,98 +682,110 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, stores
   // ---------------------------------------------------------------------------------------------
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-      {/* Danh sách kế hoạch đã duyệt */}
-      <aside className="space-y-3 rounded-lg border border-line bg-surface p-3">
-        <div className="grid grid-cols-2 gap-2">
-          <Select value={activeMonth} onChange={e => setMonth(e.target.value)}>
-            {months.length === 0 && <option value="">Chưa có tháng</option>}
-            {months.map(m => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </Select>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-ink-3" />
-            <Input className="pl-8" placeholder="Tìm gian hàng" value={search} onChange={e => setSearch(e.target.value)} />
+    <div className="space-y-4">
+      {/* Thanh bộ lọc & Thao tác trên đầu */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-2xs font-semibold text-ink-3">Kỳ</span>
+            <Select
+              value={activeMonth}
+              onChange={e => {
+                setMonth(e.target.value);
+                setSelectedId(null);
+              }}
+              className="w-[120px]"
+            >
+              {months.length === 0 && <option value="">Chưa có kỳ</option>}
+              {months.map(m => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </Select>
           </div>
-        </div>
-        <div className="max-h-[70vh] space-y-1.5 overflow-y-auto">
-          {plansState === 'loading' && <div className="px-2 py-4 text-xs text-ink-3">Đang tải kế hoạch…</div>}
-          {plansState === 'ready' && visiblePlans.length === 0 && (
-            <div className="px-2 py-4 text-xs text-ink-3">Chưa có kế hoạch nào được Giám đốc duyệt trong tháng này.</div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-2xs font-semibold text-ink-3">Gian hàng</span>
+            <Select
+              value={selectedId || ''}
+              onChange={e => {
+                setSelectedId(e.target.value);
+                setTierFilter(null);
+              }}
+              className="min-w-[260px] max-w-[400px]"
+            >
+              {visiblePlans.length === 0 && <option value="">Không có kế hoạch trong kỳ</option>}
+              {visiblePlans.map(p => {
+                const required = p.items.filter(i => i.category === 'KOC_TIER').reduce((s, i) => s + (i.qty || 0), 0);
+                return (
+                  <option key={p.id} value={p.id}>
+                    {p.storeName || p.title} ({p.pic || 'Chưa giao'} · {fmt(required)} KOC)
+                  </option>
+                );
+              })}
+            </Select>
+          </div>
+
+          {plan && (
+            <div className="hidden xl:flex items-center gap-2 border-l border-line pl-3 text-xs text-ink-3">
+              <span>PIC: <strong className="text-ink">{plan.pic || 'Chưa giao'}</strong></span>
+              {plan.bookingLeader && (
+                <span>· Trưởng nhóm: <strong className="text-ink">{plan.bookingLeader}</strong></span>
+              )}
+              {statusLabel[status] && (
+                <span className="font-medium text-accent">· {statusLabel[status]}</span>
+              )}
+            </div>
           )}
-          {visiblePlans.map(p => {
-            const required = p.items.filter(i => i.category === 'KOC_TIER').reduce((s, i) => s + (i.qty || 0), 0);
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => {
-                  setSelectedId(p.id);
-                  setTierFilter(null);
-                }}
-                className={`w-full rounded-md border px-3 py-2 text-left transition ${
-                  p.id === selectedId ? 'border-accent bg-accent-soft' : 'border-line hover:bg-sunken'
-                }`}
-              >
-                <div className="truncate text-[13px] font-medium text-ink">{p.storeName || p.title}</div>
-                <div className="mt-0.5 flex items-center justify-between text-2xs text-ink-3">
-                  <span className="truncate">{p.pic || 'Chưa giao'}</span>
-                  <span className="tabular-nums">{fmt(required)} KOC</span>
-                </div>
-              </button>
-            );
-          })}
         </div>
-      </aside>
+
+        {plan && (
+          <div className="flex flex-wrap items-center gap-2">
+            {status === 'error' && (
+              <Button size="sm" variant="secondary" onClick={saveNow}>
+                Lưu lại
+              </Button>
+            )}
+            {pullReport && (
+              <Button size="md" variant="ghost" icon={FileText} onClick={() => setReportOpen(true)}>
+                Xem phiên vừa lấy
+              </Button>
+            )}
+            <Button size="md" variant="secondary" icon={Send} onClick={() => void openPush()} disabled={items.length === 0}>
+              Đẩy lên Google Sheet
+            </Button>
+            <Button size="md" variant="secondary" icon={RefreshCw} onClick={() => void openPull()} disabled={items.length === 0}>
+              Lấy kết quả Brand
+            </Button>
+            <Button size="md" variant="secondary" icon={Download} onClick={() => void exportLark31()} disabled={items.length === 0}>
+              Xuất file 3.1
+            </Button>
+            <Button size="md" variant="secondary" icon={Search} onClick={() => setSuggestOpen(true)}>
+              Gợi ý KOC
+            </Button>
+            <Button size="md" variant="primary" icon={Plus} onClick={() => openAdd()}>
+              Thêm KOC
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {plansState === 'loading' && (
+        <div className="rounded-lg border border-line bg-surface p-12 text-center text-xs text-ink-3">
+          Đang tải dữ liệu kế hoạch…
+        </div>
+      )}
+
+      {plansState === 'ready' && visiblePlans.length === 0 && (
+        <div className="rounded-lg border border-dashed border-line p-12 text-center text-xs text-ink-3">
+          Chưa có kế hoạch nào được duyệt trong kỳ {activeMonth}.
+        </div>
+      )}
 
       {/* Bảng điều phối */}
-      <section className="min-w-0 space-y-4">
-        {!plan || !progress ? (
-          <div className="rounded-lg border border-dashed border-line px-6 py-16 text-center text-sm text-ink-3">
-            Chọn một kế hoạch đã duyệt ở bên trái để bắt đầu listing.
-          </div>
-        ) : (
-          <>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="truncate text-base font-semibold text-ink">{plan.storeName || plan.title}</h2>
-                <div className="mt-0.5 text-xs text-ink-3">
-                  {plan.month} · {plan.pic || 'Chưa giao'}
-                  {plan.bookingLeader ? ` · Trưởng nhóm ${plan.bookingLeader}` : ''}
-                  {statusLabel[status] ? ` · ${statusLabel[status]}` : ''}
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {status === 'error' && (
-                  <Button size="sm" variant="secondary" onClick={saveNow}>
-                    Lưu lại
-                  </Button>
-                )}
-                {pullReport && (
-                  <Button size="md" variant="ghost" icon={FileText} onClick={() => setReportOpen(true)}>
-                    Xem phiên vừa lấy
-                  </Button>
-                )}
-                <Button size="md" variant="secondary" icon={Send} onClick={() => void openPush()} disabled={items.length === 0}>
-                  Đẩy lên Google Sheet
-                </Button>
-                <Button size="md" variant="secondary" icon={RefreshCw} onClick={() => void openPull()} disabled={items.length === 0}>
-                  Lấy kết quả Brand
-                </Button>
-                <Button size="md" variant="secondary" icon={Download} onClick={() => void exportLark31()} disabled={items.length === 0}>
-                  Xuất file 3.1
-                </Button>
-                <Button size="md" variant="secondary" icon={Search} onClick={() => setSuggestOpen(true)}>
-                  Gợi ý KOC
-                </Button>
-                <Button size="md" variant="primary" icon={Plus} onClick={() => openAdd()}>
-                  Thêm KOC
-                </Button>
-              </div>
-            </div>
+      {plan && progress && (
+        <section className="space-y-4">
 
             {!isPlanOfficiallyApproved(plan) && (
               <div className="rounded-lg border border-warning/40 bg-warning-soft px-3.5 py-2 text-xs text-warning">
@@ -1098,9 +1148,8 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, stores
                 );
               })}
             </div>
-          </>
-        )}
-      </section>
+        </section>
+      )}
 
 
       {/* Modal Báo cáo phiên lấy kết quả Brand duyệt */}

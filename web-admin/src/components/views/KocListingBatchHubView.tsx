@@ -1053,6 +1053,9 @@ export function KocListingBatchHubView({
           stores={stores}
           deals={deals}
           currentUserName={currentUserName}
+          initialPlanId={activePlanContext?.planId}
+          initialStoreName={activePlanContext?.storeName}
+          initialMonth={activePlanContext?.monthKey}
           onNotify={onNotify}
           onCreateDeal={(planId, listingItemId) => {
             setDealFocus({ planId, listingItemId, nonce: Date.now() });
