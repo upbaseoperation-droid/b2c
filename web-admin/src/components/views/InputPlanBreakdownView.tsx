@@ -2724,21 +2724,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-xs font-semibold text-slate-900">1. Cast trả phí (Affiliate Paid)</div>
-                        {(() => {
-                          const tiers = planState.reference41?.tiers;
-                          const kl4Plus = planState.reference41?.kl4PlusTarget;
-                          const activeTiers = tiers
-                            ? (['KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7'] as const)
-                                .filter(k => (tiers[k] || 0) > 0)
-                                .map(k => `${k}:${tiers[k]}`)
-                            : [];
-                          return (
-                            <div className="text-2xs text-slate-500 font-mono">
-                              {activeTiers.length > 0 ? activeTiers.join(' · ') : '4.1 KL1–KL7: Chưa tách bậc'}
-                              {kl4Plus !== undefined ? ` · KL4+: ${kl4Plus}` : ''}
-                            </div>
-                          );
-                        })()}
                       </div>
                       <button
                         type="button"
@@ -2748,7 +2733,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         }}
                         className="text-2xs font-semibold text-blue-600 shrink-0 cursor-pointer"
                       >
-                        KL1–KL7 →
+                        Chi tiết →
                       </button>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -2794,15 +2779,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-xs font-semibold text-slate-900">2. Mẫu FOC (0đ) &amp; TikTok Reup</div>
-                        {(() => {
-                          const fb = planState.reference41?.focBreakdown;
-                          const reup = planState.reference41?.tiktokReup || 0;
-                          return (
-                            <div className="text-2xs text-slate-500 font-mono">
-                              TAP Brand: {fb?.tapBrand || 0} · TAP: {fb?.tap || 0} · TAP Up: {fb?.tapUp || 0} · Reup TT: {reup}
-                            </div>
-                          );
-                        })()}
                       </div>
                       <button
                         type="button"
@@ -2812,7 +2788,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         }}
                         className="text-2xs font-semibold text-blue-600 shrink-0 cursor-pointer"
                       >
-                        Chi tiết FOC →
+                        Chi tiết →
                       </button>
                     </div>
                     <div className="grid grid-cols-3 gap-1.5 items-end">
@@ -2848,9 +2824,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-xs font-semibold text-slate-900">3. Kênh Brand (Self-channel)</div>
-                        <div className="text-2xs text-slate-500 font-mono">
-                          4.1 giao: {planState.reference41?.selfVideos ?? layer1Metrics.qtySelfChannel} video · Net {formatVndShort(planState.reference41?.selfCostNet ?? layer1Metrics.budgetSelfChannelNet)}
-                        </div>
                       </div>
                       <button
                         type="button"
@@ -2860,7 +2833,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         }}
                         className="text-2xs font-semibold text-blue-600 shrink-0 cursor-pointer"
                       >
-                        Kênh Brand →
+                        Chi tiết →
                       </button>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -2906,23 +2879,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-xs font-semibold text-slate-900">4. Đa sàn (Shopee, Threads, FB, IG)</div>
-                        {(() => {
-                          const mp = planState.reference41?.multiPlatform;
-                          const sp = mp?.shopee?.affQty || 0;
-                          const th = mp?.threads?.affQty || 0;
-                          const fb = mp?.facebook?.affQty || 0;
-                          const ig = mp?.instagram?.affQty || 0;
-                          const reupAll =
-                            (mp?.shopee?.reupQty || 0) +
-                            (mp?.threads?.reupQty || 0) +
-                            (mp?.facebook?.reupQty || 0) +
-                            (mp?.instagram?.reupQty || 0);
-                          return (
-                            <div className="text-2xs text-slate-500 font-mono">
-                              Shopee: {sp} · Threads: {th} · FB: {fb} · IG: {ig} (Reup: {reupAll})
-                            </div>
-                          );
-                        })()}
                       </div>
                       <button
                         type="button"
@@ -2932,7 +2888,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         }}
                         className="text-2xs font-semibold text-blue-600 shrink-0 cursor-pointer"
                       >
-                        Đa sàn →
+                        Chi tiết →
                       </button>
                     </div>
                     <div className="grid grid-cols-3 gap-1.5 items-end">
@@ -2972,18 +2928,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   <div className="p-2.5 space-y-1.5">
                     <div className="min-w-0">
                       <div className="text-xs font-semibold text-slate-900">5. Livestream (Affiliate &amp; Kênh Brand)</div>
-                      {(() => {
-                        const ref41 = planState.reference41;
-                        const liveAff = ref41?.liveSessions || 0;
-                        const ih = ref41?.liveSelf?.inhouse3h || 0;
-                        const ctv = ref41?.liveSelf?.ctv2h || 0;
-                        const br = ref41?.liveSelf?.brand2h || 0;
-                        return (
-                          <div className="text-2xs text-slate-500 font-mono">
-                            Live Aff: {liveAff} · Inhouse 3h: {ih} · CTV 2h: {ctv}{br > 0 ? ` · Brand 2h: ${br}` : ''}
-                          </div>
-                        );
-                      })()}
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       <div>
@@ -3031,7 +2975,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-slate-200 text-2xs text-slate-500 font-semibold bg-slate-50/50">
-                        <th className="py-1.5 px-2.5">Hạng mục &amp; Chi tiết Bảng 4.1</th>
+                        <th className="py-1.5 px-2.5">Hạng mục kênh</th>
                         <th className="py-1.5 px-2 text-right">Sản lượng</th>
                         <th className="py-1.5 px-2 text-right">Ngân sách Net (VNĐ)</th>
                         <th className="py-1.5 px-2 text-right">Quy đổi Gross</th>
@@ -3044,21 +2988,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       <tr className="hover:bg-slate-50/70">
                         <td className="py-1.5 px-2.5">
                           <div className="font-semibold text-slate-900">1. Cast trả phí (Affiliate Paid)</div>
-                          {(() => {
-                            const tiers = planState.reference41?.tiers;
-                            const kl4Plus = planState.reference41?.kl4PlusTarget;
-                            const activeTiers = tiers
-                              ? (['KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7'] as const)
-                                  .filter(k => (tiers[k] || 0) > 0)
-                                  .map(k => `${k}:${tiers[k]}`)
-                              : [];
-                            return (
-                              <div className="text-2xs text-slate-500 font-mono truncate">
-                                {activeTiers.length > 0 ? activeTiers.join(' · ') : '4.1 KL1–KL7: Chưa tách bậc'}
-                                {kl4Plus !== undefined ? ` · KL4+: ${kl4Plus}` : ''}
-                              </div>
-                            );
-                          })()}
                         </td>
                         <td className="py-1.5 px-2 text-right">
                           <div className="inline-flex items-center justify-end gap-1.5">
@@ -3112,7 +3041,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                               }}
                               className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
                             >
-                              KL1–KL7 →
+                              Chi tiết →
                             </button>
                           </div>
                         </td>
@@ -3122,15 +3051,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       <tr className="hover:bg-slate-50/70">
                         <td className="py-1.5 px-2.5">
                           <div className="font-semibold text-slate-900">2. Mẫu FOC (0đ) &amp; TikTok Reup</div>
-                          {(() => {
-                            const fb = planState.reference41?.focBreakdown;
-                            const reup = planState.reference41?.tiktokReup || 0;
-                            return (
-                              <div className="text-2xs text-slate-500 font-mono truncate">
-                                TAP Brand: {fb?.tapBrand || 0} · TAP: {fb?.tap || 0} · TAP Up: {fb?.tapUp || 0} · Reup TT: {reup}
-                              </div>
-                            );
-                          })()}
                         </td>
                         <td className="py-1.5 px-2 text-right">
                           <div className="inline-flex items-center justify-end gap-1.5">
@@ -3172,7 +3092,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                               }}
                               className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
                             >
-                              Chi tiết FOC →
+                              Chi tiết →
                             </button>
                           </div>
                         </td>
@@ -3182,9 +3102,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       <tr className="hover:bg-slate-50/70">
                         <td className="py-1.5 px-2.5">
                           <div className="font-semibold text-slate-900">3. Kênh Brand (Self-channel)</div>
-                          <div className="text-2xs text-slate-500 font-mono truncate">
-                            4.1 giao: {planState.reference41?.selfVideos ?? layer1Metrics.qtySelfChannel} video · Net {formatVndShort(planState.reference41?.selfCostNet ?? layer1Metrics.budgetSelfChannelNet)}
-                          </div>
                         </td>
                         <td className="py-1.5 px-2 text-right">
                           <div className="inline-flex items-center justify-end gap-1.5">
@@ -3238,7 +3155,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                               }}
                               className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
                             >
-                              Kênh Brand →
+                              Chi tiết →
                             </button>
                           </div>
                         </td>
@@ -3248,23 +3165,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       <tr className="hover:bg-slate-50/70">
                         <td className="py-1.5 px-2.5">
                           <div className="font-semibold text-slate-900">4. Đa sàn (Shopee, Threads, FB, IG)</div>
-                          {(() => {
-                            const mp = planState.reference41?.multiPlatform;
-                            const sp = mp?.shopee?.affQty || 0;
-                            const th = mp?.threads?.affQty || 0;
-                            const fb = mp?.facebook?.affQty || 0;
-                            const ig = mp?.instagram?.affQty || 0;
-                            const reupAll =
-                              (mp?.shopee?.reupQty || 0) +
-                              (mp?.threads?.reupQty || 0) +
-                              (mp?.facebook?.reupQty || 0) +
-                              (mp?.instagram?.reupQty || 0);
-                            return (
-                              <div className="text-2xs text-slate-500 font-mono truncate">
-                                Shopee: {sp} · Threads: {th} · FB: {fb} · IG: {ig} (Reup: {reupAll})
-                              </div>
-                            );
-                          })()}
                         </td>
                         <td className="py-1.5 px-2 text-right">
                           <div className="inline-flex items-center justify-end gap-1.5">
@@ -3313,7 +3213,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                               }}
                               className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
                             >
-                              Đa sàn →
+                              Chi tiết →
                             </button>
                           </div>
                         </td>
@@ -3323,18 +3223,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       <tr className="hover:bg-slate-50/70">
                         <td className="py-1.5 px-2.5">
                           <div className="font-semibold text-slate-900">5. Livestream (Affiliate &amp; Kênh Brand)</div>
-                          {(() => {
-                            const ref41 = planState.reference41;
-                            const liveAff = ref41?.liveSessions || 0;
-                            const ih = ref41?.liveSelf?.inhouse3h || 0;
-                            const ctv = ref41?.liveSelf?.ctv2h || 0;
-                            const br = ref41?.liveSelf?.brand2h || 0;
-                            return (
-                              <div className="text-2xs text-slate-500 font-mono truncate">
-                                Live Aff: {liveAff} · Inhouse 3h: {ih} · CTV 2h: {ctv}{br > 0 ? ` · Brand 2h: ${br}` : ''}
-                              </div>
-                            );
-                          })()}
                         </td>
                         <td className="py-1.5 px-2 text-right">
                           <div className="inline-flex items-center justify-end gap-1.5">
