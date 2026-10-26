@@ -1,71 +1,59 @@
 # Upbase B2C - Hướng Dẫn & Quy Tắc Vận Hành Trợ Lý (GEMINI.md)
 
-## 1. Cấm Lạm Dụng Từ Ngữ AI, Buzzword & Chữ Giải Thích Thừa Dưới Tiêu Đề
-- **Giao diện (UI):** Dùng từ ngữ nghiệp vụ đời thực của phòng ban Marketing/Vận hành/Kế toán.
-  - CẤM: "AI", "Trí tuệ nhân tạo", "Smart", "OCR AI", "1-chạm", "Siêu tốc", "Đột phá", "Toàn diện", "Live dynamic binding".
-  - DÙNG: "Tải ảnh giấy tờ", "Đọc ảnh CCCD", "Soạn hợp đồng", "Xem hợp đồng", "Duyệt chi", "Mã QR".
-- **Cấm tuyệt đối dòng chữ giải thích/phụ đề bên dưới tiêu đề:**
-  - Tuyệt đối KHÔNG viết dòng phụ đề xám (`subtitle`, `description`, `<p className="text-xs text-ink-2/3">`) bên dưới tiêu đề Trang (`TopHeader`), tiêu đề Khung (`Panel`), tiêu đề Hộp thoại (`Modal`), tiêu đề Khối (`SectionHeader`, `<h1>`, `<h2>`, `<h3>`) hoặc dòng `hint` giải thích dài dòng dưới ô nhập (`Field`).
-  - Mọi hộp thoại đều phải dùng component `<Modal>` chuẩn từ `src/components/ui`, không tự dựng header kèm đoạn văn giải thích cách hệ thống hoạt động.
+## 1. Ngôn Ngữ, Giao Diện & Quy Chuẩn Design System
+- **Tham chiếu bắt buộc:** Mọi màn hình, bảng biểu, hộp thoại đều phải tuân thủ nghiêm ngặt [`web-admin/DESIGN_SYSTEM.md`](web-admin/DESIGN_SYSTEM.md) và nhập thành phần từ `@/components/ui`.
+- **Thành phần dựng trang chuẩn:**
+  - Bảng dữ liệu: Dùng `<DataTable>`, `<FilterBar>`, `<Pagination>`, `<ActionMenu>`; không tự viết thẻ `<table>` thô.
+  - Khung & Khối: Dùng `<Panel>`, `<StatRow>` / `<Stat>` (tối đa 4 chỉ số đầu trang), `<EmptyState>` khi không có dữ liệu.
+  - Tác vụ & Hộp thoại: Dùng `<Modal>` (tác vụ ngắn), `<ConfirmDialog>` (xác nhận xóa/hủy/duyệt); `<Button>` tối đa 1 nút `primary` cho mỗi vùng. Phân biệt rõ props: `<Modal open onClose={...}>` và `<ConfirmDialog open onCancel={...} onConfirm={...}>`.
+  - Định danh & Trạng thái: Dùng `<Person>` / `<Avatar>` cho nhân sự; `<ChannelTag>` / `<ChannelBar>` cho kênh/sàn; `<Status>` cho trạng thái nghiệp vụ.
+- **Hệ màu Token ngữ nghĩa (Cấm tự bịa màu Tailwind):**
+  - Chỉ dùng class token: `bg-canvas`, `bg-surface`, `bg-sunken`, `text-ink`, `text-ink-2`, `text-ink-3`, `border-line`, `border-line-strong`.
+  - Màu nhấn chính: Nút chính dùng than đen `primary` (`#2B2B2B`), liên kết và tiến độ dùng xanh mực `accent` (`#24457A`).
+  - Màu trạng thái: `positive` (đã duyệt/hoàn tất), `warning` (chờ duyệt/sắp hạn), `critical` (vượt trần/quá hạn/lỗi). Màu kênh chỉ dùng cho biểu đồ, không thay thế màu trạng thái.
+  - Tuyệt đối CẤM: gradient, bóng màu (`shadow-blue-...`), màu tím (`purple`), hồng (`pink`), xanh ngọc (`cyan`) và nền tối cho khối nội dung.
+- **Font chữ, cỡ chữ & Từ ngữ nghiệp vụ:**
+  - Font Be Vietnam Pro; cỡ chữ tối thiểu 12px (`text-2xs`), cấm dùng `text-[9-11px]`; không viết hoa toàn bộ (`uppercase`) tiêu đề cột.
+  - Dùng từ ngữ nghiệp vụ đời thực (Tải ảnh giấy tờ, Đọc ảnh CCCD, Soạn hợp đồng, Duyệt chi, Mã QR).
+  - CẤM từ ngữ buzzword/quảng cáo: "AI", "Trí tuệ nhân tạo", "Smart", "OCR AI", "1-chạm", "Siêu tốc", "Đột phá", "Toàn diện", "Live dynamic binding".
+  - CẤM tuyệt đối dòng chữ giải thích/phụ đề xám (`subtitle`, `description`, `hint`) bên dưới tiêu đề Trang (`TopHeader`), Khung (`Panel`), Hộp thoại (`Modal`), Khối (`SectionHeader`) hoặc dưới ô nhập (`Field`).
 - **Giao tiếp:** Trả lời ngắn gọn, thẳng thắn, không liệt kê hoa mỹ, không dùng giọng điệu robot hay marketing quảng cáo.
 
-## 2. Tiêu Chuẩn Kỹ Thuật & Vận Hành B2C
-- Kiểm tra `npm run build` trước khi báo cáo kết quả.
-- Đảm bảo mã nguồn TypeScript sạch sẽ, không lỗi type.
-- Tôn trọng các quy chuẩn SLA B2C và luồng duyệt tài chính.
+## 2. Tiêu Chuẩn Kỹ Thuật, Kiến Trúc Next.js & Độc Lập Môi Trường
+- **Kiểm tra bắt buộc trước khi báo cáo:** Chạy `npm run typecheck` (`tsc --noEmit`) và `npm run build`. Đảm bảo mã nguồn TypeScript sạch sẽ, 0 lỗi type.
+- **Ranh giới Server vs Client (Next.js 16 / React 19):**
+  - Mọi component có hook (`useState`, `useEffect`, `useCallback`) hoặc tương tác DOM bắt buộc có `'use client'` ở dòng đầu tiên.
+  - Tuyệt đối KHÔNG import module server (`node:fs`, `node:crypto`, `prisma`, `@/lib/server/*`) vào Client Component.
+- **Cơ chế Fallback bền vững (Zero-Crash Standalone):**
+  - Mọi API route hoặc dịch vụ đọc Database (Prisma) hoặc File nhị phân (mẫu Word `.docx`) BẮT BUỘC phải có nhánh xử lý dự phòng đọc từ Snapshot tĩnh / In-Memory cache (`OFFICIAL_TEMPLATES_SNAPSHOT`, mock store) khi thiếu biến môi trường `DATABASE_URL` hoặc thiếu file vật lý trên đĩa.
+  - Không để hệ thống bị sập (lỗi 500/503) hoặc đứt gãy kiểm thử khi chạy ở chế độ độc lập / local dev.
 
-## 3. Quy Tắc Nghiệp Vụ Đối Soát Kế Hoạch & Booking B2C
-- **Phân cấp quản trị Thương hiệu (Brand -> Gian hàng):**
-  - **Mức Brand (Thương hiệu):** Là cấp cao nhất, ký hợp đồng dịch vụ tổng thể, giao ngân sách chiến dịch tổng và định mức phê duyệt kịch bản/đơn giá (Brand Guideline).
-  - **Mức Gian hàng (Store / Platform):** Một Brand sở hữu nhiều gian hàng trên các sàn (`TikTok`, `Shopee`, `Lazada`...). Hạn mức Order được phân bổ chi tiết theo từng gian hàng nhưng phải tuân thủ định mức của Brand.
-- **Phạm vi phân tích B2C:** Chỉ tính toán các gian hàng có `B2C phụ trách = 1` (Cột 25 trong file 4.1 Plan order tổng). Tuyệt đối không gộp gian hàng thuộc Social Commerce hoặc Outright của phòng ban khác trừ khi được yêu cầu rõ ràng.
-- **Cơ cấu tổ chức & Phân bổ Leader - Specialist phòng B2C:**
-  - **Cấp Ban Giám Đốc / Tổng Giám Đốc (CEO):** `Đỗ Văn Giang` — Phụ trách chung định hướng doanh nghiệp, bảo trợ nguồn lực, phê duyệt chiến lược toàn hệ thống và ký duyệt cấp cao nhất.
-  - **Cấp Giám Đốc Marketing (Lead B2C):** `Đặng Thị Yến Nhi` — Phụ trách chung toàn khối Marketing B2C, quản lý trần PnL/ngân sách toàn bộ 69 gian hàng B2C, ký duyệt kế hoạch tháng và đại diện ký biên bản 4 bên.
-  - **Cấp Trưởng Nhóm (Leader):** Xem thực tế tại Cột 55 File 4.1.1 (chỉ có `Nguyễn Thị Ngọc Tâm` làm Trưởng nhóm phụ trách 8 gian hàng: ClubClio TikTok/Shopee, Cindy Bloom, Mine, EUPC, L'Occitane, Bye Bye Blemish, Rejuran).
-  - **Cấp Chuyên Viên (Specialist / PIC):** Các nhân sự nhận order tại File 4.1 (Cột 25, 39, 60) và File 4.1.1 (Cột 3, 50) như `Lê Phương Thảo`, `Lương Thị Như Quỳnh`, `Lê Thanh Hải`, `Phạm Thị Thu Hằng`, `Hoàng Hải Long`, `Trần Hải Phượng`, `Phan Diệu Ánh`, `Vũ Hoài Lâm`, `Nguyễn Thị Mai Anh`... là **Chuyên viên thực thi**, KHÔNG PHẢI Leader.
-  - **Quy tắc gian hàng không có Leader:** Đối với các gian hàng chỉ có 1 người phụ trách (toàn bộ các gian Shopee và nhiều gian TikTok) hoặc Cột 55 trong File 4.1.1 để trống, gian hàng ghi nhận **Không có leader** (`bookingLeader: undefined`). Chuyên viên chủ động lập phân rã và trình duyệt trực tiếp lên Giám Đốc Marketing (`Đặng Thị Yến Nhi`) mà không cần bước sơ duyệt trung gian.
-- **Bóc tách chỉ tiêu Order Growth:**
-  - Tách bạch rõ ràng **Chi phí Gross** và **Chi phí Net** (Kế toán kiểm soát theo hạn mức Net).
-  - Tách bạch rõ **Video KOC trả phí** (Paid) và **Suất gửi mẫu sản phẩm miễn phí (FOC)** (chi phí 0đ, thường do chuyên viên riêng phụ trách như Trần Thị Hảo).
-  - Tách biệt rõ **Video Affiliate**, **Video kênh Brand (Self-channel)** và **Livestream**.
-- **Nguyên tắc cảnh báo tài chính:**
-  - Cảnh báo ngay khi gian hàng có Thực tế duyệt chi vượt hạn mức Order Net (Overbudget).
-  - Báo động đỏ khi có gian hàng phát sinh chi phí lớn nhưng hạn mức Order ghi nhận 0đ (Unbudgeted Spend) để yêu cầu bổ sung phê duyệt.
+## 3. Quy Chuẩn Vận Hành, Thẩm Quyền & Định Dạng Số Liệu B2C
+- **Phân cấp thẩm quyền phê duyệt phòng B2C:**
+  - **Cấp Tổng Giám Đốc (CEO) — Đỗ Văn Giang:** Phê duyệt chiến lược toàn hệ thống, bảo trợ nguồn lực và ký duyệt cấp cao nhất.
+  - **Cấp Giám Đốc Marketing (Lead B2C) — Đặng Thị Yến Nhi:** Quản lý trần PnL/ngân sách toàn bộ 69 gian hàng B2C, ký duyệt kế hoạch tháng và đại diện ký biên bản 4 bên.
+  - **Cấp Trưởng Nhóm (Leader) — Nguyễn Thị Ngọc Tâm:** Phụ trách nhóm 8 gian hàng trọng điểm theo Cột 55 File 4.1.1 (ClubClio TikTok/Shopee, Cindy Bloom, Mine, EUPC, L'Occitane, Bye Bye Blemish, Rejuran).
+  - **Quy tắc gian hàng không có Leader:** Các gian hàng còn lại (Shopee và TikTok khác) không có chức danh Leader trung gian. Chuyên viên thực thi (PIC) chủ động lập phân rã và trình duyệt trực tiếp lên Giám Đốc Marketing (`Đặng Thị Yến Nhi`).
+- **Phân cấp quản trị Thương hiệu vs Gian hàng:**
+  - Một Brand sở hữu nhiều gian hàng trên các sàn (`TikTok`, `Shopee`, `Lazada`...). Hạn mức Order được phân bổ chi tiết theo từng gian hàng nhưng phải tuân thủ định mức chung của Brand.
+  - Phạm vi B2C: Chỉ tính các gian hàng có `B2C phụ trách = 1` (Cột 25 File 4.1). Tách bạch rõ **Chi phí Gross** và **Chi phí Net** (Kế toán kiểm soát theo hạn mức Net); tách riêng **Video trả phí**, **Suất gửi mẫu FOC**, **Video Affiliate**, **Kênh Brand** và **Livestream**.
+- **Quy chuẩn Định dạng & Bảo mật Dữ liệu B2C:**
+  - **Tiền tệ:** Luôn là **số nguyên VND** (không có số thập phân lẻ `.00`), định dạng qua `Intl.NumberFormat('vi-VN')`.
+  - **Tỷ lệ & Hiệu số:** Mọi phép tính chia tỷ lệ hoàn thành / ROI bắt buộc chặn mẫu số bằng 0 (`denominator === 0 ? 0 : ...`) để tránh văng `NaN` hoặc `Infinity` lên giao diện.
+  - **Ngày tháng:** Chuẩn Việt Nam `DD/MM/YYYY` hoặc `YYYY/MM` (giờ VN UTC+7), cấm dùng chuẩn Mỹ `MM/DD/YYYY`.
+  - **Bảo vệ dữ liệu nhạy cảm (Data Masking):** Số CCCD, Số tài khoản ngân hàng và Số điện thoại của KOC trên các bảng danh sách công cộng phải được che mờ (chỉ hiển thị 4 số cuối: `****5678`), chỉ mở đầy đủ khi có quyền Kế toán / Pháp chế mở xem chi tiết.
+  - **Cảnh báo tài chính:** Báo động đỏ ngay khi phát sinh chi phí vượt trần (Overbudget) hoặc gian hàng có chi phí nhưng hạn mức ghi nhận 0đ (Unbudgeted Spend).
 
-## 4. Quy Tắc Đồng Bộ Tài Liệu & Mã Nguồn (Documentation Sync Rule)
-- **Nguyên tắc "Code đổi - Doc cập nhật trong cùng một lượt":** Bất kỳ khi nào phát triển tính năng mới, sửa đổi luồng nghiệp vụ, mở rộng API, thêm trường dữ liệu, thay đổi ma trận phân quyền (RBAC) hay cấu trúc điều hướng/giao diện người dùng, BẮT BUỘC phải cập nhật đồng bộ các tài liệu đặc tả hệ thống tương ứng (`blueprint/2-design/`, `blueprint/README.md`, `web-admin/README.md`).
-- **Cấm để tài liệu lỗi thời:** Tuyệt đối không để tài liệu ở trạng thái "Chưa tạo" hoặc giữ nguyên mô tả "prototype cũ" trong khi mã nguồn thực tế đã hoàn thiện và vận hành.
-- **Duy trì tính chính xác của Sổ đăng ký tài liệu (`blueprint/README.md`):** Sổ đăng ký tài liệu phải luôn phản ánh đúng hiện trạng tài liệu thiết kế hệ thống, kiến trúc, phân quyền và tích hợp API.
-- **Rà soát định kỳ:** Trước khi hoàn thành bất kỳ phiên làm việc nào về mã nguồn, trợ lý phải đối soát lại tài liệu xem đặc tả chức năng, tham số API, phân quyền vai trò và luồng dữ liệu đã ăn khớp 100% với mã nguồn hay chưa.
+## 4. Quy Tắc Phòng Ngừa Lỗi Hệ Thống (`blueprint/governance/KNOWN_BUGS_AND_LESSONS.md`)
+- **`RULE-DATA-01` (Cấm sinh trạng thái giả bằng hàm băm / ngẫu nhiên):** Tuyệt đối KHÔNG dùng `hash % N`, `Math.random()` hay `|| true` để hiển thị dấu tích (`✓`) hoặc trạng thái nghiệp vụ. Chỉ hiển thị khi trường dữ liệu thực tế có giá trị hợp lệ; nếu trống hiển thị `—` hoặc `Chưa xác nhận`.
+- **`RULE-SYNC-01` (Đồng bộ 100% giữa Bảng danh sách và Màn chi tiết):** Cột trạng thái trên bảng danh sách (`DataTable`) và thông tin trong trang chi tiết (`Profile` / `Modal`) phải đọc từ cùng một hàm kiểm tra / cùng một nguồn dữ liệu gốc duy nhất.
+- **`RULE-UX-01` (Cấm tự động tích xác nhận ứng viên độ tin cậy thấp):** Khi dò tìm hoặc gợi ý dữ liệu tự động, chỉ điền sẵn kết quả có độ tin cậy `CAO` / `TRUNG_BÌNH` đã xác thực tồn tại; mức `GỢI_Ý` chỉ hiển thị để người dùng chủ động chọn.
+- **`RULE-PERF-01` (Tối ưu truy xuất & Cấm quét $O(N \times M)$ trên luồng render):** Với bảng dữ liệu lớn (69 gian hàng, >16.000 deals), bắt buộc dùng `useMemo`, `WeakMap` hoặc index `Map` $O(1)$. Tuyệt đối không lặp lồng mảng `.filter().reduce()` trực tiếp trong thân hàm render JSX.
+- **`RULE-API-01` (Quản lý tập trung Cấu hình API & Prompt):** Mọi tính năng phân tích/đánh giá AI mới phải đăng ký mục đích nghiệp vụ tại `web-admin/src/lib/apiKeyConfig.ts` và thiết lập Prompt tập trung tại `ApiKeySetupView.tsx`. Không hiển thị nút/khung chỉnh sửa Prompt trên màn hình nghiệp vụ của người dùng cuối. Luôn có nhánh dự phòng `INTERNAL` tại `/api/integrations/llm/route.ts`.
+- **`RULE-API-02` (Cấm tự động gọi API mô hình / cào dữ liệu khi mở màn hình):** Tuyệt đối KHÔNG gọi API phân tích / thu thập dữ liệu bên trong `useEffect` khi vừa mở Modal/Drawer. Chỉ được phép gọi API khi người dùng bấm nút hành động tường minh.
 
-## 5. Hệ Thống Hóa Lỗi & Quy Tắc Phòng Ngừa Tái Phát (`blueprint/governance/KNOWN_BUGS_AND_LESSONS.md`)
-- **Sổ đăng ký lỗi chuẩn (`HUB-GOV-04`):** Mọi lỗi do người dùng hoặc trợ lý phát hiện phải được ghi nhận đầy đủ (Triệu chứng, Nguyên nhân gốc, Cách khắc phục, Phạm vi rà soát mở rộng) tại `blueprint/governance/KNOWN_BUGS_AND_LESSONS.md`.
-- **Các quy tắc phòng ngừa bắt buộc áp dụng chéo cho toàn hệ thống:**
-  - **`RULE-DATA-01` (Cấm sinh trạng thái giả bằng hàm băm / ngẫu nhiên):** Tuyệt đối KHÔNG dùng `hash % N`, `Math.random()` hay `|| true` để hiển thị dấu tích (`✓`) hoặc trạng thái nghiệp vụ (có kênh MXH, đủ giấy tờ, đã ký hợp đồng, đã duyệt chi...). Chỉ hiển thị dấu tích khi trường dữ liệu thực tế có giá trị hợp lệ; nếu trống phải hiển thị `—` hoặc `Chưa xác nhận`.
-  - **`RULE-SYNC-01` (Đồng bộ 100% giữa Bảng danh sách và Màn chi tiết):** Cột trạng thái trên bảng danh sách (`DataTable`) và thông tin trong trang chi tiết (`Profile` / `Modal`) phải dùng chung một nguồn kiểm tra dữ liệu gốc duy nhất.
-  - **`RULE-UX-01` (Cấm tự động tích xác nhận ứng viên độ tin cậy thấp):** Khi dò tìm hoặc gợi ý dữ liệu tự động, chỉ điền sẵn kết quả có độ tin cậy `CAO` / `TRUNG_BÌNH` đã xác thực tồn tại; mức `GỢI_Ý` chỉ hiển thị để người dùng chủ động chọn.
-  - **`RULE-TS-01` (Tuân thủ chặt chữ ký hàm & Props của Component UI):** Phân biệt rõ `<Modal open onClose={...}>` và `<ConfirmDialog open onCancel={...} onConfirm={...}>`; kiểm tra đúng kiểu trả về của các hàm dùng chung (`normalizeStoreCoefficient`...) trước khi build.
-  - **`RULE-API-01` (Quản lý tập trung Cấu hình API & Câu lệnh Prompt tại Trung tâm Cấu hình API):** Bất kỳ tính năng phân tích, bóc tách dữ liệu, đánh giá hay tổng hợp báo cáo nào mới được thêm vào hệ thống BẮT BUỘC phải đáp ứng các điều kiện:
-    1. Đăng ký mã mục đích nghiệp vụ (`OperationalApiPurposeId`) trong `web-admin/src/lib/apiKeyConfig.ts` và hiển thị tập trung toàn bộ phần thiết lập Nhà cung cấp, Mô hình, Khóa API và Câu lệnh chỉ dẫn (`System Prompt`) tại Trung tâm Cấu hình API (`ApiKeySetupView.tsx`).
-    2. Tuyệt đối **KHÔNG** hiển thị nút bấm hay khung chỉnh sửa Câu lệnh (`Prompt`) / Cấu hình API trên các màn hình hoặc hộp thoại nghiệp vụ của người dùng cuối. Các màn hình nghiệp vụ tự động đọc cấu hình và `systemInstruction` đã thiết lập tại `ApiKeySetupView.tsx`.
-    3. Có luồng xử lý dự phòng nội bộ (`INTERNAL`) trong `/api/integrations/llm/route.ts` để tính năng luôn hoạt động ổn định kể cả khi chưa nhập khóa API ngoài hoặc máy chủ mô hình quá tải.
-  - **`RULE-API-02` (Cấm tự động gọi API mô hình / cào dữ liệu khi vừa mở hộp thoại hoặc màn hình):** Tuyệt đối KHÔNG gọi `executeOperationalReport`, `/api/integrations/llm`, `/api/integrations/tiktok-koc/social-discovery`, `/api/integrations/tiktok-koc/scrape` hay các API phân tích/thu thập dữ liệu bên trong `useEffect` khi vừa mở Modal/Drawer (`open` / `isOpen`). Chỉ được phép gọi API khi người dùng chủ động bấm nút hành động tường minh (`Đánh giá`, `Chạy phân tích`, `Dò tìm kênh tự động`, `Lấy dữ liệu kênh`...).
-
-## 6. Quy Tắc Phân Tầng Mô Hình (Model Routing) & Hàng Rào 5 Cổng Kiểm Soát QA (Tối Ưu Token)
-Khi điều phối `invoke_subagent`, bắt buộc phân bổ tham số `Model` theo đúng 3 phân khu (10 vị trí chuyên biệt) để tiết kiệm ~60%–75% lượng Token mà vẫn giữ chất lượng kiểm duyệt cao nhất:
-- **Khu 1 — Chỉ Huy & Kiến Trúc (`Model: "inherit"` hoặc `"pro"` — Gemini 4 Argon):**
-  1. **Điều phối chính (`Orchestrator`):** Phân rã bài toán, định tuyến công việc và chốt quyết định cuối.
-  2. **Kiến trúc sư (`architect` / `planner` / `code-architect`):** Chốt đặc tả kỹ thuật, cấu trúc dữ liệu, chữ ký hàm và ranh giới phân quyền trước khi giao xuống nhóm thực thi.
-- **Khu 2 — Thực Thi Tốc Độ Cao (`Model: "flash"` hoặc `"flash_lite"` — Gemini 3.8 Flash / Lite):**
-  3. **Kỹ sư Giao diện (`react-reviewer` / UI Coder — `Model: "flash"`):** Viết/sửa component React, Tailwind theo đúng đặc tả của Khu 1.
-  4. **Kỹ sư Logic & API (`typescript-reviewer` / Backend Coder — `Model: "flash"`):** Viết xử lý dữ liệu, route API và cập nhật state.
-  5. **Đồng bộ Tài liệu (`doc-updater` / `research` — `Model: "flash_lite"`):** Tra cứu nhanh tệp tin và cập nhật đồng bộ tài liệu `blueprint/` theo Quy tắc 4.
-- **Khu 3 — Hàng Rào 5 Cổng Kiểm Soát & QA Nối Tiếp (Multi-Gate QA Pipeline):**
-  - **Cổng 1 — Kiểm soát Biên dịch & Kiểu tĩnh (`build-error-resolver` / `react-build-resolver` — `Model: "flash_lite"`):** Kiểm tra `tsc --noEmit` và `npm run build`, chặn ngay lỗi cú pháp và sai kiểu Props (`RULE-TS-01`).
-  - **Cổng 2 — Thanh tra Quy chuẩn `GEMINI.md` (`code-reviewer` — `Model: "flash"`):** Quét bản thay đổi để chặn lỗi dùng hàm băm/ngẫu nhiên giả (`RULE-DATA-01`), lệch trạng thái bảng/chi tiết (`RULE-SYNC-01`), từ ngữ hoa mỹ hoặc dòng phụ đề xám dưới tiêu đề.
-  - **Cổng 3 — Kiểm soát Bảo mật & An toàn API (`security-reviewer` / `silent-failure-hunter` — `Model: "flash"`):** Chặn lỗi tự động gọi API trong `useEffect` khi mở hộp thoại (`RULE-API-02`), kiểm tra quản lý cấu hình API tập trung (`RULE-API-01`) và lỗi nuốt ngoại lệ ngầm.
-  - **Cổng 4 — Kiểm thử Tương tác & Luồng bấm nút (`e2e-runner` — `Model: "flash_lite"`):** Kiểm tra luồng đóng/mở Modal, trạng thái nút bấm và đối chiếu đồng bộ tài liệu hệ thống.
-  - **Cổng 5 — Nghiệm thu Cuối cùng (`code-reviewer` cấp Trưởng ban — `Model: "pro"` / Gemini 4 Argon):** Chỉ được gọi sau khi mã nguồn đã vượt qua đủ 4 cổng lọc phía trên; chỉ đọc phần `git diff` rút gọn để ký duyệt xuất xưởng (tránh lãng phí token của mô hình lớn vào các vòng lặp sửa lỗi cơ học).
-
-
+## 5. Đồng Bộ Tài Liệu & Định Tuyến Mô Hình (Model Routing)
+- **Đồng bộ Tài liệu & Mã nguồn trong cùng một lượt:** Khi sửa đổi luồng nghiệp vụ, thêm API, đổi quyền hay đổi giao diện, BẮT BUỘC cập nhật đồng bộ các tài liệu tương ứng tại `blueprint/2-design/`, `blueprint/README.md` và `web-admin/README.md`. Tuyệt đối không để tài liệu lệch pha với code thực tế.
+- **Tối ưu Token & Định tuyến Mô hình khi điều phối Task:**
+  - Tác vụ tra cứu, đọc file, cập nhật doc, gỡ lỗi cú pháp, chạy `tsc` và `build`: Sử dụng model nhẹ, tốc độ cao (`flash` hoặc `flash_lite`).
+  - Tác vụ phân rã kiến trúc phức tạp, thiết kế giải pháp mới hoặc nghiệm thu `git diff` quan trọng trước khi xuất xưởng: Sử dụng model thông minh (`inherit` hoặc `pro`).
