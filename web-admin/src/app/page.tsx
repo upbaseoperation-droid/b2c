@@ -9,6 +9,7 @@ import { TopHeader } from '../components/TopHeader';
 import { MobileBottomNav } from '../components/MobileBottomNav';
 import { QuickBookModal } from '../components/QuickBookModal';
 import { ImportExcelModal } from '../components/ImportExcelModal';
+import { UserProfileModal } from '../components/UserProfileModal';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { CockpitView } from '../components/views/CockpitView';
 import { ExecutiveDashboardReportsView } from '../components/views/ExecutiveDashboardReportsView';
@@ -208,6 +209,15 @@ function resolveInitialTab(user: UserProfile | null): TabKey {
   if (user.id.startsWith('contract-demo-')) {
     return 'contracts';
   }
+  if (typeof window !== 'undefined') {
+    const savedUserLanding = localStorage.getItem(`upbase_user_landing_${user.id}`) as TabKey | null;
+    if (savedUserLanding && isTabAllowedForRole(user.role, savedUserLanding)) {
+      return savedUserLanding;
+    }
+  }
+  if (user.customLandingTab && isTabAllowedForRole(user.role, user.customLandingTab)) {
+    return user.customLandingTab;
+  }
   return getDefaultLandingTabForRole(user.role);
 }
 
@@ -244,11 +254,24 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(initialAuthState.user);
   const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(initialAuthState.isLoading);
   const [activeTab, setActiveTab] = useState<TabKey>(initialAuthState.tab);
+  const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
   const hasUserNavigatedRef = useRef<boolean>(false);
   const [brandInitialDetailTab, setBrandInitialDetailTab] = useState<'PRODUCTS' | undefined>(undefined);
   const [kocMasterReturnTab, setKocMasterReturnTab] = useState<'tiktok-crawler' | 'koc-hub' | null>(null);
   const [kocMasterOpenTrigger, setKocMasterOpenTrigger] = useState<number>(0);
   const isPopStateNavigatingRef = useRef<boolean>(false);
+
+  const handleSaveUserProfile = useCallback((updated: UserProfile) => {
+    setCurrentUser(updated);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`upbase_user_profile_${updated.id}`, JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
 
   const handleSelectTab = useCallback((tab: TabKey, options?: { keepReturnContext?: boolean }) => {
     hasUserNavigatedRef.current = true;
@@ -1535,6 +1558,7 @@ export default function App() {
         onLogout={handleLogout}
         isLoggingOut={isLoggingOut}
         badgeCounts={pendingTasksCount > 0 ? { cockpit: pendingTasksCount } : undefined}
+        onOpenProfile={() => setIsProfileOpen(true)}
       />
 
       {/* Main Content Space */}
@@ -2366,6 +2390,17 @@ export default function App() {
         onClose={() => setIsImportOpen(false)}
         onImportSuccess={handleImportSuccess}
       />
+
+      {currentUser && (
+        <UserProfileModal
+          open={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+          currentUser={currentUser}
+          onSaveUser={handleSaveUserProfile}
+          onLogout={handleLogout}
+          onNotify={showToast}
+        />
+      )}
 
     </div>
   );

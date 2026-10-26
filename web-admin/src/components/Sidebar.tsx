@@ -63,6 +63,7 @@ interface SidebarProps {
   onLogout?: () => void;
   isLoggingOut?: boolean;
   badgeCounts?: Partial<Record<TabKey, number | string>>;
+  onOpenProfile?: () => void;
 }
 
 export const DASHBOARD_TAB_KEYS: TabKey[] = [
@@ -201,6 +202,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
   isLoggingOut,
   badgeCounts,
+  onOpenProfile,
 }) => {
   const [rbacTick, setRbacTick] = React.useState(0);
   React.useEffect(() => {
@@ -478,13 +480,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <div className="shrink-0 px-3 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] border-t border-line">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              type="button"
+              onClick={onOpenProfile}
+              className="flex items-center gap-2.5 min-w-0 text-left rounded-lg p-1 -m-1 hover:bg-sunken transition-colors group cursor-pointer"
+              title="Xem hồ sơ và thiết lập cá nhân"
+            >
               <Avatar name={currentUser.name} src={currentUser.larkAvatarUrl} size={28} />
               <div className="min-w-0 leading-tight">
-                <span className="block text-[13px] font-medium text-ink truncate">{currentUser.name}</span>
+                <span className="block text-[13px] font-medium text-ink truncate group-hover:text-accent">{currentUser.name}</span>
                 <span className="block text-2xs text-ink-3 truncate mt-0.5">{currentUser.roleTitle}</span>
               </div>
-            </div>
+            </button>
 
             <div className="flex items-center shrink-0">
               {footerItems.map((f) => {
