@@ -8,6 +8,7 @@ import { Button, ConfirmDialog, Field, Input, Modal, Select, Textarea } from '..
 import { CONTENT_PILLARS } from '../../lib/contentPillars';
 import { weekLabelsForMonth } from '../../lib/planBreakdownRules';
 import { usePlanRecord } from '../../lib/usePlanRecord';
+import { getCachedClientMonthlyPlans } from '../../lib/useMonthlyPlanSync';
 import { SECTION_FIELDS, SECTION_LABEL, type BrandPlanAccess } from '../../lib/brandPlanAccess';
 import {
   EMPTY_PRODUCT_CATALOG,
@@ -58,6 +59,9 @@ import {
 interface BrandMonthlyPlanFormProps {
   currentUserName?: string;
   currentUserRole?: string;
+  initialPlanId?: string;
+  initialStoreName?: string;
+  initialMonth?: string;
   onNotify?: (message: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
@@ -105,20 +109,44 @@ const NumInput: React.FC<{ value: number | null | undefined; onChange: (v: numbe
 const TH = 'whitespace-nowrap border-b border-line bg-sunken px-2.5 py-2 text-left text-2xs font-medium text-ink-3';
 const TD = 'border-b border-line px-2.5 py-1.5 align-top text-[13px] text-ink';
 
-export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ currentUserName = 'Nhân viên', currentUserRole, onNotify }) => {
+export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({
+  currentUserName = 'Nhân viên',
+  currentUserRole,
+  initialPlanId,
+  initialStoreName,
+  initialMonth,
+  onNotify,
+}) => {
   const notify = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => onNotify?.(msg, type);
 
-  const [plans, setPlans] = useState<InputPlanBreakdownState[]>([]);
+  const [plans, setPlans] = useState<InputPlanBreakdownState[]>(() => {
+    return getCachedClientMonthlyPlans() || [];
+  });
   const [accessById, setAccessById] = useState<Record<string, BrandPlanAccess>>({});
-  const [plansState, setPlansState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [month, setMonth] = useState('');
+  const [plansState, setPlansState] = useState<'loading' | 'ready' | 'error'>(() => {
+    const cached = getCachedClientMonthlyPlans();
+    return cached && cached.length > 0 ? 'ready' : 'loading';
+  });
+  const [month, setMonth] = useState(initialMonth || '');
   const [search, setSearch] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialPlanId || null);
   const [tab, setTab] = useState<PlanTab>('DIRECTION');
   const kvUploadRef = useRef<HTMLInputElement | null>(null);
   const [uploadingKv, setUploadingKv] = useState(false);
   const [kvCategory, setKvCategory] = useState<KeyVisualAssetCategory>('MASTER_KV');
   const [previewKvImg, setPreviewKvImg] = useState<KeyVisualAssetItem | null>(null);
+
+  useEffect(() => {
+    if (initialMonth && initialMonth !== month) {
+      setMonth(initialMonth);
+    }
+  }, [initialMonth]);
+
+  useEffect(() => {
+    if (initialPlanId && initialPlanId !== selectedId) {
+      setSelectedId(initialPlanId);
+    }
+  }, [initialPlanId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -146,7 +174,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
   }, []);
 
   const months = useMemo(() => Array.from(new Set(plans.map(p => p.month))).sort().reverse(), [plans]);
-  const activeMonth = month || months[0] || '';
+  const activeMonth = month || initialMonth || months[0] || '';
   const visiblePlans = useMemo(() => {
     const q = search.trim().toLowerCase();
     return plans
@@ -157,8 +185,12 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
 
   const activePlanId = useMemo(() => {
     if (selectedId && visiblePlans.some(p => p.id === selectedId)) return selectedId;
+    if (initialPlanId && visiblePlans.some(p => p.id === initialPlanId)) return initialPlanId;
+    if (initialStoreName && visiblePlans.some(p => p.storeName === initialStoreName)) {
+      return visiblePlans.find(p => p.storeName === initialStoreName)!.id;
+    }
     return visiblePlans[0]?.id ?? null;
-  }, [selectedId, visiblePlans]);
+  }, [selectedId, visiblePlans, initialPlanId, initialStoreName]);
 
   const plan = useMemo(() => plans.find(p => p.id === activePlanId) || null, [plans, activePlanId]);
   const { data, status, update, saveNow } = usePlanRecord<BrandPlanData>('/api/brand-plan', plan?.id ?? null, EMPTY_BRAND_PLAN, msg => notify(msg, 'warning'));
@@ -1229,100 +1261,120 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
   );
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
-      <aside className="space-y-3 rounded-lg border border-line bg-surface p-3">
-        <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-2">
-          <Select value={activeMonth} onChange={e => setMonth(e.target.value)}>
-            {months.length === 0 && <option value="">Chưa có tháng</option>}
-            {months.map(m => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </Select>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-ink-3" />
-            <Input className="pl-8" placeholder="Tìm gian hàng" value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
-        </div>
-        <div className="max-h-[70vh] space-y-1.5 overflow-y-auto">
-          {plansState === 'loading' && <div className="px-2 py-4 text-xs text-ink-3">Đang tải kế hoạch…</div>}
-          {plansState === 'ready' && visiblePlans.length === 0 && <div className="px-2 py-4 text-xs text-ink-3">Chưa có kế hoạch trong tháng này.</div>}
-          {visiblePlans.map(p => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setSelectedId(p.id)}
-              className={`w-full rounded-md border px-3 py-2 text-left transition ${p.id === activePlanId ? 'border-accent bg-accent-soft' : 'border-line hover:bg-sunken'}`}
+    <div className="space-y-4">
+      {/* Thanh bộ lọc & Thao tác trên đầu */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-2xs font-semibold text-ink-3">Kỳ</span>
+            <Select
+              value={activeMonth}
+              onChange={e => {
+                setMonth(e.target.value);
+                setSelectedId(null);
+              }}
+              className="w-[120px]"
             >
-              <div className="truncate text-[13px] font-medium text-ink">{p.storeName || p.title}</div>
-              <div className="mt-0.5 flex items-center justify-between text-2xs text-ink-3">
-                <span className="truncate">{p.pic || 'Chưa giao'}</span>
-                <span>{PLAN_STATUS_LABEL[p.status || 'DRAFT'] || p.status}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </aside>
-
-      <section className="min-w-0 space-y-4">
-        {!plan ? (
-          <div className="rounded-lg border border-dashed border-line px-6 py-16 text-center text-sm text-ink-3">Chọn một kế hoạch ở bên trái để nhập plan tháng của Brand.</div>
-        ) : (
-          <>
-            <datalist id="brand-plan-pic">
-              {Array.from(new Set([...members, plan.pic, data.planner].filter(Boolean) as string[])).map(n => (
-                <option key={n} value={n} />
+              {months.length === 0 && <option value="">Chưa có kỳ</option>}
+              {months.map(m => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
               ))}
-            </datalist>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2 min-w-0">
-                <h2 className="truncate text-base font-semibold text-ink">{plan.storeName || plan.title}</h2>
-                <span className="rounded bg-sunken px-2 py-0.5 text-xs text-ink-2">
-                  {plan.brandName} · {plan.month} · {plan.pic || 'Chưa giao'}
-                  {channelOfStore ? ` · ${CHANNEL_LABEL[channelOfStore]}` : ''}
-                </span>
-                {saveLabel[status] && (
-                  <span className="rounded bg-sunken px-2 py-0.5 text-2xs text-ink-3">{saveLabel[status]}</span>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={`text-xs ${approvalStatus === 'CHANGES' ? 'text-critical' : 'text-ink-2'}`}>
-                  {APPROVAL_LABEL[approvalStatus]}
-                  {data.approval.decidedBy && approvalStatus !== 'PENDING' ? ` · ${data.approval.decidedBy}` : ''}
-                  {approvalStatus === 'PENDING' && data.approval.submittedBy ? ` · ${data.approval.submittedBy} gửi` : ''}
-                </span>
-                {access.full && (approvalStatus === 'DRAFT' || approvalStatus === 'CHANGES') && (
-                  <Button size="sm" variant="primary" disabled={errorCount > 0} title={errorCount > 0 ? 'Còn lỗi ở tab Kiểm tra' : undefined} onClick={() => changeApproval('PENDING')}>
-                    {catalogStore?.bookingLeader ? `Gửi Trưởng nhóm (${catalogStore.bookingLeader})` : 'Trình duyệt Giám đốc Marketing'}
-                  </Button>
-                )}
-                {access.full && approvalStatus === 'PENDING' && (
-                  <>
-                    <Button size="sm" variant="primary" onClick={() => changeApproval('APPROVED')}>
-                      Duyệt
-                    </Button>
-                    <Button size="sm" variant="secondary" disabled={!decisionNote.trim()} title={decisionNote.trim() ? undefined : 'Nhập lý do cần sửa'} onClick={() => changeApproval('CHANGES', decisionNote.trim())}>
-                      Yêu cầu sửa
-                    </Button>
-                    <Button size="sm" variant="secondary" onClick={() => changeApproval('DRAFT')}>
-                      Rút lại
-                    </Button>
-                  </>
-                )}
-                {access.full && approvalStatus === 'APPROVED' && (
-                  <Button size="sm" variant="secondary" disabled={!decisionNote.trim()} title={decisionNote.trim() ? undefined : 'Nhập lý do mở lại'} onClick={() => changeApproval('CHANGES', decisionNote.trim())}>
-                    Mở lại để sửa
-                  </Button>
-                )}
-                {errorCount > 0 && <span className="text-xs text-critical">{errorCount} lỗi cần sửa</span>}
-                {status === 'error' && (
-                  <Button size="sm" variant="secondary" onClick={saveNow}>
-                    Lưu lại
-                  </Button>
-                )}
-              </div>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-2xs font-semibold text-ink-3">Gian hàng</span>
+            <Select
+              value={activePlanId || ''}
+              onChange={e => {
+                setSelectedId(e.target.value);
+              }}
+              className="min-w-[260px] max-w-[400px]"
+            >
+              {visiblePlans.length === 0 && <option value="">Không có kế hoạch trong kỳ</option>}
+              {visiblePlans.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.storeName || p.title} ({p.pic || 'Chưa giao'} · {PLAN_STATUS_LABEL[p.status || 'DRAFT'] || p.status})
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {plan && (
+            <div className="hidden xl:flex items-center gap-2 border-l border-line pl-3 text-xs text-ink-3">
+              <span>Nhãn: <strong className="text-ink">{plan.brandName}</strong></span>
+              <span>· PIC: <strong className="text-ink">{plan.pic || 'Chưa giao'}</strong></span>
+              {channelOfStore && (
+                <span>· Kênh: <strong className="text-ink">{CHANNEL_LABEL[channelOfStore]}</strong></span>
+              )}
+              {saveLabel[status] && (
+                <span className="font-medium text-accent">· {saveLabel[status]}</span>
+              )}
             </div>
+          )}
+        </div>
+
+        {plan && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`text-xs ${approvalStatus === 'CHANGES' ? 'text-critical' : 'text-ink-2'}`}>
+              {APPROVAL_LABEL[approvalStatus]}
+              {data.approval.decidedBy && approvalStatus !== 'PENDING' ? ` · ${data.approval.decidedBy}` : ''}
+              {approvalStatus === 'PENDING' && data.approval.submittedBy ? ` · ${data.approval.submittedBy} gửi` : ''}
+            </span>
+            {access.full && (approvalStatus === 'DRAFT' || approvalStatus === 'CHANGES') && (
+              <Button size="sm" variant="primary" disabled={errorCount > 0} title={errorCount > 0 ? 'Còn lỗi ở tab Kiểm tra' : undefined} onClick={() => changeApproval('PENDING')}>
+                {catalogStore?.bookingLeader ? `Gửi Trưởng nhóm (${catalogStore.bookingLeader})` : 'Trình duyệt Giám đốc Marketing'}
+              </Button>
+            )}
+            {access.full && approvalStatus === 'PENDING' && (
+              <>
+                <Button size="sm" variant="primary" onClick={() => changeApproval('APPROVED')}>
+                  Duyệt
+                </Button>
+                <Button size="sm" variant="secondary" disabled={!decisionNote.trim()} title={decisionNote.trim() ? undefined : 'Nhập lý do cần sửa'} onClick={() => changeApproval('CHANGES', decisionNote.trim())}>
+                  Yêu cầu sửa
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => changeApproval('DRAFT')}>
+                  Rút lại
+                </Button>
+              </>
+            )}
+            {access.full && approvalStatus === 'APPROVED' && (
+              <Button size="sm" variant="secondary" disabled={!decisionNote.trim()} title={decisionNote.trim() ? undefined : 'Nhập lý do mở lại'} onClick={() => changeApproval('CHANGES', decisionNote.trim())}>
+                Mở lại để sửa
+              </Button>
+            )}
+            {errorCount > 0 && <span className="text-xs text-critical">{errorCount} lỗi cần sửa</span>}
+            {status === 'error' && (
+              <Button size="sm" variant="secondary" onClick={saveNow}>
+                Lưu lại
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {plansState === 'loading' && (
+        <div className="rounded-lg border border-line bg-surface p-12 text-center text-xs text-ink-3">
+          Đang tải dữ liệu kế hoạch…
+        </div>
+      )}
+
+      {plansState === 'ready' && visiblePlans.length === 0 && (
+        <div className="rounded-lg border border-dashed border-line p-12 text-center text-xs text-ink-3">
+          Chưa có kế hoạch nào trong kỳ {activeMonth}.
+        </div>
+      )}
+
+      {plan && (
+        <section className="space-y-4">
+          <datalist id="brand-plan-pic">
+            {Array.from(new Set([...members, plan.pic, data.planner].filter(Boolean) as string[])).map(n => (
+              <option key={n} value={n} />
+            ))}
+          </datalist>
 
             <div className="flex flex-wrap gap-1.5 border-b border-line pb-2">
               {tabs.map(t => (
@@ -1359,9 +1411,8 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
               {activeTab === 'PILLAR' && renderPillars()}
               {activeTab === 'CHECK' && renderChecks()}
             </div>
-          </>
-        )}
-      </section>
+        </section>
+      )}
 
       <ConfirmDialog
         open={Boolean(pendingDeletePillar)}

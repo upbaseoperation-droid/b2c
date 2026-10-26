@@ -60,6 +60,9 @@ interface ContentPlanBoardProps {
   kocs?: KocItem[];
   deals?: BookingDealItem[];
   currentUserName?: string;
+  initialPlanId?: string;
+  initialStoreName?: string;
+  initialMonth?: string;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
@@ -83,16 +86,36 @@ const PLAN_STATUS_LABEL: Record<string, string> = {
 
 const saveLabel: Record<string, string> = { idle: '', loading: 'Đang tải…', saved: 'Đã lưu', dirty: 'Chưa lưu', saving: 'Đang lưu…', error: 'Lưu lỗi' };
 
-export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], deals = [], currentUserName = 'Nhân viên', onNotify }) => {
+export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
+  kocs = [],
+  deals = [],
+  currentUserName = 'Nhân viên',
+  initialPlanId,
+  initialStoreName,
+  initialMonth,
+  onNotify,
+}) => {
   const notify = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => onNotify?.(msg, type);
 
   const [plans, setPlans] = useState<InputPlanBreakdownState[]>([]);
   const [plansState, setPlansState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [month, setMonth] = useState('');
+  const [month, setMonth] = useState(initialMonth || '');
   const [search, setSearch] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialPlanId || null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [backlogGroup, setBacklogGroup] = useState('ALL');
+
+  useEffect(() => {
+    if (initialMonth && initialMonth !== month) {
+      setMonth(initialMonth);
+    }
+  }, [initialMonth]);
+
+  useEffect(() => {
+    if (initialPlanId && initialPlanId !== selectedId) {
+      setSelectedId(initialPlanId);
+    }
+  }, [initialPlanId]);
 
   useEffect(() => {
     const cached = getCachedClientMonthlyPlans();
@@ -130,7 +153,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
   }, []);
 
   const months = useMemo(() => Array.from(new Set(plans.map(p => p.month))).sort().reverse(), [plans]);
-  const activeMonth = month || months[0] || '';
+  const activeMonth = month || initialMonth || months[0] || '';
   const visiblePlans = useMemo(() => {
     const q = search.trim().toLowerCase();
     return plans
@@ -141,8 +164,12 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
 
   const activePlanId = useMemo(() => {
     if (selectedId && visiblePlans.some(p => p.id === selectedId)) return selectedId;
+    if (initialPlanId && visiblePlans.some(p => p.id === initialPlanId)) return initialPlanId;
+    if (initialStoreName && visiblePlans.some(p => p.storeName === initialStoreName)) {
+      return visiblePlans.find(p => p.storeName === initialStoreName)!.id;
+    }
     return visiblePlans[0]?.id ?? null;
-  }, [selectedId, visiblePlans]);
+  }, [selectedId, visiblePlans, initialPlanId, initialStoreName]);
 
   const plan = useMemo(() => plans.find(p => p.id === activePlanId) || null, [plans, activePlanId]);
   const { profiles: brandProfiles } = useBrandProfiles();
@@ -775,89 +802,107 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
   };
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
-      <aside className="space-y-3 rounded-lg border border-line bg-surface p-3">
-        <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-2">
-          <Select value={activeMonth} onChange={e => setMonth(e.target.value)}>
-            {months.length === 0 && <option value="">Chưa có tháng</option>}
-            {months.map(m => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </Select>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-ink-3" />
-            <Input className="pl-8" placeholder="Tìm gian hàng" value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
-        </div>
-        <div className="max-h-[70vh] space-y-1.5 overflow-y-auto">
-          {plansState === 'loading' && <div className="px-2 py-4 text-xs text-ink-3">Đang tải kế hoạch…</div>}
-          {plansState === 'ready' && visiblePlans.length === 0 && <div className="px-2 py-4 text-xs text-ink-3">Chưa có kế hoạch trong tháng này.</div>}
-          {visiblePlans.map(p => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setSelectedId(p.id)}
-              className={`w-full rounded-md border px-3 py-2 text-left transition ${p.id === activePlanId ? 'border-accent bg-accent-soft' : 'border-line hover:bg-sunken'}`}
+    <div className="space-y-4">
+      {/* Thanh bộ lọc & Thao tác trên đầu */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-2xs font-semibold text-ink-3">Kỳ</span>
+            <Select
+              value={activeMonth}
+              onChange={e => {
+                setMonth(e.target.value);
+                setSelectedId(null);
+              }}
+              className="w-[120px]"
             >
-              <div className="truncate text-[13px] font-medium text-ink">{p.storeName || p.title}</div>
-              <div className="mt-0.5 flex items-center justify-between text-2xs text-ink-3">
-                <span className="truncate">{p.pic || 'Chưa giao'}</span>
-                <span>{PLAN_STATUS_LABEL[p.status || 'DRAFT'] || p.status}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </aside>
+              {months.length === 0 && <option value="">Chưa có kỳ</option>}
+              {months.map(m => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </Select>
+          </div>
 
-      <section className="min-w-0 space-y-4">
-        {!plan || !req || !diag ? (
-          <div className="rounded-lg border border-dashed border-line px-6 py-16 text-center text-sm text-ink-3">Chọn một kế hoạch ở bên trái để lập các dòng Định hướng / Brief Content.</div>
-        ) : (
-          <>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2 min-w-0">
-                <h2 className="truncate text-base font-semibold text-ink">{plan.storeName || plan.title}</h2>
-                <span className="rounded bg-sunken px-2 py-0.5 text-xs text-ink-2">
-                  {plan.month} · {plan.pic || 'Chưa giao'} · {PLAN_STATUS_LABEL[plan.status || 'DRAFT'] || plan.status}
-                </span>
-                {saveLabel[status] && (
-                  <span className="rounded bg-sunken px-2 py-0.5 text-2xs text-ink-3">{saveLabel[status]}</span>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {req.hasData && diag.placedVideos < diag.totalRequired && (
-                  <Button size="sm" variant="secondary" onClick={handleGenerateAllPlanBriefs}>
-                    Khởi tạo dòng Brief theo khung tuần × bậc
-                  </Button>
-                )}
-                <Button size="sm" variant="secondary" onClick={pullFromBrandPlan} disabled={pulling}>
-                  {pulling ? 'Đang lấy…' : 'Lấy từ plan Brand'}
-                </Button>
-                {activeBrandProfile && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={FileText}
-                    onClick={() => setStandardBriefOpen(true)}
-                  >
-                    Brief chuẩn 5 phần
-                  </Button>
-                )}
-                <Button size="sm" variant="secondary" icon={Send} onClick={openSend} disabled={bookingRows.length === 0}>
-                  Gửi Brand
-                </Button>
-                {status === 'error' && (
-                  <Button size="sm" variant="secondary" onClick={saveNow}>
-                    Lưu lại
-                  </Button>
-                )}
-                <Button size="sm" variant="primary" icon={Plus} onClick={() => openAdd()}>
-                  Thêm dòng Brief
-                </Button>
-              </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-2xs font-semibold text-ink-3">Gian hàng</span>
+            <Select
+              value={activePlanId || ''}
+              onChange={e => {
+                setSelectedId(e.target.value);
+              }}
+              className="min-w-[260px] max-w-[400px]"
+            >
+              {visiblePlans.length === 0 && <option value="">Không có kế hoạch trong kỳ</option>}
+              {visiblePlans.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.storeName || p.title} ({p.pic || 'Chưa giao'} · {PLAN_STATUS_LABEL[p.status || 'DRAFT'] || p.status})
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {plan && (
+            <div className="hidden xl:flex items-center gap-2 border-l border-line pl-3 text-xs text-ink-3">
+              <span>PIC: <strong className="text-ink">{plan.pic || 'Chưa giao'}</strong></span>
+              <span>· Trạng thái: <strong className="text-ink">{PLAN_STATUS_LABEL[plan.status || 'DRAFT'] || plan.status}</strong></span>
+              {saveLabel[status] && (
+                <span className="font-medium text-accent">· {saveLabel[status]}</span>
+              )}
             </div>
+          )}
+        </div>
+
+        {plan && req && diag && (
+          <div className="flex flex-wrap items-center gap-2">
+            {req.hasData && diag.placedVideos < diag.totalRequired && (
+              <Button size="sm" variant="secondary" onClick={handleGenerateAllPlanBriefs}>
+                Khởi tạo dòng Brief theo khung tuần × bậc
+              </Button>
+            )}
+            <Button size="sm" variant="secondary" onClick={pullFromBrandPlan} disabled={pulling}>
+              {pulling ? 'Đang lấy…' : 'Lấy từ plan Brand'}
+            </Button>
+            {activeBrandProfile && (
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={FileText}
+                onClick={() => setStandardBriefOpen(true)}
+              >
+                Brief chuẩn 5 phần
+              </Button>
+            )}
+            <Button size="sm" variant="secondary" icon={Send} onClick={openSend} disabled={bookingRows.length === 0}>
+              Gửi Brand
+            </Button>
+            {status === 'error' && (
+              <Button size="sm" variant="secondary" onClick={saveNow}>
+                Lưu lại
+              </Button>
+            )}
+            <Button size="sm" variant="primary" icon={Plus} onClick={() => openAdd()}>
+              Thêm dòng Brief
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {plansState === 'loading' && (
+        <div className="rounded-lg border border-line bg-surface p-12 text-center text-xs text-ink-3">
+          Đang tải dữ liệu kế hoạch…
+        </div>
+      )}
+
+      {plansState === 'ready' && visiblePlans.length === 0 && (
+        <div className="rounded-lg border border-dashed border-line p-12 text-center text-xs text-ink-3">
+          Chưa có kế hoạch nào trong kỳ {activeMonth}.
+        </div>
+      )}
+
+      {plan && req && diag && (
+        <section className="space-y-4">
 
             <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
               {[
@@ -1058,9 +1103,8 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
                 )}
               </div>
             </div>
-          </>
-        )}
-      </section>
+        </section>
+      )}
 
       <Modal
         open={addOpen}

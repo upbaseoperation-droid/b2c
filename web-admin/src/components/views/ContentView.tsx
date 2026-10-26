@@ -49,6 +49,9 @@ interface ContentViewProps {
   deals?: BookingDealItem[];
   currentUserName?: string;
   currentUserRole?: string;
+  initialPlanId?: string;
+  initialStoreName?: string;
+  initialMonth?: string;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
@@ -74,6 +77,9 @@ export const ContentView: React.FC<ContentViewProps> = ({
   onNavigateToAngles,
   currentUserName,
   currentUserRole,
+  initialPlanId,
+  initialStoreName,
+  initialMonth,
   onNotify,
   kocs,
   deals,
@@ -705,6 +711,9 @@ export const ContentView: React.FC<ContentViewProps> = ({
         <BrandMonthlyPlanForm
           currentUserName={currentUserName}
           currentUserRole={currentUserRole}
+          initialPlanId={initialPlanId}
+          initialStoreName={initialStoreName}
+          initialMonth={initialMonth}
           onNotify={onNotify}
         />
       )}
@@ -714,6 +723,9 @@ export const ContentView: React.FC<ContentViewProps> = ({
           kocs={kocs}
           deals={deals}
           currentUserName={currentUserName}
+          initialPlanId={initialPlanId}
+          initialStoreName={initialStoreName}
+          initialMonth={initialMonth}
           onNotify={onNotify}
         />
       )}
