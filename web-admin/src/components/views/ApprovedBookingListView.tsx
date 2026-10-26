@@ -1201,6 +1201,8 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   const [isLarkPaymentModalOpen, setIsLarkPaymentModalOpen] = useState<boolean>(false);
   const [larkPaymentInitialItem, setLarkPaymentInitialItem] =
     useState<ApprovedBookingListItem | null>(null);
+  const [larkPaymentInitialItems, setLarkPaymentInitialItems] =
+    useState<ApprovedBookingListItem[]>([]);
 
   const dealsForLarkModal = useMemo(() => {
     const dealMap = new Map<string, BookingDealItem>();
@@ -1217,20 +1219,36 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   const openLarkPaymentModalForItem = (item?: ApprovedBookingListItem) => {
     if (item) {
       setLarkPaymentInitialItem(item);
+      setLarkPaymentInitialItems([item]);
       setIsLarkPaymentModalOpen(true);
       return;
     }
+    const checkedRows =
+      selectedIds.length > 0
+        ? filteredItems.filter((i) => selectedIds.includes(i.id))
+        : [];
     const candidate =
-      (selectedIds.length > 0
-        ? filteredItems.find((i) => selectedIds.includes(i.id))
-        : undefined) ||
+      checkedRows[0] ||
       filteredItems.find(
         (i) => i.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL'
       ) ||
       filteredItems.find((i) => i.bookingOrderCreated) ||
       filteredItems[0] ||
       null;
+    // Nếu người dùng tích chọn nhiều dòng của cùng 1 KOC thì gom sẵn vào 1 phiếu ĐNTT
+    const bundledRows =
+      checkedRows.length > 1 && candidate
+        ? checkedRows.filter(
+            (r) =>
+              normalizeTikTokId(r.idKenh).toLowerCase() ===
+                normalizeTikTokId(candidate.idKenh).toLowerCase() ||
+              (r.kocId && r.kocId === candidate.kocId)
+          )
+        : candidate
+        ? [candidate]
+        : [];
     setLarkPaymentInitialItem(candidate);
+    setLarkPaymentInitialItems(bundledRows);
     setIsLarkPaymentModalOpen(true);
   };
 
@@ -1426,7 +1444,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               onChange={setViewColumnMode}
               items={[
                 { key: 'ALL_32', label: 'Đầy đủ cột' },
-                { key: 'BOOKING_FOCUS', label: 'Chốt Book & Tạo BO' },
+                { key: 'BOOKING_FOCUS', label: 'Chốt Deal & Phụ lục SOW' },
                 { key: 'ACCEPTANCE_FOCUS', label: 'Nghiệm thu & Thanh toán' },
               ]}
             />
@@ -1434,11 +1452,11 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
 
           {/* Cụm chỉ số tóm tắt gọn trên 1 dòng */}
           <div className="flex flex-wrap items-center gap-3 px-2.5 py-1 rounded-md bg-surface border border-line text-xs shrink-0">
-            <div className="flex items-center gap-1" title={`${stats.boCreatedCount} đã tạo BO · ${stats.pendingBoCount} chờ tạo BO`}>
+            <div className="flex items-center gap-1" title={`${stats.boCreatedCount} đã tạo Deal & SOW · ${stats.pendingBoCount} chờ tạo Deal`}>
               <span className="text-ink-3">Duyệt:</span>
               <strong className="text-ink tabular-nums">{stats.total} KOC</strong>
               <span className="text-2xs text-ink-3 tabular-nums">
-                ({stats.boCreatedCount} BO)
+                ({stats.boCreatedCount} Deal)
               </span>
             </div>
             <span className="h-3 w-px bg-line" />
@@ -1480,7 +1498,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm mã BO, @id_kênh, SP..."
+                placeholder="Tìm mã Deal, Phụ lục SOW, @id_kênh, SP..."
                 className="w-full h-7 pl-7 pr-2 text-xs rounded-md border border-line-strong bg-surface text-ink focus:outline-none focus:border-ink"
               />
             </div>
@@ -1490,10 +1508,10 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               onChange={(e) => setFilterPipeline(e.target.value)}
               className="h-7 px-2 text-xs rounded-md border border-line-strong bg-surface text-ink"
             >
-              <option value="ALL">Trạng thái BO: Tất cả</option>
+              <option value="ALL">Trạng thái Deal: Tất cả</option>
               <option value="Chờ chốt giá & ngày air">Chờ chốt giá &amp; ngày air</option>
-              <option value="Sẵn sàng tạo BO">Sẵn sàng tạo BO</option>
-              <option value="Đang thực thi (Đã tạo BO)">Đang thực thi (Đã tạo BO)</option>
+              <option value="Sẵn sàng tạo BO">Sẵn sàng tạo Deal &amp; SOW</option>
+              <option value="Đang thực thi (Đã tạo BO)">Đang thực thi (Đã tạo Deal &amp; SOW)</option>
               <option value="Đã nghiệm thu video">Đã nghiệm thu video</option>
               <option value="Đã quyết toán">Đã quyết toán</option>
             </select>
@@ -1742,7 +1760,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
 
                 <th className="px-2.5 py-1.5 text-center min-w-[145px]">
                   <div className="text-2xs font-mono text-ink-3">Thao tác</div>
-                  <div className="font-semibold text-ink">Tạo BO / Nghiệm thu</div>
+                  <div className="font-semibold text-ink">Deal · SOW · Nghiệm thu</div>
                 </th>
               </tr>
             </thead>
@@ -2475,17 +2493,17 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
           {/* Tầng 1: Chọn BO mục tiêu + Ngày air mặc định + Dải KPI tóm tắt đợt nghiệm thu */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 p-3 rounded-lg bg-sunken border border-line items-end">
             <div className="lg:col-span-5">
-              <Field label="Chọn Booking Order (BO) nghiệm thu (Hoặc tự động tìm theo @id_kênh)">
+              <Field label="Chọn Deal & Phụ lục SOW cần nghiệm thu (Hoặc tự động tìm theo @id_kênh)">
                 <Select
                   value={selectedTargetBoItemId}
                   onChange={(e) => handleSelectTargetBoInModal(e.target.value)}
                 >
                   <option value="AUTO">
-                    Tự động tìm BO theo @id_kênh KOC trong link video TikTok
+                    Tự động tìm Deal & Phụ lục SOW theo @id_kênh KOC trong link video TikTok
                   </option>
                   {filteredItems.map((boItem) => (
                     <option key={boItem.id} value={boItem.id}>
-                      {boItem.maBooking ? `[${boItem.maBooking}]` : '[Chưa cấp BO]'} @
+                      {boItem.maBooking ? `[${boItem.maBooking}]` : '[Chưa tạo Deal]'} @
                       {boItem.idKenh} — {boItem.storeName} · {boItem.sanPham} (
                       {formatVnd(boItem.chiPhiBookingNetCuoi)})
                     </option>
@@ -2504,7 +2522,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
             </div>
             <div className="lg:col-span-5 grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               <div className="px-2.5 py-1.5 rounded border border-line bg-surface">
-                <div className="text-2xs text-ink-3">Khớp BO</div>
+                <div className="text-2xs text-ink-3">Khớp Deal</div>
                 <div className="text-xs font-semibold text-ink tabular-nums">
                   {acceptanceModalStats.matchedCount}/{acceptanceModalStats.total} video
                 </div>
@@ -2549,7 +2567,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
             <div className="px-3 py-2 bg-sunken border-b border-line flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-semibold text-ink">
                 Bảng đối soát &amp; chỉnh sửa trực tiếp trường nghiệm thu (
-                {acceptanceModalStats.matchedCount}/{acceptanceModalStats.total} dòng đã gắn BO)
+                {acceptanceModalStats.matchedCount}/{acceptanceModalStats.total} dòng đã gắn Deal & SOW)
               </span>
               <span className="text-2xs text-ink-3">
                 Chỉnh trực tiếp Ngày air, Mã Spark Ads, Views, Đơn, GMV ngay trên từng dòng bên dưới
@@ -2563,7 +2581,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                       Kênh KOC &amp; Link Video
                     </th>
                     <th className="px-2.5 py-1.5 border-r border-line min-w-[250px]">
-                      Chọn Booking Order (BO) / Dòng Brand duyệt
+                      Chọn Deal & Phụ lục SOW (Hạng mục Video + DV gia tăng)
                     </th>
                     <th className="px-2.5 py-1.5 border-r border-line w-[160px]">
                       Ngày air thực tế &amp; SLA
@@ -2703,7 +2721,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             </option>
                             {sameChannelBoList.length > 0 && (
                               <optgroup
-                                label={`Booking Order của kênh @${row.channelHandle} (${sameChannelBoList.length})`}
+                                label={`Deal & Phụ lục SOW của kênh @${row.channelHandle} (${sameChannelBoList.length})`}
                               >
                                 {sameChannelBoList.map((bo) => (
                                   <option key={bo.id} value={bo.id}>
@@ -2714,7 +2732,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               </optgroup>
                             )}
                             {otherBoList.length > 0 && (
-                              <optgroup label="Chọn Booking Order khác trong danh sách">
+                              <optgroup label="Chọn Deal & Phụ lục SOW khác trong danh sách">
                                 {otherBoList.map((bo) => (
                                   <option key={bo.id} value={bo.id}>
                                     {bo.maBooking || 'Chưa cấp BO'} · @{bo.idKenh} ·{' '}
@@ -2727,7 +2745,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           {m ? (
                             <div className="flex items-center justify-between gap-1 text-2xs text-emerald-700 font-medium">
                               <span>
-                                ✓ BO:{' '}
+                                ✓ Deal:{' '}
                                 <strong className="font-mono">
                                   {m.maBooking || 'Tự cấp khi lưu'}
                                 </strong>{' '}
@@ -3404,6 +3422,11 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
           larkPaymentInitialItem
             ? buildBookingDealFromApprovedItem(larkPaymentInitialItem)
             : null
+        }
+        initialDeals={
+          larkPaymentInitialItems.length > 0
+            ? larkPaymentInitialItems.map((it) => buildBookingDealFromApprovedItem(it))
+            : undefined
         }
         allDeals={dealsForLarkModal}
         kocs={kocs}

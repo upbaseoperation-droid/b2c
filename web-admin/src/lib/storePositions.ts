@@ -1,4 +1,4 @@
-import type { BrandDetail, StorePortfolioItem, UserProfile } from './types';
+import type { BrandDetail, InputPlanBreakdownState, StorePortfolioItem, UserProfile } from './types';
 import { isPersonInField, splitPeople } from './staffIdentity';
 
 /**
@@ -108,6 +108,106 @@ export function storePositionsOf(
   return out;
 }
 
+/**
+ * Hợp nhất vị trí của nhân sự trên Gian hàng (từ Dữ liệu gốc) và trên Kế hoạch tháng (4.1 & 4.1.1).
+ * Đảm bảo:
+ * - Người đứng tên `primaryPic` / `Booking PIC` trên 4.1 của kỳ đó được nhận diện là `BOOKING_MAIN`.
+ * - Nhân sự phụ chia tải trên `4.1.1` (`staffWeeklySlices`, `assignedMembers`, `FOC PIC`, `Live PIC`) được nhận diện là `BOOKING_CO`.
+ * - Nhân sự phụ trách kênh Brand (`contentPic` trên 4.1 hoặc `Phụ trách Self` trên 4.1.1) được nhận diện là `SELF_CHANNEL`.
+ * - Kể cả các gian hàng mới phát sinh trong tháng chưa kịp tạo bản ghi trong 69 gian gốc vẫn phân quyền chính xác theo `plan`.
+ */
+export function planPositionsOf(
+  user: Person | null | undefined,
+  plan: Pick<
+    InputPlanBreakdownState,
+    | 'pic'
+    | 'primaryPic'
+    | 'bookingLeader'
+    | 'hasBookingLeader'
+    | 'assignedMembers'
+    | 'staffWeeklySlices'
+    | 'reference41'
+    | 'items'
+  > | null | undefined,
+  store?: StoreLike | null,
+  brand?: BrandLike | null,
+  today: Date = new Date()
+): Set<StorePosition> {
+  const out = store ? storePositionsOf(user, store, brand, today) : new Set<StorePosition>();
+  if (!user) return out;
+  const codes = { ...(store?.staffCodes || {}), ...(brand?.staffCodes || {}) };
+
+  if (!store && brand) {
+    if (isPersonInField(user, brand.planStrategyPic, codes)) out.add('PLAN_STRATEGY');
+    if (isPersonInField(user, brand.keyVisualSisPic, codes)) out.add('KEY_VISUAL');
+  }
+
+  if (!plan) return out;
+
+  // 1. Leader trên kế hoạch (nếu gian chưa có trong catalog)
+  if (!store && plan.hasBookingLeader !== false && isPersonInField(user, plan.bookingLeader, codes)) {
+    out.add('LEADER');
+  }
+
+  // 2. PIC chính của kế hoạch tháng (4.1 Booking PIC đầu tiên hoặc primaryPic)
+  const ref = plan.reference41;
+  const rolePics = ref?.rolePics;
+  const planMainCandidates = [
+    ...splitPeople(plan.primaryPic),
+    ...splitPeople(plan.pic),
+    ...(rolePics?.bookingPics || []).flatMap(splitPeople),
+  ];
+  const planMain = planMainCandidates[0] || '';
+  if (planMain && isPersonInField(user, planMain, codes)) {
+    out.add('BOOKING_MAIN');
+  }
+
+  // 3. Các lát cắt nhập liệu 4.1.1 theo nhân sự (staffWeeklySlices)
+  for (const slice of plan.staffWeeklySlices || []) {
+    if (!isPersonInField(user, slice.staffName, codes)) continue;
+    const roleLbl = (slice.roleLabel || '').toLowerCase();
+    if (roleLbl.startsWith('pic chính')) {
+      out.add('BOOKING_MAIN');
+    } else if (roleLbl.includes('self')) {
+      out.add('SELF_CHANNEL');
+      out.add('BOOKING_CO');
+    } else {
+      out.add('BOOKING_CO');
+    }
+  }
+
+  // 4. Nhân sự cùng làm / chuyên trách FOC / Live trên kế hoạch tháng
+  const coCandidates = [
+    ...planMainCandidates.slice(1),
+    ...(plan.assignedMembers || []).flatMap(splitPeople),
+    ...splitPeople(ref?.focPic),
+    ...(rolePics?.focPics || []).flatMap(splitPeople),
+    ...splitPeople(ref?.livePic),
+    ...(rolePics?.livePics || []).flatMap(splitPeople),
+    ...(plan.items || []).flatMap(it => splitPeople(it.assignedStaff)),
+  ];
+  for (const cand of coCandidates) {
+    if (isPersonInField(user, cand, codes)) {
+      out.add('BOOKING_CO');
+      break;
+    }
+  }
+
+  // 5. Nhân sự phụ trách Content / Self-channel trên Bảng 4.1
+  const selfCandidates = [
+    ...splitPeople(ref?.contentPic),
+    ...(rolePics?.contentPics || []).flatMap(splitPeople),
+  ];
+  for (const cand of selfCandidates) {
+    if (isPersonInField(user, cand, codes)) {
+      out.add('SELF_CHANNEL');
+      break;
+    }
+  }
+
+  return out;
+}
+
 /** Người thực thi Booking của gian (chính, cùng làm, dự phòng đang hiệu lực). */
 export function isBookingExecutor(positions: Set<StorePosition>): boolean {
   return positions.has('BOOKING_MAIN') || positions.has('BOOKING_CO') || positions.has('BACKUP');
@@ -116,6 +216,34 @@ export function isBookingExecutor(positions: Set<StorePosition>): boolean {
 /** Người được sửa toàn bộ deal / listing của gian và quyết định ở cấp gian. */
 export function isStoreBookingOwner(positions: Set<StorePosition>): boolean {
   return positions.has('BOOKING_MAIN') || positions.has('LEADER');
+}
+
+/**
+ * Kiểm tra quyền sửa nội dung kế hoạch tháng (4.1.1):
+ * Cho phép PIC chính (`BOOKING_MAIN`), nhân sự phụ cùng chia tải / FOC (`BOOKING_CO`),
+ * nhân sự dự phòng đang hiệu lực (`BACKUP`), nhân sự phụ trách Self-channel (`SELF_CHANNEL`) hoặc Quản lý toàn cục.
+ */
+export function canEditPlanContent(positions: Set<StorePosition>, isGlobal: boolean): boolean {
+  return (
+    isGlobal ||
+    positions.has('BOOKING_MAIN') ||
+    positions.has('BOOKING_CO') ||
+    positions.has('BACKUP') ||
+    positions.has('SELF_CHANNEL')
+  );
+}
+
+/**
+ * Kiểm tra quyền bấm chốt gửi duyệt kế hoạch tháng lên cấp trên:
+ * Chỉ PIC chính (`BOOKING_MAIN`), nhân sự dự phòng đang hiệu lực (`BACKUP`), Trưởng nhóm (`LEADER`) hoặc Quản lý toàn cục.
+ */
+export function canSubmitPlanForApproval(positions: Set<StorePosition>, isGlobal: boolean): boolean {
+  return (
+    isGlobal ||
+    positions.has('BOOKING_MAIN') ||
+    positions.has('BACKUP') ||
+    positions.has('LEADER')
+  );
 }
 
 export const STORE_POSITION_LABEL: Record<StorePosition, string> = {

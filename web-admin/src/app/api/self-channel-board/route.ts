@@ -83,10 +83,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Dữ liệu gửi lên không hợp lệ.' }, { status: 400 });
     }
 
-    // Bảng Video kênh Brand: PIC Kênh tự sở hữu, Booking chính, Leader hoặc Giám đốc
+    // Bảng Video kênh Brand: PIC Kênh tự sở hữu, Booking chính, Booking phụ, Dự phòng, Leader hoặc Giám đốc
     const ctx = await resolvePlanContext(body.planId, actor);
-    if (!ctx.global && !['SELF_CHANNEL', 'BOOKING_MAIN', 'LEADER'].some(p => ctx.positions.has(p as never))) {
-      return NextResponse.json({ error: 'Chỉ PIC Kênh tự sở hữu, Booking chính hoặc Leader của gian được sửa bảng Video kênh Brand.' }, { status: 403 });
+    if (!ctx.global && !['SELF_CHANNEL', 'BOOKING_MAIN', 'BOOKING_CO', 'BACKUP', 'LEADER'].some(p => ctx.positions.has(p as never))) {
+      return NextResponse.json({ error: 'Chỉ nhân sự phụ trách gian hàng (Self-channel, Booking chính/phụ, Dự phòng) hoặc Leader được sửa bảng Video kênh Brand.' }, { status: 403 });
     }
     const incoming = sanitizeSelfChannelBoard(body.data);
 

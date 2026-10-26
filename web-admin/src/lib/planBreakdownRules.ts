@@ -277,6 +277,7 @@ export interface BreakdownComparisonRow {
   diff: number;
   unit: 'count' | 'money';
   matched: boolean;
+  note?: string;
 }
 
 const fmt = (v: number) => Math.round(v).toLocaleString('vi-VN');
@@ -286,18 +287,36 @@ function moneyTolerance(reference: number) {
   return Math.max(1000, Math.abs(reference) * 0.005);
 }
 
+/** Kiểm tra xem ngân sách nhập trên 4.1.1 có đang tính theo giá trước VAT (Gross ÷ 1,08 = Net × 1,10, chưa trừ 10% TNCN) hay không. */
+export function isPreVatPitIncludedBudget(planned: number, referenceNet: number): boolean {
+  if (planned <= 0 || referenceNet <= 0) return false;
+  const preVatTarget = referenceNet * 1.1;
+  return Math.abs(planned - preVatTarget) <= Math.max(500000, referenceNet * 0.015);
+}
+
 export function compareWith41(plan: InputPlanBreakdownState, rows: PlanWeekRow[]): BreakdownComparisonRow[] {
   const ref = plan.reference41;
   if (!ref) return [];
   const t = sumBreakdown(rows);
+  const useShopeeAsCastFallback =
+    t.castQty === 0 &&
+    n(ref.multiPlatform?.shopee?.affQty) === 0 &&
+    t.multiPlatform.shopee.affQty > 0;
+  const effectiveCastQty = useShopeeAsCastFallback ? t.multiPlatform.shopee.affQty : t.castQty;
+  const effectiveCastBudget = useShopeeAsCastFallback ? t.multiPlatform.shopee.budgetNet : t.castBudget;
+
   const mk = (key: string, label: string, planned: number, reference: number, unit: 'count' | 'money'): BreakdownComparisonRow => {
     const diff = planned - reference;
     const matched = unit === 'count' ? diff === 0 : Math.abs(diff) <= moneyTolerance(reference);
-    return { key, label, planned, reference, diff, unit, matched };
+    const note =
+      !matched && unit === 'money' && isPreVatPitIncludedBudget(planned, reference)
+        ? 'Nhập theo giá trước VAT (Gross ÷ 1,08 — chưa trừ 10% TNCN)'
+        : undefined;
+    return { key, label, planned, reference, diff, unit, matched, note };
   };
   return [
-    mk('cast', 'Video Cast trả phí', t.castQty, ref.cast, 'count'),
-    mk('affBudget', 'Ngân sách Cast (Net)', t.castBudget, ref.affCostNet, 'money'),
+    mk('cast', 'Video Cast trả phí', effectiveCastQty, ref.cast, 'count'),
+    mk('affBudget', 'Ngân sách Cast (Net)', effectiveCastBudget, ref.affCostNet, 'money'),
     mk('foc', 'Suất FOC', t.focQty, ref.foc, 'count'),
     mk('selfQty', 'Video self channel', t.selfQty, ref.selfVideos, 'count'),
     mk('selfBudget', 'Ngân sách self channel (Net)', t.selfBudget, ref.selfCostNet, 'money'),
@@ -407,7 +426,7 @@ export function validateBreakdown(plan: InputPlanBreakdownState): { issues: Brea
       severity: 'warning',
       code: `MISMATCH_${c.key}`,
       needsNote: true,
-      message: `${c.label}: phân rã ${c.unit === 'money' ? `${fmt(c.planned)}đ` : fmt(c.planned)}, bảng 4.1 là ${c.unit === 'money' ? `${fmt(c.reference)}đ` : fmt(c.reference)} (${over ? 'thừa' : 'thiếu'} ${amount})`,
+      message: `${c.label}: phân rã ${c.unit === 'money' ? `${fmt(c.planned)}đ` : fmt(c.planned)}, bảng 4.1 là ${c.unit === 'money' ? `${fmt(c.reference)}đ` : fmt(c.reference)} (${over ? 'thừa' : 'thiếu'} ${amount}${c.note ? ` — ${c.note}` : ''})`,
     });
   }
 

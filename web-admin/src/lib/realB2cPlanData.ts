@@ -190,15 +190,17 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Đào Phương Anh",
-    "b2cOwnerName": "Lê Phương Thảo",
+    "b2cOwnerName": "Lê Phương Thảo, Trần Thị Hảo",
     "assignedStaff": "Lê Phương Thảo",
     "hasBookingLeader": false,
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
-      "Lê Phương Thảo"
+      "Lê Phương Thảo",
+      "Trần Thị Hảo"
     ],
     "b2cOwners": [
-      "Lê Phương Thảo"
+      "Lê Phương Thảo",
+      "Trần Thị Hảo"
     ],
     "assignmentNotes": "Hạn mức Net: 136.4M / Gross: 162.0M (135 video). PIC phụ trách: Lê Phương Thảo (Không có leader)",
     "isB2cManaged": true,
@@ -238,15 +240,17 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "UNBUDGETED",
     "financialRiskNotes": "Báo động đỏ: Phát sinh thực chi 221.400.000 ₫ nhưng hạn mức Order Net = 0 ₫. Cần trình bổ sung phê duyệt ngay.",
     "accountOwnerName": "Nguyễn Thị Mai Linh",
-    "b2cOwnerName": "Nguyễn Quỳnh Trang",
+    "b2cOwnerName": "Nguyễn Quỳnh Trang, Trần Thị Hảo",
     "assignedStaff": "Nguyễn Quỳnh Trang",
     "hasBookingLeader": false,
     "primaryPic": "Nguyễn Quỳnh Trang",
     "assignedMembers": [
-      "Nguyễn Quỳnh Trang"
+      "Nguyễn Quỳnh Trang",
+      "Trần Thị Hảo"
     ],
     "b2cOwners": [
-      "Nguyễn Quỳnh Trang"
+      "Nguyễn Quỳnh Trang",
+      "Trần Thị Hảo"
     ],
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (100 video). PIC phụ trách: Nguyễn Quỳnh Trang (Không có leader)",
     "isB2cManaged": true,
@@ -286,16 +290,18 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Đào Phương Anh",
-    "b2cOwnerName": "Hoàng Hải Long",
+    "b2cOwnerName": "Hoàng Hải Long, Nguyễn Thị Tuyết Trinh, Nguyễn Ngọc Huyền",
     "assignedStaff": "Hoàng Hải Long",
     "hasBookingLeader": false,
     "primaryPic": "Hoàng Hải Long",
     "assignedMembers": [
       "Hoàng Hải Long",
+      "Nguyễn Thị Tuyết Trinh",
       "Nguyễn Ngọc Huyền"
     ],
     "b2cOwners": [
       "Hoàng Hải Long",
+      "Nguyễn Thị Tuyết Trinh",
       "Nguyễn Ngọc Huyền"
     ],
     "assignmentNotes": "Hạn mức Net: 4.3M / Gross: 5.0M (60 video). PIC phụ trách: Hoàng Hải Long (Không có leader)",
@@ -384,17 +390,17 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Trần Diệu Linh",
-    "b2cOwnerName": "Nguyễn Ngọc Huyền",
-    "assignedStaff": "Nguyễn Ngọc Huyền",
+    "b2cOwnerName": "Nguyễn Thị Quỳnh Nhi, Nguyễn Ngọc Huyền",
+    "assignedStaff": "Nguyễn Thị Quỳnh Nhi",
     "hasBookingLeader": false,
-    "primaryPic": "Nguyễn Ngọc Huyền",
+    "primaryPic": "Nguyễn Thị Quỳnh Nhi",
     "assignedMembers": [
-      "Nguyễn Ngọc Huyền",
-      "Nguyễn Thị Quỳnh Nhi"
+      "Nguyễn Thị Quỳnh Nhi",
+      "Nguyễn Ngọc Huyền"
     ],
     "b2cOwners": [
-      "Nguyễn Ngọc Huyền",
-      "Nguyễn Thị Quỳnh Nhi"
+      "Nguyễn Thị Quỳnh Nhi",
+      "Nguyễn Ngọc Huyền"
     ],
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (71 video). PIC phụ trách: Nguyễn Ngọc Huyền (Không có leader)",
     "isB2cManaged": true,
@@ -434,20 +440,20 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Trần Diệu Linh",
-    "b2cOwnerName": "Nguyễn Ngọc Huyền",
-    "assignedStaff": "Nguyễn Ngọc Huyền",
+    "b2cOwnerName": "Nguyễn Thị Quỳnh Nhi, Nguyễn Ngọc Huyền, Lương Nguyễn Trang Nhung, Bùi Thu Hằng",
+    "assignedStaff": "Nguyễn Thị Quỳnh Nhi",
     "hasBookingLeader": false,
-    "primaryPic": "Nguyễn Ngọc Huyền",
+    "primaryPic": "Nguyễn Thị Quỳnh Nhi",
     "assignedMembers": [
+      "Nguyễn Thị Quỳnh Nhi",
       "Nguyễn Ngọc Huyền",
       "Lương Nguyễn Trang Nhung",
-      "Nguyễn Thị Quỳnh Nhi",
       "Bùi Thu Hằng"
     ],
     "b2cOwners": [
+      "Nguyễn Thị Quỳnh Nhi",
       "Nguyễn Ngọc Huyền",
       "Lương Nguyễn Trang Nhung",
-      "Nguyễn Thị Quỳnh Nhi",
       "Bùi Thu Hằng"
     ],
     "assignmentNotes": "Hạn mức Net: 113.2M / Gross: 134.4M (70 video). PIC phụ trách: Nguyễn Ngọc Huyền (Không có leader)",
@@ -538,17 +544,19 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Đào Phương Anh",
-    "b2cOwnerName": "Lê Thanh Hải",
+    "b2cOwnerName": "Lê Thanh Hải, Nguyễn Quỳnh Trang, Dương Thị Hồng Nhung",
     "assignedStaff": "Lê Thanh Hải",
     "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
     "primaryPic": "Lê Thanh Hải",
     "assignedMembers": [
       "Lê Thanh Hải",
+      "Nguyễn Quỳnh Trang",
       "Dương Thị Hồng Nhung"
     ],
     "b2cOwners": [
       "Lê Thanh Hải",
+      "Nguyễn Quỳnh Trang",
       "Dương Thị Hồng Nhung"
     ],
     "assignmentNotes": "Hạn mức Net: 175.0M / Gross: 208.0M (140 video). Leader: Nguyễn Thị Ngọc Tâm, PIC: Lê Thanh Hải",
@@ -637,16 +645,20 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Dương Khánh Linh",
-    "b2cOwnerName": "Vũ Hoài Lâm",
+    "b2cOwnerName": "Vũ Hoài Lâm, Nguyễn Ngọc Linh, Nguyễn Ngọc Phương Anh, Trần Phương Thảo",
     "assignedStaff": "Vũ Hoài Lâm",
     "hasBookingLeader": false,
     "primaryPic": "Vũ Hoài Lâm",
     "assignedMembers": [
       "Vũ Hoài Lâm",
+      "Nguyễn Ngọc Linh",
+      "Nguyễn Ngọc Phương Anh",
       "Trần Phương Thảo"
     ],
     "b2cOwners": [
       "Vũ Hoài Lâm",
+      "Nguyễn Ngọc Linh",
+      "Nguyễn Ngọc Phương Anh",
       "Trần Phương Thảo"
     ],
     "assignmentNotes": "Hạn mức Net: 42.8M / Gross: 50.8M (169 video). PIC phụ trách: Vũ Hoài Lâm (Không có leader)",
@@ -687,14 +699,16 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Cao Trần Thu Hương",
-    "b2cOwnerName": "Trần Hải Phượng",
-    "assignedStaff": "Trần Hải Phượng",
+    "b2cOwnerName": "Phạm Thị Thu Hằng, Trần Hải Phượng",
+    "assignedStaff": "Phạm Thị Thu Hằng",
     "hasBookingLeader": false,
-    "primaryPic": "Trần Hải Phượng",
+    "primaryPic": "Phạm Thị Thu Hằng",
     "assignedMembers": [
+      "Phạm Thị Thu Hằng",
       "Trần Hải Phượng"
     ],
     "b2cOwners": [
+      "Phạm Thị Thu Hằng",
       "Trần Hải Phượng"
     ],
     "assignmentNotes": "Hạn mức Net: 13.6M / Gross: 16.2M (30 video). PIC phụ trách: Trần Hải Phượng (Không có leader)",
@@ -735,18 +749,20 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Cao Trần Thu Hương",
-    "b2cOwnerName": "Trần Hải Phượng",
-    "assignedStaff": "Trần Hải Phượng",
+    "b2cOwnerName": "Phạm Thị Thu Hằng, Trần Hải Phượng, Trần Thị Hảo, Nguyễn Ngọc Linh",
+    "assignedStaff": "Phạm Thị Thu Hằng",
     "hasBookingLeader": false,
-    "primaryPic": "Trần Hải Phượng",
+    "primaryPic": "Phạm Thị Thu Hằng",
     "assignedMembers": [
-      "Trần Hải Phượng",
       "Phạm Thị Thu Hằng",
+      "Trần Hải Phượng",
+      "Trần Thị Hảo",
       "Nguyễn Ngọc Linh"
     ],
     "b2cOwners": [
-      "Trần Hải Phượng",
       "Phạm Thị Thu Hằng",
+      "Trần Hải Phượng",
+      "Trần Thị Hảo",
       "Nguyễn Ngọc Linh"
     ],
     "assignmentNotes": "Hạn mức Net: 81.6M / Gross: 97.0M (237 video). PIC phụ trách: Trần Hải Phượng (Không có leader)",
@@ -835,17 +851,19 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Dương Khánh Linh",
-    "b2cOwnerName": "Nguyễn Ngọc Huyền",
-    "assignedStaff": "Nguyễn Ngọc Huyền",
+    "b2cOwnerName": "Lương Nguyễn Trang Nhung, Nguyễn Ngọc Huyền, Nguyễn Thị Tuyết Trinh",
+    "assignedStaff": "Lương Nguyễn Trang Nhung",
     "hasBookingLeader": false,
-    "primaryPic": "Nguyễn Ngọc Huyền",
+    "primaryPic": "Lương Nguyễn Trang Nhung",
     "assignedMembers": [
+      "Lương Nguyễn Trang Nhung",
       "Nguyễn Ngọc Huyền",
-      "Lương Nguyễn Trang Nhung"
+      "Nguyễn Thị Tuyết Trinh"
     ],
     "b2cOwners": [
+      "Lương Nguyễn Trang Nhung",
       "Nguyễn Ngọc Huyền",
-      "Lương Nguyễn Trang Nhung"
+      "Nguyễn Thị Tuyết Trinh"
     ],
     "assignmentNotes": "Hạn mức Net: 210.3M / Gross: 230.6M (138 video). PIC phụ trách: Nguyễn Ngọc Huyền (Không có leader)",
     "isB2cManaged": true,
@@ -885,26 +903,26 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Hà Thị Thương",
-    "b2cOwnerName": "Bùi Ngọc Ánh",
+    "b2cOwnerName": "Bùi Ngọc Ánh, Trần Phương Thảo, Nguyễn Thị Tuyết Trinh, Vũ Ngọc Minh, Nguyễn Thị Ngọc Tâm, Hà Thị Thủy",
     "assignedStaff": "Bùi Ngọc Ánh",
     "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
     "primaryPic": "Bùi Ngọc Ánh",
     "assignedMembers": [
       "Bùi Ngọc Ánh",
+      "Trần Phương Thảo",
+      "Nguyễn Thị Tuyết Trinh",
       "Vũ Ngọc Minh",
       "Nguyễn Thị Ngọc Tâm",
-      "Hà Thị Thủy",
-      "Trần Phương Thảo",
-      "Nguyễn Thị Tuyết Trinh"
+      "Hà Thị Thủy"
     ],
     "b2cOwners": [
       "Bùi Ngọc Ánh",
+      "Trần Phương Thảo",
+      "Nguyễn Thị Tuyết Trinh",
       "Vũ Ngọc Minh",
       "Nguyễn Thị Ngọc Tâm",
-      "Hà Thị Thủy",
-      "Trần Phương Thảo",
-      "Nguyễn Thị Tuyết Trinh"
+      "Hà Thị Thủy"
     ],
     "assignmentNotes": "Hạn mức Net: 97.5M / Gross: 76.0M (343 video). Leader: Nguyễn Thị Ngọc Tâm, PIC: Bùi Ngọc Ánh",
     "isB2cManaged": true,
@@ -944,19 +962,19 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Phạm Thị Nhài",
-    "b2cOwnerName": "Phạm Thị Thu Hằng",
-    "assignedStaff": "Phạm Thị Thu Hằng",
+    "b2cOwnerName": "Nguyễn Thị Ngọc Tâm, Phạm Thị Thu Hằng, Lương Nguyễn Trang Nhung",
+    "assignedStaff": "Nguyễn Thị Ngọc Tâm",
     "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
-    "primaryPic": "Phạm Thị Thu Hằng",
+    "primaryPic": "Nguyễn Thị Ngọc Tâm",
     "assignedMembers": [
-      "Phạm Thị Thu Hằng",
       "Nguyễn Thị Ngọc Tâm",
+      "Phạm Thị Thu Hằng",
       "Lương Nguyễn Trang Nhung"
     ],
     "b2cOwners": [
-      "Phạm Thị Thu Hằng",
       "Nguyễn Thị Ngọc Tâm",
+      "Phạm Thị Thu Hằng",
       "Lương Nguyễn Trang Nhung"
     ],
     "assignmentNotes": "Hạn mức Net: 10.1M / Gross: 12.0M (60 video). Leader: Nguyễn Thị Ngọc Tâm, PIC: Phạm Thị Thu Hằng",
@@ -997,20 +1015,24 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Phạm Thị Nhài",
-    "b2cOwnerName": "Phạm Thị Thu Hằng",
-    "assignedStaff": "Phạm Thị Thu Hằng",
+    "b2cOwnerName": "Nguyễn Thị Ngọc Tâm, Phạm Thị Thu Hằng, Lương Nguyễn Trang Nhung, Nguyễn Thị Tuyết Trinh, Trần Thị Hảo",
+    "assignedStaff": "Nguyễn Thị Ngọc Tâm",
     "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
-    "primaryPic": "Phạm Thị Thu Hằng",
+    "primaryPic": "Nguyễn Thị Ngọc Tâm",
     "assignedMembers": [
-      "Phạm Thị Thu Hằng",
       "Nguyễn Thị Ngọc Tâm",
-      "Lương Nguyễn Trang Nhung"
+      "Phạm Thị Thu Hằng",
+      "Lương Nguyễn Trang Nhung",
+      "Nguyễn Thị Tuyết Trinh",
+      "Trần Thị Hảo"
     ],
     "b2cOwners": [
-      "Phạm Thị Thu Hằng",
       "Nguyễn Thị Ngọc Tâm",
-      "Lương Nguyễn Trang Nhung"
+      "Phạm Thị Thu Hằng",
+      "Lương Nguyễn Trang Nhung",
+      "Nguyễn Thị Tuyết Trinh",
+      "Trần Thị Hảo"
     ],
     "assignmentNotes": "Hạn mức Net: 83.4M / Gross: 99.1M (229 video). Leader: Nguyễn Thị Ngọc Tâm, PIC: Phạm Thị Thu Hằng",
     "isB2cManaged": true,
@@ -1150,16 +1172,18 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "SLOW_BURN",
     "financialRiskNotes": "Giải ngân chậm (6% hạn mức Net). Cần đẩy nhanh tiến độ booking KOC.",
     "accountOwnerName": "Hà Thị Thương",
-    "b2cOwnerName": "Hoàng Hải Long",
+    "b2cOwnerName": "Hoàng Hải Long, Trần Thị Hảo, Lê Phương Thảo",
     "assignedStaff": "Hoàng Hải Long",
     "hasBookingLeader": false,
     "primaryPic": "Hoàng Hải Long",
     "assignedMembers": [
       "Hoàng Hải Long",
+      "Trần Thị Hảo",
       "Lê Phương Thảo"
     ],
     "b2cOwners": [
       "Hoàng Hải Long",
+      "Trần Thị Hảo",
       "Lê Phương Thảo"
     ],
     "assignmentNotes": "Hạn mức Net: 127.7M / Gross: 151.7M (221 video). PIC phụ trách: Hoàng Hải Long (Không có leader)",
@@ -1200,19 +1224,21 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Trần Thị Huyền Thương",
-    "b2cOwnerName": "Nguyễn Thị Hồng Ngát",
-    "assignedStaff": "Nguyễn Thị Hồng Ngát",
+    "b2cOwnerName": "Dương Thị Hồng Nhung, Nguyễn Thị Hồng Ngát, Nguyễn Ngọc Huyền, Nguyễn Quỳnh Trang",
+    "assignedStaff": "Dương Thị Hồng Nhung",
     "hasBookingLeader": false,
-    "primaryPic": "Nguyễn Thị Hồng Ngát",
+    "primaryPic": "Dương Thị Hồng Nhung",
     "assignedMembers": [
+      "Dương Thị Hồng Nhung",
       "Nguyễn Thị Hồng Ngát",
-      "Nguyễn Quỳnh Trang",
-      "Dương Thị Hồng Nhung"
+      "Nguyễn Ngọc Huyền",
+      "Nguyễn Quỳnh Trang"
     ],
     "b2cOwners": [
+      "Dương Thị Hồng Nhung",
       "Nguyễn Thị Hồng Ngát",
-      "Nguyễn Quỳnh Trang",
-      "Dương Thị Hồng Nhung"
+      "Nguyễn Ngọc Huyền",
+      "Nguyễn Quỳnh Trang"
     ],
     "assignmentNotes": "Hạn mức Net: 16.4M / Gross: 19.4M (55 video). PIC phụ trách: Nguyễn Thị Hồng Ngát (Không có leader)",
     "isB2cManaged": true,
@@ -1252,27 +1278,31 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Trần Thị Huyền Thương",
-    "b2cOwnerName": "Nguyễn Ngọc Huyền",
-    "assignedStaff": "Nguyễn Ngọc Huyền",
+    "b2cOwnerName": "Dương Thị Hồng Nhung, Lê Phương Thảo, Nguyễn Ngọc Huyền, Nguyễn Thị Hồng Ngát, Trần Thị Hảo, Nguyễn Ngọc Phương Anh, Hà Thị Thúy Hằng, Nguyễn Quỳnh Trang, Lại Ngọc Huyền",
+    "assignedStaff": "Dương Thị Hồng Nhung",
     "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
-    "primaryPic": "Nguyễn Ngọc Huyền",
+    "primaryPic": "Dương Thị Hồng Nhung",
     "assignedMembers": [
-      "Nguyễn Ngọc Huyền",
       "Dương Thị Hồng Nhung",
+      "Lê Phương Thảo",
+      "Nguyễn Ngọc Huyền",
       "Nguyễn Thị Hồng Ngát",
+      "Trần Thị Hảo",
+      "Nguyễn Ngọc Phương Anh",
       "Hà Thị Thúy Hằng",
       "Nguyễn Quỳnh Trang",
-      "Lê Phương Thảo",
       "Lại Ngọc Huyền"
     ],
     "b2cOwners": [
-      "Nguyễn Ngọc Huyền",
       "Dương Thị Hồng Nhung",
+      "Lê Phương Thảo",
+      "Nguyễn Ngọc Huyền",
       "Nguyễn Thị Hồng Ngát",
+      "Trần Thị Hảo",
+      "Nguyễn Ngọc Phương Anh",
       "Hà Thị Thúy Hằng",
       "Nguyễn Quỳnh Trang",
-      "Lê Phương Thảo",
       "Lại Ngọc Huyền"
     ],
     "assignmentNotes": "Hạn mức Net: 626.9M / Gross: 744.8M (414 video). Leader: Nguyễn Thị Ngọc Tâm, PIC: Nguyễn Ngọc Huyền",
@@ -1505,19 +1535,19 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Phan Bạch Tuyết",
-    "b2cOwnerName": "Phan Diệu Ánh",
+    "b2cOwnerName": "Phan Diệu Ánh, Lê Phương Thảo, Hoàng Hải Long",
     "assignedStaff": "Phan Diệu Ánh",
     "hasBookingLeader": false,
     "primaryPic": "Phan Diệu Ánh",
     "assignedMembers": [
       "Phan Diệu Ánh",
-      "Hoàng Hải Long",
-      "Lê Phương Thảo"
+      "Lê Phương Thảo",
+      "Hoàng Hải Long"
     ],
     "b2cOwners": [
       "Phan Diệu Ánh",
-      "Hoàng Hải Long",
-      "Lê Phương Thảo"
+      "Lê Phương Thảo",
+      "Hoàng Hải Long"
     ],
     "assignmentNotes": "Hạn mức Net: 91.7M / Gross: 96.1M (39 video). PIC phụ trách: Phan Diệu Ánh (Không có leader)",
     "isB2cManaged": true,
@@ -1557,18 +1587,18 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Hà Thị Thương",
-    "b2cOwnerName": "Trần Thị Hảo",
-    "assignedStaff": "Trần Thị Hảo",
+    "b2cOwnerName": "Phạm Thị Thu Hằng, Trần Thị Hảo, Lê Phương Thảo",
+    "assignedStaff": "Phạm Thị Thu Hằng",
     "hasBookingLeader": false,
-    "primaryPic": "Trần Thị Hảo",
+    "primaryPic": "Phạm Thị Thu Hằng",
     "assignedMembers": [
-      "Trần Thị Hảo",
       "Phạm Thị Thu Hằng",
+      "Trần Thị Hảo",
       "Lê Phương Thảo"
     ],
     "b2cOwners": [
-      "Trần Thị Hảo",
       "Phạm Thị Thu Hằng",
+      "Trần Thị Hảo",
       "Lê Phương Thảo"
     ],
     "assignmentNotes": "Hạn mức Net: 133.5M / Gross: 143.2M (684 video). PIC phụ trách: Trần Thị Hảo (Không có leader)",
@@ -1659,20 +1689,20 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Ngô Hà Linh",
-    "b2cOwnerName": "Trần Thị Hảo",
-    "assignedStaff": "Trần Thị Hảo",
+    "b2cOwnerName": "Hà Thị Thủy, Trần Phương Thảo, Trần Thị Hảo, Nguyễn Quỳnh Trang",
+    "assignedStaff": "Hà Thị Thủy",
     "hasBookingLeader": false,
-    "primaryPic": "Trần Thị Hảo",
+    "primaryPic": "Hà Thị Thủy",
     "assignedMembers": [
-      "Trần Thị Hảo",
       "Hà Thị Thủy",
       "Trần Phương Thảo",
+      "Trần Thị Hảo",
       "Nguyễn Quỳnh Trang"
     ],
     "b2cOwners": [
-      "Trần Thị Hảo",
       "Hà Thị Thủy",
       "Trần Phương Thảo",
+      "Trần Thị Hảo",
       "Nguyễn Quỳnh Trang"
     ],
     "assignmentNotes": "Hạn mức Net: 212.6M / Gross: 252.6M (415 video). PIC phụ trách: Trần Thị Hảo (Không có leader)",
@@ -1761,17 +1791,21 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Ngô Hà Linh",
-    "b2cOwnerName": "Trần Hải Phượng",
+    "b2cOwnerName": "Trần Hải Phượng, Phan Diệu Ánh, Nguyễn Ngọc Linh, Nguyễn Thị Tuyết Trinh",
     "assignedStaff": "Trần Hải Phượng",
     "hasBookingLeader": false,
     "primaryPic": "Trần Hải Phượng",
     "assignedMembers": [
       "Trần Hải Phượng",
-      "Nguyễn Ngọc Linh"
+      "Phan Diệu Ánh",
+      "Nguyễn Ngọc Linh",
+      "Nguyễn Thị Tuyết Trinh"
     ],
     "b2cOwners": [
       "Trần Hải Phượng",
-      "Nguyễn Ngọc Linh"
+      "Phan Diệu Ánh",
+      "Nguyễn Ngọc Linh",
+      "Nguyễn Thị Tuyết Trinh"
     ],
     "assignmentNotes": "Hạn mức Net: 369.8M / Gross: 439.3M (213 video). PIC phụ trách: Trần Hải Phượng (Không có leader)",
     "isB2cManaged": true,
@@ -1907,19 +1941,19 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Trần Việt Hoàng",
-    "b2cOwnerName": "Lại Ngọc Huyền",
-    "assignedStaff": "Lại Ngọc Huyền",
+    "b2cOwnerName": "Bùi Thu Hằng, Lại Ngọc Huyền, Nguyễn Trần Mạnh Tuấn, Trần Thảo Linh",
+    "assignedStaff": "Bùi Thu Hằng",
     "hasBookingLeader": false,
-    "primaryPic": "Lại Ngọc Huyền",
+    "primaryPic": "Bùi Thu Hằng",
     "assignedMembers": [
-      "Lại Ngọc Huyền",
       "Bùi Thu Hằng",
+      "Lại Ngọc Huyền",
       "Nguyễn Trần Mạnh Tuấn",
       "Trần Thảo Linh"
     ],
     "b2cOwners": [
-      "Lại Ngọc Huyền",
       "Bùi Thu Hằng",
+      "Lại Ngọc Huyền",
       "Nguyễn Trần Mạnh Tuấn",
       "Trần Thảo Linh"
     ],
@@ -2058,16 +2092,20 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Cao Trần Thu Hương",
-    "b2cOwnerName": "Phạm Thị Thu Hằng",
-    "assignedStaff": "Phạm Thị Thu Hằng",
+    "b2cOwnerName": "Trần Hải Phượng, Phạm Thị Thu Hằng, Nguyễn Thị Tuyết Trinh, Hoàng Hải Long",
+    "assignedStaff": "Trần Hải Phượng",
     "hasBookingLeader": false,
-    "primaryPic": "Phạm Thị Thu Hằng",
+    "primaryPic": "Trần Hải Phượng",
     "assignedMembers": [
+      "Trần Hải Phượng",
       "Phạm Thị Thu Hằng",
+      "Nguyễn Thị Tuyết Trinh",
       "Hoàng Hải Long"
     ],
     "b2cOwners": [
+      "Trần Hải Phượng",
       "Phạm Thị Thu Hằng",
+      "Nguyễn Thị Tuyết Trinh",
       "Hoàng Hải Long"
     ],
     "assignmentNotes": "Hạn mức Net: 38.9M / Gross: 35.6M (134 video). PIC phụ trách: Phạm Thị Thu Hằng (Không có leader)",
@@ -2158,14 +2196,16 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Dương Khánh Linh",
-    "b2cOwnerName": "Lại Ngọc Huyền",
-    "assignedStaff": "Lại Ngọc Huyền",
+    "b2cOwnerName": "Phạm Thị Thu Hằng, Lại Ngọc Huyền",
+    "assignedStaff": "Phạm Thị Thu Hằng",
     "hasBookingLeader": false,
-    "primaryPic": "Lại Ngọc Huyền",
+    "primaryPic": "Phạm Thị Thu Hằng",
     "assignedMembers": [
+      "Phạm Thị Thu Hằng",
       "Lại Ngọc Huyền"
     ],
     "b2cOwners": [
+      "Phạm Thị Thu Hằng",
       "Lại Ngọc Huyền"
     ],
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (5 video). PIC phụ trách: Lại Ngọc Huyền (Không có leader)",
@@ -2305,19 +2345,21 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "SLOW_BURN",
     "financialRiskNotes": "Giải ngân chậm (2% hạn mức Net). Cần đẩy nhanh tiến độ booking KOC.",
     "accountOwnerName": "Hà Thị Thương",
-    "b2cOwnerName": "Bùi Ngọc Ánh",
-    "assignedStaff": "Bùi Ngọc Ánh",
+    "b2cOwnerName": "Lê Phương Thảo, Bùi Ngọc Ánh, Nguyễn Ngọc Phương Anh, Nguyễn Thanh Hải",
+    "assignedStaff": "Lê Phương Thảo",
     "hasBookingLeader": false,
-    "primaryPic": "Bùi Ngọc Ánh",
+    "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
+      "Lê Phương Thảo",
       "Bùi Ngọc Ánh",
-      "Nguyễn Thanh Hải",
-      "Lê Phương Thảo"
+      "Nguyễn Ngọc Phương Anh",
+      "Nguyễn Thanh Hải"
     ],
     "b2cOwners": [
+      "Lê Phương Thảo",
       "Bùi Ngọc Ánh",
-      "Nguyễn Thanh Hải",
-      "Lê Phương Thảo"
+      "Nguyễn Ngọc Phương Anh",
+      "Nguyễn Thanh Hải"
     ],
     "assignmentNotes": "Hạn mức Net: 232.5M / Gross: 276.2M (375 video). PIC phụ trách: Bùi Ngọc Ánh (Không có leader)",
     "isB2cManaged": true,
@@ -2405,17 +2447,17 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Trần Diệu Linh",
-    "b2cOwnerName": "Trần Thị Hảo",
-    "assignedStaff": "Trần Thị Hảo",
+    "b2cOwnerName": "Nguyễn Thị Quỳnh Nhi, Trần Thị Hảo",
+    "assignedStaff": "Nguyễn Thị Quỳnh Nhi",
     "hasBookingLeader": false,
-    "primaryPic": "Trần Thị Hảo",
+    "primaryPic": "Nguyễn Thị Quỳnh Nhi",
     "assignedMembers": [
-      "Trần Thị Hảo",
-      "Nguyễn Thị Quỳnh Nhi"
+      "Nguyễn Thị Quỳnh Nhi",
+      "Trần Thị Hảo"
     ],
     "b2cOwners": [
-      "Trần Thị Hảo",
-      "Nguyễn Thị Quỳnh Nhi"
+      "Nguyễn Thị Quỳnh Nhi",
+      "Trần Thị Hảo"
     ],
     "assignmentNotes": "Hạn mức Net: 0.5M / Gross: 0.6M (110 video). PIC phụ trách: Trần Thị Hảo (Không có leader)",
     "isB2cManaged": true,
@@ -2503,20 +2545,20 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Ngô Hà Linh",
-    "b2cOwnerName": "Trần Thị Hảo",
-    "assignedStaff": "Trần Thị Hảo",
+    "b2cOwnerName": "Hoàng Hải Long, Hà Thị Thủy, Trần Thị Hảo, Lại Ngọc Huyền",
+    "assignedStaff": "Hoàng Hải Long",
     "hasBookingLeader": false,
-    "primaryPic": "Trần Thị Hảo",
+    "primaryPic": "Hoàng Hải Long",
     "assignedMembers": [
-      "Trần Thị Hảo",
-      "Hà Thị Thủy",
       "Hoàng Hải Long",
+      "Hà Thị Thủy",
+      "Trần Thị Hảo",
       "Lại Ngọc Huyền"
     ],
     "b2cOwners": [
-      "Trần Thị Hảo",
-      "Hà Thị Thủy",
       "Hoàng Hải Long",
+      "Hà Thị Thủy",
+      "Trần Thị Hảo",
       "Lại Ngọc Huyền"
     ],
     "assignmentNotes": "Hạn mức Net: 397.2M / Gross: 471.8M (325 video). PIC phụ trách: Trần Thị Hảo (Không có leader)",
@@ -2557,17 +2599,17 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "SLOW_BURN",
     "financialRiskNotes": "Giải ngân chậm (0% hạn mức Net). Cần đẩy nhanh tiến độ booking KOC.",
     "accountOwnerName": "Phạm Thị Nhài",
-    "b2cOwnerName": "Phan Diệu Ánh",
-    "assignedStaff": "Phan Diệu Ánh",
+    "b2cOwnerName": "Lương Thị Như Quỳnh, Phan Diệu Ánh",
+    "assignedStaff": "Lương Thị Như Quỳnh",
     "hasBookingLeader": false,
-    "primaryPic": "Phan Diệu Ánh",
+    "primaryPic": "Lương Thị Như Quỳnh",
     "assignedMembers": [
-      "Phan Diệu Ánh",
-      "Lương Thị Như Quỳnh"
+      "Lương Thị Như Quỳnh",
+      "Phan Diệu Ánh"
     ],
     "b2cOwners": [
-      "Phan Diệu Ánh",
-      "Lương Thị Như Quỳnh"
+      "Lương Thị Như Quỳnh",
+      "Phan Diệu Ánh"
     ],
     "assignmentNotes": "Hạn mức Net: 221.1M / Gross: 262.7M (42 video). PIC phụ trách: Phan Diệu Ánh (Không có leader)",
     "isB2cManaged": true,
@@ -2703,15 +2745,17 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Nguyễn Phạm Thanh Diệp",
-    "b2cOwnerName": "Nguyễn Thị Quỳnh Nhi",
+    "b2cOwnerName": "Nguyễn Thị Quỳnh Nhi, Phạm Huyền Thương",
     "assignedStaff": "Nguyễn Thị Quỳnh Nhi",
     "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Quỳnh Nhi",
     "assignedMembers": [
-      "Nguyễn Thị Quỳnh Nhi"
+      "Nguyễn Thị Quỳnh Nhi",
+      "Phạm Huyền Thương"
     ],
     "b2cOwners": [
-      "Nguyễn Thị Quỳnh Nhi"
+      "Nguyễn Thị Quỳnh Nhi",
+      "Phạm Huyền Thương"
     ],
     "assignmentNotes": "Hạn mức Net: 4.3M / Gross: 0.0M (15 video). PIC phụ trách: Nguyễn Thị Quỳnh Nhi (Không có leader)",
     "isB2cManaged": true,
@@ -2751,19 +2795,19 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Nguyễn Phạm Thanh Diệp",
-    "b2cOwnerName": "Phạm Huyền Thương",
-    "assignedStaff": "Phạm Huyền Thương",
+    "b2cOwnerName": "Nguyễn Thị Quỳnh Nhi, Phạm Huyền Thương, Nguyễn Ngọc Phương Anh",
+    "assignedStaff": "Nguyễn Thị Quỳnh Nhi",
     "hasBookingLeader": false,
-    "primaryPic": "Phạm Huyền Thương",
+    "primaryPic": "Nguyễn Thị Quỳnh Nhi",
     "assignedMembers": [
+      "Nguyễn Thị Quỳnh Nhi",
       "Phạm Huyền Thương",
-      "Nguyễn Ngọc Phương Anh",
-      "Nguyễn Thị Quỳnh Nhi"
+      "Nguyễn Ngọc Phương Anh"
     ],
     "b2cOwners": [
+      "Nguyễn Thị Quỳnh Nhi",
       "Phạm Huyền Thương",
-      "Nguyễn Ngọc Phương Anh",
-      "Nguyễn Thị Quỳnh Nhi"
+      "Nguyễn Ngọc Phương Anh"
     ],
     "assignmentNotes": "Hạn mức Net: 43.6M / Gross: 51.8M (431 video). PIC phụ trách: Phạm Huyền Thương (Không có leader)",
     "isB2cManaged": true,
@@ -2851,18 +2895,18 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Nguyễn Thị Mai Linh",
-    "b2cOwnerName": "Nguyễn Thị Quỳnh Nhi",
-    "assignedStaff": "Nguyễn Thị Quỳnh Nhi",
+    "b2cOwnerName": "Lê Thanh Hải, Nguyễn Thị Quỳnh Nhi",
+    "assignedStaff": "Lê Thanh Hải",
     "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
-    "primaryPic": "Nguyễn Thị Quỳnh Nhi",
+    "primaryPic": "Lê Thanh Hải",
     "assignedMembers": [
-      "Nguyễn Thị Quỳnh Nhi",
-      "Lê Thanh Hải"
+      "Lê Thanh Hải",
+      "Nguyễn Thị Quỳnh Nhi"
     ],
     "b2cOwners": [
-      "Nguyễn Thị Quỳnh Nhi",
-      "Lê Thanh Hải"
+      "Lê Thanh Hải",
+      "Nguyễn Thị Quỳnh Nhi"
     ],
     "assignmentNotes": "Hạn mức Net: 52.0M / Gross: 61.8M (292 video). Leader: Nguyễn Thị Ngọc Tâm, PIC: Nguyễn Thị Quỳnh Nhi",
     "isB2cManaged": true,
@@ -2950,14 +2994,16 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "UNBUDGETED",
     "financialRiskNotes": "Báo động đỏ: Phát sinh thực chi 74.290.000 ₫ nhưng hạn mức Order Net = 0 ₫. Cần trình bổ sung phê duyệt ngay.",
     "accountOwnerName": "Nguyễn Thị Mai Linh",
-    "b2cOwnerName": "Hoàng Diệu Thuỳ",
-    "assignedStaff": "Hoàng Diệu Thuỳ",
+    "b2cOwnerName": "Nguyễn Quỳnh Trang, Hoàng Diệu Thuỳ",
+    "assignedStaff": "Nguyễn Quỳnh Trang",
     "hasBookingLeader": false,
-    "primaryPic": "Hoàng Diệu Thuỳ",
+    "primaryPic": "Nguyễn Quỳnh Trang",
     "assignedMembers": [
+      "Nguyễn Quỳnh Trang",
       "Hoàng Diệu Thuỳ"
     ],
     "b2cOwners": [
+      "Nguyễn Quỳnh Trang",
       "Hoàng Diệu Thuỳ"
     ],
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (62 video). PIC phụ trách: Hoàng Diệu Thuỳ (Không có leader)",
@@ -3046,14 +3092,16 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Hà Thị Thương",
-    "b2cOwnerName": "Nguyễn Thị Ngọc Tâm",
-    "assignedStaff": "Nguyễn Thị Ngọc Tâm",
+    "b2cOwnerName": "Bùi Ngọc Ánh, Nguyễn Thị Ngọc Tâm",
+    "assignedStaff": "Bùi Ngọc Ánh",
     "hasBookingLeader": false,
-    "primaryPic": "Nguyễn Thị Ngọc Tâm",
+    "primaryPic": "Bùi Ngọc Ánh",
     "assignedMembers": [
+      "Bùi Ngọc Ánh",
       "Nguyễn Thị Ngọc Tâm"
     ],
     "b2cOwners": [
+      "Bùi Ngọc Ánh",
       "Nguyễn Thị Ngọc Tâm"
     ],
     "assignmentNotes": "Hạn mức Net: 5.4M / Gross: 0.0M (8 video). PIC phụ trách: Nguyễn Thị Ngọc Tâm (Không có leader)",
@@ -3142,16 +3190,20 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Trần Việt Hoàng",
-    "b2cOwnerName": "Nguyễn Thị Mai Anh",
+    "b2cOwnerName": "Nguyễn Thị Mai Anh, Phan Diệu Ánh, Trần Thị Hảo, Đặng Mai Hà Linh",
     "assignedStaff": "Nguyễn Thị Mai Anh",
     "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Mai Anh",
     "assignedMembers": [
       "Nguyễn Thị Mai Anh",
+      "Phan Diệu Ánh",
+      "Trần Thị Hảo",
       "Đặng Mai Hà Linh"
     ],
     "b2cOwners": [
       "Nguyễn Thị Mai Anh",
+      "Phan Diệu Ánh",
+      "Trần Thị Hảo",
       "Đặng Mai Hà Linh"
     ],
     "assignmentNotes": "Hạn mức Net: 90.4M / Gross: 89.1M (105 video). PIC phụ trách: Nguyễn Thị Mai Anh (Không có leader)",
@@ -3290,19 +3342,19 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Dương Vân Khánh",
-    "b2cOwnerName": "Bùi Ngọc Ánh",
+    "b2cOwnerName": "Bùi Ngọc Ánh, Nguyễn Thị Tuyết Trinh, Nguyễn Quỳnh Trang",
     "assignedStaff": "Bùi Ngọc Ánh",
     "hasBookingLeader": false,
     "primaryPic": "Bùi Ngọc Ánh",
     "assignedMembers": [
       "Bùi Ngọc Ánh",
-      "Nguyễn Quỳnh Trang",
-      "Nguyễn Thị Tuyết Trinh"
+      "Nguyễn Thị Tuyết Trinh",
+      "Nguyễn Quỳnh Trang"
     ],
     "b2cOwners": [
       "Bùi Ngọc Ánh",
-      "Nguyễn Quỳnh Trang",
-      "Nguyễn Thị Tuyết Trinh"
+      "Nguyễn Thị Tuyết Trinh",
+      "Nguyễn Quỳnh Trang"
     ],
     "assignmentNotes": "Hạn mức Net: 211.4M / Gross: 234.0M (571 video). PIC phụ trách: Bùi Ngọc Ánh (Không có leader)",
     "isB2cManaged": true,
@@ -3342,17 +3394,19 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Phạm Thị Nhài",
-    "b2cOwnerName": "Nguyễn Ngọc Linh",
-    "assignedStaff": "Nguyễn Ngọc Linh",
+    "b2cOwnerName": "Lương Thị Như Quỳnh, Nguyễn Ngọc Linh, Phan Diệu Ánh",
+    "assignedStaff": "Lương Thị Như Quỳnh",
     "hasBookingLeader": false,
-    "primaryPic": "Nguyễn Ngọc Linh",
+    "primaryPic": "Lương Thị Như Quỳnh",
     "assignedMembers": [
+      "Lương Thị Như Quỳnh",
       "Nguyễn Ngọc Linh",
-      "Lương Thị Như Quỳnh"
+      "Phan Diệu Ánh"
     ],
     "b2cOwners": [
+      "Lương Thị Như Quỳnh",
       "Nguyễn Ngọc Linh",
-      "Lương Thị Như Quỳnh"
+      "Phan Diệu Ánh"
     ],
     "assignmentNotes": "Hạn mức Net: 18.2M / Gross: 21.6M (55 video). PIC phụ trách: Nguyễn Ngọc Linh (Không có leader)",
     "isB2cManaged": true,
@@ -3392,19 +3446,21 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "financialRiskStatus": "NORMAL",
     "financialRiskNotes": "Trong hạn mức ngân sách Net cho phép.",
     "accountOwnerName": "Phạm Thị Nhài",
-    "b2cOwnerName": "Nguyễn Ngọc Linh",
-    "assignedStaff": "Nguyễn Ngọc Linh",
+    "b2cOwnerName": "Lương Thị Như Quỳnh, Nguyễn Ngọc Linh, Phan Diệu Ánh, Bùi Ngọc Ánh",
+    "assignedStaff": "Lương Thị Như Quỳnh",
     "hasBookingLeader": false,
-    "primaryPic": "Nguyễn Ngọc Linh",
+    "primaryPic": "Lương Thị Như Quỳnh",
     "assignedMembers": [
+      "Lương Thị Như Quỳnh",
       "Nguyễn Ngọc Linh",
-      "Bùi Ngọc Ánh",
-      "Lương Thị Như Quỳnh"
+      "Phan Diệu Ánh",
+      "Bùi Ngọc Ánh"
     ],
     "b2cOwners": [
+      "Lương Thị Như Quỳnh",
       "Nguyễn Ngọc Linh",
-      "Bùi Ngọc Ánh",
-      "Lương Thị Như Quỳnh"
+      "Phan Diệu Ánh",
+      "Bùi Ngọc Ánh"
     ],
     "assignmentNotes": "Hạn mức Net: 80.0M / Gross: 93.6M (37 video). PIC phụ trách: Nguyễn Ngọc Linh (Không có leader)",
     "isB2cManaged": true,

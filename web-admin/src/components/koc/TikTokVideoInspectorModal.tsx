@@ -21,6 +21,8 @@ import {
 import { formatNumber, getVietnamDateYmd } from '../../lib/format';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
 import { VideoProductScreenshotModal } from '../contracts/VideoProductScreenshotModal';
+import { DraftBbntPreviewModal } from '../contracts/DraftBbntPreviewModal';
+import { FileCheck } from 'lucide-react';
 import { useBrandProfiles, findBrandProfile } from '../../lib/brands/useBrandProfiles';
 import { executeOperationalReport } from '../../lib/operationalReportService';
 import {
@@ -81,6 +83,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
   const [acceptedVideoIds, setAcceptedVideoIds] = useState<Set<string>>(new Set());
   const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
   const [savedScreenshotCount, setSavedScreenshotCount] = useState<number>(0);
+  const [draftBbntOpen, setDraftBbntOpen] = useState(false);
   const { profiles } = useBrandProfiles();
   const [isAuditingTranscript, setIsAuditingTranscript] = useState(false);
   const [transcriptAuditResult, setTranscriptAuditResult] = useState<{

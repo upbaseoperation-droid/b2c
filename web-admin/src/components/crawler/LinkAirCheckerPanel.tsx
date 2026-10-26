@@ -5,6 +5,8 @@ import { Camera, Check, Copy, Download, ExternalLink, RefreshCw, RotateCcw, Shie
 import { formatDate, formatNumber, getVietnamDateYmd } from '../../lib/format';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
 import { VideoProductScreenshotModal } from '../contracts/VideoProductScreenshotModal';
+import { DraftBbntPreviewModal } from '../contracts/DraftBbntPreviewModal';
+import type { BookingDealItem } from '../../lib/types';
 import {
   buildLinkAirCsv,
   LINK_AIR_PLATFORM_LABEL,
@@ -511,6 +513,29 @@ function LinkAirDetailModal({
   const [enrichingCart, setEnrichingCart] = useState(false);
   const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
   const [savedScreenshotCount, setSavedScreenshotCount] = useState<number>(0);
+  const [draftBbntOpen, setDraftBbntOpen] = useState(false);
+
+  const syntheticDeal: BookingDealItem = useMemo(() => {
+    const videoUrl = result?.canonicalUrl || result?.inputUrl || '';
+    const videoIdMatch = videoUrl.match(/\/video\/(\d+)/);
+    const videoId = videoIdMatch ? videoIdMatch[1] : Date.now().toString();
+    const handleClean = (result?.author.handle || '').replace(/^@/, '');
+    return {
+      id: `AIR-${videoId}`,
+      dealCode: `BO-AIR-${videoId.slice(-4) || '01'}`,
+      kocId: '',
+      kocStageName: result?.author.name || (handleClean ? `@${handleClean}` : 'KOC TikTok'),
+      kocChannelId: handleClean ? `@${handleClean}` : '',
+      brandName: 'Upbase B2C',
+      productName: result?.productTitle || 'Sản phẩm TikTok',
+      tiktokVideoUrl: videoUrl,
+      stage: 'ACCEPTANCE_READY',
+      totalValue: 0,
+      vatRatePercent: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } as unknown as BookingDealItem;
+  }, [result]);
 
   const needsCartEnrichment = Boolean(
     result &&
@@ -611,6 +636,13 @@ function LinkAirDetailModal({
             onClick={() => setScreenshotModalOpen(true)}
           >
             Chụp ảnh sản phẩm cho BBNT{savedScreenshotCount > 0 ? ` (${savedScreenshotCount})` : ''}
+          </Button>
+          <Button
+            variant="primary"
+            icon={ShieldCheck}
+            onClick={() => setDraftBbntOpen(true)}
+          >
+            Lập Biên bản nghiệm thu (BBNT) / Phụ lục{savedScreenshotCount > 0 ? ` (${savedScreenshotCount} ảnh)` : ''}
           </Button>
         </>
       }
@@ -887,6 +919,15 @@ function LinkAirDetailModal({
         })}
         onApplyScreenshots={(items) => {
           setSavedScreenshotCount(items.length);
+          setDraftBbntOpen(true);
+        }}
+      />
+      <DraftBbntPreviewModal
+        open={draftBbntOpen}
+        onClose={() => setDraftBbntOpen(false)}
+        deal={syntheticDeal}
+        onSavedRecord={(rec) => {
+          setDraftBbntOpen(false);
         }}
       />
     </Modal>

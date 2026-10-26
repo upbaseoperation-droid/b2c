@@ -3,10 +3,24 @@ import { isPersonInField } from './staffIdentity';
 
 /** Tất cả người được phân việc trong một kế hoạch tháng: là PIC tham gia gian trong tháng đó. */
 function planParticipantNames(plan: InputPlanBreakdownState): string[] {
+  const ref = plan.reference41;
+  const rolePics = ref?.rolePics;
   return [
-    plan.pic, plan.primaryPic, plan.submittedBy,
+    plan.pic,
+    plan.primaryPic,
+    plan.submittedBy,
     ...(plan.assignedMembers || []),
+    ...(plan.staffWeeklySlices || []).map(s => s.staffName),
     ...(plan.items || []).map(i => i.assignedStaff),
+    ref?.focPic,
+    ref?.contentPic,
+    ref?.livePic,
+    ref?.accountPic,
+    ...(rolePics?.bookingPics || []),
+    ...(rolePics?.focPics || []),
+    ...(rolePics?.contentPics || []),
+    ...(rolePics?.livePics || []),
+    ...(rolePics?.accountPics || []),
   ].filter((n): n is string => !!n && !!n.trim());
 }
 

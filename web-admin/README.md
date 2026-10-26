@@ -12,7 +12,7 @@ Hệ thống điều hành và quản trị vận hành tập trung cho phòng M
 - **Cơ sở dữ liệu thực tế (Database & Storage Engine):**
   - **Prisma ORM & PostgreSQL trên Supabase** (AWS ap-southeast-1 Pooler / Direct).
   - Vận hành 100% dữ liệu thực tế thông qua các biến môi trường: `BRAND_STORAGE=postgres`, `CONTRACT_STORAGE=postgres`, `PARTNER_HUB_STORAGE=postgres`, `SHARED_STORAGE=postgres`.
-  - Bộ kiểm tra & đối soát dữ liệu thực: `npx tsx scripts/verify-db.ts` (16 tài khoản nhân sự/lãnh đạo B2C, 69 gian hàng `StorePortfolio`, 42 thương hiệu trong `AppSharedRecord` & `BrandProfileRecord`, 25 mẫu Word pháp chế trong `ContractTemplateSnapshot`, 98 kế hoạch tháng `MonthlyPlan`, 4.820 KOC chuẩn hóa 100% danh bạ Master và 16.024 bản ghi video/deal lịch sử hợp tác thực tế).
+  - Bộ kiểm tra & đối soát dữ liệu thực: `npx tsx scripts/verify-db.ts` (16 tài khoản nhân sự/lãnh đạo B2C, 69 gian hàng `StorePortfolio`, 42 thương hiệu trong `AppSharedRecord` & `BrandProfileRecord`, 25 mẫu Word pháp chế trong `ContractTemplateSnapshot`, 131 kế hoạch tháng thực tế `MonthlyPlan` gồm 64 gian kỳ `2026/10` và 67 gian kỳ `2026/11`, 4.820 KOC chuẩn hóa 100% danh bạ Master và 16.024 bản ghi video/deal lịch sử hợp tác thực tế).
 - **Quản lý dữ liệu & Đồng bộ 2 chiều (PostgreSQL <-> `localStorage` Cache):**
   - **API máy chủ `/api/shared-state` (`route.ts`):**
     - Cung cấp 2 phương thức `GET` và `PUT`, quản lý dữ liệu tập trung trên bảng `AppSharedRecord` (PostgreSQL) thông qua `readRecord`, `readRecordsBatch` (đọc lô 1 truy vấn SQL / 1 lần quét thư mục kèm tùy chọn `{ clone: false }`) và `upsertRecord` kèm số hiệu phiên bản (`revision`) để chống ghi đè xung đột.

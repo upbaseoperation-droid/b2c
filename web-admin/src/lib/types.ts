@@ -2854,6 +2854,7 @@ export interface AiEmployeeReviewResponse {
 export type InputPlanChannelType = 
   | 'TIKTOK' 
   | 'SHOPEE' 
+  | 'SHOPEE_VIDEO'
   | 'FACEBOOK' 
   | 'INSTAGRAM' 
   | 'THREADS' 
@@ -3141,6 +3142,13 @@ export interface PlanReference41 {
     livePics: string[];
     b2cPics: string[];
   };
+  growthPic?: string;
+  accountPic?: string;
+  bookingPic?: string;
+  bookingLeader?: string;
+  focPic?: string;
+  contentPic?: string;
+  livePic?: string;
 }
 
 export interface InputPlanBreakdownState {

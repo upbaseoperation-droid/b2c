@@ -38,6 +38,7 @@ interface LarkPaymentRequestModalProps {
   open: boolean;
   onClose: () => void;
   initialDeal: BookingDealItem | null;
+  initialDeals?: BookingDealItem[];
   allDeals: BookingDealItem[];
   kocs: KocItem[];
   currentUserName: string;
@@ -51,6 +52,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
   open,
   onClose,
   initialDeal,
+  initialDeals,
   allDeals,
   kocs,
   currentUserName,
@@ -72,7 +74,11 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
   const [isEditingPayee, setIsEditingPayee] = useState<boolean>(false);
 
   // Đồng bộ deal khởi tạo khi mở hộp thoại
-  const initKey = open ? `${initialDeal?.id || 'NONE'}` : 'CLOSED';
+  const initDealsKey =
+    initialDeals && initialDeals.length > 0
+      ? initialDeals.map(d => d.id).join(',')
+      : initialDeal?.id || 'NONE';
+  const initKey = open ? initDealsKey : 'CLOSED';
   const [prevInitKey, setPrevInitKey] = useState<string>('CLOSED');
   if (initKey !== prevInitKey) {
     setPrevInitKey(initKey);
@@ -85,15 +91,23 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
       setEditingDealIds({});
       setIsEditingPayee(false);
       setLoadingHistory(true);
-      if (initialDeal) {
-        setSelectedDealIds([initialDeal.id]);
+      const seedDeals =
+        initialDeals && initialDeals.length > 0
+          ? initialDeals
+          : initialDeal
+          ? [initialDeal]
+          : [];
+      if (seedDeals.length > 0) {
+        const firstSeed = seedDeals[0];
+        setSelectedDealIds(seedDeals.map(d => d.id));
         const isAlreadyVerified =
-          initialDeal.status === 'VIDEO_VERIFIED' ||
-          initialDeal.status === 'VIDEO_SUBMITTED' ||
-          Boolean(initialDeal.tiktokVideoUrl || initialDeal.videoUrl);
+          firstSeed.status === 'VIDEO_VERIFIED' ||
+          firstSeed.status === 'VIDEO_SUBMITTED' ||
+          Boolean(firstSeed.tiktokVideoUrl || firstSeed.videoUrl);
         setRequestType(isAlreadyVerified ? 'SETTLEMENT' : 'ADVANCE');
+        const codesText = seedDeals.map(d => d.dealCode).join(', ');
         setSlipNote(
-          `Đề nghị ${isAlreadyVerified ? 'tất toán' : 'tạm ứng'} mã BO ${initialDeal.dealCode} (${initialDeal.kocStageName} · ${initialDeal.brandName})`
+          `Đề nghị ${isAlreadyVerified ? 'tất toán' : 'tạm ứng'} Deal ${codesText} (${firstSeed.kocStageName} · ${firstSeed.brandName})`
         );
       } else {
         const firstPaid = allDeals.find(d => (d.totalValue || 0) > 0 && d.brandApprovalStatus === 'ĐÃ_DUYỆT');
@@ -617,7 +631,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
 
             {/* Khung 1: Danh sách mã BO trong phiếu & Gom đơn cùng KOC/MCN */}
             <Panel
-              title="1. Danh sách mã BO lập phiếu & Gom đơn cùng KOC / MCN"
+              title="1. Danh sách Deal & Phụ lục SOW lập phiếu · Gom thanh toán cùng KOC / MCN"
               actions={
                 sameKocOtherDeals.length > 0 ? (
                   <Button
@@ -631,7 +645,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                       ])
                     }
                   >
-                    Gom thêm {sameKocOtherDeals.length} BO của {evaluation.payee.kocStageName}
+                    Gom thêm {sameKocOtherDeals.length} Deal của {evaluation.payee.kocStageName}
                   </Button>
                 ) : undefined
               }
@@ -649,7 +663,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                     className="w-auto min-w-[280px]"
                     aria-label="Thêm mã BO từ Bảng 3.2 vào phiếu"
                   >
-                    <option value="">+ Chọn ghép thêm mã BO khác từ Bảng 3.2...</option>
+                    <option value="">+ Chọn ghép thêm Deal & Phụ lục SOW từ Bảng 3.2...</option>
                     {sameKocOtherDeals.length > 0 && (
                       <optgroup label={`Cùng KOC (${evaluation.payee.kocStageName})`}>
                         {sameKocOtherDeals.map(d => (
@@ -659,7 +673,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                         ))}
                       </optgroup>
                     )}
-                    <optgroup label="Các mã BO đã duyệt khác trên Bảng 3.2">
+                    <optgroup label="Các Deal đã duyệt khác trên Bảng 3.2">
                       {selectablePaidDeals.map(d => (
                         <option key={d.id} value={d.id}>
                           {d.dealCode} · {d.kocStageName} · {d.brandName} ({formatVnd(d.totalValue)})
@@ -689,7 +703,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                               Deal: {line.dealCode}
                             </span>
                             <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-code text-3xs text-ink-2">
-                              HĐNT: {line.masterContractCode} · Phụ lục: {line.contractAppendixCode}
+                              HĐNT: {line.masterContractCode} · Phụ lục SOW: {line.contractAppendixCode}
                             </span>
                             <Status tone={line.isEligible ? 'positive' : 'critical'}>
                               {line.isEligible
@@ -723,21 +737,21 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                         {/* Tóm tắt cấu trúc chi phí của Deal: Asset Video + Dịch vụ gia tăng - Khấu trừ phần hủy */}
                         <div className="flex flex-wrap items-center gap-3 px-2.5 py-1.5 rounded bg-surface border border-line text-2xs font-code text-ink-2">
                           <span>
-                            Asset Video: <strong>{formatVnd(line.videoAssetNetAmount ?? line.agreedNetAmount)}</strong>
+                            Hạng mục 1 (Video review): <strong>{formatVnd(line.videoAssetNetAmount ?? line.agreedNetAmount)}</strong>
                           </span>
                           <span>•</span>
                           <span>
-                            Dịch vụ gia tăng: <strong>{formatVnd(line.addonServicesNetAmount || 0)}</strong>
+                            Hạng mục 2 & 3 (DV gia tăng): <strong>{formatVnd(line.addonServicesNetAmount || 0)}</strong>
                           </span>
                           <span>•</span>
                           <span>
-                            Tổng Deal: <strong>{formatVnd(line.agreedNetAmount)}</strong>
+                            Tổng Phụ lục SOW: <strong>{formatVnd(line.agreedNetAmount)}</strong>
                           </span>
                           {line.droppedDeductionAmount > 0 && (
                             <>
                               <span>•</span>
                               <span className="text-critical font-semibold">
-                                Khấu trừ hạng mục hủy: -{formatVnd(line.droppedDeductionAmount)}
+                                Khấu trừ hạng mục hủy (BBNT): -{formatVnd(line.droppedDeductionAmount)}
                               </span>
                             </>
                           )}

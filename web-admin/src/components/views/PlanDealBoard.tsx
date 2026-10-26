@@ -4428,11 +4428,15 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
               })
             : []
         }
-        onApplyScreenshots={shots => {
+        onApplyScreenshots={(shots) => {
+          if (!screenshotTarget) return;
+          const currentTarget = screenshotTarget;
+
           notify(
-            `Đã lưu ${shots.length} ảnh chụp sản phẩm cho Biên bản nghiệm thu (${screenshotTarget?.job.code || ''}).`,
+            `Đã lưu ${shots.length} ảnh chụp sản phẩm cho Biên bản nghiệm thu (${currentTarget.job.code}). Đang mở bản nháp BBNT...`,
             'success',
           );
+          setDraftBbntTarget({ deal: currentTarget.deal, job: currentTarget.job });
         }}
       />
 

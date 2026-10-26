@@ -269,100 +269,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
     [stampOverlay]
   );
 
-  /**
-   * Vẽ khung hình minh chứng dự phòng từ ảnh bìa video khi cả máy chủ lẫn trình duyệt đều bị chặn luồng MP4
-   */
-  const buildFallbackCanvasFrame = useCallback(
-    async (
-      moment: SuggestedVideoFrameMoment,
-      meta: {
-        proxiedCoverUrl: string | null;
-        authorHandle: string;
-        authorNickname: string;
-        cartAnchorTitle: string;
-        publishedTimeFormatted: string;
-      }
-    ): Promise<string> => {
-      const canvas = document.createElement('canvas');
-      const width = 540;
-      const height = 960;
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return '';
 
-      const grad = ctx.createLinearGradient(0, 0, 0, height);
-      grad.addColorStop(0, '#1e293b');
-      grad.addColorStop(1, '#0f172a');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, width, height);
-
-      if (meta.proxiedCoverUrl) {
-        try {
-          const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-            const el = new Image();
-            el.crossOrigin = 'anonymous';
-            el.onload = () => resolve(el);
-            el.onerror = (e) => reject(e);
-            el.src = meta.proxiedCoverUrl!;
-          });
-          const scale = Math.max(width / img.width, height / img.height);
-          const drawW = img.width * scale;
-          const drawH = img.height * scale;
-          const dx = (width - drawW) / 2;
-          const dy = (height - drawH) / 2;
-          ctx.drawImage(img, dx, dy, drawW, drawH);
-        } catch {
-          // Giữ nền mặc định nếu ảnh bìa không tải được
-        }
-      }
-
-      const cardY = height - 210;
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
-      ctx.fillRect(20, cardY, width - 40, 130);
-      ctx.strokeStyle = 'rgba(16, 185, 129, 0.75)';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(20, cardY, width - 40, 130);
-
-      ctx.fillStyle = '#34d399';
-      ctx.font = '600 18px sans-serif';
-      ctx.fillText(`KHUNG HÌNH SẢN PHẨM · MỐC ${moment.timeLabel}`, 36, cardY + 32);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '600 20px sans-serif';
-      const prodLabel =
-        moment.matchedTerm ||
-        meta.cartAnchorTitle ||
-        productKeywordInput ||
-        productName ||
-        brandName ||
-        'Sản phẩm chiến dịch';
-      ctx.fillText(`Sản phẩm: ${prodLabel.slice(0, 38)}`, 36, cardY + 64);
-
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '16px sans-serif';
-      const subQuote = moment.quote
-        ? `"${moment.quote.slice(0, 48)}${moment.quote.length > 48 ? '...' : ''}"`
-        : moment.reason;
-      ctx.fillText(subQuote, 36, cardY + 96);
-
-      if (meta.publishedTimeFormatted) {
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '14px sans-serif';
-        ctx.fillText(`Ngày đăng: ${meta.publishedTimeFormatted}`, 36, cardY + 118);
-      }
-
-      drawWatermarkStamp(ctx, width, height, {
-        timeLabel: moment.timeLabel,
-        handle: meta.authorHandle || authorHandle,
-        term: prodLabel,
-        dealCode,
-      });
-
-      return canvas.toDataURL('image/jpeg', 0.88);
-    },
-    [authorHandle, brandName, dealCode, drawWatermarkStamp, productKeywordInput, productName]
-  );
 
   /**
    * Ưu tiên 1: Cắt khung hình song song qua endpoint máy chủ (`?streamToken=...&captureSec=...`)
@@ -485,106 +392,133 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
         // Nếu chưa lấy qua máy chủ (hoặc đang mở file MP4 từ máy tính), dùng thẻ <video> trên trình duyệt
         if (extracted.length === 0) {
           const tempVideo = document.createElement('video');
+          tempVideo.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:320px;height:180px;opacity:0;pointer-events:none;';
           tempVideo.crossOrigin = 'anonymous';
           tempVideo.muted = true;
           tempVideo.playsInline = true;
           tempVideo.preload = 'auto';
+          document.body.appendChild(tempVideo);
           tempVideo.src = videoSrc;
 
-          await new Promise<void>((resolve, reject) => {
-            const timer = setTimeout(() => reject(new Error('Timeout loading video stream')), 12000);
-            tempVideo.onloadedmetadata = () => {
-              clearTimeout(timer);
-              resolve();
-            };
-            tempVideo.onerror = () => {
-              clearTimeout(timer);
-              reject(new Error('Video stream error'));
-            };
-          });
+          try {
+            await new Promise<void>((resolve, reject) => {
+              const timer = setTimeout(() => reject(new Error('Timeout loading video stream')), 10000);
+              tempVideo.onloadedmetadata = () => {
+                clearTimeout(timer);
+                resolve();
+              };
+              tempVideo.onerror = () => {
+                clearTimeout(timer);
+                reject(new Error('Video stream error'));
+              };
+            });
 
-          const actualDuration = Number(tempVideo.duration) || 20;
-          setVideoDuration(actualDuration);
+            const actualDuration = Number(tempVideo.duration) || 20;
+            setVideoDuration(actualDuration);
 
-          const targetMoments = moments.slice(0, 8);
-          for (const m of targetMoments) {
-            let safeSec = Math.min(Math.max(0.5, m.sec), Math.max(0.5, actualDuration - 0.3));
-            const seekToSec = async (targetSec: number) => {
-              await new Promise<void>((resolve) => {
-                const seekTimer = setTimeout(() => resolve(), 3200);
-                tempVideo.onseeked = () => {
-                  clearTimeout(seekTimer);
-                  resolve();
-                };
-                tempVideo.currentTime = targetSec;
-              });
-            };
+            const targetMoments = moments.slice(0, 8);
+            for (const m of targetMoments) {
+              let safeSec = Math.min(Math.max(0.5, m.sec), Math.max(0.5, actualDuration - 0.3));
+              const seekToSec = async (targetSec: number) => {
+                await new Promise<void>((resolve) => {
+                  let done = false;
+                  const seekTimer = setTimeout(() => {
+                    if (!done) {
+                      done = true;
+                      tempVideo.removeEventListener('seeked', onSeeked);
+                      resolve();
+                    }
+                  }, 2600);
+                  const onSeeked = () => {
+                    if (!done) {
+                      done = true;
+                      clearTimeout(seekTimer);
+                      tempVideo.removeEventListener('seeked', onSeeked);
+                      resolve();
+                    }
+                  };
+                  tempVideo.addEventListener('seeked', onSeeked);
+                  try {
+                    tempVideo.currentTime = targetSec;
+                  } catch {
+                    if (!done) {
+                      done = true;
+                      clearTimeout(seekTimer);
+                      resolve();
+                    }
+                  }
+                });
+              };
 
-            await seekToSec(safeSec);
+              await seekToSec(safeSec);
 
-            const canvas = document.createElement('canvas');
-            const vw = tempVideo.videoWidth || 540;
-            const vh = tempVideo.videoHeight || 960;
-            const scale = Math.min(1, 720 / Math.max(vw, 1));
-            canvas.width = Math.round(vw * scale);
-            canvas.height = Math.round(vh * scale);
-
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              drawSourceWithCrop(ctx, tempVideo, vw, vh, canvas.width, canvas.height);
-              let quality = analyzeCanvasFrameQuality(ctx, canvas.width, canvas.height);
-
-              // Nếu trúng đúng khung hình tối đen lúc chuyển cảnh, tự động nhích thêm +0.45s
-              if (quality.isBlankOrDark && safeSec + 0.5 < actualDuration) {
-                safeSec = Math.round((safeSec + 0.45) * 10) / 10;
-                await seekToSec(safeSec);
-                drawSourceWithCrop(ctx, tempVideo, vw, vh, canvas.width, canvas.height);
-                quality = analyzeCanvasFrameQuality(ctx, canvas.width, canvas.height);
+              // Chặn chụp sai lệch khi video không tua được tới giây yêu cầu
+              const timeDiff = Math.abs(tempVideo.currentTime - safeSec);
+              if (timeDiff > 1.5 && safeSec > 2.5) {
+                continue;
               }
 
-              drawWatermarkStamp(ctx, canvas.width, canvas.height, {
-                timeLabel: formatSecToMmSs(safeSec),
-                handle: fallbackMeta.authorHandle || authorHandle,
-                term: m.matchedTerm || productKeywordInput || productName || brandName,
-                dealCode,
-              });
-              const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
-              extracted.push({
-                id: `frm-${Math.round(safeSec * 10)}-${Date.now()}`,
-                timestampSec: Math.round(safeSec * 10) / 10,
-                timeLabel: formatSecToMmSs(safeSec),
-                reason: m.reason,
-                matchedTerm: m.matchedTerm || productKeywordInput || productName,
-                captionQuote: m.quote,
-                imageDataUrl: dataUrl,
-                sourceMode: m.isPrimaryProductMoment ? 'SUGGESTED_MOMENT' : 'VIDEO_FRAME',
-                momentCategory: m.momentCategory,
-                confidenceScore: m.confidenceScore || (m.isPrimaryProductMoment ? 88 : 65),
-                sharpnessScore: quality.sharpnessScore,
-              });
+              const canvas = document.createElement('canvas');
+              const vw = tempVideo.videoWidth || 540;
+              const vh = tempVideo.videoHeight || 960;
+              const scale = Math.min(1, 720 / Math.max(vw, 1));
+              canvas.width = Math.round(vw * scale);
+              canvas.height = Math.round(vh * scale);
+
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                drawSourceWithCrop(ctx, tempVideo, vw, vh, canvas.width, canvas.height);
+                let quality = analyzeCanvasFrameQuality(ctx, canvas.width, canvas.height);
+
+                if (quality.isBlankOrDark && safeSec + 0.5 < actualDuration) {
+                  safeSec = Math.round((safeSec + 0.45) * 10) / 10;
+                  await seekToSec(safeSec);
+                  drawSourceWithCrop(ctx, tempVideo, vw, vh, canvas.width, canvas.height);
+                  quality = analyzeCanvasFrameQuality(ctx, canvas.width, canvas.height);
+                }
+
+                if (quality.isBlankOrDark) continue;
+
+                // Chống lưu khung hình trùng lặp với ảnh đầu video
+                const isDuplicate = extracted.some(
+                  (prev) => Math.abs(prev.sharpnessScore - quality.sharpnessScore) === 0 &&
+                            Math.abs(prev.timestampSec - safeSec) > 1.5
+                );
+                if (isDuplicate && extracted.length > 0) continue;
+
+                drawWatermarkStamp(ctx, canvas.width, canvas.height, {
+                  timeLabel: formatSecToMmSs(safeSec),
+                  handle: fallbackMeta.authorHandle || authorHandle,
+                  term: m.matchedTerm || productKeywordInput || productName || brandName,
+                  dealCode,
+                });
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+                extracted.push({
+                  id: `frm-${Math.round(safeSec * 10)}-${Date.now()}`,
+                  timestampSec: Math.round(safeSec * 10) / 10,
+                  timeLabel: formatSecToMmSs(safeSec),
+                  reason: m.reason,
+                  matchedTerm: m.matchedTerm || productKeywordInput || productName,
+                  captionQuote: m.quote,
+                  imageDataUrl: dataUrl,
+                  sourceMode: m.isPrimaryProductMoment ? 'SUGGESTED_MOMENT' : 'VIDEO_FRAME',
+                  momentCategory: m.momentCategory,
+                  confidenceScore: m.confidenceScore || (m.isPrimaryProductMoment ? 88 : 65),
+                  sharpnessScore: quality.sharpnessScore,
+                });
+              }
             }
+          } finally {
+            try {
+              tempVideo.remove();
+            } catch {}
           }
         }
       } catch {
-        const fallbackMoments = moments.slice(0, 4);
-        for (const m of fallbackMoments) {
-          const dataUrl = await buildFallbackCanvasFrame(m, fallbackMeta);
-          if (dataUrl) {
-            extracted.push({
-              id: `fb-${Math.round(m.sec * 10)}-${Date.now()}`,
-              timestampSec: m.sec,
-              timeLabel: m.timeLabel,
-              reason: m.reason,
-              matchedTerm: m.matchedTerm || productKeywordInput || productName,
-              captionQuote: m.quote,
-              imageDataUrl: dataUrl,
-              sourceMode: 'SUGGESTED_MOMENT',
-              momentCategory: m.momentCategory,
-              confidenceScore: m.confidenceScore || 70,
-              sharpnessScore: 75,
-            });
-          }
-        }
+        // Tuyệt đối không sinh khung hình giả bằng ảnh bìa (RULE-DATA-01)
+        setStatusNotice(
+          'Chưa thể tự động cắt khung hình từ luồng video. Vui lòng bấm vào mốc thời gian bên dưới để tua và bấm "Chụp khung này".'
+        );
       } finally {
         setExtractingFrames(false);
       }
@@ -605,7 +539,6 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
     [
       authorHandle,
       brandName,
-      buildFallbackCanvasFrame,
       dealCode,
       drawSourceWithCrop,
       drawWatermarkStamp,
@@ -667,32 +600,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
           false
         );
       } else {
-        const fbFrames: CandidateFrameItem[] = [];
-        for (const m of (data.suggestedMoments || []).slice(0, 4)) {
-          const dataUrl = await buildFallbackCanvasFrame(m, {
-            proxiedCoverUrl: data.proxiedCoverUrl,
-            authorHandle: data.authorHandle,
-            authorNickname: data.authorNickname,
-            cartAnchorTitle: data.cartAnchorTitle,
-            publishedTimeFormatted: data.publishedTimeFormatted,
-          });
-          if (dataUrl) {
-            fbFrames.push({
-              id: `fb-${Math.round(m.sec * 10)}-${Date.now()}`,
-              timestampSec: m.sec,
-              timeLabel: m.timeLabel,
-              reason: m.reason,
-              matchedTerm: m.matchedTerm || productKeywordInput || productName,
-              captionQuote: m.quote,
-              imageDataUrl: dataUrl,
-              sourceMode: 'SUGGESTED_MOMENT',
-              momentCategory: m.momentCategory,
-              confidenceScore: m.confidenceScore || 70,
-              sharpnessScore: 75,
-            });
-          }
-        }
-        setCandidateFrames(fbFrames);
+        setCandidateFrames([]);
       }
 
       if (data.firstProductAppearanceSec !== null) {

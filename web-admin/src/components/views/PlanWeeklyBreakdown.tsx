@@ -32,6 +32,7 @@ import {
   getTierDefaultUnitCost,
   grossFromNet,
   hasBreakdownData,
+  isPreVatPitIncludedBudget,
   mergeBreakdownItems,
   netFromGross,
   resolveWeekRows,
@@ -245,7 +246,19 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
   const detailAnchorRef = useRef<HTMLDivElement>(null);
 
   const { issues, comparison, rows: storeRows } = useMemo(() => validateBreakdown(plan), [plan]);
-  const staffSlices = useMemo(() => plan.staffWeeklySlices || [], [plan.staffWeeklySlices]);
+  const staffSlices = useMemo(() => {
+    const raw = plan.staffWeeklySlices || [];
+    if (raw.length <= 1) return raw;
+    const mainName = (plan.primaryPic || plan.pic || '').trim();
+    return [...raw].sort((a, b) => {
+      const aMain = a.staffName.trim() === mainName ? 1 : 0;
+      const bMain = b.staffName.trim() === mainName ? 1 : 0;
+      if (aMain !== bMain) return bMain - aMain;
+      const aFoc = (a.roleLabel || '').includes('FOC') && !(a.roleLabel || '').includes('Cast') ? 1 : 0;
+      const bFoc = (b.roleLabel || '').includes('FOC') && !(b.roleLabel || '').includes('Cast') ? 1 : 0;
+      return aFoc - bFoc;
+    });
+  }, [plan.staffWeeklySlices, plan.primaryPic, plan.pic]);
 
   const activeSliceObj = useMemo(
     () => (selectedStaffSlice === 'ALL_STORE' ? null : staffSlices.find(s => s.staffName === selectedStaffSlice) || null),
@@ -640,8 +653,18 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     const r = ref41;
     const l1 = plan.coreMetricsLayer1;
 
-    const multiPlannedQty = totals.multiTotalAffQty + totals.multiTotalReupQty;
-    const multiPlannedNet = totals.multiTotalBudget;
+    const useShopeeAsCastFallback =
+      totals.castQty === 0 &&
+      ref41MultiTotals.affQty === 0 &&
+      totals.multiPlatform.shopee.affQty > 0;
+    const effectiveCastPlannedQty = useShopeeAsCastFallback ? totals.multiPlatform.shopee.affQty : totals.castQty;
+    const effectiveCastPlannedNet = useShopeeAsCastFallback ? totals.multiPlatform.shopee.budgetNet : totals.castBudget;
+    const multiPlannedQty =
+      (useShopeeAsCastFallback ? totals.multiTotalAffQty - totals.multiPlatform.shopee.affQty : totals.multiTotalAffQty) +
+      totals.multiTotalReupQty;
+    const multiPlannedNet = useShopeeAsCastFallback
+      ? totals.multiTotalBudget - totals.multiPlatform.shopee.budgetNet
+      : totals.multiTotalBudget;
     const livePlannedQty = totals.liveSessions + totals.liveSelfInhouse + totals.liveSelfCtv + totals.liveSelfBrand;
     const livePlannedNet = totals.liveBudget + totals.liveSelfBudget;
 
@@ -668,10 +691,10 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
         title: '1. Cast trả phí (KL1–KL7)',
         picText: rolePics?.bookingPics?.length ? rolePics.bookingPics.join(', ') : plan.primaryPic || plan.pic || '—',
         refQty: castRefQty,
-        plannedQty: totals.castQty,
+        plannedQty: effectiveCastPlannedQty,
         unitLabel: 'video',
         refBudgetNet: castRefNet,
-        plannedBudgetNet: totals.castBudget,
+        plannedBudgetNet: effectiveCastPlannedNet,
         extraTag:
           (r?.kl4PlusTarget || 0) > 0
             ? `KL4+: ${kl4PlusPlanned}/${r?.kl4PlusTarget}`
@@ -807,7 +830,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
 
           <div className="flex flex-wrap items-center gap-1.5">
             {staffSlices.length > 1 && (
-              <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5 text-2xs">
+              <div className="flex flex-wrap items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5 text-2xs">
                 <button
                   type="button"
                   onClick={() => setSelectedStaffSlice('ALL_STORE')}
@@ -821,18 +844,33 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                 </button>
                 {staffSlices.map(slice => {
                   const isSelected = selectedStaffSlice === slice.staffName;
+                  const isMainPic = slice.staffName.trim() === (plan.primaryPic || plan.pic || '').trim();
+                  const roleTag = slice.roleLabel || (isMainPic ? 'PIC chính' : 'Phụ');
                   return (
                     <button
                       key={slice.staffName}
                       type="button"
                       onClick={() => setSelectedStaffSlice(isSelected ? 'ALL_STORE' : slice.staffName)}
-                      className={`rounded px-2 py-0.5 font-semibold transition cursor-pointer ${
+                      className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 font-semibold transition cursor-pointer ${
                         isSelected
                           ? 'bg-indigo-600 text-white'
+                          : isMainPic
+                          ? 'bg-slate-100 text-slate-900 hover:bg-slate-200/80'
                           : 'text-slate-600 hover:bg-slate-100'
                       }`}
                     >
-                      {slice.staffName}
+                      <span>{slice.staffName}</span>
+                      <span
+                        className={`rounded px-1.5 py-0 text-2xs font-medium ${
+                          isSelected
+                            ? 'bg-indigo-500/80 text-white'
+                            : isMainPic
+                            ? 'bg-slate-800 text-white'
+                            : 'bg-slate-200/80 text-slate-700'
+                        }`}
+                      >
+                        {roleTag}
+                      </span>
                     </button>
                   );
                 })}
@@ -1023,15 +1061,22 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                           <CheckCircle2 className="h-3.5 w-3.5" /> Khớp
                         </span>
                       ) : (
-                        <div className="inline-flex flex-wrap items-center justify-end gap-1.5 text-2xs font-semibold">
-                          {!isQtyMatched && (
-                            <span className={qtyDiff > 0 ? 'text-rose-600' : 'text-amber-700'}>
-                              {qtyDiff > 0 ? `+${fmt(qtyDiff)}` : fmt(qtyDiff)} {row.unitLabel}
-                            </span>
-                          )}
-                          {!isBudMatched && (
-                            <span className={budDiff > 0 ? 'text-rose-600' : 'text-amber-700'}>
-                              {budDiff > 0 ? `+${fmt(budDiff)}đ` : `${fmt(budDiff)}đ`}
+                        <div className="inline-flex flex-col items-end gap-0.5 text-2xs font-semibold">
+                          <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
+                            {!isQtyMatched && (
+                              <span className={qtyDiff > 0 ? 'text-rose-600' : 'text-amber-700'}>
+                                {qtyDiff > 0 ? `+${fmt(qtyDiff)}` : fmt(qtyDiff)} {row.unitLabel}
+                              </span>
+                            )}
+                            {!isBudMatched && (
+                              <span className={budDiff > 0 ? 'text-rose-600' : 'text-amber-700'}>
+                                {budDiff > 0 ? `+${fmt(budDiff)}đ` : `${fmt(budDiff)}đ`}
+                              </span>
+                            )}
+                          </div>
+                          {!isBudMatched && isPreVatPitIncludedBudget(row.plannedBudgetNet, row.refBudgetNet) && (
+                            <span className="rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-2xs font-medium text-amber-800">
+                              Giá trước VAT (chưa trừ 10% TNCN)
                             </span>
                           )}
                         </div>

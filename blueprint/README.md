@@ -47,7 +47,7 @@ Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự á
 | HUB-1.5 | [Bảng câu hỏi — nhân viên kỳ cựu](1-requirements/1.5_DISCOVERY_GUIDE_NHAN_VIEN_KY_CUU.md) | Hoàn tất | Khối MKT | Công cụ khảo sát |
 | HUB-1.6 | [Mục tiêu vận hành](1-requirements/1.6_OPERATING_GOALS.md) | Đã chốt | Khối MKT | Tối ưu SLA, kiểm soát trần PnL, chuẩn hóa đánh giá nhân sự |
 | HUB-1.7 | [BRD Ops Hub](1-requirements/1.7_BRD_OPS_HUB.md) | Đã chuẩn hóa | Khối MKT | 9 Nhu cầu nghiệp vụ cốt lõi |
-| HUB-1.9 | [Nguồn dữ liệu Lark 4.1 Plan order tổng](1-requirements/1.9_DATA_SOURCE_LARK_4.1_PLAN_ORDER.md) | Đã áp dụng | Khối MKT & DX | Quy tắc DEC-006: đồng bộ thực tế 64 gian B2C kỳ `2026/10` & 66 gian B2C kỳ `2026/11`, tách Gross/Net, Paid/FOC |
+| HUB-1.9 | [Nguồn dữ liệu Lark 4.1 Plan order tổng](1-requirements/1.9_DATA_SOURCE_LARK_4.1_PLAN_ORDER.md) | Đã áp dụng | Khối MKT & DX | Quy tắc DEC-006: đồng bộ thực tế 64 gian B2C kỳ `2026/10` (49 gian có 4.1.1) & 67 gian B2C kỳ `2026/11` (32 gian có 4.1.1), tách Gross/Net, Paid/FOC & phân vai PIC chính/phụ |
 | HUB-1.10 | [Tổng quan hệ thống Lark Base B2C_Quản lý Booking](1-requirements/1.10_LARK_BASE_SYSTEM_OVERVIEW.md) | Đã chuẩn hóa | Khối MKT & DX | 34 bảng, luồng đối soát xuyên suốt `4.1` → `4.1.1` → `3.1` → `3.2` → `6.1` kỳ `2026/10` (2.877 booking, 2.214 listing, 946 phiếu thanh toán) |
 
 ## Giai đoạn 2 — Phân tích & thiết kế kỹ thuật

@@ -76,6 +76,43 @@ function getStreamSessionMap(): Map<string, StreamSessionEntry> {
   }
   return map;
 }
+function encodeStreamSession(entry: StreamSessionEntry): string {
+  try {
+    const payload = {
+      u: entry.streamUrls.slice(0, 3),
+      c: entry.cookies,
+      r: entry.referer || 'https://www.tiktok.com/',
+      t: entry.createdAt,
+    };
+    return Buffer.from(JSON.stringify(payload)).toString('base64url');
+  } catch {
+    return randomUUID();
+  }
+}
+
+function decodeStreamSession(token: string): StreamSessionEntry | null {
+  if (!token) return null;
+  const inMemory = getStreamSessionMap().get(token);
+  if (inMemory) return inMemory;
+
+  try {
+    const raw = Buffer.from(token, 'base64url').toString('utf8');
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed?.u) && parsed.u.length > 0) {
+      const entry: StreamSessionEntry = {
+        streamUrls: parsed.u,
+        cookies: parsed.c,
+        referer: parsed.r || 'https://www.tiktok.com/',
+        createdAt: Number(parsed.t) || Date.now(),
+        frameCache: new Map(),
+      };
+      getStreamSessionMap().set(token, entry);
+      return entry;
+    }
+  } catch {}
+  return null;
+}
+
 
 function getVideoRawMetaCache(): Map<string, CachedVideoRawMeta> {
   if (!globalForStreamSessions.__upbaseVideoRawMetaCache) {
@@ -360,7 +397,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const session = getStreamSessionMap().get(streamToken);
+  const session = decodeStreamSession(streamToken);
   if (!session || session.streamUrls.length === 0) {
     return NextResponse.json(
       { success: false, error: 'Phiên phát video đã hết hạn, vui lòng bấm tải lại video.' },
@@ -799,10 +836,35 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Dò các mốc giây sản phẩm xuất hiện trong lời thoại
+    const isGenericProduct =
+      !productName ||
+      /^(sản phẩm|sản phẩm chiến dịch|booking|deal|koc|brand|mẫu|foc)$/i.test(productName.trim());
+    let targetProductName = isGenericProduct ? undefined : productName;
+
+    if (!targetProductName) {
+      if (meta.cartAnchorTitle) {
+        targetProductName = meta.cartAnchorTitle;
+      } else {
+        const hashMatch = meta.caption.match(
+          /#(?!fyp|xuhuong|trending|viral|review|foryou|couple|dcgr|xuhuongtiktok|boxquamine|mua|hot)[a-zA-Z0-9_\u00C0-\u1EF9]+/gi
+        );
+        if (hashMatch && hashMatch.length > 0) {
+          targetProductName = hashMatch[0].replace(/^#/, '');
+        } else {
+          const prodNounMatch = meta.caption.match(
+            /(?:nước giặt|dung dịch vệ sinh|sữa rửa mặt|kem chống nắng|kem dưỡng|son|serum|dầu gội|xịt khoáng|toner|tẩy trang|mặt nạ)/i
+          );
+          if (prodNounMatch) {
+            targetProductName = prodNounMatch[0];
+          }
+        }
+      }
+    }
+
     const mentionDetection = detectProductMentionMoments({
       segments: meta.subtitleSegments,
       brandName,
-      productName,
+      productName: targetProductName,
       cartAnchorTitle: meta.cartAnchorTitle,
       caption: meta.caption,
       uspKeywords,
@@ -812,7 +874,7 @@ export async function POST(req: NextRequest) {
       durationSeconds: meta.durationSeconds,
       productMentionMoments: mentionDetection.productMentionMoments,
       subtitleSegments: meta.subtitleSegments,
-      productName: productName || meta.cartAnchorTitle,
+      productName: targetProductName || meta.cartAnchorTitle,
       brandName,
     });
 

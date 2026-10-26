@@ -96,6 +96,7 @@ export function DraftBbntPreviewModal({
   const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+  const [savedContractRecord, setSavedContractRecord] = useState<ContractRecord | null>(null);
   const [saveError, setSaveError] = useState('');
 
   const syncKey = open && deal ? `${deal.id}::${deal.dealCode || ''}::${templateId}::${deal.tiktokVideoUrl || ''}` : '';
@@ -185,6 +186,7 @@ export function DraftBbntPreviewModal({
           }),
         });
         setSaveMessage(`Đã cập nhật bản nháp BBNT (${res.record.title} · v${res.record.version}) trong Quản lý Hợp đồng.`);
+        setSavedContractRecord(res.record);
         onSavedRecord?.(res.record);
       } else {
         const res = await contractApi<{ record: ContractRecord }>('/api/contracts', {
@@ -204,6 +206,7 @@ export function DraftBbntPreviewModal({
           }),
         });
         setSaveMessage(`Đã tạo bản nháp BBNT (${res.record.title}) trong Quản lý Hợp đồng.`);
+        setSavedContractRecord(res.record);
         onSavedRecord?.(res.record);
       }
     } catch (e) {
@@ -248,20 +251,34 @@ export function DraftBbntPreviewModal({
               )}
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" onClick={onClose}>
-                Đóng
+              {savedContractRecord && onOpenFullEditor && (
+                <Button
+                  variant="secondary"
+                  icon={ExternalLink}
+                  onClick={() => {
+                    onClose();
+                    onOpenFullEditor(deal);
+                  }}
+                >
+                  Mở xem chi tiết văn bản
+                </Button>
+              )}
+              <Button variant={savedContractRecord ? 'primary' : 'ghost'} onClick={onClose}>
+                {savedContractRecord ? 'Hoàn tất & Đóng' : 'Đóng'}
               </Button>
               <Button
-                variant="primary"
+                variant={savedContractRecord ? 'secondary' : 'primary'}
                 icon={FileCheck}
                 disabled={saving}
                 onClick={() => void handleSaveDraftToContractHub()}
               >
                 {saving
                   ? 'Đang lưu bản nháp…'
-                  : existingBbntRecord
-                    ? 'Cập nhật Bản nháp BBNT'
-                    : 'Xác nhận & Lưu Bản nháp BBNT'}
+                  : savedContractRecord
+                    ? 'Lưu lại thay đổi'
+                    : existingBbntRecord
+                      ? 'Cập nhật Bản nháp BBNT'
+                      : 'Xác nhận & Lưu Bản nháp BBNT'}
               </Button>
             </div>
           </div>
@@ -576,8 +593,11 @@ export function DraftBbntPreviewModal({
             setValues(prev => {
               const next = { ...prev };
               for (const f of fields) {
+                const fTitle = (f.title || f.label || '').toLowerCase();
                 if (f.source === 'airDate' && inspectionMeta.publishedDateVn && !next[f.key]?.trim()) {
                   next[f.key] = inspectionMeta.publishedDateVn;
+                } else if (f.source === 'channelLink' && inspectionMeta.authorHandle && !next[f.key]?.trim()) {
+                  next[f.key] = `https://www.tiktok.com/@${inspectionMeta.authorHandle.replace(/^@/, '')}`;
                 } else if (
                   f.source === 'product' &&
                   (inspectionMeta.matchedProductTerms[0] || inspectionMeta.cartAnchorTitle) &&
@@ -588,6 +608,12 @@ export function DraftBbntPreviewModal({
                     inspectionMeta.matchedProductTerms[0] ||
                     inspectionMeta.cartAnchorTitle ||
                     '';
+                } else if (
+                  (fTitle.includes('link video') || fTitle === 'dòng 1 · link') &&
+                  inspectionMeta.resolvedUrl &&
+                  !next[f.key]?.trim()
+                ) {
+                  next[f.key] = inspectionMeta.resolvedUrl;
                 }
               }
               return next;

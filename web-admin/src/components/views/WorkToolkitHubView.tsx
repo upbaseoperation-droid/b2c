@@ -59,8 +59,6 @@ import {
   type SlaMilestoneRow,
 } from '../../lib/workToolkitRules';
 import {
-  StatRow,
-  Stat,
   Tabs,
   Panel,
   FilterBar,
@@ -972,34 +970,6 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
 
   return (
     <div className="space-y-5">
-      <StatRow size="sm">
-        <Stat
-          label="Tổng công cụ nghiệp vụ"
-          value={TOOL_CATALOG.length}
-          note="Tài chính · Vận hành · Nội dung"
-          icon={Calculator}
-        />
-        <Stat
-          label="Công cụ đã ghim ưu tiên"
-          value={pinnedIds.length}
-          note="Lưu tự động trên trình duyệt"
-          tone="positive"
-          icon={Pin}
-        />
-        <Stat
-          label="Danh bạ KOC kết nối"
-          value={kocs.length.toLocaleString('vi-VN')}
-          note="Đối chiếu nhanh ID kênh & Ngân hàng"
-          icon={Link2}
-        />
-        <Stat
-          label="Từ ngữ hạn chế TikTok Shop"
-          value={TIKTOK_RESTRICTED_DICTIONARY.length}
-          note="Quét 5 nhóm rủi ro vi phạm"
-          tone="warning"
-          icon={ShieldAlert}
-        />
-      </StatRow>
 
       <Tabs
         items={[

@@ -76,11 +76,13 @@ import {
   enrichPlanWithVersions,
 } from '../../lib/monthlyPlanData';
 import { useMonthlyPlanSync } from '../../lib/useMonthlyPlanSync';
-import { filterScopedPlans } from '../../lib/rbacScope';
+import { filterScopedPlans, isStaffGlobalAdminOrManager } from '../../lib/rbacScope';
+import { canEditPlanContent, planPositionsOf } from '../../lib/storePositions';
 import { PlanApprovalStepper } from './PlanApprovalStepper';
 import { PlanHistoryModal } from './PlanHistoryModal';
 import { PlanSyncBadge } from './PlanSyncBadge';
 import { resolveStoreBookingLeader } from '../../lib/larkPaymentRequestEngine';
+import { REAL_BOOKING_TEAMS_STRUCTURE } from '../../lib/realB2cPlanData';
 import {
   ConfirmDialog,
   Modal,
@@ -143,7 +145,7 @@ const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
   );
 };
 
-const PIC_OPTIONS = [
+const BASE_PIC_OPTIONS = [
   'Lê Phương Thảo',
   'Lương Thị Như Quỳnh',
   'Lê Thanh Hải',
@@ -158,8 +160,17 @@ const PIC_OPTIONS = [
   'Đặng Mai Hà Linh',
   'Nguyễn Thu Trang',
   'Lê Hoàng Yến',
-  'Trần Minh Đức'
+  'Trần Minh Đức',
 ];
+
+const PIC_OPTIONS = Array.from(
+  new Set(
+    [
+      ...BASE_PIC_OPTIONS,
+      ...REAL_BOOKING_TEAMS_STRUCTURE.flatMap(t => [t.leaderName, ...t.members.map(m => m.name)]),
+    ].filter(Boolean)
+  )
+);
 
 const TEAM_MEMBERS_INFO: Record<string, { role: string; avatar: string; expertise: string }> = {
   'Lê Phương Thảo': { role: 'Chuyên viên Booking B2C', avatar: 'PT', expertise: 'KOC Affiliate trả phí (KL1–KL6)' },
@@ -524,8 +535,21 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   const highTierSharePct = totalAllocatedBudget > 0 ? (highTierBudget / totalAllocatedBudget) * 100 : 0;
   const highTierOverLimit = highTierSharePct > 45;
 
-  // Phiên bản đã chốt/khóa
-  const isPlanLocked = Boolean(planState.isVersionLocked || planState.status === 'LOCKED');
+  // Kiểm tra quyền sửa kế hoạch của người dùng hiện tại (đồng bộ 100% với máy chủ monthlyPlanStore.ts)
+  const canUserEditPlan = useMemo(() => {
+    if (!currentUser) return true;
+    if (isStaffGlobalAdminOrManager(currentUser)) return true;
+    const matchedStore = (storePortfolios || []).find(
+      s =>
+        (planState.storeId && s.id === planState.storeId) ||
+        (planState.storeName && s.storeName.toLowerCase() === planState.storeName.toLowerCase())
+    );
+    const positions = planPositionsOf(currentUser, planState, matchedStore);
+    return canEditPlanContent(positions, false);
+  }, [currentUser, storePortfolios, planState]);
+
+  // Phiên bản đã chốt/khóa hoặc người dùng chỉ có quyền xem
+  const isPlanLocked = Boolean(planState.isVersionLocked || planState.status === 'LOCKED' || !canUserEditPlan);
 
   // Hệ số quy đổi Net -> Gross chuẩn kế toán B2C: VAT 8% * TNCN 10% = 1.188 (Net/Gross = 0.8418)
   const GROSS_MULTIPLIER = 1.188;
@@ -1086,10 +1110,50 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     notify(`PIC ${planState.pic} đã phân bổ tự động các dòng theo chuyên môn của từng thành viên (Booking, Content Self-Channel, FOC, Đa sàn)!`);
   };
 
+  // Vai trò từng nhân sự trên gian hàng hiện tại (PIC chính / Phụ / Phụ trách FOC / Phụ trách Self)
+  const storeRoleByStaff = useMemo(() => {
+    const map: Record<string, string> = {};
+    const mainPic = (planState.primaryPic || planState.pic || '').trim();
+    if (mainPic) {
+      map[mainPic] = 'PIC chính';
+    }
+    for (const sl of planState.staffWeeklySlices || []) {
+      const name = (sl.staffName || '').trim();
+      if (!name) continue;
+      if (name === mainPic) {
+        map[name] = 'PIC chính';
+      } else if (sl.roleLabel) {
+        map[name] = sl.roleLabel.split('·')[0].trim() || 'Phụ';
+      } else {
+        map[name] = 'Phụ';
+      }
+    }
+    for (const member of planState.assignedMembers || []) {
+      const name = (member || '').trim();
+      if (name && !map[name]) {
+        map[name] = name === mainPic ? 'PIC chính' : 'Phụ';
+      }
+    }
+    return map;
+  }, [planState.primaryPic, planState.pic, planState.staffWeeklySlices, planState.assignedMembers]);
+
+  // Danh sách nhân sự hiển thị trong <select> (ưu tiên nhân sự của gian hàng lên đầu, không bao giờ thiếu người)
+  const effectivePicOptions = useMemo(() => {
+    const mainPic = (planState.primaryPic || planState.pic || '').trim();
+    const sliceNames = (planState.staffWeeklySlices || []).map(s => (s.staffName || '').trim());
+    const itemNames = (planState.items || []).map(it => (it.assignedStaff || '').trim());
+    const memberNames = (planState.assignedMembers || []).map(m => (m || '').trim());
+    return Array.from(
+      new Set([mainPic, ...sliceNames, ...itemNames, ...memberNames, ...PIC_OPTIONS].filter(Boolean))
+    );
+  }, [planState.primaryPic, planState.pic, planState.staffWeeklySlices, planState.items, planState.assignedMembers]);
+
   // Tổng hợp phân bổ theo từng nhân sự trong team
   const staffAllocationSummary = useMemo(() => {
+    const mainPic = (planState.primaryPic || planState.pic || '').trim();
     const summaryMap: Record<string, {
       staffName: string;
+      roleBadge?: string;
       videoCount: number;
       totalBudget: number;
       targetGmv: number;
@@ -1097,9 +1161,10 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       tiersCount: Record<string, number>;
     }> = {};
 
-    PIC_OPTIONS.forEach(staff => {
+    effectivePicOptions.forEach(staff => {
       summaryMap[staff] = {
         staffName: staff,
+        roleBadge: storeRoleByStaff[staff],
         videoCount: 0,
         totalBudget: 0,
         targetGmv: 0,
@@ -1109,10 +1174,12 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     });
 
     planState.items.forEach(item => {
-      const assignee = item.assignedStaff || planState.pic;
+      const assignee = (item.assignedStaff || mainPic || planState.pic || '').trim();
+      if (!assignee) return;
       if (!summaryMap[assignee]) {
         summaryMap[assignee] = {
           staffName: assignee,
+          roleBadge: storeRoleByStaff[assignee],
           videoCount: 0,
           totalBudget: 0,
           targetGmv: 0,
@@ -1127,8 +1194,15 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       summaryMap[assignee].tiersCount[item.tierCode] = (summaryMap[assignee].tiersCount[item.tierCode] || 0) + item.qty;
     });
 
-    return Object.values(summaryMap).filter(s => s.videoCount > 0 || s.staffName === planState.pic);
-  }, [planState.items, planState.pic]);
+    return Object.values(summaryMap)
+      .filter(s => s.videoCount > 0 || s.staffName === mainPic || Boolean(storeRoleByStaff[s.staffName]))
+      .sort((a, b) => {
+        const aMain = a.staffName === mainPic ? 1 : 0;
+        const bMain = b.staffName === mainPic ? 1 : 0;
+        if (aMain !== bMain) return bMain - aMain;
+        return b.totalBudget - a.totalBudget || b.videoCount - a.videoCount;
+      });
+  }, [planState.items, planState.pic, planState.primaryPic, effectivePicOptions, storeRoleByStaff]);
 
   const handleDistributeStep2ToWeeksAndOpen = () => {
     const nextRows = distributeItemsToWeeks(planState, 'EVEN');
@@ -3705,7 +3779,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-2xs font-semibold text-slate-500 inline-flex items-center gap-1 mr-1">
                 <Users className="w-3.5 h-3.5 text-blue-600" />
-                Lọc theo người làm trên gian hàng ({staffAllocationSummary.filter(s => s.videoCount > 0).length} người):
+                Lọc theo người làm trên gian hàng ({staffAllocationSummary.filter(s => s.videoCount > 0 || Boolean(s.roleBadge)).length} người):
               </span>
               <button
                 type="button"
@@ -3719,9 +3793,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 Toàn đội ({totalAllocatedContents} video)
               </button>
               {staffAllocationSummary
-                .filter(s => s.videoCount > 0)
+                .filter(s => s.videoCount > 0 || Boolean(s.roleBadge))
                 .map(s => {
                   const isFocused = focusedStaffFilter === s.staffName;
+                  const roleTag = s.roleBadge ? ` · ${s.roleBadge}` : '';
+                  const metricTag = s.videoCount > 0 ? ` (${s.videoCount} video · ${formatVndShort(s.totalBudget)})` : '';
                   return (
                     <button
                       key={s.staffName}
@@ -3730,11 +3806,13 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       className={`px-2 py-0.5 rounded-md text-2xs font-semibold border transition cursor-pointer ${
                         isFocused
                           ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                          : s.roleBadge === 'PIC chính'
+                          ? 'bg-emerald-50/70 text-emerald-900 border-emerald-300 hover:bg-emerald-100/70'
                           : 'bg-blue-50/60 text-blue-800 border-blue-200 hover:bg-blue-100/70'
                       }`}
-                      title={`Chỉ hiện phần việc của ${s.staffName}: ${s.videoCount} video (${formatVndShort(s.totalBudget)})`}
+                      title={`Chỉ hiện phần việc của ${s.staffName}${roleTag}: ${s.videoCount} video (${formatVndShort(s.totalBudget)})`}
                     >
-                      {s.staffName} ({s.videoCount} video · {formatVndShort(s.totalBudget)})
+                      {s.staffName}{roleTag}{metricTag}
                     </button>
                   );
                 })}
@@ -3757,7 +3835,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {activeTab === 'MINDMAP' && (
         <StorePlanMindmap
           planState={planState}
-          picOptions={PIC_OPTIONS}
+          picOptions={effectivePicOptions}
           disabled={isPlanLocked}
           onUpdateItems={(nextItems) => setPlanState(prev => ({ ...prev, items: nextItems }))}
           onNotify={notify}
@@ -3852,11 +3930,14 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                               : 'bg-white border-slate-200 text-slate-800'
                           }`}
                         >
-                          {PIC_OPTIONS.map(staff => (
-                            <option key={staff} value={staff}>
-                              {staff} {staff === planState.pic ? '(PIC)' : ''}
-                            </option>
-                          ))}
+                          {effectivePicOptions.map(staff => {
+                            const roleTag = storeRoleByStaff[staff] || (staff === (planState.primaryPic || planState.pic) ? 'PIC chính' : '');
+                            return (
+                              <option key={staff} value={staff}>
+                                {staff}{roleTag ? ` (${roleTag})` : ''}
+                              </option>
+                            );
+                          })}
                         </select>
                         {!isPlanLocked && (
                           <button
@@ -4026,11 +4107,14 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                                 : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
                             }`}
                           >
-                            {PIC_OPTIONS.map(staff => (
-                              <option key={staff} value={staff}>
-                                {staff} {staff === planState.pic ? '(PIC)' : ''}
-                              </option>
-                            ))}
+                            {effectivePicOptions.map(staff => {
+                              const roleTag = storeRoleByStaff[staff] || (staff === (planState.primaryPic || planState.pic) ? 'PIC chính' : '');
+                              return (
+                                <option key={staff} value={staff}>
+                                  {staff}{roleTag ? ` (${roleTag})` : ''}
+                                </option>
+                              );
+                            })}
                           </select>
                           {!isPlanLocked && (
                             <button
@@ -4348,7 +4432,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {PIC_OPTIONS.map((staffName) => {
+              {effectivePicOptions.slice(0, 16).map((staffName) => {
                 const info = TEAM_MEMBERS_INFO[staffName] || { role: 'Booking Specialist', avatar: 'ST', expertise: 'KOC' };
                 const summary = staffAllocationSummary.find(s => s.staffName === staffName) || {
                   staffName,
@@ -4521,11 +4605,14 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                                 : 'bg-white border-slate-200 text-slate-800'
                             }`}
                           >
-                            {PIC_OPTIONS.map(staff => (
-                              <option key={staff} value={staff}>
-                                {staff} {staff === planState.pic ? '(PIC Chủ Trì)' : ''}
-                              </option>
-                            ))}
+                            {effectivePicOptions.map(staff => {
+                              const roleTag = storeRoleByStaff[staff] || (staff === (planState.primaryPic || planState.pic) ? 'PIC chính' : '');
+                              return (
+                                <option key={staff} value={staff}>
+                                  {staff}{roleTag ? ` (${roleTag})` : ''}
+                                </option>
+                              );
+                            })}
                           </select>
                           <input
                             type="text"
@@ -4603,11 +4690,14 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                                     : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
                                 }`}
                               >
-                                {PIC_OPTIONS.map(staff => (
-                                  <option key={staff} value={staff}>
-                                    {staff} {staff === planState.pic ? '(PIC Chủ Trì)' : ''}
-                                  </option>
-                                ))}
+                                {effectivePicOptions.map(staff => {
+                                  const roleTag = storeRoleByStaff[staff] || (staff === (planState.primaryPic || planState.pic) ? 'PIC chính' : '');
+                                  return (
+                                    <option key={staff} value={staff}>
+                                      {staff}{roleTag ? ` (${roleTag})` : ''}
+                                    </option>
+                                  );
+                                })}
                               </select>
                             </td>
 
