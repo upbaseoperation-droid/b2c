@@ -2091,7 +2091,7 @@ function LegalPaymentPanel({
           {type === 'INDIVIDUAL' &&
             (defProfile?.taxCode || koc.taxCode) &&
             (defProfile?.taxCode || koc.taxCode) !== 'Chưa có' &&
-            (defProfile?.taxCode || koc.taxCode) !== legalId && (
+            (defProfile?.taxCode || koc.taxCode)?.trim() !== legalId?.trim() && (
               <InfoRow label="Mã số thuế cá nhân">
                 <SensitiveValue
                   value={show((defProfile?.taxCode || koc.taxCode)!)}
@@ -2154,77 +2154,16 @@ function LegalPaymentPanel({
           {koc.sharedMcnInfo && (
             <InfoRow label="Đầu mối dùng chung">{koc.sharedMcnInfo}</InfoRow>
           )}
-          {legalProfiles.length > 0 && (
-            <InfoRow label={`Hồ sơ pháp lý đã đăng ký (${legalProfiles.length})`}>
-              <div className="space-y-1.5 mt-0.5">
-                {legalProfiles.map((p, idx) => (
-                  <div
-                    key={p.id || idx}
-                    className={`p-2 rounded border text-2xs space-y-1 ${
-                      p.isDefault
-                        ? 'border-accent/40 bg-accent-soft/20'
-                        : 'border-line bg-sunken/30'
-                    }`}
-                  >
-                    <div className="font-medium text-ink flex items-center justify-between gap-2">
-                      <span className="truncate">
-                        <b className="font-mono">{p.profileCode}</b> · {LEGAL_TYPE_LABEL[p.legalType]} · {p.holderName}
-                      </span>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {p.isDefault ? (
-                          <span className="text-accent font-semibold">Mặc định</span>
-                        ) : onUpdateKoc ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const next = legalProfiles.map((item) => ({
-                                ...item,
-                                isDefault: item.id === p.id,
-                              }));
-                              const updated = syncKocWithLegalProfiles(koc, next);
-                              syncKocContactToStaffSheets(updated);
-                              onUpdateKoc(
-                                updated,
-                                `Đã chuyển hồ sơ pháp lý mặc định sang ${p.profileCode} (${p.holderName})`,
-                              );
-                            }}
-                            className="text-accent hover:underline font-medium cursor-pointer"
-                          >
-                            Đặt mặc định
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between gap-2 text-ink-2">
-                      <span className="truncate">
-                        {p.legalType === 'INDIVIDUAL' ? 'CCCD' : 'MST'}:{' '}
-                        <span className="num font-medium">{show(p.taxCode || p.cccd || '')}</span>
-                        {p.bankName ? ` · ${p.bankName}` : ''}
-                        {p.bankAccount ? ` (${show(p.bankAccount)})` : ''}
-                      </span>
-                      {onCreateContractForKoc && (
-                        <button
-                          type="button"
-                          onClick={() => onCreateContractForKoc(koc, p.id)}
-                          className="text-primary hover:underline font-semibold shrink-0 cursor-pointer"
-                        >
-                          Ký HĐ
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {onOpenLegalTab && (
-                  <button
-                    type="button"
-                    onClick={onOpenLegalTab}
-                    className="inline-flex items-center gap-1 text-2xs font-semibold text-accent hover:underline pt-0.5 cursor-pointer"
-                  >
-                    <Plus className="w-3 h-3" />
-                    Quản lý &amp; Thêm hồ sơ pháp lý ({legalProfiles.length})
-                  </button>
-                )}
-              </div>
+          {legalProfiles.length > 1 && onOpenLegalTab && (
+            <InfoRow label="Hồ sơ pháp lý khác">
+              <button
+                type="button"
+                onClick={onOpenLegalTab}
+                className="inline-flex items-center gap-1 text-2xs font-semibold text-accent hover:underline cursor-pointer"
+              >
+                <span>+{legalProfiles.length - 1} hồ sơ pháp lý khác</span>
+                <span className="text-ink-3">· Xem trong tab Pháp lý →</span>
+              </button>
             </InfoRow>
           )}
           {koc.contractDriveUrl && (

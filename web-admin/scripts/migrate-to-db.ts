@@ -81,6 +81,8 @@ async function main() {
     { email: 'hailong@upbase.vn', name: 'Hoàng Hải Long', team: 'Booking Team 2', leadId: leadB2c.id },
     { email: 'haiphuong@upbase.vn', name: 'Trần Hải Phượng', team: 'Booking Team 2', leadId: leadB2c.id },
     { email: 'dieuanh@upbase.vn', name: 'Phan Diệu Ánh', team: 'Booking Team 3', leadId: leadB2c.id },
+    { email: 'bichlien@upbase.vn', name: 'Đinh Thị Bích Liên', team: 'Booking Team 2', leadId: leadB2c.id },
+    { email: 'ngocanh@upbase.vn', name: 'Bùi Ngọc Ánh', team: 'Booking Team 3', leadId: leadB2c.id },
     { email: 'hoailam@upbase.vn', name: 'Vũ Hoài Lâm', team: 'Booking Team 3', leadId: leadB2c.id },
     { email: 'maianh@upbase.vn', name: 'Nguyễn Thị Mai Anh', team: 'Booking Team 3', leadId: leadB2c.id },
     { email: 'haott@upbase.vn', name: 'Trần Thị Hảo', team: 'FOC Free Samples', leadId: leadB2c.id },

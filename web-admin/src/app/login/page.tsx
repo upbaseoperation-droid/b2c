@@ -454,6 +454,36 @@ function LoginContent() {
                   <button
                     type="button"
                     onClick={() => {
+                      setSelectedUser('user-bich-lien');
+                      handleSandboxLogin('user-bich-lien');
+                    }}
+                    className="text-2xs px-2.5 py-1.5 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
+                  >
+                    HN601 · Đinh Thị Bích Liên (Booking B2C)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedUser('user-dieu-anh');
+                      handleSandboxLogin('user-dieu-anh');
+                    }}
+                    className="text-2xs px-2.5 py-1.5 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
+                  >
+                    HN889 · Phan Diệu Ánh (Booking B2C)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedUser('user-ngoc-anh');
+                      handleSandboxLogin('user-ngoc-anh');
+                    }}
+                    className="text-2xs px-2.5 py-1.5 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
+                  >
+                    HN240 · Bùi Ngọc Ánh (Content B2C)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
                       setStaffIdentifierInput('HN028');
                       handleDirectoryStaffLogin('HN028');
                     }}

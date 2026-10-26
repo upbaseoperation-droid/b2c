@@ -9,6 +9,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
+  Award,
   Building2,
   Check,
   CheckCircle2,
@@ -63,7 +64,6 @@ import {
   useUpaffiliatePeriodicSync,
 } from '../../lib/upaffiliateKocSyncService';
 import {
-  KocChannelReviewBadge,
   KocChannelReviewModal,
   type KocChannelReviewTarget,
 } from '../koc/KocChannelReviewModal';
@@ -739,6 +739,21 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           ]
         : []),
       {
+        label: reviewSummary
+          ? `Đánh giá KOC (${reviewSummary.latestReview.verdict === 'SUITABLE' ? 'Phù hợp' : reviewSummary.latestReview.verdict === 'NOT_SUITABLE' ? 'Không phù hợp' : 'Cần cân nhắc'})`
+          : 'Đánh giá KOC theo Brand',
+        icon: Award,
+        onSelect: () =>
+          openChannelReview({
+            handle: k.channelId,
+            channelName: k.stageName,
+            channelUrl: k.channelLink || `https://www.tiktok.com/@${k.channelId.replace(/^@+/, '')}`,
+            avatarUrl: k.avatarUrl,
+            defaultBrandScope: defaultBrand,
+            sourceScreen: 'Danh bạ KOC',
+          }),
+      },
+      {
         label: 'Đánh giá Phù hợp (theo Brand)',
         icon: Check,
         onSelect: () =>
@@ -809,70 +824,6 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     ];
   };
 
-  /* --------------------------------------------------------------- Cột dùng chung */
-
-  const renderBrandReviewCol = (k: KocItem) => {
-    const reviewSummary = getChannelSummary(k.channelId || k.channelLink);
-    const defaultBrand = selectedBrand && selectedBrand !== ALL ? selectedBrand : undefined;
-    const openForVerdict = (verdict?: 'SUITABLE' | 'CAUTION' | 'NOT_SUITABLE') => {
-      openChannelReview({
-        handle: k.channelId,
-        channelName: k.stageName,
-        channelUrl: k.channelLink || `https://www.tiktok.com/@${k.channelId.replace(/^@+/, '')}`,
-        avatarUrl: k.avatarUrl,
-        defaultBrandScope: defaultBrand,
-        initialVerdict: verdict,
-        sourceScreen: 'Danh bạ KOC',
-      });
-    };
-
-    if (!reviewSummary) {
-      return (
-        <div className="grid gap-1 min-w-0 max-w-[220px]" onClick={(e) => e.stopPropagation()}>
-          <span className="text-2xs text-ink-3">Chưa có đánh giá theo Brand</span>
-          <div className="flex flex-wrap items-center gap-1">
-            <button
-              type="button"
-              onClick={() => openForVerdict('SUITABLE')}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-positive/30 bg-positive-soft text-positive text-2xs font-semibold hover:bg-positive-soft/80 transition cursor-pointer"
-            >
-              <Check className="w-3 h-3 shrink-0" />
-              <span>Phù hợp</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => openForVerdict('NOT_SUITABLE')}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-critical/30 bg-critical-soft text-critical text-2xs font-semibold hover:bg-critical-soft/80 transition cursor-pointer"
-            >
-              <XCircle className="w-3 h-3 shrink-0" />
-              <span>K.Phù hợp</span>
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="grid gap-1 min-w-0 max-w-[225px]" onClick={(e) => e.stopPropagation()}>
-        <KocChannelReviewBadge summary={reviewSummary} onClick={() => openForVerdict()} />
-        <button
-          type="button"
-          onClick={() => openForVerdict()}
-          className="text-left text-2xs leading-snug grid gap-0.5 hover:underline cursor-pointer"
-          title={`Ý kiến: ${reviewSummary.latestReview.note || reviewSummary.latestReview.reasonTags.join(', ')}`}
-        >
-          <span className="truncate font-medium text-ink-2">
-            {reviewSummary.latestReview.reviewerName} · {reviewSummary.latestReview.dateLabel}
-          </span>
-          {reviewSummary.latestReview.note && (
-            <span className="truncate text-ink">
-              &ldquo;{reviewSummary.latestReview.note}&rdquo;
-            </span>
-          )}
-        </button>
-      </div>
-    );
-  };
 
   /* --------------------------------------------------------------- BẢNG 1: KOC CŨ KÈM LỊCH SỬ (COOPERATED) */
 
@@ -939,9 +890,9 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     },
     {
       key: 'rateAndGmv',
-      header: 'Đơn giá & Hiệu quả tích lũy',
+      header: 'Đơn giá & Hiệu quả',
       align: 'right',
-      width: 175,
+      width: 155,
       render: (k) => {
         const gmv = k.totalPastGmv || k.gmvBestCase || 0;
         const roi =
@@ -949,28 +900,23 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           (k.totalPastCost && k.totalPastCost > 0 ? gmv / k.totalPastCost : 0);
         const hasRange =
           k.minRate && k.maxRate && k.minRate > 0 && k.maxRate > k.minRate;
+        const tooltip = hasRange
+          ? `Biên độ giá: ${formatVndShort(k.minRate!)} – ${formatVndShort(k.maxRate!)}`
+          : undefined;
+
         return (
-          <div className="leading-tight text-right space-y-0.5">
+          <div className="leading-tight text-right space-y-0.5" title={tooltip}>
             <div className="text-xs font-semibold text-ink tabular-nums">
               {k.rateCardVideo > 1 ? formatVndShort(k.rateCardVideo) : 'FOC / Hoa hồng'}
             </div>
-            {hasRange ? (
-              <div className="text-2xs text-ink-3 tabular-nums">
-                Biên độ: {formatVndShort(k.minRate!)} – {formatVndShort(k.maxRate!)}
-              </div>
-            ) : (
-              <div className="text-2xs text-ink-3 tabular-nums">
-                {formatFollowers(k.followers)} flw · {formatFollowers(k.avgViews)} view
-              </div>
-            )}
             <div className="text-2xs tabular-nums">
               {gmv > 0 ? (
-                <span className="text-positive font-semibold">
+                <span className="text-positive font-medium">
                   GMV {formatVndShort(gmv)}
                   {roi > 0 ? ` · ROI ${roi.toFixed(1)}x` : ''}
                 </span>
               ) : (
-                <span className="text-ink-3">Chưa đồng bộ GMV</span>
+                <span className="text-ink-3">—</span>
               )}
             </div>
           </div>
@@ -979,61 +925,42 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     },
     {
       key: 'legalProfiles',
-      header: 'Hồ sơ pháp lý (1–N)',
-      width: 205,
+      header: 'Hồ sơ pháp lý',
+      width: 175,
       render: (k) => {
         const profiles = getKocLegalProfiles(k);
         const dup = duplicates.get(k.id);
         const def = profiles.find((p) => p.isDefault) || profiles[0];
-        const distinctTypes = Array.from(new Set(profiles.map((p) => LEGAL_TYPE_LABEL[p.legalType])));
         const readiness = def ? evaluateLegalProfileContractReadiness(def, k) : null;
+        const isSigned = def?.frameworkContractStatus === 'ĐÃ_KÝ';
 
         return (
-          <div className="grid gap-1 justify-items-start min-w-0 max-w-[205px]">
-            <div className="flex flex-wrap items-center gap-1">
+          <div className="leading-tight space-y-0.5 min-w-0 max-w-[175px]">
+            <div>
               {profiles.length === 0 ? (
-                <Status tone="warning">Thiếu giấy tờ</Status>
-              ) : profiles.length > 1 ? (
-                <Status tone="info">{profiles.length} Hồ sơ pháp lý</Status>
+                <Status tone="warning">Chưa có hồ sơ</Status>
               ) : dup ? (
-                <span title={`Trùng ${dup.map((d) => `${d.stageName} (${d.fields.join(', ')})`).join('; ')}`}>
+                <span title={`Trùng: ${dup.map((d) => `${d.stageName} (${d.fields.join(', ')})`).join('; ')}`}>
                   <Status tone="warning">Nghi trùng</Status>
                 </span>
+              ) : isSigned ? (
+                <Status tone="positive">Đã ký HĐNT</Status>
               ) : readiness && !readiness.ready ? (
                 <span title={`Thiếu trường ký HĐ: ${readiness.missingFields.join(', ')}`}>
-                  <Status tone="warning">
-                    1 Hồ sơ ({readiness.filledCount}/{readiness.totalRequired} trường HĐ)
-                  </Status>
+                  <Status tone="warning">Chưa đủ hồ sơ</Status>
                 </span>
               ) : (
-                <Status tone="positive">1 Hồ sơ chuẩn HĐ</Status>
-              )}
-              {def?.frameworkContractStatus === 'ĐÃ_KÝ' && (
-                <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive text-3xs font-semibold border border-positive/25">
-                  HĐNT
-                </span>
+                <Status tone="positive">Đủ hồ sơ</Status>
               )}
             </div>
             {profiles.length > 0 && (
-              <div className="flex items-center justify-between gap-1.5 w-full min-w-0">
-                <span
-                  className="text-2xs text-ink-2 truncate"
-                  title={profiles.map((p) => `${p.profileCode}: ${p.holderName} (${p.taxAccountType})`).join(' | ')}
-                >
-                  {distinctTypes.join(' + ')} · {def?.holderName}
-                </span>
-                {onCreateContractForKoc && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onCreateContractForKoc(k, def?.id);
-                    }}
-                    className="text-2xs font-semibold text-primary hover:underline shrink-0 cursor-pointer"
-                    title="Mở màn Ký hợp đồng với KOC & Hồ sơ pháp lý này"
-                  >
-                    Ký HĐ
-                  </button>
+              <div
+                className="text-2xs text-ink-2 truncate"
+                title={profiles.map((p) => `${p.profileCode}: ${p.holderName} (${p.taxAccountType})`).join(' | ')}
+              >
+                <span>{def?.holderName || '—'}</span>
+                {profiles.length > 1 && (
+                  <span className="text-ink-3 ml-1">+{profiles.length - 1} HS</span>
                 )}
               </div>
             )}
@@ -1097,12 +1024,6 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       ),
     },
     {
-      key: 'brandReview',
-      header: 'Đánh giá & Brand',
-      width: 215,
-      render: renderBrandReviewCol,
-    },
-    {
       key: 'actions',
       header: '',
       align: 'right',
@@ -1156,9 +1077,9 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     },
     {
       key: 'channelMetrics',
-      header: 'Chỉ số Kênh (TikTok / Kalodata)',
+      header: 'Chỉ số Kênh',
       align: 'right',
-      width: 185,
+      width: 170,
       render: (k) => (
         <div className="leading-tight text-right space-y-0.5">
           <div className="text-xs font-semibold text-ink tabular-nums">
@@ -1167,9 +1088,6 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           <div className="text-2xs text-positive font-medium tabular-nums">
             GMV 30d: {k.recentRevenue ? formatVndShort(k.recentRevenue) : '—'}
             {k.gpm ? ` · GPM ${formatVndShort(k.gpm)}` : ''}
-          </div>
-          <div className="text-2xs text-ink-3 tabular-nums">
-            Nữ {k.femaleRatio ?? 80}% · Tuổi 25–34 ({k.age25_34 ?? 46}%)
           </div>
         </div>
       ),
@@ -1254,12 +1172,6 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           </div>
         );
       },
-    },
-    {
-      key: 'brandReview',
-      header: 'Đánh giá & Brand',
-      width: 205,
-      render: renderBrandReviewCol,
     },
     {
       key: 'actions',
@@ -1522,7 +1434,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                     note="Đủ CCCD/MST & STK để ký HĐNT và thanh toán"
                   />
                   <Stat
-                    label="KOC có >1 Hồ sơ pháp lý (1:N)"
+                    label="KOC có >1 Hồ sơ pháp lý"
                     value={`${formatNumber(datasetStats.coopMultiLegal)} KOC`}
                     note="Chuyển đổi Cá nhân ↔ HKD ↔ Công ty/MCN"
                     tone="warning"
