@@ -61,6 +61,9 @@ export async function readRecord<T>(
         });
         return record as SharedRecord<unknown>;
       })
+      .catch(() => {
+        return { revision: 0, data: fallback } as SharedRecord<unknown>;
+      })
       .finally(() => {
         pgInflightReads.delete(key);
       });
@@ -122,7 +125,7 @@ export async function readRecordsBatch<T>(
   if (missingKeys.length > 0) {
     const rows = await prisma.$queryRaw<Array<{ key: string; revision: number; data: T }>>`
       SELECT key, revision, data FROM "AppSharedRecord" WHERE key = ANY(${missingKeys})
-    `;
+    `.catch(() => [] as Array<{ key: string; revision: number; data: T }>);
     const foundByKey = new Map<string, SharedRecord<T>>();
     for (const row of rows) {
       foundByKey.set(row.key, { revision: row.revision, data: row.data });

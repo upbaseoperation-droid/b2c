@@ -2808,10 +2808,19 @@ export function BrandProfileDetail({
           const gone = list[removing.index];
           const fileKey = typeof gone?.fileKey === 'string' ? gone.fileKey : '';
           if (fileKey) {
-            fetch(`/api/brands/files?key=${encodeURIComponent(fileKey)}`, { method: 'DELETE' }).catch(() => undefined);
+            fetch(`/api/brands/files?key=${encodeURIComponent(fileKey)}`, { method: 'DELETE' })
+              .then((res) => {
+                if (!res.ok) {
+                  onNotify?.('Đã xóa mục khỏi hồ sơ nhưng chưa thu hồi được tệp đính kèm trên kho lưu trữ.');
+                }
+              })
+              .catch(() => {
+                onNotify?.('Đã xóa mục khỏi hồ sơ nhưng kết nối kho lưu trữ tệp bị gián đoạn.');
+              });
           }
           saveList(removing.list, list.filter((_, k) => k !== removing.index), `Xóa ${LIST_META[removing.list].noun}: ${String(gone?.name || gone?.question || gone?.title || '')}`);
         }}
+        onCancel={() => setRemoving(null)}
         onOpenChange={o => !o && setRemoving(null)}
       />
 

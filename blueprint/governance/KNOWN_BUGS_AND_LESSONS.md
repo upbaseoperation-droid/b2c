@@ -25,6 +25,7 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 | **RULE-RBAC-01** | **Ưu tiên kích hoạt Quyền phê duyệt đặc thù cá nhân (`SPECIAL_PERMISSION_OVERRIDE_PRECEDENCE`)** | Khi người dùng được gán các cờ quyền cá nhân (`canApprovePayment`, `canApproveBudget`, `canApproveP3`, `canManageMasterData`, `canExportRawData`), hệ thống phải kiểm tra và cho phép thao tác độc lập, không được để điều kiện `level !== 'DENIED'` của vai trò gốc làm vô hiệu hóa quyền đặc thù. |
 | **RULE-API-02** | **Cấm tự động chạy API phân tích / cào dữ liệu khi mở hộp thoại (`AUTO_RUN_API_ON_OPEN`)** | Tuyệt đối **KHÔNG** gọi `executeOperationalReport`, `/api/integrations/llm`, `social-discovery`, `scrape` hay `link-air-check` bên trong `useEffect` ngay khi mở Modal/Drawer (`open` / `isOpen`). Chỉ gọi API khi người dùng chủ động bấm nút thực thi (`Đánh giá`, `Chạy phân tích`, `Dò tìm kênh tự động`, `Lấy dữ liệu kênh`). |
 | **RULE-PERF-01** | **Tối ưu truy xuất lô (`readRecordsBatch`), dùng bộ nhớ đệm Plan (`fetchClientMonthlyPlans` / `WeakMap`) & Cấm quét $O(N \times M)$ trên luồng render (`PLAN_LOAD_AND_RENDER_OPTIMIZATION`)** | (1) Khi API đọc nhiều khóa `AppSharedRecord` (`deal-board`, `self-channel-board`, `content-plan`, `plan-actual-report`), bắt buộc dùng `readRecordsBatch(keys, fallback, { clone: false })` thay vì lặp `readRecord` lẻ tẻ hoặc `structuredClone` sâu không cần thiết; (2) Trên trình duyệt, mọi màn hình đọc `/api/monthly-plans` phải đi qua `fetchClientMonthlyPlans` / `getCachedClientMonthlyPlans` (`useMonthlyPlanSync.ts`) và so sánh tham chiếu đối tượng (`lastSavedObjRef`) trước khi `JSON.stringify`; (3) Các phép tính kiểm định/tổng hợp kế hoạch (`sumBreakdown`, `validateBreakdown`, `evaluatePlanValiditySummary`, `getStorePlanWorkstreamSummary`, `enrichPlanWithVersions`, `buildStoreMonthlyPlanReport`) phải bọc `WeakMap` memoization và lập chỉ mục `Map` $O(1)$ thay vì lặp lồng nhau $69 \text{ gian} \times 16.039 \text{ deal}$ trên mỗi lần render. |
+| **RULE-SVG-01** | **Chuẩn hóa ma trận cột động, định tuyến vòng lên đỉnh không cắt chéo mũi tên khác & phân tầng phẳng 0 giao cắt (`SWIMLANE_PLANAR_TOP_HIGHWAY_ROUTING`)** | (1) Khi tạo sơ đồ phân làn Swimlane (BPMN / SVG), tính tọa độ cột động `colX(colIdx) = startX + colIdx * colStep` và mở rộng `laneWidth`/`totalWidth` theo số cột tối đa để chống trôi thẻ về `(0, 0)`; (2) Các nhánh `No` quay về bước trước đó bắt buộc định tuyến vòng lên hành lang đỉnh chuyên dụng (Top Return Highway: $y \in [44, 94]$) phía trên Làn 0 và cách đáy Tiêu đề ($y = 26$) tối thiểu 14px, tuyệt đối không đâm xuyên qua các làn làm cắt chéo các mũi tên tiến (`Yes` hoặc luồng quy trình chính); (3) Định tuyến phẳng phân tầng so le (Planar Staggered Channels): sắp xếp loopback theo cột xuất phát tăng dần, nhánh gần đi tầng dưới ($y = 90$) cắm vào bên phải thẻ đích (`targetOffset = +14` / `+18`), nhánh xa đi tầng trên ($y = 72, 54$) bay qua đầu nhánh gần và cắm vào bên trái thẻ đích (`targetOffset = -14` / `-18`), loại bỏ 100% điểm giao cắt; (4) Nhãn điều kiện (`Yes` / `No`) neo trực tiếp trên phân đoạn dây dẫn tương ứng với độ rộng co giãn động; (5) 100% hình thoi quyết định bắt buộc có đủ 2 nhánh `Yes` và `No`. |
 
 ---
 
@@ -1090,6 +1091,66 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   3. Bọc `filterScopedStores(baseStores, currentUser)` cho mọi nguồn `storePortfolios` tại `StorePipelineFunnelOverview.tsx` và chuẩn hóa cỡ chữ `text-2xs` đúng Design System.
   4. Bổ sung điều kiện `job.sowContractId === record.id || job.bbntContractId === record.id` vào hàm `matches()` trong `contractJobSync.ts`.
 - **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ 137/137 bài kiểm thử tự động (`npm test`), kiểm tra kiểu dữ liệu (`npx tsc --noEmit`), kiểm tra quy tắc mã nguồn (`npx eslint`) và bản dựng sản phẩm (`npm run build`) đều vượt qua 100% (`0 fail`).
+
+---
+
+### BUG-059 — Thẻ Quy Trình Bị Trôi Về Tọa Độ (0, 0), Nhãn Rẽ Nhánh Bay Lơ Lửng Đè Lên Dây Nối Và Trùng Vạch Nhánh `No` Trên Sơ Đồ Swimlane Lark Docx
+- **Ngày phát hiện:** 26/10/2026 (Người dùng gửi ảnh chụp màn hình thực tế trên sơ đồ `Quy trình 13: Đề nghị thanh toán & Quyết toán` trong tài liệu Lark Docx).
+- **Phân hệ / File liên quan:** `web-admin/swimlane-builder.cjs`, `web-admin/render-all-14.cjs`, `Lark Docx: KkHadZJ2EofbKBxtaP0l7Zrpgtf`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Thẻ bước thứ 7 (`7. Hoàn tất (KOC nhận tiền & UNC)`) bị trôi lên góc trên cùng bên trái `(0, 0)` đè lên tiêu đề quy trình:**
+     - Trong `swimlane-builder.cjs`, mảng tọa độ cột `colX = [190, 370, 550, 730, 910, 1010]` được gán cứng 6 phần tử (chỉ số 0..5). Khi quy trình 10 và quy trình 13 có 7 bước (`colIndex: 6`), `colX[6]` trả về `undefined`. Biểu thức `translate(undefined, ly)` trong SVG bị lỗi phân tích cú pháp và trình hiển thị đẩy thẻ về góc `(0, 0)` ngoài khung sơ đồ.
+  2. **Nhãn rẽ nhánh `No (Từ chối chi)` bị treo lơ lửng đè lên đường nối giữa các bước:**
+     - Tọa độ nhãn được tính bằng trung bình cộng `(fn.cy + tn.cy) / 2 - 10`. Với đường rẽ `No` đi theo tuyến kênh trên đỉnh (`topY`), tọa độ trung bình cộng lại rơi đúng vào khoảng giữa của các làn bên dưới, dẫn đến nhãn bị bay lơ lửng và đè trực tiếp lên đường nối giữa các bước `3. Đúng ngân sách?` và `4. Soát pháp lý?`.
+  3. **Các đường `No` quay về bước trước đó bị vẽ trùng khít lên nhau:**
+     - Nhiều nhánh `No` cùng trỏ về một bước (ví dụ các bước duyệt 3, 4, 5 cùng quay về bước 2) đều dùng chung một tọa độ kênh đỉnh và cắm thẳng vào cùng tọa độ X trên thẻ đích, làm các nét đứt đỏ bị đè nét lên nhau.
+- **Cách khắc phục:**
+  1. Thay thế mảng cố định bằng hàm tính cột động: `colX(colIdx) = startX + colIdx * colStep`, tính `maxCol` của sơ đồ và mở rộng động `laneWidth` / `totalWidth` (lên tới 1.624px cho 7 bước), đảm bảo mọi bước đều nằm chính xác trong làn của mình.
+  2. Định tuyến các nhánh `No` thành các kênh song song so le trên đỉnh (`trackY = startY - 14 - (loopbackCounter * 14)`), điểm cắm xuống thẻ đích có độ dịch chuyển ngang so le (`targetOffset = (count - 1) * 16 - 16`) tránh chồng vạch.
+  3. Gắn nhãn `No` / `Yes` trực tiếp trên phân đoạn dây dẫn tương ứng với độ rộng co giãn tự động theo độ dài chữ (`badgeWidth = Math.max(46, label.length * 7 + 14)`).
+  4. Đóng gói quy trình và thuật toán chuẩn hóa vào skill `lark-swimlane-builder` (`.agent/skills/lark-swimlane-builder/SKILL.md`) để tái sử dụng xuyên suốt toàn hệ thống.
+- **Phạm vi rà soát mở rộng sang phần khác:** Áp dụng **RULE-SVG-01** cho toàn bộ 14 sơ đồ phân làn trong Lark Docx và các tài liệu kiến trúc quy trình sau này.
+
+---
+
+### BUG-060 — Đường Dẫn Và Nhãn Rẽ Nhánh `No` Bị Bắn Ra Ngoài Swimlane Lên Khoảng Trắng Trên Cùng Do Kênh Loopback Dùng Tọa Độ Toàn Cục $Y < \text{startY}$
+- **Ngày phát hiện:** 26/10/2026 (Người dùng gửi ảnh chụp thực tế sơ đồ `Quy trình 10: Duyệt Kịch Bản & Demo Video` trong Lark Docx).
+- **Phân hệ / File liên quan:** `web-admin/swimlane-builder.cjs`, `web-admin/render-all-14.cjs`, `Lark Docx: KkHadZJ2EofbKBxtaP0l7Zrpgtf`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. Trong sơ đồ Q10, các đường nét đứt đỏ và các nhãn Badge `No` (từ bước Duyệt Kịch Bản và Duyệt Demo của Chuyên viên PIC / Brand trả về bước Soạn kịch bản / Dựng demo của KOC) bị bắn ngược lên trên qua đường biên đỉnh của Làn 0 (Brand) và chạy ngang trên khoảng trắng bên ngoài swimlane.
+  2. Nguyên nhân gốc: `swimlane-builder.cjs` sử dụng công thức kênh toàn cục `trackY = startY - 14 - (loopbackCounter * 14)`. Do `startY = 70` là đường biên trên cùng của Làn 0, mọi giá trị `trackY < 70` đều nằm ngoài sơ đồ, đồng thời đường dẫn đi từ các làn dưới đâm xuyên qua Làn 0 để lên trần trước khi đâm ngược xuống lại Làn 2 (KOC).
+- **Cách khắc phục:**
+  1. Loại bỏ hoàn toàn kênh ngoài đỉnh $Y < \text{startY}$. Chuyển toàn bộ đường dẫn quay lui (`fn.colIndex >= tn.colIndex`) vào hành lang trên (upper corridor) của làn nhận (`tnLaneTop`):
+     - Người duyệt ở làn trên (`fn.laneIndex < tn.laneIndex`): Xuất phát từ đáy hình thoi (`fn.bottom`), hạ thẳng qua khoảng trống giữa các cột xuống hành lang làn đích (`tnLaneTop + trackYOffset`), rẽ trái và cắm xuống đỉnh thẻ đích (`tn.top`).
+     - Cùng làn (`fn.laneIndex === tn.laneIndex`) hoặc làn dưới (`fn.laneIndex > tn.laneIndex`): Xuất phát từ đỉnh hình thoi (`fn.top`), lên hành lang trên của làn đích và đâm xuống đỉnh thẻ đích (`tn.top`).
+  2. Phân tầng so le đa nhánh theo đích nhận (`loopbacksPerTarget[c.to]`): Nhánh gần chạy ở độ cao `tnLaneTop + 10/11`, nhánh xa chạy ở `tnLaneTop + 22/26`, điểm cắm xuống thẻ đích so le đối xứng (`targetOffset = ±14` hoặc `-18 / 0 / +18`), loại bỏ 100% hiện tượng cắt chéo hoặc đè vạch.
+  3. Tăng chiều cao làn bơi lên `laneHeight = 136px` để hành lang trên đạt độ thoáng 38px, đảm bảo toàn bộ đường dẫn và nhãn Badge `No` (chiều cao 20px) nằm trọn vẹn 100% bên trong làn nhận với khoảng cách an toàn so với mép làn và thẻ bước ($Y \ge \text{startY}$).
+  4. Đã re-render toàn bộ 14 sơ đồ PNG và cập nhật đồng bộ lên tài liệu Lark Docx bằng `lark-cli docs +media-upload`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Áp dụng kiểm tra tự động `verify-y-bounds` ($Y \ge 70$) cho toàn bộ sơ đồ BPMN, cập nhật skill `lark-swimlane-builder` và `RULE-SVG-01`.
+
+---
+
+### BUG-061 — Tổng Kiểm Toán Đa Tác Tử (5-Agent Audit) Về UI/UX Design System, Nghiệp Vụ B2C, React 19 Compiler, Che Mờ Dữ Liệu Nhạy Cảm (PII) & Cách Ly Bảo Mật Đối Tác
+- **Ngày phát hiện:** 27/10/2026
+- **Phân hệ / File liên quan:** 48 files trên toàn bộ `web-admin/src/` (`lib/server/monthlyPlanStore.ts`, `lib/planActualReport.ts`, `lib/format.ts`, `lib/navGroups.ts`, `lib/server/sharedRecords.ts`, `lib/contracts/store.ts`, `lib/contracts/access.ts`, `app/api/**`, `components/views/**`, `components/brands/**`, `components/contracts/**`, `components/booking/**`, `components/koc/**`).
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Vi phạm Quy chuẩn Design System & ESLint (`web-admin/DESIGN_SYSTEM.md`):** Còn tồn tại các class cấm trong 15 component (`font-bold`, `text-[10px]`, `text-[11px]`, `uppercase`, `tracking-wider`, `rounded-2xl`, `backdrop-blur-xs`, `bg-purple-*`, `bg-indigo-*`, `bg-teal-*`, `bg-slate-900`, `bg-brand`), bảng `<table>` thô tại `StandardBriefPreviewModal.tsx`, tone `<Status>` không chuẩn (`warn`, `err`, `ok`, `brand`) tại `SelfChannelCtvHubView.tsx`, và 5 đoạn phụ đề xám `<p>` dưới `<h3>` tại `MarketingKnowledgeQaView.tsx`.
+  2. **Lỗi Logic Nghiệp vụ B2C & Đối soát Tài chính (`GEMINI.md §3`):**
+     - Đối soát ngân sách `Self-channel (Kênh Brand)` tại `planActualReport.ts` cộng `j.feeGross` vào `committed` và `paid` trong khi `planBudget` là hạn mức Net (`totalBudgetNet`), gây lệch 10% thuế TNCN.
+     - Luồng trình duyệt Plan tháng tại `InputPlanBreakdownView.tsx` chỉ đọc cờ tĩnh `selectedStore?.hasBookingLeader` thay vì `resolveStoreBookingLeader(selectedStore)`, và `MonthlyPlanHub.tsx` cho phép Giám đốc Marketing bấm duyệt trực tiếp trên Modal chi tiết đối với gian hàng có Leader (`Nguyễn Thị Ngọc Tâm`) khi chưa qua bước `ĐÃ_SƠ_DUYỆT`.
+     - Trong `monthlyPlanStore.ts`, guard chặn sửa chỉ tiêu tổng Header khi nhân sự lưu phân rã so sánh cả các trường mảng con khiến nhân sự không lưu được dòng phân rã KOC nếu payload gửi kèm object Plan.
+     - Phép tính ROI đơn FOC (`totalValue = 0`) tại `BookingView.tsx` chia cho `Math.max(1, ...)` sinh ROI ảo hàng triệu phần trăm; thiếu chặn mẫu số bằng `0` tại `BrandHubView.tsx` (`totalTargetVideos === 0`) và `MarketingAcademySection.tsx` (`total === 0`); `formatDate('')` tại `format.ts` văng `RangeError: Invalid time value`.
+  3. **Rò rỉ Dữ liệu Nhạy cảm (PII) & Cách ly Tài khoản Đối tác (`RULE-AUTH-01` & `GEMINI.md §3`):**
+     - Số điện thoại, Zalo, CCCD, Số tài khoản ngân hàng của KOC/CTV hiển thị nguyên văn trên các bảng danh sách công cộng (`BookingView.tsx`, `KocMasterDataView.tsx`, `CtvManagementView.tsx`, `UpaffiliateDataManagementPanel.tsx`, `PendingKocStagingModal.tsx`, `LarkPaymentRequestModal.tsx`).
+     - Các API `/api/integrations/koc-outreach-email`, `/api/integrations/link-air-check`, `/api/integrations/tiktok-koc/video-frame` thiếu kiểm tra `getAuthenticatedUser`; `/api/shared-state` và `/api/kocs` chưa chặn tài khoản đối tác (`partnerType` / `_PARTNER`); proxy ảnh `video-frame` chưa giới hạn tên miền CDN TikTok.
+  4. **Vi phạm React 19 Compiler / Rules of Hooks & `RULE-API-02`:**
+     - Gọi hàm không thuần khiết `Date.now()` / `performance.now()` trong `useMemo` (`LinkAirCheckerPanel.tsx`, `MarketingKnowledgeQaView.tsx`), gọi `setState` đồng bộ trong `useEffect` (`ContractForm.tsx`, `MasterDataHubView.tsx`, `UserProfileModal.tsx`, `UpaffiliateDataManagementPanel.tsx`, `BrandMonthlyPlanForm.tsx`, `ContentPlanBoard.tsx`, `PlanDealBoard.tsx`, `PlanListingBoard.tsx`, `PlanSelfChannelBoard.tsx`), dùng `.length` thay vì tham chiếu mảng trong `useMemo` deps (`BookingView.tsx`), và tự động gọi API `/api/integrations/kalodata/creator` ngay khi mở `KalodataSyncModal.tsx`.
+- **Cách khắc phục:**
+  1. Chuẩn hóa 100% class token ngữ nghĩa, cỡ chữ tối thiểu `text-2xs`, trọng lượng chữ `font-semibold`, chuyển bảng thô sang `<DataTable>`, xóa phụ đề xám dưới tiêu đề và thêm prop tường minh `onCancel` cho toàn bộ `<ConfirmDialog>`.
+  2. Quy đổi `committed` và `paid` của Self-channel về giá trị Net (`j.feeNet ?? Math.round((j.feeGross || 0) * 0.9)`), đồng bộ `resolveStoreBookingLeader` ở cả màn lập Plan và Modal duyệt Plan, khôi phục kiểm tra `PLAN_HEADER_TARGET_FIELDS` trong `monthlyPlanStore.ts`, chặn mẫu số bằng `0` trên toàn bộ phép tính ROI / tiến độ, và bảo vệ `formatDate` trả về `'—'` khi ngày rỗng/lỗi.
+  3. Che mờ (`****5678`) toàn bộ SĐT, CCCD, STK trên bảng công cộng; bổ sung xác thực phiên, chặn đối tác ngoài trên tất cả API nội bộ, kiểm tra `canApprovePayment` + khớp tên `bookingLeaderName` khi duyệt phiếu thanh toán Lark, thêm whitelist tên miền TikTok CDN cho `video-frame`, và bổ sung nhánh `.catch()` fallback cho `sharedRecords.ts` & `contracts/store.ts`.
+  4. Tái cấu trúc các Hook đồng bộ state sang mô hình tính toán thuần khiết trong render / lazy initializer và loại bỏ lời gọi API tự động trong `useEffect` của `KalodataSyncModal.tsx`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đạt 0 lỗi `npx eslint src/`, 0 lỗi `npm run typecheck`, 100% pass bộ kiểm thử tự động `npm test` và hoàn tất `npm run build` sạch sẽ.
 
 ---
 

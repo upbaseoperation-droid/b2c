@@ -846,8 +846,8 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               {k.realName && k.realName !== k.stageName ? ` · ${k.realName}` : ''}
             </span>
             {k.email || k.phone ? (
-              <span className="block truncate text-2xs text-ink-2" title={[k.email, k.phone].filter(Boolean).join(' · ')}>
-                {[k.email, k.phone].filter(Boolean).join(' · ')}
+              <span className="block truncate text-2xs text-ink-2" title={[k.email, k.phone ? `****${k.phone.trim().slice(-4)}` : ''].filter(Boolean).join(' · ')}>
+                {[k.email, k.phone ? `****${k.phone.trim().slice(-4)}` : ''].filter(Boolean).join(' · ')}
               </span>
             ) : (
               <span className="block truncate text-2xs text-ink-3/70">Chưa có Email / SĐT</span>
@@ -1162,7 +1162,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
             </div>
             {k.phone || k.email ? (
               <span className="text-2xs text-ink-2 truncate w-full font-mono">
-                {[k.phone, k.email].filter(Boolean).join(' · ')}
+                {[k.phone ? `****${k.phone.trim().slice(-4)}` : '', k.email].filter(Boolean).join(' · ')}
               </span>
             ) : (
               <span className="text-2xs text-ink-3 truncate w-full">
@@ -1315,7 +1315,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                 }`}
               >
                 <Users className="w-3.5 h-3.5 text-accent" />
-                <span>1. Bảng KOC Cũ kèm lịch sử</span>
+                <span>Bảng KOC Cũ kèm lịch sử</span>
                 <span className="px-1.5 py-0.5 rounded bg-accent-soft text-accent text-2xs font-semibold tabular-nums">
                   {formatNumber(cooperatedKocs.length)}
                 </span>
@@ -1334,7 +1334,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5 text-positive" />
-                <span>2. Bảng KOC Mới / Tiềm năng</span>
+                <span>Bảng KOC Mới / Tiềm năng</span>
                 <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive text-2xs font-semibold tabular-nums">
                   {formatNumber(newKocs.length)}
                 </span>
@@ -1352,7 +1352,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                 }`}
               >
                 <RefreshCw className="w-3.5 h-3.5 text-accent" />
-                <span>3. Quản lý Dữ liệu & Đồng bộ UpAffiliate</span>
+                <span>Quản lý Dữ liệu & Đồng bộ UpAffiliate</span>
                 {stagingPendingCount > 0 && (
                   <span className="px-1.5 py-0.5 rounded bg-warning-soft text-warning text-2xs font-semibold tabular-nums">
                     {formatNumber(stagingPendingCount)}

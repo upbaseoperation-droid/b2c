@@ -23,6 +23,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { UserProfile, TabKey } from '../lib/types';
+import { USERS } from '../lib/mockData';
 import { getAllowedTabsForRole } from '../lib/rbacData';
 import { TAB_LABELS } from '../lib/navGroups';
 
@@ -31,17 +32,19 @@ export interface UserProfileModalProps {
   onClose: () => void;
   currentUser: UserProfile;
   onSaveUser: (updated: UserProfile) => void;
+  onSwitchUser?: (user: UserProfile) => void;
   onLogout?: () => void;
   onNotify?: (message: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
-type ProfileSubTab = 'info' | 'preferences' | 'security';
+type ProfileSubTab = 'info' | 'internal_accounts' | 'preferences' | 'security';
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   open,
   onClose,
   currentUser,
   onSaveUser,
+  onSwitchUser,
   onNotify,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<ProfileSubTab>('info');
@@ -60,17 +63,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   // Nạp dữ liệu khi mở modal
   useEffect(() => {
     if (open) {
-      setPhone(currentUser.phone || '');
-      const savedLanding = typeof window !== 'undefined'
-        ? (localStorage.getItem(`upbase_user_landing_${currentUser.id}`) as TabKey | null)
-        : null;
-      setDefaultLanding(savedLanding || currentUser.customLandingTab || 'cockpit');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setPasswordError('');
-      setPasswordSuccess(false);
-      setActiveSubTab('info');
+      queueMicrotask(() => {
+        setPhone(currentUser.phone || '');
+        const savedLanding = typeof window !== 'undefined'
+          ? (localStorage.getItem(`upbase_user_landing_${currentUser.id}`) as TabKey | null)
+          : null;
+        setDefaultLanding(savedLanding || currentUser.customLandingTab || 'cockpit');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setPasswordError('');
+        setPasswordSuccess(false);
+        setActiveSubTab('info');
+      });
     }
   }, [open, currentUser]);
 
@@ -131,7 +136,15 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     onNotify?.('Đã cập nhật mật khẩu thành công', 'success');
   };
 
-  const isLarkLogin = currentUser.loginProvider === 'LARK' || !!currentUser.larkOpenId;
+  const isLarkLogin =
+    currentUser.loginProvider === 'LARK' &&
+    Boolean(currentUser.larkOpenId) &&
+    !String(currentUser.larkOpenId).startsWith('ou_sandbox_') &&
+    !String(currentUser.larkOpenId).startsWith('ou_staff_');
+  const internalUsers = useMemo(
+    () => USERS.filter((u) => !u.partnerType && !u.role.endsWith('_PARTNER') && u.canLogin !== false),
+    []
+  );
 
   return (
     <Modal
@@ -202,6 +215,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           >
             Thông tin & Phân công
           </button>
+          {onSwitchUser && (
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('internal_accounts')}
+              className={`pb-2 px-1 text-xs font-medium border-b-2 transition-colors cursor-pointer ${
+                activeSubTab === 'internal_accounts'
+                  ? 'border-accent text-accent font-semibold'
+                  : 'border-transparent text-ink-3 hover:text-ink'
+              }`}
+            >
+              Tài khoản nội bộ ({internalUsers.length})
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setActiveSubTab('preferences')}
@@ -230,7 +256,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         {activeSubTab === 'info' && (
           <div className="space-y-3 pt-1">
             <div className="p-3.5 rounded-lg border border-line bg-canvas space-y-3">
-              <span className="text-2xs font-semibold text-ink-3 uppercase tracking-wider block">
+              <span className="text-2xs font-semibold text-ink-3 block">
                 Phân công & Phê duyệt
               </span>
 
@@ -267,6 +293,47 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Nội dung 1b: Chuyển nhanh tài khoản nội bộ */}
+        {activeSubTab === 'internal_accounts' && onSwitchUser && (
+          <div className="space-y-2.5 pt-1">
+            <div className="text-2xs text-ink-2">
+              Chọn tài khoản nhân sự nội bộ để đăng nhập và làm việc theo đúng phạm vi phân quyền:
+            </div>
+            <div className="border border-line rounded-xl bg-surface divide-y divide-line max-h-72 overflow-y-auto">
+              {internalUsers.map((u) => {
+                const isCurrent = u.id === currentUser.id;
+                return (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => {
+                      onSwitchUser(u);
+                      onClose();
+                    }}
+                    className={`w-full text-left px-3.5 py-2.5 flex items-center justify-between gap-3 transition-colors cursor-pointer ${
+                      isCurrent ? 'bg-accent-soft/60 text-ink' : 'hover:bg-sunken text-ink'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Avatar name={u.name} size={28} />
+                      <div className="min-w-0 leading-tight">
+                        <div className="text-xs font-semibold text-ink truncate">
+                          {u.name}
+                          {u.staffCode ? <span className="ml-1.5 font-mono text-2xs text-ink-3">({u.staffCode})</span> : null}
+                        </div>
+                        <div className="text-2xs text-ink-3 truncate mt-0.5">{u.roleTitle} · {u.email}</div>
+                      </div>
+                    </div>
+                    <Status tone={isCurrent ? 'positive' : 'neutral'}>
+                      {isCurrent ? 'Đang dùng' : 'Đăng nhập'}
+                    </Status>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -315,7 +382,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             ) : (
               <form onSubmit={handleChangePassword} className="space-y-3">
                 <div className="p-3.5 rounded-lg border border-line bg-canvas space-y-3">
-                  <span className="text-2xs font-semibold text-ink-3 uppercase tracking-wider block">
+                  <span className="text-2xs font-semibold text-ink-3 block">
                     Đổi mật khẩu tài khoản
                   </span>
 

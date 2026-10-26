@@ -143,7 +143,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
         setOcrError('Quá trình nhận diện vượt quá 20 giây. Vui lòng thử lại với ảnh rõ nét hoặc dung lượng nhỏ hơn.');
       } else {
         const message = err instanceof Error ? err.message : 'Lỗi kết nối';
-        setOcrError('Đã xảy ra lỗi khi bóc tách OCR từ ảnh: ' + message);
+        setOcrError('Đã xảy ra lỗi khi đọc thông tin từ ảnh giấy tờ: ' + message);
       }
     } finally {
       setIsScanning(false);

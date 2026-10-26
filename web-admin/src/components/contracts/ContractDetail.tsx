@@ -354,7 +354,7 @@ export function ContractDetail({
                           <li key={i} className="px-3 py-2.5 flex flex-wrap items-center justify-between gap-3">
                             <div className="flex items-center gap-2.5 min-w-0">
                               <span
-                                className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-2xs font-bold shrink-0 ${
+                                className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-2xs font-semibold shrink-0 ${
                                   p.action === 2
                                     ? 'bg-positive-soft text-positive border border-positive/30'
                                     : p.action === 1
@@ -830,7 +830,8 @@ export function ContractDetail({
           confirmLabel="Duyệt"
           reason={{ label: 'Nhận xét (không bắt buộc)' }}
           onConfirm={note => onAction({ action: 'DECIDE', decision: 'APPROVED', note: note || '' }, 'Đã duyệt hồ sơ')}
-          onOpenChange={o => !o && setDialog(null)}
+          onCancel={() => setDialog(null)}
+        onOpenChange={o => !o && setDialog(null)}
         />
       )}
       <ConfirmDialog
@@ -840,6 +841,7 @@ export function ContractDetail({
         confirmLabel="Gửi yêu cầu"
         reason={{ label: 'Cần sửa gì', required: true }}
         onConfirm={note => onAction({ action: 'DECIDE', decision: 'CHANGES', note: note || '' }, 'Đã gửi yêu cầu sửa')}
+        onCancel={() => setDialog(null)}
         onOpenChange={o => !o && setDialog(null)}
       />
       <ConfirmDialog
@@ -849,6 +851,7 @@ export function ContractDetail({
         confirmLabel="Từ chối"
         reason={{ label: 'Lý do từ chối', required: true }}
         onConfirm={note => onAction({ action: 'DECIDE', decision: 'REJECTED', note: note || '' }, 'Đã từ chối hồ sơ')}
+        onCancel={() => setDialog(null)}
         onOpenChange={o => !o && setDialog(null)}
       />
       <ConfirmDialog
@@ -858,6 +861,7 @@ export function ContractDetail({
         confirmLabel="Thu hồi"
         reason={{ label: 'Lý do thu hồi', required: true }}
         onConfirm={note => onAction({ action: 'WITHDRAW', note: note || '' }, 'Đã thu hồi hồ sơ')}
+        onCancel={() => setDialog(null)}
         onOpenChange={o => !o && setDialog(null)}
       />
       <VideoProductScreenshotModal

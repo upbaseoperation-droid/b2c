@@ -342,7 +342,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
         setSubmitError(json?.message || json?.error || 'Không chuyển được bước duyệt.');
       }
     } catch {
-      // Giữ nguyên nếu lỗi mạng
+      setSubmitError('Lỗi kết nối mạng khi cập nhật bước duyệt phiếu thanh toán. Vui lòng thử lại.');
     }
   };
 
@@ -1207,7 +1207,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                 <div className="text-xs text-ink-2 flex flex-wrap items-center gap-x-4 gap-y-1">
                   <span>
                     KOC: <strong>{slip.payee.kocStageName}</strong> ({slip.payee.bankName} ·{' '}
-                    <span className="font-code">{slip.payee.bankAccount}</span> ·{' '}
+                    <span className="font-code">{slip.payee.bankAccount && slip.payee.bankAccount.length > 4 && !slip.payee.bankAccount.startsWith('*') ? `****${slip.payee.bankAccount.slice(-4)}` : slip.payee.bankAccount}</span> ·{' '}
                     {slip.payee.bankHolder})
                   </span>
                   <span>

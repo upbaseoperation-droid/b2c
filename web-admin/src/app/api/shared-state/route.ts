@@ -90,6 +90,12 @@ export async function GET(req: NextRequest) {
         { status: 401, headers }
       );
     }
+    if (user.partnerType || user.role.endsWith('_PARTNER')) {
+      return NextResponse.json(
+        { success: false, error: 'Tài khoản đối tác không được phép truy cập kho trạng thái nội bộ.' },
+        { status: 403, headers }
+      );
+    }
 
     const singleKey = req.nextUrl.searchParams.get('key')?.trim();
     const multiKeys = req.nextUrl.searchParams.get('keys')?.trim();
@@ -159,6 +165,12 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Phiên đăng nhập không hợp lệ.' },
         { status: 401, headers }
+      );
+    }
+    if (user.partnerType || user.role.endsWith('_PARTNER')) {
+      return NextResponse.json(
+        { success: false, error: 'Tài khoản đối tác không được phép ghi đè kho trạng thái nội bộ.' },
+        { status: 403, headers }
       );
     }
 

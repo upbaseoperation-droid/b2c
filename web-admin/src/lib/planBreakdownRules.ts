@@ -1155,7 +1155,7 @@ function splitIntByWeights(total: number, weights: number[]): number[] {
 
   const exact = weights.map(w => cleanTotal * w);
   const floored = exact.map(v => Math.floor(v));
-  let remainder = cleanTotal - floored.reduce((s, v) => s + v, 0);
+  const remainder = cleanTotal - floored.reduce((s, v) => s + v, 0);
 
   const order = exact
     .map((v, idx) => ({ idx, frac: v - floored[idx] }))

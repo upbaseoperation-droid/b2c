@@ -2560,6 +2560,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
       {/* Dialog xác nhận khôi phục mặc định */}
       <ConfirmDialog
         open={isConfirmResetOpen}
+        onCancel={() => setIsConfirmResetOpen(false)}
         onOpenChange={(open) => setIsConfirmResetOpen(open)}
         onConfirm={() => {
           updateAndPersistConfig(prev => ({

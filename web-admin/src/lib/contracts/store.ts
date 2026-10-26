@@ -12,8 +12,12 @@ async function localRecords(): Promise<ContractRecord[]> {
 }
 export async function listContracts(): Promise<ContractRecord[]> {
   if (local()) return localRecords();
-  const rows = await prisma.$queryRaw<Array<{ data: ContractRecord }>>`SELECT data FROM "ContractHubRecord" ORDER BY "updatedAt" DESC`;
-  return rows.map(r => r.data);
+  try {
+    const rows = await prisma.$queryRaw<Array<{ data: ContractRecord }>>`SELECT data FROM "ContractHubRecord" ORDER BY "updatedAt" DESC`;
+    return rows.map(r => r.data);
+  } catch {
+    return localRecords().catch(() => []);
+  }
 }
 export async function getContract(id: string) { const record = (await listContracts()).find(r => r.id === id); requireCondition(record, 'Không tìm thấy hồ sơ.', 404); return record; }
 export async function saveContract(record: ContractRecord, expected?: number) {

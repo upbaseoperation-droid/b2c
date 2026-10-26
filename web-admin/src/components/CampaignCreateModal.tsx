@@ -10,6 +10,7 @@ import {
   getCoveredMonthsFromRange,
 } from '../lib/types';
 import { REAL_B2C_42_BRANDS } from '../lib/realB2cBrandsData';
+import { formatVndShort } from '../lib/format';
 
 interface CampaignCreateModalProps {
   isOpen: boolean;
@@ -728,10 +729,10 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                               Tổng cộng phân kỳ {monthlyPhases.length} tháng:
                             </td>
                             <td className="py-2 px-2.5 text-ink">
-                              {(sumPhaseBudget / 1000000).toFixed(1)}M VNĐ
+                              {formatVndShort(sumPhaseBudget)}
                             </td>
                             <td className="py-2 px-2.5 text-positive">
-                              {(sumPhaseGmv / 1000000).toFixed(0)}M VNĐ
+                              {formatVndShort(sumPhaseGmv)}
                             </td>
                             <td className="py-2 px-2.5 text-ink">
                               {monthlyPhases.reduce((s, p) => s + (p.targetKocCount || 0), 0)} KOC

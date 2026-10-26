@@ -494,7 +494,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {/* ===================================================================== */}
       {/* HEADER BAR: THÔNG TIN TỔNG QUAN & CÁC NÚT THAO TÁC TRÌNH BRAND        */}
       {/* ===================================================================== */}
-      <div className="sm:sticky sm:top-0 z-20 bg-surface/95 backdrop-blur-xs text-ink rounded-xl p-3 sm:p-4 border border-line space-y-3 shadow-xs">
+      <div className="sm:sticky sm:top-0 z-20 bg-surface text-ink rounded-xl p-3 sm:p-4 border border-line space-y-3 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-sm font-semibold text-ink">
@@ -662,7 +662,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               <div className="flex items-center justify-between gap-1">
                 <span className="font-semibold text-slate-700">{item.label}</span>
                 <span
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                  className={`px-1.5 py-0.5 rounded text-2xs font-semibold ${
                     item.matched
                       ? 'bg-emerald-50 text-emerald-700'
                       : 'bg-amber-50 text-amber-700'
@@ -1095,7 +1095,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                       <th className="py-2.5 px-2.5 text-center border-r border-slate-200 w-32 bg-amber-50/60 text-amber-900">
                         3. Ngày nộp Draft
                       </th>
-                      <th className="py-2.5 px-2.5 text-center border-r border-slate-200 w-32 bg-purple-50/60 text-purple-900">
+                      <th className="py-2.5 px-2.5 text-center border-r border-slate-200 w-32 bg-blue-50/60 text-blue-900">
                         4. Ngày Duyệt
                       </th>
                       <th className="py-2.5 px-2.5 text-center border-r border-slate-200 w-32 bg-emerald-50/70 text-emerald-900">
@@ -1229,7 +1229,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                             )}
                             {renderGapBadge(gapDraft, 'Order')}
                           </td>
-                          <td className="p-2 border-r border-slate-200 text-center bg-purple-50/20">
+                          <td className="p-2 border-r border-slate-200 text-center bg-blue-50/20">
                             {isEditMode ? (
                               <input
                                 type="date"
@@ -1243,7 +1243,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                                 className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs font-mono bg-white"
                               />
                             ) : (
-                              <span className="font-mono font-medium text-purple-900">
+                              <span className="font-mono font-medium text-blue-900">
                                 {formatIsoDateVn(row.approveDate)}
                               </span>
                             )}
@@ -1374,7 +1374,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                           <img
                             src={imgItem.url}
                             alt={imgItem.fileName}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                            className="w-full h-full object-cover transition-colors"
                           />
                           <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/75 text-white text-3xs font-semibold">
                             {KEY_VISUAL_CATEGORY_LABEL[imgItem.category || 'MASTER_KV'] || 'Master KV'}

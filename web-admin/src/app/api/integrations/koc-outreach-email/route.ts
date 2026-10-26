@@ -1,6 +1,7 @@
 import tls from 'node:tls';
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchLarkAppAccessToken, getLarkConfig } from '@/lib/larkAuth';
+import { fetchLarkAppAccessToken, getAuthenticatedUser, getLarkConfig, isSandboxLoginAllowed } from '@/lib/larkAuth';
+import { USERS } from '@/lib/mockData';
 import { readRecord, updateRecord } from '@/lib/server/sharedRecords';
 import {
   DEFAULT_EMAIL_SERVER_CONFIG,
@@ -20,7 +21,26 @@ const FALLBACK_STATE: KocOutreachEmailState = {
   updatedAt: '2026-10-20T00:00:00.000Z',
 };
 
-export async function GET() {
+function ensureInternalStaff(req: NextRequest) {
+  const user = getAuthenticatedUser(req) || (process.env.NODE_ENV !== 'production' && isSandboxLoginAllowed() ? USERS[0] : null);
+  if (!user) {
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized: Vui lòng đăng nhập để sử dụng tính năng gửi thư mời KOC.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { ok: false, error: 'Tài khoản đối tác không có quyền truy cập cấu hình hoặc gửi thư mời KOC nội bộ.' },
+      { status: 403 }
+    );
+  }
+  return null;
+}
+
+export async function GET(req: NextRequest) {
+  const denied = ensureInternalStaff(req);
+  if (denied) return denied;
   try {
     const rec = await readRecord<KocOutreachEmailState>(RECORD_KEY, FALLBACK_STATE);
     return NextResponse.json({
@@ -39,6 +59,8 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
+  const denied = ensureInternalStaff(req);
+  if (denied) return denied;
   try {
     const body = (await req.json()) as Partial<KocOutreachEmailState>;
     const current = await readRecord<KocOutreachEmailState>(RECORD_KEY, FALLBACK_STATE);
@@ -609,6 +631,8 @@ async function notifyLarkGroupBotIfConfigured(
 }
 
 export async function POST(req: NextRequest) {
+  const denied = ensureInternalStaff(req);
+  if (denied) return denied;
   try {
     const payload = await req.json();
     const action = payload?.action || 'SEND_BATCH';

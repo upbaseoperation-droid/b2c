@@ -209,8 +209,10 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
   useEffect(() => {
     const cached = getCachedClientMonthlyPlans();
     if (cached && cached.length > 0) {
-      setPlans(cached);
-      setPlansState('ready');
+      queueMicrotask(() => {
+        setPlans(cached);
+        setPlansState('ready');
+      });
     }
     let cancelled = false;
     (async () => {
@@ -603,15 +605,19 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     const target = plans.find(p => p.id === focus.planId);
     if (!target) return;
     if (selectedId !== focus.planId) {
-      setMonth(target.month);
-      setSelectedId(focus.planId);
+      queueMicrotask(() => {
+        setMonth(target.month);
+        setSelectedId(focus.planId);
+      });
       return;
     }
     if (status === 'loading' || status === 'idle' || !items.some(i => i.id === focus.listingItemId)) return;
     handledFocus.current = focus.nonce;
     const existing = deals.find(d => d.listingItemId === focus.listingItemId);
-    if (existing) openDealWithJob(existing.id, existing.jobs[0]?.id);
-    else makeDeal(focus.listingItemId);
+    queueMicrotask(() => {
+      if (existing) openDealWithJob(existing.id, existing.jobs[0]?.id);
+      else makeDeal(focus.listingItemId);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus, plans, selectedId, status, items, deals]);
 

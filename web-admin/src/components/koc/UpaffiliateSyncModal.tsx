@@ -289,7 +289,7 @@ export const UpaffiliateSyncModal: React.FC<UpaffiliateSyncModalProps> = ({
             </div>
 
             <Panel
-              title="Cấu trúc Ánh xạ Thực thể Đồng bộ (UpAffiliate ERD ↔ B2C Ops Hub)"
+              title="Ánh xạ dữ liệu UpAffiliate và B2C"
               actions={
                 <span className="text-2xs font-code text-ink-3">
                   Phiên đồng bộ kế tiếp: {formatSyncDateTime(config.nextScheduledSyncAt)}

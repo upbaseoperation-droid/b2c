@@ -1118,8 +1118,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
       .filter(rt => rt.acceptanceStatus === 'DROPPED')
       .reduce((sum, rt) => sum + (rt.allocatedCostVnd || 0), 0);
     const droppedCost = droppedDeliverablesCost + droppedAddonsCost;
-    const effectiveTotalCost = Math.max(1, (editingDeal.totalValue || 1) - droppedCost);
-    const computedRoi = Number((newGmv / effectiveTotalCost).toFixed(2));
+    const netPositiveCost = (editingDeal.totalValue || 0) - droppedCost;
+    const computedRoi = netPositiveCost > 0 ? Number((newGmv / netPositiveCost).toFixed(2)) : 0;
     const isWinner = newGmv >= 30000000;
     const isBreakEven = computedRoi >= 1.0;
 
@@ -2106,7 +2106,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     storePlanOverview,
     dealPeriodScope,
     dealsSearch,
-    deals.length,
+    deals,
     selectedDealPicFilter,
     selectedStaffName,
     selectedBrandFilter,
@@ -2118,13 +2118,13 @@ export const BookingView: React.FC<BookingViewProps> = ({
     dealsPageSize,
     pipelineViewMode,
     selectedPipelineStage,
-    storePipelineGroups.length,
+    storePipelineGroups,
     pagedStoreGroups,
     safeStoreGroupPage,
     storeGroupPageSize,
     collapsedStores,
     kanbanCardLimit,
-    candidates.length,
+    candidates,
     onSelectDealForContract,
   ]);
 
@@ -2169,7 +2169,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                     {k.isWinnerTop20 && <span className="text-2xs text-warning font-semibold">· Winner</span>}
                     <span className="text-2xs font-semibold text-accent">({k.salaryGrade})</span>
                   </div>
-                  <div className="text-2xs text-ink-3 mt-0.5">{k.channelId} · {k.phone}</div>
+                  <div className="text-2xs text-ink-3 mt-0.5">{k.channelId} · {k.phone && k.phone.trim().length > 4 ? `****${k.phone.trim().slice(-4)}` : k.phone}</div>
                   <div className="text-2xs text-ink-3 mt-0.5">{k.segment || 'Massive Creator'} · {k.location || 'Hà Nội'}</div>
                 </div>
               </div>
@@ -2823,7 +2823,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 </div>
                 {editForm.deliverables.some(i => i.lockStatus === 'DROPPED') && (
                   <div className="px-2.5 py-1.5 rounded bg-warning-soft text-warning text-2xs font-medium">
-                    Khấu trừ hạng mục rớt sóng: -{formatVnd(editForm.deliverables.filter(i => i.lockStatus === 'DROPPED').reduce((s, i) => s + i.allocatedCostVnd, 0))} · Tất toán còn lại dự tính: {formatVnd(Math.max(0, (editingDeal.totalValue || 0) - (editingDeal.advanceAmount || 0) - editForm.deliverables.filter(i => i.lockStatus === 'DROPPED').reduce((s, i) => s + i.allocatedCostVnd, 0)))}
+                    Khấu trừ hạng mục rớt sóng: -{formatVnd(editForm.deliverables.reduce((s, i) => i.lockStatus === 'DROPPED' ? s + i.allocatedCostVnd : s, 0))} · Tất toán còn lại dự tính: {formatVnd(Math.max(0, (editingDeal.totalValue || 0) - (editingDeal.advanceAmount || 0) - editForm.deliverables.reduce((s, i) => i.lockStatus === 'DROPPED' ? s + i.allocatedCostVnd : s, 0)))}
                   </div>
                 )}
               </div>

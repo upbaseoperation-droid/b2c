@@ -631,7 +631,7 @@ export function TaskPolicySetupView({
           >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-xs">
               <div className="p-3.5 rounded-lg bg-sunken border border-line space-y-1">
-                <div className="text-2xs font-medium text-ink-3 uppercase tracking-wider">
+                <div className="text-2xs font-medium text-ink-3">
                   1. Điểm nhiệm vụ cá nhân
                 </div>
                 <div className="font-mono font-semibold text-ink">
@@ -639,7 +639,7 @@ export function TaskPolicySetupView({
                 </div>
               </div>
               <div className="p-3.5 rounded-lg bg-sunken border border-line space-y-1">
-                <div className="text-2xs font-medium text-ink-3 uppercase tracking-wider">
+                <div className="text-2xs font-medium text-ink-3">
                   2. Tổng điểm nhân sự cuối tháng
                 </div>
                 <div className="font-mono font-semibold text-ink">
@@ -657,7 +657,7 @@ export function TaskPolicySetupView({
             >
               <div className="w-full overflow-x-auto">
                 <table className="w-full min-w-[560px] text-left text-xs">
-                  <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
+                  <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
                     <tr>
                       <th className="py-2.5 px-4 font-medium">Nhóm gian hàng</th>
                       <th className="py-2.5 px-3 font-medium text-right">Hệ số</th>
@@ -687,7 +687,7 @@ export function TaskPolicySetupView({
               >
                 <div className="w-full overflow-x-auto">
                   <table className="w-full min-w-[560px] text-left text-xs">
-                    <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
+                    <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
                       <tr>
                         <th className="py-2.5 px-4 font-medium">Mức độ</th>
                         <th className="py-2.5 px-3 font-medium text-right">Hệ số</th>
@@ -715,7 +715,7 @@ export function TaskPolicySetupView({
               >
                 <div className="w-full overflow-x-auto">
                   <table className="w-full min-w-[560px] text-left text-xs">
-                    <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
+                    <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
                       <tr>
                         <th className="py-2.5 px-4 font-medium">Quy mô đa sàn</th>
                         <th className="py-2.5 px-4 font-medium text-right">Hệ số nhân</th>
@@ -745,7 +745,7 @@ export function TaskPolicySetupView({
             >
               <div className="w-full overflow-x-auto">
                 <table className="w-full min-w-[560px] text-left text-xs">
-                  <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
+                  <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
                     <tr>
                       <th className="py-2.5 px-4 font-medium">Level nhân sự</th>
                       <th className="py-2.5 px-3 font-medium">Tỷ trọng việc khó tối thiểu</th>
@@ -783,7 +783,7 @@ export function TaskPolicySetupView({
               >
                 <div className="w-full overflow-x-auto">
                   <table className="w-full min-w-[560px] text-left text-xs">
-                    <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
+                    <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
                       <tr>
                         <th className="py-2.5 px-4 font-medium">Mức độ hoàn thành</th>
                         <th className="py-2.5 px-3 font-medium text-right">Hệ số</th>
@@ -811,7 +811,7 @@ export function TaskPolicySetupView({
               >
                 <div className="w-full overflow-x-auto">
                   <table className="w-full min-w-[560px] text-left text-xs">
-                    <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
+                    <thead className="bg-sunken text-2xs text-ink-3 border-b border-line">
                       <tr>
                         <th className="py-2.5 px-4 font-medium">Vai trò</th>
                         <th className="py-2.5 px-3 font-medium text-right">Khung gợi ý</th>

@@ -150,9 +150,9 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
 
   useEffect(() => {
     if (!selectedId && visiblePlans.length > 0) {
-      setSelectedId(visiblePlans[0].id);
+      queueMicrotask(() => setSelectedId(visiblePlans[0].id));
     } else if (selectedId && !visiblePlans.some(p => p.id === selectedId)) {
-      setSelectedId(visiblePlans[0]?.id ?? null);
+      queueMicrotask(() => setSelectedId(visiblePlans[0]?.id ?? null));
     }
   }, [visiblePlans, selectedId]);
 
@@ -221,16 +221,18 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
   const [isPushingLarkSingle, setIsPushingLarkSingle] = useState(false);
 
   useEffect(() => {
-    if (activeJobId) {
-      const found = board.jobs.find(j => j.id === activeJobId);
-      if (found) {
-        setActiveJobDraft(JSON.parse(JSON.stringify(found)));
+    queueMicrotask(() => {
+      if (activeJobId) {
+        const found = board.jobs.find(j => j.id === activeJobId);
+        if (found) {
+          setActiveJobDraft(JSON.parse(JSON.stringify(found)));
+        } else {
+          setActiveJobDraft(null);
+        }
       } else {
         setActiveJobDraft(null);
       }
-    } else {
-      setActiveJobDraft(null);
-    }
+    });
   }, [activeJobId, board.jobs]);
 
   // 6. Quản lý Modal Chốt bảng công & ĐNTT gom theo CTV

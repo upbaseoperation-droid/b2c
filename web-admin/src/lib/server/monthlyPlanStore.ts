@@ -21,6 +21,7 @@ import {
   planPositionsOf,
   storeLeader,
   storeMainBooking,
+  storePositionsOf,
   type StorePosition,
 } from '../storePositions';
 import { isPersonInField } from '../staffIdentity';
@@ -59,6 +60,24 @@ const LOCKED_FIELDS = [
   'budgetSelfChannel',
   'targetAffiliateContents',
   'targetSelfChannelContents'
+] as const satisfies ReadonlyArray<keyof InputPlanBreakdownState>;
+
+// Các trường thông tin gốc & chỉ tiêu cấp gian hàng chỉ do Quản lý hoặc Booking chính (hoặc Dự phòng đang hiệu lực) cập nhật;
+// nhân sự Booking cùng làm (BOOKING_CO) / Self-channel chỉ cập nhật phần phân rã thực thi (items, staffWeeklySlices, discussions).
+const PLAN_HEADER_TARGET_FIELDS = [
+  'title',
+  'brandName',
+  'storeId',
+  'storeName',
+  'month',
+  'primaryPic',
+  'pic',
+  'bookingLeader',
+  'totalTargetBudget',
+  'targetGmv',
+  'budgetAdsTotal',
+  'budgetAffiliate',
+  'budgetSelfChannel',
 ] as const satisfies ReadonlyArray<keyof InputPlanBreakdownState>;
 
 const planInclude = {
@@ -551,6 +570,15 @@ async function seedInitialPlans(actor: UserProfile) {
 export async function createMonthlyPlan(plan: InputPlanBreakdownState, actor: UserProfile): Promise<StoredMonthlyPlan> {
   if (!plan?.id) throw new PlanStoreError('INVALID', 'Thiếu mã kế hoạch.');
   await assertPlanAccess(plan, actor, 'write');
+  if (!isStaffGlobalAdminOrManager(actor)) {
+    const { data: catalog } = await readMasterCatalog();
+    const store = planStoreOf(plan, catalog);
+    const brand = planBrandOf(plan, catalog, store);
+    const storePos = store ? storePositionsOf(actor, store, brand) : new Set<StorePosition>();
+    if (!storePos.has('BOOKING_MAIN') && !storePos.has('BACKUP') && !storePos.has('LEADER')) {
+      throw new PlanStoreError('FORBIDDEN', 'Chỉ Quản lý hoặc PIC chính của gian hàng trong Dữ liệu gốc được khởi tạo kế hoạch tháng mới.');
+    }
+  }
   if (plan.isVersionLocked || (plan.status && !['DRAFT', 'PENDING_PRE_APPROVAL', 'PENDING_APPROVAL'].includes(plan.status)) || plan.versionSnapshots?.length) await assertPlanAccess(plan, actor, 'approve');
   const { working, versionSnapshots, discussions } = splitPlan(plan);
 
@@ -672,6 +700,16 @@ export async function saveMonthlyPlan(
     const isLeaderStep = isPlanLeader && fromStatus === 'PENDING_PRE_APPROVAL' && ['PENDING_APPROVAL', 'REVISION_REQUESTED'].includes(toStatus);
     if (!isGlobalManager && !canEditPlanContent(positions, false) && !isLeaderStep) {
       throw new PlanStoreError('FORBIDDEN', 'Leader chỉ sơ duyệt kế hoạch; nội dung do nhân sự phụ trách gian hàng sửa.');
+    }
+    const isMainPlanOwner = isGlobalManager || positions.has('BOOKING_MAIN') || positions.has('BACKUP');
+    if (!isMainPlanOwner && !isLeaderStep) {
+      const changedHeader = PLAN_HEADER_TARGET_FIELDS.filter(f => !sameValue(plan[f], stored[f]));
+      if (changedHeader.length) {
+        throw new PlanStoreError(
+          'FORBIDDEN',
+          `Booking cùng làm chỉ cập nhật phần phân rã thực thi, không sửa thông tin chung hoặc chỉ tiêu gốc của kế hoạch (${changedHeader.slice(0, 3).join(', ')}).`
+        );
+      }
     }
     if (isLeaderStep && !canEditPlanContent(positions, false)) {
       const changed = LOCKED_FIELDS.filter(f => !sameValue(plan[f], stored[f]));
@@ -801,6 +839,16 @@ export async function saveMonthlyPlan(
     // Leader (không kiêm nhân sự thực thi trên gian) chỉ sơ duyệt, không sửa nội dung kế hoạch
     if (!isGlobalManager && !canEditPlanContent(positions, false) && !isLeaderStep) {
       throw new PlanStoreError('FORBIDDEN', 'Leader chỉ sơ duyệt kế hoạch; nội dung do nhân sự phụ trách gian hàng sửa.');
+    }
+    const isMainPlanOwner = isGlobalManager || positions.has('BOOKING_MAIN') || positions.has('BACKUP');
+    if (!isMainPlanOwner && !isLeaderStep) {
+      const changedHeader = PLAN_HEADER_TARGET_FIELDS.filter(f => !sameValue(plan[f], stored[f]));
+      if (changedHeader.length) {
+        throw new PlanStoreError(
+          'FORBIDDEN',
+          `Booking cùng làm chỉ cập nhật phần phân rã thực thi, không sửa thông tin chung hoặc chỉ tiêu gốc của kế hoạch (${changedHeader.slice(0, 3).join(', ')}).`
+        );
+      }
     }
     if (isLeaderStep && !canEditPlanContent(positions, false)) {
       const changed = LOCKED_FIELDS.filter(f => !sameValue(plan[f], stored[f]));

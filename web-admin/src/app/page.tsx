@@ -2397,6 +2397,7 @@ export default function App() {
           onClose={() => setIsProfileOpen(false)}
           currentUser={currentUser}
           onSaveUser={handleSaveUserProfile}
+          onSwitchUser={handleUserChange}
           onLogout={handleLogout}
           onNotify={showToast}
         />

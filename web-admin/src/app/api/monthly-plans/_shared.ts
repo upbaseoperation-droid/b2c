@@ -6,7 +6,7 @@ import { PlanStoreError } from '@/lib/server/monthlyPlanStore';
 /** Lấy người dùng nội bộ từ cookie phiên. Tài khoản đối tác (Brand/KOC/CTV) không được truy cập kế hoạch. */
 export async function getPlanActor(request: NextRequest): Promise<UserProfile | null> {
   const user = await requestActor(request);
-  if (!user || user.partnerType) return null;
+  if (!user || user.partnerType || user.role.endsWith('_PARTNER')) return null;
   return user;
 }
 

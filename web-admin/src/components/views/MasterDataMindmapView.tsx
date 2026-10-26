@@ -1297,13 +1297,13 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                     <div className="p-3 bg-canvas border border-line rounded-xl">
                       <div className="text-2xs text-ink-3 font-semibold">Ngân sách tháng</div>
                       <div className="text-sm font-semibold text-ink mt-1">
-                        {(selectedNode.data.monthlyBudget / 1000000).toFixed(0)} Triệu đ
+                        {formatVndShort(selectedNode.data.monthlyBudget)}
                       </div>
                     </div>
                     <div className="p-3 bg-canvas border border-line rounded-xl">
                       <div className="text-2xs text-ink-3 font-semibold">Target GMV</div>
                       <div className="text-sm font-semibold text-positive mt-1">
-                        {(selectedNode.data.monthlyTargetGmv / 1000000).toFixed(0)} Triệu đ
+                        {formatVndShort(selectedNode.data.monthlyTargetGmv)}
                       </div>
                     </div>
                   </div>

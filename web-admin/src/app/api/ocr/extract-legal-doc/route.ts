@@ -14,9 +14,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (user.role === 'BRAND_PARTNER' || user.partnerType === 'BRAND') {
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
     return NextResponse.json(
-      { success: false, error: 'Đối tác thương hiệu không có quyền quét hoặc bóc tách giấy tờ pháp lý cá nhân của Creator.' },
+      { success: false, error: 'Tài khoản đối tác không có quyền quét hoặc đọc giấy tờ pháp lý nội bộ.' },
       { status: 403 }
     );
   }

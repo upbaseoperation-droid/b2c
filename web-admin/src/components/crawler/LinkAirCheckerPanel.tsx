@@ -518,8 +518,10 @@ function LinkAirDetailModal({
   const syntheticDeal: BookingDealItem = useMemo(() => {
     const videoUrl = result?.canonicalUrl || result?.inputUrl || '';
     const videoIdMatch = videoUrl.match(/\/video\/(\d+)/);
-    const videoId = videoIdMatch ? videoIdMatch[1] : Date.now().toString();
+    const fallbackCode = (result?.publishedAt || '0001').replace(/\D/g, '').slice(-8) || '0001';
+    const videoId = videoIdMatch ? videoIdMatch[1] : fallbackCode;
     const handleClean = (result?.author.handle || '').replace(/^@/, '');
+    const timestampIso = result?.publishedAt || '2026-10-20T00:00:00.000Z';
     return {
       id: `AIR-${videoId}`,
       dealCode: `BO-AIR-${videoId.slice(-4) || '01'}`,
@@ -532,8 +534,8 @@ function LinkAirDetailModal({
       stage: 'ACCEPTANCE_READY',
       totalValue: 0,
       vatRatePercent: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: timestampIso,
+      updatedAt: timestampIso,
     } as unknown as BookingDealItem;
   }, [result]);
 

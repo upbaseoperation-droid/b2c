@@ -458,7 +458,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     const log = `Nhân viên (${actor}) đã GỬI DUYỆT QUẢN LÝ sau khi thống nhất chỉ số với Growth team: "${finalNote}"`;
 
     // Gian có Trưởng nhóm: sơ duyệt trước, rồi mới tới Giám đốc. Gian không có Trưởng nhóm: lên thẳng Giám đốc.
-    const needsLeader = planState.hasBookingLeader !== false && Boolean(planState.bookingLeader);
+    const resolvedLeader = resolveStoreBookingLeader(planState.storeName || planState.brandName, planState.bookingLeader);
+    const needsLeader = planState.hasBookingLeader !== false && Boolean(resolvedLeader);
     const nextStatus: MonthlyPlanStatus = needsLeader ? 'PENDING_PRE_APPROVAL' : 'PENDING_APPROVAL';
     handleStatusChangeForPlan(planState.id, nextStatus, log, finalNote);
 
@@ -2183,7 +2184,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 >
                   {/* Chip PIC B2C chính */}
                   <span className="inline-flex items-center gap-1">
-                    <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold inline-flex items-center justify-center shrink-0">
+                    <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-3xs font-semibold inline-flex items-center justify-center shrink-0">
                       {getInitials(mainPic)}
                     </span>
                     <span className="text-slate-500">PIC:</span>
@@ -2199,7 +2200,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   {leaderDisplayName && (
                     <span className="hidden md:inline-flex items-center gap-1 pl-1.5 border-l border-slate-200">
                       <span className="text-slate-500">Leader:</span>
-                      <strong className="text-indigo-700">{leaderDisplayName}</strong>
+                      <strong className="text-blue-700">{leaderDisplayName}</strong>
                     </span>
                   )}
 
@@ -2237,7 +2238,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         {/* 1. Chuyên viên B2C (PIC) */}
                         <div className="flex items-start justify-between gap-2 p-2 rounded-lg bg-blue-50/60 border border-blue-100">
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-2xs font-bold inline-flex items-center justify-center shrink-0">
+                            <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-2xs font-semibold inline-flex items-center justify-center shrink-0">
                               {getInitials(mainPic)}
                             </span>
                             <div className="min-w-0">
@@ -2258,7 +2259,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                             <div className="text-2xs text-slate-500">Cấp duyệt B2C</div>
                             {leaderDisplayName ? (
                               <div className="font-semibold text-slate-900">
-                                Leader: <span className="text-indigo-700">{leaderDisplayName}</span> → GĐ: Đặng Thị Yến Nhi
+                                Leader: <span className="text-blue-700">{leaderDisplayName}</span> → GĐ: Đặng Thị Yến Nhi
                               </div>
                             ) : (
                               <div className="font-semibold text-slate-900">
@@ -3502,7 +3503,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           <span>Yêu cầu sửa</span>
                           {revisionCount > 0 && (
                             <span
-                              className={`px-1 rounded-full text-[10px] font-mono ${
+                              className={`px-1 rounded-full text-2xs font-mono ${
                                 chatFilter === 'REVISION_REQUEST'
                                   ? 'bg-white/20 text-white'
                                   : 'bg-rose-100 text-rose-700'
@@ -3561,7 +3562,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                               <div className="flex items-center justify-between gap-1.5 mb-0.5">
                                 <div className="flex items-center gap-1.5 min-w-0">
                                   <span
-                                    className={`w-4 h-4 rounded-full text-[9px] font-bold inline-flex items-center justify-center shrink-0 ${
+                                    className={`w-4 h-4 rounded-full text-3xs font-semibold inline-flex items-center justify-center shrink-0 ${
                                       isRev
                                         ? 'bg-rose-600 text-white'
                                         : isApprove
@@ -3575,22 +3576,22 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                                     {msg.authorName}
                                   </span>
                                   {msg.authorTitle && (
-                                    <span className="px-1.5 py-0.2 rounded bg-white/90 border border-slate-200 text-[10px] font-medium text-slate-600 shrink-0">
+                                    <span className="px-1.5 py-0.2 rounded bg-white/90 border border-slate-200 text-2xs font-medium text-slate-600 shrink-0">
                                       {msg.authorTitle}
                                     </span>
                                   )}
                                   {isRev && (
-                                    <span className="px-1.5 py-0.2 rounded bg-rose-600 text-white text-[10px] font-semibold shrink-0">
+                                    <span className="px-1.5 py-0.2 rounded bg-rose-600 text-white text-2xs font-semibold shrink-0">
                                       Yêu cầu sửa
                                     </span>
                                   )}
                                   {!isRev && !isApprove && (
-                                    <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 text-[10px] font-semibold shrink-0">
+                                    <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 text-2xs font-semibold shrink-0">
                                       Thống nhất
                                     </span>
                                   )}
                                 </div>
-                                <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                                <span className="text-2xs font-mono text-slate-400 shrink-0">
                                   {msg.timestamp && !Number.isNaN(Date.parse(msg.timestamp))
                                     ? getVietnamDateTimeShort(new Date(msg.timestamp))
                                     : msg.timestamp}
@@ -3642,7 +3643,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                                 setChatDraft((prev) => (prev ? `${prev}; ${chip}` : chip));
                                 chatInputRef.current?.focus();
                               }}
-                              className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-medium whitespace-nowrap transition cursor-pointer"
+                              className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-2xs font-medium whitespace-nowrap transition cursor-pointer"
                             >
                               + {chip}
                             </button>

@@ -379,7 +379,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
               </span>
             </div>
             <span className="block truncate text-2xs text-ink-3 mt-0.5">
-              {c.phone}
+              {c.phone && c.phone.trim().length > 4 ? `****${c.phone.trim().slice(-4)}` : c.phone}
               {c.contentPic ? ` · PIC: ${c.contentPic}` : ''}
             </span>
           </div>
@@ -1531,7 +1531,7 @@ export function CtvProfileDetail({
                 <Panel>
                   <div className="space-y-3">
                     <SectionHeader
-                      title="Lịch sử hợp tác theo Nhãn hàng (Brand History)"
+                      title="Lịch sử hợp tác theo Nhãn hàng"
                     />
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {brandHistoryStats.map((b) => (

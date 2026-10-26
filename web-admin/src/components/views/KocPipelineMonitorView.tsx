@@ -661,7 +661,7 @@ export function KocPipelineMonitorView({
           </div>
           <div className="text-xs text-ink-2">{r.pipeline.subStatusName}</div>
           {r.pipeline.slaNotice && (
-            <div className="text-[11px] font-medium text-amber-600 flex items-center gap-1 mt-0.5">
+            <div className="text-2xs font-medium text-amber-600 flex items-center gap-1 mt-0.5">
               <Clock className="w-3 h-3" />
               <span>{r.pipeline.slaNotice}</span>
             </div>
@@ -675,9 +675,9 @@ export function KocPipelineMonitorView({
       render: (r) => {
         const bgColors: Record<BallInCourt, string> = {
           B2C_STAFF: 'bg-blue-50 text-blue-700 border-blue-200',
-          KOC: 'bg-purple-50 text-purple-700 border-purple-200',
+          KOC: 'bg-blue-50 text-blue-700 border-blue-200',
           BRAND: 'bg-amber-50 text-amber-700 border-amber-200',
-          LEGAL_FINANCE: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+          LEGAL_FINANCE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
           SYSTEM: 'bg-slate-50 text-slate-600 border-slate-200',
         };
         return (
@@ -769,8 +769,8 @@ export function KocPipelineMonitorView({
             >
               <div className="text-xs font-medium text-ink-2 truncate">{m.label}</div>
               <div className="flex items-baseline justify-between mt-1">
-                <span className="text-xl font-bold text-ink-1">{count}</span>
-                <span className="text-[11px] text-ink-2">{m.sub}</span>
+                <span className="text-xl font-semibold text-ink-1">{count}</span>
+                <span className="text-2xs text-ink-2">{m.sub}</span>
               </div>
             </button>
           );
@@ -802,14 +802,14 @@ export function KocPipelineMonitorView({
           </div>
         </div>
 
-        <div className="p-3 border rounded-lg border-purple-200 bg-purple-50/50">
+        <div className="p-3 border rounded-lg border-blue-200 bg-blue-50/50">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-purple-900">KOC im lặng (&gt; 24h)</span>
-            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+            <span className="text-xs font-semibold text-blue-900">KOC im lặng (&gt; 24h)</span>
+            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
               {bottleneckAlerts.kocSilent.length}
             </span>
           </div>
-          <div className="text-xs text-purple-800 mt-1">
+          <div className="text-xs text-blue-800 mt-1">
             Có {bottleneckAlerts.kocSilent.length} KOC chưa phản hồi báo giá hoặc kịch bản cần follow-up.
           </div>
         </div>

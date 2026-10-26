@@ -473,10 +473,10 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                             <div className="font-semibold truncate">
                               Chặng {st.stageNumber}: {st.stageName}
                             </div>
-                            <div className="text-[11px] text-slate-600 leading-snug">{st.finding}</div>
+                            <div className="text-2xs text-slate-600 leading-snug">{st.finding}</div>
                           </div>
                           <span
-                            className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                            className={`shrink-0 px-1.5 py-0.5 rounded text-2xs font-semibold ${
                               st.status === 'PASS'
                                 ? 'bg-emerald-100 text-emerald-800'
                                 : st.status === 'FAIL'

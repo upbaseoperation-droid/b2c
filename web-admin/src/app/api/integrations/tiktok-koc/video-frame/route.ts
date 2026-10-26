@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
+import { getAuthenticatedUser, isSandboxLoginAllowed } from '@/lib/larkAuth';
+import { USERS } from '@/lib/mockData';
+
+const ALLOWED_TIKTOK_CDN_SUFFIXES = [
+  '.tiktokcdn.com',
+  '.tiktokcdn-us.com',
+  '.tiktokcdn-eu.com',
+  '.tiktok.com',
+  '.byteoversea.com',
+  '.ibytedtos.com',
+  '.ibyteimg.com',
+  '.musical.ly',
+];
+
+function isAllowedTikTokImageHost(hostname: string): boolean {
+  const lower = hostname.toLowerCase();
+  return ALLOWED_TIKTOK_CDN_SUFFIXES.some((s) => lower === s.slice(1) || lower.endsWith(s));
+}
 import {
   extractTikTokShopAnchorInfo,
   fetchTikTokHtmlWithWafBypass,
@@ -354,6 +372,20 @@ function buildSuggestedMoments(params: {
  * - ?streamToken=... : Proxy luồng phát video (.mp4) có hỗ trợ Range & CORS sạch
  */
 export async function GET(req: NextRequest) {
+  const user = getAuthenticatedUser(req) || (process.env.NODE_ENV !== 'production' && isSandboxLoginAllowed() ? USERS[0] : null);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: 'Vui lòng đăng nhập để truy cập luồng nghiệm thu video.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { success: false, error: 'Tài khoản đối tác không được phép truy cập công cụ cắt khung hình nội bộ.' },
+      { status: 403 }
+    );
+  }
+
   const streamToken = req.nextUrl.searchParams.get('streamToken')?.trim();
   const imageUrl = req.nextUrl.searchParams.get('imageUrl')?.trim();
   const captureSecRaw = req.nextUrl.searchParams.get('captureSec')?.trim();
@@ -361,8 +393,8 @@ export async function GET(req: NextRequest) {
   if (imageUrl) {
     try {
       const parsed = new URL(imageUrl);
-      if (!['http:', 'https:'].includes(parsed.protocol)) {
-        return new NextResponse('Invalid URL protocol', { status: 400 });
+      if (!['http:', 'https:'].includes(parsed.protocol) || !isAllowedTikTokImageHost(parsed.hostname)) {
+        return new NextResponse('Invalid or disallowed image URL host', { status: 400 });
       }
       const imgRes = await fetch(parsed.toString(), {
         headers: {
@@ -517,6 +549,19 @@ export async function GET(req: NextRequest) {
  * KOC cầm/test/nhắc sản phẩm và tạo đường dẫn luồng phát MP4 + cắt khung hình.
  */
 export async function POST(req: NextRequest) {
+  const user = getAuthenticatedUser(req) || (process.env.NODE_ENV !== 'production' && isSandboxLoginAllowed() ? USERS[0] : null);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: 'Vui lòng đăng nhập để phân tích khung hình video.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { success: false, error: 'Tài khoản đối tác không có quyền phân tích khung hình video nội bộ.' },
+      { status: 403 }
+    );
+  }
   try {
     const body = await req.json();
     let rawUrl = String(body?.videoUrl || body?.url || '').trim();

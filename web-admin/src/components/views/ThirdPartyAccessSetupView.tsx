@@ -826,6 +826,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
 
       <ConfirmDialog
         open={!!deletingAccount}
+        onCancel={() => setDeletingAccount(null)}
         onOpenChange={(open) => {
           if (!open) setDeletingAccount(null);
         }}

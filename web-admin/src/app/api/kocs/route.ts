@@ -95,6 +95,12 @@ export async function GET(req: NextRequest) {
         { status: 401, headers }
       );
     }
+    if (user.partnerType || user.role.endsWith('_PARTNER')) {
+      return NextResponse.json(
+        { success: false, error: 'Tài khoản đối tác không có quyền tải danh bạ KOC nội bộ.' },
+        { status: 403, headers }
+      );
+    }
 
     const record = await readRecord<KocDirectoryChangesData>(RECORD_KEY, DEFAULT_KOC_CHANGES);
     const items = Object.values(record.data.itemsByHandle || {});
@@ -130,6 +136,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Phiên đăng nhập không hợp lệ.' },
         { status: 401, headers }
+      );
+    }
+    if (user.partnerType || user.role.endsWith('_PARTNER')) {
+      return NextResponse.json(
+        { success: false, error: 'Tài khoản đối tác không có quyền chỉnh sửa danh bạ KOC nội bộ.' },
+        { status: 403, headers }
       );
     }
 

@@ -989,13 +989,13 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                   {activePortal.liveAiredVideosCount} / {activePortal.totalTargetVideos}
                 </span>
                 <span className="text-2xs text-slate-400">
-                  {Math.round((activePortal.liveAiredVideosCount / activePortal.totalTargetVideos) * 100)}% hoàn thành
+                  {activePortal.totalTargetVideos > 0 ? Math.round((activePortal.liveAiredVideosCount / activePortal.totalTargetVideos) * 100) : 0}% hoàn thành
                 </span>
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
                 <div 
                   className="data-bar bg-blue-600 h-full rounded-full"
-                  style={{ width: `${(activePortal.liveAiredVideosCount / activePortal.totalTargetVideos) * 100}%` }}
+                  style={{ width: `${activePortal.totalTargetVideos > 0 ? Math.min(100, (activePortal.liveAiredVideosCount / activePortal.totalTargetVideos) * 100) : 0}%` }}
                 />
               </div>
             </div>
@@ -1083,7 +1083,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                   </span>
                 </div>
                 <h4 className="text-xs font-semibold text-slate-800">
-                  {Math.round((activePortal.liveAiredVideosCount / activePortal.totalTargetVideos) * 100)}% hoàn thành
+                  {activePortal.totalTargetVideos > 0 ? Math.round((activePortal.liveAiredVideosCount / activePortal.totalTargetVideos) * 100) : 0}% hoàn thành
                 </h4>
                 
               </div>

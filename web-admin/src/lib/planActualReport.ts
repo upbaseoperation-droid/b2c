@@ -168,10 +168,13 @@ export function buildPlanActualReport(
       jobs: activeSelfJobs.length,
       aired: activeSelfJobs.filter(j => Boolean(j.airedAt || j.airLink.trim())).length,
       accepted: activeSelfJobs.filter(j => j.acceptanceStatus === 'PASSED').length,
-      committed: activeSelfJobs.reduce((s, j) => s + (j.feeGross || 0), 0),
+      committed: activeSelfJobs.reduce(
+        (s, j) => s + Math.round((j.feeGross || 0) * 0.9),
+        0
+      ),
       paid: activeSelfJobs
         .filter(j => j.paymentStatus === 'PAID')
-        .reduce((s, j) => s + (j.feeGross || 0), 0),
+        .reduce((s, j) => s + Math.round((j.feeGross || 0) * 0.9), 0),
     };
     tiers.set('SELF', selfRow);
   }

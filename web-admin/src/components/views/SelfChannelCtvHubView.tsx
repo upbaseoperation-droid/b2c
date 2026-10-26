@@ -573,23 +573,23 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       case 'OPEN_TASK':
         return <Status tone="neutral">Mở nhận việc</Status>;
       case 'BRAND_ORIENTATION_PENDING':
-        return <Status tone="warn">Chờ Brand duyệt VJ (48h)</Status>;
+        return <Status tone="warning">Chờ Brand duyệt VJ (48h)</Status>;
       case 'SCRIPT_PENDING_REVIEW':
-        return <Status tone="warn">Chờ duyệt kịch bản (24h)</Status>;
+        return <Status tone="warning">Chờ duyệt kịch bản (24h)</Status>;
       case 'SCRIPT_REVISION':
-        return <Status tone="err">Sửa kịch bản</Status>;
+        return <Status tone="critical">Sửa kịch bản</Status>;
       case 'SCRIPT_APPROVED':
         return <Status tone="info">Đang quay &amp; dựng</Status>;
       case 'DRAFT_VIDEO_SUBMITTED':
         return <Status tone="info">Chờ QA nội bộ (Vòng 1)</Status>;
       case 'INTERNAL_QA_PASSED':
-        return <Status tone="brand">Chờ Brand nghiệm thu &amp; Đăng kênh</Status>;
+        return <Status tone="info">Chờ Brand nghiệm thu &amp; Đăng kênh</Status>;
       case 'VIDEO_REVISION':
-        return <Status tone="warn">Sửa video nháp</Status>;
+        return <Status tone="warning">Sửa video nháp</Status>;
       case 'ACCEPTED_COMPLETED':
-        return <Status tone="ok">Đã nghiệm thu (Chờ lập DNTT)</Status>;
+        return <Status tone="positive">Đã nghiệm thu (Chờ lập DNTT)</Status>;
       case 'PAID':
-        return <Status tone="info">Đã quyết toán</Status>;
+        return <Status tone="positive">Đã quyết toán</Status>;
     }
   };
 

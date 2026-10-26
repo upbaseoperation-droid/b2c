@@ -96,8 +96,8 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     let active = true;
-    const queryHandle = targetKoc?.channelId ? targetKoc.channelId.replace('@', '') : '';
 
+    // RULE-API-02: Chỉ kiểm tra trạng thái kết nối, không tự động gọi API cào dữ liệu khi mở Modal
     fetch('/api/integrations/kalodata/status')
       .then((res) => res.json())
       .then((json) => {
@@ -109,35 +109,10 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
         // Bỏ qua lỗi kết nối ngầm
       });
 
-    if (queryHandle) {
-      fetch(
-        `/api/integrations/kalodata/creator?handle=${encodeURIComponent(queryHandle)}&period=${period}`
-      )
-        .then((res) => res.json())
-        .then((json) => {
-          if (!active) return;
-          if (json.success && json.data) {
-            setResult(json.data);
-          } else {
-            setErrorMsg(json.message || 'Không tìm thấy dữ liệu cho kênh này.');
-          }
-        })
-        .catch(() => {
-          if (active) {
-            setErrorMsg('Lỗi kết nối khi gửi yêu cầu tra cứu Kalodata.');
-          }
-        })
-        .finally(() => {
-          if (active) {
-            setLoading(false);
-          }
-        });
-    }
-
     return () => {
       active = false;
     };
-  }, [isOpen, targetKoc, period]);
+  }, [isOpen]);
 
   const handleApplyToKoc = async () => {
     if (!result || !targetKoc) return;

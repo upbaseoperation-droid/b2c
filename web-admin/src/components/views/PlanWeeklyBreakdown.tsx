@@ -474,7 +474,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
             focusCell(r - 1, c);
           }
         }}
-        className={`h-8 w-full border-0 bg-transparent px-2 text-right text-xs tabular-nums outline-none transition placeholder:text-slate-300 hover:bg-slate-50/80 focus:bg-indigo-50/50 focus:ring-1 focus:ring-inset focus:ring-indigo-600 ${
+        className={`h-8 w-full border-0 bg-transparent px-2 text-right text-xs tabular-nums outline-none transition placeholder:text-slate-300 hover:bg-slate-50/80 focus:bg-blue-50/50 focus:ring-1 focus:ring-inset focus:ring-blue-600 ${
           sub === 0 ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'
         } ${tone}`}
       />
@@ -508,7 +508,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
         value={value ? fmt(value) : ''}
         placeholder="—"
         onChange={e => onChangeVal(parseNumber(e.target.value))}
-        className={`h-8 w-full border-0 bg-transparent px-2.5 text-right text-xs tabular-nums outline-none transition placeholder:text-slate-300 hover:bg-slate-50/80 focus:bg-indigo-50/50 focus:ring-1 focus:ring-inset focus:ring-indigo-600 ${
+        className={`h-8 w-full border-0 bg-transparent px-2.5 text-right text-xs tabular-nums outline-none transition placeholder:text-slate-300 hover:bg-slate-50/80 focus:bg-blue-50/50 focus:ring-1 focus:ring-inset focus:ring-blue-600 ${
           isBold ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'
         }`}
       />
@@ -588,7 +588,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
         className="group border-b border-l border-slate-200 bg-slate-50 px-2 py-1.5 text-center align-middle"
       >
         <div className="flex items-center justify-center gap-1">
-          <span className="text-xs font-bold text-slate-800">{code}</span>
+          <span className="text-xs font-semibold text-slate-800">{code}</span>
           {range && <span className="text-2xs font-normal text-slate-500">{range}</span>}
           {!effectiveReadOnly && (
             <span className="ml-1 hidden items-center gap-0.5 group-hover:inline-flex">
@@ -597,7 +597,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                   type="button"
                   title="Sao chép tuần trước"
                   onClick={() => copyPrevious(wi)}
-                  className="rounded p-0.5 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer"
+                  className="rounded p-0.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600 cursor-pointer"
                 >
                   <Copy className="h-3 w-3" />
                 </button>
@@ -806,7 +806,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
       <div className="rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/80 px-4 py-2">
           <div className="flex flex-wrap items-center gap-2">
-            <h4 className="text-xs font-bold text-slate-900">
+            <h4 className="text-xs font-semibold text-slate-900">
               Tổng quan 4.1 &amp; 4.1.1
             </h4>
             <span className="text-slate-300">|</span>
@@ -836,7 +836,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                   onClick={() => setSelectedStaffSlice('ALL_STORE')}
                   className={`rounded px-2 py-0.5 font-semibold transition cursor-pointer ${
                     selectedStaffSlice === 'ALL_STORE'
-                      ? 'bg-slate-900 text-white'
+                      ? 'bg-primary text-white'
                       : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
@@ -853,7 +853,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                       onClick={() => setSelectedStaffSlice(isSelected ? 'ALL_STORE' : slice.staffName)}
                       className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 font-semibold transition cursor-pointer ${
                         isSelected
-                          ? 'bg-indigo-600 text-white'
+                          ? 'bg-accent text-white'
                           : isMainPic
                           ? 'bg-slate-100 text-slate-900 hover:bg-slate-200/80'
                           : 'text-slate-600 hover:bg-slate-100'
@@ -863,9 +863,9 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                       <span
                         className={`rounded px-1.5 py-0 text-2xs font-medium ${
                           isSelected
-                            ? 'bg-indigo-500/80 text-white'
+                            ? 'bg-white/20 text-white'
                             : isMainPic
-                            ? 'bg-slate-800 text-white'
+                            ? 'bg-sunken text-ink'
                             : 'bg-slate-200/80 text-slate-700'
                         }`}
                       >
@@ -897,7 +897,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('ALL')}
-                className="rounded-md border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-2xs font-semibold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer"
+                className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-2xs font-semibold text-blue-700 hover:bg-blue-100 transition cursor-pointer"
               >
                 Xem tất cả
               </button>
@@ -921,7 +921,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                 key={`mob-ov-${row.id}`}
                 onClick={() => handleSelectWorkstreamFromOverview(row.id)}
                 className={`p-3 space-y-1.5 cursor-pointer transition ${
-                  isFocused ? 'bg-indigo-50/60' : 'hover:bg-slate-50/70'
+                  isFocused ? 'bg-blue-50/60' : 'hover:bg-slate-50/70'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
@@ -960,12 +960,12 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                     <span>
                       <span className="text-slate-600">{fmt(row.refQty)}</span>
                       <span className="text-slate-300 mx-1">/</span>
-                      <strong className="text-indigo-700">{fmt(row.plannedQty)}</strong>
+                      <strong className="text-blue-700">{fmt(row.plannedQty)}</strong>
                     </span>
                   </div>
-                  <div className="rounded-lg bg-indigo-50/30 border border-indigo-100 px-2.5 py-1.5 flex items-center justify-between">
+                  <div className="rounded-lg bg-blue-50/30 border border-blue-100 px-2.5 py-1.5 flex items-center justify-between">
                     <span className="text-slate-500">Net:</span>
-                    <strong className="text-indigo-950">
+                    <strong className="text-blue-950">
                       {row.plannedBudgetNet > 0 ? `${fmt(row.plannedBudgetNet)}đ` : row.refBudgetNet > 0 ? `${fmt(row.refBudgetNet)}đ` : '0đ'}
                     </strong>
                   </div>
@@ -973,9 +973,9 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               </div>
             );
           })}
-          <div className="p-3 bg-slate-50/90 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-900">
+          <div className="p-3 bg-slate-50/90 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-900">
             <span>Tổng 4.1.1 / 4.1: {fmt(overviewGrandTotals.plannedQty)} / {fmt(overviewGrandTotals.refQty)}</span>
-            <span className="text-indigo-700 tabular-nums">
+            <span className="text-blue-700 tabular-nums">
               {fmt(overviewGrandTotals.plannedBudgetNet)}đ / {fmt(overviewGrandTotals.refBudgetNet)}đ
             </span>
           </div>
@@ -988,9 +988,9 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                 <th className="px-4 py-2 text-left">Hạng mục</th>
                 <th className="px-3 py-2 text-left">Phụ trách</th>
                 <th className="border-l border-slate-200 px-3 py-2 text-right w-[120px]">SL 4.1</th>
-                <th className="px-3 py-2 text-right w-[120px] bg-indigo-50/30 text-indigo-950">SL 4.1.1</th>
+                <th className="px-3 py-2 text-right w-[120px] bg-blue-50/30 text-blue-950">SL 4.1.1</th>
                 <th className="border-l border-slate-200 px-3 py-2 text-right w-[150px]">Net 4.1</th>
-                <th className="px-3 py-2 text-right w-[150px] bg-indigo-50/30 text-indigo-950">Net 4.1.1</th>
+                <th className="px-3 py-2 text-right w-[150px] bg-blue-50/30 text-blue-950">Net 4.1.1</th>
                 <th className="border-l border-slate-200 px-4 py-2 text-right w-[140px]">Đối soát</th>
               </tr>
             </thead>
@@ -1010,7 +1010,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                     onClick={() => handleSelectWorkstreamFromOverview(row.id)}
                     className={`cursor-pointer transition ${
                       isFocused
-                        ? 'bg-indigo-50/60'
+                        ? 'bg-blue-50/60'
                         : 'hover:bg-slate-50/70'
                     }`}
                   >
@@ -1037,10 +1037,10 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                         <span className="text-slate-300">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-right align-middle tabular-nums bg-indigo-50/20">
+                    <td className="px-3 py-2 text-right align-middle tabular-nums bg-blue-50/20">
                       {row.plannedQty > 0 ? (
                         <>
-                          <span className="font-bold text-slate-900">{fmt(row.plannedQty)}</span>{' '}
+                          <span className="font-semibold text-slate-900">{fmt(row.plannedQty)}</span>{' '}
                           <span className="text-2xs text-slate-400">{row.unitLabel}</span>
                         </>
                       ) : (
@@ -1050,7 +1050,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                     <td className="border-l border-slate-100 px-3 py-2 text-right align-middle tabular-nums text-slate-600">
                       {row.refBudgetNet > 0 ? `${fmt(row.refBudgetNet)}đ` : <span className="text-slate-300">—</span>}
                     </td>
-                    <td className="px-3 py-2 text-right align-middle tabular-nums font-semibold text-indigo-950 bg-indigo-50/20">
+                    <td className="px-3 py-2 text-right align-middle tabular-nums font-semibold text-blue-950 bg-blue-50/20">
                       {row.plannedBudgetNet > 0 ? `${fmt(row.plannedBudgetNet)}đ` : <span className="text-slate-300 font-normal">—</span>}
                     </td>
                     <td className="border-l border-slate-100 px-4 py-2 text-right align-middle tabular-nums">
@@ -1087,20 +1087,20 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               })}
             </tbody>
             <tfoot>
-              <tr className="border-t border-slate-200 bg-slate-50/90 font-bold text-slate-900">
+              <tr className="border-t border-slate-200 bg-slate-50/90 font-semibold text-slate-900">
                 <td className="px-4 py-2" colSpan={2}>
                   Tổng cộng
                 </td>
                 <td className="border-l border-slate-200 px-3 py-2 text-right tabular-nums">
                   {fmt(overviewGrandTotals.refQty)}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums text-indigo-700 bg-indigo-50/40">
+                <td className="px-3 py-2 text-right tabular-nums text-blue-700 bg-blue-50/40">
                   {fmt(overviewGrandTotals.plannedQty)}
                 </td>
                 <td className="border-l border-slate-200 px-3 py-2 text-right tabular-nums">
                   {fmt(overviewGrandTotals.refBudgetNet)}đ
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums text-indigo-700 bg-indigo-50/40">
+                <td className="px-3 py-2 text-right tabular-nums text-blue-700 bg-blue-50/40">
                   {fmt(overviewGrandTotals.plannedBudgetNet)}đ
                 </td>
                 <td className="border-l border-slate-200 px-4 py-2 text-right tabular-nums">
@@ -1125,25 +1125,25 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 text-2xs">
               <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
                 <div className="text-slate-500">NMV mục tiêu</div>
-                <div className="font-bold tabular-nums text-slate-900">
+                <div className="font-semibold tabular-nums text-slate-900">
                   {ref41.gmvTargets.nmvPlan > 0 ? `${fmt(ref41.gmvTargets.nmvPlan)}đ` : '—'}
                 </div>
               </div>
               <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
                 <div className="text-slate-500">GMV Affiliate</div>
-                <div className="font-bold tabular-nums text-emerald-700">
+                <div className="font-semibold tabular-nums text-emerald-700">
                   {ref41.gmvTargets.videoAff > 0 ? `${fmt(ref41.gmvTargets.videoAff)}đ` : '—'}
                 </div>
               </div>
               <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
                 <div className="text-slate-500">GMV Kênh Brand</div>
-                <div className="font-bold tabular-nums text-indigo-700">
+                <div className="font-semibold tabular-nums text-blue-700">
                   {ref41.gmvTargets.videoSelf > 0 ? `${fmt(ref41.gmvTargets.videoSelf)}đ` : '—'}
                 </div>
               </div>
               <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
                 <div className="text-slate-500">GMV Live Brand</div>
-                <div className="font-bold tabular-nums text-teal-700">
+                <div className="font-semibold tabular-nums text-emerald-700">
                   {ref41.gmvTargets.liveInhouse + ref41.gmvTargets.liveCtv > 0
                     ? `${fmt(ref41.gmvTargets.liveInhouse + ref41.gmvTargets.liveCtv)}đ`
                     : '—'}
@@ -1151,13 +1151,13 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               </div>
               <div className="rounded-lg border border-amber-200 bg-amber-50/50 px-2.5 py-1.5">
                 <div className="text-amber-800">GMV 30 ngày trước</div>
-                <div className="font-bold tabular-nums text-amber-950">
+                <div className="font-semibold tabular-nums text-amber-950">
                   {ref41.gmvTargets.lastMonth30d > 0 ? `${fmt(ref41.gmvTargets.lastMonth30d)}đ` : '—'}
                 </div>
               </div>
               <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 px-2.5 py-1.5">
                 <div className="text-emerald-800">GMV 30 ngày này</div>
-                <div className="font-bold tabular-nums text-emerald-950">
+                <div className="font-semibold tabular-nums text-emerald-950">
                   {ref41.gmvTargets.thisMonth30d > 0 ? `${fmt(ref41.gmvTargets.thisMonth30d)}đ` : '—'}
                 </div>
               </div>
@@ -1275,7 +1275,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
         {visibleSections.length > 0 && (
           <div className="space-y-2">
             {(activeTab === 'ALL' || activeTab === 'CAST_KL') && ref41 && (ref41.kl4PlusTarget || 0) > 0 && (
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-200 bg-indigo-50/60 px-3 py-1.5 text-xs text-indigo-950">
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50/60 px-3 py-1.5 text-xs text-blue-950">
                 <span className="font-semibold">Video KL4–KL7</span>
                 <span className="font-semibold tabular-nums">
                   {fmt(kl4PlusPlanned)} / {fmt(ref41.kl4PlusTarget || 0)} video (
@@ -1297,7 +1297,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                   <tr>
                     <th
                       rowSpan={2}
-                      className="sticky left-0 z-20 min-w-[105px] max-w-[115px] sm:min-w-[190px] sm:max-w-none border-b border-r border-slate-200 bg-slate-50 px-2 sm:px-3 py-2 text-left font-bold text-slate-800"
+                      className="sticky left-0 z-20 min-w-[105px] max-w-[115px] sm:min-w-[190px] sm:max-w-none border-b border-r border-slate-200 bg-slate-50 px-2 sm:px-3 py-2 text-left font-semibold text-slate-800"
                     >
                       Hạng mục
                     </th>
@@ -1310,14 +1310,14 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                     {rows.map((r, wi) => weekHeader(r, wi))}
                     <th
                       colSpan={2}
-                      className="border-b border-l border-slate-200 bg-indigo-50/60 px-2 py-1.5 text-center font-bold text-indigo-950"
+                      className="border-b border-l border-slate-200 bg-blue-50/60 px-2 py-1.5 text-center font-semibold text-blue-950"
                     >
                       Tổng 4.1.1
                     </th>
                     {hasRef && (
                       <th
                         colSpan={2}
-                        className="border-b border-l border-slate-200 bg-slate-100/80 px-2 py-1.5 text-center font-bold text-slate-700"
+                        className="border-b border-l border-slate-200 bg-slate-100/80 px-2 py-1.5 text-center font-semibold text-slate-700"
                       >
                         Chỉ tiêu 4.1
                       </th>
@@ -1325,7 +1325,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                     {hasRef && (
                       <th
                         rowSpan={2}
-                        className="min-w-[90px] border-b border-l border-slate-200 bg-slate-50 px-2.5 py-2 text-right font-bold text-slate-700"
+                        className="min-w-[90px] border-b border-l border-slate-200 bg-slate-50 px-2.5 py-2 text-right font-semibold text-slate-700"
                       >
                         Đối soát
                       </th>
@@ -1342,10 +1342,10 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                         </th>
                       </React.Fragment>
                     ))}
-                    <th className="w-[56px] min-w-[56px] border-l border-slate-200 bg-indigo-50/40 px-2 py-1 text-right text-indigo-900">
+                    <th className="w-[56px] min-w-[56px] border-l border-slate-200 bg-blue-50/40 px-2 py-1 text-right text-blue-900">
                       SL
                     </th>
-                    <th className="w-[104px] min-w-[104px] border-l border-indigo-100 bg-indigo-50/40 px-2 py-1 text-right text-indigo-900">
+                    <th className="w-[104px] min-w-[104px] border-l border-blue-100 bg-blue-50/40 px-2 py-1 text-right text-blue-900">
                       Net
                     </th>
                     {hasRef && (
@@ -1376,7 +1376,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                         <tr className="bg-slate-100/80 border-y border-slate-200">
                           <td
                             colSpan={totalColSpan}
-                            className="sticky left-0 px-3 py-1.5 text-2xs font-bold uppercase tracking-wide text-slate-700"
+                            className="sticky left-0 px-3 py-1.5 text-2xs font-semibold uppercase tracking-wide text-slate-700"
                           >
                             {section}
                           </td>
@@ -1417,10 +1417,10 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                                   </td>
                                 </React.Fragment>
                               ))}
-                              <td className="border-l border-slate-200 bg-indigo-50/20 px-2 py-1 text-right tabular-nums font-bold text-slate-900">
+                              <td className="border-l border-slate-200 bg-blue-50/20 px-2 py-1 text-right tabular-nums font-semibold text-slate-900">
                                 {def.hasQty ? (t.qty > 0 ? fmt(t.qty) : <span className="text-slate-300 font-normal">—</span>) : ''}
                               </td>
-                              <td className="border-l border-indigo-100/70 bg-indigo-50/20 px-2 py-1 text-right tabular-nums font-semibold text-indigo-950">
+                              <td className="border-l border-blue-100/70 bg-blue-50/20 px-2 py-1 text-right tabular-nums font-semibold text-blue-950">
                                 {def.hasBudget ? (t.budget > 0 ? fmt(t.budget) : <span className="text-slate-300 font-normal">—</span>) : ''}
                               </td>
                               {hasRef && (
@@ -1440,7 +1440,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                           );
                         })}
                         {defs.length > 1 ? (
-                          <tr className="border-b border-slate-200 bg-slate-50/90 font-bold text-slate-900">
+                          <tr className="border-b border-slate-200 bg-slate-50/90 font-semibold text-slate-900">
                             <td className="sticky left-0 z-10 border-r border-slate-200 bg-slate-50 px-3 py-1.5">
                               Cộng {section.toLowerCase()}
                             </td>
@@ -1457,10 +1457,10 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                                 </td>
                               </React.Fragment>
                             ))}
-                            <td className="border-l border-slate-200 bg-indigo-50/50 px-2 py-1.5 text-right tabular-nums text-indigo-950">
+                            <td className="border-l border-slate-200 bg-blue-50/50 px-2 py-1.5 text-right tabular-nums text-blue-950">
                               {fmt(secQty)}
                             </td>
-                            <td className="border-l border-indigo-100 bg-indigo-50/50 px-2 py-1.5 text-right tabular-nums text-indigo-950">
+                            <td className="border-l border-blue-100 bg-blue-50/50 px-2 py-1.5 text-right tabular-nums text-blue-950">
                               {section === 'Suất FOC (0đ)' ? '0' : fmt(secBudget)}
                             </td>
                             {hasRef && (
@@ -1490,7 +1490,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
         {(activeTab === 'ALL' || activeTab === 'MULTI_PLATFORM') && (
           <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2">
-              <h4 className="text-xs font-bold text-slate-800">
+              <h4 className="text-xs font-semibold text-slate-800">
                 Đa sàn (Shopee · Threads · Facebook · Instagram)
               </h4>
               <div className="flex flex-wrap items-center gap-3 text-xs tabular-nums">
@@ -1521,7 +1521,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                     className={`rounded-xl border ${mp.borderClass} bg-white shadow-xs overflow-hidden`}
                   >
                     <div className={`flex flex-wrap items-center justify-between gap-2 border-b ${mp.borderClass} ${mp.headerBg} px-3.5 py-2`}>
-                      <span className={`rounded-md border px-2 py-0.5 text-xs font-bold ${mp.badgeClass}`}>
+                      <span className={`rounded-md border px-2 py-0.5 text-xs font-semibold ${mp.badgeClass}`}>
                         {mp.shortLabel}
                       </span>
                       <div className="flex flex-wrap items-center gap-2 text-2xs tabular-nums">
@@ -1643,7 +1643,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
           <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
             <div className="rounded-xl border border-rose-200 bg-white shadow-xs overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rose-200 bg-rose-50/70 px-3.5 py-2">
-                <span className="text-xs font-bold text-rose-900">
+                <span className="text-xs font-semibold text-rose-900">
                   Livestream Affiliate
                 </span>
                 <div className="flex items-center gap-2 text-2xs tabular-nums">
@@ -1733,21 +1733,21 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               </div>
             </div>
 
-            <div className="rounded-xl border border-teal-200 bg-white shadow-xs overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-teal-200 bg-teal-50/70 px-3.5 py-2">
-                <span className="text-xs font-bold text-teal-950">
+            <div className="rounded-xl border border-emerald-200 bg-white shadow-xs overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-200 bg-emerald-50/70 px-3.5 py-2">
+                <span className="text-xs font-semibold text-emerald-950">
                   Livestream kênh Brand
                 </span>
                 <div className="flex flex-wrap items-center gap-2 text-2xs tabular-nums">
-                  <span className="rounded bg-white px-2 py-0.5 font-semibold text-teal-900 border border-teal-200">
+                  <span className="rounded bg-white px-2 py-0.5 font-semibold text-emerald-900 border border-emerald-200">
                     Inhouse 3h: {fmt(totals.liveSelfInhouse)}
                     {hasRef ? ` / ${fmt(ref41?.liveSelf?.inhouse3h || 0)}` : ''}
                   </span>
-                  <span className="rounded bg-white px-2 py-0.5 font-semibold text-teal-900 border border-teal-200">
+                  <span className="rounded bg-white px-2 py-0.5 font-semibold text-emerald-900 border border-emerald-200">
                     CTV 2h: {fmt(totals.liveSelfCtv)}
                     {hasRef ? ` / ${fmt(ref41?.liveSelf?.ctv2h || 0)}` : ''}
                   </span>
-                  <span className="rounded bg-white px-2 py-0.5 font-semibold text-teal-900 border border-teal-200">
+                  <span className="rounded bg-white px-2 py-0.5 font-semibold text-emerald-900 border border-emerald-200">
                     Net: {fmt(totals.liveSelfBudget)}đ
                     {hasRef ? ` / ${fmt(ref41?.liveSelf?.totalCostNet || 0)}đ` : ''}
                   </span>

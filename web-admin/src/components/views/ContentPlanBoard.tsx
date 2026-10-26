@@ -98,8 +98,11 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
 }) => {
   const notify = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => onNotify?.(msg, type);
 
-  const [plans, setPlans] = useState<InputPlanBreakdownState[]>([]);
-  const [plansState, setPlansState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [plans, setPlans] = useState<InputPlanBreakdownState[]>(() => getCachedClientMonthlyPlans() || []);
+  const [plansState, setPlansState] = useState<'loading' | 'ready' | 'error'>(() => {
+    const cached = getCachedClientMonthlyPlans();
+    return cached && cached.length > 0 ? 'ready' : 'loading';
+  });
   const [month, setMonth] = useState(initialMonth || '');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(initialPlanId || null);
@@ -108,40 +111,15 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
 
   useEffect(() => {
     if (initialMonth && initialMonth !== month) {
-      setMonth(initialMonth);
+      queueMicrotask(() => setMonth(initialMonth));
     }
-  }, [initialMonth]);
+  }, [initialMonth, month]);
 
   useEffect(() => {
     if (initialPlanId && initialPlanId !== selectedId) {
-      setSelectedId(initialPlanId);
+      queueMicrotask(() => setSelectedId(initialPlanId));
     }
-  }, [initialPlanId]);
-
-  useEffect(() => {
-    const cached = getCachedClientMonthlyPlans();
-    if (cached && cached.length > 0) {
-      setPlans(cached);
-      setPlansState('ready');
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const stored = await fetchClientMonthlyPlans();
-        if (cancelled) return;
-        setPlans(stored.map(p => p.plan));
-        setPlansState('ready');
-      } catch (err) {
-        if (cancelled) return;
-        setPlansState('error');
-        notify(err instanceof Error ? err.message : 'Không tải được danh sách kế hoạch.', 'error');
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialPlanId, selectedId]);
 
   // Lắng nghe sự kiện cập nhật Brand Monthly Plans từ DB để tự động cập nhật
   const [brandPlansRevision, setBrandPlansRevision] = useState(0);
@@ -152,6 +130,25 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
     window.addEventListener('upbase:brand-monthly-plans-updated', handleBrandPlansUpdate);
     return () => window.removeEventListener('upbase:brand-monthly-plans-updated', handleBrandPlansUpdate);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const stored = await fetchClientMonthlyPlans();
+        if (cancelled) return;
+        setPlans(stored.map(p => p.plan));
+        setPlansState('ready');
+      } catch (err) {
+        if (cancelled) return;
+        setPlansState('error');
+        onNotify?.(err instanceof Error ? err.message : 'Không tải được danh sách kế hoạch.', 'error');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [brandPlansRevision, onNotify]);
 
   const months = useMemo(() => Array.from(new Set(plans.map(p => p.month))).sort().reverse(), [plans]);
   const activeMonth = month || initialMonth || months[0] || '';
@@ -212,7 +209,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
   const [catalog, setCatalog] = useState<BrandProductCatalog>({ groups: [] });
   useEffect(() => {
     if (!plan?.brandName) {
-      setCatalog({ groups: [] });
+      queueMicrotask(() => setCatalog({ groups: [] }));
       return;
     }
     let cancelled = false;

@@ -138,15 +138,15 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({
 
   useEffect(() => {
     if (initialMonth && initialMonth !== month) {
-      setMonth(initialMonth);
+      queueMicrotask(() => setMonth(initialMonth));
     }
-  }, [initialMonth]);
+  }, [initialMonth, month]);
 
   useEffect(() => {
     if (initialPlanId && initialPlanId !== selectedId) {
-      setSelectedId(initialPlanId);
+      queueMicrotask(() => setSelectedId(initialPlanId));
     }
-  }, [initialPlanId]);
+  }, [initialPlanId, selectedId]);
 
   useEffect(() => {
     let cancelled = false;

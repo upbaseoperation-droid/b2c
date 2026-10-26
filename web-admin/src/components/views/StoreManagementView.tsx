@@ -689,7 +689,7 @@ export function StoreManagementView({
             onClick={() => setActiveSubTab('MONTHLY_COEFF_SETUP')}
             className={`px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer inline-flex items-center gap-1.5 ${
               activeSubTab === 'MONTHLY_COEFF_SETUP'
-                ? 'bg-brand text-white shadow-2xs'
+                ? 'bg-surface text-ink shadow-2xs border border-line-strong'
                 : 'text-ink-2 hover:text-ink'
             }`}
           >

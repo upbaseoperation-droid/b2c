@@ -39,7 +39,7 @@ import type {
   SystemRegisteredVideo,
   VideoWeeklySnapshotItem,
 } from '../../lib/kocVideoWeeklyHistory';
-import { getKocLegalProfiles, LEGAL_TYPE_LABEL } from './kocUtils';
+import { getKocLegalProfiles, LEGAL_TYPE_LABEL, mask } from './kocUtils';
 import {
   Button,
   Chips,
@@ -182,8 +182,10 @@ export const UpaffiliateDataManagementPanel: React.FC<UpaffiliateDataManagementP
   }, []);
 
   useEffect(() => {
-    void loadVideoPerformanceData();
-    void loadStagingQueue();
+    queueMicrotask(() => {
+      void loadVideoPerformanceData();
+      void loadStagingQueue();
+    });
   }, [loadVideoPerformanceData, loadStagingQueue]);
 
   // Tính toán hiệu quả D14 / D30 / D60 và tổng lũy kế cho từng Video
@@ -699,7 +701,7 @@ export const UpaffiliateDataManagementPanel: React.FC<UpaffiliateDataManagementP
       render: (it) => (
         <div className="space-y-0.5 text-xs">
           {it.phone || it.zalo ? (
-            <span className="font-code text-ink font-medium">{it.phone || it.zalo}</span>
+            <span className="font-code text-ink font-medium">{mask(it.phone || it.zalo)}</span>
           ) : (
             <span className="text-2xs text-ink-3">Chưa có SĐT/Zalo</span>
           )}
@@ -818,7 +820,7 @@ export const UpaffiliateDataManagementPanel: React.FC<UpaffiliateDataManagementP
       render: (k) => (
         <div className="space-y-0.5 text-xs min-w-0 max-w-[195px]">
           <div className="font-code text-ink truncate">
-            {k.phone || k.zalo || 'Chưa cập nhật SĐT'}
+            {k.phone || k.zalo ? mask(k.phone || k.zalo) : 'Chưa cập nhật SĐT'}
           </div>
           <div className="text-2xs text-ink-2 truncate">{k.email || 'Chưa có Email'}</div>
           {k.shippingAddress && (
@@ -850,8 +852,8 @@ export const UpaffiliateDataManagementPanel: React.FC<UpaffiliateDataManagementP
               </span>
             </div>
             <div className="text-2xs text-ink-2 truncate font-code">
-              {primary.taxCode || primary.cccd || 'Thiếu CCCD/MST'} ·{' '}
-              {primary.bankAccount ? `${primary.bankName || 'NH'} ${primary.bankAccount}` : 'Thiếu STK'}
+              {primary.taxCode || (primary.cccd ? mask(primary.cccd) : 'Thiếu CCCD/MST')} ·{' '}
+              {primary.bankAccount ? `${primary.bankName || 'NH'} ${mask(primary.bankAccount)}` : 'Thiếu STK'}
             </div>
             {primary.frameworkContractCode && (
               <div className="text-2xs text-positive font-code">

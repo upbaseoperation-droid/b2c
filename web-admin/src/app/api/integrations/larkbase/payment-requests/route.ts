@@ -173,40 +173,49 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  await seedInitialPaymentSlips();
-  const config = getLarkPaymentIntegrationConfig();
-  const canSeeFullPayee =
-    isStaffGlobalAdminOrManager(user) ||
-    ['FINANCE', 'LEADER'].includes(user.role) ||
-    Boolean(user.permissions?.includes('canApprovePayment'));
-  const slips = (await listPaymentSlips())
-    .slice()
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .map(slip => {
-      if (canSeeFullPayee || slip.createdBy.trim().toLowerCase() === (user.name || '').trim().toLowerCase()) {
-        return slip;
-      }
-      return {
-        ...slip,
-        payee: {
-          ...slip.payee,
-          legalId: maskSensitiveCode(slip.payee.legalId),
-          bankAccount: maskSensitiveCode(slip.payee.bankAccount),
-        },
-      };
-    });
+  try {
+    await seedInitialPaymentSlips();
+    const config = getLarkPaymentIntegrationConfig();
+    const canSeeFullPayee =
+      isStaffGlobalAdminOrManager(user) ||
+      ['FINANCE', 'LEADER'].includes(user.role) ||
+      Boolean(user.permissions?.includes('canApprovePayment'));
+    const slips = (await listPaymentSlips())
+      .slice()
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map(slip => {
+        if (canSeeFullPayee || slip.createdBy.trim().toLowerCase() === (user.name || '').trim().toLowerCase()) {
+          return slip;
+        }
+        return {
+          ...slip,
+          payee: {
+            ...slip.payee,
+            legalId: maskSensitiveCode(slip.payee.legalId),
+            bankAccount: maskSensitiveCode(slip.payee.bankAccount),
+          },
+        };
+      });
 
-  return NextResponse.json({
-    config: {
-      domain: config.domain,
-      appToken: config.appToken,
-      paymentTableId: config.paymentTableId,
-      approvalDefCode: config.approvalDefCode,
-      hasLiveApprovalDef: config.hasLiveApprovalDef,
-      hasAnycrossWebhook: config.hasAnycrossWebhook,
-    },
-    slips,
-  });
+    return NextResponse.json({
+      config: {
+        domain: config.domain,
+        appToken: config.appToken,
+        paymentTableId: config.paymentTableId,
+        approvalDefCode: config.approvalDefCode,
+        hasLiveApprovalDef: config.hasLiveApprovalDef,
+        hasAnycrossWebhook: config.hasAnycrossWebhook,
+      },
+      slips,
+    });
+  } catch (err) {
+    return NextResponse.json(
+      {
+        error: err instanceof Error ? err.message : 'Lỗi khi tải danh sách phiếu đề nghị thanh toán.',
+      },
+      { status: 500 }
+    );
+  }
 }
 
 /**
@@ -840,9 +849,25 @@ export async function PATCH(request: NextRequest) {
       );
     }
     const allowedRoles = APPROVER_ROLES_BY_STATUS[currentStatus] || [];
-    if (!allowedRoles.includes(user.role)) {
+    const hasExplicitApprovePerm = Boolean(user.permissions?.includes('canApprovePayment'));
+    if (!allowedRoles.includes(user.role) && !hasExplicitApprovePerm) {
       return NextResponse.json(
         { success: false, error: 'FORBIDDEN_STEP', message: 'Bạn không có quyền duyệt bước hiện tại của phiếu này.' },
+        { status: 403 }
+      );
+    }
+    if (
+      currentStatus === 'PENDING_LEADER' &&
+      !isStaffGlobalAdminOrManager(user) &&
+      target.approvalRoute.bookingLeaderName &&
+      user.name.trim().toLowerCase() !== target.approvalRoute.bookingLeaderName.trim().toLowerCase()
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'FORBIDDEN_LEADER_SCOPE',
+          message: `Chỉ Trưởng nhóm phụ trách (${target.approvalRoute.bookingLeaderName}) hoặc cấp Quản lý mới có quyền duyệt bước Leader của phiếu này.`,
+        },
         { status: 403 }
       );
     }

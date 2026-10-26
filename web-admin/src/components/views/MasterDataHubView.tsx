@@ -110,6 +110,9 @@ interface CachedMasterCatalogPayload {
 }
 
 let clientMasterCatalogCache: CachedMasterCatalogPayload | null = null;
+const setMasterCatalogCache = (val: CachedMasterCatalogPayload | null) => {
+  clientMasterCatalogCache = val;
+};
 
 const serializeCatalog = (c: MasterCatalog): string =>
   JSON.stringify({
@@ -781,21 +784,21 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const [savedCatalog, setSavedCatalog] = useState(() => clientMasterCatalogCache ? serializeCatalog(clientMasterCatalogCache.data) : '');
   const draftCatalog: MasterCatalog = { brands: brandList, stores: storeList, products: productList, pillars: pillarList, ...extraCatalog };
   const catalogDirty = savedCatalog !== '' && serializeCatalog(draftCatalog) !== savedCatalog;
-  const acceptCatalog = useCallback((body: { revision: number; data: MasterCatalog; canEdit: boolean }, userId?: string) => {
+  const acceptCatalog = (body: { revision: number; data: MasterCatalog; canEdit: boolean }, userId?: string) => {
     const data = body.data;
     setBrandList(data.brands); setStoreList(data.stores); setProductList(data.products); setPillarList(data.pillars);
     setExtraCatalog({ castTiers: data.castTiers, niches: data.niches, formats: data.formats });
     setCatalogRevision(body.revision); setCanEditCatalog(body.canEdit); setSavedCatalog(serializeCatalog(data));
     if (userId) {
-      clientMasterCatalogCache = {
+      setMasterCatalogCache({
         revision: body.revision,
         data,
         canEdit: body.canEdit,
         userId,
         cachedAt: Date.now(),
-      };
+      });
     }
-  }, []);
+  };
   const reloadCatalog = async () => {
     const res = await fetch('/api/master-data', { cache: 'no-store' });
     const body = await res.json(); if (!res.ok) throw new Error(body.error);
@@ -804,7 +807,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const [prevCatalogUserId, setPrevCatalogUserId] = useState(currentUser.id);
   if (currentUser.id !== prevCatalogUserId) {
     setPrevCatalogUserId(currentUser.id);
-    clientMasterCatalogCache = null;
     setBrandList(brands && brands.length > 0 ? brands : DEFAULT_MASTER_CATALOG.brands);
     setStoreList(stores && stores.length > 0 ? stores : DEFAULT_MASTER_CATALOG.stores);
     setProductList(INITIAL_MASTER_PRODUCTS);
@@ -992,7 +994,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                     fallback={
                       <div
                         className="w-9 h-9 rounded-md text-white font-semibold text-xs flex items-center justify-center shrink-0 shadow-2xs"
-                        style={{ backgroundColor: b.color || '#4f46e5' }}
+                        style={{ backgroundColor: b.color || '#24457A' }}
                       >
                         {initials}
                       </div>

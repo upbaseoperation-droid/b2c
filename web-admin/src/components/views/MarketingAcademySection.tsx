@@ -171,7 +171,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
     });
 
     const total = activeQuiz.questions.length;
-    const pct = Math.round((score / total) * 100);
+    const pct = total > 0 ? Math.round((score / total) * 100) : 0;
     const passed = pct >= activeQuiz.passScorePct;
 
     const result = { score, total, pct, passed };
@@ -768,7 +768,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                     <span className="text-sm font-semibold">
                       {examResult.passed ? 'KẾT QUẢ: ĐẠT CHUẨN SÁT HẠCH' : 'KẾT QUẢ: CHƯA ĐẠT CHUẨN'}
                     </span>
-                    <span className="text-lg font-bold font-mono">
+                    <span className="text-lg font-semibold font-mono">
                       {examResult.score} / {examResult.total} ({examResult.pct}%)
                     </span>
                   </div>
@@ -788,7 +788,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                 <div className="p-4 rounded-xl border border-line bg-surface space-y-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-1">
-                      <span className="text-2xs font-bold text-accent uppercase tracking-wider">
+                      <span className="text-2xs font-semibold text-accent uppercase tracking-wider">
                         {activeQuiz.questions[currentQuestionIndex].type === 'SCENARIO_CASE'
                           ? 'Tình huống thực tế'
                           : 'Câu hỏi trắc nghiệm'}
@@ -815,7 +815,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                           }`}
                         >
                           <span
-                            className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                            className={`w-6 h-6 rounded-full flex items-center justify-center font-semibold text-xs shrink-0 ${
                               isSelected
                                 ? 'bg-accent text-white'
                                 : 'bg-sunken text-ink-3'
@@ -927,7 +927,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
                               key={opt.key}
                               className={`p-2 rounded border flex items-start gap-2.5 ${badgeClass}`}
                             >
-                              <span className="font-bold font-mono">{opt.key}.</span>
+                              <span className="font-semibold font-mono">{opt.key}.</span>
                               <span className="leading-relaxed">{opt.label}</span>
                               {isOptionCorrect && (
                                 <span className="ml-auto text-2xs font-semibold text-positive flex items-center gap-0.5">
@@ -1056,7 +1056,7 @@ export const MarketingAcademySection: React.FC<MarketingAcademySectionProps> = (
               <Field label="Cấp độ khó">
                 <Select
                   value={genDifficulty}
-                  onChange={(e) => setGenDifficulty(e.target.value as any)}
+                  onChange={(e) => setGenDifficulty(e.target.value as 'CƠ_BẢN' | 'NÂNG_CAO' | 'CHUYÊN_SÂU')}
                 >
                   <option value="CƠ_BẢN">Cơ bản</option>
                   <option value="NÂNG_CAO">Nâng cao</option>

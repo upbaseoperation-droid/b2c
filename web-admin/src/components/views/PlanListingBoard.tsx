@@ -101,15 +101,15 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
 
   useEffect(() => {
     if (initialMonth && initialMonth !== month) {
-      setMonth(initialMonth);
+      queueMicrotask(() => setMonth(initialMonth));
     }
-  }, [initialMonth]);
+  }, [initialMonth, month]);
 
   useEffect(() => {
     if (initialPlanId && initialPlanId !== selectedId) {
-      setSelectedId(initialPlanId);
+      queueMicrotask(() => setSelectedId(initialPlanId));
     }
-  }, [initialPlanId]);
+  }, [initialPlanId, selectedId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,7 +150,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
       const matchInitial =
         (initialPlanId && visiblePlans.find(p => p.id === initialPlanId)) ||
         (initialStoreName && visiblePlans.find(p => p.storeName === initialStoreName));
-      setSelectedId((matchInitial || visiblePlans[0]).id);
+      queueMicrotask(() => setSelectedId((matchInitial || visiblePlans[0]).id));
     }
   }, [visiblePlans, selectedId, initialPlanId, initialStoreName]);
 

@@ -255,28 +255,29 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
       });
 
       if (report.ok && report.outputText) {
-        let parsed: any = null;
+        let parsed: Record<string, unknown> | Array<Record<string, unknown>> | null = null;
         try {
           const jsonMatch = report.outputText.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
-            parsed = JSON.parse(jsonMatch[0]);
+            parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>;
           } else {
-            parsed = JSON.parse(report.outputText);
+            parsed = JSON.parse(report.outputText) as Record<string, unknown> | Array<Record<string, unknown>>;
           }
         } catch {
           // ignore
         }
 
-        const proposalList = Array.isArray(parsed?.proposals)
-          ? parsed.proposals
-          : Array.isArray(parsed)
-            ? parsed
-            : [];
+        const proposalList: Array<Record<string, string>> =
+          parsed && !Array.isArray(parsed) && Array.isArray(parsed.proposals)
+            ? (parsed.proposals as Array<Record<string, string>>)
+            : Array.isArray(parsed)
+              ? (parsed as Array<Record<string, string>>)
+              : [];
 
         if (proposalList.length > 0) {
           const brandPrefix = selectedBrand.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4) || 'ANG';
           const timestamp = Date.now().toString().slice(-4);
-          const newItems: ContentAngleItem[] = proposalList.map((p: any, idx: number) => ({
+          const newItems: ContentAngleItem[] = proposalList.map((p, idx: number) => ({
             id: `ang-prop-${Date.now()}-${idx + 1}`,
             code: `ANG-${brandPrefix}-${timestamp}-${idx + 1}`,
             name: p.name || `Góc đề xuất ${idx + 1}`,
@@ -622,7 +623,7 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
                                 <strong>{st.stageNumber}. {st.stageName}:</strong> {st.finding}
                               </span>
                               <span
-                                className={`shrink-0 text-3xs font-bold ${
+                                className={`shrink-0 text-3xs font-semibold ${
                                   st.status === 'PASS'
                                     ? 'text-positive'
                                     : st.status === 'FAIL'

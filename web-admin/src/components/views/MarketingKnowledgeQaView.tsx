@@ -66,6 +66,8 @@ import { MarketingAcademySection } from './MarketingAcademySection';
 import { pushSharedStateToDb } from '../../lib/sharedStateClient';
 import { formatVnd, formatVndShort } from '../../lib/format';
 
+const getPerfNowMs = () => performance.now();
+
 interface MarketingKnowledgeQaViewProps {
   currentUser: UserProfile;
   brands?: BrandDetail[];
@@ -521,7 +523,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
       kocs,
     });
 
-    const startTime = performance.now();
+    const startTime = getPerfNowMs();
     try {
       if (effectiveQaRoute.hasActiveExternalKey) {
         const ragSystemPrompt = buildRagPromptForMarketingQa({
@@ -541,7 +543,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
 
         if (res.ok) {
           const data = await res.json();
-          const latency = Math.round(performance.now() - startTime);
+          const latency = Math.round(getPerfNowMs() - startTime);
           const promptTokens = data.promptTokens || 600;
           const completionTokens = data.completionTokens || 350;
           const costReport = calculateExecutionCost(effectiveQaRoute.primaryModel, {
@@ -799,7 +801,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
   return (
     <div className="space-y-6">
       {/* KHUNG TRA CỨU TOÀN CỤC & HÀNH ĐỘNG ĐẦU TRANG */}
-      <div className="rounded-2xl border border-line bg-surface p-5 shadow-xs space-y-4">
+      <div className="rounded-xl border border-line bg-surface p-5 shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-ink-3 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -981,7 +983,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
             <div
               onClick={() => setActiveTab('library')}
-              className="p-5 rounded-2xl bg-surface border border-line hover:border-accent hover:shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
+              className="p-5 rounded-xl bg-surface border border-line hover:border-accent hover:shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div className="space-y-3">
                 <div className="w-10 h-10 rounded-xl bg-accent-soft text-accent flex items-center justify-center">
@@ -991,9 +993,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                   <h3 className="text-base font-semibold text-ink group-hover:text-accent transition-colors">
                     18 Chuyên đề nghiệp vụ
                   </h3>
-                  <p className="text-xs text-ink-3 mt-1">
-                    Toàn bộ cẩm nang từ phân cấp 69 gian, 12 bước lập kế hoạch, 110 quy tắc duyệt video đến cắt kỳ kế toán.
-                  </p>
                 </div>
               </div>
               <div className="pt-4 border-t border-line mt-4 flex items-center justify-between text-2xs font-semibold text-accent">
@@ -1004,7 +1003,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
 
             <div
               onClick={() => setActiveTab('academy')}
-              className="p-5 rounded-2xl bg-surface border border-line hover:border-accent hover:shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
+              className="p-5 rounded-xl bg-surface border border-line hover:border-accent hover:shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div className="space-y-3">
                 <div className="w-10 h-10 rounded-xl bg-accent-soft text-accent flex items-center justify-center">
@@ -1014,9 +1013,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                   <h3 className="text-base font-semibold text-ink group-hover:text-accent transition-colors">
                     Đào tạo & Khảo thí
                   </h3>
-                  <p className="text-xs text-ink-3 mt-1">
-                    Khóa học thực chiến, ngân hàng đề thi tình huống số liệu thật, sát hạch năng lực và cấp chứng chỉ quy trình.
-                  </p>
                 </div>
               </div>
               <div className="pt-4 border-t border-line mt-4 flex items-center justify-between text-2xs font-semibold text-accent">
@@ -1030,7 +1026,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                 setPlaybookSubTab('faqs');
                 setActiveTab('faqs');
               }}
-              className="p-5 rounded-2xl bg-surface border border-line hover:border-positive hover:shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
+              className="p-5 rounded-xl bg-surface border border-line hover:border-positive hover:shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div className="space-y-3">
                 <div className="w-10 h-10 rounded-xl bg-positive-soft text-positive flex items-center justify-center">
@@ -1040,9 +1036,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                   <h3 className="text-base font-semibold text-ink group-hover:text-positive transition-colors">
                     42 Câu hỏi thường gặp
                   </h3>
-                  <p className="text-xs text-ink-3 mt-1">
-                    Giải đáp mọi thắc mắc thực chiến về giá Net/Gross, xử lý hàng mẫu, gian hàng không có Leader, vi phạm TikTok.
-                  </p>
                 </div>
               </div>
               <div className="pt-4 border-t border-line mt-4 flex items-center justify-between text-2xs font-semibold text-positive">
@@ -1056,7 +1049,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                 setQuickTableSubTab('sla');
                 setActiveTab('tables');
               }}
-              className="p-5 rounded-2xl bg-surface border border-line hover:border-warning hover:shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
+              className="p-5 rounded-xl bg-surface border border-line hover:border-warning hover:shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div className="space-y-3">
                 <div className="w-10 h-10 rounded-xl bg-warning-soft text-warning flex items-center justify-center">
@@ -1066,9 +1059,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                   <h3 className="text-base font-semibold text-ink group-hover:text-warning transition-colors">
                     22 Thời hạn SLA cam kết
                   </h3>
-                  <p className="text-xs text-ink-3 mt-1">
-                    Quy chuẩn giờ chốt, thời gian gửi mẫu 48h, nộp demo 5 ngày, lịch cắt kỳ ngày 02 và 2 đợt mở cổng kế toán.
-                  </p>
                 </div>
               </div>
               <div className="pt-4 border-t border-line mt-4 flex items-center justify-between text-2xs font-semibold text-warning">
@@ -1082,7 +1072,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                 setPlaybookSubTab('objections');
                 setActiveTab('faqs');
               }}
-              className="p-5 rounded-2xl bg-surface border border-line hover:border-ink hover:shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
+              className="p-5 rounded-xl bg-surface border border-line hover:border-ink hover:shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div className="space-y-3">
                 <div className="w-10 h-10 rounded-xl bg-sunken text-ink flex items-center justify-center">
@@ -1092,9 +1082,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                   <h3 className="text-base font-semibold text-ink transition-colors">
                     15 Kịch bản đàm phán KOC
                   </h3>
-                  <p className="text-xs text-ink-3 mt-1">
-                    Mẫu tin nhắn Zalo gửi KOC khi ép giá, từ chối cấp Spark Ads, chậm video, bùng mẫu kèm phương án dự phòng.
-                  </p>
                 </div>
               </div>
               <div className="pt-4 border-t border-line mt-4 flex items-center justify-between text-2xs font-semibold text-ink">
@@ -1105,7 +1092,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
           </div>
 
           {/* BỘ LỌC THEO VAI TRÒ VẬN HÀNH & GỢI Ý NGHIỆP VỤ */}
-          <div className="rounded-2xl border border-line bg-surface p-5 space-y-4">
+          <div className="rounded-xl border border-line bg-surface p-5 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="text-sm font-semibold text-ink flex items-center gap-2">
                 <Users className="w-4 h-4 text-accent" />

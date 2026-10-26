@@ -435,16 +435,18 @@ export function ContractForm({
     legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
     ctvAcceptedDeals,
   });
-  latestPrefillCtxRef.current = {
-    koc,
-    deal: dealWithActiveProfile || deal,
-    brand,
-    existingRecords: data.records,
-    parentRecord,
-    parentFields: parentTemplate ? uniqueFields(parentTemplate) : [],
-    legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
-    ctvAcceptedDeals,
-  };
+  useEffect(() => {
+    latestPrefillCtxRef.current = {
+      koc,
+      deal: dealWithActiveProfile || deal,
+      brand,
+      existingRecords: data.records,
+      parentRecord,
+      parentFields: parentTemplate ? uniqueFields(parentTemplate) : [],
+      legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
+      ctvAcceptedDeals,
+    };
+  });
 
   // Tải mẫu (kèm vị trí ô). Hồ sơ đang sửa dùng đúng bản mẫu đã khóa của hồ sơ.
   useEffect(() => {

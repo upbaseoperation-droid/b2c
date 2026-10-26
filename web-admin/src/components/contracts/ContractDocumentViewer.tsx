@@ -328,11 +328,11 @@ export function ContractDocumentViewer({
       return (
         <React.Fragment key={idx}>
           <p
-            className={`${alignClass} ${block.bold ? 'font-bold' : ''} ${block.italic ? 'italic' : ''} ${
+            className={`${alignClass} ${block.bold ? 'font-semibold' : ''} ${block.italic ? 'italic' : ''} ${
               isMainTitle
-                ? 'text-[17px] sm:text-[18px] uppercase tracking-wide font-bold mt-4 mb-1 text-black'
+                ? 'text-lg uppercase tracking-wide font-semibold mt-4 mb-1 text-black'
                 : isClause
-                  ? 'mt-4 mb-1 text-[15px] font-bold text-black'
+                  ? 'mt-4 mb-1 text-base font-semibold text-black'
                   : 'my-1 text-black'
             }`}
           >
@@ -551,7 +551,7 @@ export function ContractDocumentViewer({
           className="mx-auto w-full max-w-[816px] min-h-[1056px] bg-white text-black shadow-[0_1px_3px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.08)] border border-[#d0d4d9] rounded-none px-6 py-8 sm:px-14 sm:py-12 selection:bg-[#fff2a8]"
         >
           {/* Header biểu mẫu chuẩn Microsoft Word */}
-          <div className="doc-header mb-6 pb-2 border-b border-[#d8d8d8] text-[11px] text-[#555] flex items-center justify-between gap-2">
+          <div className="doc-header mb-6 pb-2 border-b border-[#d8d8d8] text-2xs text-[#555] flex items-center justify-between gap-2">
             <span className="font-sans font-medium uppercase tracking-wider text-[#666]">Phòng Pháp chế · Upbase B2C</span>
             <div className="text-right font-mono text-[#333]">
               {headerBlocks.length > 0 ? (
@@ -577,7 +577,7 @@ export function ContractDocumentViewer({
           )}
 
           {/* Footer biểu mẫu chuẩn Microsoft Word */}
-          <div className="doc-footer mt-10 pt-2 border-t border-[#d8d8d8] text-[11px] text-[#666] flex flex-wrap items-center justify-between gap-2">
+          <div className="doc-footer mt-10 pt-2 border-t border-[#d8d8d8] text-2xs text-[#666] flex flex-wrap items-center justify-between gap-2">
             {footerBlocks.length > 0 ? (
               footerBlocks.map((b, i) => (
                 <div key={`ftr-${i}`}>{renderBlock(b, `ftr-${i}`)}</div>

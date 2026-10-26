@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser, isSandboxLoginAllowed } from '@/lib/larkAuth';
+import { USERS } from '@/lib/mockData';
 import { splitLinkInput, type LinkAirExpectation, type LinkAirResult } from '../../../../lib/linkAirCheck';
 import { checkSingleLinkServerless } from '../../../../lib/linkAirCheckServer';
 import { resolveExpectedCartInputUrls } from '../../../../lib/tiktokOpenSourceEngines';
@@ -17,6 +19,20 @@ interface RequestPayload {
  * tự động fallback sang bộ kiểm tra tích hợp sẵn trong web-admin khi chưa bật worker riêng.
  */
 export async function POST(req: NextRequest) {
+  const user = getAuthenticatedUser(req) || (process.env.NODE_ENV !== 'production' && isSandboxLoginAllowed() ? USERS[0] : null);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: 'UNAUTHORIZED', message: 'Vui lòng đăng nhập để kiểm tra link air video.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { success: false, error: 'FORBIDDEN', message: 'Tài khoản đối tác không có quyền gọi công cụ kiểm tra link air nội bộ.' },
+      { status: 403 }
+    );
+  }
+
   let body: RequestPayload;
   try {
     body = (await req.json()) as RequestPayload;

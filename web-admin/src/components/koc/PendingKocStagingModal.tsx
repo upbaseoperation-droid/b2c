@@ -240,7 +240,7 @@ export const PendingKocStagingModal: React.FC<PendingKocStagingModalProps> = ({
                       {item.phone || item.zalo ? (
                         <span className="inline-flex items-center gap-1 text-ink font-code text-2xs">
                           <Phone className="w-3 h-3 text-accent" />
-                          <span>{item.phone || item.zalo}</span>
+                          <span>{(() => { const v = (item.phone || item.zalo || '').trim(); return v.length > 4 ? `****${v.slice(-4)}` : v; })()}</span>
                         </span>
                       ) : item.email ? (
                         <span className="text-ink-3 text-2xs truncate max-w-[140px] block">

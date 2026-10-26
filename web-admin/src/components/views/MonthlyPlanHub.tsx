@@ -1191,7 +1191,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       onUpdatePlanStatus(
         planId,
         'LEAD_APPROVED',
-        `Trưởng phòng (${currentUser?.name || 'Lead'}) đã duyệt nhanh kế hoạch gian hàng ${storeName}.`,
+        `Giám đốc Marketing B2C (${currentUser?.name || 'Lead B2C'}) đã duyệt nhanh kế hoạch gian hàng ${storeName}.`,
         'Phê duyệt nhanh trên bảng quản trị kế hoạch tháng.'
       );
     }
@@ -1762,7 +1762,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <BrandAvatar brandName={editingBrandPlan.brandName} code={editingBrandPlan.brandCode} size={38} rounded="lg" />
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-sm sm:text-base font-bold text-ink truncate">
+                  <h1 className="text-sm sm:text-base font-semibold text-ink truncate">
                     Kế hoạch Tháng theo Brand — {editingBrandPlan.brandName}
                   </h1>
                   <span className="px-2 py-0.5 rounded bg-sunken text-ink-2 text-2xs font-semibold">
@@ -4076,11 +4076,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-semibold text-xs text-ink">{pkg.staffName}</span>
-                            <span className="px-1.5 py-0.5 rounded bg-canvas border border-line text-[10px] font-medium text-ink-2">
+                            <span className="px-1.5 py-0.5 rounded bg-canvas border border-line text-2xs font-medium text-ink-2">
                               {pkg.workstreamLabel}
                             </span>
                           </div>
-                          <div className="text-[11px] text-ink-3 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                          <div className="text-2xs text-ink-3 mt-0.5 flex items-center gap-1.5 flex-wrap">
                             {!pkg.isBrandPosition && (
                               <ChannelTag channel={pkg.platform} className="text-2xs px-1 py-0" />
                             )}
@@ -4095,8 +4095,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
                       <div className="p-2 rounded-lg bg-canvas/70 border border-line/70 flex items-center justify-between gap-2 text-xs">
                         <div className="min-w-0 flex-1">
-                          <div className="text-[11px] text-ink truncate" title={tiersSummary}>{tiersSummary}</div>
-                          <div className="text-[10px] text-ink-3">
+                          <div className="text-2xs text-ink truncate" title={tiersSummary}>{tiersSummary}</div>
+                          <div className="text-2xs text-ink-3">
                             {pkg.isBrandPosition ? 'Đầu việc cấp Brand' : `${pkg.rowIds.length} hạng mục giao riêng`}
                           </div>
                         </div>
@@ -4104,7 +4104,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           <div className="font-semibold text-accent text-xs">
                             {pkg.myQty} {pkg.isBrandPosition ? 'đầu mục' : 'video'}
                           </div>
-                          <div className="font-semibold text-ink text-[11px]">
+                          <div className="font-semibold text-ink text-2xs">
                             {pkg.myBudget > 0 ? formatVndShort(pkg.myBudget) : 'Theo Brand'}
                           </div>
                         </div>
@@ -5343,7 +5343,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           >
                             Sơ duyệt đạt (Chuyển GĐ)
                           </Button>
-                        ) : isStaffGlobalAdminOrManager(currentUser) ? (
+                        ) : isStaffGlobalAdminOrManager(currentUser) && (!hasLeader || iPlan.status === 'PENDING_APPROVAL' || iPlan.leaderApprovalStatus === 'ĐÃ_SƠ_DUYỆT') ? (
                           <Button
                             variant="primary"
                             size="sm"
@@ -5494,7 +5494,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           )}
                         >
                           <span>{iss.message}</span>
-                          <span className="shrink-0 font-mono text-[10px] uppercase">
+                          <span className="shrink-0 font-mono text-2xs uppercase">
                             {iss.severity === 'error' ? 'Lỗi chặn gửi' : iss.needsNote ? 'Cần giải trình' : 'Lưu ý giá'}
                           </span>
                         </li>
@@ -5644,7 +5644,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <div className="space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="font-semibold text-ink">1. Plan Tổng (4.1 &amp; Brand)</span>
-                  <span className="text-sm font-bold font-mono text-emerald-700 tabular-nums">
+                  <span className="text-sm font-semibold font-mono text-emerald-700 tabular-nums">
                     {governanceStats.countConfirmed41}/{governanceStats.totalB2cManaged}{' '}
                     <span className="text-2xs font-semibold">({governanceStats.coveragePct}%)</span>
                   </span>
@@ -5735,7 +5735,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <div className="space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="font-semibold text-ink">2. Plan Chi Tiết (4.1.1 Tuần)</span>
-                  <span className="text-sm font-bold font-mono text-blue-700 tabular-nums">
+                  <span className="text-sm font-semibold font-mono text-blue-700 tabular-nums">
                     {governanceStats.countHasWeekly411}/{governanceStats.totalB2cManaged}{' '}
                     <span className="text-2xs font-semibold">({governanceStats.weekly411Pct}%)</span>
                   </span>
@@ -5818,7 +5818,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <div className="space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="font-semibold text-ink">3. Kiểm Định Hợp Lệ (4.1 vs 4.1.1)</span>
-                  <span className="text-sm font-bold font-mono text-emerald-700 tabular-nums">
+                  <span className="text-sm font-semibold font-mono text-emerald-700 tabular-nums">
                     {governanceStats.countValidTotal}/{governanceStats.countWithPlan || 1}{' '}
                     <span className="text-2xs font-semibold">({governanceStats.validPct}%)</span>
                   </span>
@@ -5848,7 +5848,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       : []),
                     {
                       key: 'UNEXPLAINED_MISMATCH' as const,
-                      label: '⚠ Lệch 4.1 chưa giải trình',
+                      label: 'Lệch 4.1 chưa giải trình',
                       count: governanceStats.countUnexplainedMismatch,
                       badgeClass: 'bg-amber-50 text-amber-900 border-amber-200',
                     },
@@ -5918,7 +5918,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <div className="space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="font-semibold text-ink">4. Phê Duyệt &amp; Triển Khai</span>
-                  <span className="text-sm font-bold font-mono text-accent tabular-nums">
+                  <span className="text-sm font-semibold font-mono text-accent tabular-nums">
                     {governanceStats.countApproved}/{governanceStats.totalB2cManaged}{' '}
                     <span className="text-2xs font-semibold">({governanceStats.approvedPct}%)</span>
                   </span>

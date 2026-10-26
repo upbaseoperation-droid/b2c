@@ -110,7 +110,15 @@ export function pushSharedStateToDb(
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key: dbKey, data }),
-    }).catch(() => undefined);
+    })
+      .then((res) => {
+        if (!res.ok) {
+          console.warn(`[sharedStateClient] Đồng bộ "${dbKey}" trả về HTTP ${res.status}`);
+        }
+      })
+      .catch((err) => {
+        console.warn(`[sharedStateClient] Lỗi mạng khi đồng bộ "${dbKey}":`, err);
+      });
   }, debounceMs);
 
   debounceTimers.set(dbKey, timer);

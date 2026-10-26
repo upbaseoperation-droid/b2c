@@ -27,13 +27,17 @@ export const formatMoney = formatVndShort;
 export const formatPercent = (ratio: number, digits = 1) => `${nf(digits).format((ratio || 0) * 100)}%`;
 
 /** 08/10/2026 */
-export const formatDate = (d: Date | string) =>
-  new Intl.DateTimeFormat('vi-VN', {
+export const formatDate = (d?: Date | string | number | null): string => {
+  if (!d) return '—';
+  const parsed = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(parsed.getTime())) return typeof d === 'string' && d.trim() ? d.trim() : '—';
+  return new Intl.DateTimeFormat('vi-VN', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
     timeZone: 'Asia/Ho_Chi_Minh',
-  }).format(new Date(d));
+  }).format(parsed);
+};
 
 /**
  * Định dạng thời gian chuẩn múi giờ Việt Nam (GMT+7): "16:25:41 · 20/10/2026"
