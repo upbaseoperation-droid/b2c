@@ -26,6 +26,7 @@ import { INITIAL_CONTENT_ANGLES, generateAiAngleSuggestions } from '../../lib/co
 import { INITIAL_MASTER_PILLARS } from '../../lib/selfChannelData';
 import { INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
 import { getVietnamDateYmd } from '../../lib/format';
+import { loadSavedBrandAngles, SAVED_BRAND_ANGLES_EVENT } from '../../lib/contentContextBuilder';
 
 interface ContentAngleSetupViewProps {
   currentUser?: UserProfile | null;
@@ -195,6 +196,28 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
     setAngles(initialScopedAngles);
   }
 
+  // Góc nội dung đã lưu từ nhãn hàng và đồng bộ sự kiện tức thì
+  const [savedAngles, setSavedAngles] = useState<ContentAngleItem[]>(() => loadSavedBrandAngles(brandName));
+  React.useEffect(() => {
+    const handleUpdate = () => {
+      setSavedAngles(loadSavedBrandAngles(brandName));
+    };
+    window.addEventListener(SAVED_BRAND_ANGLES_EVENT, handleUpdate);
+    return () => window.removeEventListener(SAVED_BRAND_ANGLES_EVENT, handleUpdate);
+  }, [brandName]);
+
+  const effectiveAngles = useMemo(() => {
+    if (!savedAngles || savedAngles.length === 0) return angles;
+    const map = new Map<string, ContentAngleItem>();
+    savedAngles.forEach(a => map.set(a.id, a));
+    angles.forEach(a => {
+      if (!map.has(a.id)) {
+        map.set(a.id, a);
+      }
+    });
+    return Array.from(map.values());
+  }, [savedAngles, angles]);
+
   // Active View Mode: 'CARDS' | 'MATRIX' | 'TABLE'
   const [viewMode, setViewMode] = useState<'CARDS' | 'MATRIX' | 'TABLE'>('CARDS');
 
@@ -244,9 +267,9 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
   const availableStores = useMemo(() => {
     const set = new Set<string>();
     products.forEach(p => { if (p.storeName) set.add(p.storeName); });
-    angles.forEach(a => { if (a.storeName) set.add(a.storeName); });
+    effectiveAngles.forEach(a => { if (a.storeName) set.add(a.storeName); });
     return Array.from(set);
-  }, [products, angles]);
+  }, [products, effectiveAngles]);
 
   // Filtered Products based on selected store
   const availableProducts = useMemo(() => {
@@ -262,7 +285,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
 
   // Filtered Angles
   const filteredAngles = useMemo(() => {
-    return angles.filter(angle => {
+    return effectiveAngles.filter(angle => {
       const matchSearch = 
         angle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         angle.hookIdea.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -280,11 +303,11 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
 
       return true;
     });
-  }, [angles, searchTerm, selectedStore, selectedProduct, selectedPillar, selectedStatus]);
+  }, [effectiveAngles, searchTerm, selectedStore, selectedProduct, selectedPillar, selectedStatus]);
 
   // Overview metrics
-  const activeCount = useMemo(() => angles.filter(a => a.status === 'ACTIVE').length, [angles]);
-  const totalBookingsApplied = useMemo(() => angles.reduce((sum, a) => sum + (a.usageCount || 0), 0), [angles]);
+  const activeCount = useMemo(() => effectiveAngles.filter(a => a.status === 'ACTIVE').length, [effectiveAngles]);
+  const totalBookingsApplied = useMemo(() => effectiveAngles.reduce((sum, a) => sum + (a.usageCount || 0), 0), [effectiveAngles]);
   
   // Matrix data calculation: rows = unique products, columns = pillars
   const matrixProducts = useMemo(() => {
@@ -817,7 +840,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
 
                 <tbody className="divide-y divide-slate-200">
                   {matrixProducts.map(product => {
-                    const productAngles = angles.filter(a => a.productId === product.id || a.productSku === product.sku);
+                    const productAngles = effectiveAngles.filter(a => a.productId === product.id || a.productSku === product.sku);
 
                     return (
                       <tr key={product.id} className="hover:bg-slate-50/70 transition">

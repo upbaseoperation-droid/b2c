@@ -713,16 +713,42 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                       setIsRunningLlmReview(true);
                       try {
                         const latestPrompt = getEffectiveConfigForPurpose('SCRIPT_REVIEW').purpose.systemInstruction;
+                        const bannedList = (detectedBrandProfile?.contentRules?.banned || []).map(
+                          (b) => `"${b.phrase}" (thay bằng: "${b.replacement || 'diễn đạt tự nhiên'}")`
+                        );
+                        const uspsList = (detectedBrandProfile?.products || []).flatMap(p => p.usps || []);
+                        const disclaimers = (detectedBrandProfile?.legal || []).map(l => l.disclaimer).filter(Boolean);
+                        const hashtags = detectedBrandProfile?.contentRules?.mandatoryHashtags || [];
+                        const isGuardrails =
+                          script.reviewMode === 'VETTING_GUARDRAILS' ||
+                          script.kocTier === 'TIER_1_CELEB' ||
+                          script.kocTier === 'TIER_2_MACRO';
+
                         const inputContext = [
                           `[DỮ LIỆU PHÂN HỆ: Kiểm Duyệt & Biên Tập Kịch Bản Video KOC]`,
                           `- Nhãn hàng: ${detectedBrandProfile?.brandName || script.campaignTitle}`,
                           `- Chiến dịch: ${script.campaignTitle} | KOC: ${script.kocName} (${script.kocId})`,
-                          `- Từ cấm của nhãn hàng: ${(detectedBrandProfile?.contentRules?.banned?.map((b) => b.phrase) || []).join(', ') || 'Không có'}`,
-                          `- Mở đầu (3s): ${script.hook}`,
+                          detectedBrandProfile?.positioning?.slogan ? `- Định vị nhãn hàng: ${detectedBrandProfile.positioning.slogan}` : '',
+                          detectedBrandProfile?.positioning?.toneOfVoice ? `- Giọng văn: ${detectedBrandProfile.positioning.toneOfVoice}` : '',
+                          detectedBrandProfile?.positioning?.targetAudience ? `- Khách hàng mục tiêu: ${detectedBrandProfile.positioning.targetAudience}` : '',
+                          detectedBrandProfile?.positioning?.keyMessage ? `- Thông điệp chính: ${detectedBrandProfile.positioning.keyMessage}` : '',
+                          uspsList.length > 0 ? `- USP sản phẩm nhãn hàng: ${uspsList.slice(0, 5).join('; ')}` : '',
+                          bannedList.length > 0
+                            ? `- Danh sách từ cấm kèm từ thay thế: ${bannedList.join(', ')}`
+                            : `- Từ cấm của nhãn hàng: Không có`,
+                          disclaimers.length > 0 ? `- Khuyến cáo pháp lý bắt buộc (disclaimer): ${disclaimers.join('; ')}` : '',
+                          hashtags.length > 0 ? `- Hashtag bắt buộc: ${hashtags.join(' ')}` : '',
+                          isGuardrails && (script.mandatoryShots || detectedBrandProfile?.contentRules?.visualDo?.length)
+                            ? `- Cảnh quay bắt buộc (Mandatory Shots): ${script.mandatoryShots || (detectedBrandProfile?.contentRules?.visualDo || []).join('; ')}`
+                            : '',
+                          isGuardrails && script.rightsGuardrails
+                            ? `- Ràng buộc quyền & mã Spark Ads (Rights Guardrails): ${script.rightsGuardrails}`
+                            : '',
+                          `- Mở đầu (Hook 3s): ${script.hook}`,
                           `- Nỗi đau (Pain Point): ${script.painPoint}`,
-                          `- Giải pháp & USP: ${script.solutionAndUsp}`,
+                          `- Giải pháp & USP kịch bản: ${script.solutionAndUsp}`,
                           `- Kêu gọi hành động (CTA): ${script.callToAction}`,
-                        ].join('\n');
+                        ].filter(Boolean).join('\n');
                         const res = await executeOperationalReport({
                           purposeId: 'SCRIPT_REVIEW',
                           inputContextText: inputContext,

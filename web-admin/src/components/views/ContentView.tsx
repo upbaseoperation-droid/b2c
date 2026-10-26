@@ -18,6 +18,7 @@ import {
   Lightbulb,
   ShieldAlert,
   RefreshCw,
+  Bookmark,
 } from 'lucide-react';
 import { ScriptReviewItem, ContentItemModel, PublicationItemModel, KocItem, BookingDealItem, InputPlanBreakdownState } from '../../lib/types';
 import { INITIAL_SCRIPTS, INITIAL_CONTENT_ITEMS, INITIAL_PUBLICATIONS, INITIAL_DEALS } from '../../lib/mockData';
@@ -41,6 +42,7 @@ import { ScriptReviewModal } from '../ScriptReviewModal';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
 import { ContentCopilotModal } from '../content/ContentCopilotModal';
+import { ContentPerformanceReviewModal } from '../content/ContentPerformanceReviewModal';
 
 interface ContentViewProps {
   onScriptApprovedNotification?: (dealCode: string) => void;
@@ -96,6 +98,8 @@ export const ContentView: React.FC<ContentViewProps> = ({
   const [isVideoInspectorOpen, setIsVideoInspectorOpen] = useState(false);
   const [inspectInitialUrl, setInspectInitialUrl] = useState<string>('');
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [isPerfReviewOpen, setIsPerfReviewOpen] = useState(false);
+  const [selectedPubForReview, setSelectedPubForReview] = useState<PublicationItemModel | null>(null);
   const [filterBrand, setFilterBrand] = useState<string>('ALL');
   const [filterProduct, setFilterProduct] = useState<string>('');
   const [isSyncingPlans, setIsSyncingPlans] = useState<boolean>(false);
@@ -670,6 +674,14 @@ export const ContentView: React.FC<ContentViewProps> = ({
           items={[
             { label: 'Rà soát kịch bản & từ cấm', icon: FileText, onSelect: () => setIsScriptReportOpen(true) },
             { label: 'Gợi ý & Soát xét', icon: Lightbulb, onSelect: () => setIsCopilotOpen(true) },
+            {
+              label: 'Đánh giá bài đăng & lưu mẫu',
+              icon: Bookmark,
+              onSelect: () => {
+                setSelectedPubForReview(null);
+                setIsPerfReviewOpen(true);
+              },
+            },
           ]}
         />
         <Button
@@ -1021,17 +1033,30 @@ export const ContentView: React.FC<ContentViewProps> = ({
           flush
           title="Bài đăng thực tế & bàn giao mã Spark Ads"
           actions={
-            <Button
-              size="sm"
-              variant="primary"
-              icon={Video}
-              onClick={() => {
-                setInspectInitialUrl('');
-                setIsVideoInspectorOpen(true);
-              }}
-            >
-              Kiểm tra & Nghiệm thu link video mới
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={Bookmark}
+                onClick={() => {
+                  setSelectedPubForReview(null);
+                  setIsPerfReviewOpen(true);
+                }}
+              >
+                Đánh giá hiệu quả & lưu mẫu
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                icon={Video}
+                onClick={() => {
+                  setInspectInitialUrl('');
+                  setIsVideoInspectorOpen(true);
+                }}
+              >
+                Kiểm tra & Nghiệm thu link video mới
+              </Button>
+            </div>
           }
         >
           <div className="overflow-x-auto">
@@ -1098,6 +1123,16 @@ export const ContentView: React.FC<ContentViewProps> = ({
                     <td className="p-3.5 pr-5 text-right sm:sticky sm:right-0 sm:z-10 bg-surface group-hover:bg-canvas border-l border-line">
                       <div className="flex flex-col items-end gap-1">
                         <Status tone="positive">Đã đối soát</Status>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedPubForReview(pub);
+                            setIsPerfReviewOpen(true);
+                          }}
+                          className="text-2xs font-semibold text-positive hover:underline cursor-pointer"
+                        >
+                          Đánh giá & lưu mẫu
+                        </button>
                         <button
                           type="button"
                           onClick={() => {
@@ -1453,6 +1488,16 @@ export const ContentView: React.FC<ContentViewProps> = ({
           setNewCta(data.cta);
           setIsCreateScriptOpen(true);
         }}
+        onNotify={onNotify}
+      />
+
+      <ContentPerformanceReviewModal
+        open={isPerfReviewOpen}
+        onClose={() => setIsPerfReviewOpen(false)}
+        brandProfiles={profiles}
+        publications={publications}
+        contentItems={contentItems}
+        initialPublication={selectedPubForReview}
         onNotify={onNotify}
       />
     </div>

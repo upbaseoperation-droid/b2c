@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Button, Field, Modal, Select, Status, Textarea } from '../ui';
-import { Lightbulb, ShieldCheck, Sparkles, Check, Copy } from 'lucide-react';
+import { Button, Field, Input, Modal, Select, Status, Textarea } from '../ui';
+import { Lightbulb, ShieldCheck, FileText, Check, Copy, Bookmark } from 'lucide-react';
 import { INITIAL_CONTENT_ANGLES, generateAiAngleSuggestions } from '../../lib/contentAngleData';
 import { analyzeScriptWithAi } from '../../lib/aiScriptAnalyzer';
 import { useBrandProfiles, brandProfileToKnowledgeBase, findBrandProfile } from '../../lib/brands/useBrandProfiles';
@@ -14,6 +14,11 @@ import {
   FUNNEL_STAGE_OPTIONS,
   inferSlotFunnelStage,
 } from '../../lib/contentPlanRules';
+import {
+  loadSavedBrandAngles,
+  saveBrandAngleItem,
+  buildBrandContentContextPrompt,
+} from '../../lib/contentContextBuilder';
 
 export interface AppliedAngleData {
   angleName: string;
@@ -62,6 +67,10 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
   const [scriptInput, setScriptInput] = useState(initialScript);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [kocChannelInput, setKocChannelInput] = useState('');
+  const [customProposals, setCustomProposals] = useState<ContentAngleItem[]>([]);
+  const [isGeneratingProposals, setIsGeneratingProposals] = useState(false);
+  const [savedAngleIds, setSavedAngleIds] = useState<Set<string>>(new Set());
 
   // Sync khi mở modal
   const syncKey = `${open}|${brandName}|${productName}|${initialPillar}|${initialScript}`;
@@ -89,6 +98,9 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
 
   // Kho Góc nội dung (Angles)
   const angleSuggestions = useMemo(() => {
+    // 0. Góc nội dung đã lưu từ nhãn hàng
+    const saved = loadSavedBrandAngles(selectedBrand);
+
     // 1. Tìm các angle có sẵn trong danh mục chuẩn khớp sản phẩm hoặc thương hiệu
     const exact = INITIAL_CONTENT_ANGLES.filter(
       a =>
@@ -99,8 +111,21 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
     // 2. Nếu thiếu thì bổ sung từ thuật toán sinh theo pillar và sản phẩm
     const generated = generateAiAngleSuggestions(activeProduct, selectedPillar, selectedBrand);
 
-    return [...exact, ...generated].slice(0, 8);
-  }, [activeProduct, selectedBrand, selectedPillar]);
+    // Gộp customProposals + saved lên đầu, loại trừ trùng ID
+    const combined: ContentAngleItem[] = [];
+    const seen = new Set<string>();
+
+    [...customProposals, ...saved, ...exact, ...generated].forEach((item, idx) => {
+      const partialItem = item as Partial<ContentAngleItem>;
+      const key = partialItem.id || `gen-${partialItem.name}-${idx}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        combined.push(item as ContentAngleItem);
+      }
+    });
+
+    return combined.slice(0, 16);
+  }, [activeProduct, selectedBrand, selectedPillar, customProposals]);
 
   // Kết quả Soát xét kịch bản (Pre-check)
   const scriptAudit = useMemo(() => {
@@ -177,11 +202,132 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
     }
   };
 
+  const handleSaveAngleToStore = (ang: Partial<ContentAngleItem>) => {
+    const itemToSave: ContentAngleItem = {
+      id: ang.id || `ang-saved-${Date.now()}`,
+      code: ang.code || `ANG-${Date.now().toString().slice(-4)}`,
+      name: ang.name || `${selectedPillar} - ${activeProduct}`,
+      productId: ang.productId || `prod-saved`,
+      productName: ang.productName || activeProduct,
+      productSku: ang.productSku || '',
+      brandId: ang.brandId || `brand-saved`,
+      brandName: ang.brandName || selectedBrand,
+      storeId: ang.storeId || `store-saved`,
+      storeName: ang.storeName || `${selectedBrand} Official`,
+      platform: ang.platform || 'TIKTOK_SHOP',
+      pillarId: ang.pillarId || 'pillar-1',
+      pillarName: ang.pillarName || selectedPillar,
+      targetAudience: ang.targetAudience || brandProfile?.positioning?.targetAudience || 'Khách hàng mục tiêu',
+      painPoint: ang.painPoint || '',
+      keySellingPoints: ang.keySellingPoints || [],
+      solutionApproach: ang.solutionApproach || '',
+      hookIdea: ang.hookIdea || '',
+      callToAction: ang.callToAction || '',
+      suggestedFormat: ang.suggestedFormat || 'Talking Head + B-roll thực tế',
+      status: 'ACTIVE',
+      usageCount: ang.usageCount || 0,
+      avgViewsEstimate: ang.avgViewsEstimate || 50000,
+      createdBy: ang.createdBy || 'Upbase Ops',
+      createdAt: ang.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    saveBrandAngleItem(itemToSave);
+    setSavedAngleIds(prev => new Set(prev).add(itemToSave.id));
+    onNotify?.(`Đã lưu góc "${itemToSave.name}" vào kho góc mẫu nhãn hàng.`, 'success');
+  };
+
+  const handleGenerateNewProposals = async () => {
+    setIsGeneratingProposals(true);
+    try {
+      const promptContext = buildBrandContentContextPrompt({
+        profile: brandProfile,
+        productName: activeProduct,
+        pillar: selectedPillar,
+        funnelStage: selectedFunnel,
+        kocName: kocChannelInput.trim() || undefined,
+      });
+
+      const report = await executeOperationalReport({
+        purposeId: 'CONTENT_PROPOSAL',
+        moduleTitle: `Đề xuất góc nội dung (${selectedBrand} - ${activeProduct})`,
+        sourceTag: 'SCRIPT_REVIEW',
+        inputContextText: promptContext,
+      });
+
+      if (report.ok && report.outputText) {
+        let parsed: any = null;
+        try {
+          const jsonMatch = report.outputText.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            parsed = JSON.parse(jsonMatch[0]);
+          } else {
+            parsed = JSON.parse(report.outputText);
+          }
+        } catch {
+          // ignore
+        }
+
+        const proposalList = Array.isArray(parsed?.proposals)
+          ? parsed.proposals
+          : Array.isArray(parsed)
+            ? parsed
+            : [];
+
+        if (proposalList.length > 0) {
+          const brandPrefix = selectedBrand.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4) || 'ANG';
+          const timestamp = Date.now().toString().slice(-4);
+          const newItems: ContentAngleItem[] = proposalList.map((p: any, idx: number) => ({
+            id: `ang-prop-${Date.now()}-${idx + 1}`,
+            code: `ANG-${brandPrefix}-${timestamp}-${idx + 1}`,
+            name: p.name || `Góc đề xuất ${idx + 1}`,
+            productId: `prod-${brandPrefix.toLowerCase()}`,
+            productName: activeProduct,
+            productSku: `${brandPrefix}-SKU`,
+            brandId: `brand-${brandPrefix.toLowerCase()}`,
+            brandName: selectedBrand,
+            storeId: `store-${brandPrefix.toLowerCase()}`,
+            storeName: `${selectedBrand} Official`,
+            platform: 'TIKTOK_SHOP' as const,
+            pillarId: 'pillar-auto',
+            pillarName: selectedPillar,
+            funnelStage: selectedFunnel,
+            targetAudience: brandProfile?.positioning?.targetAudience || 'Khách hàng mục tiêu',
+            painPoint: p.painPoint || '',
+            keySellingPoints: p.solutionApproach ? [p.solutionApproach] : [],
+            solutionApproach: p.solutionApproach || '',
+            hookIdea: p.hookIdea || '',
+            callToAction: p.callToAction || '',
+            suggestedFormat: p.suggestedFormat || 'Talking Head + B-roll thực tế',
+            feasibilityScore: 'HIGH_VIRAL' as const,
+            status: 'ACTIVE' as const,
+            usageCount: 0,
+            avgViewsEstimate: 50000,
+            createdBy: 'Hệ thống Upbase',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }));
+
+          setCustomProposals(prev => [...newItems, ...prev]);
+          onNotify?.(`Đã tạo thành công ${newItems.length} góc đề xuất mới.`, 'success');
+        } else {
+          onNotify?.('Không thể phân tích dữ liệu đề xuất, vui lòng thử lại.', 'warning');
+        }
+      } else {
+        onNotify?.('Lỗi kết nối khi tạo góc đề xuất.', 'error');
+      }
+    } catch (err) {
+      console.error('Lỗi khi tạo góc đề xuất:', err);
+      onNotify?.('Có lỗi xảy ra khi tạo góc đề xuất mới.', 'error');
+    } finally {
+      setIsGeneratingProposals(false);
+    }
+  };
+
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title="Góc nội dung & Soát xét kịch bản"
+      title="Đề xuất góc nội dung & Kiểm tra kịch bản"
       size="xl"
       footer={
         <div className="flex items-center justify-between w-full">
@@ -229,39 +375,62 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
         </div>
 
         {/* Thanh điều khiển ngữ cảnh */}
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 bg-sunken/60 p-2.5 rounded-md">
-          <Field label="Sản phẩm mục tiêu">
-            <Select value={activeProduct} onChange={e => setSelectedProduct(e.target.value)}>
-              {brandProducts.map(p => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </Select>
-          </Field>
+        <div className="bg-sunken/60 p-2.5 rounded-md space-y-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <Field label="Sản phẩm mục tiêu">
+              <Select value={activeProduct} onChange={e => setSelectedProduct(e.target.value)}>
+                {brandProducts.map(p => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </Select>
+            </Field>
 
-          <Field label="Trụ cột nội dung (Pillar)">
-            <Select value={selectedPillar} onChange={e => setSelectedPillar(e.target.value)}>
-              {CONTENT_PILLARS.map(p => (
-                <option key={p.name} value={p.name}>
-                  {p.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
+            <Field label="Trụ cột nội dung (Pillar)">
+              <Select value={selectedPillar} onChange={e => setSelectedPillar(e.target.value)}>
+                {CONTENT_PILLARS.map(p => (
+                  <option key={p.name} value={p.name}>
+                    {p.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
 
-          <Field label="Giai đoạn Phễu truyền thông">
-            <Select
-              value={selectedFunnel}
-              onChange={e => setSelectedFunnel(e.target.value as ContentFunnelStage)}
+            <Field label="Giai đoạn Phễu truyền thông">
+              <Select
+                value={selectedFunnel}
+                onChange={e => setSelectedFunnel(e.target.value as ContentFunnelStage)}
+              >
+                {FUNNEL_STAGE_OPTIONS.map(f => (
+                  <option key={f.value} value={f.value}>
+                    {f.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+
+          <div className="flex flex-wrap items-end justify-between gap-2 pt-1 border-t border-line/60">
+            <div className="flex-1 min-w-[200px]">
+              <Field label="Kênh KOC dự kiến (tùy chọn)">
+                <Input
+                  value={kocChannelInput}
+                  onChange={e => setKocChannelInput(e.target.value)}
+                  placeholder="Ví dụ: @chuyenmebe, @reviewda..."
+                />
+              </Field>
+            </div>
+            <Button
+              size="sm"
+              variant="primary"
+              icon={Lightbulb}
+              disabled={isGeneratingProposals}
+              onClick={() => void handleGenerateNewProposals()}
             >
-              {FUNNEL_STAGE_OPTIONS.map(f => (
-                <option key={f.value} value={f.value}>
-                  {f.label}
-                </option>
-              ))}
-            </Select>
-          </Field>
+              {isGeneratingProposals ? 'Đang tạo góc...' : 'Tạo 3 góc đề xuất mới'}
+            </Button>
+          </div>
         </div>
 
         {/* TAB 1: GỢI Ý GÓC TIẾP CẬN & HOOK 3S */}
@@ -330,10 +499,18 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
                     <Button
                       size="sm"
                       variant="secondary"
+                      icon={Bookmark}
+                      onClick={() => handleSaveAngleToStore(ang)}
+                    >
+                      {savedAngleIds.has(ang.id || '') ? 'Đã lưu góc mẫu' : 'Lưu góc mẫu'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
                       disabled={isGenerating}
+                      icon={FileText}
                       onClick={() => void handleGenerateScriptDraft(ang)}
                     >
-                      <Sparkles className="h-3.5 w-3.5 mr-1 text-accent" />
                       Soạn kịch bản nháp
                     </Button>
                     {onApplyAngle && (

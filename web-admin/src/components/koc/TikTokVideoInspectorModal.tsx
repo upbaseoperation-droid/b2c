@@ -21,6 +21,8 @@ import {
 import { formatNumber, getVietnamDateYmd } from '../../lib/format';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
 import { VideoProductScreenshotModal } from '../contracts/VideoProductScreenshotModal';
+import { useBrandProfiles, findBrandProfile } from '../../lib/brands/useBrandProfiles';
+import { executeOperationalReport } from '../../lib/operationalReportService';
 import {
   Button,
   DataTable,
@@ -79,6 +81,14 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
   const [acceptedVideoIds, setAcceptedVideoIds] = useState<Set<string>>(new Set());
   const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
   const [savedScreenshotCount, setSavedScreenshotCount] = useState<number>(0);
+  const { profiles } = useBrandProfiles();
+  const [isAuditingTranscript, setIsAuditingTranscript] = useState(false);
+  const [transcriptAuditResult, setTranscriptAuditResult] = useState<{
+    ok?: boolean;
+    outputText?: string;
+    output?: string;
+    providerUsed?: string;
+  } | null>(null);
 
   const currentInitialKey = `${isOpen}:${initialDeal?.dealCode || ''}:${initialUrl}`;
   const [prevInitialKey, setPrevInitialKey] = useState<string>(currentInitialKey);
@@ -88,16 +98,17 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
       setResults([]);
       setSelectedVideoId('');
       setErrorMessage(null);
+      setTranscriptAuditResult(null);
       if (initialDeal) {
         setSelectedDealCode(initialDeal.dealCode);
         setRawUrlsInput(initialUrl || initialDeal.tiktokVideoUrl || '');
         setExpectedDeadlineInput(initialDeal.deadlinePost || '');
         setExpectedHandleInput(initialDeal.kocChannelId || '');
-        setRequiredUspInput(initialDeal.contentHook || '');
+        const bp = initialDeal.brandName ? findBrandProfile(profiles, initialDeal.brandName) : undefined;
+        setRequiredUspInput(initialDeal.contentHook || bp?.products?.[0]?.usps?.slice(0, 2).join(', ') || '');
         setRequiredHashtagsInput(
-          initialDeal.brandName
-            ? `#${initialDeal.brandName.replace(/\s+/g, '')}`
-            : ''
+          bp?.contentRules?.mandatoryHashtags?.join(', ') ||
+          (initialDeal.brandName ? `#${initialDeal.brandName.replace(/\s+/g, '')}` : '')
         );
       } else {
         setSelectedDealCode('');
@@ -144,13 +155,69 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
     if (deal) {
       setExpectedDeadlineInput(deal.deadlinePost || '');
       setExpectedHandleInput(deal.kocChannelId || '');
-      if (deal.contentHook) setRequiredUspInput(deal.contentHook);
-      if (deal.brandName) {
-        setRequiredHashtagsInput(`#${deal.brandName.replace(/\s+/g, '')}`);
-      }
+      const bp = deal.brandName ? findBrandProfile(profiles, deal.brandName) : undefined;
+      setRequiredUspInput(deal.contentHook || bp?.products?.[0]?.usps?.slice(0, 2).join(', ') || '');
+      setRequiredHashtagsInput(
+        bp?.contentRules?.mandatoryHashtags?.join(', ') ||
+        (deal.brandName ? `#${deal.brandName.replace(/\s+/g, '')}` : '')
+      );
       if (!rawUrlsInput.trim() && deal.tiktokVideoUrl) {
         setRawUrlsInput(deal.tiktokVideoUrl);
       }
+    }
+  };
+
+  const handleAuditTranscriptWithBrandRules = async () => {
+    if (!activeInspection) return;
+    setIsAuditingTranscript(true);
+    setTranscriptAuditResult(null);
+    try {
+      const bName = selectedDealObj?.brandName || '';
+      const bp = bName ? findBrandProfile(profiles, bName) : undefined;
+
+      const fullTranscript =
+        activeInspection.contentCheck.transcriptText ||
+        activeInspection.contentCheck.caption ||
+        (activeInspection.contentCheck.subtitleSegments || []).map((s) => s.text).join(' ');
+
+      const banned = (bp?.contentRules?.banned || [])
+        .map((b) => `"${b.phrase}" (thay bằng: "${b.replacement || 'diễn đạt tự nhiên'}")`)
+        .join(', ');
+      const disclaimers = (bp?.legal || []).map((l) => l.disclaimer).filter(Boolean).join('; ');
+      const usps = requiredUspInput || (bp?.products?.[0]?.usps || []).slice(0, 3).join('; ');
+
+      const contextText = [
+        `[ĐỐI SOÁT LỜI THOẠI & PHỤ ĐỀ VIDEO VỚI QUY CHUẨN NHÃN HÀNG]`,
+        `- Nhãn hàng: ${bName || 'Chưa chọn'}`,
+        `- KOC: @${activeInspection.authorHandle} | Mã deal: ${selectedDealCode || activeInspection.matchedDealCode || '—'}`,
+        `- Thời lượng video thực tế: ${activeInspection.durationSeconds}s (Yêu cầu tối thiểu: ${minDurationInput}s)`,
+        `- Trạng thái giỏ hàng TikTok Shop: ${activeInspection.contentCheck.hasCartAnchor ? 'ĐÃ GẮN GIỎ HÀNG' : 'CHƯA GẮN GIỎ HÀNG'}`,
+        `- Tên sản phẩm giỏ hàng: ${activeInspection.cartAnchorVerification.detectedProductTitle || 'Không có'}`,
+        `- Điểm nổi bật (USP) cần nhắc: ${usps || 'Không có yêu cầu cụ thể'}`,
+        `- Danh sách từ cấm của nhãn: ${banned || 'Không có từ cấm'}`,
+        `- Cảnh báo pháp lý bắt buộc: ${disclaimers || 'Không có'}`,
+        `- Hashtag yêu cầu: ${requiredHashtagsInput || 'Không có'}`,
+        `- Mở đầu (Hook 3s): "${activeInspection.contentCheck.hookFirst3Seconds}"`,
+        `- Toàn bộ lời thoại & phụ đề bóc tách từ video:`,
+        fullTranscript || '(Không có nội dung phụ đề/lời thoại)',
+      ].join('\n');
+
+      const report = await executeOperationalReport({
+        purposeId: 'SCRIPT_REVIEW',
+        moduleTitle: `Đối soát video nghiệm thu (@${activeInspection.authorHandle})`,
+        sourceTag: 'SCRIPT_REVIEW',
+        inputContextText: contextText,
+      });
+
+      setTranscriptAuditResult(report);
+    } catch (err) {
+      console.error('Lỗi khi đối soát video:', err);
+      setTranscriptAuditResult({
+        ok: false,
+        outputText: 'Đã xảy ra lỗi khi kết nối đối soát video.',
+      });
+    } finally {
+      setIsAuditingTranscript(false);
     }
   };
 
@@ -1258,6 +1325,41 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                   </div>
                 </div>
               )}
+
+              {/* Khối Đối soát phụ đề video với quy chuẩn nhãn hàng */}
+              <div className="rounded border border-line bg-surface/75 p-3 space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
+                  <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-accent" />
+                    Đối soát phụ đề video với quy chuẩn nhãn hàng
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={RefreshCw}
+                    disabled={isAuditingTranscript}
+                    onClick={() => void handleAuditTranscriptWithBrandRules()}
+                  >
+                    {isAuditingTranscript ? 'Đang đối soát...' : 'Kiểm tra lời thoại & quy chuẩn nhãn'}
+                  </Button>
+                </div>
+
+                {transcriptAuditResult && (
+                  <div className="p-3 rounded bg-sunken border border-line space-y-2">
+                    <div className="flex items-center justify-between text-2xs text-ink-3">
+                      <span className="font-semibold text-ink">
+                        Kết quả đối chiếu quy chuẩn nhãn hàng:
+                      </span>
+                      {transcriptAuditResult.providerUsed && (
+                        <span className="font-code">({transcriptAuditResult.providerUsed})</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-ink font-mono whitespace-pre-wrap leading-relaxed max-h-56 overflow-y-auto">
+                      {transcriptAuditResult.outputText || transcriptAuditResult.output || 'Không có phản hồi.'}
+                    </div>
+                  </div>
+                )}
+              </div>
           </div>
         )}
       </div>

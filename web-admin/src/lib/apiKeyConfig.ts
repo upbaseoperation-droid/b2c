@@ -18,7 +18,10 @@ export type OperationalApiPurposeId =
   | 'KOC_HISTORY_EVALUATION'
   | 'KNOWLEDGE_QA'
   | 'BRAND_MARKET_RESEARCH'
-  | 'TRAINING_EXAM_GENERATION';
+  | 'TRAINING_EXAM_GENERATION'
+  | 'BRAND_GUIDELINE_EXTRACT'
+  | 'CONTENT_PROPOSAL'
+  | 'CONTENT_PERFORMANCE_REVIEW';
 
 export interface ApiModelOption {
   id: string;
@@ -832,6 +835,60 @@ Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng
       sampleInputText:
         'Tạo bộ đề kiểm tra 5 câu tình huống cho Chuyên viên Booking phụ trách gian hàng Cathy Doll TikTok, tập trung vào đàm phán thù lao Net/Gross, kiểm tra điều kiện duyệt kịch bản và xử lý đơn vi phạm thời hạn lên video.',
     },
+    BRAND_GUIDELINE_EXTRACT: {
+      purposeId: 'BRAND_GUIDELINE_EXTRACT',
+      title: '11. Đọc tài liệu nhãn hàng & Tách quy chuẩn nội dung',
+      departmentTag: 'Content & Brand',
+      usedInScreens: ['Hồ sơ thương hiệu'],
+      description:
+        'Đọc văn bản giới thiệu nhãn hàng, thông tin sản phẩm và quy định duyệt bài để tách riêng phần định vị, từ cấm, hình ảnh cần tránh và câu cảnh báo pháp lý.',
+      primaryProvider: 'GOOGLE',
+      primaryModel: 'gemini-3.8-flash',
+      fallbackProvider: 'INTERNAL',
+      fallbackModel: 'upbase-local-engine',
+      temperature: 0.15,
+      maxTokens: 2200,
+      systemInstruction:
+        'Đọc văn bản tài liệu nhãn hàng và tách chính xác thành cấu trúc JSON gồm: positioning (slogan, story, toneOfVoice, targetAudience, bigIdea, keyMessage, painPoints[], rtbs[]), contentRules (banned[{phrase, reason, replacement}], visualDo[], visualDont[], mandatoryHashtags[], defaultCta), legalDisclaimer. Viết ngắn gọn, giữ nguyên số liệu và thuật ngữ sản phẩm của nhãn, không thêm lời bình.',
+      sampleInputText:
+        'Nhãn hàng: Kutieskin. Định vị: Chăm sóc da lành tính cho trẻ sơ sinh và mẹ. Khách hàng: Mẹ có con nhỏ 0-5 tuổi bị chàm sữa, rôm sảy, hăm tã. Điểm chính: Tinh chất nghệ trắng Nano THC và yến mạch Đức, không corticoid, không paraben, chứng nhận Cosmos Ecocert. Từ cấm: thuốc đặc trị, trị dứt điểm, khỏi 100%, corticoide. Cảnh quay bắt buộc: Quay rõ chất kem thấm nhanh trên da bé. Cảnh quay cấm: Không quay nơi thiếu sáng, không so sánh trực tiếp tên hãng khác. Khuyến cáo: Sản phẩm không phải là thuốc, hiệu quả tùy cơ địa từng bé. Hashtag: #Kutieskin #ChamsocdaBe',
+    },
+    CONTENT_PROPOSAL: {
+      purposeId: 'CONTENT_PROPOSAL',
+      title: '12. Đề xuất góc nội dung & Soạn đề bài kịch bản',
+      departmentTag: 'Content & Booking',
+      usedInScreens: ['Kế hoạch content', 'Góc nội dung', 'Kịch bản & video'],
+      description:
+        'Đề xuất 3 phương án góc tiếp cận và kịch bản 4 phần (Mở đầu 3s, Tình huống, Điểm chính sản phẩm, Điều hướng giỏ hàng) dựa trên sản phẩm, từ cấm của nhãn và bài đăng đã ra đơn.',
+      primaryProvider: 'CLAUDE',
+      primaryModel: 'claude-sonnet-5-5',
+      fallbackProvider: 'GOOGLE',
+      fallbackModel: 'gemini-3.8-flash',
+      temperature: 0.3,
+      maxTokens: 2200,
+      systemInstruction:
+        'Dựa vào thông tin sản phẩm, danh sách từ cấm của nhãn hàng, thông tin kênh KOC và các bài đăng đã bán tốt, hãy viết 3 phương án đề bài kịch bản trả về định dạng JSON {"proposals": [{"name": "Tên góc tiếp cận", "hookIdea": "Câu mở đầu 3 giây", "painPoint": "Tình huống thực tế của khách", "solutionApproach": "Điểm chính sản phẩm và cảnh quay", "callToAction": "Câu điều hướng bấm giỏ hàng kèm khuyến cáo nếu có", "suggestedFormat": "Talking Head + B-roll"}]}. Tuyệt đối không dùng các từ nằm trong danh sách từ cấm của nhãn.',
+      sampleInputText:
+        'Nhãn hàng: Kutieskin | Sản phẩm: Kem mẩn ngứa hăm Kutieskin 30g (Giá bán: 95.000đ)\nTrụ cột: Nỗi đau - Giải pháp | Phễu: Consideration\nĐiểm chính: Tinh chất nghệ trắng Nano, dịu vết mẩn đỏ sau 2-3 ngày, không chứa corticoid.\nTừ cấm: trị dứt điểm, thuốc đặc trị, khỏi 100%.',
+    },
+    CONTENT_PERFORMANCE_REVIEW: {
+      purposeId: 'CONTENT_PERFORMANCE_REVIEW',
+      title: '13. Đánh giá hiệu quả bài đăng & Lưu mẫu dùng lại',
+      departmentTag: 'Content & Growth',
+      usedInScreens: ['Kịch bản & video', 'Sổ tay & Hỏi đáp'],
+      description:
+        'Tổng hợp kết quả lượt xem, đơn hàng, doanh số GMV và ROI của các bài đăng đã lên sóng để rút ra góc nội dung bán tốt và lưu lại cho đợt sau.',
+      primaryProvider: 'OPENAI',
+      primaryModel: 'gpt-6.1-sol',
+      fallbackProvider: 'GOOGLE',
+      fallbackModel: 'gemini-3.8-flash',
+      temperature: 0.2,
+      maxTokens: 2200,
+      systemInstruction:
+        'Đối chiếu số liệu thực tế của bài đăng (Lượt xem, Số đơn, Doanh số GMV, Chi phí Net, ROI) với kịch bản gốc (Góc tiếp cận, Câu mở đầu 3s, Điểm chính sản phẩm). Trình bày ngắn gọn gồm: (1) Bảng đối chiếu hiệu quả từng bài đăng, (2) Lý do bài đăng ra đơn tốt hoặc chưa đạt ROI, (3) Mẫu góc nội dung cần lưu lại cho đợt booking tiếp theo. Không viết lời dẫn dài dòng.',
+      sampleInputText:
+        'Nhãn hàng: Kutieskin\nBài đăng 1: @chanhbeauty | Góc: Mẩn ngứa rôm sảy mùa nóng | Mở đầu 3s: "Mẹ nào con hay gãi sồn sột cả đêm vì rôm sảy thì xem ngay" | Chi phí: 2.500.000đ | Lượt xem: 145.000 | Đơn hàng: 92 | GMV: 18.400.000đ | ROI: 7.36x.\nBài đăng 2: @minhdan | Góc: Mở hộp bộ 3 sản phẩm | Mở đầu 3s: "Hôm nay mình khui hộp đồ sơ sinh mới mua" | Chi phí: 3.000.000đ | Lượt xem: 18.000 | Đơn hàng: 9 | GMV: 1.800.000đ | ROI: 0.6x.',
+    },
   },
   updatedAt: '2026-10-20T12:00:00.000Z',
 };
@@ -941,6 +998,9 @@ export function loadApiWorkspaceConfig(): ApiWorkspaceConfigState {
         KNOWLEDGE_QA: mergeRoute('KNOWLEDGE_QA'),
         BRAND_MARKET_RESEARCH: mergeRoute('BRAND_MARKET_RESEARCH'),
         TRAINING_EXAM_GENERATION: mergeRoute('TRAINING_EXAM_GENERATION'),
+        BRAND_GUIDELINE_EXTRACT: mergeRoute('BRAND_GUIDELINE_EXTRACT'),
+        CONTENT_PROPOSAL: mergeRoute('CONTENT_PROPOSAL'),
+        CONTENT_PERFORMANCE_REVIEW: mergeRoute('CONTENT_PERFORMANCE_REVIEW'),
       },
       updatedAt: parsed.updatedAt || INITIAL_API_WORKSPACE_CONFIG.updatedAt,
     };
@@ -1307,6 +1367,9 @@ export function getAggregatedUsageMetrics(logs: ApiUsageLogItem[]) {
     KNOWLEDGE_QA: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
     BRAND_MARKET_RESEARCH: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
     TRAINING_EXAM_GENERATION: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
+    BRAND_GUIDELINE_EXTRACT: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
+    CONTENT_PROPOSAL: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
+    CONTENT_PERFORMANCE_REVIEW: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
   };
 
   for (const log of logs) {

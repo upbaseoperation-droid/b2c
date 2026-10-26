@@ -84,6 +84,7 @@ import { INITIAL_MASTER_PRODUCTS } from '../../lib/masterCatalog';
 import { listAllCatalogProducts, type BrandProductCatalog } from '../../lib/productCatalog';
 import { CloudflareR2SetupModal } from './CloudflareR2SetupPanel';
 import { StandardBriefPreviewModal } from './StandardBriefPreviewModal';
+import { BrandGuidelineExtractModal } from './BrandGuidelineExtractModal';
 import {
   DOC_CATEGORY_LABEL,
   KOC_APPROVAL_MODE_LABEL,
@@ -281,6 +282,7 @@ export function BrandProfileDetail({
   const [inspectingBooking, setInspectingBooking] = useState<StoreMonthlyBookingRecord | null>(null);
   const [showTaxCode, setShowTaxCode] = useState(false);
   const [showStandardBrief, setShowStandardBrief] = useState(false);
+  const [extractGuidelineOpen, setExtractGuidelineOpen] = useState(false);
 
   // Kho tệp R2 state
   const [quickUploading, setQuickUploading] = useState(false);
@@ -902,6 +904,14 @@ export function BrandProfileDetail({
           {quickUploading ? 'Đang tải…' : 'Tải tệp'}
         </Button>
       )}
+      <Button
+        size="sm"
+        variant="secondary"
+        icon={FileText}
+        onClick={() => setExtractGuidelineOpen(true)}
+      >
+        Đọc tài liệu quy chuẩn
+      </Button>
       <Button
         size="sm"
         variant="secondary"
@@ -2817,6 +2827,39 @@ export function BrandProfileDetail({
         profile={{ ...p, products: mergedBrandProducts }}
         cycleMonth={activeMonth}
         onNotify={onNotify}
+      />
+
+      <BrandGuidelineExtractModal
+        open={extractGuidelineOpen}
+        onClose={() => setExtractGuidelineOpen(false)}
+        brandProfile={p}
+        canEditPositioning={can.POSITIONING}
+        canEditContentRules={can.CONTENT_RULES}
+        canEditLegal={can.LEGAL}
+        onNotify={onNotify}
+        onApplyToProfile={async (patch) => {
+          if (patch.positioning) {
+            await onSave('POSITIONING', patch.positioning, 'Cập nhật định vị từ tài liệu nhãn hàng');
+          }
+          if (patch.contentRules) {
+            await onSave('CONTENT_RULES', patch.contentRules, 'Cập nhật từ cấm & quy định quay từ tài liệu nhãn hàng');
+          }
+          if (patch.legalDisclaimer) {
+            const nextLegal = (p.legal && p.legal.length > 0)
+              ? p.legal.map((item, idx) => (idx === 0 ? { ...item, disclaimer: patch.legalDisclaimer } : item))
+              : [{
+                  id: `legal-${Date.now()}`,
+                  title: 'Quy định pháp lý & cảnh báo',
+                  docNumber: '',
+                  authority: '',
+                  issueDate: '',
+                  validUntil: '',
+                  disclaimer: patch.legalDisclaimer,
+                  url: '',
+                }];
+            await onSave('LEGAL', { legal: nextLegal }, 'Cập nhật câu cảnh báo pháp lý bắt buộc');
+          }
+        }}
       />
     </div>
   );

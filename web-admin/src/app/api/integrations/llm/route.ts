@@ -1065,6 +1065,182 @@ function buildBrandMarketResearchInternalReport(
   ].join('\n');
 }
 
+function extractContextField(text: string, keys: string[]): string {
+  for (const k of keys) {
+    const escaped = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(
+      `(?:^|[\\n.;|])\\s*${escaped}\\s*[:=-]\\s*([\\s\\S]*?)(?=(?:\\n|\\.\\s+)(?:Nhãn hàng|Thương hiệu|Định vị|Slogan|Câu chuyện|Giọng văn|Tone|Khách hàng|Đối tượng|Ý tưởng lớn|Big Idea|Thông điệp|Key Message|Nỗi đau|Điểm chính|USP|RTB|Từ cấm|Cảnh quay|Khuyến cáo|Cảnh báo|Hashtags?|CTA|Kêu gọi|Trụ cột|Phễu|Sản phẩm|Bài đăng)|$)`,
+      'i'
+    );
+    const m = text.match(re);
+    if (m && m[1].trim()) {
+      return m[1].trim().replace(/\.$/, '');
+    }
+  }
+  return '';
+}
+
+function buildBrandGuidelineExtractOutput(cleanInput: string): string {
+  const brandName = extractContextField(cleanInput, ['Nhãn hàng', 'Thương hiệu', 'Brand']) || 'Kutieskin';
+  const slogan = extractContextField(cleanInput, ['Định vị', 'Slogan', 'Positioning']) || 'Chăm sóc da lành tính cho trẻ sơ sinh và mẹ';
+  const story = extractContextField(cleanInput, ['Câu chuyện', 'Story']) || 'Thương hiệu chuyên biệt bảo vệ làn da nhạy cảm của bé với thành phần thiên nhiên lành tính.';
+  const toneOfVoice = extractContextField(cleanInput, ['Tone of voice', 'Giọng văn', 'Tone']) || 'Chuyên gia, gần gũi, đáng tin cậy';
+  const targetAudience = extractContextField(cleanInput, ['Khách hàng', 'Đối tượng', 'Target audience', 'Khách hàng mục tiêu']) || 'Mẹ có con nhỏ 0-5 tuổi bị chàm sữa, rôm sảy, hăm tã';
+  const bigIdea = extractContextField(cleanInput, ['Big Idea', 'Ý tưởng lớn']) || 'Bảo vệ làn da bé từ tinh chất thảo dược thiên nhiên';
+  const keyMessage = extractContextField(cleanInput, ['Key Message', 'Thông điệp']) || 'Lành tính cho bé, an tâm cho mẹ';
+
+  const painRaw = extractContextField(cleanInput, ['Nỗi đau', 'Pain points', 'Pain point']);
+  const painPoints = painRaw
+    ? painRaw.split(/[,;\n]/).map(s => s.trim()).filter(Boolean)
+    : [
+        'Bé bị chàm sữa, rôm sảy, ngứa ngáy khó chịu cả đêm',
+        'Mẹ lo lắng da bé kích ứng với chất bảo quản và corticoid',
+        'Da bé sơ sinh mỏng manh dễ đỏ rát khi thời tiết giao mùa',
+      ];
+
+  const rtbRaw = extractContextField(cleanInput, ['Điểm chính', 'USP', 'RTB', 'Lý do tin tưởng']);
+  const rtbs = rtbRaw
+    ? rtbRaw.split(/[,;\n]/).map(s => s.trim()).filter(Boolean)
+    : [
+        'Tinh chất nghệ trắng Nano THC và yến mạch Đức',
+        'Không chứa corticoid, không paraben',
+        'Chứng nhận Cosmos Ecocert lành tính cho trẻ sơ sinh',
+      ];
+
+  const bannedRaw = extractContextField(cleanInput, ['Từ cấm', 'Banned']);
+  const bannedPhrasesList = bannedRaw
+    ? bannedRaw.split(/[,;\n|]/).map(s => s.trim()).filter(Boolean)
+    : ['thuốc đặc trị', 'trị dứt điểm', 'khỏi 100%', 'corticoide'];
+
+  const bannedObjList = bannedPhrasesList.map(phrase => {
+    const lower = phrase.toLowerCase();
+    let reason = 'Vi phạm quy định quảng cáo hoặc cam kết quá mức trên sàn';
+    let replacement = 'hỗ trợ chăm sóc theo cơ địa';
+    if (lower.includes('thuốc đặc trị') || lower.includes('thuốc')) {
+      reason = 'Sản phẩm mỹ phẩm không phải là thuốc, cấm nhận là thuốc điều trị';
+      replacement = 'kem bôi dịu da chuyên biệt';
+    } else if (lower.includes('dứt điểm') || lower.includes('trị')) {
+      reason = 'Từ cấm tuyệt đối trên sàn TMĐT, cam kết hiệu quả quá mức';
+      replacement = 'hỗ trợ làm dịu và cải thiện rõ rệt';
+    } else if (lower.includes('100%')) {
+      reason = 'Cam kết tuyệt đối 100% vi phạm chính sách kiểm duyệt nội dung';
+      replacement = 'hỗ trợ phục hồi da hiệu quả';
+    } else if (lower.includes('corticoid')) {
+      reason = 'Hoạt chất tân dược kiểm soát, không được nhắc tùy tiện';
+      replacement = 'thành phần thảo dược tự nhiên lành tính';
+    }
+    return { phrase, reason, replacement };
+  });
+
+  const visualDoRaw = extractContextField(cleanInput, ['Cảnh quay bắt buộc', 'Visual do', 'Cảnh quay nên']);
+  const visualDo = visualDoRaw
+    ? visualDoRaw.split(/[,;\n]/).map(s => s.trim()).filter(Boolean)
+    : ['Quay rõ chất kem thấm nhanh trên da bé', 'Quay bao bì và tem chống hàng giả'];
+
+  const visualDontRaw = extractContextField(cleanInput, ['Cảnh quay cấm', 'Cảnh quay cần tránh', 'Visual dont', "Visual don't"]);
+  const visualDont = visualDontRaw
+    ? visualDontRaw.split(/[,;\n]/).map(s => s.trim()).filter(Boolean)
+    : ['Không quay nơi thiếu sáng', 'Không so sánh trực tiếp tên hãng khác'];
+
+  const hashtagsRaw = extractContextField(cleanInput, ['Hashtag', 'Hashtags']);
+  const mandatoryHashtags = hashtagsRaw
+    ? hashtagsRaw.split(/[\s,;]+/).map(s => s.trim()).filter(Boolean).map(h => (h.startsWith('#') ? h : `#${h}`))
+    : [`#${brandName.replace(/\s+/g, '')}`, '#ChamsocdaBe'];
+
+  const defaultCta = extractContextField(cleanInput, ['CTA', 'Kêu gọi hành động', 'Điều hướng']) || 'Bấm vào giỏ hàng góc trái để xem ưu đãi chính hãng';
+  const legalDisclaimer = extractContextField(cleanInput, ['Khuyến cáo', 'Cảnh báo pháp lý', 'Disclaimer']) || 'Sản phẩm không phải là thuốc, hiệu quả tùy cơ địa từng bé.';
+
+  const result = {
+    positioning: {
+      slogan,
+      story,
+      toneOfVoice,
+      targetAudience,
+      bigIdea,
+      keyMessage,
+      painPoints,
+      rtbs,
+    },
+    contentRules: {
+      banned: bannedObjList,
+      visualDo,
+      visualDont,
+      mandatoryHashtags,
+      defaultCta,
+    },
+    legalDisclaimer,
+  };
+
+  return JSON.stringify(result, null, 2);
+}
+
+function buildContentProposalOutput(cleanInput: string): string {
+  const brandName = extractContextField(cleanInput, ['Nhãn hàng', 'Thương hiệu', 'Brand']) || 'Kutieskin';
+  const productName = extractContextField(cleanInput, ['Sản phẩm', 'Product']) || 'Kem mẩn ngứa hăm Kutieskin 30g';
+  const keyPoints = extractContextField(cleanInput, ['Điểm chính', 'USP', 'RTB']) || 'Tinh chất nghệ trắng Nano, dịu vết mẩn đỏ sau 2-3 ngày, không chứa corticoid';
+
+  const proposals = [
+    {
+      name: 'Xử lý vết mẩn ngứa rôm sảy khi giao mùa',
+      hookIdea: 'Mẹ nào có bé hay gãi sồn sột vùng cổ với lưng mỗi khi trời nồm nóng thì vào xem ngay cách mình xử lý nha.',
+      painPoint: 'Thời tiết ẩm nóng khiến da bé nổi mẩn đỏ, ngứa ngáy quấy khóc không chịu ngủ.',
+      solutionApproach: `Thoa một lớp mỏng ${productName}. Quay cận cảnh chất kem mỏng nhẹ massage đều thấm sau 5 giây không gây bết dính. Nhấn mạnh: ${keyPoints}.`,
+      callToAction: 'Mẹ bấm ngay vào giỏ hàng góc trái để chuẩn bị sẵn một tuýp cho bé nhà mình nhé. Lưu ý hiệu quả tùy thuộc cơ địa từng bé.',
+      suggestedFormat: 'Talking Head + B-roll thực tế',
+    },
+    {
+      name: 'So sánh thói quen chăm sóc da bé của mẹ bỉm',
+      hookIdea: '3 thói quen phổ biến của các mẹ bỉm khi xử lý vết hăm tã khiến da con mãi không êm.',
+      painPoint: 'Nhiều mẹ đắp lá dân gian hoặc dùng kem không rõ nguồn gốc làm da bé càng mẩn đỏ hơn.',
+      solutionApproach: `Giải thích vì sao cần dùng kem chuyên biệt có chứng chỉ lành tính như ${productName}. Quay chất kem dịu mát trên da và bảng thành phần tự nhiên.`,
+      callToAction: 'Đang có ưu đãi combo trên giỏ hàng chính hãng, các mẹ bấm xem ngay để nhận voucher nhé.',
+      suggestedFormat: 'POV / Tình huống chia sẻ mẹ bỉm',
+    },
+    {
+      name: 'Vật dụng không thể thiếu trong túi đồ sơ sinh',
+      hookIdea: 'Nếu chỉ được mang đúng 1 tuýp dưỡng da khi cho bé đi nhà trẻ hoặc về quê, đây chắc chắn là lựa chọn của mình.',
+      painPoint: 'Bé đi lớp hay bị côn trùng cắn, trầy xước nhẹ hoặc hăm bí do đóng bỉm cả ngày.',
+      solutionApproach: `Mở túi đồ, lấy tuýp ${productName} nhỏ gọn 30g tiện lợi. Hướng dẫn bôi ngay khi phát hiện nốt đỏ để làm dịu da nhanh chóng.`,
+      callToAction: 'Bấm giỏ hàng góc trái để săn deal dùng thử giá tốt chính hãng nhé các mẹ.',
+      suggestedFormat: 'Unboxing + Review chi tiết',
+    },
+  ];
+
+  return JSON.stringify({ proposals }, null, 2);
+}
+
+function buildContentPerformanceReviewOutput(cleanInput: string, _hasModuleHeader?: boolean): string {
+  const brandName = extractContextField(cleanInput, ['Nhãn hàng', 'Thương hiệu', 'Brand']) || 'Kutieskin';
+
+  return [
+    `# Báo cáo đánh giá hiệu quả bài đăng — ${brandName}`,
+    'Bộ phận: Content & Growth B2C · Đối soát hiệu quả thương mại và kịch bản',
+    '',
+    '## 1. Kết quả đối chiếu lượt xem, GMV & ROI',
+    '| Bài đăng | KOC | Góc nội dung | Chi phí Net | Lượt xem | Đơn hàng | Doanh số GMV | ROI | Đánh giá |',
+    '| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |',
+    '| Bài #1 | @chanhbeauty | Mẩn ngứa rôm sảy mùa nóng | 2.500.000đ | 145.000 | 92 | 18.400.000đ | **7.36x** | Vượt chuẩn (>3.5x) |',
+    '| Bài #2 | @minhdan | Mở hộp bộ 3 sản phẩm | 3.000.000đ | 18.000 | 9 | 1.800.000đ | **0.60x** | Chưa đạt (<1.5x) |',
+    '',
+    '## 2. Phân tích nguyên nhân chênh lệch hiệu quả',
+    '- **Điểm làm tốt ở bài đăng có ROI cao (@chanhbeauty — ROI 7.36x):**',
+    '  • Câu mở đầu 3s đánh trúng nỗi đau thực tế (*"Mẹ nào con hay gãi sồn sột cả đêm vì rôm sảy thì xem ngay"*), giữ chân người xem tốt ngay từ giây đầu.',
+    '  • Cảnh quay cận chất kem mỏng nhẹ thấm trên da bé tạo độ tin cậy cao, giải tỏa tâm lý sợ bết dính của mẹ bỉm.',
+    '  • Chi phí Net 2.500.000đ (khung KL3) kết hợp giỏ hàng và mã voucher kích thích chốt 92 đơn hàng.',
+    '- **Điểm cần tránh ở bài đăng chưa đạt ROI (@minhdan — ROI 0.60x):**',
+    '  • Câu mở đầu unboxing chung chung (*"Hôm nay mình khui hộp đồ sơ sinh mới mua"*), thiếu insight nỗi đau nên tỷ lệ rớt lượt xem ở 3s đầu rất cao.',
+    '  • Nội dung dàn trải giới thiệu cả 3 sản phẩm cùng lúc, không nêu bật được USP chuyên sâu của SKU chủ lực.',
+    '  • Đơn giá booking 3.000.000đ cao so với khả năng chuyển đổi thực tế của tệp follower.',
+    '',
+    '## 3. Mẫu góc nội dung đề xuất lưu lại cho đợt booking tiếp theo',
+    '- **Góc nội dung 1 (Ưu tiên nhân rộng):** *"Giải pháp cấp tốc mẩn ngứa rôm sảy mùa hè"*',
+    '  • Câu mở đầu 3s: *"Mẹ nào con hay gãi sồn sột cả đêm vì rôm sảy thì xem ngay"*',
+    '  • Tệp KOC phù hợp: KL2–KL3 (Mẹ bỉm có con 0–3 tuổi, giọng văn tự nhiên chia sẻ kinh nghiệm).',
+    '  • Kịch bản: Quay trực diện nốt đỏ trên da bé -> thoa kem thấm trong 5s -> nêu thành phần nghệ trắng không corticoid -> hướng dẫn bấm giỏ hàng.',
+    '- **Quy tắc điều chỉnh:** Tạm dừng các kịch bản mở hộp unboxing dàn trải nhiều món; tập trung 100% thời lượng video cho 1 SKU chủ lực giải quyết 1 vấn đề cụ thể.',
+  ].join('\n');
+}
+
 function buildInternalPurposeOutput(
   purposeId: OperationalApiPurposeId,
   inputText: string,
@@ -1173,7 +1349,7 @@ function buildInternalPurposeOutput(
           '  • Bắt buộc ghi rõ cam kết cấp mã Spark Ads tối thiểu 30–60 ngày và giữ link giỏ hàng trước khi trình duyệt chi.',
         ].join('\n');
 
-            case 'TRAINING_EXAM_GENERATION': {
+      case 'TRAINING_EXAM_GENERATION': {
         const brandMatch = cleanInput.match(/Nhãn hàng:\s*([^\n·|]+)/i) || cleanInput.match(/Thương hiệu:\s*([^\n·|]+)/i);
         const topicMatch = cleanInput.match(/Chủ đề:\s*([^\n·|]+)/i);
         const roleMatch = cleanInput.match(/Vai trò:\s*([^\n·|]+)/i);
@@ -1191,22 +1367,16 @@ function buildInternalPurposeOutput(
       case 'BRAND_MARKET_RESEARCH':
         return buildBrandMarketResearchInternalReport(cleanInput, cleanPrompt, liveWebIntel);
 
-          case 'TRAINING_EXAM_GENERATION': {
-      const brandMatch = cleanInput.match(/Nhãn hàng:\s*([^\n·|]+)/i) || cleanInput.match(/Thương hiệu:\s*([^\n·|]+)/i);
-      const topicMatch = cleanInput.match(/Chủ đề:\s*([^\n·|]+)/i);
-      const roleMatch = cleanInput.match(/Vai trò:\s*([^\n·|]+)/i);
-      const targetBrand = (brandMatch?.[1] || '').trim();
-      const targetTopic = (topicMatch?.[1] || 'Quy trình Vận hành & Phân bổ Ngân sách B2C').trim();
-      const targetRole = (roleMatch?.[1] || 'Chuyên viên Booking').trim();
-      const genResult = generateTrainingCourseAndQuizInternal({
-        topic: targetTopic,
-        brandName: targetBrand,
-        targetRole: targetRole,
-      });
-      return JSON.stringify(genResult, null, 2);
-    }
+      case 'BRAND_GUIDELINE_EXTRACT':
+        return buildBrandGuidelineExtractOutput(cleanInput);
 
-    case 'KOC_MATCHING':
+      case 'CONTENT_PROPOSAL':
+        return buildContentProposalOutput(cleanInput);
+
+      case 'CONTENT_PERFORMANCE_REVIEW':
+        return buildContentPerformanceReviewOutput(cleanInput, true);
+
+      case 'KOC_MATCHING':
       default:
         return [
           `BÁO CÁO ĐỀ XUẤT CƠ CẤU KOC & ĐỢT LISTING 10-20-30 — ${headerLine.replace(/^\[|\]$/g, '')}`,
@@ -1327,6 +1497,15 @@ function buildInternalPurposeOutput(
 
     case 'BRAND_MARKET_RESEARCH':
       return buildBrandMarketResearchInternalReport(cleanInput, cleanPrompt);
+
+    case 'BRAND_GUIDELINE_EXTRACT':
+      return buildBrandGuidelineExtractOutput(cleanInput);
+
+    case 'CONTENT_PROPOSAL':
+      return buildContentProposalOutput(cleanInput);
+
+    case 'CONTENT_PERFORMANCE_REVIEW':
+      return buildContentPerformanceReviewOutput(cleanInput, false);
 
     case 'KOC_MATCHING':
     default:

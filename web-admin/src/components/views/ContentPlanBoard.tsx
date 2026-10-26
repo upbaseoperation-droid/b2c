@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, Download, FileText, Lightbulb, Plus, Search, Send, Trash2, UserPlus } from 'lucide-react';
-import type { BookingDealItem, InputPlanBreakdownState, KocItem, StorePortfolioItem } from '../../lib/types';
+import type { BookingDealItem, ContentAngleItem, InputPlanBreakdownState, KocItem, StorePortfolioItem } from '../../lib/types';
 import { Button, ConfirmDialog, Field, Input, Modal, Select, Status, Textarea } from '../ui';
 import { CONTENT_PILLARS, pillarGroupOf } from '../../lib/contentPillars';
 import { fetchClientMonthlyPlans, getCachedClientMonthlyPlans } from '../../lib/useMonthlyPlanSync';
@@ -54,6 +54,7 @@ import { detectChannel, type BrandPlanData, type PlanChannel } from '../../lib/b
 import { CreatorMatchModal } from './CreatorMatchModal';
 import { ContentCopilotModal } from '../content/ContentCopilotModal';
 import { INITIAL_CONTENT_ANGLES } from '../../lib/contentAngleData';
+import { loadSavedBrandAngles, SAVED_BRAND_ANGLES_EVENT } from '../../lib/contentContextBuilder';
 import { BOOKING_LIST_COLUMNS, buildBookingListRows, defaultBookingTabName, resolveBrandBookingSheetUrl } from '../../lib/bookingList';
 
 interface ContentPlanBoardProps {
@@ -178,14 +179,32 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({
     const parentBrand = (plan.parentBrand || plan.brandName || '').split('_')[0].trim();
     return findBrandProfile(brandProfiles, parentBrand) || findBrandProfile(brandProfiles, plan.brandName) || brandProfiles[0] || null;
   }, [plan, brandProfiles]);
+  const [savedAnglesSyncTick, setSavedAnglesSyncTick] = useState(0);
+  useEffect(() => {
+    const handleUpdate = () => setSavedAnglesSyncTick(t => t + 1);
+    window.addEventListener(SAVED_BRAND_ANGLES_EVENT, handleUpdate);
+    return () => window.removeEventListener(SAVED_BRAND_ANGLES_EVENT, handleUpdate);
+  }, []);
+
   const brandSavedAngles = useMemo(() => {
-    const bName = (plan?.parentBrand || plan?.brandName || '').split('_')[0].trim().toLowerCase();
-    if (!bName) return INITIAL_CONTENT_ANGLES;
-    const matched = INITIAL_CONTENT_ANGLES.filter(
-      a => a.brandName?.toLowerCase().includes(bName) || bName.includes(a.brandName?.toLowerCase() || '')
-    );
-    return matched.length > 0 ? matched : INITIAL_CONTENT_ANGLES;
-  }, [plan?.brandName, plan?.parentBrand]);
+    const bName = (plan?.parentBrand || plan?.brandName || '').split('_')[0].trim();
+    const storageAngles = loadSavedBrandAngles(bName);
+    const bNameLower = bName.toLowerCase();
+    const matched = bNameLower
+      ? INITIAL_CONTENT_ANGLES.filter(
+          a => a.brandName?.toLowerCase().includes(bNameLower) || bNameLower.includes(a.brandName?.toLowerCase() || '')
+        )
+      : INITIAL_CONTENT_ANGLES;
+
+    const map = new Map<string, ContentAngleItem>();
+    storageAngles.forEach(a => map.set(a.id, a));
+    (matched.length > 0 ? matched : INITIAL_CONTENT_ANGLES).forEach(a => {
+      if (!map.has(a.id)) {
+        map.set(a.id, a);
+      }
+    });
+    return Array.from(map.values());
+  }, [plan?.brandName, plan?.parentBrand, savedAnglesSyncTick]);
   const [standardBriefOpen, setStandardBriefOpen] = useState(false);
   const { data, status, update, saveNow } = usePlanRecord<ContentPlanData>('/api/content-plan', plan?.id ?? null, EMPTY, msg => notify(msg, 'warning'));
   const slots = useMemo(() => ensureSequentialBriefCodes(data.slots || []), [data.slots]);
