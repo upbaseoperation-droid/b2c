@@ -92,8 +92,9 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
   onNavigateToTab,
 }) => {
   const stores = useMemo<StorePortfolioItem[]>(() => {
-    if (storePortfolios && storePortfolios.length > 0) return storePortfolios;
-    return filterScopedStores(REAL_B2C_69_STORES, currentUser);
+    const baseStores =
+      storePortfolios && storePortfolios.length > 0 ? storePortfolios : REAL_B2C_69_STORES;
+    return filterScopedStores(baseStores, currentUser);
   }, [storePortfolios, currentUser]);
 
   const totalTiktokCount = useMemo(
@@ -337,7 +338,7 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
         currentBottleneckLabel: bottleneckLabel,
       };
     });
-  }, [stores, plans, deals]);
+  }, [stores, dealsLookup, plansLookup]);
 
   // Bộ đếm phễu tổng hợp
   const metrics = useMemo(() => {
@@ -700,7 +701,7 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
                   }`}
                 >
                   <span>{shortName}</span>
-                  <span className="font-mono text-[10px] opacity-80">({pic.valid411}/{pic.total})</span>
+                  <span className="font-mono text-2xs opacity-80">({pic.valid411}/{pic.total})</span>
                 </button>
               );
             })}

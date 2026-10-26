@@ -360,11 +360,21 @@ async function readSourceBuffer(id: string, override?: CatalogOverride): Promise
 }
 
 export async function archiveTemplate(id: string, hash: string) {
-  const { template } = await loadTemplate(id); requireCondition(template.hash === hash, 'Mẫu nguồn đã thay đổi trong lúc tạo hồ sơ.', 409);
+  const { template, zip } = await loadTemplate(id); requireCondition(template.hash === hash, 'Mẫu nguồn đã thay đổi trong lúc tạo hồ sơ.', 409);
   const overrides = await readCatalogOverrides();
-  const { buffer } = await readSourceBuffer(id, overrides[id]);
-  requireCondition(createHash('sha256').update(buffer).digest('hex') === hash, 'Mẫu nguồn đã thay đổi trong lúc tạo hồ sơ.', 409);
-  if (process.env.CONTRACT_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres')) {
+  let buffer: Buffer;
+  try {
+    const loaded = await readSourceBuffer(id, overrides[id]);
+    buffer = loaded.buffer;
+    requireCondition(createHash('sha256').update(buffer).digest('hex') === hash, 'Mẫu nguồn đã thay đổi trong lúc tạo hồ sơ.', 409);
+  } catch (e) {
+    if (OFFICIAL_TEMPLATES_SNAPSHOT[id] && !overrides[id]?.customFile && OFFICIAL_TEMPLATES_SNAPSHOT[id].hash === hash) {
+      buffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+    } else {
+      throw e;
+    }
+  }
+  if (process.env.CONTRACT_DATA_DIR || !process.env.DATABASE_URL || (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres')) {
     await mkdir(archiveDirectory(), { recursive: true });
     await writeFile(path.join(archiveDirectory(), `${hash}.docx`), buffer, { flag: 'wx', mode: 0o600 }).catch(e => { if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e; });
   } else await prisma.$executeRaw`INSERT INTO "ContractTemplateSnapshot" (hash, "templateId", file) VALUES (${hash}, ${id}, ${buffer}) ON CONFLICT (hash) DO NOTHING`;
@@ -491,6 +501,60 @@ export function extractBlocks(xml: string, part: string): DocBlock[] {
   return root;
 }
 
+function renderDocBlocksToXml(blocks: DocBlock[]): string {
+  return blocks
+    .map(b => {
+      if (b.kind === 'p') {
+        const pPr = b.align ? `<w:pPr><w:jc w:val="${b.align === 'justify' ? 'both' : b.align}"/></w:pPr>` : '';
+        const rPr = b.bold || b.italic ? `<w:rPr>${b.bold ? '<w:b/>' : ''}${b.italic ? '<w:i/>' : ''}</w:rPr>` : '';
+        return `<w:p>${pPr}<w:r>${rPr}<w:t xml:space="preserve">${encodeXml(b.text)}</w:t></w:r></w:p>`;
+      }
+      const rowsXml = b.rows
+        .map(row => {
+          const cellsXml = row
+            .map(cell => {
+              const tcPr = cell.colSpan && cell.colSpan > 1 ? `<w:tcPr><w:gridSpan w:val="${cell.colSpan}"/></w:tcPr>` : '';
+              return `<w:tc>${tcPr}${renderDocBlocksToXml(cell.blocks)}</w:tc>`;
+            })
+            .join('');
+          return `<w:tr>${cellsXml}</w:tr>`;
+        })
+        .join('');
+      return `<w:tbl>${rowsXml}</w:tbl>`;
+    })
+    .join('');
+}
+
+function buildFallbackZipFromSnapshot(snap: LegalTemplate): JSZip {
+  const fallbackZip = new JSZip();
+  fallbackZip.file(
+    'word/styles.xml',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>',
+  );
+  const blocks = snap.blocks || [];
+  const byPart = new Map<string, DocBlock[]>();
+  for (const b of blocks) {
+    const part = b.part || 'word/document.xml';
+    const list = byPart.get(part) || [];
+    list.push(b);
+    byPart.set(part, list);
+  }
+  if (!byPart.has('word/document.xml')) {
+    byPart.set(
+      'word/document.xml',
+      (snap.paragraphs || []).map((t, idx) => ({ kind: 'p' as const, part: 'word/document.xml', paragraph: idx, text: t })),
+    );
+  }
+  for (const [part, partBlocks] of byPart.entries()) {
+    const bodyXml = renderDocBlocksToXml(partBlocks);
+    fallbackZip.file(
+      part,
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${bodyXml}</w:body></w:document>`,
+    );
+  }
+  return fallbackZip;
+}
+
 export async function loadTemplate(id: string, expectedHash?: string): Promise<{ template: LegalTemplate; zip: JSZip }> {
   const overrides = await readCatalogOverrides();
   const override = overrides[id];
@@ -522,17 +586,18 @@ export async function loadTemplate(id: string, expectedHash?: string): Promise<{
     const loaded = await readSourceBuffer(id, override);
     buffer = loaded.buffer;
   } catch (e) {
-    if (OFFICIAL_TEMPLATES_SNAPSHOT[id] && !override?.customFile) {
+    if (OFFICIAL_TEMPLATES_SNAPSHOT[id] && !override?.customFile && (!expectedHash || expectedHash === OFFICIAL_TEMPLATES_SNAPSHOT[id].hash)) {
       const snap = OFFICIAL_TEMPLATES_SNAPSHOT[id];
-      const fallbackZip = new JSZip();
-      fallbackZip.file(
-        'word/document.xml',
-        '<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body></w:body></w:document>',
-      );
+      const fallbackZip = buildFallbackZipFromSnapshot(snap);
       return {
         zip: fallbackZip,
         template: {
           ...snap,
+          name,
+          filename,
+          subject,
+          kind,
+          version,
           category,
           description,
           active,
@@ -546,7 +611,9 @@ export async function loadTemplate(id: string, expectedHash?: string): Promise<{
           originalContractId,
           customType,
           legalNotes,
-          history: override?.history || snap.history,
+          updatedAt,
+          updatedBy,
+          history: override?.history?.length ? override.history : snap.history,
         },
       };
     }
@@ -555,7 +622,37 @@ export async function loadTemplate(id: string, expectedHash?: string): Promise<{
   }
   if (expectedHash && createHash('sha256').update(buffer).digest('hex') !== expectedHash) {
     requireCondition(/^[a-f0-9]{64}$/.test(expectedHash), 'Phiên bản nguồn không hợp lệ.', 409);
-    if (process.env.CONTRACT_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres')) {
+    if (OFFICIAL_TEMPLATES_SNAPSHOT[id]?.hash === expectedHash && !override?.customFile) {
+      const snap = OFFICIAL_TEMPLATES_SNAPSHOT[id];
+      return {
+        zip: buildFallbackZipFromSnapshot(snap),
+        template: {
+          ...snap,
+          name,
+          filename,
+          subject,
+          kind,
+          version,
+          category,
+          description,
+          active,
+          defaultReviewRoles,
+          exemptLegalReview,
+          scope,
+          kocId,
+          kocName,
+          approvedByLegal,
+          approvedAt,
+          originalContractId,
+          customType,
+          legalNotes,
+          updatedAt,
+          updatedBy,
+          history: override?.history?.length ? override.history : snap.history,
+        },
+      };
+    }
+    if (process.env.CONTRACT_DATA_DIR || !process.env.DATABASE_URL || (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres')) {
       try { buffer = await readFile(path.join(archiveDirectory(), `${expectedHash}.docx`)); }
       catch { requireCondition(false, 'Không tìm thấy bản mẫu gốc đã lưu cho phiên bản này.', 409); }
     } else {
@@ -1060,7 +1157,7 @@ export async function parseAndStoreCustomDocx(
   requireCondition(Boolean(zip.file('word/document.xml')), 'File .docx thiếu nội dung word/document.xml.');
 
   const hash = createHash('sha256').update(buffer).digest('hex');
-  if (process.env.CONTRACT_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres')) {
+  if (process.env.CONTRACT_DATA_DIR || !process.env.DATABASE_URL || (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres')) {
     await mkdir(archiveDirectory(), { recursive: true });
     await writeFile(path.join(archiveDirectory(), `${hash}.docx`), buffer, { flag: 'wx', mode: 0o600 }).catch(e => {
       if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
@@ -1097,7 +1194,7 @@ export async function parseAndStoreCustomDocx(
 
 export async function readArchivedDocxBuffer(hash: string): Promise<Buffer | null> {
   if (!/^[a-f0-9]{64}$/.test(hash)) return null;
-  if (process.env.CONTRACT_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres')) {
+  if (process.env.CONTRACT_DATA_DIR || !process.env.DATABASE_URL || (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres')) {
     try {
       return await readFile(path.join(archiveDirectory(), `${hash}.docx`));
     } catch {

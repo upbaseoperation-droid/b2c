@@ -67,6 +67,7 @@ before(async () => {
 });
 
 after(async () => {
+  if (!process.env.DATABASE_URL) return;
   try {
     const prisma = (await import('../src/lib/prisma')).default;
     await prisma.monthlyPlan.deleteMany({ where: { id: planId } });

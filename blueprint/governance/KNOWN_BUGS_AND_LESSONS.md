@@ -5,7 +5,7 @@
 | Mã tài liệu | HUB-GOV-04 |
 | Dự án | B2C Ops Hub — Quản trị & Điều hành phòng Marketing B2C |
 | Trạng thái | Đang dùng (Sổ ghi liên tục — Bắt buộc đối chiếu khi sửa lỗi & phát triển tính năng) |
-| Cập nhật | 25/10/2026 |
+| Cập nhật | 26/10/2026 |
 
 Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hiển thị dữ liệu và lỗi logic nghiệp vụ do người dùng cùng trợ lý phát hiện trong quá trình xây dựng **B2C Ops Hub**. Mỗi lỗi đều được rút trích thành **Quy tắc phòng ngừa chuẩn** để áp dụng chéo cho tất cả các phân hệ khác (`Danh bạ KOC`, `Booking`, `Kế hoạch tháng`, `Hồ sơ Thương hiệu`, `Gian hàng`, `Hợp đồng`, `Giao việc & Workload`).
 
@@ -1073,6 +1073,23 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
      - Bảng thông tin các bên không viền, căn lề 2 chấm (`:`) thẳng hàng; bảng dịch vụ có viền đen sắc nét, nền tiêu đề xám nhạt `#f2f2f2`; khối ký tên 2 cột cách đáy 72px chừa chỗ ký tay/đóng dấu.
      - Nút chuyển chế độ xem: "Đang đánh dấu chỗ điền" (highlight bút dạ quang màu vàng `#fff7b2` chuẩn Word) và "Bản in Word chuẩn" (văn bản sạch để in/xuất PDF với dấu chấm chừa chỗ).
 - **Phạm vi rà soát mở rộng sang phần khác:** Đã đối soát trên cả chế độ xem nhanh danh sách (`Xem HĐ`), chế độ xem mẫu catalog (`Văn bản A4`) và chế độ in trực tiếp (`handlePrint`), đảm bảo hiển thị đồng nhất. Kiểm tra biên dịch `tsc --noEmit` và `npm run build` thành công 100%.
+
+---
+
+### BUG-058 — Kiểm Định Logic Toàn Diện 8 Luồng Quy Trình Nghiệp Vụ & Bổ Sung Cơ Chế Chạy Độc Lập (Zero-Crash Standalone) Cho Kế Hoạch Tháng & Mẫu Hợp Đồng
+- **Ngày phát hiện:** 26/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/lib/contracts/templates.ts`, `web-admin/src/lib/server/monthlyPlanStore.ts`, `web-admin/src/lib/server/larkbaseBookingPlanSync.ts`, `web-admin/src/lib/server/contractJobSync.ts`, `web-admin/src/components/views/StorePipelineFunnelOverview.tsx`, `web-admin/tests/brand-profile.test.ts`, `web-admin/tests/contract-e2e-ui-ux-flow.test.ts`, `web-admin/tests/rbac-booking-e2e.test.ts`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Vi phạm `RULE-2 (Zero-Crash Standalone)` tại `monthlyPlanStore.ts` và `larkbaseBookingPlanSync.ts`:** Các hàm `getStoredPlanByIdFast`, `loadAllStoredPlans`, `createMonthlyPlan`, `saveMonthlyPlan`, `assertPlanExists`, `listPlanMessages`, `appendPlanMessage` và `listIngestedLarkbasePlanRecords` gọi trực tiếp `prisma.monthlyPlan.*` / `prisma.larkbaseBookingPlanRecord.*` mà không kiểm tra `Boolean(process.env.DATABASE_URL?.trim())`, gây lỗi kết nối DB khi chạy kiểm thử hoặc vận hành ở chế độ độc lập không có PostgreSQL.
+  2. **Thiếu tái tạo cấu trúc XML `.docx` từ Snapshot tại `templates.ts`:** Khi thư mục mẫu hợp đồng vật lý (`Quản lý hợp đồng/`) không có trên đĩa, nhánh dự phòng `OFFICIAL_TEMPLATES_SNAPSHOT[id]` chỉ tạo một gói ZIP với `<w:body></w:body>` rỗng, chưa áp dụng `override` metadata (`version`, `name`, `updatedBy`) và hàm `archiveTemplate` / `readArchivedDocxBuffer` gọi `fs.readFileSync` trực tiếp gây lỗi `ENOENT`.
+  3. **Rò rỉ phạm vi RBAC khi truyền prop `storePortfolios` tại `StorePipelineFunnelOverview.tsx`:** Khi component nhận prop `storePortfolios` từ ngoài truyền vào, dòng 95 trả thẳng `storePortfolios` mà chưa bọc qua `filterScopedStores(baseStores, currentUser)`.
+  4. **Đồng bộ Hợp đồng → Job trong Deal nhiều Job tại `contractJobSync.ts`:** Hàm `matches()` chưa kiểm tra trực tiếp `job.sowContractId === record.id || job.bbntContractId === record.id`, dẫn đến trường hợp Job thứ 2 trở đi (ví dụ Phụ lục SOW phát sinh sau Air) liên kết qua ID hợp đồng có thể bị bỏ sót nếu `record.dealId` ghi theo mã Deal cha.
+- **Cách khắc phục:**
+  1. Bổ sung kho lưu trữ dự phòng trong bộ nhớ (`memoryPlansById`, `memoryMessagesByPlanId`, `isPostgresMonthlyPlanEnabled()`, `ensureMemoryPlansSeeded()`) cho `monthlyPlanStore.ts` và kiểm tra `process.env.DATABASE_URL` tại `larkbaseBookingPlanSync.ts` cùng `rbac-booking-e2e.test.ts`.
+  2. Xây dựng hàm `renderDocBlocksToXml` và `buildFallbackZipFromSnapshot(snap)` trong `templates.ts` để tái tạo đầy đủ cấu trúc `.docx` (`word/document.xml`, `word/styles.xml`, `word/header1.xml`, `word/footer1.xml`, bảng `<w:tbl>`, đoạn văn `<w:p>` và các trường `{{...}}`) từ `OFFICIAL_TEMPLATES_SNAPSHOT`, đồng thời hỗ trợ lưu/đọc bản lưu trữ mẫu trong bộ nhớ khi chạy độc lập.
+  3. Bọc `filterScopedStores(baseStores, currentUser)` cho mọi nguồn `storePortfolios` tại `StorePipelineFunnelOverview.tsx` và chuẩn hóa cỡ chữ `text-2xs` đúng Design System.
+  4. Bổ sung điều kiện `job.sowContractId === record.id || job.bbntContractId === record.id` vào hàm `matches()` trong `contractJobSync.ts`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ 137/137 bài kiểm thử tự động (`npm test`), kiểm tra kiểu dữ liệu (`npx tsc --noEmit`), kiểm tra quy tắc mã nguồn (`npx eslint`) và bản dựng sản phẩm (`npm run build`) đều vượt qua 100% (`0 fail`).
 
 ---
 

@@ -2,7 +2,7 @@
 
 import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AlertTriangle, ArrowRight, Building, Users, Video, Mail, BarChart3, Layers } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Building, Users, Video, Mail } from 'lucide-react';
 import { USERS } from '@/lib/mockData';
 import { INITIAL_THIRD_PARTY_ACCOUNTS } from '@/lib/thirdPartyAccessData';
 import { BrandLogo, Button, Input, Segmented, Status } from '../../components/ui';
@@ -231,80 +231,13 @@ function LoginContent() {
       : null;
 
   return (
-    <div className="min-h-dvh bg-canvas text-ink lg:grid lg:grid-cols-12">
-      {/* Cột trái: Giới thiệu hệ sinh thái B2C & Thống kê vận hành */}
-      <aside className="hidden lg:flex lg:col-span-5 flex-col justify-between p-10 bg-sunken/60 border-r border-line">
-        <div className="space-y-8">
-          <BrandLogo height={28} />
-
-          <div className="space-y-3 pt-4">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent-soft text-accent text-2xs font-medium border border-accent/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent" aria-hidden="true" />
-              <span>Khối Vận hành Marketing B2C</span>
-            </div>
-            <h2 className="text-2xl font-semibold text-ink tracking-tight leading-snug">
-              Nền tảng Quản trị & Điều phối Vận hành Đa sàn
-            </h2>
-            <p className="text-sm text-ink-2 leading-relaxed">
-              Hệ thống quản lý kế hoạch tháng, booking KOC và kiểm soát ngân sách PnL tập trung cho toàn bộ các gian hàng B2C.
-            </p>
-          </div>
-
-          <div className="space-y-3.5 pt-2">
-            <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-surface border border-line">
-              <div className="p-2 rounded-lg bg-accent-soft text-accent shrink-0">
-                <Building className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-ink">Quản lý 69 Gian hàng B2C</div>
-                <div className="text-2xs text-ink-3 mt-0.5 leading-relaxed">
-                  Kiểm soát định mức ngân sách chiến dịch trên TikTok Shop, Shopee và Lazada.
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-surface border border-line">
-              <div className="p-2 rounded-lg bg-accent-soft text-accent shrink-0">
-                <Layers className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-ink">Đối soát Kế hoạch & Hạn mức Net</div>
-                <div className="text-2xs text-ink-3 mt-0.5 leading-relaxed">
-                  Tách bạch chi phí Gross và Net, phân bổ chỉ tiêu Leader và chuyên viên phụ trách.
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-surface border border-line">
-              <div className="p-2 rounded-lg bg-accent-soft text-accent shrink-0">
-                <BarChart3 className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-ink">Báo cáo Ads & Đo lường Video</div>
-                <div className="text-2xs text-ink-3 mt-0.5 leading-relaxed">
-                  Theo dõi tiến độ Air Video, doanh thu affiliate và hiệu quả chiến dịch thời gian thực.
-                </div>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-dvh bg-canvas text-ink flex flex-col justify-between items-center px-4 py-8 sm:py-12">
+      <div className="w-full max-w-[480px] my-auto space-y-6">
+        <div className="flex justify-center">
+          <BrandLogo height={32} />
         </div>
 
-        <div className="pt-8 border-t border-line flex items-center justify-between text-2xs text-ink-3">
-          <span>Hệ thống Upbase Ops 2026</span>
-          <span className="flex items-center gap-1.5 text-positive font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-positive" aria-hidden="true" />
-            Vận hành ổn định
-          </span>
-        </div>
-      </aside>
-
-      {/* Cột phải: Form đăng nhập */}
-      <main className="lg:col-span-7 flex flex-col justify-between items-center px-3 py-5 sm:px-8 sm:py-8">
-        <div className="w-full lg:hidden pb-4 sm:pb-6 flex justify-center">
-          <BrandLogo height={26} />
-        </div>
-
-        <div className="w-full max-w-[480px] my-auto bg-surface border border-line rounded-xl p-4 sm:p-8 shadow-2xs space-y-4 sm:space-y-5">
+        <div className="w-full bg-surface border border-line rounded-xl p-5 sm:p-8 shadow-2xs space-y-4 sm:space-y-5">
           <div>
             <h1 className="text-xl font-semibold tracking-tight">Đăng nhập</h1>
           </div>
@@ -484,6 +417,16 @@ function LoginContent() {
                   <button
                     type="button"
                     onClick={() => {
+                      setSelectedUser('user-dieu-thuy');
+                      handleSandboxLogin('user-dieu-thuy');
+                    }}
+                    className="text-2xs px-2.5 py-1.5 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
+                  >
+                    HN206 · Hoàng Diệu Thùy (Content / Key Visual)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
                       setStaffIdentifierInput('HN028');
                       handleDirectoryStaffLogin('HN028');
                     }}
@@ -617,10 +560,10 @@ function LoginContent() {
             </div>
           )}
         </div>
-        <footer className="pt-6 pb-2 text-center text-2xs text-ink-3">
-          © 2026 Upbase · Khối Marketing B2C · Cổng đăng nhập hệ thống
-        </footer>
-      </main>
+      </div>
+      <footer className="pt-6 pb-2 text-center text-2xs text-ink-3">
+        © 2026 Upbase · Khối Marketing B2C · Cổng đăng nhập hệ thống
+      </footer>
     </div>
   );
 }

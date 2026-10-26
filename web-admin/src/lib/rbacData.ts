@@ -1066,6 +1066,37 @@ export const INITIAL_INTERNAL_STAFF_RBAC: InternalStaffRbacMember[] = [
     authMethod: 'LARK_SSO'
   },
   {
+    id: 'user-dieu-thuy',
+    staffCode: 'HN206',
+    name: 'Hoàng Diệu Thùy',
+    email: 'dieuthuy@upbase.vn',
+    avatar: 'DT',
+    role: 'CONTENT_MEMBER',
+    roleTitle: 'Chuyên Viên Content & Key Visual Lead (SIS / Content Executive)',
+    department: 'Phòng Marketing B2C',
+    team: 'Key Visual / SIS',
+    location: 'HN',
+    employmentType: 'Chính thức',
+    departmentScope: 'MARKETING_B2C',
+    canLogin: true,
+    accessSource: 'DEPT_RULE',
+    managerId: 'user-yen-nhi',
+    managerName: 'Đặng Thị Yến Nhi',
+    position: 'Content Executive',
+    picBrands: ['ClubClio', 'Baniphar', 'Meracine', 'Nucos', 'Blossomy', 'Revision', 'pHCare'],
+    permissions: {
+      canApproveBudget: false,
+      canApproveP3: false,
+      canApprovePayment: false,
+      canViewAllBrands: false,
+      canExportRawData: false,
+      canManageMasterData: false
+    },
+    status: 'ACTIVE',
+    lastActive: 'Vừa xong',
+    authMethod: 'LARK_SSO'
+  },
+  {
     id: 'user-ha-linh',
     staffCode: 'HN140',
     name: 'Đặng Mai Hà Linh',

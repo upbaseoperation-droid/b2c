@@ -732,11 +732,12 @@ export async function listIngestedLarkbasePlanRecords(month?: string): Promise<{
   const config = getLarkbasePlanConfig();
   let records = Array.from(memoryIngestedRecords.values());
 
-  try {
-    const dbRows = await prisma.larkbaseBookingPlanRecord.findMany({
-      where: month && month !== 'ALL' ? { month } : undefined,
-      orderBy: { approvedAt: 'desc' }
-    });
+  if (process.env.DATABASE_URL && process.env.DATABASE_URL.trim()) {
+    try {
+      const dbRows = await prisma.larkbaseBookingPlanRecord.findMany({
+        where: month && month !== 'ALL' ? { month } : undefined,
+        orderBy: { approvedAt: 'desc' }
+      });
     if (dbRows.length > 0) {
       records = dbRows.map(row => {
         const raw = row.rawFields as unknown as LarkbaseBookingPlanRecordItem | null;
@@ -791,8 +792,9 @@ export async function listIngestedLarkbasePlanRecords(month?: string): Promise<{
         };
       });
     }
-  } catch {
-    // Dùng dữ liệu trong memoryIngestedRecords khi DB chưa chạy
+    } catch {
+      // Dùng dữ liệu trong memoryIngestedRecords khi DB chưa chạy
+    }
   }
 
   if (month && month !== 'ALL') {

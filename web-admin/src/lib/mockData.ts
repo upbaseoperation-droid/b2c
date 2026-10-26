@@ -263,6 +263,24 @@ export const USERS: UserProfile[] = [
     assignedBrands: ['Baniphar', 'Herbal Care', 'Venus', 'Blossomy']
   },
   {
+    id: 'user-dieu-thuy',
+    name: 'Hoàng Diệu Thùy',
+    email: 'dieuthuy@upbase.vn',
+    role: 'CONTENT_MEMBER',
+    roleTitle: 'Chuyên Viên Content & Key Visual Lead (SIS / Content Executive)',
+    avatar: 'DT',
+    staffCode: 'HN206',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Phòng Marketing B2C',
+    teamName: 'Key Visual / SIS',
+    managerId: 'user-yen-nhi',
+    managerName: 'Đặng Thị Yến Nhi',
+    canLogin: true,
+    loginProvider: 'LARK',
+    linkedEntityName: 'ClubClio, Baniphar, Meracine, Nucos, Blossomy, Revision, pHCare',
+    assignedBrands: ['ClubClio', 'Baniphar', 'Meracine', 'Nucos', 'Blossomy', 'Revision', 'pHCare']
+  },
+  {
     id: 'user-viet-hoang',
     name: 'Việt Hoàng',
     email: 'viethoang@upbase.vn',

@@ -238,9 +238,15 @@ test('E2E UI/UX Flow 2: Tải hợp đồng riêng của KOC (.docx) -> Pháp ch
   process.env.CONTRACT_DATA_DIR = directory;
 
   try {
-    const sampleDocxBuffer = await readFile(
-      path.join(resolveTemplateDir(), '1.1.1. BM.HĐ.VID.IND.Ver052026 booking Video.docx'),
-    );
+    let sampleDocxBuffer: Buffer;
+    try {
+      sampleDocxBuffer = await readFile(
+        path.join(resolveTemplateDir(), '1.1.1. BM.HĐ.VID.IND.Ver052026 booking Video.docx'),
+      );
+    } catch {
+      const { zip } = await loadTemplate('IND-HD');
+      sampleDocxBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+    }
     const base64Docx = sampleDocxBuffer.toString('base64');
 
     // 1. Tạo hợp đồng bằng file .docx riêng của KOC (isKocOwnForm: true)

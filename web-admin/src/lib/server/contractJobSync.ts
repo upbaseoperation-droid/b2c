@@ -46,6 +46,8 @@ export function applyContractRecordToJob(job: DealJob, record: ContractRecord): 
 }
 
 const matches = (job: DealJob, record: ContractRecord, isFirstJob: boolean, dealCode: string, dealId: string) =>
+  job.sowContractId === record.id ||
+  job.bbntContractId === record.id ||
   record.dealId === `PJ-${job.id}` ||
   (Boolean(record.dealCode) && record.dealCode === job.code) ||
   (isFirstJob && ((Boolean(record.dealCode) && record.dealCode === dealCode) || record.dealId === `PD-${dealId}`));

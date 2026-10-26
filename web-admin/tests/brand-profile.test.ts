@@ -9,14 +9,21 @@ import { brandKey, emptyProfile } from '../src/lib/brands/types';
 
 const user = (role: UserProfile['role'], name = 'Người dùng'): UserProfile => ({ id: name, name, email: '', role, roleTitle: '', avatar: '' });
 
-test('Phân quyền theo mục: trưởng phòng sửa tất cả, Account PIC sửa nội dung, không ai khác sửa trần thù lao', () => {
+test('Phân quyền theo mục: nhân sự nội bộ B2C sửa đầy đủ hồ sơ trong phạm vi, đối tác Brand sửa trừ trần thù lao', () => {
   const lead = permissionsFor(user('MANAGER'));
   assert.ok(Object.values(lead).every(Boolean));
-  const pic = permissionsFor(user('BOOKING_MEMBER', 'Phương Thảo'), 'phương thảo');
+  const pic = permissionsFor(user('BOOKING_MEMBER', 'Phương Thảo'), 'phương thảo', 'Senka');
   assert.equal(pic.POSITIONING, true); assert.equal(pic.PRODUCTS, true); assert.equal(pic.DOCUMENTS, true);
-  assert.equal(pic.RATECARD, false); assert.equal(pic.LEGAL, false);
-  const other = permissionsFor(user('BOOKING_MEMBER', 'Khánh Vy'), 'Phương Thảo');
-  assert.ok(Object.values(other).every(v => v === false));
+  assert.equal(pic.LEGAL, true); assert.equal(pic.RATECARD, true);
+  const internalOther = permissionsFor(user('BOOKING_MEMBER', 'Lê Phương Thảo'), 'Phương Thảo', 'Senka');
+  assert.ok(Object.values(internalOther).every(Boolean));
+  const partnerOwn: UserProfile = { ...user('BRAND_PARTNER', 'Đại diện Senka'), partnerType: 'BRAND', assignedBrands: ['Senka'] };
+  const partnerOwnPerms = permissionsFor(partnerOwn, 'Phương Thảo', 'Senka');
+  assert.equal(partnerOwnPerms.POSITIONING, true);
+  assert.equal(partnerOwnPerms.LEGAL, true);
+  assert.equal(partnerOwnPerms.RATECARD, false);
+  const partnerOtherPerms = permissionsFor(partnerOwn, 'Phương Thảo', 'ClubClio');
+  assert.ok(Object.values(partnerOtherPerms).every(v => v === false));
   assert.ok(Object.values(permissionsFor(null)).every(v => v === false));
 });
 
