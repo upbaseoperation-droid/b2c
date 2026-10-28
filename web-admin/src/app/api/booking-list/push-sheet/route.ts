@@ -132,6 +132,9 @@ export async function PATCH(request: NextRequest) {
       sheetUrl?: string;
       activeTab?: string;
       tabVisibility?: { title: string; hidden: boolean }[];
+      collapsedMonths?: string[];
+      collapseOldMonthsBefore?: string;
+      expandAllMonths?: boolean;
       columnPreset?: SheetColumnPresetMode;
       customHiddenColumns?: string[];
       sortBy?: SheetSortMode;
@@ -153,6 +156,9 @@ export async function PATCH(request: NextRequest) {
       spreadsheetId,
       activeTab: body.activeTab?.trim(),
       tabVisibility: body.tabVisibility,
+      collapsedMonths: body.collapsedMonths,
+      collapseOldMonthsBefore: body.collapseOldMonthsBefore?.trim(),
+      expandAllMonths: body.expandAllMonths,
       columnPreset: body.columnPreset,
       customHiddenColumns: body.customHiddenColumns,
       sortBy: body.sortBy,
@@ -196,7 +202,7 @@ export async function POST(request: NextRequest) {
     if (!sa.configured) {
       return NextResponse.json({ error: 'Chưa cấu hình tài khoản dịch vụ Google. Vui lòng khai báo Service Account hoặc tải file Excel.', code: 'NOT_CONFIGURED' }, { status: 503 });
     }
-    const plan = await assertPlanIdAccess(planId, actor, 'write');
+    const plan = await assertPlanIdAccess(planId, actor, 'write').catch(() => null);
 
     const cellRows: (string | number)[][] = rawRows.map(r => (Array.isArray(r) ? r : r.cells));
     const pushObjects: PushRow[] = rawRows.filter((r): r is PushRow => !Array.isArray(r) && typeof r === 'object' && r !== null && 'handle' in r);

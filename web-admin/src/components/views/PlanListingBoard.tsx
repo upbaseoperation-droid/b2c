@@ -77,9 +77,9 @@ const NEXT_ACTION: Partial<Record<BoardColumn, { to: BoardColumn; label: string 
 };
 
 export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
-  kocs,
-  stores = [],
-  deals = [],
+  kocs: rawKocs,
+  stores: rawStores = [],
+  deals: rawDeals = [],
   currentUserName = 'Nhân viên',
   currentUserId = 'staff',
   initialPlanId,
@@ -90,9 +90,15 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
   onOpenSheetSetupScreen,
   isAdmin = false,
 }) => {
+  const kocs = useMemo(() => (Array.isArray(rawKocs) ? rawKocs : []), [rawKocs]);
+  const stores = useMemo(() => (Array.isArray(rawStores) ? rawStores : []), [rawStores]);
+  const deals = useMemo(() => (Array.isArray(rawDeals) ? rawDeals : []), [rawDeals]);
   const notify = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => onNotify?.(msg, type);
 
-  const [plans, setPlans] = useState<InputPlanBreakdownState[]>(() => getCachedClientMonthlyPlans() || []);
+  const [plans, setPlans] = useState<InputPlanBreakdownState[]>(() => {
+    const cached = getCachedClientMonthlyPlans();
+    return Array.isArray(cached) ? cached : [];
+  });
   const [plansState, setPlansState] = useState<'loading' | 'ready' | 'error'>(() =>
     getCachedClientMonthlyPlans() ? 'ready' : 'loading'
   );
@@ -135,7 +141,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
       try {
         const stored = await fetchClientMonthlyPlans();
         if (cancelled) return;
-        setPlans(stored.map(p => p.plan));
+        setPlans(Array.isArray(stored) ? stored.map(p => p?.plan).filter(Boolean) : []);
         setPlansState('ready');
       } catch (err) {
         if (cancelled) return;
@@ -149,7 +155,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const listable = useMemo(() => plans.filter(isPlanListable), [plans]);
+  const listable = useMemo(() => (Array.isArray(plans) ? plans : []).filter(isPlanListable), [plans]);
   const months = useMemo(
     () => Array.from(new Set(['2026/12', '2026/11', '2026/10', '2026/09', ...listable.map(p => p.month).filter(Boolean)])).sort().reverse(),
     [listable]
@@ -226,7 +232,8 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
   }, [visiblePlans, selectedId, initialPlanId, initialStoreName]);
 
   const plan = useMemo(() => allMonthPlans.find(p => p.id === selectedId) || null, [allMonthPlans, selectedId]);
-  const { items, status, update, saveNow, reload } = useListingBoard(plan?.id ?? null, msg => notify(msg, 'warning'));
+  const { items: rawItems, status, update, saveNow, reload } = useListingBoard(plan?.id ?? null, msg => notify(msg, 'warning'));
+  const items = useMemo(() => (Array.isArray(rawItems) ? rawItems : []), [rawItems]);
 
   interface PullSessionReport {
     pullAt: string;
@@ -317,6 +324,19 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
         return;
       }
       setSheetCfg({ configured: Boolean(body.configured), serviceAccountEmail: body.serviceAccountEmail ?? null });
+      if (typeof window !== 'undefined') {
+        try {
+          const payloadToCache = saForm.jsonText.trim()
+            ? saForm.jsonText.trim()
+            : JSON.stringify({
+                client_email: saForm.email.trim() || body.serviceAccountEmail || '',
+                private_key: saForm.privateKey.trim(),
+              });
+          window.localStorage.setItem('upbase_b2c_google_sa_config_v1', payloadToCache);
+        } catch {
+          /* ignore */
+        }
+      }
       setSaConfigOpen(false);
       setSaForm({ jsonText: '', email: '', privateKey: '' });
       notify(`Đã kết nối Google Service Account: ${body.serviceAccountEmail}`, 'success');
@@ -956,7 +976,8 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
             >
               {visiblePlans.length === 0 && <option value="">Không có gian hàng trong kỳ</option>}
               {visiblePlans.map(p => {
-                const required = p.items.filter(i => i.category === 'KOC_TIER').reduce((s, i) => s + (i.qty || 0), 0);
+                const planItems = Array.isArray(p.items) ? p.items : [];
+                const required = planItems.filter(i => i && i.category === 'KOC_TIER').reduce((s, i) => s + (i.qty || 0), 0);
                 const suffix = isStandaloneListingPlan(p)
                   ? 'Listing tự do'
                   : required > 0

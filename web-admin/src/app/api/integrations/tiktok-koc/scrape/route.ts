@@ -253,16 +253,49 @@ export async function POST(req: NextRequest) {
     const directVideoUrls = extractDirectVideoUrlsFromInput(rawInput);
     const defaultVideoLimit = handles.length === 1 ? 24 : 16;
     const videoLimit = Number(body.videoLimit || defaultVideoLimit);
-    const results: TikTokScrapedKocResult[] = await Promise.all(
-      handles.map((h) => scrapeTikTokCreatorData(h, period, { directVideoUrls, videoLimit }))
-    );
+    const forceRefresh = Boolean(body.forceRefresh);
+    const batchStartedAt = Date.now();
+
+    const results: TikTokScrapedKocResult[] = [];
+    const failedHandles: Array<{ handle: string; reason: string }> = [];
+    const concurrency = Math.min(4, handles.length);
+    let cursorIdx = 0;
+
+    const workers = Array.from({ length: concurrency }, async () => {
+      while (cursorIdx < handles.length) {
+        const currentIdx = cursorIdx++;
+        const h = handles[currentIdx];
+        if (!h) continue;
+        try {
+          const item = await scrapeTikTokCreatorData(h, period, {
+            directVideoUrls,
+            videoLimit,
+            forceRefresh,
+          });
+          results[currentIdx] = item;
+        } catch (handleErr: unknown) {
+          failedHandles.push({
+            handle: h,
+            reason:
+              handleErr instanceof Error
+                ? handleErr.message
+                : 'Không phản hồi hoặc vượt thời gian chờ',
+          });
+        }
+      }
+    });
+
+    await Promise.all(workers);
+    const orderedResults = results.filter(Boolean);
 
     return NextResponse.json({
-      success: true,
+      success: orderedResults.length > 0,
       mode: 'HANDLE_SCRAPE',
-      count: results.length,
-      results,
-      data: results[0] || null,
+      count: orderedResults.length,
+      batchDurationMs: Math.max(1, Date.now() - batchStartedAt),
+      failedHandles,
+      results: orderedResults,
+      data: orderedResults[0] || null,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Lỗi không xác định khi thu thập dữ liệu.';

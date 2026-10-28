@@ -22,6 +22,7 @@ import { ActionMenu, ConfirmDialog, FilterBar, Modal, PageActions, Button, Selec
 import { formatVnd, formatVndShort } from '../../lib/format';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 import { StaffBrandListingSheetWorkspace } from '../shortlist/StaffBrandListingSheetWorkspace';
+import { KocQuickViewModal } from '../shortlist/KocQuickViewModal';
 import { PlanListingBoard } from './PlanListingBoard';
 import { PlanDealBoard } from './PlanDealBoard';
 import { PlanSelfChannelBoard } from './PlanSelfChannelBoard';
@@ -104,7 +105,7 @@ function inferSalaryGradeFromFee(fee: number, existingGrade?: SalaryGrade): Sala
 }
 
 export function KocListingBatchHubView({
-  listings,
+  listings: rawListings,
   onUpdateListings,
   onGenerateDeal,
   onCreateOrUpdateDeals,
@@ -112,15 +113,27 @@ export function KocListingBatchHubView({
   currentUser,
   currentRole,
   currentUserName = 'Quản trị viên',
-  monthlyPlans = INITIAL_MONTHLY_PLANS,
-  stores = INITIAL_STORE_PORTFOLIOS,
-  kocs = INITIAL_KOCS,
-  deals = INITIAL_DEALS,
+  monthlyPlans: rawMonthlyPlans = INITIAL_MONTHLY_PLANS,
+  stores: rawStores = INITIAL_STORE_PORTFOLIOS,
+  kocs: rawKocs = INITIAL_KOCS,
+  deals: rawDeals = INITIAL_DEALS,
   activePlanContext,
   onOpenPlanStudio,
   onOpenContractForPlanDeal,
   onNotify,
 }: KocListingBatchHubViewProps) {
+  const listings = useMemo(() => (Array.isArray(rawListings) ? rawListings : []), [rawListings]);
+  const monthlyPlans = useMemo(
+    () => (Array.isArray(rawMonthlyPlans) ? rawMonthlyPlans : INITIAL_MONTHLY_PLANS),
+    [rawMonthlyPlans]
+  );
+  const stores = useMemo(
+    () => (Array.isArray(rawStores) ? rawStores : INITIAL_STORE_PORTFOLIOS),
+    [rawStores]
+  );
+  const kocs = useMemo(() => (Array.isArray(rawKocs) ? rawKocs : INITIAL_KOCS), [rawKocs]);
+  const deals = useMemo(() => (Array.isArray(rawDeals) ? rawDeals : INITIAL_DEALS), [rawDeals]);
+
   // Navigation sub-tabs
   const isAdmin = !currentRole || currentRole === 'ADMIN' || currentRole === 'MANAGER';
   const [dealFocus, setDealFocus] = useState<{ planId: string; listingItemId: string; nonce: number } | null>(null);
@@ -182,6 +195,10 @@ export function KocListingBatchHubView({
   const [approvingItem, setApprovingItem] = useState<KocListingItem | null>(null);
   const [rejectingItem, setRejectingItem] = useState<KocListingItem | null>(null);
   const [isKocReportOpen, setIsKocReportOpen] = useState<boolean>(false);
+  const [quickViewTarget, setQuickViewTarget] = useState<{
+    channelHandle?: string;
+    kocId?: string;
+  } | null>(null);
 
   // Drawer/Modal trao đổi & duyệt chi tiết 1 KOC Listing (Submit Brand -> Duyệt & Đàm phán -> Final Approve)
   const [inspectingListingId, setInspectingListingId] = useState<string | null>(null);
@@ -201,10 +218,9 @@ export function KocListingBatchHubView({
         setSelectedGrade('ALL');
       }
       if (activePlanContext.openStaffSheet) {
-        setActiveSubTab('PLAN_BOARD');
+        setActiveSubTab('STAFF_BRAND_SHEET');
       } else {
-        // Danh sách đề xuất cũ (dữ liệu mẫu, không lưu) đã bỏ: mở bảng Listing thật theo kế hoạch
-        setActiveSubTab('PLAN_BOARD');
+        setActiveSubTab('STAFF_BRAND_SHEET');
       }
     }
   }
@@ -310,16 +326,19 @@ export function KocListingBatchHubView({
       const assignedPicSet = new Set<string>();
 
       relevantPlans.forEach((plan) => {
-        (plan.items || []).forEach((row) => {
+        const planItems = Array.isArray(plan?.items) ? plan.items : [];
+        planItems.forEach((row) => {
+          if (!row) return;
+          const tierCodeStr = String(row.tierCode || '');
           const isPaidOrTapRow =
-            row.channel === 'TIKTOK' || row.category === 'KOC_TIER' || row.tierCode.includes('TAP');
+            row.channel === 'TIKTOK' || row.category === 'KOC_TIER' || tierCodeStr.includes('TAP');
           if (!isPaidOrTapRow) return;
 
           const rowGrade: SalaryGrade =
             row.salaryGrade ||
-            (row.tierCode.includes('TAP')
+            (tierCodeStr.includes('TAP')
               ? 'TAP UpAffiliate'
-              : (row.tierCode as SalaryGrade));
+              : (tierCodeStr as SalaryGrade));
 
           if (rowGrade === klDef.code) {
             planQty += row.qty || 0;
@@ -472,10 +491,10 @@ export function KocListingBatchHubView({
       if (selectedKocStatus !== 'ALL' && item.kocNegotiationStatus !== selectedKocStatus) return false;
       if (deferredSearchQuery.trim()) {
         const q = deferredSearchQuery.toLowerCase();
-        const matchName = item.kocName.toLowerCase().includes(q);
-        const matchHandle = item.kocHandle.toLowerCase().includes(q);
-        const matchStore = item.storeName.toLowerCase().includes(q);
-        const matchBrand = item.brandName.toLowerCase().includes(q);
+        const matchName = (item.kocName || '').toLowerCase().includes(q);
+        const matchHandle = (item.kocHandle || '').toLowerCase().includes(q);
+        const matchStore = (item.storeName || '').toLowerCase().includes(q);
+        const matchBrand = (item.brandName || '').toLowerCase().includes(q);
         if (!matchName && !matchHandle && !matchStore && !matchBrand) return false;
       }
       return true;
@@ -991,8 +1010,10 @@ export function KocListingBatchHubView({
     });
     const brandNewItems = fullListings.filter((inc) => !updatedExistingIds.has(inc.id));
     onUpdateListings([...brandNewItems, ...mergedListings]);
+    setSelectedMonth(targetMonthKey);
+    setSelectedStore(targetStoreName);
     setShowShortlistModal(false);
-    onNotify?.(`Đã đưa ${fullListings.length} KOC vào Sheet "${targetStoreName}" và danh sách đề xuất.`, 'success');
+    onNotify?.(`Đã đưa ${fullListings.length} KOC vào Sheet "${targetStoreName}" (Plan ${targetMonthKey}) và danh sách đề xuất.`, 'success');
   };
 
   // Update Air Video stage
@@ -1594,13 +1615,37 @@ export function KocListingBatchHubView({
                         {/* KOC Info & KL Badge */}
                         <td className="py-2.5 px-3">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-semibold text-slate-900">{item.kocName}</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setQuickViewTarget({
+                                  channelHandle: item.kocHandle,
+                                  kocId: item.kocId,
+                                })
+                              }
+                              className="font-semibold text-slate-900 hover:text-accent hover:underline text-left"
+                              title="Xem nhanh thông tin KOC, hiệu suất kênh & lịch sử hợp tác"
+                            >
+                              {item.kocName}
+                            </button>
                             <span className="font-code text-2xs font-semibold text-blue-700">
                               · {resolvedGrade}
                             </span>
                           </div>
                           <div className="text-2xs text-slate-500 flex items-center gap-1 mt-0.5">
-                            <span>{item.kocHandle}</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setQuickViewTarget({
+                                  channelHandle: item.kocHandle,
+                                  kocId: item.kocId,
+                                })
+                              }
+                              className="text-accent hover:underline font-medium"
+                              title="Mở hồ sơ, hiệu suất & lịch sử KOC"
+                            >
+                              {item.kocHandle}
+                            </button>
                             <span>•</span>
                             <span className="font-medium text-slate-600">{item.channel}</span>
                             <span>•</span>
@@ -2657,6 +2702,17 @@ export function KocListingBatchHubView({
           ),
         ].join('\n')}
         customSystemPrompt="Đánh giá tiến độ Listing KOC so với Plan Final theo từng khung lương KL1-KL7: (1) Chỉ ra các khung lương KL đang thiếu hụt số lượng listing so với Plan Final, (2) Phân tích tỷ lệ rớt/từ chối ở bước Submit Brand & Đàm phán KOC, (3) Đề xuất phương án bổ sung KOC nháp vào các khung lương còn thiếu để đảm bảo giải ngân đúng định mức Plan Final."
+      />
+      <KocQuickViewModal
+        open={Boolean(quickViewTarget)}
+        onClose={() => setQuickViewTarget(null)}
+        channelHandle={quickViewTarget?.channelHandle}
+        kocId={quickViewTarget?.kocId}
+        kocs={kocs}
+        stores={stores}
+        deals={deals}
+        currentUser={currentUser}
+        onNotify={onNotify}
       />
     </div>
   );

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
+  Activity,
   AlertTriangle,
   Check,
   Clock,
@@ -13,6 +14,7 @@ import {
   RefreshCw,
   Search,
   ShoppingBag,
+  Square,
   UserCheck,
   XCircle,
 } from 'lucide-react';
@@ -60,7 +62,7 @@ interface TikTokKocScraperModalProps {
 }
 
 type PeriodKey = '7d' | '30d' | '90d';
-type VideoFilterMode = 'ALL' | 'AFFILIATE' | 'ORGANIC';
+type VideoFilterMode = 'ALL' | 'AFFILIATE' | 'ORGANIC' | 'OUTLIER';
 const VIDEO_LIMIT_OPTIONS = [24, 48, 72, 100] as const;
 
 export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
@@ -79,15 +81,18 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   const period: PeriodKey = '30d';
   const [videoLimit, setVideoLimit] = useState<number>(24);
   const [requestedHandlesCount, setRequestedHandlesCount] = useState<number>(0);
+  const [completedHandlesCount, setCompletedHandlesCount] = useState<number>(0);
   const [requestedVideoLimit, setRequestedVideoLimit] = useState<number>(24);
   const [loading, setLoading] = useState(false);
   const [loadingMoreHandle, setLoadingMoreHandle] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [failedHandlesList, setFailedHandlesList] = useState<Array<{ handle: string; reason: string }>>([]);
   const [results, setResults] = useState<TikTokScrapedKocResult[]>([]);
   const [selectedHandle, setSelectedHandle] = useState<string>('');
   const [videoFilter, setVideoFilter] = useState<VideoFilterMode>('ALL');
   const [reviewModalOpen, setReviewModalOpen] = useState<boolean>(false);
   const [reviewTarget, setReviewTarget] = useState<KocChannelReviewTarget | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const { reviews: channelReviews, getChannelSummary } = useKocChannelReviews();
 
   const syncKey = `${open}-${initialHandle}`;
@@ -99,37 +104,120 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
       setVideoLimit(24);
       setRequestedVideoLimit(24);
       setRequestedHandlesCount(parseTikTokHandles(initialHandle).length);
+      setCompletedHandlesCount(0);
       setErrorMsg(null);
+      setFailedHandlesList([]);
       setResults([]);
       setSelectedHandle('');
       setLoading(false);
     } else {
+      abortControllerRef.current?.abort();
       setLoading(false);
       setLoadingMoreHandle(null);
     }
   }
 
-  const runScrape = async (inputToFetch: string, targetPeriod: PeriodKey, targetLimit = videoLimit) => {
+  const handleStopScrape = () => {
+    abortControllerRef.current?.abort();
+    setLoading(false);
+    onNotify?.('Đã dừng quét các kênh còn lại. Giữ nguyên các kênh đã thu thập.', 'info');
+  };
+
+  const runScrape = async (
+    inputToFetch: string,
+    targetPeriod: PeriodKey,
+    targetLimit = videoLimit,
+    forceRefresh = false
+  ) => {
     const trimmed = inputToFetch.trim();
     if (!trimmed) {
       setErrorMsg('Nhập ít nhất một đường dẫn kênh hoặc @handle TikTok để lấy dữ liệu.');
       return;
     }
 
-    const parsedHandles = parseTikTokHandles(trimmed);
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    const parsedHandles = parseTikTokHandles(trimmed).slice(0, 30);
     setRequestedHandlesCount(Math.max(1, parsedHandles.length));
+    setCompletedHandlesCount(0);
     setRequestedVideoLimit(targetLimit);
     setLoading(true);
     setErrorMsg(null);
+    setFailedHandlesList([]);
+
+    // Quét theo lô cuốn chiếu (Micro-Batch 2 kênh/lượt) khi nhập nhiều kênh để hiển thị kết quả tức thì
+    if (parsedHandles.length > 2) {
+      const accumulatedResults: TikTokScrapedKocResult[] = [];
+      const accumulatedFailures: Array<{ handle: string; reason: string }> = [];
+      const chunkSize = 2;
+
+      try {
+        for (let i = 0; i < parsedHandles.length; i += chunkSize) {
+          if (controller.signal.aborted) break;
+          const chunkHandles = parsedHandles.slice(i, i + chunkSize);
+          const res = await fetch('/api/integrations/tiktok-koc/scrape', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({
+              rawInput: chunkHandles.join(', '),
+              period: targetPeriod,
+              videoLimit: targetLimit,
+              forceRefresh,
+            }),
+          });
+          const json = await res.json();
+          if (Array.isArray(json.results) && json.results.length > 0) {
+            for (const item of json.results as TikTokScrapedKocResult[]) {
+              if (!accumulatedResults.some((r) => r.handle === item.handle)) {
+                accumulatedResults.push(item);
+              }
+            }
+            setResults([...accumulatedResults]);
+            if (accumulatedResults.length === json.results.length) {
+              setSelectedHandle(accumulatedResults[0].handle);
+            }
+          }
+          if (Array.isArray(json.failedHandles)) {
+            accumulatedFailures.push(...json.failedHandles);
+            setFailedHandlesList([...accumulatedFailures]);
+          }
+          setCompletedHandlesCount(Math.min(parsedHandles.length, i + chunkHandles.length));
+        }
+
+        if (accumulatedResults.length > 0) {
+          onSaveScrapedSession?.({
+            rawInput: trimmed,
+            results: accumulatedResults,
+          });
+        } else if (!controller.signal.aborted) {
+          setErrorMsg('Không lấy được dữ liệu kênh TikTok. Kiểm tra lại đường dẫn hoặc @handle.');
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+        if (accumulatedResults.length === 0) {
+          setErrorMsg('Không kết nối được dịch vụ lấy dữ liệu TikTok. Thử lại sau ít phút.');
+        }
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     try {
       const res = await fetch('/api/integrations/tiktok-koc/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           rawInput: trimmed,
           period: targetPeriod,
           videoLimit: targetLimit,
+          forceRefresh,
         }),
       });
       const json = await res.json();
@@ -140,6 +228,10 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
       }
 
       setResults(json.results);
+      setCompletedHandlesCount(json.results.length);
+      if (Array.isArray(json.failedHandles)) {
+        setFailedHandlesList(json.failedHandles);
+      }
       setSelectedHandle(json.results[0].handle);
       onSaveScrapedSession?.({
         rawInput: trimmed,
@@ -150,15 +242,20 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
           `Chỉ lấy được ${json.results.length}/${parsedHandles.length} kênh KOC yêu cầu (thiếu ${parsedHandles.length - json.results.length} kênh).`,
           'warning'
         );
+      } else if (forceRefresh) {
+        onNotify?.(`Đã làm mới trực tiếp dữ liệu kênh @${json.results[0].handle}`, 'success');
       }
-    } catch {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
       setErrorMsg('Không kết nối được dịch vụ lấy dữ liệu TikTok. Thử lại sau ít phút.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLoadMoreVideos = async (handle: string, nextLimit: number) => {
+  const handleLoadMoreVideos = async (handle: string, nextLimit: number, forceRefresh = false) => {
     setLoadingMoreHandle(handle);
     setRequestedVideoLimit(nextLimit);
     try {
@@ -169,6 +266,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
           handles: [handle],
           period,
           videoLimit: nextLimit,
+          forceRefresh,
         }),
       });
       const json = await res.json();
@@ -176,7 +274,12 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
         const refreshed = json.results[0] as TikTokScrapedKocResult;
         setResults((prev) => prev.map((item) => (item.handle === handle ? refreshed : item)));
         setVideoLimit(nextLimit);
-        onNotify?.(`Đã tải ${refreshed.recentVideos.length} video trên kênh @${handle}`, 'success');
+        onNotify?.(
+          forceRefresh
+            ? `Đã làm mới trực tiếp kênh @${handle} (${refreshed.recentVideos.length} video)`
+            : `Đã tải ${refreshed.recentVideos.length} video trên kênh @${handle}`,
+          'success'
+        );
       } else {
         onNotify?.('Không tải thêm được video của kênh này.', 'warning');
       }
@@ -219,6 +322,9 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
     }
     if (videoFilter === 'ORGANIC') {
       return activeResult.recentVideos.filter((v) => !v.isAffiliate);
+    }
+    if (videoFilter === 'OUTLIER') {
+      return activeResult.recentVideos.filter((v) => v.isViralOutlier || v.isPinnedOldVideo);
     }
     return activeResult.recentVideos;
   }, [activeResult, videoFilter]);
@@ -289,9 +395,21 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
             <span>{v.caption}</span>
             <ExternalLink className="w-3 h-3 shrink-0 mt-0.5 text-ink-3" />
           </a>
-          <span className="text-2xs text-ink-3 truncate">
-            {v.hashtags.length > 0 ? v.hashtags.join(' ') : 'Không có hashtag'}
-          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {v.isViralOutlier && (
+              <span className="px-1.5 py-0.5 rounded bg-accent-soft text-accent text-2xs font-medium">
+                Đột biến &ge;4x trung vị
+              </span>
+            )}
+            {v.isPinnedOldVideo && (
+              <span className="px-1.5 py-0.5 rounded bg-warning-soft text-warning text-2xs font-medium">
+                Bài ghim cũ
+              </span>
+            )}
+            <span className="text-2xs text-ink-3 truncate">
+              {v.hashtags.length > 0 ? v.hashtags.join(' ') : 'Không có hashtag'}
+            </span>
+          </div>
           {v.isAffiliate && (
             <span className="text-2xs text-positive font-medium truncate" title={v.productName}>
               Giỏ hàng: {v.productName || 'Sản phẩm TikTok Shop'}
@@ -476,15 +594,62 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                 ))}
               </Select>
 
-              <Button
-                variant={results.length === 0 ? 'primary' : 'secondary'}
-                icon={loading ? RefreshCw : Search}
-                disabled={loading}
-                onClick={() => runScrape(rawInput, period, videoLimit)}
-              >
-                {loading ? 'Đang lấy dữ liệu...' : 'Lấy dữ liệu kênh'}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={results.length === 0 ? 'primary' : 'secondary'}
+                  icon={loading ? RefreshCw : Search}
+                  disabled={loading}
+                  onClick={() => runScrape(rawInput, period, videoLimit, false)}
+                >
+                  {loading
+                    ? requestedHandlesCount > 1
+                      ? `Đang quét ${completedHandlesCount}/${requestedHandlesCount}...`
+                      : 'Đang lấy dữ liệu...'
+                    : 'Lấy dữ liệu kênh'}
+                </Button>
+                {loading && (
+                  <Button
+                    variant="secondary"
+                    icon={Square}
+                    onClick={handleStopScrape}
+                  >
+                    Dừng
+                  </Button>
+                )}
+              </div>
             </div>
+
+            {loading && requestedHandlesCount > 1 && (
+              <div className="space-y-1 pt-0.5">
+                <div className="flex items-center justify-between text-2xs text-ink-3 tabular-nums">
+                  <span>
+                    Tiến độ quét lô cuốn chiếu: {completedHandlesCount}/{requestedHandlesCount} kênh
+                  </span>
+                  <span>
+                    {Math.min(
+                      100,
+                      Math.round(
+                        (completedHandlesCount / Math.max(1, requestedHandlesCount)) * 100
+                      )
+                    )}
+                    %
+                  </span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-sunken overflow-hidden">
+                  <div
+                    className="h-full bg-accent transition-all duration-300"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.round(
+                          (completedHandlesCount / Math.max(1, requestedHandlesCount)) * 100
+                        )
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
 
             {errorMsg && <p className="text-2xs text-critical">{errorMsg}</p>}
             {!loading && results.length > 0 && requestedHandlesCount > results.length && (
@@ -493,6 +658,23 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                   Chỉ lấy được {results.length}/{requestedHandlesCount} kênh KOC yêu cầu (thiếu{' '}
                   {requestedHandlesCount - results.length} kênh)
                 </Status>
+                {failedHandlesList.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={RefreshCw}
+                    onClick={() =>
+                      runScrape(
+                        failedHandlesList.map((f) => f.handle).join(', '),
+                        period,
+                        videoLimit,
+                        true
+                      )
+                    }
+                  >
+                    Quét lại {failedHandlesList.length} kênh lỗi
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -608,6 +790,33 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                         >
                           Đưa vào Sheet Listing
                         </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        icon={RefreshCw}
+                        disabled={loadingMoreHandle === activeResult.handle || loading}
+                        onClick={() =>
+                          void handleLoadMoreVideos(
+                            activeResult.handle,
+                            Math.max(videoLimit, activeResult.recentVideos.length || 24),
+                            true
+                          )
+                        }
+                      >
+                        {loadingMoreHandle === activeResult.handle
+                          ? 'Đang làm mới...'
+                          : 'Làm mới trực tiếp'}
+                      </Button>
+                      {activeResult.scrapeDiagnostics && (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-sunken border border-line text-2xs text-ink-2 tabular-nums">
+                          <Activity className="w-3 h-3 text-accent shrink-0" />
+                          <span>{activeResult.scrapeDiagnostics.engineLabel}</span>
+                          <span>· {activeResult.scrapeDiagnostics.durationMs}ms</span>
+                          <span>
+                            · {activeResult.scrapeDiagnostics.cacheHit ? 'Bộ nhớ đệm' : 'Trực tiếp'}
+                          </span>
+                        </span>
                       )}
                       <span className="text-2xs text-ink-3">
                         · SĐT:{' '}
@@ -1053,6 +1262,27 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                       >
                         Bài thường ({activeResult.recentVideos.filter((v) => !v.isAffiliate).length})
                       </button>
+                      {activeResult.recentVideos.some(
+                        (v) => v.isViralOutlier || v.isPinnedOldVideo
+                      ) && (
+                        <button
+                          type="button"
+                          onClick={() => setVideoFilter('OUTLIER')}
+                          className={`px-2 py-1 rounded-md transition-colors ${
+                            videoFilter === 'OUTLIER'
+                              ? 'bg-surface text-accent font-semibold'
+                              : 'text-ink-2 hover:text-ink'
+                          }`}
+                        >
+                          Đột biến / Ghim cũ (
+                          {
+                            activeResult.recentVideos.filter(
+                              (v) => v.isViralOutlier || v.isPinnedOldVideo
+                            ).length
+                          }
+                          )
+                        </button>
+                      )}
                     </div>
                     {!loading &&
                       loadingMoreHandle !== activeResult.handle &&

@@ -32,7 +32,12 @@ import type {
   KocItem,
   StorePortfolioItem,
 } from '../../lib/types';
-import { formatVnd, formatVndShort, getVietnamDateYmd } from '../../lib/format';
+import { formatNumber, formatVnd, formatVndShort, getVietnamDateYmd } from '../../lib/format';
+
+const parseThousandNumberInput = (raw: string): number => {
+  const digits = String(raw || '').replace(/[^\d]/g, '');
+  return digits ? Number(digits) || 0 : 0;
+};
 import {
   APPROVED_BOOKING_LIST_UPDATED_EVENT,
   LOAI_TAI_KHOAN_THANH_TOAN_OPTIONS,
@@ -65,6 +70,7 @@ import type { TikTokVideoInspectionResult } from '../../lib/tiktokVideoInspector
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
 import { LarkPaymentRequestModal } from '../booking/LarkPaymentRequestModal';
 import { DraftBbntPreviewModal } from '../contracts/DraftBbntPreviewModal';
+import { KocQuickViewModal } from '../shortlist/KocQuickViewModal';
 import type { LarkPaymentRequestSlip } from '../../lib/larkPaymentRequestEngine';
 import { ActionMenu, Button, Field, Input, Modal, PageActions, Segmented, Select } from '../ui';
 
@@ -170,6 +176,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
 
   // Lọc danh sách hiển thị
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
+  const [quickViewApprovedItem, setQuickViewApprovedItem] = useState<ApprovedBookingListItem | null>(null);
   const sheetSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const filteredItems = useMemo(() => {
@@ -1869,30 +1876,51 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                         )}
                       </td>
 
-                      {/* Cột 2: ID kênh & Link kênh */}
+                      {/* Cột 2: ID kênh & Link kênh + Xem nhanh Hồ sơ / Hiệu suất / Lịch sử KOC */}
                       <td
                         className={`sticky left-[180px] z-10 ${stickyCellBg} px-2.5 py-2 border-r border-line w-[168px] min-w-[168px] max-w-[168px] align-middle shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]`}
                       >
                         <div className="space-y-1">
-                          <input
-                            type="text"
-                            value={item.idKenh}
-                            onChange={(e) =>
-                              handleFieldChange(item.id, 'idKenh', e.target.value)
-                            }
-                            placeholder="Nhập @id_kênh..."
-                            className="w-full h-7 px-2 rounded border border-line bg-surface font-semibold text-xs text-ink"
-                          />
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              value={item.idKenh}
+                              onChange={(e) =>
+                                handleFieldChange(item.id, 'idKenh', e.target.value)
+                              }
+                              onDoubleClick={() => {
+                                if (item.idKenh || item.kocId) {
+                                  setQuickViewApprovedItem(item);
+                                }
+                              }}
+                              placeholder="Nhập @id_kênh..."
+                              className="w-full min-w-0 h-7 px-2 rounded border border-line bg-surface font-semibold text-xs text-ink"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setQuickViewApprovedItem(item)}
+                              disabled={!item.idKenh && !item.kocId}
+                              title={`Xem nhanh thông tin KOC, hiệu suất kênh & lịch sử hợp tác (@${item.idKenh})`}
+                              className="h-7 w-7 rounded border border-line bg-surface text-accent hover:bg-sunken inline-flex items-center justify-center shrink-0 disabled:opacity-40"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                           <div className="flex items-center justify-between gap-1 text-2xs text-ink-3">
-                            <span className="truncate max-w-[100px]" title={item.tenKenh}>
-                              {item.tenKenh || item.tepKenh}
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setQuickViewApprovedItem(item)}
+                              className="truncate max-w-[100px] text-left text-accent hover:underline font-medium"
+                              title={`Xem hồ sơ & lịch sử KOC: ${item.tenKenh || item.idKenh}`}
+                            >
+                              {item.tenKenh || item.tepKenh || 'Xem KOC'}
+                            </button>
                             {item.linkKenh && (
                               <a
                                 href={item.linkKenh}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-accent hover:underline shrink-0"
+                                className="text-ink-2 hover:text-accent hover:underline shrink-0"
                               >
                                 Kênh ↗
                               </a>
@@ -1955,13 +1983,14 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                       {/* Cột 18: Nhân viên điền Giá cuối cùng của Deal (Video Asset + Dịch vụ gia tăng) */}
                       <td className="px-2.5 py-2 border-r border-line align-middle bg-amber-50/25">
                         <input
-                          type="number"
-                          value={item.chiPhiBookingNetCuoi}
+                          type="text"
+                          inputMode="numeric"
+                          value={formatNumber(Number(item.chiPhiBookingNetCuoi) || 0)}
                           onChange={(e) =>
                             handleFieldChange(
                               item.id,
                               'chiPhiBookingNetCuoi',
-                              Number(e.target.value) || 0
+                              parseThousandNumberInput(e.target.value)
                             )
                           }
                           className="w-full h-7 px-2 rounded border border-amber-300 bg-surface text-right font-mono font-semibold text-xs text-ink tabular-nums focus:outline-none focus:border-ink"
@@ -1994,13 +2023,14 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                         <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
                           <span className="text-2xs text-ink-3 shrink-0">Cọc</span>
                           <input
-                            type="number"
-                            value={item.soTienTamUngTruoc}
+                            type="text"
+                            inputMode="numeric"
+                            value={formatNumber(Number(item.soTienTamUngTruoc) || 0)}
                             onChange={(e) =>
                               handleFieldChange(
                                 item.id,
                                 'soTienTamUngTruoc',
-                                Number(e.target.value) || 0
+                                parseThousandNumberInput(e.target.value)
                               )
                             }
                             placeholder="0"
@@ -2174,33 +2204,35 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
                                 <span className="text-3xs text-ink-3 shrink-0">View</span>
                                 <input
-                                  type="number"
-                                  value={item.views30d}
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={formatNumber(Number(item.views30d) || 0)}
                                   onChange={(e) =>
                                     handleFieldChange(
                                       item.id,
                                       'views30d',
-                                      Number(e.target.value) || 0
+                                      parseThousandNumberInput(e.target.value)
                                     )
                                   }
                                   title="Views 30 ngày"
-                                  className="w-full min-w-0 bg-transparent text-right font-mono text-2xs text-ink tabular-nums focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  className="w-full min-w-0 bg-transparent text-right font-mono text-2xs text-ink tabular-nums focus:outline-none"
                                 />
                               </div>
                               <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
                                 <span className="text-3xs text-ink-3 shrink-0">Đơn</span>
                                 <input
-                                  type="number"
-                                  value={item.orders30d}
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={formatNumber(Number(item.orders30d) || 0)}
                                   onChange={(e) =>
                                     handleFieldChange(
                                       item.id,
                                       'orders30d',
-                                      Number(e.target.value) || 0
+                                      parseThousandNumberInput(e.target.value)
                                     )
                                   }
                                   title="Số đơn hàng 30 ngày"
-                                  className="w-full min-w-0 bg-transparent text-right font-mono text-2xs text-ink tabular-nums focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  className="w-full min-w-0 bg-transparent text-right font-mono text-2xs text-ink tabular-nums focus:outline-none"
                                 />
                               </div>
                             </div>
@@ -2209,17 +2241,18 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                 GMV
                               </span>
                               <input
-                                type="number"
-                                value={item.gmv30d}
+                                type="text"
+                                inputMode="numeric"
+                                value={formatNumber(Number(item.gmv30d) || 0)}
                                 onChange={(e) =>
                                   handleFieldChange(
                                     item.id,
                                     'gmv30d',
-                                    Number(e.target.value) || 0
+                                    parseThousandNumberInput(e.target.value)
                                   )
                                 }
                                 title="GMV 30 ngày (VNĐ)"
-                                className="w-full min-w-0 bg-transparent text-right font-mono font-semibold text-xs text-emerald-800 tabular-nums focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                className="w-full min-w-0 bg-transparent text-right font-mono font-semibold text-xs text-emerald-800 tabular-nums focus:outline-none"
                               />
                             </div>
                           </td>
@@ -2813,13 +2846,14 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
                               <span className="text-3xs text-ink-3 shrink-0">View</span>
                               <input
-                                type="number"
-                                value={row.views30d}
+                                type="text"
+                                inputMode="numeric"
+                                value={formatNumber(Number(row.views30d) || 0)}
                                 onChange={(e) =>
                                   updateDraftRowField(
                                     idx,
                                     'views30d',
-                                    Number(e.target.value) || 0
+                                    parseThousandNumberInput(e.target.value)
                                   )
                                 }
                                 className="w-full bg-transparent text-right font-mono text-2xs text-ink tabular-nums focus:outline-none"
@@ -2828,13 +2862,14 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
                               <span className="text-3xs text-ink-3 shrink-0">Đơn</span>
                               <input
-                                type="number"
-                                value={row.orders30d}
+                                type="text"
+                                inputMode="numeric"
+                                value={formatNumber(Number(row.orders30d) || 0)}
                                 onChange={(e) =>
                                   updateDraftRowField(
                                     idx,
                                     'orders30d',
-                                    Number(e.target.value) || 0
+                                    parseThousandNumberInput(e.target.value)
                                   )
                                 }
                                 className="w-full bg-transparent text-right font-mono text-2xs text-ink tabular-nums focus:outline-none"
@@ -2846,13 +2881,14 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               GMV
                             </span>
                             <input
-                              type="number"
-                              value={row.gmv30d}
+                              type="text"
+                              inputMode="numeric"
+                              value={formatNumber(Number(row.gmv30d) || 0)}
                               onChange={(e) =>
                                 updateDraftRowField(
                                   idx,
                                   'gmv30d',
-                                  Number(e.target.value) || 0
+                                  parseThousandNumberInput(e.target.value)
                                 )
                               }
                               className="w-full bg-transparent text-right font-mono font-semibold text-xs text-emerald-800 tabular-nums focus:outline-none"
@@ -3202,19 +3238,21 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                 </Field>
                 <Field label="Đơn giá Net của Asset Video (VNĐ)">
                   <Input
-                    type="number"
-                    value={dealDraftVideoNetCost}
+                    type="text"
+                    inputMode="numeric"
+                    value={formatNumber(Number(dealDraftVideoNetCost) || 0)}
                     onChange={(e) =>
-                      setDealDraftVideoNetCost(Math.max(0, Number(e.target.value) || 0))
+                      setDealDraftVideoNetCost(parseThousandNumberInput(e.target.value))
                     }
                   />
                 </Field>
                 <Field label="Số tiền tạm ứng trước theo Deal (VNĐ)">
                   <Input
-                    type="number"
-                    value={dealDraftAdvanceAmount}
+                    type="text"
+                    inputMode="numeric"
+                    value={formatNumber(Number(dealDraftAdvanceAmount) || 0)}
                     onChange={(e) =>
-                      setDealDraftAdvanceAmount(Math.max(0, Number(e.target.value) || 0))
+                      setDealDraftAdvanceAmount(parseThousandNumberInput(e.target.value))
                     }
                   />
                 </Field>
@@ -3340,17 +3378,18 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                       <div className="sm:col-span-3 flex items-center gap-1">
                         <span className="text-2xs text-ink-3 shrink-0">Phí Net:</span>
                         <input
-                          type="number"
-                          value={addon.allocatedCostVnd || 0}
+                          type="text"
+                          inputMode="numeric"
+                          value={formatNumber(Number(addon.allocatedCostVnd) || 0)}
                           onChange={(e) => {
-                            const cost = Math.max(0, Number(e.target.value) || 0);
+                            const cost = parseThousandNumberInput(e.target.value);
                             setDealDraftAddons((prev) =>
                               prev.map((a, i) =>
                                 i === idx ? { ...a, allocatedCostVnd: cost } : a
                               )
                             );
                           }}
-                          className="w-full h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-right font-semibold text-ink"
+                          className="w-full h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-right font-semibold text-ink tabular-nums"
                         />
                       </div>
                       <div className="sm:col-span-1 text-right">
@@ -3454,6 +3493,16 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
             'success'
           );
         }}
+      />
+
+      <KocQuickViewModal
+        open={Boolean(quickViewApprovedItem)}
+        onClose={() => setQuickViewApprovedItem(null)}
+        approvedItem={quickViewApprovedItem}
+        kocs={kocs}
+        stores={stores}
+        deals={deals}
+        onNotify={onNotify}
       />
     </div>
   );

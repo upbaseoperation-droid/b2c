@@ -8,74 +8,86 @@ export interface StaffListingSheetRow {
   kocId?: string;
   createdAt: string;
 
-  // 48 cột theo đúng thứ tự B -> AW của Sheet "Template hệ thống" (template list KOL_KOC.xlsx)
-  ngayDien: string;             // #1  (B)  ngay_dien (Tự động)
-  dot: string;                  // #2  (C)  Đợt (Thủ công: Đợt 1, Đợt 2, Đợt 3...)
-  thang: string;                // #3  (D)  Tháng (Tự động: 2026/10, Tháng 10...)
-  nhanSuDien: string;           // #4  (E)  nhan_su_dien (Tự động)
-  store: string;                // #5  (F)  Store (Tự động theo sheet Brand/Gian hàng)
-  contentTag: string;           // #6  (G)  Content tag (Thủ công - Pillar Content)
-  idKenh: string;               // #7  (H)  🎃id kênh (Hệ thống tự lấy từ KOC)
-  linkKenh: string;             // #8  (I)  🎃Link kênh (Công thức =CONCAT("https://www.tiktok.com/@",H4))
-  tepKenh: string;              // #9  (J)  🎃 Tệp kênh (Hệ thống tự lấy + nhân viên chỉnh)
-  sanPham: string;              // #10 (K)  Sản phẩm (Nhân viên điền / chọn SKU của Brand)
-  tenKenh: string;              // #11 (L)  Tên người ảnh hưởng (Tên kênh) (Hệ thống tự lấy)
-  tepBooking: string;           // #12 (M)  Tệp Booking (Tự động theo Giá net video: Freecast, KL1..KL7)
-  giaNetVideo: number;          // #13 (N)  Giá net video (Hệ thống gợi ý từ hồ sơ / Nhân viên điền)
-  phiBookingKemThue: number;    // #14 (O)  Phí booking kèm thuế TNCN (Công thức = N4/0.9)
-  follower: number;             // #15 (P)  Follower (Hệ thống tự lấy)
-  trangThai: string;            // #16 (Q)  Trạng thái (Nhận sản phẩm, Trải nghiệm sản phẩm, Không phản hồi, Từ chối...)
-  deXuatUpBase: string;         // #17 (R)  Đề xuất từ UpBase (Must Have, Recommend, Optional)
-  leaderNote: string;           // #18 (S)  Growth/ account/leader note (Thủ công)
-  contentNote: string;          // #19 (T)  Content note (Thủ công)
-  brandChon: string;            // #20 (U)  Brand chọn (Yes, No, Cân nhắc, Chờ duyệt)
-  lyDoTuChoi: string;           // #21 (V)  Lý do từ chối - brand note (Thủ công)
-  thanhQuaHopTac: string;       // #22 (W)  Thành quả hợp tác (Hệ thống tự tổng hợp lịch sử + Nhân viên điền)
-  gmvDaHopTac: number;          // #23 (X)  GMV đã hợp tác - Kéo từ GMV max của ID kênh (Tự động - kéo)
-  doanhSo: number;              // #24 (Y)  Doanh số (nếu có) (Hệ thống tự lấy GMV 30d)
-  soMonBanRa: number;           // #25 (Z)  Số món bán ra (Hệ thống tự lấy itemsSold)
-  gpm: number;                  // #26 (AA) GPM (Hệ thống tự lấy)
-  aov: number;                  // #27 (AB) GMV từ mỗi khách hàng/ AOV (Hệ thống tự lấy)
-  viewTrungBinh: number;        // #28 (AC) View trung bình video (Hệ thống tự lấy)
-  gmvTuVideoPct: number;        // #29 (AD) GMV từ video (%) (Hệ thống tự lấy)
-  gmvTuLivePct: number;         // #30 (AE) GMV từ Live (%) (Hệ thống tự lấy)
-  gmvTuTheSanPhamPct: number;   // #31 (AF) GMV từ thẻ sản phẩm (%) (Công thức = 100% - AD - AE)
-  namPct: number;               // #32 (AG) Nam (%) (Hệ thống tự lấy)
-  nuPct: number;                // #33 (AH) Nữ (%) (Công thức = 100% - AG)
-  tuoi18_24Pct: number;         // #34 (AI) 18-24 (%) (Hệ thống tự lấy)
-  tuoi25_34Pct: number;         // #35 (AJ) 25-34 (%) (Hệ thống tự lấy)
-  tuoiTren35Pct: number;        // #36 (AK) >35 (%) (Công thức = 100% - AI - AJ - AL)
-  tuoiOtherPct: number;         // #37 (AL) Other (%)
-  location: string;             // #38 (AM) Location (Hệ thống tự lấy)
-  ngayAirPlan: string;          // #39 (AN) Ngày air plan (Nhân viên điền)
-  email: string;                // #40 (AO) Email (Hệ thống tự lấy từ Danh bạ)
-  zalo: string;                 // #41 (AP) Zalo (Hệ thống tự lấy từ Danh bạ)
-  nguoiNhanHang: string;        // #42 (AQ) Người nhận hàng (Hệ thống tự lấy từ Danh bạ)
-  sdtNhanHang: string;          // #43 (AR) SĐT nhận hàng (Hệ thống tự lấy từ Danh bạ)
-  diaChiNhanHang: string;       // #44 (AS) Địa chỉ nhận hàng (Hệ thống tự lấy từ Danh bạ)
-  tenTaiKhoanNganHang: string;  // #45 (AT) Tên tài khoản ngân hàng (Hệ thống tự lấy từ Danh bạ)
-  soTaiKhoan: string;           // #46 (AU) Số tài khoản (Hệ thống tự lấy từ Danh bạ)
-  nganHang: string;             // #47 (AV) Ngân hàng (Hệ thống tự lấy từ Danh bạ)
-  soCccd: string;               // #48 (AW) Số CCCD (Hệ thống tự lấy từ Danh bạ)
+  // 57 cột chuẩn theo đúng thứ tự A -> BE của Sheet "Template List KOC_TikTok - đã chốt" (QSCWrv)
+  ngayDien: string;             // #1  (A)  Ngày điền (Tự động)
+  thang: string;                // #2  (B)  Tháng (Tự động: 2026/10)
+  nhanSuDien: string;           // #3  (C)  Nhân sự điền (Tự động)
+  dot: string;                  // #4  (D)  Đợt listing (Thủ công: Đợt 1, Đợt 2, Đợt 3...)
+  store: string;                // #5  (E)  Store (Tự động theo sheet Brand/Gian hàng)
+  sanPham: string;              // #6  (F)  Sản phẩm (Nhân viên điền / chọn SKU của Brand)
+  idKenh: string;               // #7  (G)  🎃id kênh (Hệ thống tự lấy từ KOC)
+  tenKenh: string;              // #8  (H)  Tên người ảnh hưởng (Tên kênh) (Hệ thống tự lấy)
+  linkKenh: string;             // #9  (I)  🎃Link kênh (Công thức =CONCAT("https://www.tiktok.com/@",G9))
+  follower: number;             // #10 (J)  Follower (Hệ thống tự lấy)
+  tepKenh: string;              // #11 (K)  🎃 Tệp kênh (Hệ thống tự lấy + nhân viên chỉnh)
+  contentTag: string;           // #12 (L)  Content tag (Thủ công - Pillar Content)
+  tepBooking: string;           // #13 (M)  Tệp Booking (Tự động theo Giá net video: Freecast, KL1..KL7)
+  giaDaHopTacTruocDo?: number;  // #14 (N)  Giá đã hợp tác trước đó (Giá dự kiến)
+  loaiGia?: string;             // #15 (O)  Loại giá (Booking, Code ads, reup Gắn giỏ, SDHA)
+  giaNetVideo: number;          // #16 (P)  Giá net video (Hệ thống gợi ý từ hồ sơ / Nhân viên điền)
+  phiBookingKemThue: number;    // #17 (Q)  Phí booking kèm thuế TNCN (Công thức = P9/0.9)
+  trangThai: string;            // #18 (R)  Trạng thái Quy trình Booking - Tech
+  deXuatUpBase: string;         // #19 (S)  Đề xuất từ UpBase (Must Have, Recommend, Optional)
+  contentNote: string;          // #20 (T)  Content note (Thủ công)
+  brandChon: string;            // #21 (U)  Brand chọn (Yes, No, Cân nhắc, Chờ duyệt)
+  lyDoTuChoi: string;           // #22 (V)  Lý do từ chối (Thủ công)
+  thanhQuaHopTac: string;       // #23 (W)  Thành quả hợp tác với UB
+  thanhQuaBrandNgoai?: string;  // #24 (X)  Thành quả hợp tác với brand ngoài
+  doanhSo: number;              // #25 (Y)  Doanh số (nếu có) (= Số món bán ra * AOV)
+  doanhSoUocTinh30d?: number;   // #26 (Z)  Doanh số ước tính trong 30 ngày
+  soMonBanRa: number;           // #27 (AA) Số món bán ra (Hệ thống tự lấy itemsSold)
+  gpm: number;                  // #28 (AB) GPM (Hệ thống tự lấy)
+  aov: number;                  // #29 (AC) GMV từ mỗi khách hàng/ AOV (Hệ thống tự lấy)
+  viewTrungBinh: number;        // #30 (AD) View trung bình video/ trung vị video
+  costPerView?: number;         // #31 (AE) Cost per view (Chi phí / view)
+  gmvTuVideoPct: number;        // #32 (AF) Tỉ trọng GMV từ video (%)
+  gmvTuLivePct: number;         // #33 (AG) Tỉ trọng GMV từ Live (%)
+  gmvTuTheSanPhamPct: number;   // #34 (AH) Tỉ trọng GMV từ thẻ sản phẩm (%)
+  tiTrongNganhHang?: string;    // #35 (AI) Tỉ trọng ngành hàng (Top 3 ngành hàng/kênh)
+  namPct: number;               // #36 (AJ) Tỉ trọng Nam (%)
+  nuPct: number;                // #37 (AK) Tỉ trọng Nữ (%)
+  tuoi18_24Pct: number;         // #38 (AL) Tỉ trọng 18-24 (%)
+  tuoi25_34Pct: number;         // #39 (AM) Tỉ trọng 25-34 (%)
+  tuoiOtherPct: number;         // #40 (AN) Other (%)
+  location: string;             // #41 (AO) Location (Hệ thống tự lấy)
+  ngayAirPlan: string;          // #42 (AP) Ngày air plan (Nhân viên điền)
+  gmvTarget?: number;           // #43 (AQ) GMV Target (View trung bình * CTR * CR * AOV)
+  viewTrungVi?: number;         // #44 (AR) View trung vị
+  ctrPct?: number;              // #45 (AS) CTR (%)
+  crPct?: number;               // #46 (AT) CR (%)
+  viewTarget?: number;          // #47 (AU) View Target
+  tyLeTuongTacPct?: number;     // #48 (AV) Tỷ lệ tương tác (%)
+  email: string;                // #49 (AW) Email (Nội bộ - Tự động điền từ Danh bạ)
+  zalo: string;                 // #50 (AX) Zalo (Nội bộ - Tự động điền từ Danh bạ)
+  nguoiNhanHang: string;        // #51 (AY) Người nhận hàng (Nội bộ - Tự động điền từ Danh bạ)
+  sdtNhanHang: string;          // #52 (AZ) SĐT nhận hàng (Nội bộ - Tự động điền từ Danh bạ)
+  diaChiNhanHang: string;       // #53 (BA) Địa chỉ nhận hàng (Nội bộ - Tự động điền từ Danh bạ)
+  tenTaiKhoanNganHang: string;  // #54 (BB) Tên tài khoản ngân hàng (Nội bộ - Tự động điền từ Danh bạ)
+  soTaiKhoan: string;           // #55 (BC) Số tài khoản (Nội bộ - Tự động điền từ Danh bạ)
+  nganHang: string;             // #56 (BD) Ngân hàng (Nội bộ - Tự động điền từ Danh bạ)
+  soCccd: string;               // #57 (BE) Số CCCD (Nội bộ - Tự động điền từ Danh bạ)
 
-  // Các trường Chốt Book & Nghiệm thu Video (Hệ thống tự động mapping theo kênh KOC sau khi nghiệm thu)
+  // Các trường mở rộng nội bộ & Nghiệm thu Video (File 3.2)
+  leaderNote: string;           // #58 (BF) Ghi chú Leader nội bộ
+  gmvDaHopTac: number;          // #59 (BG) GMV đã hợp tác cao nhất
+  tuoiTren35Pct: number;        // #60 (BH) >35 (%)
   chuyenListDuyetBook?: boolean;
   brandReviewedAt?: string;     // ISO timestamp hệ thống ghi nhận lúc Brand chọn Yes / No / Cân nhắc
-  maBooking?: string;           // #49 (AX) Mã Booking (BO...)
-  giaChotCuoi?: number;         // #50 (AY) Chi phí thanh toán Booking chốt cuối
-  ngayAirChot?: string;         // #51 (AZ) P.Ngày air chốt
-  linkAirNghiemThu?: string;    // #52 (BA) 🎃 Link air/Link nghiệm thu
-  ngayAirReal?: string;         // #53 (BB) 🎃 Ngày air/live real
-  tuanReal?: string;            // #54 (BC) Tuần real
-  trangThaiSlaAir?: string;     // #55 (BD) Trễ/Đúng hạn điền link air
-  maSparkAds?: string;          // #56 (BE) Mã ủy quyền ads
-  viewsNghiemThu?: number;      // #57 (BF) 🌸 Views 30 ngày
-  gmvNghiemThu?: number;        // #58 (BG) 🌸 GMV 30 ngày
-  donHangNghiemThu?: number;    // #59 (BH) 🌸 Số đơn hàng 30 ngày
-  roiNghiemThu?: number;        // #60 (BI) 🌸 ROI 30 ngày
-  trangThaiThanhToan?: string;  // #61 (BJ) Trạng thái phiếu thanh toán
-  ngayBrandDuyet?: string;      // #62 (BK) Thời gian Brand duyệt (DD/MM/YYYY HH:mm)
-  slaBrandDuyet?: string;       // #63 (BL) SLA Brand duyệt (Từ lúc Listing -> Brand duyệt, chuẩn 48h)
+  maBooking?: string;           // #61 (BI) Mã Booking (BO...)
+  giaChotCuoi?: number;         // #62 (BJ) Chi phí thanh toán Booking chốt cuối
+  ngayAirChot?: string;         // #63 (BK) P.Ngày air chốt
+  linkAirNghiemThu?: string;    // #64 (BL) 🎃 Link air/Link nghiệm thu
+  ngayAirReal?: string;         // #65 (BM) 🎃 Ngày air/live real
+  tuanReal?: string;            // #66 (BN) Tuần real
+  trangThaiSlaAir?: string;     // #67 (BO) Trễ/Đúng hạn điền link air
+  maSparkAds?: string;          // #68 (BP) Mã ủy quyền ads
+  viewsNghiemThu?: number;      // #69 (BQ) 🌸 Views 30 ngày
+  gmvNghiemThu?: number;        // #70 (BR) 🌸 GMV 30 ngày
+  donHangNghiemThu?: number;    // #71 (BS) 🌸 Số đơn hàng 30 ngày
+  roiNghiemThu?: number;        // #72 (BT) 🌸 ROI 30 ngày
+  trangThaiThanhToan?: string;  // #73 (BU) Trạng thái phiếu thanh toán
+  ngayBrandDuyet?: string;      // #74 (BV) Thời gian Brand duyệt (DD/MM/YYYY HH:mm)
+  slaBrandDuyet?: string;       // #75 (BW) SLA Brand duyệt (Từ lúc Listing -> Brand duyệt, chuẩn 48h)
 }
 
 export type StaffListingColumnKey = keyof Omit<
@@ -96,70 +108,83 @@ export interface StaffListingColumnMeta {
 }
 
 export const STAFF_LISTING_COLUMNS: StaffListingColumnMeta[] = [
-  { index: 1, excelCol: 'B', key: 'ngayDien', header: 'ngay_dien', group: 'Listing điền', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 138 },
-  { index: 2, excelCol: 'C', key: 'dot', header: 'Đợt (Bổ sung thêm)', group: 'Listing điền', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: false, width: 100 },
-  { index: 3, excelCol: 'D', key: 'thang', header: 'Tháng', group: 'Listing điền', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 95 },
-  { index: 4, excelCol: 'E', key: 'nhanSuDien', header: 'nhan_su_dien', group: 'Listing điền', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 145 },
-  { index: 5, excelCol: 'F', key: 'store', header: 'Store', group: 'Listing điền', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 165 },
-  { index: 6, excelCol: 'G', key: 'contentTag', header: 'Content tag', group: 'Listing điền', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 165 },
-  { index: 7, excelCol: 'H', key: 'idKenh', header: '🎃id kênh', group: 'Kênh KOC', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 220 },
-  { index: 8, excelCol: 'I', key: 'linkKenh', header: '🎃Link kênh', group: 'Kênh KOC', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: true, width: 220 },
-  { index: 9, excelCol: 'J', key: 'tepKenh', header: '🎃 Tệp kênh', group: 'Kênh KOC', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 150 },
-  { index: 10, excelCol: 'K', key: 'sanPham', header: 'Sản phẩm', group: 'Đề xuất & Báo giá', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 185 },
-  { index: 11, excelCol: 'L', key: 'tenKenh', header: 'Tên người ảnh hưởng (Tên kênh)', group: 'Kênh KOC', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 170 },
-  { index: 12, excelCol: 'M', key: 'tepBooking', header: 'Tệp Booking', group: 'Đề xuất & Báo giá', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: true, width: 105 },
-  { index: 13, excelCol: 'N', key: 'giaNetVideo', header: 'Giá net video', group: 'Đề xuất & Báo giá', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 130 },
-  { index: 14, excelCol: 'O', key: 'phiBookingKemThue', header: 'Phí booking kèm thuế TNCN', group: 'Đề xuất & Báo giá', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: true, width: 145 },
-  { index: 15, excelCol: 'P', key: 'follower', header: 'Follower', group: 'Kênh KOC', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 105 },
-  { index: 16, excelCol: 'Q', key: 'trangThai', header: 'Trạng thái', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 155 },
-  { index: 17, excelCol: 'R', key: 'deXuatUpBase', header: 'Đề xuất từ UpBase', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 135 },
-  { index: 18, excelCol: 'S', key: 'leaderNote', header: 'Growth/ account/leader note (Bổ sung thêm)', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: false, width: 190 },
-  { index: 19, excelCol: 'T', key: 'contentNote', header: 'Content note', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 240 },
-  { index: 20, excelCol: 'U', key: 'brandChon', header: 'Brand chọn', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 150 },
-  { index: 21, excelCol: 'V', key: 'lyDoTuChoi', header: 'Lý do từ chối - brand note', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 190 },
-  { index: 22, excelCol: 'W', key: 'thanhQuaHopTac', header: 'Thành quả hợp tác', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 230 },
-  { index: 23, excelCol: 'X', key: 'gmvDaHopTac', header: 'GMV đã hợp tác (Bổ sung thêm) - Kéo từ GMV max của ID kênh', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 150 },
-  { index: 24, excelCol: 'Y', key: 'doanhSo', header: 'Doanh số (nếu có)', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 130 },
-  { index: 25, excelCol: 'Z', key: 'soMonBanRa', header: 'Số món bán ra', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 115 },
-  { index: 26, excelCol: 'AA', key: 'gpm', header: 'GPM', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 110 },
-  { index: 27, excelCol: 'AB', key: 'aov', header: 'GMV từ mỗi khách hàng/ AOV', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 130 },
-  { index: 28, excelCol: 'AC', key: 'viewTrungBinh', header: 'View trung bình video', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 125 },
-  { index: 29, excelCol: 'AD', key: 'gmvTuVideoPct', header: 'GMV từ video', group: 'GMV từ mỗi kênh bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 105 },
-  { index: 30, excelCol: 'AE', key: 'gmvTuLivePct', header: 'GMV từ Live', group: 'GMV từ mỗi kênh bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 105 },
-  { index: 31, excelCol: 'AF', key: 'gmvTuTheSanPhamPct', header: 'GMV từ thẻ sản phẩm', group: 'GMV từ mỗi kênh bán hàng', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: true, width: 120 },
-  { index: 32, excelCol: 'AG', key: 'namPct', header: 'Nam', group: 'Người theo dõi', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 90 },
-  { index: 33, excelCol: 'AH', key: 'nuPct', header: 'Nữ', group: 'Người theo dõi', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: true, width: 90 },
-  { index: 34, excelCol: 'AI', key: 'tuoi18_24Pct', header: '18-24', group: 'Độ tuổi người theo dõi', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 90 },
-  { index: 35, excelCol: 'AJ', key: 'tuoi25_34Pct', header: '25-34', group: 'Độ tuổi người theo dõi', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 90 },
-  { index: 36, excelCol: 'AK', key: 'tuoiTren35Pct', header: '>35', group: 'Độ tuổi người theo dõi', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: true, width: 90 },
-  { index: 37, excelCol: 'AL', key: 'tuoiOtherPct', header: 'Other', group: 'Độ tuổi người theo dõi', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 85 },
-  { index: 38, excelCol: 'AM', key: 'location', header: 'Location', group: 'Độ tuổi người theo dõi', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 120 },
-  { index: 39, excelCol: 'AN', key: 'ngayAirPlan', header: 'Ngày air plan', group: 'Lịch Air & Hậu cần', fillMode: 'MANUAL_STAFF', inLarkBase: false, inBrandWorkingFile: false, width: 125 },
-  { index: 40, excelCol: 'AO', key: 'email', header: 'Email', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 220 },
-  { index: 41, excelCol: 'AP', key: 'zalo', header: 'Zalo', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 120 },
-  { index: 42, excelCol: 'AQ', key: 'nguoiNhanHang', header: 'Người nhận hàng', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 150 },
-  { index: 43, excelCol: 'AR', key: 'sdtNhanHang', header: 'SĐT nhận hàng', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 125 },
-  { index: 44, excelCol: 'AS', key: 'diaChiNhanHang', header: 'Địa chỉ nhận hàng', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 230 },
-  { index: 45, excelCol: 'AT', key: 'tenTaiKhoanNganHang', header: 'Tên tài khoản ngân hàng', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 165 },
-  { index: 46, excelCol: 'AU', key: 'soTaiKhoan', header: 'Số tài khoản', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 140 },
-  { index: 47, excelCol: 'AV', key: 'nganHang', header: 'Ngân hàng', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 140 },
-  { index: 48, excelCol: 'AW', key: 'soCccd', header: 'Số CCCD', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 135 },
-  // 13 cột Nghiệm thu & Booking (File 3.2) tự động điền khi mapping nghiệm thu video
-  { index: 49, excelCol: 'AX', key: 'maBooking', header: 'Mã Booking (BO...)', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 135 },
-  { index: 50, excelCol: 'AY', key: 'giaChotCuoi', header: '🎃Chi phí thanh toán Booking (Giá cuối)', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 140 },
-  { index: 51, excelCol: 'AZ', key: 'ngayAirChot', header: 'P.Ngày air (Chốt)', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 120 },
-  { index: 52, excelCol: 'BA', key: 'linkAirNghiemThu', header: '🎃 Link air/Link nghiệm thu', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 230 },
-  { index: 53, excelCol: 'BB', key: 'ngayAirReal', header: '🎃 Ngày air/live real', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 125 },
-  { index: 54, excelCol: 'BC', key: 'tuanReal', header: 'Tuần real', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 95 },
-  { index: 55, excelCol: 'BD', key: 'trangThaiSlaAir', header: 'Trễ/Đúng hạn điền link air', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 140 },
-  { index: 56, excelCol: 'BE', key: 'maSparkAds', header: 'Mã ủy quyền ads', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 165 },
-  { index: 57, excelCol: 'BF', key: 'viewsNghiemThu', header: '🌸 Views 30 ngày', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 115 },
-  { index: 58, excelCol: 'BG', key: 'gmvNghiemThu', header: '🌸 GMV 30 ngày', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 125 },
-  { index: 59, excelCol: 'BH', key: 'donHangNghiemThu', header: '🌸 Số đơn hàng 30 ngày', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 115 },
-  { index: 60, excelCol: 'BI', key: 'roiNghiemThu', header: '🌸 ROI 30 ngày', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'FORMULA', inLarkBase: false, inBrandWorkingFile: false, width: 100 },
-  { index: 61, excelCol: 'BJ', key: 'trangThaiThanhToan', header: 'Trạng thái phiếu thanh toán', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 155 },
-  { index: 62, excelCol: 'BK', key: 'ngayBrandDuyet', header: 'Thời gian Brand duyệt', group: 'Đề xuất & Phê duyệt', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 145 },
-  { index: 63, excelCol: 'BL', key: 'slaBrandDuyet', header: 'SLA Brand duyệt (48h)', group: 'Đề xuất & Phê duyệt', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 160 },
+  // 57 cột chuẩn A -> BE của Sheet "Template List KOC_TikTok - đã chốt" (QSCWrv)
+  { index: 1, excelCol: 'A', key: 'ngayDien', header: 'Ngày điền', group: 'Listing điền', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 138 },
+  { index: 2, excelCol: 'B', key: 'thang', header: 'Tháng', group: 'Listing điền', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 95 },
+  { index: 3, excelCol: 'C', key: 'nhanSuDien', header: 'Nhân sự điền', group: 'Listing điền', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 145 },
+  { index: 4, excelCol: 'D', key: 'dot', header: 'Đợt listing', group: 'Listing điền', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: false, width: 100 },
+  { index: 5, excelCol: 'E', key: 'store', header: 'Store', group: 'Listing điền', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 165 },
+  { index: 6, excelCol: 'F', key: 'sanPham', header: 'Sản phẩm', group: 'Đề xuất & Báo giá', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 185 },
+  { index: 7, excelCol: 'G', key: 'idKenh', header: '🎃id kênh', group: 'Kênh KOC', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 220 },
+  { index: 8, excelCol: 'H', key: 'tenKenh', header: 'Tên người ảnh hưởng (Tên kênh)', group: 'Kênh KOC', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 175 },
+  { index: 9, excelCol: 'I', key: 'linkKenh', header: '🎃Link kênh', group: 'Kênh KOC', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: true, width: 220 },
+  { index: 10, excelCol: 'J', key: 'follower', header: 'Follower', group: 'Kênh KOC', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 105 },
+  { index: 11, excelCol: 'K', key: 'tepKenh', header: '🎃 Tệp kênh', group: 'Kênh KOC', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 150 },
+  { index: 12, excelCol: 'L', key: 'contentTag', header: 'Content tag', group: 'Đề xuất & Báo giá', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 165 },
+  { index: 13, excelCol: 'M', key: 'tepBooking', header: 'Tệp Booking', group: 'Đề xuất & Báo giá', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: true, width: 105 },
+  { index: 14, excelCol: 'N', key: 'giaDaHopTacTruocDo', header: 'Giá đã hợp tác trước đó (Giá dự kiến)', group: 'Đề xuất & Báo giá', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 140 },
+  { index: 15, excelCol: 'O', key: 'loaiGia', header: 'Loại giá (Booking, Code ads, reup Gắn giỏ, SDHA)', group: 'Đề xuất & Báo giá', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 145 },
+  { index: 16, excelCol: 'P', key: 'giaNetVideo', header: 'Giá net video', group: 'Đề xuất & Báo giá', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 130 },
+  { index: 17, excelCol: 'Q', key: 'phiBookingKemThue', header: 'Phí booking kèm thuế TNCN', group: 'Đề xuất & Báo giá', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: true, width: 145 },
+  { index: 18, excelCol: 'R', key: 'trangThai', header: 'Trạng thái Quy trình Booking - Tech', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 155 },
+  { index: 19, excelCol: 'S', key: 'deXuatUpBase', header: 'Đề xuất từ UpBase', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 135 },
+  { index: 20, excelCol: 'T', key: 'contentNote', header: 'Content note', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 240 },
+  { index: 21, excelCol: 'U', key: 'brandChon', header: 'Brand chọn', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 150 },
+  { index: 22, excelCol: 'V', key: 'lyDoTuChoi', header: 'Lý do từ chối', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 190 },
+  { index: 23, excelCol: 'W', key: 'thanhQuaHopTac', header: 'Thành quả hợp tác với UB', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 230 },
+  { index: 24, excelCol: 'X', key: 'thanhQuaBrandNgoai', header: 'Thành quả hợp tác với brand ngoài', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 210 },
+  { index: 25, excelCol: 'Y', key: 'doanhSo', header: 'Doanh số (nếu có)', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 130 },
+  { index: 26, excelCol: 'Z', key: 'doanhSoUocTinh30d', header: 'Doanh số ước tính trong 30 ngày', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 145 },
+  { index: 27, excelCol: 'AA', key: 'soMonBanRa', header: 'Số món bán ra', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 115 },
+  { index: 28, excelCol: 'AB', key: 'gpm', header: 'GPM', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 110 },
+  { index: 29, excelCol: 'AC', key: 'aov', header: 'GMV từ mỗi khách hàng/ AOV', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 130 },
+  { index: 30, excelCol: 'AD', key: 'viewTrungBinh', header: 'View trung bình video/ trung vị video', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 135 },
+  { index: 31, excelCol: 'AE', key: 'costPerView', header: 'Cost per view', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: true, width: 110 },
+  { index: 32, excelCol: 'AF', key: 'gmvTuVideoPct', header: 'Tỉ trọng GMV từ video', group: 'GMV từ mỗi kênh bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 115 },
+  { index: 33, excelCol: 'AG', key: 'gmvTuLivePct', header: 'Tỉ trọng GMV từ Live', group: 'GMV từ mỗi kênh bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 115 },
+  { index: 34, excelCol: 'AH', key: 'gmvTuTheSanPhamPct', header: 'Tỉ trọng GMV từ thẻ sản phẩm', group: 'GMV từ mỗi kênh bán hàng', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: true, width: 130 },
+  { index: 35, excelCol: 'AI', key: 'tiTrongNganhHang', header: 'Tỉ trọng ngành hàng', group: 'Người theo dõi', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 165 },
+  { index: 36, excelCol: 'AJ', key: 'namPct', header: 'Tỉ trọng Nam', group: 'Người theo dõi', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 100 },
+  { index: 37, excelCol: 'AK', key: 'nuPct', header: 'Tỉ trọng Nữ', group: 'Người theo dõi', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: true, width: 100 },
+  { index: 38, excelCol: 'AL', key: 'tuoi18_24Pct', header: 'Tỉ trọng 18-24', group: 'Độ tuổi người theo dõi', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 105 },
+  { index: 39, excelCol: 'AM', key: 'tuoi25_34Pct', header: 'Tỉ trọng 25-34', group: 'Độ tuổi người theo dõi', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 105 },
+  { index: 40, excelCol: 'AN', key: 'tuoiOtherPct', header: 'Other', group: 'Độ tuổi người theo dõi', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: true, width: 95 },
+  { index: 41, excelCol: 'AO', key: 'location', header: 'Location', group: 'Độ tuổi người theo dõi', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 120 },
+  { index: 42, excelCol: 'AP', key: 'ngayAirPlan', header: 'Ngày air plan', group: 'Lịch Air & Hậu cần', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 125 },
+  { index: 43, excelCol: 'AQ', key: 'gmvTarget', header: 'GMV Target', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: true, width: 130 },
+  { index: 44, excelCol: 'AR', key: 'viewTrungVi', header: 'View trung vị', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 120 },
+  { index: 45, excelCol: 'AS', key: 'ctrPct', header: 'CTR', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 90 },
+  { index: 46, excelCol: 'AT', key: 'crPct', header: 'CR', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 90 },
+  { index: 47, excelCol: 'AU', key: 'viewTarget', header: 'View Target', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 120 },
+  { index: 48, excelCol: 'AV', key: 'tyLeTuongTacPct', header: 'Tỷ lệ tương tác', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 115 },
+  { index: 49, excelCol: 'AW', key: 'email', header: 'Email', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 220 },
+  { index: 50, excelCol: 'AX', key: 'zalo', header: 'Zalo', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 120 },
+  { index: 51, excelCol: 'AY', key: 'nguoiNhanHang', header: 'Người nhận hàng', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 150 },
+  { index: 52, excelCol: 'AZ', key: 'sdtNhanHang', header: 'SĐT nhận hàng', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 125 },
+  { index: 53, excelCol: 'BA', key: 'diaChiNhanHang', header: 'Địa chỉ nhận hàng', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 230 },
+  { index: 54, excelCol: 'BB', key: 'tenTaiKhoanNganHang', header: 'Tên tài khoản ngân hàng', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 165 },
+  { index: 55, excelCol: 'BC', key: 'soTaiKhoan', header: 'Số tài khoản', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 140 },
+  { index: 56, excelCol: 'BD', key: 'nganHang', header: 'Ngân hàng', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 140 },
+  { index: 57, excelCol: 'BE', key: 'soCccd', header: 'Số CCCD', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 135 },
+  // Các cột mở rộng nội bộ & Nghiệm thu (File 3.2)
+  { index: 58, excelCol: 'BF', key: 'leaderNote', header: 'Growth/ account/leader note', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: false, width: 190 },
+  { index: 59, excelCol: 'BG', key: 'gmvDaHopTac', header: 'GMV đã hợp tác', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 150 },
+  { index: 60, excelCol: 'BH', key: 'tuoiTren35Pct', header: '>35', group: 'Độ tuổi người theo dõi', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: false, width: 90 },
+  { index: 61, excelCol: 'BI', key: 'maBooking', header: 'Mã Booking (BO...)', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 135 },
+  { index: 62, excelCol: 'BJ', key: 'giaChotCuoi', header: '🎃Chi phí thanh toán Booking (Giá cuối)', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 140 },
+  { index: 63, excelCol: 'BK', key: 'ngayAirChot', header: 'P.Ngày air (Chốt)', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 120 },
+  { index: 64, excelCol: 'BL', key: 'linkAirNghiemThu', header: '🎃 Link air/Link nghiệm thu', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 230 },
+  { index: 65, excelCol: 'BM', key: 'ngayAirReal', header: '🎃 Ngày air/live real', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 125 },
+  { index: 66, excelCol: 'BN', key: 'tuanReal', header: 'Tuần real', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 95 },
+  { index: 67, excelCol: 'BO', key: 'trangThaiSlaAir', header: 'Trễ/Đúng hạn điền link air', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 140 },
+  { index: 68, excelCol: 'BP', key: 'maSparkAds', header: 'Mã ủy quyền ads', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 165 },
+  { index: 69, excelCol: 'BQ', key: 'viewsNghiemThu', header: '🌸 Views 30 ngày', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 115 },
+  { index: 70, excelCol: 'BR', key: 'gmvNghiemThu', header: '🌸 GMV 30 ngày', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 125 },
+  { index: 71, excelCol: 'BS', key: 'donHangNghiemThu', header: '🌸 Số đơn hàng 30 ngày', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 115 },
+  { index: 72, excelCol: 'BT', key: 'roiNghiemThu', header: '🌸 ROI 30 ngày', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'FORMULA', inLarkBase: false, inBrandWorkingFile: false, width: 100 },
+  { index: 73, excelCol: 'BU', key: 'trangThaiThanhToan', header: 'Trạng thái phiếu thanh toán', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 155 },
+  { index: 74, excelCol: 'BV', key: 'ngayBrandDuyet', header: 'Thời gian Brand duyệt', group: 'Đề xuất & Phê duyệt', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 145 },
+  { index: 75, excelCol: 'BW', key: 'slaBrandDuyet', header: 'SLA Brand duyệt (48h)', group: 'Đề xuất & Phê duyệt', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 160 },
 ];
 
 // Danh mục chuẩn từ Sheet 9 ("Định nghĩa") của file template list KOL_KOC.xlsx
@@ -917,12 +942,14 @@ export function buildStaffListingRowFromKoc(params: {
   const grossFee = computeGrossFeeWithTax(netFee);
 
   // Tìm lịch sử hợp tác UpBase từ deals
-  const kocDeals = deals.filter((d) => {
+  const safeDeals = Array.isArray(deals) ? deals : [];
+  const kocDeals = safeDeals.filter((d) => {
+    if (!d) return false;
     const dHandle = normalizeTikTokId(d.kocChannelId || '');
     return (
       (koc.id && d.kocId === koc.id) ||
       (cleanId && dHandle && dHandle.toLowerCase() === cleanId.toLowerCase()) ||
-      d.kocStageName.trim().toLowerCase() === koc.stageName.trim().toLowerCase()
+      (d.kocStageName || '').trim().toLowerCase() === (koc.stageName || '').trim().toLowerCase()
     );
   });
 
@@ -989,6 +1016,26 @@ export function buildStaffListingRowFromKoc(params: {
     brandReviewedAt: brandReviewedAtIso,
   });
 
+  const avgViewsVal = Number(koc.avgViews ?? 0);
+  const medianViewsVal = Number(koc.medianViews ?? avgViewsVal);
+  const aovVal = Number(koc.aov ?? 0);
+  const ctrVal = Number(koc.tiktokAvgCtr ?? 4.5);
+  const crVal = Number(koc.tiktokAvgCvr ?? 2.8);
+  const engRateVal = Number(koc.engagementRate ?? 3.5);
+  const cpvVal = avgViewsVal > 0 ? Math.round(netFee / avgViewsVal) : 0;
+  const gmvTargetVal =
+    avgViewsVal > 0 && aovVal > 0
+      ? Math.round(avgViewsVal * (ctrVal / 100) * (crVal / 100) * aovVal)
+      : Number(koc.recentRevenue ?? 0);
+  const lastHistPrice =
+    kocDeals.length > 0
+      ? Number(kocDeals[0].totalValue || koc.minRate || netFee)
+      : Number(koc.minRate || netFee);
+  const topCategoriesText =
+    koc.tiktokTopCategories && koc.tiktokTopCategories.length > 0
+      ? koc.tiktokTopCategories.slice(0, 3).join(', ')
+      : koc.niche || koc.kocCategory || 'Beauty & Chăm sóc cá nhân';
+
   return {
     id: `sheet-row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     kocId: koc.id,
@@ -1005,6 +1052,8 @@ export function buildStaffListingRowFromKoc(params: {
     sanPham,
     tenKenh: koc.stageName || cleanId,
     tepBooking,
+    giaDaHopTacTruocDo: lastHistPrice,
+    loaiGia: 'Booking',
     giaNetVideo: netFee,
     phiBookingKemThue: grossFee,
     follower: Number(koc.followers || 0),
@@ -1015,23 +1064,35 @@ export function buildStaffListingRowFromKoc(params: {
     brandChon: initialBrandChon,
     lyDoTuChoi: koc.brandRejectReason || '',
     thanhQuaHopTac: thanhQuaText,
+    thanhQuaBrandNgoai: koc.workedBrands?.length
+      ? `Đã hợp tác: ${koc.workedBrands.slice(0, 3).join(', ')}`
+      : 'Kalodata ngành hàng tương đương',
     gmvDaHopTac: maxDealGmv,
     doanhSo: Number(koc.recentRevenue ?? 0),
+    doanhSoUocTinh30d: Number(koc.recentRevenue ?? maxDealGmv ?? 0),
     soMonBanRa: Number(koc.itemsSold ?? 0),
     gpm: Number(koc.gpm ?? 0),
-    aov: Number(koc.aov ?? 0),
-    viewTrungBinh: Number(koc.avgViews ?? 0),
+    aov: aovVal,
+    viewTrungBinh: avgViewsVal,
+    costPerView: cpvVal,
     gmvTuVideoPct: videoShare,
     gmvTuLivePct: liveShare,
     gmvTuTheSanPhamPct: cardShare,
+    tiTrongNganhHang: topCategoriesText,
     namPct,
     nuPct,
     tuoi18_24Pct: age18_24,
     tuoi25_34Pct: age25_34,
     tuoiTren35Pct: ageOver35,
-    tuoiOtherPct: ageOther,
+    tuoiOtherPct: ageOver35,
     location: koc.location || 'Việt Nam',
     ngayAirPlan,
+    gmvTarget: gmvTargetVal,
+    viewTrungVi: medianViewsVal,
+    ctrPct: ctrVal,
+    crPct: crVal,
+    viewTarget: avgViewsVal,
+    tyLeTuongTacPct: engRateVal,
     email: koc.email || '',
     zalo: koc.zalo || koc.phone || '',
     nguoiNhanHang: koc.shippingRecipientName || koc.realName || koc.stageName || '',
@@ -1069,8 +1130,20 @@ export function recalculateStaffListingRow(
 
   const a18 = Math.min(100, Math.max(0, Number(row.tuoi18_24Pct) || 0));
   const a25 = Math.min(100 - a18, Math.max(0, Number(row.tuoi25_34Pct) || 0));
-  const aOther = Math.min(100 - a18 - a25, Math.max(0, Number(row.tuoiOtherPct) || 0));
-  const a35 = Number(Math.max(0, 100 - a18 - a25 - aOther).toFixed(2));
+  const a35 = Number(Math.max(0, 100 - a18 - a25).toFixed(2));
+  const aOther = Number(row.tuoiOtherPct) > 0 ? Number(row.tuoiOtherPct) : a35;
+
+  const avgViewsVal = Math.max(0, Number(row.viewTrungBinh) || 0);
+  const costPerView = avgViewsVal > 0 ? Math.round(netFee / avgViewsVal) : 0;
+  const aovVal = Math.max(0, Number(row.aov) || 0);
+  const ctrVal = Number(row.ctrPct ?? 4.5);
+  const crVal = Number(row.crPct ?? 2.8);
+  const gmvTarget =
+    Number(row.gmvTarget) > 0
+      ? Number(row.gmvTarget)
+      : avgViewsVal > 0 && aovVal > 0
+        ? Math.round(avgViewsVal * (ctrVal / 100) * (crVal / 100) * aovVal)
+        : 0;
 
   // Đảm bảo ngayDien luôn có cả Ngày & Giờ (DD/MM/YYYY HH:mm)
   let ngayDien = (row.ngayDien || '').trim();
@@ -1118,6 +1191,14 @@ export function recalculateStaffListingRow(
     giaNetVideo: netFee,
     tepBooking,
     phiBookingKemThue,
+    costPerView,
+    gmvTarget,
+    viewTrungVi: Number(row.viewTrungVi) > 0 ? Number(row.viewTrungVi) : avgViewsVal,
+    ctrPct: ctrVal,
+    crPct: crVal,
+    viewTarget: Number(row.viewTarget) > 0 ? Number(row.viewTarget) : avgViewsVal,
+    tyLeTuongTacPct: Number(row.tyLeTuongTacPct ?? 3.5),
+    loaiGia: row.loaiGia || 'Booking',
     gmvTuVideoPct: vPct,
     gmvTuLivePct: lPct,
     gmvTuTheSanPhamPct: cPct,
@@ -1142,30 +1223,33 @@ export function buildInitialStaffSheetCollection(
   deals: BookingDealItem[],
   defaultStaffName = 'Chuyên viên Listing'
 ): StaffBrandSheetCollection {
+  const safeKocs = Array.isArray(kocs) ? kocs : [];
+  const safeStores = Array.isArray(stores) ? stores : [];
+  const safeDeals = Array.isArray(deals) ? deals : [];
   const sheets: Record<string, StaffListingSheetRow[]> = {};
   const targetMonth = '2026/10';
-  const allB2c = stores.filter((s) => s.isB2cManaged !== false);
+  const allB2c = safeStores.filter((s) => s && s.isB2cManaged !== false);
   const topSlice = allB2c.slice(0, 5);
   const kutieskinStores = allB2c.filter(
     (s) =>
-      s.brandName.toLowerCase().includes('kutieskin') &&
+      (s.brandName || '').toLowerCase().includes('kutieskin') &&
       !topSlice.some((t) => t.id === s.id)
   );
   const topStores = [...topSlice, ...kutieskinStores];
 
   topStores.forEach((store, sIdx) => {
     const key = makeSheetKey(targetMonth, store.storeName);
-    const matchingKocs = kocs
+    const matchingKocs = safeKocs
       .filter(
         (k) =>
-          (k.brandName &&
+          (k?.brandName &&
             store.brandName &&
             k.brandName.toLowerCase().includes(store.brandName.toLowerCase())) ||
           sIdx === 0
       )
       .slice(sIdx * 3, sIdx * 3 + 5);
 
-    const sampleKocs = matchingKocs.length > 0 ? matchingKocs : kocs.slice(0, 4);
+    const sampleKocs = matchingKocs.length > 0 ? matchingKocs : safeKocs.slice(0, 4);
     sheets[key] = sampleKocs.map((koc, idx) => {
       // Mốc thời gian Listing thực tế theo từng dòng mẫu (cách hiện tại 12h - 36h)
       const listedAtDate = new Date(Date.now() - (32 - idx * 6) * 3_600_000);
@@ -1175,7 +1259,7 @@ export function buildInitialStaffSheetCollection(
         monthKey: targetMonth,
         storeName: store.storeName,
         staffName: store.assignedPic || koc.bookingPic || defaultStaffName,
-        deals,
+        deals: safeDeals,
         dot: idx < 2 ? 'Đợt 1' : 'Đợt 2',
         sanPham: store.mainProducts?.[0] || `Sản phẩm chủ lực ${store.brandName}`,
         contentTag: CONTENT_TAG_OPTIONS[idx % 4],
@@ -1208,16 +1292,21 @@ export function loadStaffSheetCollection(
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as StaffBrandSheetCollection;
-      if (parsed && typeof parsed.sheets === 'object') {
+      if (parsed && parsed.sheets && typeof parsed.sheets === 'object' && !Array.isArray(parsed.sheets)) {
         const normalizedSheets: Record<string, StaffListingSheetRow[]> = {};
         for (const [k, sheetRows] of Object.entries(parsed.sheets || {})) {
           normalizedSheets[k] = Array.isArray(sheetRows)
-            ? sheetRows.map((r) => recalculateStaffListingRow(r))
+            ? sheetRows
+                .filter((r): r is StaffListingSheetRow => Boolean(r && typeof r === 'object'))
+                .map((r) => recalculateStaffListingRow(r))
             : [];
         }
         return {
           sheets: normalizedSheets,
-          googleSheetUrls: parsed.googleSheetUrls || {},
+          googleSheetUrls:
+            parsed.googleSheetUrls && typeof parsed.googleSheetUrls === 'object'
+              ? parsed.googleSheetUrls
+              : {},
           ...(parsed.fieldEditPolicy
             ? { fieldEditPolicy: normalizeStaffSheetFieldEditPolicy(parsed.fieldEditPolicy) }
             : {}),
@@ -1493,22 +1582,25 @@ export function formatStaffSheetToTsv(
     const cells = visibleColumns.map((col) => {
       if (useGoogleSheetFormulas) {
         if (col.key === 'linkKenh') {
-          return `=CONCAT("https://www.tiktok.com/@",H${excelRowNum})`;
+          return `=CONCAT("https://www.tiktok.com/@",G${excelRowNum})`;
         }
         if (col.key === 'tepBooking') {
-          return `=IFS(N${excelRowNum}=0,"Freecast",AND(N${excelRowNum}>0,N${excelRowNum}<500000),"KL1",AND(N${excelRowNum}>=500000,N${excelRowNum}<1500000),"KL2",AND(N${excelRowNum}>=1500000,N${excelRowNum}<3000000),"KL3",AND(N${excelRowNum}>=3000000,N${excelRowNum}<5000000),"KL4",AND(N${excelRowNum}>=5000000,N${excelRowNum}<10000000),"KL5",AND(N${excelRowNum}>=10000000,N${excelRowNum}<30000000),"KL6",N${excelRowNum}>=30000000,"KL7")`;
+          return `=IFS(P${excelRowNum}=0,"Freecast",AND(P${excelRowNum}>0,P${excelRowNum}<500000),"KL1",AND(P${excelRowNum}>=500000,P${excelRowNum}<1500000),"KL2",AND(P${excelRowNum}>=1500000,P${excelRowNum}<3000000),"KL3",AND(P${excelRowNum}>=3000000,P${excelRowNum}<5000000),"KL4",AND(P${excelRowNum}>=5000000,P${excelRowNum}<10000000),"KL5",AND(P${excelRowNum}>=10000000,P${excelRowNum}<30000000),"KL6",P${excelRowNum}>=30000000,"KL7")`;
         }
         if (col.key === 'phiBookingKemThue') {
-          return `=ROUND(N${excelRowNum}/0.9,0)`;
+          return `=ROUND(P${excelRowNum}/0.9,0)`;
+        }
+        if (col.key === 'costPerView') {
+          return `=IF(AD${excelRowNum}>0,ROUND(P${excelRowNum}/AD${excelRowNum},0),0)`;
         }
         if (col.key === 'gmvTuTheSanPhamPct') {
-          return `=1-AD${excelRowNum}-AE${excelRowNum}`;
+          return `=1-AF${excelRowNum}-AG${excelRowNum}`;
         }
         if (col.key === 'nuPct') {
-          return `=1-AG${excelRowNum}`;
+          return `=1-AJ${excelRowNum}`;
         }
-        if (col.key === 'tuoiTren35Pct') {
-          return `=1-AI${excelRowNum}-AJ${excelRowNum}`;
+        if (col.key === 'tuoiOtherPct' || col.key === 'tuoiTren35Pct') {
+          return `=1-AL${excelRowNum}-AM${excelRowNum}`;
         }
       }
 

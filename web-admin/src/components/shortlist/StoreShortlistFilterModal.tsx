@@ -122,6 +122,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
   const initialDefaults = getDefaultStoreFilters(initialStoreObj);
 
   const [selectedStoreId, setSelectedStoreId] = useState<string>(defaultStoreId);
+  const [selectedPlanMonth, setSelectedPlanMonth] = useState<string>(activePlan?.month || '2026/10');
   const [bucketFilter, setBucketFilter] = useState<RecommendationBucket>('ALL');
 
   const [selectedGrades, setSelectedGrades] = useState<string[]>(
@@ -175,6 +176,14 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
       setSelectedTepKenh(defaults.tepKenh);
       setMinFemaleRatio(defaults.minFemaleRatio);
       setSelectedKocIds([]);
+    }
+  }
+
+  const [prevActivePlanMonth, setPrevActivePlanMonth] = useState(activePlan?.month);
+  if (prevActivePlanMonth !== activePlan?.month) {
+    setPrevActivePlanMonth(activePlan?.month);
+    if (activePlan?.month) {
+      setSelectedPlanMonth(activePlan.month);
     }
   }
 
@@ -401,7 +410,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
         id: createListingId(k.id),
         batchId: `BATCH-${targetBatchCycle}-${selectedStore.id}`,
         batchCycle: targetBatchCycle,
-        monthKey: activePlan?.month || '2026/10',
+        monthKey: selectedPlanMonth || activePlan?.month || '2026/10',
         storeId: selectedStore.id,
         storeName: selectedStore.storeName,
         brandName: selectedStore.brandName,
@@ -577,6 +586,20 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
               </Button>
 
               <div className="flex items-center gap-1.5 bg-sunken px-2.5 py-1 rounded-md border border-line">
+                <span className="text-2xs font-medium text-ink-2">Plan Tháng:</span>
+                <select
+                  value={selectedPlanMonth}
+                  onChange={(e) => setSelectedPlanMonth(e.target.value)}
+                  className="bg-transparent text-xs font-semibold text-ink focus:outline-none"
+                >
+                  <option value="2026/11">Plan 2026/11</option>
+                  <option value="2026/10">Plan 2026/10</option>
+                  <option value="2026/09">Plan 2026/09</option>
+                  <option value="2026/08">Plan 2026/08</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-sunken px-2.5 py-1 rounded-md border border-line">
                 <span className="text-2xs font-medium text-ink-2">Đợt:</span>
                 <select
                   value={targetBatchCycle}
@@ -608,6 +631,19 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
           <div className="p-3.5 sm:p-4 border-b border-line bg-sunken space-y-3">
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0 w-full lg:w-auto lg:min-w-[300px]">
+                <label className="text-xs font-semibold text-ink-2 whitespace-nowrap">
+                  Plan Tháng:
+                </label>
+                <select
+                  value={selectedPlanMonth}
+                  onChange={(e) => setSelectedPlanMonth(e.target.value)}
+                  className="bg-surface border border-line-strong rounded-md px-2.5 py-1.5 text-xs font-semibold text-ink focus:outline-none focus:border-primary shrink-0"
+                >
+                  <option value="2026/11">Plan 2026/11</option>
+                  <option value="2026/10">Plan 2026/10</option>
+                  <option value="2026/09">Plan 2026/09</option>
+                  <option value="2026/08">Plan 2026/08</option>
+                </select>
                 <label className="text-xs font-semibold text-ink-2 whitespace-nowrap">
                   Gian hàng mục tiêu:
                 </label>

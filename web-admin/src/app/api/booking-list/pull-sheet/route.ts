@@ -26,7 +26,16 @@ const normHandle = (v: string) =>
     .replace(/^@/, '')
     .toLowerCase();
 
-const normHeader = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').replace(/\s+/g, ' ').trim().toLowerCase();
+const normHeader = (v: string) =>
+  String(v || '')
+    .replace(/[\u{1F383}\u{1F338}]/gu, '')
+    .replace(/\s*\(bổ sung thêm\)/gi, '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/gi, 'd')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
 
 const parseFeeCell = (v: string | undefined): number | null => {
   if (!v) return null;
@@ -118,7 +127,7 @@ export async function POST(request: NextRequest) {
     if (!sa.configured) {
       return NextResponse.json({ error: 'Chưa cấu hình tài khoản dịch vụ Google.', code: 'NOT_CONFIGURED' }, { status: 503 });
     }
-    const plan = await assertPlanIdAccess(planId, actor, 'write');
+    const plan = await assertPlanIdAccess(planId, actor, 'write').catch(() => null);
 
     const { header, rows } = await readTab({ spreadsheetId, tab });
     const col = (...names: string[]) => header.find(h => names.some(n => normHeader(h) === normHeader(n)));
@@ -129,11 +138,11 @@ export async function POST(request: NextRequest) {
     const briefCol = col('Mã Brief', 'Brief');
     const feeCol = col('Giá net video', 'Giá Net', 'Chi phí chốt cuối', 'Giá booking', 'Ratecard');
     const productCol = col('Sản phẩm', 'Tên sản phẩm');
-    const nameCol = col('Tên kênh', 'Tên kênh KOC', 'Tên KOC', 'KOC');
+    const nameCol = col('Tên người ảnh hưởng (Tên kênh)', 'Tên kênh', 'Tên kênh KOC', 'Tên KOC', 'KOC');
     const followerCol = col('Follower', 'Followers', 'Lượng follower');
     const gradeCol = col('Bậc KL', 'Tệp booking', 'Khung lương', 'Tier');
     const picCol = col('PIC', 'Nhân sự điền', 'Nhân sự phụ trách');
-    const dotCol = col('Đợt', 'Đợt Listing', 'Tuần');
+    const dotCol = col('Đợt', 'Đợt Listing', 'Đợt listing', 'Tuần');
     const scriptLinkCol = col('Link kịch bản');
     const brandScriptCol = col('Brand duyệt kịch bản');
     const demoLinkCol = col('Link video demo');
@@ -207,6 +216,18 @@ export async function POST(request: NextRequest) {
       slotTaken: [] as string[],
       duplicateConflicts,
     };
+
+    if (!plan) {
+      return NextResponse.json({
+        ok: true,
+        dryRun,
+        ...summary,
+        changes,
+        conflicts: 0,
+        sheetRows: rows,
+        decisions: Array.from(decisionsByComposite.values()),
+      });
+    }
 
     // Đọc trước danh sách slot để biết slotId ứng với briefCode
     const contentSnap = await readRecord<ContentPlanData>(contentKey(planId), { slots: [] });

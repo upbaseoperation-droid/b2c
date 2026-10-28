@@ -17,6 +17,7 @@ import {
   discoverRealTikTokVideoUrlsByQuery,
   discoverTikTokChannelVideoUrls,
   doesInspectedVideoMatchTarget,
+  extractUnixSecFromTikTokVideoId,
   fetchTikTokCreatorVideoListBySecUid,
   fetchTikTokHtmlWithWafBypass,
   getSharedCrawlerStore,
@@ -26,12 +27,18 @@ import {
 } from './tiktokOpenSourceEngines';
 
 /**
- * So sánh 2 video theo thứ tự ưu tiên Ngày air mới nhất lên trước (publishedAt giảm dần -> Snowflake videoId giảm dần -> lượt xem giảm dần).
+ * So sánh 2 video theo thứ tự ưu tiên Ngày air mới nhất lên trước (Snowflake timestamp chính xác giây -> publishedAt giảm dần -> lượt xem giảm dần).
  */
 export function compareVideoAirDateDesc(
   a: { publishedAt?: string; videoId?: string; views?: number },
   b: { publishedAt?: string; videoId?: string; views?: number }
 ): number {
+  const snowA = extractUnixSecFromTikTokVideoId(a.videoId);
+  const snowB = extractUnixSecFromTikTokVideoId(b.videoId);
+  if (snowA > 0 && snowB > 0 && snowB !== snowA) {
+    return snowB - snowA;
+  }
+
   const timeA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
   const timeB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
   const validA = Number.isFinite(timeA) ? timeA : 0;
@@ -83,6 +90,8 @@ export interface TikTokEngagementMetrics {
   organicVideoCount?: number;
   organicMedianViews?: number;
   organicAvgViews?: number;
+  outlierViralCount?: number;
+  pinnedOldVideoCount?: number;
   viewConsistencyRatioPct?: number;
   postingFrequencyPerWeek?: number;
   daysSinceLastPost?: number;
@@ -157,6 +166,21 @@ export interface TikTokAffiliateMetrics {
   };
 }
 
+export interface TikTokScrapeDiagnostics {
+  durationMs: number;
+  cacheHit: boolean;
+  enginePath:
+    | 'SECUID_CREATOR_API'
+    | 'SSR_REHYDRATION_BATCH'
+    | 'SEARCH_DISCOVERY'
+    | 'INTERNAL_MASTER_FALLBACK';
+  engineLabel: string;
+  dataConfidence: 'CAO' | 'TRUNG_BÌNH' | 'CẦN_KIỂM_TRA';
+  inspectedVideosCount: number;
+  outlierViralCount: number;
+  pinnedOldCount: number;
+}
+
 export interface TikTokScrapedKocResult {
   handle: string;
   channelUrl: string;
@@ -166,6 +190,7 @@ export interface TikTokScrapedKocResult {
   engagementMetrics: TikTokEngagementMetrics;
   recentVideos: TikTokVideoItem[];
   affiliateMetrics: TikTokAffiliateMetrics;
+  scrapeDiagnostics?: TikTokScrapeDiagnostics;
   matchedHashtagVideo?: TikTokHashtagDiscoveredVideo;
   competitorCollaboration?: TikTokCompetitorCollaborationInfo;
 }
@@ -392,7 +417,10 @@ function classifyByRealFollowers(
  * để lấy thông tin thực tế từ JSON Rehydration (__UNIVERSAL_DATA_FOR_REHYDRATION__).
  * Có bộ nhớ đệm dùng chung (TTL 30 phút) và gộp truy vấn trùng cho 30+ người dùng đồng thời.
  */
-export async function fetchLiveTikTokPublicProfile(handle: string): Promise<{
+export async function fetchLiveTikTokPublicProfile(
+  handle: string,
+  options?: { forceRefresh?: boolean }
+): Promise<{
   secUid?: string;
   nickname?: string;
   bio?: string;
@@ -409,13 +437,17 @@ export async function fetchLiveTikTokPublicProfile(handle: string): Promise<{
 
   const store = getSharedCrawlerStore();
   const now = Date.now();
-  const cached = store.profileCache.get(clean);
-  if (cached && cached.expiresAt > now) {
-    return cached.data;
+  if (options?.forceRefresh) {
+    store.profileCache.delete(clean);
+  } else {
+    const cached = store.profileCache.get(clean);
+    if (cached && cached.expiresAt > now) {
+      return cached.data;
+    }
   }
 
   const inFlight = store.inFlightProfile.get(clean);
-  if (inFlight) {
+  if (inFlight && !options?.forceRefresh) {
     return inFlight;
   }
 
@@ -502,7 +534,12 @@ function buildScrapedResultFromRealData(
     isVerified?: boolean;
   } | null,
   realInspectedVideos: RealTikTokVideoAndAuthorDetail[],
-  usedFallbackVideosForInternalKoc = false
+  usedFallbackVideosForInternalKoc = false,
+  diagnosticsInput?: {
+    durationMs: number;
+    cacheHit: boolean;
+    enginePath: TikTokScrapeDiagnostics['enginePath'];
+  }
 ): TikTokScrapedKocResult {
   const existingKoc = UPBASE_FULL_KOC_MASTER.find(
     (k) => k.channelId.toLowerCase().replace(/^@+/, '') === cleanHandle
@@ -613,7 +650,7 @@ function buildScrapedResultFromRealData(
   const resolvedPhone = extracted.phone || bestVideoPhone || existingKoc?.phone || undefined;
   const resolvedEmail = extracted.email || bestVideoEmail || existingKoc?.email || undefined;
 
-  const recentVideos: TikTokVideoItem[] = realInspectedVideos
+  const rawRecentVideos: TikTokVideoItem[] = realInspectedVideos
     .map((v) => ({
       videoId: v.videoId,
       videoUrl: v.videoUrl,
@@ -631,18 +668,57 @@ function buildScrapedResultFromRealData(
     }))
     .sort((a, b) => compareVideoAirDateDesc(a, b));
 
-  const sampleCount = recentVideos.length;
+  const sampleCount = rawRecentVideos.length;
   const avgViews =
     sampleCount > 0
-      ? Math.round(recentVideos.reduce((s, v) => s + v.views, 0) / sampleCount)
+      ? Math.round(rawRecentVideos.reduce((s, v) => s + v.views, 0) / sampleCount)
       : existingKoc?.avgViews || 0;
   const medianViews =
     sampleCount > 0
-      ? computeMedianViews(recentVideos.map((v) => v.views))
+      ? computeMedianViews(rawRecentVideos.map((v) => v.views))
       : existingKoc?.medianViews || avgViews;
 
+  // Nhận diện bài đăng cũ cách biệt thời gian (thường là bài ghim cũ đầu trang) và bài xu hướng đột biến (>= 4x trung vị)
+  const getVideoUnixSec = (v: { videoId?: string; publishedAt?: string }): number => {
+    const snowSec = extractUnixSecFromTikTokVideoId(v.videoId);
+    if (snowSec > 0) return snowSec;
+    if (v.publishedAt) {
+      const ms = new Date(v.publishedAt).getTime();
+      if (Number.isFinite(ms) && ms > 1000000000000) return Math.floor(ms / 1000);
+    }
+    return 0;
+  };
+  const anchorRecentSec =
+    rawRecentVideos.length >= 2
+      ? getVideoUnixSec(rawRecentVideos[1]) || getVideoUnixSec(rawRecentVideos[0])
+      : rawRecentVideos.length === 1
+      ? getVideoUnixSec(rawRecentVideos[0])
+      : 0;
+
+  let outlierViralCount = 0;
+  let pinnedOldVideoCount = 0;
+  const recentVideos: TikTokVideoItem[] = rawRecentVideos.map((v) => {
+    const isViralOutlier =
+      sampleCount >= 4 && medianViews >= 500 && v.views >= medianViews * 4;
+    const vSec = getVideoUnixSec(v);
+    const isPinnedOldVideo =
+      sampleCount >= 6 &&
+      anchorRecentSec > 0 &&
+      vSec > 0 &&
+      anchorRecentSec - vSec > 60 * 86400 &&
+      v.views >= medianViews * 1.8;
+    if (isViralOutlier) outlierViralCount += 1;
+    if (isPinnedOldVideo) pinnedOldVideoCount += 1;
+    return {
+      ...v,
+      isViralOutlier,
+      isPinnedOldVideo,
+    };
+  });
+
   // Tách 15 bài đăng mới nhất theo thứ tự thời gian (loại trừ sai lệch do các bài cũ được ghim đầu trang)
-  const latest15Slice = recentVideos.slice(0, 15);
+  const nonPinnedRecent = recentVideos.filter((v) => !v.isPinnedOldVideo);
+  const latest15Slice = (nonPinnedRecent.length >= 5 ? nonPinnedRecent : recentVideos).slice(0, 15);
   const latest15MedianViews =
     latest15Slice.length > 0
       ? computeMedianViews(latest15Slice.map((v) => v.views))
@@ -685,9 +761,10 @@ function buildScrapedResultFromRealData(
       ? Math.round((steadyCount / positiveViews.length) * 100)
       : undefined;
 
-  // Nhịp độ đăng bài thực tế & số ngày từ bài gần nhất
-  const validTimestamps = recentVideos
-    .map((v) => (v.publishedAt ? new Date(v.publishedAt).getTime() : 0))
+  // Nhịp độ đăng bài thực tế & số ngày từ bài gần nhất (tính trên cụm bài đăng gần đây để không bị bài ghim cũ làm loãng khoảng ngày)
+  const cadenceVideos = latest15Slice.length >= 2 ? latest15Slice : recentVideos;
+  const validTimestamps = cadenceVideos
+    .map((v) => getVideoUnixSec(v) * 1000)
     .filter((t) => Number.isFinite(t) && t > 1000000000000)
     .sort((a, b) => b - a);
   const lastVideoPublishedAt = recentVideos[0]?.publishedAt;
@@ -757,6 +834,30 @@ function buildScrapedResultFromRealData(
   );
   const suggested = classifyByRealFollowers(followers, existingKoc);
 
+  const enginePath: TikTokScrapeDiagnostics['enginePath'] =
+    diagnosticsInput?.enginePath ||
+    (usedFallbackVideosForInternalKoc
+      ? 'INTERNAL_MASTER_FALLBACK'
+      : effectiveLiveProfile
+      ? 'SECUID_CREATOR_API'
+      : sampleCount > 0
+      ? 'SSR_REHYDRATION_BATCH'
+      : 'SEARCH_DISCOVERY');
+
+  const engineLabelMap: Record<TikTokScrapeDiagnostics['enginePath'], string> = {
+    SECUID_CREATOR_API: 'Luồng API Creator (secUid)',
+    SSR_REHYDRATION_BATCH: 'Bóc tách SSR Rehydration',
+    SEARCH_DISCOVERY: 'Dò tìm đa luồng',
+    INTERNAL_MASTER_FALLBACK: 'Đối chiếu Danh bạ Master',
+  };
+
+  const dataConfidence: TikTokScrapeDiagnostics['dataConfidence'] =
+    sampleCount >= 12 && followers > 0
+      ? 'CAO'
+      : sampleCount >= 4 || followers > 0
+      ? 'TRUNG_BÌNH'
+      : 'CẦN_KIỂM_TRA';
+
   return {
     handle: cleanHandle,
     channelUrl: `https://www.tiktok.com/@${cleanHandle}`,
@@ -793,6 +894,8 @@ function buildScrapedResultFromRealData(
       organicVideoCount,
       organicMedianViews,
       organicAvgViews,
+      outlierViralCount,
+      pinnedOldVideoCount,
       viewConsistencyRatioPct,
       postingFrequencyPerWeek,
       daysSinceLastPost,
@@ -804,6 +907,16 @@ function buildScrapedResultFromRealData(
       engagementRate,
     },
     recentVideos,
+    scrapeDiagnostics: {
+      durationMs: Math.max(1, diagnosticsInput?.durationMs || 0),
+      cacheHit: Boolean(diagnosticsInput?.cacheHit),
+      enginePath,
+      engineLabel: engineLabelMap[enginePath],
+      dataConfidence,
+      inspectedVideosCount: sampleCount,
+      outlierViralCount,
+      pinnedOldCount: pinnedOldVideoCount,
+    },
     affiliateMetrics: {
       period,
       gmv30d: existingKoc?.recentRevenue || 0,
@@ -909,13 +1022,24 @@ export async function scrapeTikTokCreatorData(
   options?: {
     directVideoUrls?: Array<{ handle: string; videoId: string; videoUrl: string }>;
     videoLimit?: number;
+    forceRefresh?: boolean;
   }
 ): Promise<TikTokScrapedKocResult> {
+  const startedAtMs = Date.now();
   const parsedHandles = parseTikTokHandles(rawHandle);
   const cleanHandle = (parsedHandles[0] || rawHandle)
     .trim()
     .toLowerCase()
     .replace(/^@+/, '');
+
+  const forceRefresh = Boolean(options?.forceRefresh);
+  const store = getSharedCrawlerStore();
+  const hadProfileCache =
+    !forceRefresh &&
+    Boolean(
+      store.profileCache.get(cleanHandle) &&
+        (store.profileCache.get(cleanHandle)?.expiresAt || 0) > startedAtMs
+    );
 
   const targetVideoLimit = Math.min(Math.max(options?.videoLimit || 40, 6), 100);
   const candidateMaxUrls = Math.min(Math.max(targetVideoLimit * 2, 80), 160);
@@ -927,12 +1051,15 @@ export async function scrapeTikTokCreatorData(
   ].filter((v) => v.handle.toLowerCase() === cleanHandle);
 
   // 1. Lấy hồ sơ kênh thực tế trước để có secUid truy vấn danh sách video mới nhất liên tiếp
-  let livePublic = await fetchLiveTikTokPublicProfile(cleanHandle);
+  let livePublic = await fetchLiveTikTokPublicProfile(cleanHandle, { forceRefresh });
   let inspectedVideos: RealTikTokVideoAndAuthorDetail[] = [];
+  let enginePath: TikTokScrapeDiagnostics['enginePath'] = 'SECUID_CREATOR_API';
 
   if (livePublic?.secUid) {
     const [chronologicalVideos, inspectedDirect] = await Promise.all([
-      fetchTikTokCreatorVideoListBySecUid(cleanHandle, livePublic.secUid, targetVideoLimit),
+      fetchTikTokCreatorVideoListBySecUid(cleanHandle, livePublic.secUid, targetVideoLimit, {
+        forceRefresh,
+      }),
       directVideosForHandle.length > 0
         ? inspectVideoCandidatesInBatches(
             directVideosForHandle,
@@ -954,6 +1081,7 @@ export async function scrapeTikTokCreatorData(
 
   // 2. Dự phòng khi chưa có secUid hoặc /api/creator/item_list/ trả về ít hơn số lượng yêu cầu
   if (inspectedVideos.length === 0) {
+    enginePath = 'SSR_REHYDRATION_BATCH';
     const initialChannelVideos = await discoverTikTokChannelVideoUrls(cleanHandle, {
       maxUrls: candidateMaxUrls,
       secUid: livePublic?.secUid,
@@ -989,13 +1117,14 @@ export async function scrapeTikTokCreatorData(
     );
     const fallbackHandle = resolveFallbackCreatorHandle(cleanHandle);
     if (fallbackHandle && fallbackHandle !== cleanHandle) {
-      const fallbackProfile = await fetchLiveTikTokPublicProfile(fallbackHandle);
+      const fallbackProfile = await fetchLiveTikTokPublicProfile(fallbackHandle, { forceRefresh });
       let fallbackInspected: RealTikTokVideoAndAuthorDetail[] = [];
       if (fallbackProfile?.secUid) {
         fallbackInspected = await fetchTikTokCreatorVideoListBySecUid(
           fallbackHandle,
           fallbackProfile.secUid,
-          targetVideoLimit
+          targetVideoLimit,
+          { forceRefresh }
         );
       }
       if (fallbackInspected.length === 0) {
@@ -1012,6 +1141,7 @@ export async function scrapeTikTokCreatorData(
       if (fallbackInspected.length > 0) {
         inspectedVideos = fallbackInspected;
         usedFallbackVideosForInternalKoc = Boolean(existingKoc);
+        enginePath = 'INTERNAL_MASTER_FALLBACK';
         if (!existingKoc && fallbackProfile) {
           livePublic = fallbackProfile;
         }
@@ -1019,12 +1149,18 @@ export async function scrapeTikTokCreatorData(
     }
   }
 
+  const durationMs = Math.max(1, Date.now() - startedAtMs);
   return buildScrapedResultFromRealData(
     cleanHandle,
     period,
     livePublic,
     inspectedVideos,
-    usedFallbackVideosForInternalKoc
+    usedFallbackVideosForInternalKoc,
+    {
+      durationMs,
+      cacheHit: hadProfileCache && durationMs < 250,
+      enginePath,
+    }
   );
 }
 

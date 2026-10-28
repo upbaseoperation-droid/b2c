@@ -77,4 +77,5 @@ Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự á
 | Mục | Vị trí | Trạng thái |
 | --- | --- | --- |
 | **Hệ thống web-admin** | [`B2C/web-admin`](../web-admin/README.md) | Đang vận hành và phát triển các phân hệ theo đặc tả Giai đoạn 2 |
+| **Tiện ích trình duyệt (Chrome Extension)** | [`B2C/chrome-extension`](../chrome-extension/README.md) | Thu thập chỉ số TikTok/Instagram, đối soát lịch sử giá KOC & đồng bộ nghiệm thu Air Link qua `/api/extension/koc-sync` |
 | Tài liệu lưu trữ prototype v0 | [`blueprint/archive/prototype-v0`](archive/prototype-v0/README.md) | Lưu trữ tư liệu lịch sử khảo sát |

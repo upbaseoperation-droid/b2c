@@ -25,11 +25,51 @@ interface StoredServiceAccountConfig {
 }
 
 let runtimeServiceAccount: { email: string; key: string } | null = null;
-let hasLoadedStoredConfig = false;
+let lastLoadedStoredAt = 0;
+
+function normalizePrivateKey(raw: string): string {
+  let k = String(raw || '').trim();
+  if ((k.startsWith('"') && k.endsWith('"')) || (k.startsWith("'") && k.endsWith("'"))) {
+    k = k.slice(1, -1).trim();
+  }
+  return k.replace(/\\n/g, '\n').replace(/\r\n/g, '\n').trim();
+}
+
+function tryParseServiceAccountJson(raw: string): { email: string; key: string } | null {
+  const s = String(raw || '').trim();
+  if (!s.startsWith('{')) return null;
+  try {
+    const parsed = JSON.parse(s) as {
+      client_email?: string;
+      serviceAccountEmail?: string;
+      private_key?: string;
+      privateKey?: string;
+    };
+    const email = String(parsed.client_email || parsed.serviceAccountEmail || '').trim();
+    const key = normalizePrivateKey(parsed.private_key || parsed.privateKey || '');
+    if (email && key) return { email, key };
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
 
 export function getServiceAccount() {
+  const envJsonRaw =
+    process.env.GOOGLE_SERVICE_ACCOUNT_JSON ||
+    process.env.GOOGLE_SERVICE_ACCOUNT_KEY ||
+    process.env.GOOGLE_CREDENTIALS ||
+    '';
+  const fromEnvJson =
+    tryParseServiceAccountJson(envJsonRaw) ||
+    tryParseServiceAccountJson(process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || '') ||
+    tryParseServiceAccountJson(process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '');
+  if (fromEnvJson) {
+    return { email: fromEnvJson.email, key: fromEnvJson.key, configured: true, source: 'env' as const };
+  }
+
   const envEmail = (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '').trim();
-  const envKey = (process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || '').replace(/\\n/g, '\n').trim();
+  const envKey = normalizePrivateKey(process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || '');
   if (envEmail && envKey) {
     return { email: envEmail, key: envKey, configured: true, source: 'env' as const };
   }
@@ -46,13 +86,24 @@ export function getServiceAccount() {
 
 export async function ensureServiceAccountLoaded() {
   const current = getServiceAccount();
-  if (current.configured) return current;
-  if (!hasLoadedStoredConfig) {
-    hasLoadedStoredConfig = true;
+  if (current.source === 'env') return current;
+  const now = Date.now();
+  if (!runtimeServiceAccount || now - lastLoadedStoredAt > 10_000) {
+    lastLoadedStoredAt = now;
     try {
       const rec = await readRecord<StoredServiceAccountConfig>(GOOGLE_SHEETS_CONFIG_KEY, {});
-      const email = (rec.data?.serviceAccountEmail || '').trim();
-      const key = (rec.data?.privateKey || '').replace(/\\n/g, '\n').trim();
+      let email = (rec.data?.serviceAccountEmail || '').trim();
+      let key = normalizePrivateKey(rec.data?.privateKey || '');
+      if (!email || !key) {
+        const sharedState = await readRecord<Record<string, string>>('b2c-shared-state-v1', {});
+        const fromShared = tryParseServiceAccountJson(
+          sharedState.data?.['upbase_b2c_google_sa_config_v1'] || ''
+        );
+        if (fromShared) {
+          email = fromShared.email;
+          key = fromShared.key;
+        }
+      }
       if (email && key) {
         runtimeServiceAccount = { email, key };
       }
@@ -69,7 +120,7 @@ export async function saveServiceAccountConfig(input: {
   actorName?: string;
 }) {
   const email = (input.serviceAccountEmail || '').trim();
-  const key = (input.privateKey || '').replace(/\\n/g, '\n').trim();
+  const key = normalizePrivateKey(input.privateKey || '');
   if (!email || !email.includes('@')) {
     throw new GoogleSheetsError('Email Service Account không hợp lệ.', 'INVALID', 400);
   }
@@ -82,14 +133,18 @@ export async function saveServiceAccountConfig(input: {
     throw new GoogleSheetsError('Private Key không hợp lệ (không thể ký RSA-SHA256).', 'INVALID', 400);
   }
   runtimeServiceAccount = { email, key };
-  hasLoadedStoredConfig = true;
+  lastLoadedStoredAt = Date.now();
   cachedToken = null;
-  await upsertRecord<StoredServiceAccountConfig>(GOOGLE_SHEETS_CONFIG_KEY, {}, () => ({
-    serviceAccountEmail: email,
-    privateKey: key,
-    updatedAt: new Date().toISOString(),
-    updatedBy: input.actorName || 'Admin',
-  }));
+  try {
+    await upsertRecord<StoredServiceAccountConfig>(GOOGLE_SHEETS_CONFIG_KEY, {}, () => ({
+      serviceAccountEmail: email,
+      privateKey: key,
+      updatedAt: new Date().toISOString(),
+      updatedBy: input.actorName || 'Admin',
+    }));
+  } catch {
+    /* Vẫn giữ runtimeServiceAccount trong bộ nhớ nếu DB tạm thời gián đoạn */
+  }
   return getServiceAccount();
 }
 
@@ -165,8 +220,39 @@ const keyOf = (v: unknown) =>
 
 const quoteTab = (tab: string) => `'${tab.replace(/'/g, "''")}'`;
 
-const normHeaderToken = (v: string) =>
-  String(v || '')
+const HEADER_CANONICAL_ALIASES: Record<string, string> = {
+  ngay_dien: 'ngay dien',
+  'tg listing (ngay gio)': 'ngay dien',
+  'dot listing': 'dot',
+  nhan_su_dien: 'nhan su dien',
+  'ten kenh koc': 'ten kenh',
+  'ten nguoi anh huong (ten kenh)': 'ten kenh',
+  'gia da hop tac truoc do (gia du kien)': 'gia da hop tac truoc do',
+  'loai gia (booking, code ads, reup gan gio, sdha)': 'loai gia',
+  'phi kem thue tncn': 'phi booking kem thue tncn',
+  'trang thai quy trinh booking - tech': 'trang thai',
+  'ly do tu choi - brand note': 'ly do tu choi',
+  'thanh qua hop tac voi ub': 'thanh qua hop tac',
+  'doanh so 30d': 'doanh so',
+  'doanh so (neu co)': 'doanh so',
+  'gmv tu moi khach hang/ aov': 'aov',
+  'view tb video': 'view trung binh video',
+  'view trung binh video/ trung vi video': 'view trung binh video',
+  'ti trong gmv tu video': 'gmv tu video',
+  'ti trong gmv tu live': 'gmv tu live',
+  'ti trong gmv tu the san pham': 'gmv tu the san pham',
+  'ti trong nam': 'nam',
+  'ti trong nu': 'nu',
+  'ti trong 18-24': '18-24',
+  'ti trong 25-34': '25-34',
+  'ngay air (plan)': 'ngay air plan',
+  'tg brand duyet': 'thoi gian brand duyet',
+  'ngay brand duyet': 'thoi gian brand duyet',
+  'ghi chu leader': 'growth/ account/leader note',
+};
+
+const normHeaderToken = (v: string) => {
+  const cleaned = String(v || '')
     .replace(/[\u{1F383}\u{1F338}]/gu, '')
     .replace(/\s*\(bổ sung thêm\)/gi, '')
     .normalize('NFD')
@@ -175,6 +261,8 @@ const normHeaderToken = (v: string) =>
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
+  return HEADER_CANONICAL_ALIASES[cleaned] || cleaned;
+};
 
 export interface PushFieldChange {
   column: string;
@@ -219,19 +307,61 @@ const colLetter = (idx: number): string => {
 const UPDATABLE_COLUMNS = new Set([
   ROW_ID_COLUMN_HEADER,
   'Ngày điền',
+  'Tháng',
   'Đợt',
+  'Store',
   'Nhân sự điền',
   'Mã Brief',
-  'Content tag',
   'Sản phẩm',
+  'Tên kênh',
+  'Link kênh',
+  'Follower',
+  'Tệp kênh',
+  'Content tag',
   'Tệp Booking',
+  'Giá đã hợp tác trước đó',
+  'Loại giá',
   'Giá net video',
   'Phí kèm thuế TNCN',
   'Phí booking kèm thuế TNCN',
   'Trạng thái',
   'Đề xuất từ UpBase',
   'Content note',
-  'Ngày air (plan)',
+  'Thành quả hợp tác',
+  'Thành quả hợp tác với brand ngoài',
+  'Doanh số (nếu có)',
+  'Doanh số ước tính trong 30 ngày',
+  'Số món bán ra',
+  'GPM',
+  'AOV',
+  'View trung bình video',
+  'Cost per view',
+  'Tỉ trọng GMV từ video',
+  'Tỉ trọng GMV từ Live',
+  'Tỉ trọng GMV từ thẻ sản phẩm',
+  'Tỉ trọng ngành hàng',
+  'Tỉ trọng Nam',
+  'Tỉ trọng Nữ',
+  'Tỉ trọng 18-24',
+  'Tỉ trọng 25-34',
+  'Other',
+  'Location',
+  'Ngày air plan',
+  'GMV Target',
+  'View trung vị',
+  'CTR',
+  'CR',
+  'View Target',
+  'Tỷ lệ tương tác',
+  'Email',
+  'Zalo',
+  'Người nhận hàng',
+  'SĐT nhận hàng',
+  'Địa chỉ nhận hàng',
+  'Tên tài khoản ngân hàng',
+  'Số tài khoản',
+  'Ngân hàng',
+  'Số CCCD',
   'Link kịch bản',
   'Link video demo',
   'Link Air',
@@ -269,8 +399,16 @@ export async function appendNewRows(opts: {
   const dotIdx = columns.findIndex(c => normHeaderToken(c) === 'dot');
   const nameIdx = columns.findIndex(c => /tên kênh|tên người ảnh hưởng/i.test(c));
 
-  const meta = (await sheetsFetch(`${spreadsheetId}?fields=sheets.properties(sheetId,title)`)) as {
-    sheets?: { properties: { sheetId: number; title: string } }[];
+  const meta = (await sheetsFetch(
+    `${spreadsheetId}?fields=sheets.properties(sheetId,title,gridProperties)`
+  )) as {
+    sheets?: {
+      properties: {
+        sheetId: number;
+        title: string;
+        gridProperties?: { rowCount?: number; columnCount?: number };
+      };
+    }[];
   };
   let targetSheetProp = (meta.sheets || []).find(s => s.properties.title === tab)?.properties;
   const exists = Boolean(targetSheetProp);
@@ -278,7 +416,17 @@ export async function appendNewRows(opts: {
     const addRes = (await sheetsFetch(`${spreadsheetId}:batchUpdate`, {
       method: 'POST',
       body: JSON.stringify({ requests: [{ addSheet: { properties: { title: tab } } }] }),
-    })) as { replies?: { addSheet?: { properties?: { sheetId: number; title: string } } }[] };
+    })) as {
+      replies?: {
+        addSheet?: {
+          properties?: {
+            sheetId: number;
+            title: string;
+            gridProperties?: { rowCount?: number; columnCount?: number };
+          };
+        };
+      }[];
+    };
     targetSheetProp = addRes.replies?.[0]?.addSheet?.properties;
   }
 
@@ -289,7 +437,7 @@ export async function appendNewRows(opts: {
   const values = current.values || [];
 
   let headerRowIdx = 0;
-  for (let idx = 0; idx < Math.min(10, values.length); idx++) {
+  for (let idx = 0; idx < Math.min(15, values.length); idx++) {
     const rowCells = (values[idx] || []).map(c => String(c || '').trim().toLowerCase());
     if (rowCells.some(c => c.includes('id kênh') || c.includes('id kenh') || c === keyColumn.toLowerCase())) {
       headerRowIdx = idx;
@@ -330,6 +478,7 @@ export async function appendNewRows(opts: {
   const existingRowByComposite = new Map<string, { rowNum: number; rowVals: string[] }>();
   const existingRowByProdDot = new Map<string, { rowNum: number; rowVals: string[] }>();
   const existingRowByHandle = new Map<string, { rowNum: number; rowVals: string[] }>();
+  let lastValidDataRowNum = hasHeader ? headerRowIdx + 1 : 0;
 
   if (hasHeader && sheetKeyIdx >= 0) {
     values.slice(headerRowIdx + 1).forEach((r, idx) => {
@@ -337,9 +486,11 @@ export async function appendNewRows(opts: {
       const rId = sheetRowIdIdx >= 0 ? String(r[sheetRowIdIdx] ?? '').trim() : '';
       if (rId) {
         existingRowByRowId.set(rId, { rowNum, rowVals: r });
+        lastValidDataRowNum = Math.max(lastValidDataRowNum, rowNum);
       }
       const k = keyOf(r[sheetKeyIdx]);
       if (!k) return;
+      lastValidDataRowNum = Math.max(lastValidDataRowNum, rowNum);
       const b = sheetBriefIdx >= 0 ? String(r[sheetBriefIdx] ?? '').trim().toUpperCase() : '';
       const prod = sheetProdIdx >= 0 ? normHeaderToken(String(r[sheetProdIdx] ?? '')) : '';
       const dot = sheetDotIdx >= 0 ? normHeaderToken(String(r[sheetDotIdx] ?? '')) : '';
@@ -501,13 +652,50 @@ export async function appendNewRows(opts: {
 
     const payload: (string | number)[][] = hasHeader ? aligned : [header, ...aligned];
     if (payload.length > 0) {
-      await sheetsFetch(
-        `${spreadsheetId}/values/${encodeURIComponent(`${quoteTab(tab)}!A1`)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ values: payload }),
+      const writeStartRow = hasHeader ? Math.max(headerRowIdx + 2, lastValidDataRowNum + 1) : 1;
+      const writeEndRow = writeStartRow + payload.length - 1;
+      const currentRowCount = targetSheetProp?.gridProperties?.rowCount ?? 1000;
+      const currentColCount = targetSheetProp?.gridProperties?.columnCount ?? 60;
+      const dimRequests: Record<string, unknown>[] = [];
+      if (targetSheetProp?.sheetId !== undefined) {
+        if (writeEndRow > currentRowCount) {
+          dimRequests.push({
+            appendDimension: {
+              sheetId: targetSheetProp.sheetId,
+              dimension: 'ROWS',
+              length: Math.max(50, writeEndRow - currentRowCount + 20),
+            },
+          });
         }
-      );
+        if (header.length > currentColCount) {
+          dimRequests.push({
+            appendDimension: {
+              sheetId: targetSheetProp.sheetId,
+              dimension: 'COLUMNS',
+              length: header.length - currentColCount + 5,
+            },
+          });
+        }
+        if (dimRequests.length > 0) {
+          await sheetsFetch(`${spreadsheetId}:batchUpdate`, {
+            method: 'POST',
+            body: JSON.stringify({ requests: dimRequests }),
+          }).catch(() => {});
+        }
+      }
+
+      await sheetsFetch(`${spreadsheetId}/values:batchUpdate`, {
+        method: 'POST',
+        body: JSON.stringify({
+          valueInputOption: 'USER_ENTERED',
+          data: [
+            {
+              range: `${quoteTab(tab)}!A${writeStartRow}:${colLetter(header.length - 1)}${writeEndRow}`,
+              values: payload,
+            },
+          ],
+        }),
+      });
     }
 
     // Tự động ẩn cột kỹ thuật "Mã dòng (Row ID)" trên Google Sheet để Brand không nhìn thấy mã hệ thống
@@ -612,7 +800,7 @@ export async function readTab(opts: { spreadsheetId: string; tab: string }): Pro
 
   let headerRowIdx = 0;
   const knownKeyTokens = new Set(['id kenh', 'id kenh tiktok', 'tiktok id', 'handle', 'kenh koc']);
-  for (let idx = 0; idx < Math.min(10, values.length); idx++) {
+  for (let idx = 0; idx < Math.min(15, values.length); idx++) {
     const rowTokens = (values[idx] || []).map(normHeaderToken);
     if (rowTokens.some(t => knownKeyTokens.has(t))) {
       headerRowIdx = idx;
@@ -631,16 +819,23 @@ export async function readTab(opts: { spreadsheetId: string; tab: string }): Pro
   return { header, rows };
 }
 
-// Các cột nội bộ / nhạy cảm không hiển thị cho Brand trên file Google Sheet
+// Các cột nội bộ / nhạy cảm được gắn nhãn "Nội bộ / Ẩn cột đi" trên Template List KOC_TikTok - đã chốt (A..E, N, AW..BE)
 const INTERNAL_SENSITIVE_HEADER_TOKENS = new Set([
   normHeaderToken(ROW_ID_COLUMN_HEADER),
   'rowid',
   'ma dong',
+  'ngay dien',
+  'thang',
+  'nhan su dien',
+  'dot',
+  'store',
+  'gia da hop tac truoc do',
   'email',
   'zalo',
   'nguoi nhan hang',
   'sdt nhan hang',
   'dia chi nhan hang',
+  'ten tai khoan ngan hang',
   'so tai khoan',
   'ngan hang',
   'so cccd',
@@ -678,10 +873,30 @@ export type SheetSortMode =
   | 'BATCH'            // Sắp xếp theo Đợt Listing (Đợt 1 -> Đợt 3), phụ theo Sản phẩm
   | 'BRAND_DECISION';  // Sắp xếp gom các dòng Brand chọn (Yes) lên đầu
 
+export interface SheetMonthColumnStat {
+  month: string;
+  rowCount: number;
+  collapsed: boolean;
+}
+
+function normalizeSheetMonthToken(raw: string): string {
+  const s = String(raw ?? '').trim();
+  if (!s) return '';
+  const mYyyyMm = s.match(/(20\d{2})\s*[\/\-_.]\s*(0?[1-9]|1[0-2])/);
+  if (mYyyyMm) {
+    return `${mYyyyMm[1]}/${mYyyyMm[2].padStart(2, '0')}`;
+  }
+  const mMmYyyy = s.match(/(0?[1-9]|1[0-2])\s*[\/\-_.]\s*(20\d{2})/);
+  if (mMmYyyy) {
+    return `${mMmYyyy[2]}/${mMmYyyy[1].padStart(2, '0')}`;
+  }
+  return s;
+}
+
 /**
  * Điều khiển trực tiếp bố cục & sắp xếp trên file Google Sheet (Template chung):
- * 1. Ẩn / Hiện các Tab tháng cũ (`tabVisibility`).
- * 2. Ẩn / Hiện các nhóm cột trên Tab đang thao tác (`columnPreset` hoặc `hiddenColumnHeaders`).
+ * 1. Thu gọn / Mở rộng các dòng Tháng cũ theo Cột Tháng (Cột B) (`collapsedMonths`, `collapseOldMonthsBefore`, `expandAllMonths`).
+ * 2. Ẩn / Hiện các nhóm cột trên Tab đang thao tác (`columnPreset` hoặc `customHiddenColumns`).
  * 3. Sắp xếp trực tiếp dữ liệu trên Google Sheet theo Sản phẩm / Nhân sự điền / Đợt (`sortBy`).
  * 4. Gắn sẵn nút Lọc (`Basic Filter`) ở hàng tiêu đề và tạo sẵn 4 `Filter Views` trên Google Sheet
  *    để người dùng mở file Google Sheet có thể bấm chọn xem/sắp xếp theo Sản phẩm hoặc Nhân sự ngay trên Sheet.
@@ -690,6 +905,9 @@ export async function configureSpreadsheetTemplate(opts: {
   spreadsheetId: string;
   activeTab?: string;
   tabVisibility?: { title: string; hidden: boolean }[];
+  collapsedMonths?: string[];
+  collapseOldMonthsBefore?: string;
+  expandAllMonths?: boolean;
   columnPreset?: SheetColumnPresetMode;
   customHiddenColumns?: string[];
   sortBy?: SheetSortMode;
@@ -698,6 +916,8 @@ export async function configureSpreadsheetTemplate(opts: {
   ok: boolean;
   updatedTabsCount: number;
   hiddenColumnsCount: number;
+  collapsedRowsCount: number;
+  monthColumnStats: SheetMonthColumnStat[];
   sortedBy?: SheetSortMode;
   filterViewsInstalled?: boolean;
   tabsDetail: SpreadsheetTabDetail[];
@@ -706,6 +926,9 @@ export async function configureSpreadsheetTemplate(opts: {
     spreadsheetId,
     activeTab,
     tabVisibility,
+    collapsedMonths,
+    collapseOldMonthsBefore,
+    expandAllMonths,
     columnPreset,
     customHiddenColumns,
     sortBy,
@@ -713,7 +936,7 @@ export async function configureSpreadsheetTemplate(opts: {
   } = opts;
 
   const meta = (await sheetsFetch(
-    `${spreadsheetId}?fields=properties.title,sheets(properties(sheetId,title,hidden,index,gridProperties),filterViews)`
+    `${spreadsheetId}?fields=properties.title,sheets(properties(sheetId,title,hidden,index,gridProperties),filterViews,rowGroups)`
   )) as {
     properties?: { title?: string };
     sheets?: {
@@ -725,6 +948,16 @@ export async function configureSpreadsheetTemplate(opts: {
         gridProperties?: { rowCount?: number; columnCount?: number };
       };
       filterViews?: { filterViewId?: number; title?: string }[];
+      rowGroups?: {
+        range?: {
+          sheetId?: number;
+          dimension?: string;
+          startIndex?: number;
+          endIndex?: number;
+        };
+        depth?: number;
+        collapsed?: boolean;
+      }[];
     }[];
   };
 
@@ -732,7 +965,9 @@ export async function configureSpreadsheetTemplate(opts: {
   const requests: Record<string, unknown>[] = [];
   let updatedTabsCount = 0;
   let hiddenColumnsCount = 0;
+  let collapsedRowsCount = 0;
   let filterViewsInstalled = false;
+  const monthColumnStats: SheetMonthColumnStat[] = [];
 
   // 1. Ẩn / Hiện các Tab Tháng trên file Google Sheet
   if (Array.isArray(tabVisibility) && tabVisibility.length > 0) {
@@ -765,18 +1000,31 @@ export async function configureSpreadsheetTemplate(opts: {
     }
   }
 
-  // Nếu có thao tác trên activeTab (Ẩn/Hiện cột, Sort theo Sản phẩm/Nhân sự, hoặc Cài đặt Filter Views)
-  if (activeTab && (columnPreset || customHiddenColumns || sortBy || installFilterViews)) {
-    const targetSheet = sheets.find(s => (s.properties?.title || '').trim() === activeTab.trim());
+  // Nếu có thao tác trên activeTab (Thu gọn dòng theo Cột Tháng, Ẩn/Hiện cột, Sort theo Sản phẩm/Nhân sự, hoặc Cài đặt Filter Views)
+  const resolvedTabName = (activeTab || sheets[0]?.properties?.title || '').trim();
+  const hasMonthRowAction =
+    Array.isArray(collapsedMonths) ||
+    Boolean(collapseOldMonthsBefore) ||
+    expandAllMonths === true;
+
+  if (
+    resolvedTabName &&
+    (hasMonthRowAction || columnPreset || customHiddenColumns || sortBy || installFilterViews)
+  ) {
+    const targetSheet =
+      sheets.find(s => (s.properties?.title || '').trim() === resolvedTabName) || sheets[0];
     const sheetId = targetSheet?.properties?.sheetId;
-    if (targetSheet && sheetId !== undefined) {
-      const range = encodeURIComponent(`${quoteTab(activeTab)}!A1:ZZ20`);
+    const sheetTitle = (targetSheet?.properties?.title || resolvedTabName).trim();
+    if (targetSheet && sheetId !== undefined && sheetTitle) {
+      const range = encodeURIComponent(
+        `${quoteTab(sheetTitle)}!A1:ZZ${hasMonthRowAction ? 2000 : 20}`
+      );
       const res = (await sheetsFetch(`${spreadsheetId}/values/${range}`)) as { values?: string[][] };
       const values = res.values || [];
 
       let headerRowIdx = 0;
       const knownKeyTokens = new Set(['id kenh', 'id kenh tiktok', 'tiktok id', 'handle', 'kenh koc']);
-      for (let idx = 0; idx < Math.min(10, values.length); idx++) {
+      for (let idx = 0; idx < Math.min(15, values.length); idx++) {
         const rowTokens = (values[idx] || []).map(normHeaderToken);
         if (rowTokens.some(t => knownKeyTokens.has(t))) {
           headerRowIdx = idx;
@@ -784,6 +1032,131 @@ export async function configureSpreadsheetTemplate(opts: {
         }
       }
       const header = (values[headerRowIdx] || []).map(h => String(h).trim());
+
+      const findColIdx = (...candidates: string[]) => {
+        for (const c of candidates) {
+          const target = normHeaderToken(c);
+          const found = header.findIndex(h => normHeaderToken(h) === target);
+          if (found >= 0) return found;
+        }
+        return -1;
+      };
+
+      const monthColIdx = (() => {
+        const found = findColIdx('Tháng', 'Thang', 'Month', 'Kỳ tháng');
+        return found >= 0 ? found : 1; // Mặc định Cột B (index 1) là cột Tháng trên Template
+      })();
+
+      // 1b. Thu gọn / Mở rộng các dòng Tháng cũ dựa trên Cột Tháng (Cột B) trên Google Sheet
+      if (hasMonthRowAction && values.length > headerRowIdx + 1) {
+        const collapsedNormSet = new Set(
+          (collapsedMonths || []).map(m => normalizeSheetMonthToken(m)).filter(Boolean)
+        );
+        const cutoffNorm = collapseOldMonthsBefore
+          ? normalizeSheetMonthToken(collapseOldMonthsBefore)
+          : '';
+
+        // Xóa các nhóm dòng (Row Dimension Groups) cũ nếu có để tạo lại gọn gàng
+        for (const rg of targetSheet.rowGroups || []) {
+          if (rg.range && rg.range.startIndex !== undefined && rg.range.endIndex !== undefined) {
+            requests.push({
+              deleteDimensionGroup: {
+                range: {
+                  sheetId,
+                  dimension: 'ROWS',
+                  startIndex: rg.range.startIndex,
+                  endIndex: rg.range.endIndex,
+                },
+              },
+            });
+          }
+        }
+
+        const monthCountMap = new Map<string, { count: number; collapsed: boolean }>();
+        const rowDecision: { rowIdx: number; month: string; collapse: boolean }[] = [];
+
+        for (let rIdx = headerRowIdx + 1; rIdx < values.length; rIdx++) {
+          const rowArr = values[rIdx] || [];
+          const hasAnyContent = rowArr.some(cell => String(cell ?? '').trim() !== '');
+          if (!hasAnyContent) continue;
+
+          const rawMonth = String(rowArr[monthColIdx] ?? '').trim();
+          const normMonth = normalizeSheetMonthToken(rawMonth) || rawMonth;
+
+          let shouldCollapse = false;
+          if (expandAllMonths === true) {
+            shouldCollapse = false;
+          } else if (collapsedNormSet.size > 0) {
+            shouldCollapse = Boolean(normMonth && collapsedNormSet.has(normMonth));
+          } else if (cutoffNorm) {
+            shouldCollapse = Boolean(normMonth && normMonth < cutoffNorm);
+          }
+
+          if (shouldCollapse) collapsedRowsCount++;
+          rowDecision.push({ rowIdx: rIdx, month: normMonth, collapse: shouldCollapse });
+
+          if (normMonth) {
+            const prev = monthCountMap.get(normMonth) || { count: 0, collapsed: shouldCollapse };
+            monthCountMap.set(normMonth, {
+              count: prev.count + 1,
+              collapsed: shouldCollapse,
+            });
+          }
+        }
+
+        Array.from(monthCountMap.entries())
+          .sort((a, b) => b[0].localeCompare(a[0]))
+          .forEach(([m, info]) => {
+            monthColumnStats.push({
+              month: m,
+              rowCount: info.count,
+              collapsed: info.collapsed,
+            });
+          });
+
+        // Gom các dòng liên tiếp có cùng trạng thái collapse để gửi updateDimensionProperties + addDimensionGroup
+        let i = 0;
+        while (i < rowDecision.length) {
+          const startRow = rowDecision[i].rowIdx;
+          const collapseVal = rowDecision[i].collapse;
+          let endRow = startRow + 1;
+          while (
+            i + 1 < rowDecision.length &&
+            rowDecision[i + 1].rowIdx === endRow &&
+            rowDecision[i + 1].collapse === collapseVal
+          ) {
+            endRow++;
+            i++;
+          }
+
+          requests.push({
+            updateDimensionProperties: {
+              range: {
+                sheetId,
+                dimension: 'ROWS',
+                startIndex: startRow,
+                endIndex: endRow,
+              },
+              properties: { hiddenByUser: collapseVal },
+              fields: 'hiddenByUser',
+            },
+          });
+
+          if (collapseVal) {
+            requests.push({
+              addDimensionGroup: {
+                range: {
+                  sheetId,
+                  dimension: 'ROWS',
+                  startIndex: startRow,
+                  endIndex: endRow,
+                },
+              },
+            });
+          }
+          i++;
+        }
+      }
 
       // 2. Ẩn / Hiện cột trên Google Sheet theo chế độ Template
       if (columnPreset || Array.isArray(customHiddenColumns)) {
@@ -820,15 +1193,6 @@ export async function configureSpreadsheetTemplate(opts: {
           });
         });
       }
-
-      const findColIdx = (...candidates: string[]) => {
-        for (const c of candidates) {
-          const target = normHeaderToken(c);
-          const found = header.findIndex(h => normHeaderToken(h) === target);
-          if (found >= 0) return found;
-        }
-        return -1;
-      };
 
       const productColIdx = findColIdx('Sản phẩm', 'Tên sản phẩm');
       const staffColIdx = findColIdx('Nhân sự điền', 'PIC', 'Nhân sự phụ trách');
@@ -991,6 +1355,8 @@ export async function configureSpreadsheetTemplate(opts: {
     ok: true,
     updatedTabsCount,
     hiddenColumnsCount,
+    collapsedRowsCount,
+    monthColumnStats,
     sortedBy: sortBy,
     filterViewsInstalled,
     tabsDetail: updatedMeta.tabsDetail,

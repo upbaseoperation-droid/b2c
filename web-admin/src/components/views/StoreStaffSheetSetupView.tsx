@@ -207,13 +207,37 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
     loadDraftsFromStores();
   }, [loadDraftsFromStores]);
 
-  // Kiểm tra trạng thái Google Service Account
+  // Kiểm tra trạng thái Google Service Account (tự động khôi phục từ bộ nhớ trình duyệt nếu máy chủ vừa khởi động lại)
   useEffect(() => {
     fetch('/api/booking-list/push-sheet')
       .then(r => r.json())
-      .then((d: { configured?: boolean; serviceAccountEmail?: string }) => {
-        setSaConfigured(Boolean(d.configured));
-        if (d.serviceAccountEmail) setSaEmail(d.serviceAccountEmail);
+      .then(async (d: { configured?: boolean; serviceAccountEmail?: string }) => {
+        if (d.configured) {
+          setSaConfigured(true);
+          if (d.serviceAccountEmail) setSaEmail(d.serviceAccountEmail);
+          return;
+        }
+        const cachedJson =
+          typeof window !== 'undefined'
+            ? window.localStorage.getItem('upbase_b2c_google_sa_config_v1')
+            : null;
+        if (cachedJson && cachedJson.trim()) {
+          const restoreRes = await fetch('/api/booking-list/push-sheet', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ serviceAccountJson: cachedJson.trim() }),
+          }).catch(() => null);
+          const restored = (await restoreRes?.json().catch(() => null)) as {
+            configured?: boolean;
+            serviceAccountEmail?: string;
+          } | null;
+          if (restored?.configured) {
+            setSaConfigured(true);
+            if (restored.serviceAccountEmail) setSaEmail(restored.serviceAccountEmail);
+            return;
+          }
+        }
+        setSaConfigured(false);
       })
       .catch(() => {});
   }, []);
@@ -328,10 +352,18 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
     }
   };
 
-  // Điều khiển Template Google Sheet (Ẩn Tab tháng cũ, Ẩn/Hiện nhóm Cột, Sort theo Sản phẩm / Nhân sự)
+  const [quickCollapsedMonths, setQuickCollapsedMonths] = useState<string[]>([
+    '2026/09',
+    '2026/08',
+  ]);
+
+  // Điều khiển Template Google Sheet (Thu gọn các tháng cũ theo Cột Tháng, Ẩn/Hiện nhóm Cột, Sort theo Sản phẩm / Nhân sự)
   const handleRunQuickSheetTemplatePatch = async (
     payload: {
       tabVisibility?: { title: string; hidden: boolean }[];
+      collapsedMonths?: string[];
+      collapseOldMonthsBefore?: string;
+      expandAllMonths?: boolean;
       columnPreset?: 'BRAND_REVIEW' | 'AIR_ACCEPTANCE' | 'FULL_TEMPLATE';
       sortBy?: 'PRODUCT' | 'STAFF' | 'BATCH' | 'BRAND_DECISION';
       installFilterViews?: boolean;
@@ -747,6 +779,13 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
       }
       setSaConfigured(Boolean(data.configured));
       if (data.serviceAccountEmail) setSaEmail(data.serviceAccountEmail);
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem('upbase_b2c_google_sa_config_v1', saJsonInput.trim());
+        } catch {
+          /* ignore */
+        }
+      }
       setSaJsonInput('');
       onNotify?.(`Đã lưu Google Service Account (${data.serviceAccountEmail}).`, 'success');
     } catch (err) {
@@ -1192,7 +1231,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                 <div className="flex items-center gap-1.5 font-semibold text-ink">
                   <Columns className="h-3.5 w-3.5 text-accent" />
-                  <span>Điều khiển nhanh File Google Sheet đang chọn (Ẩn tháng, Ẩn cột, Sort & Bộ lọc):</span>
+                  <span>Điều khiển nhanh File Google Sheet đang chọn (Thu gọn Cột Tháng cũ, Ẩn cột, Sort & Bộ lọc):</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <Button
@@ -1268,54 +1307,76 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                 </div>
               </div>
 
-              {quickTabsDetail.length > 0 && (
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-line text-2xs">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-ink-3 font-medium">Các Tab tháng trên Sheet:</span>
-                    {quickTabsDetail.map(t => (
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-line text-2xs">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-ink-3 font-medium">
+                    Cột Tháng (Cột B) trên Sheet — Chọn tháng cũ cần thu gọn:
+                  </span>
+                  {['2026/11', '2026/10', '2026/09', '2026/08'].map(m => {
+                    const isCollapsed = quickCollapsedMonths.includes(m);
+                    return (
                       <button
-                        key={`${t.sheetId}-${t.title}`}
+                        key={m}
                         type="button"
                         disabled={sheetControlBusy}
                         onClick={() =>
-                          void handleRunQuickSheetTemplatePatch(
-                            { tabVisibility: [{ title: t.title, hidden: !t.hidden }] },
-                            `${!t.hidden ? 'Đã ẩn' : 'Đã hiện'} Tab "${t.title}" trên Google Sheet.`
+                          setQuickCollapsedMonths(prev =>
+                            prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]
                           )
                         }
                         className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 font-medium transition-colors ${
-                          t.hidden
-                            ? 'border-line bg-surface text-ink-3 line-through'
+                          isCollapsed
+                            ? 'border-warning/40 bg-sunken text-ink-2'
                             : 'border-accent/30 bg-accent-soft text-accent'
                         }`}
-                        title={t.hidden ? 'Tab đang ẩn — bấm để hiện lại' : 'Tab đang hiện — bấm để ẩn trên Google Sheet'}
+                        title={
+                          isCollapsed
+                            ? `Tháng ${m} đang chọn thu gọn dòng — bấm để mở rộng`
+                            : `Tháng ${m} đang mở rộng — bấm để chọn thu gọn dòng`
+                        }
                       >
-                        {t.hidden && <EyeOff className="h-3 w-3" />}
-                        <span>{t.title}</span>
+                        <span className="font-mono">{isCollapsed ? '[+]' : '[-]'}</span>
+                        <span>Tháng {m}</span>
+                        <span className="text-ink-3">
+                          ({isCollapsed ? 'Thu gọn' : 'Mở rộng'})
+                        </span>
                       </button>
-                    ))}
-                  </div>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center gap-1.5">
                   <Button
                     size="sm"
                     variant="ghost"
-                    icon={EyeOff}
-                    disabled={sheetControlBusy || quickTabsDetail.length <= 1}
+                    disabled={sheetControlBusy}
                     onClick={() => {
-                      const activeTarget = (quickSheetTab || quickTabsDetail[0]?.title || '').trim().toLowerCase();
-                      const vis = quickTabsDetail.map((t, idx) => ({
-                        title: t.title,
-                        hidden: activeTarget ? t.title.trim().toLowerCase() !== activeTarget : idx > 0,
-                      }));
+                      setQuickCollapsedMonths([]);
                       void handleRunQuickSheetTemplatePatch(
-                        { tabVisibility: vis },
-                        'Đã ẩn các Tab tháng cũ, chỉ giữ lại Tab đang làm việc trên Google Sheet.'
+                        { expandAllMonths: true },
+                        'Đã mở rộng toàn bộ các tháng ở Cột Tháng (Cột B) trên Google Sheet.'
                       );
                     }}
                   >
-                    Ẩn các Tab tháng cũ
+                    Mở rộng tất cả tháng
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={EyeOff}
+                    disabled={sheetControlBusy}
+                    onClick={() =>
+                      void handleRunQuickSheetTemplatePatch(
+                        { collapsedMonths: quickCollapsedMonths },
+                        quickCollapsedMonths.length > 0
+                          ? `Đã thu gọn các dòng tháng cũ (${quickCollapsedMonths.join(', ')}) theo Cột Tháng (Cột B) trên Google Sheet.`
+                          : 'Đã mở rộng toàn bộ các tháng theo Cột Tháng (Cột B) trên Google Sheet.'
+                      )
+                    }
+                  >
+                    Thu gọn các tháng cũ đã chọn
                   </Button>
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>

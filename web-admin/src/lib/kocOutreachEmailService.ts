@@ -78,8 +78,21 @@ export interface KocEmailOutreachLogItem {
   templateName: string;
   subject: string;
   body: string;
-  channelMethod: 'SYSTEM_DIRECT' | 'LARK_MAIL_WEB' | 'GMAIL_WEB' | 'MAILTO_CLIENT' | 'COPIED';
-  deliveryStatus: 'SENT' | 'QUEUED_LOGGED' | 'OPENED_LARK' | 'OPENED_GMAIL' | 'COPIED' | 'FAILED';
+  channelMethod:
+    | 'SYSTEM_DIRECT'
+    | 'LARK_MAIL_WEB'
+    | 'GMAIL_WEB'
+    | 'MAILTO_CLIENT'
+    | 'COPIED'
+    | 'ZALO_CHAT';
+  deliveryStatus:
+    | 'SENT'
+    | 'QUEUED_LOGGED'
+    | 'OPENED_LARK'
+    | 'OPENED_GMAIL'
+    | 'COPIED'
+    | 'OPENED_ZALO'
+    | 'FAILED';
   sentBy: string;
   errorMessage?: string;
 }
@@ -642,4 +655,73 @@ export function buildMailtoUrl(params: {
 
 export function buildLarkMailWebUrl(): string {
   return 'https://mail.larksuite.com/';
+}
+
+export function buildZaloChatUrl(phoneOrZalo: string): string {
+  const clean = (phoneOrZalo || '').replace(/\D/g, '');
+  if (!clean) return 'https://zalo.me';
+  return `https://zalo.me/${clean}`;
+}
+
+export function renderKocOutreachZaloMessage(params: {
+  row: StaffListingSheetRow;
+  store?: StorePortfolioItem;
+  kocDirectoryItem?: KocItem;
+  staffName: string;
+  staffPhone?: string;
+  customNote?: string;
+  hideExactFee?: boolean;
+}): string {
+  const {
+    row,
+    store,
+    kocDirectoryItem,
+    staffName,
+    staffPhone = '0988 654 321',
+    customNote = '',
+    hideExactFee = false,
+  } = params;
+
+  const cleanHandle = (row.idKenh || kocDirectoryItem?.channelId || '')
+    .trim()
+    .replace(/^@+/, '');
+  const tenKoc = (row.tenKenh || kocDirectoryItem?.stageName || cleanHandle || 'bạn').trim();
+  const brandName =
+    store?.brandName ||
+    (row.store ? row.store.split(/[-–—]/)[0].trim() : 'Nhãn hàng');
+  const storeName = store?.storeName || row.store || brandName;
+  const sanPham =
+    (row.sanPham || store?.mainProducts?.[0] || `Sản phẩm chủ lực ${brandName}`).trim();
+  const contentTag = (row.contentTag || 'Review trải nghiệm thực tế').trim();
+  const tepBooking = (row.tepBooking || 'KL2').trim();
+
+  const netFee = Number(row.giaNetVideo) || 0;
+  let mucCatXe = 'Trao đổi chi tiết theo Ratecard kênh';
+  if (netFee <= 0 || tepBooking === 'Freecast') {
+    mucCatXe = 'Tặng bộ sản phẩm Fullsize + Hoa hồng Affiliate';
+  } else if (!hideExactFee) {
+    mucCatXe = `${netFee.toLocaleString('vi-VN')} VNĐ`;
+  }
+
+  const lines = [
+    `Chào bạn ${tenKoc},`,
+    `Mình là ${staffName} phụ trách Booking nhãn hàng ${brandName} (${storeName}) tại UpBase.`,
+    '',
+    `Nhãn hàng gửi lời mời hợp tác kênh @${cleanHandle}:`,
+    `- Sản phẩm: ${sanPham}`,
+    `- Định hướng nội dung: ${contentTag}`,
+    `- Ngân sách đề xuất: ${mucCatXe}`,
+    `- Dự kiến lên sóng: ${row.ngayAirChot || row.ngayAirPlan || 'Trong tháng này'}`,
+  ];
+
+  if (customNote.trim()) {
+    lines.push(`- Lời nhắn: ${customNote.trim()}`);
+  }
+
+  lines.push('');
+  lines.push(
+    `Nếu bạn quan tâm, bạn phản hồi lại qua Zalo này hoặc SĐT ${staffPhone} để mình gửi Brief chi tiết và sản phẩm mẫu nhé! Cảm ơn bạn.`
+  );
+
+  return lines.join('\n');
 }

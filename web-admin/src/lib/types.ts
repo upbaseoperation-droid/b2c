@@ -693,6 +693,8 @@ export interface TikTokVideoItem {
   shares: number;
   engagementRate: number; // ER%
   isAffiliate: boolean;
+  isViralOutlier?: boolean;
+  isPinnedOldVideo?: boolean;
   productName?: string;
   estimatedGmv?: number;
   itemsSold?: number;

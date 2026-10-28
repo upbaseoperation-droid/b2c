@@ -11,6 +11,7 @@ import {
   Copy,
   Download,
   ExternalLink,
+  Eye,
   FileSpreadsheet,
   FileText,
   Link2,
@@ -41,7 +42,7 @@ import {
 import { filterScopedStores } from '../../lib/rbacScope';
 import { isPersonInField } from '../../lib/staffIdentity';
 import { resolveBrandBookingSheetUrl } from '../../lib/bookingList';
-import { formatVnd, formatVndShort } from '../../lib/format';
+import { formatNumber, formatVnd, formatVndShort } from '../../lib/format';
 import {
   BRAND_CHON_OPTIONS,
   CONTENT_TAG_OPTIONS,
@@ -89,7 +90,17 @@ import {
   loadKocOutreachEmailState,
 } from '../../lib/kocOutreachEmailService';
 import { KocOutreachEmailModal } from './KocOutreachEmailModal';
-import { ActionMenu, Avatar, Button, Field, Input, Modal, Select, Status } from '../ui';
+import { KocQuickViewModal } from './KocQuickViewModal';
+import {
+  BrandProductDropdownInput,
+  buildBrandProductCatalogGroups,
+} from './BrandProductDropdownInput';
+import { ActionMenu, Avatar, Button, Field, Input, Modal, Person, Select, Status } from '../ui';
+
+const parseThousandNumberInput = (raw: string): number => {
+  const digits = String(raw || '').replace(/[^\d]/g, '');
+  return digits ? Number(digits) || 0 : 0;
+};
 
 const UI_HEADER_OVERRIDES: Partial<Record<StaffListingColumnKey, string>> = {
   ngayDien: 'TG Listing (Ngày giờ)',
@@ -255,9 +266,9 @@ const FILL_MODE_BADGE: Record<
 export const StaffBrandListingSheetWorkspace: React.FC<
   StaffBrandListingSheetWorkspaceProps
 > = ({
-  kocs,
-  stores,
-  deals,
+  kocs: rawKocs,
+  stores: rawStores,
+  deals: rawDeals,
   currentUser,
   currentUserName,
   currentRole,
@@ -272,6 +283,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   onOpenSheetSetupScreen,
   onNotify,
 }) => {
+  const kocs = useMemo(() => (Array.isArray(rawKocs) ? rawKocs : []), [rawKocs]);
+  const stores = useMemo(() => (Array.isArray(rawStores) ? rawStores : []), [rawStores]);
+  const deals = useMemo(() => (Array.isArray(rawDeals) ? rawDeals : []), [rawDeals]);
   const [storeOverrides, setStoreOverrides] = useState<Record<string, Partial<StorePortfolioItem>>>(() => {
     if (typeof window === 'undefined') return {};
     try {
@@ -375,18 +389,20 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   );
 
   const rows: StaffListingSheetRow[] = useMemo(
-    () => collection.sheets[activeSheetKey] || [],
+    () => (Array.isArray(collection?.sheets?.[activeSheetKey]) ? collection.sheets[activeSheetKey] : []),
     [collection, activeSheetKey]
   );
 
   const updateActiveSheetRows = (updater: (prev: StaffListingSheetRow[]) => StaffListingSheetRow[]) => {
     setCollection((prev) => {
-      const currentRows = prev.sheets[activeSheetKey] || [];
+      const currentRows = Array.isArray(prev?.sheets?.[activeSheetKey])
+        ? prev.sheets[activeSheetKey]
+        : [];
       const nextRows = updater(currentRows);
       const nextCollection: StaffBrandSheetCollection = {
         ...prev,
         sheets: {
-          ...prev.sheets,
+          ...(prev?.sheets || {}),
           [activeSheetKey]: nextRows,
         },
       };
@@ -399,15 +415,16 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   const activeMonthBrandSheets = useMemo(() => {
     const prefix = `${activeMonth}__`;
     const storeNamesWithData = new Set<string>();
-    Object.entries(collection.sheets).forEach(([key, list]) => {
-      if (key.startsWith(prefix) && list.length > 0) {
+    Object.entries(collection?.sheets || {}).forEach(([key, list]) => {
+      if (key.startsWith(prefix) && Array.isArray(list) && list.length > 0) {
         storeNamesWithData.add(key.slice(prefix.length));
       }
     });
     storeNamesWithData.add(activeStoreName);
     return Array.from(storeNamesWithData).map((sName) => {
       const st = b2cStores.find((s) => s.storeName === sName);
-      const count = (collection.sheets[makeSheetKey(activeMonth, sName)] || []).length;
+      const sheetList = collection?.sheets?.[makeSheetKey(activeMonth, sName)];
+      const count = Array.isArray(sheetList) ? sheetList.length : 0;
       return {
         storeName: sName,
         brandName: st?.brandName || sName.split(/[-_]/)[0].trim(),
@@ -502,8 +519,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     }
   };
 
-  // Tìm kiếm & chọn KOC từ Danh bạ ngay tại Sheet
+  // Tìm kiếm & chọn KOC từ Danh bạ ngay tại Sheet (cho phép chọn Plan Tháng & Gian hàng đích)
   const [isDirectoryPickerOpen, setIsDirectoryPickerOpen] = useState(false);
+  const [pickerTargetMonth, setPickerTargetMonth] = useState<string>(activeMonth);
+  const [pickerTargetStoreName, setPickerTargetStoreName] = useState<string>(activeStoreName);
   const [kocSearchText, setKocSearchText] = useState('');
   const [kocFilterTep, setKocFilterTep] = useState('ALL');
   const [kocFilterKl, setKocFilterKl] = useState('ALL');
@@ -512,6 +531,20 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   const [quickProduct, setQuickProduct] = useState('');
   const [quickContentTag, setQuickContentTag] = useState('Review trực tiếp');
   const [quickUpbaseProposal, setQuickUpbaseProposal] = useState('Recommend');
+
+  const handleOpenDirectoryPickerModal = () => {
+    setPickerTargetMonth(activeMonth);
+    setPickerTargetStoreName(activeStoreName);
+    const defaultCat = buildBrandProductCatalogGroups({
+      brandName: activeStoreObj?.brandName,
+      storeName: activeStoreName,
+      storeObj: activeStoreObj,
+      deals,
+    });
+    setQuickProduct(defaultCat.flatOptions[0]?.name || activeStoreObj?.mainProducts?.[0] || '');
+    setPickedKocIds([]);
+    setIsDirectoryPickerOpen(true);
+  };
 
   // Tùy chọn Copy & Google Sheet
   const [copyWithHeaders, setCopyWithHeaders] = useState(true);
@@ -529,8 +562,20 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   const [sheetTemplateActiveTab, setSheetTemplateActiveTab] = useState('');
   const [sheetColumnPresetMode, setSheetColumnPresetMode] = useState<'BRAND_REVIEW' | 'AIR_ACCEPTANCE' | 'FULL_TEMPLATE'>('BRAND_REVIEW');
   const [sheetTemplateBusy, setSheetTemplateBusy] = useState(false);
+  // Thu gọn các tháng cũ theo Cột Tháng (Cột B) trên Bảng App & trên Google Sheet
+  const [showOldMonthsInTable, setShowOldMonthsInTable] = useState(true);
+  const [expandedOldMonths, setExpandedOldMonths] = useState<string[]>([]);
+  const [sheetCollapsedMonthsDraft, setSheetCollapsedMonthsDraft] = useState<string[]>(() =>
+    MONTH_OPTIONS.filter((m) => m < activeMonth)
+  );
+  const [sheetMonthColumnStats, setSheetMonthColumnStats] = useState<
+    { month: string; rowCount: number; collapsed: boolean }[]
+  >([]);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const [isPicPopoverOpen, setIsPicPopoverOpen] = useState(false);
+  const picPopoverRef = useRef<HTMLDivElement>(null);
+  const [quickViewRow, setQuickViewRow] = useState<Partial<StaffListingSheetRow> | null>(null);
 
   // Phân quyền lấy trực tiếp từ dữ liệu Phân công Gian hàng trên hệ thống (1 PIC Chính + Nhân viên hỗ trợ + Leader)
   const storeAssignment = useMemo(
@@ -547,6 +592,23 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         : '',
     [activeStoreObj]
   );
+  const storePicTotalCount = useMemo(() => {
+    const names = new Set<string>();
+    if (storeAssignment.primaryPic) names.add(storeAssignment.primaryPic);
+    storeAssignment.supportStaff.forEach((s) => {
+      if (s) names.add(s);
+    });
+    if (storeLeaderName) names.add(storeLeaderName);
+    return names.size;
+  }, [storeAssignment, storeLeaderName]);
+  const picRowCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const r of rows) {
+      const key = (r.nhanSuDien || '').trim().toLowerCase();
+      if (key) map.set(key, (map.get(key) || 0) + 1);
+    }
+    return map;
+  }, [rows]);
   const identityUser = useMemo(
     () =>
       currentUser || {
@@ -640,6 +702,22 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     };
   }, [isExportMenuOpen]);
 
+  useEffect(() => {
+    if (!isPicPopoverOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!picPopoverRef.current?.contains(e.target as Node)) {
+        setIsPicPopoverOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setIsPicPopoverOpen(false);
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [isPicPopoverOpen]);
+
   // Hộp thoại Gửi Mail Mời Hợp Tác KOC & Quản Lý Mẫu Thư
   const [isOutreachModalOpen, setIsOutreachModalOpen] = useState(false);
   const [outreachModalTab, setOutreachModalTab] = useState<'COMPOSE' | 'TEMPLATES' | 'SETTINGS_LOGS'>('COMPOSE');
@@ -677,14 +755,15 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
   const handleUpdateRowEmailAndStatus = (
     rowId: string,
-    patch: Partial<Pick<StaffListingSheetRow, 'email' | 'trangThai'>>
+    patch: Partial<Pick<StaffListingSheetRow, 'email' | 'trangThai' | 'zalo'>>
   ) => {
     const targetRow = rows.find((r) => r.id === rowId);
-    if (targetRow && patch.email !== undefined) {
+    if (targetRow && (patch.email !== undefined || patch.zalo !== undefined)) {
       syncSheetRowContactToKocMaster({
         kocId: targetRow.kocId,
         idKenh: targetRow.idKenh,
-        email: patch.email,
+        ...(patch.email !== undefined ? { email: patch.email } : {}),
+        ...(patch.zalo !== undefined ? { zalo: patch.zalo } : {}),
         allKocs: kocs,
       });
     }
@@ -717,11 +796,18 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     return Array.from(set);
   }, [rows, storeAssignment]);
 
-  const existingHandlesInActiveSheet = useMemo(() => {
+  const pickerTargetStoreObj = useMemo(
+    () => b2cStores.find((s) => s.storeName === pickerTargetStoreName) || activeStoreObj,
+    [b2cStores, pickerTargetStoreName, activeStoreObj]
+  );
+
+  const existingHandlesInPickerTargetSheet = useMemo(() => {
+    const targetKey = makeSheetKey(pickerTargetMonth, pickerTargetStoreName);
+    const targetRows = collection.sheets[targetKey] || [];
     return new Set(
-      rows.map((r) => normalizeTikTokId(r.idKenh).toLowerCase()).filter(Boolean)
+      targetRows.map((r) => normalizeTikTokId(r.idKenh).toLowerCase()).filter(Boolean)
     );
-  }, [rows]);
+  }, [collection.sheets, pickerTargetMonth, pickerTargetStoreName]);
 
   // Danh sách KOC lọc trong hộp chọn từ Danh bạ
   const filteredDirectoryKocs = useMemo(() => {
@@ -798,6 +884,39 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     });
     return sorted;
   }, [rows, filterDot, filterBrandChon, filterNhanSu, currentUserName, rowSearchQuery, appSortBy]);
+
+  // Các nhóm dòng thuộc Tháng cũ của cùng Gian hàng (dựa trên Cột B: Tháng) để hiển thị thu gọn / mở rộng ngay trên Bảng
+  const storeOldMonthGroups = useMemo(() => {
+    const groups: {
+      month: string;
+      rows: StaffListingSheetRow[];
+      approvedCount: number;
+      totalNet: number;
+    }[] = [];
+
+    for (const m of MONTH_OPTIONS) {
+      if (m === activeMonth) continue;
+      const key = makeSheetKey(m, activeStoreName);
+      const rawList = collection?.sheets?.[key];
+      const list = Array.isArray(rawList) ? rawList : [];
+      if (list.length === 0) continue;
+      const approvedCount = list.filter((r) => r.brandChon === 'Yes').length;
+      const totalNet = list.reduce((s, r) => s + (Number(r.giaNetVideo) || 0), 0);
+      groups.push({
+        month: m,
+        rows: list,
+        approvedCount,
+        totalNet,
+      });
+    }
+    return groups.sort((a, b) => b.month.localeCompare(a.month));
+  }, [collection.sheets, activeMonth, activeStoreName]);
+
+  const toggleExpandOldMonthInTable = (month: string) => {
+    setExpandedOldMonths((prev) =>
+      prev.includes(month) ? prev.filter((x) => x !== month) : [...prev, month]
+    );
+  };
 
   // Thống kê nhanh của Sheet Brand hiện tại + Đo lường SLA Brand duyệt
   const sheetStats = useMemo(() => {
@@ -984,7 +1103,14 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
   // Thêm 1 dòng trống để nhân viên tự gõ hoặc dán ID kênh
   const handleAddBlankRow = () => {
+    const cat = buildBrandProductCatalogGroups({
+      brandName: activeStoreObj?.brandName,
+      storeName: activeStoreName,
+      storeObj: activeStoreObj,
+      deals,
+    });
     const defaultProd =
+      cat.flatOptions[0]?.name ||
       activeStoreObj?.mainProducts?.[0] ||
       (activeStoreObj?.brandName ? `Sản phẩm ${activeStoreObj.brandName}` : '');
     const blankRow = buildStaffListingRowFromKoc({
@@ -1008,24 +1134,37 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     onNotify?.('Đã thêm 1 dòng mới vào Sheet.', 'info');
   };
 
-  // Đưa các KOC đã tích chọn từ Danh bạ vào Sheet hiện tại
+  // Đưa các KOC đã tích chọn từ Danh bạ vào Sheet theo Plan Tháng & Gian hàng đã chọn
   const handleAddPickedKocsToSheet = () => {
     if (pickedKocIds.length === 0) return;
     const pickedSet = new Set(pickedKocIds);
     const selectedKocs = kocs.filter((k) => pickedSet.has(k.id));
+    const targetMonth = pickerTargetMonth || activeMonth;
+    const targetStore = pickerTargetStoreName || activeStoreName;
+    const targetStoreObj =
+      b2cStores.find((s) => s.storeName === targetStore) || activeStoreObj;
+    const cat = buildBrandProductCatalogGroups({
+      brandName: targetStoreObj?.brandName,
+      storeName: targetStore,
+      storeObj: targetStoreObj,
+      deals,
+    });
     const defaultProd =
       quickProduct.trim() ||
-      activeStoreObj?.mainProducts?.[0] ||
-      (activeStoreObj?.brandName ? `Sản phẩm ${activeStoreObj.brandName}` : '');
+      cat.flatOptions[0]?.name ||
+      targetStoreObj?.mainProducts?.[0] ||
+      (targetStoreObj?.brandName ? `Sản phẩm ${targetStoreObj.brandName}` : '');
 
     let added = 0;
     let skipped = 0;
+    const targetKey = makeSheetKey(targetMonth, targetStore);
 
-    updateActiveSheetRows((prev) => {
+    setCollection((prev) => {
+      const currentRows = prev.sheets[targetKey] || [];
       const existingSet = new Set(
-        prev.map((r) => normalizeTikTokId(r.idKenh).toLowerCase()).filter(Boolean)
+        currentRows.map((r) => normalizeTikTokId(r.idKenh).toLowerCase()).filter(Boolean)
       );
-      const nextRows = [...prev];
+      const nextRows = [...currentRows];
 
       for (const koc of selectedKocs) {
         const cleanId = normalizeTikTokId(koc.channelId).toLowerCase();
@@ -1037,8 +1176,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         nextRows.push(
           buildStaffListingRowFromKoc({
             koc,
-            monthKey: activeMonth,
-            storeName: activeStoreName,
+            monthKey: targetMonth,
+            storeName: targetStore,
             staffName: currentUserName,
             deals,
             dot: quickBatchDot,
@@ -1050,20 +1189,39 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         );
         added++;
       }
-      return nextRows;
+
+      const next: StaffBrandSheetCollection = {
+        ...prev,
+        sheets: {
+          ...prev.sheets,
+          [targetKey]: nextRows,
+        },
+      };
+      saveStaffSheetCollection(next);
+      return next;
     });
+
+    if (targetMonth !== activeMonth) {
+      onChangeMonth(targetMonth);
+    }
+    if (targetStore !== activeStoreName) {
+      onChangeStore(targetStore);
+    }
 
     setPickedKocIds([]);
     setIsDirectoryPickerOpen(false);
     if (added > 0) {
       onNotify?.(
         skipped > 0
-          ? `Đã đưa ${added} KOC vào Sheet "${activeStoreName}" (bỏ qua ${skipped} kênh trùng).`
-          : `Đã đưa ${added} KOC vào Sheet "${activeStoreName}" và tự động điền dữ liệu hồ sơ.`,
+          ? `Đã đưa ${added} KOC vào Sheet "${targetStore}" (Plan ${targetMonth}, bỏ qua ${skipped} kênh trùng).`
+          : `Đã đưa ${added} KOC vào Sheet "${targetStore}" (Plan ${targetMonth}) và tự động điền dữ liệu hồ sơ.`,
         'success'
       );
     } else {
-      onNotify?.('Các KOC đã chọn đều đã có trong Sheet này.', 'warning');
+      onNotify?.(
+        `Các KOC đã chọn đều đã có trong Sheet "${targetStore}" (Plan ${targetMonth}).`,
+        'warning'
+      );
     }
   };
 
@@ -1100,7 +1258,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
     const colsToCopy =
       mode === 'ALL_48_COLS'
-        ? STAFF_LISTING_COLUMNS.filter((c) => c.index <= 48)
+        ? STAFF_LISTING_COLUMNS.filter((c) => c.index <= 57)
         : mode === 'BRAND_WORKING_COLS'
           ? STAFF_LISTING_COLUMNS.filter((c) => c.inBrandWorkingFile)
           : visibleColumns;
@@ -1108,7 +1266,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     const tsv = formatStaffSheetToTsv(targetRows, colsToCopy, {
       includeHeaders: copyWithHeaders,
       useGoogleSheetFormulas: copyWithFormulas,
-      startRowNumberInSheet: 4,
+      startRowNumberInSheet: 9,
     });
 
     try {
@@ -1117,7 +1275,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         mode === 'BRAND_WORKING_COLS'
           ? `bản gửi Brand (${colsToCopy.length} cột Working file)`
           : mode === 'ALL_48_COLS'
-            ? 'đầy đủ 48 cột (B -> AW)'
+            ? 'đầy đủ 57 cột chuẩn Template (A -> BE)'
             : `${colsToCopy.length} cột đang bật`;
       onNotify?.(
         `Đã copy ${targetRows.length} dòng (${label}) — bấm Ctrl+V vào Google Sheet hoặc Excel.`,
@@ -1342,6 +1500,34 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   const [isCreateDealsModalOpen, setIsCreateDealsModalOpen] = useState(false);
   const [dealDrafts, setDealDrafts] = useState<CreateDealDraftRow[]>([]);
 
+  const tryRestoreServiceAccountFromLocalCache = async (): Promise<boolean> => {
+    if (typeof window === 'undefined') return false;
+    const cachedJson = window.localStorage.getItem('upbase_b2c_google_sa_config_v1');
+    if (!cachedJson || !cachedJson.trim()) return false;
+    try {
+      const res = await fetch('/api/booking-list/push-sheet', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serviceAccountJson: cachedJson.trim() }),
+      });
+      const data = (await res.json().catch(() => null)) as { configured?: boolean } | null;
+      return Boolean(res.ok && data?.configured);
+    } catch {
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    fetch('/api/booking-list/push-sheet')
+      .then((r) => r.json())
+      .then((d: { configured?: boolean }) => {
+        if (!d?.configured) {
+          void tryRestoreServiceAccountFromLocalCache();
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const fetchTabsForSheetUrl = async (
     url: string,
     currentTab: string,
@@ -1351,15 +1537,31 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     if (!cleanUrl) return;
     setLoadingSheetTabs(true);
     try {
-      const res = await fetch(
+      let res = await fetch(
         `/api/booking-list/push-sheet?sheetUrl=${encodeURIComponent(cleanUrl)}`,
         { cache: 'no-store' }
       );
-      const data = (await res.json().catch(() => null)) as {
+      let data = (await res.json().catch(() => null)) as {
+        configured?: boolean;
         tabs?: string[];
         tabsDetail?: SheetTabDetailItem[];
         error?: string;
       } | null;
+      if (data?.configured === false) {
+        const restored = await tryRestoreServiceAccountFromLocalCache();
+        if (restored) {
+          res = await fetch(
+            `/api/booking-list/push-sheet?sheetUrl=${encodeURIComponent(cleanUrl)}`,
+            { cache: 'no-store' }
+          );
+          data = (await res.json().catch(() => null)) as {
+            configured?: boolean;
+            tabs?: string[];
+            tabsDetail?: SheetTabDetailItem[];
+            error?: string;
+          } | null;
+        }
+      }
       if (res.ok && Array.isArray(data?.tabs)) {
         setAvailableSheetTabs(data.tabs);
         if (Array.isArray(data.tabsDetail)) {
@@ -1388,7 +1590,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
   const getColsForPush = (mode: 'BRAND_WORKING_32' | 'ALL_VISIBLE'): StaffListingColumnMeta[] => {
     if (mode === 'BRAND_WORKING_32') {
-      return STAFF_LISTING_COLUMNS.filter((c) => c.inBrandWorkingFile);
+      return STAFF_LISTING_COLUMNS.filter((c) => c.index <= 57);
     }
     return visibleColumns;
   };
@@ -1442,19 +1644,31 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     try {
       const cols = getColsForPush(colModeToUse);
       const { columns, rows: matrixRows } = buildMatrixForPush(targetRows, cols);
-      const res = await fetch('/api/booking-list/push-sheet', {
+      const reqPayload = JSON.stringify({
+        planId: activeSheetKey,
+        sheetUrl: urlToUse,
+        tab: tabToUse,
+        columns,
+        rows: matrixRows,
+        dryRun: true,
+      });
+      let res = await fetch('/api/booking-list/push-sheet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          planId: activeSheetKey,
-          sheetUrl: urlToUse,
-          tab: tabToUse,
-          columns,
-          rows: matrixRows,
-          dryRun: true,
-        }),
+        body: reqPayload,
       });
-      const body = await res.json().catch(() => null);
+      let body = await res.json().catch(() => null);
+      if (!res.ok && body?.code === 'NOT_CONFIGURED') {
+        const restored = await tryRestoreServiceAccountFromLocalCache();
+        if (restored) {
+          res = await fetch('/api/booking-list/push-sheet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: reqPayload,
+          });
+          body = await res.json().catch(() => null);
+        }
+      }
       if (!res.ok) {
         onNotify?.(body?.error || `Lỗi đối soát Google Sheet (${res.status})`, 'error');
         return;
@@ -1509,19 +1723,31 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     try {
       const cols = getColsForPush(pushColMode);
       const { columns, rows: matrixRows } = buildMatrixForPush(targetRows, cols);
-      const res = await fetch('/api/booking-list/push-sheet', {
+      const reqPayload = JSON.stringify({
+        planId: activeSheetKey,
+        sheetUrl: urlToUse,
+        tab: tabToUse,
+        columns,
+        rows: matrixRows,
+        dryRun: false,
+      });
+      let res = await fetch('/api/booking-list/push-sheet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          planId: activeSheetKey,
-          sheetUrl: urlToUse,
-          tab: tabToUse,
-          columns,
-          rows: matrixRows,
-          dryRun: false,
-        }),
+        body: reqPayload,
       });
-      const body = await res.json().catch(() => null);
+      let body = await res.json().catch(() => null);
+      if (!res.ok && body?.code === 'NOT_CONFIGURED') {
+        const restored = await tryRestoreServiceAccountFromLocalCache();
+        if (restored) {
+          res = await fetch('/api/booking-list/push-sheet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: reqPayload,
+          });
+          body = await res.json().catch(() => null);
+        }
+      }
       if (!res.ok) {
         onNotify?.(body?.error || `Lỗi ghi Google Sheet (${res.status})`, 'error');
         return;
@@ -1553,17 +1779,29 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     setPullBusy(true);
     setPullDiffReport(null);
     try {
-      const res = await fetch('/api/booking-list/pull-sheet', {
+      const reqPayload = JSON.stringify({
+        planId: activeSheetKey,
+        sheetUrl: urlToUse,
+        tab: tabToUse,
+        dryRun: true,
+      });
+      let res = await fetch('/api/booking-list/pull-sheet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          planId: activeSheetKey,
-          sheetUrl: urlToUse,
-          tab: tabToUse,
-          dryRun: true,
-        }),
+        body: reqPayload,
       });
-      const body = await res.json().catch(() => null);
+      let body = await res.json().catch(() => null);
+      if (!res.ok && body?.code === 'NOT_CONFIGURED') {
+        const restored = await tryRestoreServiceAccountFromLocalCache();
+        if (restored) {
+          res = await fetch('/api/booking-list/pull-sheet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: reqPayload,
+          });
+          body = await res.json().catch(() => null);
+        }
+      }
       if (!res.ok) {
         onNotify?.(body?.error || `Lỗi đọc Google Sheet (${res.status})`, 'error');
         return;
@@ -1624,7 +1862,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 ? 'Cân nhắc'
                 : rawBrand;
 
-        const sheetTenKenh = pickSheetCol(sr, ['tên kênh koc', 'tên kênh', 'ten kenh']);
+        const sheetTenKenh = pickSheetCol(sr, [
+          'tên người ảnh hưởng (tên kênh)',
+          'tên kênh koc',
+          'tên kênh',
+          'ten kenh',
+        ]);
         const sheetLyDo = pickSheetCol(sr, ['lý do từ chối', 'ly do tu choi', 'phản hồi brand']);
         const sheetLeaderNote = pickSheetCol(sr, ['ghi chú leader', 'leader note']);
         const sheetSanPham = pickSheetCol(sr, ['sản phẩm', 'san pham']);
@@ -2203,7 +2446,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   };
 
   // =========================================================================
-  // ĐIỀU KHIỂN HIỂN THỊ TEMPLATE GOOGLE SHEET (ẨN THÁNG, ẨN CỘT, SORT SHEET)
+  // ĐIỀU KHIỂN HIỂN THỊ TEMPLATE GOOGLE SHEET (THU GỌN CỘT THÁNG CŨ, ẨN CỘT, SORT SHEET)
   // =========================================================================
   const handleOpenSheetTemplateModal = () => {
     const url = currentGoogleSheetUrl;
@@ -2215,6 +2458,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     }
     const defaultTab = defaultGoogleSheetTab;
     setSheetTemplateActiveTab(defaultTab);
+    setSheetCollapsedMonthsDraft(MONTH_OPTIONS.filter((m) => m < activeMonth));
     setIsSheetTemplateModalOpen(true);
     void fetchTabsForSheetUrl(url, defaultTab, (t) => setSheetTemplateActiveTab(t));
   };
@@ -2223,6 +2467,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     payload: {
       activeTab?: string;
       tabVisibility?: { title: string; hidden: boolean }[];
+      collapsedMonths?: string[];
+      collapseOldMonthsBefore?: string;
+      expandAllMonths?: boolean;
       columnPreset?: 'BRAND_REVIEW' | 'AIR_ACCEPTANCE' | 'FULL_TEMPLATE';
       sortBy?: 'PRODUCT' | 'STAFF' | 'BATCH' | 'BRAND_DECISION';
       installFilterViews?: boolean;
@@ -2248,6 +2495,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       const data = (await res.json().catch(() => null)) as {
         ok?: boolean;
         tabsDetail?: SheetTabDetailItem[];
+        collapsedRowsCount?: number;
+        monthColumnStats?: { month: string; rowCount: number; collapsed: boolean }[];
         error?: string;
       } | null;
       if (!res.ok || !data?.ok) {
@@ -2257,6 +2506,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       if (Array.isArray(data.tabsDetail)) {
         setSheetTabsDetail(data.tabsDetail);
         setAvailableSheetTabs(data.tabsDetail.map((t) => t.title));
+      }
+      if (Array.isArray(data.monthColumnStats) && data.monthColumnStats.length > 0) {
+        setSheetMonthColumnStats(data.monthColumnStats);
       }
       onNotify?.(successMessage, 'success');
     } catch (err) {
@@ -2269,26 +2521,14 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     }
   };
 
-  const handleToggleSingleSheetTabHidden = (tabTitle: string, nextHidden: boolean) => {
-    setSheetTabsDetail((prev) =>
-      prev.map((t) => (t.title === tabTitle ? { ...t, hidden: nextHidden } : t))
+  const handleToggleCollapseMonthDraft = (month: string) => {
+    setSheetCollapsedMonthsDraft((prev) =>
+      prev.includes(month) ? prev.filter((m) => m !== month) : [...prev, month]
     );
   };
 
-  const handleHideOldMonthTabsDraft = () => {
-    const activeTabClean = (sheetTemplateActiveTab || defaultGoogleSheetTab).trim().toLowerCase();
-    const monthToken = activeMonth.split('/')[1] || '10'; // VD: '10'
-    setSheetTabsDetail((prev) =>
-      prev.map((t) => {
-        const lower = t.title.toLowerCase();
-        const isCurrent =
-          lower === activeTabClean ||
-          lower.includes(`t${monthToken}`) ||
-          lower.includes(`-${monthToken}`) ||
-          lower.includes(`/${monthToken}`);
-        return { ...t, hidden: !isCurrent };
-      })
-    );
+  const handleSelectOldMonthsToCollapseDraft = () => {
+    setSheetCollapsedMonthsDraft(MONTH_OPTIONS.filter((m) => m < activeMonth));
   };
 
   return (
@@ -2331,44 +2571,136 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
             <span className="h-4 w-px bg-line mx-0.5 shrink-0" />
 
-            {/* Cụm hiển thị gọn lấy trực tiếp từ Phân quyền theo gian: 1 PIC Chính + Nhân viên hỗ trợ + Leader + Link Google Sheet */}
+            {/* Cụm hiển thị gọn lấy trực tiếp từ Phân quyền theo gian: Nút bấm xem danh sách PIC gian hàng + Quyền + Link Google Sheet */}
             <div className="flex flex-wrap items-center gap-1.5 text-2xs">
-              <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-line text-ink"
-                title="Dữ liệu đồng bộ tự động từ Phân quyền theo gian hàng"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-accent shrink-0" />
-                <span className="text-ink-3">PIC Chính:</span>
-                <strong className="font-semibold text-ink">
-                  {storeAssignment.primaryPic || 'Chưa phân công'}
-                </strong>
-              </span>
-
-              {storeAssignment.supportStaff.length > 0 && (
-                <span
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-line text-ink-2"
-                  title={`Nhân viên hỗ trợ (từ Phân quyền theo gian): ${storeAssignment.supportStaff.join(', ')}`}
+              <div ref={picPopoverRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsPicPopoverOpen((v) => !v)}
+                  aria-expanded={isPicPopoverOpen}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface border border-line-strong text-ink font-medium hover:bg-sunken transition-colors"
                 >
-                  <Users className="w-3.5 h-3.5 text-ink-3 shrink-0" />
-                  <span className="text-ink-3">Hỗ trợ:</span>
-                  <span className="font-medium text-ink">
-                    {storeAssignment.supportStaff.slice(0, 2).join(', ')}
-                    {storeAssignment.supportStaff.length > 2
-                      ? ` +${storeAssignment.supportStaff.length - 2}`
-                      : ''}
-                  </span>
-                </span>
-              )}
+                  <Users className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span>PIC gian hàng ({storePicTotalCount})</span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-ink-3 shrink-0 transition-transform ${
+                      isPicPopoverOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
 
-              {storeLeaderName && (
-                <span
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-line text-ink-2"
-                  title={`Leader phụ trách cụm gian hàng: ${storeLeaderName}`}
-                >
-                  <span className="text-ink-3">Leader:</span>
-                  <span className="font-medium text-ink">{storeLeaderName}</span>
-                </span>
-              )}
+                {isPicPopoverOpen && (
+                  <div className="absolute left-0 top-full mt-1.5 z-40 w-80 rounded-lg border border-line-strong bg-surface shadow-lg p-3 space-y-3 text-xs">
+                    <div className="flex items-center justify-between gap-2 pb-2 border-b border-line">
+                      <span className="font-semibold text-ink truncate">
+                        Nhân sự phụ trách gian hàng
+                      </span>
+                      <Status tone="neutral">{storePicTotalCount} nhân sự</Status>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="text-2xs font-medium text-ink-3">PIC Chính</div>
+                      {storeAssignment.primaryPic ? (
+                        <div className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-sunken/60 border border-line">
+                          <Person
+                            name={storeAssignment.primaryPic}
+                            sub={`${
+                              picRowCountMap.get(storeAssignment.primaryPic.trim().toLowerCase()) || 0
+                            } dòng trong bảng`}
+                            size={24}
+                          />
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Status tone="positive">PIC Chính</Status>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFilterNhanSu(storeAssignment.primaryPic);
+                                setIsPicPopoverOpen(false);
+                              }}
+                              className="px-1.5 py-0.5 rounded border border-line bg-surface text-2xs text-ink-2 hover:bg-sunken hover:text-ink"
+                            >
+                              Lọc
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="px-2 py-1.5 rounded-md bg-sunken/40 border border-line text-2xs text-ink-3">
+                          Chưa phân công
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="text-2xs font-medium text-ink-3">
+                        Nhân viên hỗ trợ ({storeAssignment.supportStaff.length})
+                      </div>
+                      {storeAssignment.supportStaff.length > 0 ? (
+                        <div className="max-h-44 overflow-y-auto space-y-1 pr-0.5">
+                          {storeAssignment.supportStaff.map((staffName) => (
+                            <div
+                              key={staffName}
+                              className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-surface border border-line"
+                            >
+                              <Person
+                                name={staffName}
+                                sub={`${
+                                  picRowCountMap.get(staffName.trim().toLowerCase()) || 0
+                                } dòng trong bảng`}
+                                size={22}
+                              />
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <Status tone="info">Hỗ trợ</Status>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFilterNhanSu(staffName);
+                                    setIsPicPopoverOpen(false);
+                                  }}
+                                  className="px-1.5 py-0.5 rounded border border-line bg-surface text-2xs text-ink-2 hover:bg-sunken hover:text-ink"
+                                >
+                                  Lọc
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="px-2 py-1.5 rounded-md bg-sunken/40 border border-line text-2xs text-ink-3">
+                          Không có nhân sự hỗ trợ
+                        </div>
+                      )}
+                    </div>
+
+                    {storeLeaderName && (
+                      <div className="space-y-1.5 pt-1 border-t border-line">
+                        <div className="text-2xs font-medium text-ink-3">Trưởng nhóm phụ trách</div>
+                        <div className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-surface border border-line">
+                          <Person name={storeLeaderName} size={22} />
+                          <Status tone="brand">Leader</Status>
+                        </div>
+                      </div>
+                    )}
+
+                    {filterNhanSu !== 'ALL' && (
+                      <div className="pt-1 border-t border-line flex items-center justify-between gap-2">
+                        <span className="text-2xs text-ink-2 truncate">
+                          Đang lọc: <strong className="text-ink">{filterNhanSu}</strong>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFilterNhanSu('ALL');
+                            setIsPicPopoverOpen(false);
+                          }}
+                          className="text-2xs font-medium text-accent hover:underline shrink-0"
+                        >
+                          Bỏ lọc
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <Status
                 tone={
@@ -2579,6 +2911,37 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               <option value="BRAND_DECISION">Sort theo: Brand chọn (Yes)</option>
             </select>
 
+            {storeOldMonthGroups.length > 0 && (
+              <div className="inline-flex items-center gap-1 px-2 h-8 rounded-md bg-sunken border border-line text-2xs">
+                <span className="font-semibold text-ink-2 whitespace-nowrap">
+                  Cột Tháng (B):
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowOldMonthsInTable((v) => !v)}
+                  className={`px-1.5 py-0.5 rounded font-medium transition-colors ${
+                    showOldMonthsInTable
+                      ? 'bg-surface text-ink border border-line-strong'
+                      : 'text-ink-3 hover:text-ink'
+                  }`}
+                  title="Hiện hoặc ẩn hoàn toàn các nhóm dòng tháng cũ của gian hàng này trên bảng"
+                >
+                  {showOldMonthsInTable
+                    ? `Thu gọn ${storeOldMonthGroups.length} tháng cũ`
+                    : `Đang ẩn ${storeOldMonthGroups.length} tháng cũ`}
+                </button>
+                {showOldMonthsInTable && expandedOldMonths.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setExpandedOldMonths([])}
+                    className="px-1.5 py-0.5 rounded bg-accent-soft text-accent font-semibold hover:underline"
+                  >
+                    Thu gọn lại hết
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Bộ chuyển nhanh 3 giai đoạn cột trên Google Sheet */}
             <div className="inline-flex items-center p-0.5 rounded-md bg-sunken border border-line text-2xs">
               <button
@@ -2634,7 +2997,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               variant="secondary"
               size="sm"
               icon={UserPlus}
-              onClick={() => setIsDirectoryPickerOpen(true)}
+              onClick={handleOpenDirectoryPickerModal}
             >
               Chọn KOC
             </Button>
@@ -2904,6 +3267,140 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             </thead>
 
             <tbody className="divide-y divide-line">
+              {/* Các nhóm dòng thuộc Tháng cũ theo Cột Tháng (Cột B) — Mặc định thu gọn gọn gàng */}
+              {showOldMonthsInTable &&
+                storeOldMonthGroups.map((group) => {
+                  const isExpanded = expandedOldMonths.includes(group.month);
+                  return (
+                    <React.Fragment key={`old-month-group-${group.month}`}>
+                      <tr className="bg-sunken/80 hover:bg-sunken transition-colors">
+                        <td
+                          colSpan={visibleColumns.length + 2}
+                          className="px-3 py-1.5 border-b border-line"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => toggleExpandOldMonthInTable(group.month)}
+                                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-line-strong bg-surface font-semibold text-ink hover:bg-accent-soft hover:text-accent transition-colors"
+                              >
+                                <span className="font-mono text-xs">
+                                  {isExpanded ? '[-]' : '[+]'}
+                                </span>
+                                <span>Cột Tháng (B): {group.month}</span>
+                              </button>
+                              <Status tone={isExpanded ? 'info' : 'neutral'}>
+                                {isExpanded ? 'Đang mở rộng' : 'Đã thu gọn tháng cũ'}
+                              </Status>
+                              <span className="text-2xs text-ink-2">
+                                <strong>{group.rows.length}</strong> dòng KOC · Brand chọn Yes:{' '}
+                                <strong className="text-positive">{group.approvedCount}</strong> · Tổng Net:{' '}
+                                <strong className="font-mono tabular-nums">
+                                  {formatVnd(group.totalNet)}
+                                </strong>
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => toggleExpandOldMonthInTable(group.month)}
+                                className="text-2xs font-medium text-accent hover:underline px-1.5 py-0.5"
+                              >
+                                {isExpanded
+                                  ? 'Thu gọn lại tháng này'
+                                  : `Bấm mở xem nhanh ${group.rows.length} dòng`}
+                              </button>
+                              <span className="text-line-strong">·</span>
+                              <button
+                                type="button"
+                                onClick={() => onChangeMonth(group.month)}
+                                className="text-2xs font-medium text-ink-2 hover:text-ink hover:underline px-1.5 py-0.5"
+                              >
+                                Chuyển hẳn sang Tháng {group.month}
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      {isExpanded &&
+                        group.rows.map((oldRow, oldIdx) => (
+                          <tr
+                            key={`old-${group.month}-${oldRow.id}`}
+                            className="bg-sunken/35 text-ink-2 hover:bg-sunken/60 transition-colors"
+                          >
+                            <td className="sticky left-0 z-10 bg-sunken px-2 py-1 border-r border-line text-center font-mono text-2xs text-ink-3">
+                              —
+                            </td>
+                            <td className="sticky left-[38px] z-10 bg-sunken px-1.5 py-1 border-r border-line text-center font-mono text-2xs text-ink-3 tabular-nums">
+                              {oldIdx + 1}
+                            </td>
+                            {visibleColumns.map((col) => {
+                              const isStickyId = col.key === 'idKenh';
+                              const val = oldRow[col.key];
+                              return (
+                                <td
+                                  key={`old-cell-${oldRow.id}-${col.key}`}
+                                  className={`px-2 py-1 border-r border-line text-2xs truncate max-w-[220px] ${
+                                    isStickyId
+                                      ? 'sticky left-[76px] z-10 bg-sunken font-semibold text-ink shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]'
+                                      : ''
+                                  }`}
+                                >
+                                  {col.key === 'thang' ? (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-surface border border-line font-mono font-semibold text-ink-2">
+                                      {oldRow.thang || group.month}
+                                    </span>
+                                  ) : col.key === 'brandChon' ? (
+                                    <Status
+                                      tone={
+                                        oldRow.brandChon === 'Yes'
+                                          ? 'positive'
+                                          : oldRow.brandChon === 'No'
+                                            ? 'critical'
+                                            : 'neutral'
+                                      }
+                                    >
+                                      {oldRow.brandChon || 'Chờ duyệt'}
+                                    </Status>
+                                  ) : col.key === 'giaNetVideo' || col.key === 'phiBookingKemThue' ? (
+                                    <span className="font-mono tabular-nums">
+                                      {formatVnd(Number(val) || 0)}
+                                    </span>
+                                  ) : (
+                                    String(val ?? '—')
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                    </React.Fragment>
+                  );
+                })}
+
+              {/* Thanh tiêu đề Tháng hiện tại đang làm việc khi có các nhóm Tháng cũ ở trên */}
+              {showOldMonthsInTable && storeOldMonthGroups.length > 0 && (
+                <tr className="bg-accent-soft/25">
+                  <td
+                    colSpan={visibleColumns.length + 2}
+                    className="px-3 py-1.5 border-b border-line"
+                  >
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-accent text-white font-semibold">
+                          <span>[-] Cột Tháng (B): {activeMonth}</span>
+                        </span>
+                        <Status tone="positive">Tháng đang làm việc (Mở rộng)</Status>
+                        <span className="text-2xs text-ink-2">
+                          Đang hiển thị <strong>{displayedRows.length}</strong> / {rows.length} dòng KOC của tháng {activeMonth}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+
               {displayedRows.length === 0 ? (
                 <tr>
                   <td
@@ -3364,14 +3861,15 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           return (
                             <td key={col.key} className={cellBaseClass} title={cellTitle}>
                               <input
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
                                 disabled={!cellEditable}
-                                value={Number(row[col.key]) || 0}
+                                value={formatNumber(Number(row[col.key]) || 0)}
                                 onChange={(e) =>
                                   handleCellChange(
                                     row.id,
                                     col.key,
-                                    Number(e.target.value) || 0
+                                    parseThousandNumberInput(e.target.value)
                                   )
                                 }
                                 className="w-full h-7 px-2 rounded border border-line bg-surface text-right font-mono text-xs text-ink tabular-nums focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3"
@@ -3420,26 +3918,33 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         }
 
                         if (
+                          col.key === 'giaDaHopTacTruocDo' ||
                           col.key === 'giaNetVideo' ||
                           col.key === 'follower' ||
                           col.key === 'gmvDaHopTac' ||
                           col.key === 'doanhSo' ||
+                          col.key === 'doanhSoUocTinh30d' ||
                           col.key === 'soMonBanRa' ||
                           col.key === 'gpm' ||
                           col.key === 'aov' ||
-                          col.key === 'viewTrungBinh'
+                          col.key === 'viewTrungBinh' ||
+                          col.key === 'costPerView' ||
+                          col.key === 'gmvTarget' ||
+                          col.key === 'viewTrungVi' ||
+                          col.key === 'viewTarget'
                         ) {
                           return (
                             <td key={col.key} className={cellBaseClass} title={cellTitle}>
                               <input
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
                                 disabled={!cellEditable}
-                                value={row[col.key]}
+                                value={formatNumber(Number(row[col.key]) || 0)}
                                 onChange={(e) =>
                                   handleCellChange(
                                     row.id,
                                     col.key,
-                                    Number(e.target.value) || 0
+                                    parseThousandNumberInput(e.target.value)
                                   )
                                 }
                                 className="w-full h-7 px-2 rounded border border-line bg-surface text-right font-mono text-xs text-ink tabular-nums focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3"
@@ -3457,7 +3962,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           col.key === 'tuoi18_24Pct' ||
                           col.key === 'tuoi25_34Pct' ||
                           col.key === 'tuoiTren35Pct' ||
-                          col.key === 'tuoiOtherPct'
+                          col.key === 'tuoiOtherPct' ||
+                          col.key === 'ctrPct' ||
+                          col.key === 'crPct' ||
+                          col.key === 'tyLeTuongTacPct'
                         ) {
                           const isFormulaCol = col.fillMode === 'FORMULA';
                           return (
@@ -3513,9 +4021,21 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                     handleCellChange(row.id, 'idKenh', e.target.value)
                                   }
                                   onBlur={() => handleIdKenhBlur(row.id)}
+                                  onDoubleClick={() => {
+                                    if (cleanH || row.kocId) setQuickViewRow(row);
+                                  }}
                                   placeholder={col.header}
                                   className="w-full min-w-0 h-7 px-2 rounded border border-line bg-surface text-xs text-ink font-semibold focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3"
                                 />
+                                <button
+                                  type="button"
+                                  onClick={() => setQuickViewRow(row)}
+                                  disabled={!cleanH && !row.kocId}
+                                  title={`Xem nhanh thông tin KOC, hiệu suất kênh & lịch sử hợp tác (@${cleanH || 'KOC'})`}
+                                  className="h-7 w-7 rounded border border-line bg-surface text-accent hover:bg-sunken inline-flex items-center justify-center shrink-0 disabled:opacity-40"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => handleOpenOutreachForSingleRow(row)}
@@ -3535,6 +4055,39 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                     <span className="text-2xs font-semibold">Đã gửi</span>
                                   )}
                                 </button>
+                              </div>
+                            </td>
+                          );
+                        }
+
+                        if (col.key === 'tenKenh') {
+                          const cleanH = normalizeTikTokId(row.idKenh).toLowerCase();
+                          return (
+                            <td key={col.key} className={cellBaseClass} title={cellTitle}>
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="text"
+                                  disabled={!cellEditable}
+                                  value={String(row.tenKenh ?? '')}
+                                  onChange={(e) =>
+                                    handleCellChange(row.id, 'tenKenh', e.target.value)
+                                  }
+                                  onDoubleClick={() => {
+                                    if (cleanH || row.kocId) setQuickViewRow(row);
+                                  }}
+                                  placeholder={col.header}
+                                  className="w-full min-w-0 h-7 px-2 rounded border border-line bg-surface text-xs text-ink focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3"
+                                />
+                                {(cleanH || row.kocId) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setQuickViewRow(row)}
+                                    title="Mở hồ sơ, hiệu suất & lịch sử KOC"
+                                    className="h-7 px-1.5 rounded border border-line bg-surface text-2xs font-medium text-accent hover:bg-sunken shrink-0"
+                                  >
+                                    Hồ sơ
+                                  </button>
+                                )}
                               </div>
                             </td>
                           );
@@ -3567,7 +4120,25 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           );
                         }
 
-                        // Các cột văn bản chung (sanPham, contentNote, leaderNote, lyDoTuChoi, thanhQuaHopTac, ngayAirPlan, thông tin liên hệ/ngân hàng/CCCD...)
+                        if (col.key === 'sanPham') {
+                          return (
+                            <td key={col.key} className={cellBaseClass} title={cellTitle}>
+                              <BrandProductDropdownInput
+                                size="sm"
+                                disabled={!cellEditable}
+                                value={String(row.sanPham ?? '')}
+                                onChange={(val) => handleCellChange(row.id, 'sanPham', val)}
+                                brandName={activeStoreObj?.brandName}
+                                storeName={activeStoreName}
+                                storeObj={activeStoreObj}
+                                deals={deals}
+                                placeholder="Chọn SP của Brand..."
+                              />
+                            </td>
+                          );
+                        }
+
+                        // Các cột văn bản chung (contentNote, leaderNote, lyDoTuChoi, thanhQuaHopTac, ngayAirPlan, thông tin liên hệ/ngân hàng/CCCD...)
                         return (
                           <td key={col.key} className={cellBaseClass} title={cellTitle}>
                             <input
@@ -3596,7 +4167,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       <Modal
         open={isDirectoryPickerOpen}
         onClose={() => setIsDirectoryPickerOpen(false)}
-        title={`Chọn KOC từ Danh bạ đưa vào Sheet "${activeStoreName}" (${activeMonth})`}
+        title="Tìm kiếm & Chọn KOC từ Danh bạ đưa vào Sheet"
         size="xl"
         footer={
           <>
@@ -3609,15 +4180,62 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               disabled={pickedKocIds.length === 0}
               onClick={handleAddPickedKocsToSheet}
             >
-              Đưa {pickedKocIds.length} KOC đã chọn vào Sheet
+              Đưa {pickedKocIds.length} KOC vào Sheet &ldquo;{pickerTargetStoreName}&rdquo; ({pickerTargetMonth})
             </Button>
           </>
         }
       >
         <div className="space-y-3">
-          {/* Thiết lập nhanh các trường nhân viên điền khi đưa vào Sheet */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2.5 p-3 rounded-lg bg-sunken border border-line">
-            <Field label="Đợt (Cột C)" className="md:col-span-2" labelClassName="whitespace-nowrap">
+          {/* Hàng 1: Chọn Plan Tháng, Gian hàng (Sheet Brand) và Đợt Listing */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-lg bg-sunken border border-line">
+            <Field label="Plan Tháng" className="sm:col-span-3" labelClassName="whitespace-nowrap">
+              <Select
+                value={pickerTargetMonth}
+                onChange={(e) => setPickerTargetMonth(e.target.value)}
+              >
+                {MONTH_OPTIONS.map((m) => (
+                  <option key={m} value={m}>
+                    Plan Tháng {m}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Field
+              label="Gian hàng (Sheet Brand)"
+              className="sm:col-span-6"
+              labelClassName="whitespace-nowrap"
+            >
+              <Select
+                value={pickerTargetStoreName}
+                onChange={(e) => {
+                  const nextStore = e.target.value;
+                  setPickerTargetStoreName(nextStore);
+                  const nextStoreObj = b2cStores.find((s) => s.storeName === nextStore);
+                  const nextCat = buildBrandProductCatalogGroups({
+                    brandName: nextStoreObj?.brandName,
+                    storeName: nextStore,
+                    storeObj: nextStoreObj,
+                    deals,
+                  });
+                  setQuickProduct(
+                    nextCat.flatOptions[0]?.name || nextStoreObj?.mainProducts?.[0] || ''
+                  );
+                }}
+              >
+                {b2cStores.map((st) => {
+                  const key = makeSheetKey(pickerTargetMonth, st.storeName);
+                  const count = collection.sheets[key]?.length || 0;
+                  return (
+                    <option key={st.id} value={st.storeName}>
+                      {st.brandName} — {st.storeName} ({count} KOC)
+                    </option>
+                  );
+                })}
+              </Select>
+            </Field>
+
+            <Field label="Đợt (Cột C)" className="sm:col-span-3" labelClassName="whitespace-nowrap">
               <Select
                 value={quickBatchDot}
                 onChange={(e) => setQuickBatchDot(e.target.value)}
@@ -3630,17 +4248,22 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               </Select>
             </Field>
 
-            <Field label="Sản phẩm (Cột K)" className="md:col-span-4" labelClassName="whitespace-nowrap">
-              <Input
+            <Field label="Sản phẩm (Cột K)" className="sm:col-span-6" labelClassName="whitespace-nowrap">
+              <BrandProductDropdownInput
                 value={quickProduct}
-                onChange={(e) => setQuickProduct(e.target.value)}
+                onChange={(val) => setQuickProduct(val)}
+                brandName={pickerTargetStoreObj?.brandName}
+                storeName={pickerTargetStoreName}
+                storeObj={pickerTargetStoreObj}
+                deals={deals}
                 placeholder={
-                  activeStoreObj?.mainProducts?.[0] || 'Nhập tên sản phẩm...'
+                  pickerTargetStoreObj?.mainProducts?.[0] ||
+                  'Chọn sản phẩm từ Danh mục SP của Brand...'
                 }
               />
             </Field>
 
-            <Field label="Content tag (Cột G)" className="md:col-span-3" labelClassName="whitespace-nowrap">
+            <Field label="Content tag (Cột G)" className="sm:col-span-3" labelClassName="whitespace-nowrap">
               <Select
                 value={quickContentTag}
                 onChange={(e) => setQuickContentTag(e.target.value)}
@@ -3653,7 +4276,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               </Select>
             </Field>
 
-            <Field label="Đề xuất UpBase (Cột R)" className="md:col-span-3" labelClassName="whitespace-nowrap">
+            <Field label="Đề xuất UpBase (Cột R)" className="sm:col-span-3" labelClassName="whitespace-nowrap">
               <Select
                 value={quickUpbaseProposal}
                 onChange={(e) => setQuickUpbaseProposal(e.target.value)}
@@ -3705,7 +4328,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           <div className="border border-line rounded-lg overflow-hidden">
             <div className="px-3 py-2 bg-sunken border-b border-line flex items-center justify-between text-xs">
               <span className="font-semibold text-ink">
-                Danh bạ KOC ({filteredDirectoryKocs.length} kênh)
+                Danh bạ KOC ({filteredDirectoryKocs.length} kênh) — Đích: {pickerTargetStoreName} (Plan {pickerTargetMonth})
               </span>
               <span className="text-ink-3">
                 Đã chọn: <strong className="text-ink">{pickedKocIds.length}</strong>
@@ -3714,7 +4337,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             <div className="max-h-80 overflow-y-auto divide-y divide-line">
               {filteredDirectoryKocs.slice(0, 80).map((k) => {
                 const cleanHandle = normalizeTikTokId(k.channelId);
-                const alreadyInSheet = existingHandlesInActiveSheet.has(
+                const alreadyInSheet = existingHandlesInPickerTargetSheet.has(
                   cleanHandle.toLowerCase()
                 );
                 const isChecked = pickedKocIds.includes(k.id);
@@ -3950,7 +4573,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 }}
               >
                 <option value="BRAND_WORKING_32">
-                  Bản gửi Brand chuẩn Google Sheet Template (32 cột Working file)
+                  Chuẩn Template List KOC_TikTok đã chốt (57 cột A → BE)
                 </option>
                 <option value="ALL_VISIBLE">
                   Toàn bộ các cột đang bật ({visibleColumns.length} cột)
@@ -4510,7 +5133,27 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                 />
                               </td>
                               <td className="py-2 px-2.5 font-medium text-ink">
-                                <div>@{d.handle}</div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const matchedRow = rows.find(
+                                      (r) =>
+                                        normalizeTikTokId(r.idKenh).toLowerCase() ===
+                                        normalizeTikTokId(d.handle).toLowerCase()
+                                    );
+                                    setQuickViewRow(
+                                      matchedRow || {
+                                        idKenh: d.handle,
+                                        tenKenh: d.kocName || d.handle,
+                                      }
+                                    );
+                                  }}
+                                  className="inline-flex items-center gap-1 font-semibold text-accent hover:underline"
+                                  title="Xem nhanh hồ sơ, hiệu suất & lịch sử KOC"
+                                >
+                                  <span>@{d.handle}</span>
+                                  <Eye className="w-3 h-3 shrink-0" />
+                                </button>
                                 {d.kocName && d.kocName !== d.handle && (
                                   <div className="text-2xs text-ink-3">{d.kocName}</div>
                                 )}
@@ -4772,7 +5415,25 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       />
                     </td>
                     <td className="py-2 px-2.5">
-                      <div className="font-semibold text-ink">@{draft.idKenh}</div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const matchedRow = rows.find((r) => r.id === draft.rowId);
+                          setQuickViewRow(
+                            matchedRow || {
+                              idKenh: draft.idKenh,
+                              tenKenh: draft.tenKenh,
+                              dot: draft.dot,
+                              sanPham: draft.sanPham,
+                            }
+                          );
+                        }}
+                        className="inline-flex items-center gap-1 font-semibold text-accent hover:underline"
+                        title="Xem nhanh hồ sơ, hiệu suất & lịch sử KOC"
+                      >
+                        <span>@{draft.idKenh}</span>
+                        <Eye className="w-3 h-3 shrink-0" />
+                      </button>
                       <div className="text-2xs text-ink-3">
                         {draft.tenKenh} · {draft.dot}
                       </div>
@@ -4814,35 +5475,37 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       </div>
                     </td>
                     <td className="py-2 px-2.5">
-                      <input
-                        type="text"
+                      <BrandProductDropdownInput
+                        size="sm"
                         value={draft.sanPham}
-                        onChange={(e) => {
-                          const val = e.target.value;
+                        onChange={(val) => {
                           setDealDrafts((prev) =>
                             prev.map((item, i) =>
                               i === idx ? { ...item, sanPham: val } : item
                             )
                           );
                         }}
-                        placeholder="Nhập tên sản phẩm..."
-                        className="w-full h-7 px-2 text-xs rounded border border-line-strong bg-surface text-ink"
+                        brandName={activeStoreObj?.brandName}
+                        storeName={activeStoreName}
+                        storeObj={activeStoreObj}
+                        deals={deals}
+                        placeholder="Chọn sản phẩm từ Danh mục SP..."
                       />
                     </td>
                     <td className="py-2 px-2.5">
                       <input
-                        type="number"
-                        step={50000}
-                        value={draft.giaChotCuoi}
+                        type="text"
+                        inputMode="numeric"
+                        value={formatNumber(Number(draft.giaChotCuoi) || 0)}
                         onChange={(e) => {
-                          const val = Math.max(0, Number(e.target.value) || 0);
+                          const val = parseThousandNumberInput(e.target.value);
                           setDealDrafts((prev) =>
                             prev.map((item, i) =>
                               i === idx ? { ...item, giaChotCuoi: val } : item
                             )
                           );
                         }}
-                        className="w-full h-7 px-2 text-xs font-semibold tabular-nums rounded border border-line-strong bg-surface text-ink"
+                        className="w-full h-7 px-2 text-xs text-right font-mono font-semibold tabular-nums rounded border border-line-strong bg-surface text-ink"
                       />
                       <div className="text-2xs text-ink-3 tabular-nums mt-0.5">
                         Gross: {formatVnd(computeGrossFeeWithTax(draft.giaChotCuoi))}
@@ -4948,77 +5611,113 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             </div>
           </div>
 
-          {/* MỤC 1: ẨN / HIỆN CÁC TAB THÁNG TRÊN FILE GOOGLE SHEET */}
+          {/* MỤC 1: THU GỌN CÁC THÁNG CŨ THEO CỘT THÁNG (CỘT B) TRÊN FILE GOOGLE SHEET */}
           <div className="border border-line rounded-lg p-3.5 space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <div className="font-semibold text-ink">
-                  1. Ẩn / Hiện các Tab Tháng trên File Google Sheet ({sheetTabsDetail.length} Tab)
+                  1. Thu gọn các Tháng cũ theo Cột Tháng (Cột B) trên File Google Sheet
                 </div>
                 <div className="text-2xs text-ink-3">
-                  Ẩn bớt các tab tháng cũ để Brand mở file Google Sheet nhìn gọn gàng, chỉ tập trung vào tháng đang chạy.
+                  Trên Google Sheet, các tháng nằm chung trong bảng và phân biệt ở <strong>Cột B (Tháng)</strong>. Chọn các tháng cũ bên dưới để <strong>thu gọn dòng (Collapse Rows)</strong> trên Google Sheet, chỉ mở rộng tháng đang làm việc ({activeMonth}).
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 <Button
                   size="sm"
                   variant="secondary"
-                  disabled={sheetTemplateBusy || sheetTabsDetail.length <= 1}
-                  onClick={handleHideOldMonthTabsDraft}
+                  disabled={sheetTemplateBusy}
+                  onClick={handleSelectOldMonthsToCollapseDraft}
                 >
-                  Chỉ giữ tháng {activeMonth} &amp; chọn ẩn tháng cũ
+                  Chọn thu gọn tháng cũ (&lt; {activeMonth})
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={sheetTemplateBusy}
+                  onClick={() => {
+                    setSheetCollapsedMonthsDraft([]);
+                    void runSheetTemplatePatch(
+                      { expandAllMonths: true },
+                      'Đã mở rộng lại toàn bộ các dòng của mọi tháng ở Cột Tháng (Cột B) trên Google Sheet.'
+                    );
+                  }}
+                >
+                  Mở rộng tất cả tháng
                 </Button>
                 <Button
                   size="sm"
                   variant="primary"
-                  disabled={sheetTemplateBusy || sheetTabsDetail.length === 0}
+                  disabled={sheetTemplateBusy}
                   onClick={() =>
                     void runSheetTemplatePatch(
                       {
-                        tabVisibility: sheetTabsDetail.map((t) => ({
-                          title: t.title,
-                          hidden: t.hidden,
-                        })),
+                        collapsedMonths: sheetCollapsedMonthsDraft,
                       },
-                      'Đã cập nhật ẩn/hiện các Tab Tháng trên file Google Sheet.'
+                      sheetCollapsedMonthsDraft.length > 0
+                        ? `Đã thu gọn các dòng thuộc tháng cũ (${sheetCollapsedMonthsDraft.join(', ')}) theo Cột Tháng (Cột B) trên Google Sheet.`
+                        : 'Đã mở rộng toàn bộ các tháng theo Cột Tháng (Cột B) trên Google Sheet.'
                     )
                   }
                 >
-                  {sheetTemplateBusy ? 'Đang lưu…' : 'Áp dụng ẩn/hiện Tab lên Sheet'}
+                  {sheetTemplateBusy ? 'Đang áp dụng…' : 'Áp dụng thu gọn Cột Tháng lên Sheet'}
                 </Button>
               </div>
             </div>
 
-            {sheetTabsDetail.length === 0 ? (
-              <div className="text-2xs text-ink-3 py-2">
-                Chưa tải được danh sách Tab hoặc file Google Sheet chưa chia sẻ quyền cho Service Account.
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pt-1">
-                {sheetTabsDetail.map((t) => (
-                  <label
-                    key={t.sheetId}
-                    className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border cursor-pointer select-none ${
-                      t.hidden
-                        ? 'bg-sunken border-line text-ink-3'
-                        : 'bg-surface border-line-strong text-ink font-medium'
-                    }`}
-                  >
-                    <span className="truncate text-2xs" title={t.title}>
-                      {t.title}
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={!t.hidden}
-                      onChange={(e) =>
-                        handleToggleSingleSheetTabHidden(t.title, !e.target.checked)
-                      }
-                      className="rounded border-line"
-                    />
-                  </label>
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 pt-1">
+              {Array.from(
+                new Set([
+                  ...MONTH_OPTIONS,
+                  ...sheetMonthColumnStats.map((s) => s.month),
+                ])
+              )
+                .sort((a, b) => b.localeCompare(a))
+                .map((m) => {
+                  const isCollapsed = sheetCollapsedMonthsDraft.includes(m);
+                  const isCurrentMonth = m === activeMonth;
+                  const appCount =
+                    (collection.sheets[makeSheetKey(m, activeStoreName)] || []).length;
+                  const sheetStat = sheetMonthColumnStats.find((s) => s.month === m);
+                  const rowCountLabel =
+                    sheetStat !== undefined
+                      ? `${sheetStat.rowCount} dòng trên Sheet`
+                      : `${appCount} dòng trên App`;
+
+                  return (
+                    <label
+                      key={m}
+                      className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md border cursor-pointer select-none transition-colors ${
+                        isCollapsed
+                          ? 'bg-sunken border-line text-ink-2'
+                          : 'bg-surface border-line-strong text-ink font-semibold'
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <span className="font-mono">
+                            {isCollapsed ? '[+]' : '[-]'} Cột B: {m}
+                          </span>
+                          {isCurrentMonth && <Status tone="positive">Hiện tại</Status>}
+                        </div>
+                        <div className="text-2xs text-ink-3">
+                          {rowCountLabel} ·{' '}
+                          <strong className={isCollapsed ? 'text-warning' : 'text-positive'}>
+                            {isCollapsed ? 'Thu gọn dòng' : 'Mở rộng dòng'}
+                          </strong>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={isCollapsed}
+                        onChange={() => handleToggleCollapseMonthDraft(m)}
+                        className="rounded border-line shrink-0"
+                        title="Tích chọn để thu gọn các dòng có Cột B (Tháng) là tháng này"
+                      />
+                    </label>
+                  );
+                })}
+            </div>
           </div>
 
           {/* MỤC 2: ẨN / HIỆN CÁC NHÓM CỘT TRÊN FILE GOOGLE SHEET (VÌ DÙNG CHUNG 1 TEMPLATE) */}
@@ -5236,6 +5935,18 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         currentUserName={currentUserName}
         currentRole={currentRole}
         onUpdateRowFields={handleUpdateRowEmailAndStatus}
+        onNotify={onNotify}
+      />
+
+      {/* Modal Xem nhanh Hồ sơ, Hiệu suất Kênh & Lịch sử Hợp tác KOC */}
+      <KocQuickViewModal
+        open={Boolean(quickViewRow)}
+        onClose={() => setQuickViewRow(null)}
+        sheetRow={quickViewRow}
+        kocs={kocs}
+        stores={stores}
+        deals={deals}
+        currentUser={currentUser}
         onNotify={onNotify}
       />
     </div>

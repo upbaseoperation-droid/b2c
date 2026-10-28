@@ -64,6 +64,12 @@ interface SharedTikTokCrawlerStore {
   inFlightVideoDetail: Map<string, Promise<RealTikTokVideoAndAuthorDetail | null>>;
   profileCache: Map<string, { data: CachedPublicProfileData; expiresAt: number }>;
   inFlightProfile: Map<string, Promise<CachedPublicProfileData | null>>;
+  creatorVideoListCache: Map<
+    string,
+    { data: RealTikTokVideoAndAuthorDetail[]; expiresAt: number }
+  >;
+  inFlightCreatorVideoList: Map<string, Promise<RealTikTokVideoAndAuthorDetail[]>>;
+  wafSessionCookie?: { cookie: string; expiresAt: number };
   searchHtmlCache: Map<
     string,
     { data: Array<{ handle: string; videoId: string; videoUrl: string }>; expiresAt: number }
@@ -99,6 +105,8 @@ export function getSharedCrawlerStore(): SharedTikTokCrawlerStore {
       inFlightVideoDetail: new Map(),
       profileCache: new Map(),
       inFlightProfile: new Map(),
+      creatorVideoListCache: new Map(),
+      inFlightCreatorVideoList: new Map(),
       searchHtmlCache: new Map(),
       inFlightSearchHtml: new Map(),
       commentsPageCache: new Map(),
@@ -112,7 +120,31 @@ export function getSharedCrawlerStore(): SharedTikTokCrawlerStore {
   if (!globalForCrawler.__upbaseTikTokCrawlerStore.rejectedHandlesByTarget) {
     globalForCrawler.__upbaseTikTokCrawlerStore.rejectedHandlesByTarget = new Map();
   }
+  if (!globalForCrawler.__upbaseTikTokCrawlerStore.creatorVideoListCache) {
+    globalForCrawler.__upbaseTikTokCrawlerStore.creatorVideoListCache = new Map();
+  }
+  if (!globalForCrawler.__upbaseTikTokCrawlerStore.inFlightCreatorVideoList) {
+    globalForCrawler.__upbaseTikTokCrawlerStore.inFlightCreatorVideoList = new Map();
+  }
   return globalForCrawler.__upbaseTikTokCrawlerStore;
+}
+
+/**
+ * Trích xuất nhãn thời gian Unix (giây) trực tiếp từ 32 bit cao của mã Snowflake videoId TikTok (19 chữ số).
+ * Cho phép xác định chính xác thời điểm đăng bài ngay cả khi dữ liệu nguồn chỉ có ngày YYYY-MM-DD.
+ */
+export function extractUnixSecFromTikTokVideoId(videoId?: string): number {
+  const clean = (videoId || '').trim();
+  if (!/^\d{18,20}$/.test(clean)) return 0;
+  try {
+    const sec = Number(BigInt(clean) >> BigInt(32));
+    if (sec >= 1451606400 && sec <= 2051222400) {
+      return sec;
+    }
+  } catch {
+    return 0;
+  }
+  return 0;
 }
 
 export function recordRejectedTargetHandles(rawTargetKey: string, handles: string[]) {
@@ -229,15 +261,24 @@ function mergeCookieStrings(...cookieParts: Array<string | undefined>): string {
 export async function fetchTikTokHtmlWithWafBypass(
   url: string,
   timeoutMs = 6500
-): Promise<{ html: string; finalUrl: string; cookies?: string } | null> {
+): Promise<{ html: string; finalUrl: string; cookies?: string; wafBypassed?: boolean } | null> {
   const store = getSharedCrawlerStore();
   return store.tiktokLimiter.run(async () => {
     try {
+      const now = Date.now();
+      const cachedWafCookie =
+        store.wafSessionCookie && store.wafSessionCookie.expiresAt > now
+          ? store.wafSessionCookie.cookie
+          : undefined;
+
       const r1Headers: Record<string, string> = {
         'User-Agent': DEFAULT_BROWSER_UA,
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
       };
+      if (cachedWafCookie) {
+        r1Headers.Cookie = cachedWafCookie;
+      }
 
       const r1 = await fetch(url, {
         method: 'GET',
@@ -257,7 +298,13 @@ export async function fetchTikTokHtmlWithWafBypass(
       const html1 = await r1.text();
       const wafCookie1 = solveTikTokWafHtml(html1);
       if (!wafCookie1) {
-        return { html: html1, finalUrl, cookies: mergeCookieStrings(...setCookies1) };
+        const merged1 = mergeCookieStrings(cachedWafCookie, ...setCookies1);
+        return {
+          html: html1,
+          finalUrl,
+          cookies: merged1,
+          wafBypassed: Boolean(cachedWafCookie),
+        };
       }
 
       const combinedCookie1 = mergeCookieStrings(...setCookies1, wafCookie1);
@@ -285,10 +332,16 @@ export async function fetchTikTokHtmlWithWafBypass(
 
       const wafCookie2 = solveTikTokWafHtml(html2);
       if (!wafCookie2) {
+        const solvedJar2 = mergeCookieStrings(combinedCookie1, ...setCookies2);
+        store.wafSessionCookie = {
+          cookie: solvedJar2,
+          expiresAt: Date.now() + 10 * 60 * 1000,
+        };
         return {
           html: html2,
           finalUrl: finalUrl2,
-          cookies: mergeCookieStrings(combinedCookie1, ...setCookies2),
+          cookies: solvedJar2,
+          wafBypassed: true,
         };
       }
 
@@ -313,10 +366,16 @@ export async function fetchTikTokHtmlWithWafBypass(
         .map((c) => c.split(';')[0].trim())
         .filter(Boolean);
       const html3 = await r3.text();
+      const solvedJar3 = mergeCookieStrings(combinedCookie2, ...setCookies3);
+      store.wafSessionCookie = {
+        cookie: solvedJar3,
+        expiresAt: Date.now() + 10 * 60 * 1000,
+      };
       return {
         html: html3,
         finalUrl: r3.url ? r3.url.split('?')[0] : finalUrl2,
-        cookies: mergeCookieStrings(combinedCookie2, ...setCookies3),
+        cookies: solvedJar3,
+        wafBypassed: true,
       };
     } catch {
       return null;
@@ -1274,7 +1333,8 @@ export function parseTikTokItemStructToDetail(itemStruct: Record<string, any> | 
 export async function fetchTikTokCreatorVideoListBySecUid(
   rawHandle: string,
   secUid: string,
-  maxItems = 40
+  maxItems = 40,
+  options?: { forceRefresh?: boolean }
 ): Promise<RealTikTokVideoAndAuthorDetail[]> {
   const cleanHandle = rawHandle.trim().toLowerCase().replace(/^@+/, '');
   const cleanSecUid = (secUid || '').trim();
@@ -1282,99 +1342,143 @@ export async function fetchTikTokCreatorVideoListBySecUid(
 
   const targetCount = Math.min(Math.max(6, maxItems), 100);
   const store = getSharedCrawlerStore();
-  const deviceId =
-    '7' + Array.from({ length: 18 }, () => Math.floor(Math.random() * 10)).join('');
-  let cursor = Date.now();
-  const collected = new Map<string, RealTikTokVideoAndAuthorDetail>();
-  const maxPages = Math.min(Math.ceil(targetCount / 14) + 1, 8);
+  const cacheKey = `${cleanHandle}_${cleanSecUid}`;
+  const now = Date.now();
 
-  for (let page = 0; page < maxPages && collected.size < targetCount; page++) {
-    const currentCursor = cursor;
-    const pageData = await store.tiktokLimiter.run(async () => {
-      try {
-        const qs = new URLSearchParams({
-          aid: '1988',
-          app_language: 'vi-VN',
-          app_name: 'tiktok_web',
-          browser_language: 'vi-VN',
-          browser_name: 'Mozilla',
-          browser_online: 'true',
-          browser_platform: 'Win32',
-          browser_version: '5.0 (Windows NT 10.0; Win64; x64)',
-          channel: 'tiktok_web',
-          cookie_enabled: 'true',
-          count: '15',
-          cursor: String(currentCursor),
-          device_id: deviceId,
-          device_platform: 'web_pc',
-          focus_state: 'true',
-          from_page: 'user',
-          history_len: '2',
-          is_fullscreen: 'false',
-          is_page_visible: 'true',
-          language: 'vi-VN',
-          os: 'windows',
-          priority_region: 'VN',
-          referer: '',
-          region: 'VN',
-          screen_height: '1080',
-          screen_width: '1920',
-          secUid: cleanSecUid,
-          tz_name: 'Asia/Saigon',
-          type: '1', // 1 = Lấy lần lượt từ video mới đăng nhất trở về trước
-          verifyFp: '',
-          webcast_language: 'vi-VN',
-        });
+  if (options?.forceRefresh) {
+    store.creatorVideoListCache.delete(cacheKey);
+  } else {
+    const cached = store.creatorVideoListCache.get(cacheKey);
+    if (
+      cached &&
+      cached.expiresAt > now &&
+      (cached.data.length >= targetCount || cached.data.length >= 12)
+    ) {
+      return cached.data.slice(0, targetCount);
+    }
+    const existingInFlight = store.inFlightCreatorVideoList.get(cacheKey);
+    if (existingInFlight) {
+      const res = await existingInFlight;
+      return res.slice(0, targetCount);
+    }
+  }
 
-        const res = await fetch(`https://www.tiktok.com/api/creator/item_list/?${qs.toString()}`, {
-          method: 'GET',
-          headers: {
+  const taskPromise = (async (): Promise<RealTikTokVideoAndAuthorDetail[]> => {
+    const deviceId =
+      '7' + Array.from({ length: 18 }, () => Math.floor(Math.random() * 10)).join('');
+    let cursor = Date.now();
+    const collected = new Map<string, RealTikTokVideoAndAuthorDetail>();
+    const maxPages = Math.min(Math.ceil(targetCount / 14) + 1, 8);
+
+    for (let page = 0; page < maxPages && collected.size < targetCount; page++) {
+      const currentCursor = cursor;
+      const pageData = await store.tiktokLimiter.run(async () => {
+        try {
+          const qs = new URLSearchParams({
+            aid: '1988',
+            app_language: 'vi-VN',
+            app_name: 'tiktok_web',
+            browser_language: 'vi-VN',
+            browser_name: 'Mozilla',
+            browser_online: 'true',
+            browser_platform: 'Win32',
+            browser_version: '5.0 (Windows NT 10.0; Win64; x64)',
+            channel: 'tiktok_web',
+            cookie_enabled: 'true',
+            count: '15',
+            cursor: String(currentCursor),
+            device_id: deviceId,
+            device_platform: 'web_pc',
+            focus_state: 'true',
+            from_page: 'user',
+            history_len: '2',
+            is_fullscreen: 'false',
+            is_page_visible: 'true',
+            language: 'vi-VN',
+            os: 'windows',
+            priority_region: 'VN',
+            referer: '',
+            region: 'VN',
+            screen_height: '1080',
+            screen_width: '1920',
+            secUid: cleanSecUid,
+            tz_name: 'Asia/Saigon',
+            type: '1', // 1 = Lấy lần lượt từ video mới đăng nhất trở về trước
+            verifyFp: '',
+            webcast_language: 'vi-VN',
+          });
+
+          const reqHeaders: Record<string, string> = {
             'User-Agent': DEFAULT_BROWSER_UA,
             Accept: 'application/json, text/plain, */*',
             'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
             Referer: `https://www.tiktok.com/@${cleanHandle}`,
-          },
-          signal: AbortSignal.timeout(6500),
-          cache: 'no-store',
-        });
-        if (!res.ok) return null;
-        return await res.json();
-      } catch {
-        return null;
-      }
-    });
+          };
+          if (store.wafSessionCookie && store.wafSessionCookie.expiresAt > Date.now()) {
+            reqHeaders.Cookie = store.wafSessionCookie.cookie;
+          }
 
-    const list = Array.isArray(pageData?.itemList) ? pageData.itemList : [];
-    if (list.length === 0) break;
+          const res = await fetch(`https://www.tiktok.com/api/creator/item_list/?${qs.toString()}`, {
+            method: 'GET',
+            headers: reqHeaders,
+            signal: AbortSignal.timeout(6500),
+            cache: 'no-store',
+          });
+          if (!res.ok) return null;
+          return await res.json();
+        } catch {
+          return null;
+        }
+      });
 
-    let minCreateTimeSec = Infinity;
-    for (const rawItem of list) {
-      const parsed = parseTikTokItemStructToDetail(rawItem);
-      if (!parsed) continue;
-      if (parsed.author.handle.toLowerCase() !== cleanHandle) continue;
-      if (!collected.has(parsed.videoId)) {
-        collected.set(parsed.videoId, parsed);
+      const list = Array.isArray(pageData?.itemList) ? pageData.itemList : [];
+      if (list.length === 0) break;
+
+      let minCreateTimeSec = Infinity;
+      for (const rawItem of list) {
+        const parsed = parseTikTokItemStructToDetail(rawItem);
+        if (!parsed) continue;
+        if (parsed.author.handle.toLowerCase() !== cleanHandle) continue;
+        if (!collected.has(parsed.videoId)) {
+          collected.set(parsed.videoId, parsed);
+        }
+        if (parsed.createTimeSec > 0 && parsed.createTimeSec < minCreateTimeSec) {
+          minCreateTimeSec = parsed.createTimeSec;
+        }
       }
-      if (parsed.createTimeSec > 0 && parsed.createTimeSec < minCreateTimeSec) {
-        minCreateTimeSec = parsed.createTimeSec;
+
+      if (!pageData?.hasMorePrevious || !Number.isFinite(minCreateTimeSec)) {
+        break;
       }
+
+      const nextCursor = (minCreateTimeSec - 1) * 1000;
+      cursor = nextCursor < cursor ? nextCursor : cursor - 1000;
     }
 
-    if (!pageData?.hasMorePrevious || !Number.isFinite(minCreateTimeSec)) {
-      break;
-    }
-
-    const nextCursor = (minCreateTimeSec - 1) * 1000;
-    cursor = nextCursor < cursor ? nextCursor : cursor - 1000;
-  }
-
-  return [...collected.values()]
-    .sort(
+    const sortedList = [...collected.values()].sort(
       (a, b) =>
         b.createTimeSec - a.createTimeSec ||
         compareTikTokVideoIdDesc(a.videoId, b.videoId)
-    )
-    .slice(0, targetCount);
+    );
+    if (sortedList.length > 0) {
+      setBoundedCache(
+        store.creatorVideoListCache,
+        cacheKey,
+        sortedList,
+        20 * 60 * 1000,
+        400
+      );
+    }
+    return sortedList;
+  })();
+
+  store.inFlightCreatorVideoList.set(cacheKey, taskPromise);
+  try {
+    const finalRes = await taskPromise;
+    return finalRes.slice(0, targetCount);
+  } finally {
+    store.inFlightCreatorVideoList.delete(cacheKey);
+  }
 }
 
 /**
