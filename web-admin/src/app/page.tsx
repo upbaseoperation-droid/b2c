@@ -69,6 +69,7 @@ const ContractManagementView = dynamic(() => import('../components/views/Contrac
 const WeeklyAdsReportHubView = dynamic(() => import('../components/views/WeeklyAdsReportHubView').then(m => m.WeeklyAdsReportHubView), { loading: ViewLoading });
 const ApiKeySetupView = dynamic(() => import('../components/views/ApiKeySetupView').then(m => m.ApiKeySetupView), { loading: ViewLoading });
 const CloudflareAdminView = dynamic(() => import('../components/views/CloudflareAdminView').then(m => m.CloudflareAdminView), { loading: ViewLoading });
+const ZaloBotManagerView = dynamic(() => import('../components/views/ZaloBotManagerView').then(m => m.ZaloBotManagerView), { loading: ViewLoading });
 const MarketingKnowledgeQaView = dynamic(() => import('../components/views/MarketingKnowledgeQaView').then(m => m.MarketingKnowledgeQaView), { loading: ViewLoading });
 const TaskDelegationView = dynamic(() => import('../components/views/TaskDelegationView').then(m => m.TaskDelegationView), { loading: ViewLoading });
 const Workload3dMapView = dynamic(() => import('../components/views/Workload3dMapView').then(m => m.Workload3dMapView), { loading: ViewLoading });
@@ -2273,6 +2274,13 @@ export default function App() {
                 }
                 setActiveTab('brand-knowledge');
               }}
+            />
+          </KeepAliveTab>
+
+          <KeepAliveTab tabKey="zalo-bot" currentTab={activeTab}>
+            <ZaloBotManagerView
+              currentUser={currentUser}
+              onNotify={showToast}
             />
           </KeepAliveTab>
 

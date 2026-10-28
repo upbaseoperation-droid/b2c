@@ -29,6 +29,8 @@ import {
   Contact,
   Cloud,
   Wrench,
+  Bot,
+  MessageSquare,
   type LucideIcon,
 } from 'lucide-react';
 import { UserProfile, TabKey } from '../lib/types';
@@ -101,6 +103,7 @@ const NAV = {
 
 /** Màn đặt ở chân menu (cạnh tài khoản) thay vì chiếm một dòng trong danh sách. */
 const FOOTER_ITEMS: NavItem[] = [
+  { key: 'zalo-bot', label: 'Quản lý Zalo Bot', icon: Bot },
   { key: 'work-toolkit', label: 'Bộ công cụ tiện ích', icon: Wrench },
   { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
   { key: 'api-settings', label: 'Cấu hình API', icon: Sliders },

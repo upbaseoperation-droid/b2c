@@ -1762,7 +1762,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'work-toolkit'
+    'work-toolkit',
+    'zalo-bot'
   ],
   MANAGER: [
     'store-air-plan-report',
@@ -1803,7 +1804,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'work-toolkit'
+    'work-toolkit',
+    'zalo-bot'
   ],
   LEADER: [
     'store-air-plan-report',
@@ -1839,7 +1841,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'work-toolkit'
+    'work-toolkit',
+    'zalo-bot'
   ],
   BOOKING_MEMBER: [
     'store-air-plan-report',
@@ -1863,7 +1866,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'work-toolkit'
+    'work-toolkit',
+    'zalo-bot'
   ],
   CONTENT_MEMBER: [
     'cockpit',
@@ -1881,7 +1885,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'work-toolkit'
+    'work-toolkit',
+    'zalo-bot'
   ],
   BRAND_MEMBER: [
     'cockpit',
@@ -1903,7 +1908,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'work-toolkit'
+    'work-toolkit',
+    'zalo-bot'
   ],
   MEMBER: [
     'cockpit',
@@ -1926,21 +1932,25 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'work-toolkit'
+    'work-toolkit',
+    'zalo-bot'
   ],
   LEGAL: [
     'contracts',
-    'work-toolkit'
+    'work-toolkit',
+    'zalo-bot'
   ],
   FINANCE: [
     'store-air-plan-report',
     'contracts',
     'dashboard-finance',
-    'work-toolkit'
+    'work-toolkit',
+    'zalo-bot'
   ],
   SIGN_ADMIN: [
     'contracts',
-    'work-toolkit'
+    'work-toolkit',
+    'zalo-bot'
   ],
   BRAND_PARTNER: [
     'brand-hub',

@@ -45,6 +45,7 @@ export const TAB_LABELS: Record<TabKey, string> = {
   'market-research': 'Nghiên cứu Brand & Đối thủ',
   'store-air-plan-report': 'Báo cáo Kế hoạch & Air Video',
   'work-toolkit': 'Bộ công cụ tiện ích',
+  'zalo-bot': 'Quản lý Zalo Bot',
 };
 
 export interface NavGroupTabItem {

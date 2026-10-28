@@ -26,6 +26,24 @@ export function getDebugEvents() {
   return recentDebugEvents;
 }
 
+export function getAllMappings(): ZaloGroupMapping[] {
+  const map = loadMappings();
+  return Array.from(map.values());
+}
+
+export function setGroupMapping(mapping: ZaloGroupMapping): void {
+  const map = loadMappings();
+  map.set(mapping.groupId, mapping);
+  saveMappings();
+}
+
+export function removeGroupMapping(groupId: string): boolean {
+  const map = loadMappings();
+  const deleted = map.delete(groupId);
+  if (deleted) saveMappings();
+  return deleted;
+}
+
 function loadMappings(): Map<string, ZaloGroupMapping> {
   if (inMemoryMappings.size > 0) return inMemoryMappings;
   try {

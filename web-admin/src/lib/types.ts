@@ -66,7 +66,8 @@ export type TabKey =
   | 'tiktok-crawler'
   | 'market-research'
   | 'store-air-plan-report'
-  | 'work-toolkit';
+  | 'work-toolkit'
+  | 'zalo-bot';
 
 export interface UserProfile {
   id: string;
@@ -3928,6 +3929,8 @@ export interface KocListingItem {
   staffComment?: string;
   brandApprovedAt?: string;
   brandApprovedBy?: string;
+  brandApprovedFee?: number; // Giá net tại thời điểm Brand duyệt
+  brandRepricedAt?: string; // Lúc tăng giá sau khi Brand đã duyệt: chữ "Yes" trên Sheet ghi trước mốc này không còn giá trị
   brandApprovalEvidence?: string; // Bằng chứng Brand duyệt khi không lấy từ Sheet (link tin nhắn / email / ảnh chụp)
   
   // Tiến trình song song 2: KOC Negotiation
