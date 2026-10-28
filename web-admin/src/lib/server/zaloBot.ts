@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { checkSingleLinkServerless } from '../linkAirCheckServer';
 import type { LinkAirResult } from '../linkAirCheck';
+import { inspectLiveTikTokVideoPage } from '../tiktokOpenSourceEngines';
 import { REAL_B2C_69_STORES } from '../realB2cPlanData';
 import { readRecord, upsertRecord } from './sharedRecords';
 
@@ -103,6 +105,23 @@ export interface ZaloAirCheckHistoryItem {
     title: string;
     productUrl: string;
   }>;
+  holdingScreenshotUrl?: string;
+  holdingMomentSec?: number;
+  holdingMomentTimeLabel?: string;
+  holdingMomentQuote?: string;
+  airedAtVn?: string;
+  publishedAt?: string;
+  firstProductAppearanceSec?: number | null;
+  firstProductMentionTimeLabel?: string;
+  firstProductMentionTerm?: string;
+  firstProductMentionQuote?: string;
+  productMentionMoments?: Array<{
+    startSec: number;
+    endSec: number;
+    timeLabel: string;
+    matchedTerm: string;
+    quote: string;
+  }>;
   views: number | null;
   likes: number | null;
   hashtags: string[];
@@ -133,12 +152,17 @@ const AIR_HISTORY_FILE_PATH = path.join(process.cwd(), 'src/data/zalo_air_histor
 const PERMISSIONS_FILE_PATH = path.join(process.cwd(), 'src/data/zalo_user_permissions.json');
 const SECURITY_POLICY_FILE_PATH = path.join(process.cwd(), 'src/data/zalo_security_policy.json');
 
+const IS_SERVERLESS_READONLY = Boolean(process.env.VERCEL);
 const inMemoryMappings = new Map<string, ZaloGroupMapping>();
 const inMemoryAirHistory: ZaloAirCheckHistoryItem[] = [];
 const inMemoryPermissions = new Map<string, ZaloUserPermission>();
 const inMemoryDiscoveredSenders = new Map<string, ZaloDiscoveredSender>();
+const inMemoryCapturedFrames = new Map<string, { buffer: Buffer; createdAt: number }>();
+const inMemoryAirCheckCache = new Map<string, { result: LinkAirResult; expiresAt: number }>();
 let inMemorySecurityPolicy: ZaloBotSecurityPolicy | null = null;
 let lastDbHydratedAt = 0;
+let dbHydrationInFlight: Promise<void> | null = null;
+let isFfmpegUnavailable = IS_SERVERLESS_READONLY;
 
 interface ZaloBotPersistedState {
   mappings: Record<string, ZaloGroupMapping>;
@@ -511,16 +535,19 @@ function loadMappings(): Map<string, ZaloGroupMapping> {
 }
 
 function saveMappings(): void {
-  try {
-    const dir = path.dirname(MAPPINGS_FILE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+  if (IS_SERVERLESS_READONLY) return;
+  const arr = Array.from(inMemoryMappings.values());
+  setImmediate(() => {
+    try {
+      const dir = path.dirname(MAPPINGS_FILE_PATH);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(MAPPINGS_FILE_PATH, JSON.stringify(arr, null, 2), 'utf-8');
+    } catch {
+      // Non-fatal on serverless read-only fs
     }
-    const arr = Array.from(inMemoryMappings.values());
-    fs.writeFileSync(MAPPINGS_FILE_PATH, JSON.stringify(arr, null, 2), 'utf-8');
-  } catch {
-    // Non-fatal on serverless read-only fs
-  }
+  });
 }
 
 function loadPermissions(): Map<string, ZaloUserPermission> {
@@ -545,16 +572,19 @@ function loadPermissions(): Map<string, ZaloUserPermission> {
 }
 
 function savePermissions(): void {
-  try {
-    const dir = path.dirname(PERMISSIONS_FILE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+  if (IS_SERVERLESS_READONLY) return;
+  const arr = Array.from(inMemoryPermissions.values());
+  setImmediate(() => {
+    try {
+      const dir = path.dirname(PERMISSIONS_FILE_PATH);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(PERMISSIONS_FILE_PATH, JSON.stringify(arr, null, 2), 'utf-8');
+    } catch {
+      // Ignore read-only errors
     }
-    const arr = Array.from(inMemoryPermissions.values());
-    fs.writeFileSync(PERMISSIONS_FILE_PATH, JSON.stringify(arr, null, 2), 'utf-8');
-  } catch {
-    // Ignore read-only errors
-  }
+  });
 }
 
 function loadAirHistory(): ZaloAirCheckHistoryItem[] {
@@ -574,15 +604,19 @@ function loadAirHistory(): ZaloAirCheckHistoryItem[] {
 }
 
 function saveAirHistory(): void {
-  try {
-    const dir = path.dirname(AIR_HISTORY_FILE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+  if (IS_SERVERLESS_READONLY) return;
+  const snapshot = inMemoryAirHistory.slice(0, 50);
+  setImmediate(() => {
+    try {
+      const dir = path.dirname(AIR_HISTORY_FILE_PATH);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(AIR_HISTORY_FILE_PATH, JSON.stringify(snapshot, null, 2), 'utf-8');
+    } catch {
+      // Non-fatal
     }
-    fs.writeFileSync(AIR_HISTORY_FILE_PATH, JSON.stringify(inMemoryAirHistory.slice(0, 50), null, 2), 'utf-8');
-  } catch {
-    // Non-fatal
-  }
+  });
 }
 
 export function getAllMappings(): ZaloGroupMapping[] {
@@ -595,51 +629,74 @@ export function getAllDiscoveredSenders(): ZaloDiscoveredSender[] {
   );
 }
 
+async function performDbHydration(): Promise<void> {
+  if (dbHydrationInFlight) return dbHydrationInFlight;
+  dbHydrationInFlight = (async () => {
+    try {
+      const rec = await readRecord<ZaloBotPersistedState>(ZALO_BOT_SHARED_KEY, {
+        mappings: {},
+        permissions: {},
+        discoveredSenders: {},
+      });
+      if (rec?.data) {
+        if (rec.data.mappings && typeof rec.data.mappings === 'object') {
+          for (const [gid, item] of Object.entries(rec.data.mappings)) {
+            if (gid && item) {
+              inMemoryMappings.set(gid, item);
+            }
+          }
+        }
+        if (rec.data.permissions && typeof rec.data.permissions === 'object') {
+          for (const [uid, perm] of Object.entries(rec.data.permissions)) {
+            if (uid && perm) {
+              inMemoryPermissions.set(uid, perm);
+            }
+          }
+        }
+        if (rec.data.discoveredSenders && typeof rec.data.discoveredSenders === 'object') {
+          for (const [sid, sender] of Object.entries(rec.data.discoveredSenders)) {
+            if (sid && sender) {
+              inMemoryDiscoveredSenders.set(sid, sender);
+            }
+          }
+        }
+        if (rec.data.securityPolicy) {
+          inMemorySecurityPolicy = { ...DEFAULT_SECURITY_POLICY, ...rec.data.securityPolicy };
+        }
+      }
+      lastDbHydratedAt = Date.now();
+    } catch {
+      // Fallback an toàn trên bộ nhớ trong
+    } finally {
+      dbHydrationInFlight = null;
+    }
+  })();
+  return dbHydrationInFlight;
+}
+
 /**
- * Đồng bộ trạng thái Zalo Bot từ PostgreSQL (AppSharedRecord) để đảm bảo 20 nhân viên
- * thao tác đồng thời trên hàng trăm nhóm KOC không bị ghi đè hoặc mất dữ liệu giữa các Serverless instance.
+ * Đồng bộ trạng thái Zalo Bot từ PostgreSQL (AppSharedRecord) theo cơ chế Stale-While-Revalidate:
+ * - Nếu instance đã có cache trong RAM (< 15s): trả về ngay lập tức trong 0ms.
+ * - Nếu cache đã quá 15s: trả về ngay lập tức từ RAM và làm mới ngầm từ DB.
+ * - Nếu Cold Start lần đầu: giới hạn thời gian chờ DB tối đa 700ms để Bot phản hồi tức thì.
  */
 export async function hydrateZaloBotStateFromDb(): Promise<void> {
-  if (Date.now() - lastDbHydratedAt < 5000) return;
   loadMappings();
   loadPermissions();
   getSecurityPolicy();
-  try {
-    const rec = await readRecord<ZaloBotPersistedState>(ZALO_BOT_SHARED_KEY, {
-      mappings: {},
-      permissions: {},
-      discoveredSenders: {},
-    });
-    if (rec?.data) {
-      if (rec.data.mappings && typeof rec.data.mappings === 'object') {
-        for (const [gid, item] of Object.entries(rec.data.mappings)) {
-          if (gid && item) {
-            inMemoryMappings.set(gid, item);
-          }
-        }
-      }
-      if (rec.data.permissions && typeof rec.data.permissions === 'object') {
-        for (const [uid, perm] of Object.entries(rec.data.permissions)) {
-          if (uid && perm) {
-            inMemoryPermissions.set(uid, perm);
-          }
-        }
-      }
-      if (rec.data.discoveredSenders && typeof rec.data.discoveredSenders === 'object') {
-        for (const [sid, sender] of Object.entries(rec.data.discoveredSenders)) {
-          if (sid && sender) {
-            inMemoryDiscoveredSenders.set(sid, sender);
-          }
-        }
-      }
-      if (rec.data.securityPolicy) {
-        inMemorySecurityPolicy = { ...DEFAULT_SECURITY_POLICY, ...rec.data.securityPolicy };
-      }
+
+  const ageMs = Date.now() - lastDbHydratedAt;
+  if (lastDbHydratedAt > 0) {
+    if (ageMs >= 15000) {
+      void performDbHydration();
     }
-    lastDbHydratedAt = Date.now();
-  } catch {
-    // Fallback an toàn trên bộ nhớ trong
+    return;
   }
+
+  await Promise.race([
+    performDbHydration(),
+    new Promise<void>((resolve) => setTimeout(resolve, 700)),
+  ]);
 }
 
 /**
@@ -851,6 +908,311 @@ export async function sendZaloMessage(chatId: string, text: string): Promise<boo
     console.error('[ZaloBot] Exception khi gửi tin:', err);
     return false;
   }
+}
+
+const FRAME_CAPTURE_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+
+function storeCapturedFrameBuffer(frameId: string, buffer: Buffer): void {
+  if (!frameId || buffer.length < 300) return;
+  if (inMemoryCapturedFrames.size >= 40) {
+    const oldestKey = inMemoryCapturedFrames.keys().next().value;
+    if (oldestKey) inMemoryCapturedFrames.delete(oldestKey);
+  }
+  inMemoryCapturedFrames.set(frameId, { buffer, createdAt: Date.now() });
+}
+
+export function getCachedFrameBuffer(frameId?: string | null): Buffer | null {
+  if (!frameId) return null;
+  const hit = inMemoryCapturedFrames.get(frameId);
+  if (!hit) return null;
+  if (Date.now() - hit.createdAt > 60 * 60 * 1000) {
+    inMemoryCapturedFrames.delete(frameId);
+    return null;
+  }
+  return hit.buffer;
+}
+
+function extractSingleFrameWithFfmpeg(streamUrl: string, sec: number): Promise<Buffer | null> {
+  if (isFfmpegUnavailable) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const safeSec = Math.max(0.5, Math.min(180, Number(sec) || 2.5));
+    const args = [
+      '-hide_banner',
+      '-loglevel',
+      'error',
+      '-ss',
+      safeSec.toFixed(2),
+      '-user_agent',
+      FRAME_CAPTURE_UA,
+      '-headers',
+      'Referer: https://www.tiktok.com/\r\n',
+      '-i',
+      streamUrl,
+      '-frames:v',
+      '1',
+      '-vf',
+      'scale=540:-2',
+      '-q:v',
+      '3',
+      '-f',
+      'image2pipe',
+      '-vcodec',
+      'mjpeg',
+      'pipe:1',
+    ];
+
+    let settled = false;
+    const chunks: Buffer[] = [];
+    let proc: ReturnType<typeof spawn> | null = null;
+
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        try {
+          proc?.kill('SIGKILL');
+        } catch {
+          // ignore
+        }
+        resolve(null);
+      }
+    }, 4500);
+
+    try {
+      proc = spawn('ffmpeg', args, { stdio: ['ignore', 'pipe', 'pipe'] });
+      proc.stdout?.on('data', (chunk: Buffer) => chunks.push(chunk));
+      proc.on('error', (err: any) => {
+        if (err?.code === 'ENOENT') {
+          isFfmpegUnavailable = true;
+        }
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          resolve(null);
+        }
+      });
+      proc.on('close', (code) => {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          if (code === 0 && chunks.length > 0) {
+            const buf = Buffer.concat(chunks);
+            resolve(buf.length > 400 ? buf : null);
+          } else {
+            resolve(null);
+          }
+        }
+      });
+    } catch {
+      isFfmpegUnavailable = true;
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        resolve(null);
+      }
+    }
+  });
+}
+
+/**
+ * Cắt khung hình JPEG tại đúng mốc giây KOC cầm/giới thiệu sản phẩm từ luồng MP4 TikTok,
+ * có nhánh dự phòng tải ảnh khung hình bìa độ phân giải cao khi môi trường Serverless không có ffmpeg.
+ */
+export async function captureTikTokProductFrameBuffer(params: {
+  videoUrl: string;
+  playableUrl?: string | null;
+  coverUrl?: string | null;
+  captureSec: number;
+  frameId?: string | null;
+}): Promise<{
+  buffer: Buffer | null;
+  source: 'FFMPEG_FRAME' | 'TIKTOK_COVER' | 'NONE';
+  resolvedCoverUrl?: string;
+}> {
+  if (params.frameId) {
+    const cached = getCachedFrameBuffer(params.frameId);
+    if (cached) {
+      return {
+        buffer: cached,
+        source: 'FFMPEG_FRAME',
+        resolvedCoverUrl: params.coverUrl || undefined,
+      };
+    }
+  }
+
+  let streamUrl = params.playableUrl || null;
+  let coverUrl = params.coverUrl || null;
+
+  // Bổ sung luồng MP4 H.264 và ảnh cover JPEG từ TikWM hoặc trang SSR nếu chưa có sẵn
+  if (!streamUrl || !coverUrl) {
+    try {
+      const tikwmRes = await fetch(
+        `https://www.tikwm.com/api/?url=${encodeURIComponent(params.videoUrl)}&hd=1`,
+        {
+          headers: {
+            'User-Agent': FRAME_CAPTURE_UA,
+            Accept: 'application/json',
+          },
+          signal: AbortSignal.timeout(4500),
+          cache: 'no-store',
+        }
+      );
+      if (tikwmRes.ok) {
+        const tikwmJson = await tikwmRes.json();
+        const data = tikwmJson?.data;
+        if (data) {
+          if (!streamUrl && typeof data.play === 'string' && data.play.startsWith('http')) {
+            streamUrl = data.play;
+          } else if (!streamUrl && typeof data.wmplay === 'string' && data.wmplay.startsWith('http')) {
+            streamUrl = data.wmplay;
+          }
+          const tikwmCover =
+            typeof data.origin_cover === 'string' && data.origin_cover.startsWith('http')
+              ? data.origin_cover
+              : typeof data.cover === 'string' && data.cover.startsWith('http')
+                ? data.cover
+                : null;
+          if (!coverUrl && tikwmCover) {
+            coverUrl = tikwmCover;
+          }
+        }
+      }
+    } catch {
+      // Tiếp tục thử qua inspectLiveTikTokVideoPage
+    }
+  }
+
+  if (!streamUrl || !coverUrl) {
+    try {
+      const inspected = await inspectLiveTikTokVideoPage(params.videoUrl);
+      if (inspected) {
+        if (!streamUrl && inspected.playableUrl) streamUrl = inspected.playableUrl;
+        if (!coverUrl && inspected.coverUrl) coverUrl = inspected.coverUrl;
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  // 1. Thử trích xuất chính xác khung hình tại giây captureSec bằng ffmpeg
+  if (streamUrl) {
+    const ffmpegBuf = await extractSingleFrameWithFfmpeg(streamUrl, params.captureSec);
+    if (ffmpegBuf && ffmpegBuf.length > 400) {
+      if (params.frameId) {
+        storeCapturedFrameBuffer(params.frameId, ffmpegBuf);
+      }
+      return {
+        buffer: ffmpegBuf,
+        source: 'FFMPEG_FRAME',
+        resolvedCoverUrl: coverUrl || undefined,
+      };
+    }
+  }
+
+  // 2. Nhánh dự phòng Zero-Crash trên Serverless: tải ảnh khung hình JPEG từ coverUrl
+  if (coverUrl) {
+    try {
+      const imgRes = await fetch(coverUrl, {
+        headers: {
+          'User-Agent': FRAME_CAPTURE_UA,
+          Accept: 'image/jpeg,image/png,image/*;q=0.8',
+          Referer: 'https://www.tiktok.com/',
+        },
+        signal: AbortSignal.timeout(4500),
+        cache: 'no-store',
+      });
+      if (imgRes.ok) {
+        const arrBuf = await imgRes.arrayBuffer();
+        const buf = Buffer.from(arrBuf);
+        if (buf.length > 400) {
+          if (params.frameId) {
+            storeCapturedFrameBuffer(params.frameId, buf);
+          }
+          return {
+            buffer: buf,
+            source: 'TIKTOK_COVER',
+            resolvedCoverUrl: coverUrl,
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return { buffer: null, source: 'NONE', resolvedCoverUrl: coverUrl || undefined };
+}
+
+export function buildPublicZaloFrameUrl(params: {
+  frameId: string;
+  videoUrl: string;
+  captureSec: number;
+  coverUrl?: string | null;
+  relativeOnly?: boolean;
+}): string {
+  const qs = new URLSearchParams({
+    frame: '1',
+    frameId: params.frameId,
+    videoUrl: params.videoUrl,
+    sec: String(params.captureSec),
+  });
+  if (params.coverUrl) {
+    qs.set('coverUrl', params.coverUrl);
+  }
+  const pathWithQuery = `/api/integrations/zalo-bot/webhook?${qs.toString()}`;
+  if (params.relativeOnly) return pathWithQuery;
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://b2c-theta.vercel.app').replace(
+    /\/+$/,
+    ''
+  );
+  return `${baseUrl}${pathWithQuery}`;
+}
+
+/**
+ * Gửi ảnh chụp nghiệm thu vào nhóm Zalo qua Zalo Bot Platform API (sendPhoto)
+ */
+export async function sendZaloPhoto(
+  chatId: string,
+  photoUrl: string,
+  caption?: string,
+  fallbackPhotoUrl?: string
+): Promise<boolean> {
+  const token = getZaloBotToken();
+  if (!token || !photoUrl) return false;
+
+  const trySendSinglePhoto = async (targetPhotoUrl: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`https://bot-api.zaloplatforms.com/bot${token}/sendPhoto`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          photo: targetPhotoUrl,
+          ...(caption ? { caption } : {}),
+        }),
+        cache: 'no-store',
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.ok === false) {
+        console.warn('[ZaloBot] sendPhoto không thành công với URL:', targetPhotoUrl, data);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('[ZaloBot] Exception khi gửi ảnh:', err);
+      return false;
+    }
+  };
+
+  const sentPrimary = await trySendSinglePhoto(photoUrl);
+  if (sentPrimary) return true;
+
+  if (fallbackPhotoUrl && fallbackPhotoUrl !== photoUrl && /^https?:\/\//i.test(fallbackPhotoUrl)) {
+    return trySendSinglePhoto(fallbackPhotoUrl);
+  }
+  return false;
 }
 
 const TIKTOK_URL_REGEX = /(https?:\/\/(?:vt\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s]+)/i;
@@ -1246,7 +1608,15 @@ export function buildGroupSummaryMessage(
 export async function processZaloWebhookEvent(
   body: any,
   options?: { skipSendToZalo?: boolean; overrideGroupRole?: ZaloGroupRole }
-): Promise<{ handled: boolean; reply?: string; extractedChatId?: string }> {
+): Promise<{
+  handled: boolean;
+  reply?: string;
+  extractedChatId?: string;
+  holdingScreenshotUrl?: string;
+  holdingMomentSec?: number;
+  holdingMomentTimeLabel?: string;
+  holdingMomentQuote?: string;
+}> {
   const message = body?.result?.message || body?.message || body;
   const chatId = String(
     message?.chat?.id ||
@@ -1395,18 +1765,37 @@ export async function processZaloWebhookEvent(
   const linkMatch = rawText.match(TIKTOK_URL_REGEX);
   if (linkMatch) {
     const videoUrl = linkMatch[1];
-    if (shouldSend) {
-      await sendZaloMessage(
-        chatId,
-        `⏳ Đang quét dữ liệu nghiệm thu video TikTok: ${videoUrl}\nVui lòng chờ trong giây lát...`
-      );
-    }
+    const cacheKey = `${videoUrl}|${(currentMapping?.requiredHashtags || []).join(',')}|${currentMapping?.expectedProductUrl || ''}`;
+    const cachedAir = inMemoryAirCheckCache.get(cacheKey);
+    const hasFreshCache = Boolean(cachedAir && cachedAir.expiresAt > Date.now());
+
+    // Bắn thông báo "Đang quét..." song song với luồng cào dữ liệu (nếu chưa có trong RAM cache) để tiết kiệm 400-600ms
+    const notifyPendingPromise =
+      shouldSend && !hasFreshCache
+        ? sendZaloMessage(
+            chatId,
+            `⏳ Đang quét dữ liệu nghiệm thu video TikTok: ${videoUrl}\nVui lòng chờ trong giây lát...`
+          ).catch(() => false)
+        : Promise.resolve(true);
 
     try {
-      const checkResult: LinkAirResult = await checkSingleLinkServerless(videoUrl, {
-        requiredHashtags: currentMapping?.requiredHashtags,
-        expectedProductUrl: currentMapping?.expectedProductUrl,
-      });
+      const checkResult: LinkAirResult = hasFreshCache
+        ? cachedAir!.result
+        : await checkSingleLinkServerless(videoUrl, {
+            requiredHashtags: currentMapping?.requiredHashtags,
+            expectedProductUrl: currentMapping?.expectedProductUrl,
+          });
+
+      if (!hasFreshCache && checkResult.status === 'LIVE') {
+        if (inMemoryAirCheckCache.size >= 100) {
+          const oldest = inMemoryAirCheckCache.keys().next().value;
+          if (oldest) inMemoryAirCheckCache.delete(oldest);
+        }
+        inMemoryAirCheckCache.set(cacheKey, {
+          result: checkResult,
+          expiresAt: Date.now() + 3 * 60 * 1000,
+        });
+      }
 
       const isPass = checkResult.verdict === 'PASS';
       const isReview = checkResult.verdict === 'REVIEW';
@@ -1461,6 +1850,33 @@ export async function processZaloWebhookEvent(
               )
           : [];
 
+      const captureSec = Number(
+        (
+          checkResult.bestHoldingMomentSec ??
+          (checkResult.firstProductAppearanceSec !== null &&
+          checkResult.firstProductAppearanceSec !== undefined
+            ? checkResult.firstProductAppearanceSec + 1.5
+            : 3.5)
+        ).toFixed(1)
+      );
+      const holdingTimeLabel =
+        checkResult.bestHoldingMomentTimeLabel ||
+        checkResult.firstProductMentionTimeLabel ||
+        '00:02 - 00:05';
+      const holdingQuote =
+        checkResult.bestHoldingMomentQuote || checkResult.firstProductMentionQuote || null;
+      const targetCanonicalVideoUrl = checkResult.canonicalUrl || videoUrl;
+      const frameId = `FRM-${checkResult.contentId || Date.now()}-${Math.round(captureSec * 10)}`;
+      const initialCoverUrl = checkResult.coverUrl || undefined;
+
+      const webRelativePhotoUrl = buildPublicZaloFrameUrl({
+        frameId,
+        videoUrl: targetCanonicalVideoUrl,
+        captureSec,
+        coverUrl: initialCoverUrl,
+        relativeOnly: true,
+      });
+
       // Cập nhật trạng thái Deal nếu nhóm đã liên kết và kết quả PASS
       if (currentMapping && isPass) {
         currentMapping.dealStatus = 'ĐÃ_NGHIỆM_THU_AIR';
@@ -1470,7 +1886,90 @@ export async function processZaloWebhookEvent(
         saveMappings();
       }
 
-      // Lưu vào lịch sử nghiệm thu trên Web Manager
+      const airedAtText =
+        checkResult.airedAtVn ||
+        (checkResult.publishedAt && /^\d{4}-\d{2}-\d{2}/.test(checkResult.publishedAt)
+          ? checkResult.publishedAt.slice(0, 10).split('-').reverse().join('/')
+          : 'Chưa xác định');
+
+      const mentionMoments = checkResult.productMentionMoments || [];
+      const firstMentionSec =
+        checkResult.firstProductAppearanceSec !== null &&
+        checkResult.firstProductAppearanceSec !== undefined
+          ? checkResult.firstProductAppearanceSec
+          : mentionMoments[0]?.startSec ?? null;
+      const firstMentionLabel =
+        checkResult.firstProductMentionTimeLabel || mentionMoments[0]?.timeLabel || undefined;
+      const firstMentionTerm =
+        checkResult.firstProductMentionTerm || mentionMoments[0]?.matchedTerm || undefined;
+      const firstMentionQuote =
+        checkResult.firstProductMentionQuote || mentionMoments[0]?.quote || undefined;
+
+      const productMentionLine =
+        firstMentionSec !== null
+          ? `• Thời gian KOC nhắc SP: Lần đầu ở giây ${firstMentionSec}s (${
+              firstMentionLabel || '—'
+            })${firstMentionTerm ? ` — Từ khóa "${firstMentionTerm}"` : ''}${
+              mentionMoments.length > 1
+                ? ` | Tổng ${mentionMoments.length} lần nhắc tại: ${mentionMoments
+                    .slice(0, 5)
+                    .map((m) => `${m.timeLabel} (${m.startSec}s)`)
+                    .join(', ')}`
+                : ''
+            }`
+          : `• Thời gian KOC nhắc SP: Chưa phát hiện lời thoại nhắc tên SP trong phụ đề tự động`;
+
+      const resultMsg = [
+        `📊 KẾT QUẢ NGHIỆM THU VIDEO TIKTOK`,
+        `----------------------------------------`,
+        `• Đánh giá: ${statusIcon}`,
+        `• Tác giả kênh: @${checkResult.author?.handle || 'Chưa rõ'}`,
+        `• Ngày giờ lên sóng (Air): ${airedAtText}${airedAtText.includes(':') ? ' (Giờ VN)' : ''}`,
+        `• Tình trạng: ${checkResult.status === 'LIVE' ? 'Đang công khai (Live/Air)' : checkResult.status}`,
+        `• Giỏ hàng: ${cartText}`,
+        ...productLinkLines,
+        productMentionLine,
+        `• Khoảnh khắc KOC cầm SP (cắt ảnh): Giây ${captureSec}s (${holdingTimeLabel})${
+          holdingQuote ? ` — "${holdingQuote.slice(0, 75)}"` : ''
+        }`,
+        `• Lượt xem: ${checkResult.metrics?.views ? checkResult.metrics.views.toLocaleString('vi-VN') : '—'}`,
+        `• Lượt thích: ${checkResult.metrics?.likes ? checkResult.metrics.likes.toLocaleString('vi-VN') : '—'}`,
+        `• Hashtags: ${
+          checkResult.hashtags && checkResult.hashtags.length > 0
+            ? checkResult.hashtags.map((h) => `#${h.replace(/^#+/, '')}`).join(' ')
+            : '—'
+        }`,
+        `----------------------------------------`,
+        currentMapping
+          ? `✅ Đã đồng bộ kết quả vào Deal [${currentMapping.dealCode}] (${currentMapping.brandName || 'B2C'}) — Trạng thái: ${currentMapping.dealStatus}`
+          : `💡 Mẹo: Gõ /link <MÃ_DEAL> để tự động lưu kết quả nghiệm thu vào hồ sơ Deal trên web-admin.`,
+      ].join('\n');
+
+      // GỬI KẾT QUẢ VĂN BẢN NGAY LẬP TỨC (không chờ cắt frame / tải ảnh để phản hồi nhanh gấp 3-5 lần)
+      await notifyPendingPromise;
+      await replyToChat(resultMsg);
+
+      // Sau khi người dùng đã nhận báo cáo chữ trên Zalo, tiến hành xử lý ảnh frame & ghi lịch sử
+      let resolvedCoverUrl = initialCoverUrl;
+      if (!isFfmpegUnavailable || !resolvedCoverUrl) {
+        const capturedFrame = await captureTikTokProductFrameBuffer({
+          videoUrl: targetCanonicalVideoUrl,
+          playableUrl: checkResult.playableUrl,
+          coverUrl: checkResult.coverUrl,
+          captureSec,
+          frameId,
+        });
+        resolvedCoverUrl = capturedFrame.resolvedCoverUrl || initialCoverUrl;
+      }
+
+      const publicZaloPhotoUrl = buildPublicZaloFrameUrl({
+        frameId,
+        videoUrl: targetCanonicalVideoUrl,
+        captureSec,
+        coverUrl: resolvedCoverUrl,
+        relativeOnly: false,
+      });
+
       recordAirCheckHistory({
         id: `AIR-${Date.now()}`,
         checkedAt: new Date().toISOString(),
@@ -1486,35 +1985,52 @@ export async function processZaloWebhookEvent(
         productUrl: primaryProd?.productUrl || checkResult.productUrl || undefined,
         productId: primaryProd?.productId || checkResult.productId || undefined,
         cartProducts: normalizedCartProducts.length > 0 ? normalizedCartProducts : undefined,
+        holdingScreenshotUrl: webRelativePhotoUrl,
+        holdingMomentSec: captureSec,
+        holdingMomentTimeLabel: holdingTimeLabel,
+        holdingMomentQuote: holdingQuote || undefined,
+        airedAtVn: airedAtText !== 'Chưa xác định' ? airedAtText : undefined,
+        publishedAt: checkResult.publishedAt || undefined,
+        firstProductAppearanceSec: firstMentionSec,
+        firstProductMentionTimeLabel: firstMentionLabel,
+        firstProductMentionTerm: firstMentionTerm,
+        firstProductMentionQuote: firstMentionQuote,
+        productMentionMoments: mentionMoments.length > 0 ? mentionMoments : undefined,
         views: checkResult.metrics?.views ?? null,
         likes: checkResult.metrics?.likes ?? null,
         hashtags: checkResult.hashtags || [],
         sentToZalo: shouldSend,
       });
 
-      const resultMsg = [
-        `📊 KẾT QUẢ NGHIỆM THU VIDEO TIKTOK`,
-        `----------------------------------------`,
-        `• Đánh giá: ${statusIcon}`,
-        `• Tác giả kênh: @${checkResult.author?.handle || 'Chưa rõ'}`,
-        `• Tình trạng: ${checkResult.status === 'LIVE' ? 'Đang công khai (Live/Air)' : checkResult.status}`,
-        `• Giỏ hàng: ${cartText}`,
-        ...productLinkLines,
-        `• Lượt xem: ${checkResult.metrics?.views ? checkResult.metrics.views.toLocaleString('vi-VN') : '—'}`,
-        `• Lượt thích: ${checkResult.metrics?.likes ? checkResult.metrics.likes.toLocaleString('vi-VN') : '—'}`,
-        `• Hashtags: ${
-          checkResult.hashtags && checkResult.hashtags.length > 0
-            ? checkResult.hashtags.map((h) => `#${h.replace(/^#+/, '')}`).join(' ')
-            : '—'
-        }`,
-        `----------------------------------------`,
-        currentMapping
-          ? `✅ Đã đồng bộ kết quả vào Deal [${currentMapping.dealCode}] (${currentMapping.brandName || 'B2C'}) — Trạng thái: ${currentMapping.dealStatus}`
-          : `💡 Mẹo: Gõ /link <MÃ_DEAL> để tự động lưu kết quả nghiệm thu vào hồ sơ Deal trên web-admin.`,
-      ].join('\n');
+      if (shouldSend) {
+        const photoCaption = [
+          `📸 Ảnh chụp KOC @${checkResult.author?.handle || 'koc'} cầm sản phẩm ở giây ${captureSec}s (${holdingTimeLabel})`,
+          `📅 Ngày giờ Air: ${airedAtText}${
+            firstMentionSec !== null ? ` | ⏱️ Nhắc SP lần đầu: Giây ${firstMentionSec}s` : ''
+          }`,
+          primaryProd?.title ? `🛒 SP: ${primaryProd.title}` : '',
+          holdingQuote ? `💬 Lời thoại: "${holdingQuote.slice(0, 90)}"` : '',
+        ]
+          .filter(Boolean)
+          .join('\n');
 
-      await replyToChat(resultMsg);
-      return { handled: true, reply: resultMsg, extractedChatId: chatId };
+        await sendZaloPhoto(
+          chatId,
+          publicZaloPhotoUrl,
+          photoCaption,
+          resolvedCoverUrl
+        );
+      }
+
+      return {
+        handled: true,
+        reply: resultMsg,
+        extractedChatId: chatId,
+        holdingScreenshotUrl: webRelativePhotoUrl,
+        holdingMomentSec: captureSec,
+        holdingMomentTimeLabel: holdingTimeLabel,
+        holdingMomentQuote: holdingQuote || undefined,
+      };
     } catch (err: any) {
       const errMsg = `❌ Không thể quét dữ liệu video: ${err?.message || 'Lỗi kết nối'}. Vui lòng kiểm tra lại đường dẫn TikTok.`;
       await replyToChat(errMsg);
