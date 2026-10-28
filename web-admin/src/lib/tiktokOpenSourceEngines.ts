@@ -553,7 +553,20 @@ export function extractTikTokShopAnchorInfo(itemStruct: Record<string, unknown>)
       : []),
   ];
 
-  let hasCartAnchor = Boolean(itemStruct.isECVideo) || Boolean(itemStruct.commerceInfo);
+  const penaltyCtx =
+    itemStruct.penaltyContext && typeof itemStruct.penaltyContext === 'object'
+      ? (itemStruct.penaltyContext as Record<string, unknown>)
+      : null;
+  const musicObj =
+    itemStruct.music && typeof itemStruct.music === 'object'
+      ? (itemStruct.music as Record<string, unknown>)
+      : null;
+  const isCommercialAdVideo =
+    Boolean(itemStruct.isAd) &&
+    (penaltyCtx?.ec_global_verdict === 1 || Boolean(musicObj?.is_commerce_music));
+
+  let hasCartAnchor =
+    Boolean(itemStruct.isECVideo) || Boolean(itemStruct.commerceInfo) || isCommercialAdVideo;
   let cartAnchorTitle: string | undefined;
   const cartProducts: TikTokCartProductItem[] = [];
   const seenKeys = new Set<string>();
@@ -840,6 +853,38 @@ export function extractTikTokShopAnchorInfo(itemStruct: Record<string, unknown>)
         });
       }
     }
+  }
+
+  // Dự phòng cho Video Quảng Cáo Thương Mại TikTok Ads (isAd: true + ec_global_verdict: 1) khi TikTok gắn thẻ mua hàng qua tầng Ads
+  if (cartProducts.length === 0 && isCommercialAdVideo) {
+    const suggestedList = Array.isArray(itemStruct.suggestedWords)
+      ? (itemStruct.suggestedWords as unknown[])
+          .map((w) => String(w || '').trim())
+          .filter(Boolean)
+      : [];
+    const primarySuggested = suggestedList[0] || '';
+    const formattedSuggested = primarySuggested
+      ? primarySuggested
+          .split(/\s+/)
+          .map((w, i) => (i === 0 || w.length >= 4 ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+          .join(' ')
+      : '';
+    const rawDesc = typeof itemStruct.desc === 'string' ? itemStruct.desc.trim() : '';
+    const adTitle = formattedSuggested
+      ? `${formattedSuggested} [Quảng cáo TikTok Shop Ads]`
+      : rawDesc
+      ? `${rawDesc.slice(0, 56)} [Quảng cáo TikTok Shop Ads]`
+      : 'Sản phẩm Quảng cáo TikTok Shop (TikTok Ads)';
+    const searchKeyword = primarySuggested || rawDesc.slice(0, 40) || 'TikTok Shop';
+    const adSearchUrl = `https://www.tiktok.com/search?q=${encodeURIComponent(searchKeyword)}`;
+    cartAnchorTitle = adTitle;
+    pushProduct({
+      productId: String(itemStruct.id || ''),
+      title: adTitle,
+      anchorKeyword: primarySuggested || undefined,
+      productUrl: adSearchUrl,
+      source: 'TikTok Shop Ads',
+    });
   }
 
   const primary = cartProducts[0];
@@ -1306,11 +1351,11 @@ export function parseTikTokItemStructToDetail(itemStruct: Record<string, any> | 
       )
   );
   const rawCoverCandidate =
-    itemStruct.video?.zoomCover?.['720'] ||
-    itemStruct.video?.zoomCover?.['480'] ||
-    itemStruct.video?.cover ||
     itemStruct.video?.originCover ||
-    itemStruct.video?.dynamicCover;
+    itemStruct.video?.cover ||
+    itemStruct.video?.dynamicCover ||
+    itemStruct.video?.zoomCover?.['720'] ||
+    itemStruct.video?.zoomCover?.['480'];
   const coverUrl =
     typeof rawCoverCandidate === 'string' && /^https?:\/\//i.test(rawCoverCandidate)
       ? rawCoverCandidate
@@ -1785,11 +1830,13 @@ export async function inspectLiveTikTokVideoPage(
                     ? d.wmplay
                     : undefined,
               coverUrl:
-                typeof d.origin_cover === 'string' && d.origin_cover.startsWith('http')
-                  ? d.origin_cover
-                  : typeof d.cover === 'string' && d.cover.startsWith('http')
-                    ? d.cover
-                    : undefined,
+                typeof d.ai_dynamic_cover === 'string' && d.ai_dynamic_cover.startsWith('http')
+                  ? d.ai_dynamic_cover
+                  : typeof d.origin_cover === 'string' && d.origin_cover.startsWith('http')
+                    ? d.origin_cover
+                    : typeof d.cover === 'string' && d.cover.startsWith('http')
+                      ? d.cover
+                      : undefined,
               author: {
                 handle,
                 nickname: String(d.author?.nickname || handle),

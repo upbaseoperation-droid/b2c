@@ -881,6 +881,7 @@ export interface VnCartBridgeItem {
   cartAnchorUrl?: string;
   cartProductId?: string;
   cartSellerId?: string;
+  frameJpegBase64?: string;
   updatedAt: string;
 }
 
@@ -1269,7 +1270,7 @@ export async function checkSingleLinkServerless(
     });
 
     const holdingRegex =
-      /(?:cầm|về tay|trên tay|cả bộ|cây đèn|chai này|lọ này|tuýp này|hộp này|em này|như thế này|như này|đây này|bôi|thoa|test)/i;
+      /(?:cầm|về tay|trên tay|cả bộ|cây đèn|chai này|chai màu|lọ này|tuýp này|hộp này|em này|như thế này|như này|đây này|phiên bản mới|phiên bản này|ở nắp|xịt lên|bôi|thoa|test)/i;
     const preferredHoldingMoment =
       mentionDetection.productMentionMoments.find((m) => holdingRegex.test(m.quote)) ||
       mentionDetection.productMentionMoments[0];

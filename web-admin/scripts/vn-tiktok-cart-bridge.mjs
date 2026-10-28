@@ -1,7 +1,13 @@
 import dns from 'node:dns';
 import crypto from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 dns.setServers(['8.8.8.8', '1.1.1.1']);
+const execFileAsync = promisify(execFile);
 
 const WEBHOOK_URL =
   process.env.ZALO_WEBHOOK_URL ||
@@ -110,10 +116,76 @@ function parseCartProductsFromItemStruct(itemStruct) {
     }
   }
 
+  // Dự phòng cho Video Quảng cáo Thương mại TikTok Ads (isAd: true + ec_global_verdict: 1)
+  if (
+    products.length === 0 &&
+    itemStruct?.isAd &&
+    (itemStruct?.penaltyContext?.ec_global_verdict === 1 || itemStruct?.music?.is_commerce_music)
+  ) {
+    const suggested = Array.isArray(itemStruct?.suggestedWords) ? itemStruct.suggestedWords : [];
+    const primaryKw = String(suggested[0] || '').trim();
+    const formattedKw = primaryKw
+      ? primaryKw.charAt(0).toUpperCase() + primaryKw.slice(1)
+      : String(itemStruct?.desc || 'Sản phẩm TikTok Shop Ads').slice(0, 56);
+    products.push({
+      productId: String(itemStruct?.id || ''),
+      title: `${formattedKw} [Quảng cáo TikTok Shop Ads]`,
+      productUrl: `https://www.tiktok.com/search?q=${encodeURIComponent(primaryKw || formattedKw)}`,
+      source: 'TikTok Shop Ads (VN Bridge)',
+    });
+  }
+
   return products;
 }
 
-export async function inspectTikTokCartFromVietnam(videoUrl, fallbackVideoId) {
+async function extractFfmpegFrameBase64(videoUrl, sec = 4.2) {
+  try {
+    const tikwmRes = await fetch(
+      `https://www.tikwm.com/api/?url=${encodeURIComponent(videoUrl)}&hd=1`,
+      { signal: AbortSignal.timeout(4500) }
+    );
+    if (!tikwmRes.ok) return undefined;
+    const j = await tikwmRes.json();
+    const playUrl = j?.data?.play || j?.data?.wmplay;
+    if (!playUrl || !playUrl.startsWith('http')) return undefined;
+    const tmpFile = path.join(os.tmpdir(), `tt_bridge_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`);
+    await execFileAsync(
+      'ffmpeg',
+      [
+        '-hide_banner',
+        '-loglevel',
+        'error',
+        '-ss',
+        String(sec),
+        '-i',
+        playUrl,
+        '-frames:v',
+        '1',
+        '-vf',
+        'scale=540:960:force_original_aspect_ratio=increase,crop=540:960',
+        '-q:v',
+        '4',
+        '-f',
+        'image2',
+        '-y',
+        tmpFile,
+      ],
+      { timeout: 7000 }
+    );
+    const buf = fs.readFileSync(tmpFile);
+    try {
+      fs.unlinkSync(tmpFile);
+    } catch {}
+    if (buf.length > 1000) {
+      return buf.toString('base64');
+    }
+  } catch {
+    // ignore ffmpeg error
+  }
+  return undefined;
+}
+
+export async function inspectTikTokCartFromVietnam(videoUrl, fallbackVideoId, captureSec = 4.2) {
   let cookieHeader =
     Date.now() < wafCookieExpireAt && wafCookieCache
       ? wafCookieCache
@@ -163,6 +235,7 @@ export async function inspectTikTokCartFromVietnam(videoUrl, fallbackVideoId) {
     const videoId = String(itemStruct.id || fallbackVideoId || '').trim();
     const cartProducts = parseCartProductsFromItemStruct(itemStruct);
     const first = cartProducts[0];
+    const frameJpegBase64 = await extractFfmpegFrameBase64(res.url || videoUrl, captureSec);
     return {
       videoId,
       videoUrl: res.url || videoUrl,
@@ -171,13 +244,12 @@ export async function inspectTikTokCartFromVietnam(videoUrl, fallbackVideoId) {
       cartAnchorUrl: first?.productUrl,
       cartProductId: first?.productId,
       cartSellerId: first?.sellerId,
+      frameJpegBase64,
       updatedAt: new Date().toISOString(),
     };
   }
   return null;
 }
-
-const resolvedLocalSet = new Set();
 
 async function pollOnce() {
   try {
@@ -202,12 +274,11 @@ async function pollOnce() {
           return null;
         }
       );
-      if (inspected && inspected.cartProducts.length > 0) {
+      if (inspected && (inspected.cartProducts.length > 0 || inspected.frameJpegBase64)) {
         console.log(
-          `[VN-Bridge] Resolved ${inspected.cartProducts.length} product(s) for ${item.videoId}: ${inspected.cartProductId} - ${inspected.cartAnchorTitle}`
+          `[VN-Bridge] Resolved ${inspected.cartProducts.length} product(s) & frame=${Boolean(inspected.frameJpegBase64)} for ${item.videoId}`
         );
         resolvedItems.push(inspected);
-        resolvedLocalSet.add(item.videoId);
       }
     }
 
@@ -222,24 +293,33 @@ async function pollOnce() {
           vnBridgeResolve: true,
           items: resolvedItems,
         }),
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(8000),
       });
     }
-  } catch (err) {
+  } catch {
     // Ignore transient network errors
   }
 }
 
 async function bootstrap() {
   console.log(`[VN-Bridge] Starting Vietnam TikTok Shop Cart Bridge -> ${WEBHOOK_URL}`);
-  const seed = await inspectTikTokCartFromVietnam(
+  const seeds = [];
+  const seed1 = await inspectTikTokCartFromVietnam(
     'https://www.tiktok.com/@maiphuong_oplung/video/7700246764321803541',
-    '7700246764321803541'
+    '7700246764321803541',
+    4.6
   ).catch(() => null);
-  if (seed && seed.cartProducts.length > 0) {
-    console.log(
-      `[VN-Bridge] Seeded 7700246764321803541 -> ${seed.cartAnchorUrl} (${seed.cartAnchorTitle})`
-    );
+  if (seed1) seeds.push(seed1);
+
+  const seed2 = await inspectTikTokCartFromVietnam(
+    'https://www.tiktok.com/@user1877211117511/video/7699036513912376582',
+    '7699036513912376582',
+    4.2
+  ).catch(() => null);
+  if (seed2) seeds.push(seed2);
+
+  if (seeds.length > 0) {
+    console.log(`[VN-Bridge] Seeded ${seeds.length} videos with cart products + ffmpeg frames`);
     await fetch(WEBHOOK_URL, {
       method: 'POST',
       headers: {
@@ -248,9 +328,9 @@ async function bootstrap() {
       },
       body: JSON.stringify({
         vnBridgeResolve: true,
-        items: [seed],
+        items: seeds,
       }),
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(8000),
     }).catch(() => {});
   }
 
@@ -260,4 +340,6 @@ async function bootstrap() {
   }
 }
 
-bootstrap();
+if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
+  bootstrap();
+}

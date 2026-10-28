@@ -490,6 +490,13 @@ const PRODUCT_CATEGORY_PHRASES = [
   'dầu xả',
   'ủ tóc',
   'xịt dưỡng tóc',
+  'xịt tạo phồng',
+  'xịt tạo kiểu',
+  'xịt lên tóc',
+  'xịt tóc',
+  'tạo phồng',
+  'sáp vuốt tóc',
+  'gôm xịt tóc',
   'sữa tắm',
   'dung dịch vệ sinh',
   'lăn khử mùi',
@@ -695,6 +702,9 @@ const PRODUCT_SHORTHAND_EXPANSIONS: Record<string, string[]> = {
   ntt: ['nước tẩy trang'],
   tdc: ['tẩy da chết', 'tẩy tế bào chết'],
   kda: ['kem dưỡng ẩm'],
+  make: ['mixen', 'make sense'],
+  sense: ['mixen', 'make sense'],
+  makesense: ['mixen', 'make sense'],
 };
 
 /**
@@ -838,20 +848,27 @@ export function detectProductMentionMoments(params: {
     }
   }
 
-  // 3. Cụm danh mục sản phẩm (VD: "kem chống nắng", "sữa rửa mặt", "ốp lưng"...) có xuất hiện trong tên sản phẩm, hashtag không dấu hoặc lời thoại
+  // 3. Cụm danh mục sản phẩm (VD: "kem chống nắng", "sữa rửa mặt", "ốp lưng"...) có xuất hiện trong tên sản phẩm, hashtag không dấu hoặc lời thoại cùng chủ đề
   const foldedAllTitles = foldForMatch(allProductTitles);
+  const titleWordsSet = new Set(
+    foldedAllTitles
+      .split(/\s+/)
+      .filter((w) => w.length >= 3 && !GENERIC_TITLE_STOPWORDS.has(w))
+  );
   const spacelessAllTitles = foldedAllTitles.replace(/\s+/g, '');
   const foldedAllSegments = foldForMatch(segments.map((s) => s.text).join(' '));
   for (const phrase of PRODUCT_CATEGORY_PHRASES) {
     const foldedPhrase = foldForMatch(phrase);
     const spacelessPhrase = foldedPhrase.replace(/\s+/g, '');
+    const phraseWords = foldedPhrase.split(/\s+/).filter((w) => w.length >= 3);
+    const hasTopicOverlap = phraseWords.some((w) => titleWordsSet.has(w));
     if (
       !foldedAllTitles ||
       foldedAllTitles.includes(foldedPhrase) ||
       (spacelessPhrase.length >= 5 && spacelessAllTitles.includes(spacelessPhrase))
     ) {
       addCandidate(phrase, 2);
-    } else if (foldedAllSegments.includes(foldedPhrase)) {
+    } else if (hasTopicOverlap && foldedAllSegments.includes(foldedPhrase)) {
       addCandidate(phrase, 3);
     }
   }

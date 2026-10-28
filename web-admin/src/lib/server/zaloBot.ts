@@ -3,7 +3,11 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import React from 'react';
 import { ImageResponse } from 'next/og';
-import { checkSingleLinkServerless, formatVnDateTimeFromUnixSec } from '../linkAirCheckServer';
+import {
+  checkSingleLinkServerless,
+  formatVnDateTimeFromUnixSec,
+  getVnCartBridgeState,
+} from '../linkAirCheckServer';
 import type { LinkAirResult } from '../linkAirCheck';
 import { getSharedCrawlerStore, inspectLiveTikTokVideoPage } from '../tiktokOpenSourceEngines';
 import { REAL_B2C_69_STORES } from '../realB2cPlanData';
@@ -2270,14 +2274,25 @@ export async function captureTikTokProductFrameBuffer(params: {
 
   let streamUrl = params.playableUrl || null;
   let coverUrl = params.coverUrl || null;
+  const isCroppedCover = (u?: string | null) =>
+    Boolean(u && /zoomcover|:300:400|:360:360/i.test(u));
   const mergedMeta: TikTokFrameOverlayMeta = { ...(params.overlayMeta || {}) };
 
-  if (!streamUrl || !coverUrl || !mergedMeta.kocHandle || !mergedMeta.productTitle || !mergedMeta.avatarUrl) {
+  if (
+    !streamUrl ||
+    !coverUrl ||
+    isCroppedCover(coverUrl) ||
+    !mergedMeta.kocHandle ||
+    !mergedMeta.productTitle ||
+    !mergedMeta.avatarUrl
+  ) {
     try {
       const inspected = await inspectLiveTikTokVideoPage(params.videoUrl);
       if (inspected) {
         if (!streamUrl && inspected.playableUrl) streamUrl = inspected.playableUrl;
-        if (!coverUrl && inspected.coverUrl) coverUrl = inspected.coverUrl;
+        if ((!coverUrl || isCroppedCover(coverUrl)) && inspected.coverUrl) {
+          coverUrl = inspected.coverUrl;
+        }
         if (!mergedMeta.kocHandle && inspected.author?.handle) {
           mergedMeta.kocHandle = inspected.author.handle;
         }
@@ -2329,8 +2344,8 @@ export async function captureTikTokProductFrameBuffer(params: {
     }
   }
 
-  // Bổ sung luồng MP4 H.264 và ảnh cover JPEG từ TikWM nếu chưa có sẵn
-  if (!streamUrl || !coverUrl) {
+  // Bổ sung luồng MP4 H.264 và ảnh cover 9:16 từ TikWM nếu chưa có sẵn
+  if (!streamUrl || !coverUrl || isCroppedCover(coverUrl)) {
     try {
       const tikwmRes = await fetch(
         `https://www.tikwm.com/api/?url=${encodeURIComponent(params.videoUrl)}&hd=1`,
@@ -2353,12 +2368,14 @@ export async function captureTikTokProductFrameBuffer(params: {
             streamUrl = data.wmplay;
           }
           const tikwmCover =
-            typeof data.cover === 'string' && data.cover.startsWith('http')
-              ? data.cover
-              : typeof data.origin_cover === 'string' && data.origin_cover.startsWith('http')
-                ? data.origin_cover
-                : null;
-          if (!coverUrl && tikwmCover) {
+            typeof data.ai_dynamic_cover === 'string' && data.ai_dynamic_cover.startsWith('http')
+              ? data.ai_dynamic_cover
+              : typeof data.cover === 'string' && data.cover.startsWith('http')
+                ? data.cover
+                : typeof data.origin_cover === 'string' && data.origin_cover.startsWith('http')
+                  ? data.origin_cover
+                  : null;
+          if ((!coverUrl || isCroppedCover(coverUrl)) && tikwmCover) {
             coverUrl = tikwmCover;
           }
           if (!mergedMeta.kocHandle && data.author?.unique_id) {
@@ -2374,8 +2391,28 @@ export async function captureTikTokProductFrameBuffer(params: {
   let rawBuffer: Buffer | null = null;
   let rawSource: 'FFMPEG_FRAME' | 'TIKTOK_COVER' | 'NONE' = 'NONE';
 
+  // 0. Kiểm tra nếu Cầu nối IP Việt Nam (vn-tiktok-cart-bridge) đã trích xuất sẵn khung hình ffmpeg tại mốc giây KOC cầm sản phẩm
+  const vidFromUrl =
+    params.videoUrl.match(/\/video\/(\d{15,22})/)?.[1] ||
+    params.frameId?.match(/FRM-(\d{15,22})/)?.[1];
+  if (vidFromUrl) {
+    try {
+      const bridgeState = await getVnCartBridgeState();
+      const bridgeItem = bridgeState.items?.[vidFromUrl];
+      if (bridgeItem?.frameJpegBase64) {
+        const buf = Buffer.from(bridgeItem.frameJpegBase64, 'base64');
+        if (buf.length > 1000) {
+          rawBuffer = buf;
+          rawSource = 'FFMPEG_FRAME';
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   // 1. Thử trích xuất chính xác khung hình tại giây captureSec bằng ffmpeg
-  if (streamUrl) {
+  if (!rawBuffer && streamUrl) {
     let ffmpegBuf = await extractSingleFrameWithFfmpeg(streamUrl, params.captureSec);
     if ((!ffmpegBuf || ffmpegBuf.length <= 400) && !isFfmpegUnavailable) {
       try {
