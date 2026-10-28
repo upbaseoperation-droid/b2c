@@ -2,20 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   getZaloBotSecretToken,
   processZaloWebhookEvent,
+  getDebugEvents,
+  recordDebugEvent,
 } from '@/lib/server/zaloBot';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/integrations/zalo-bot/webhook
- * Health check endpoint để kiểm tra trạng thái hoạt động của Webhook
+ * Health check & Debug inspector endpoint
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const isDebug = req.nextUrl.searchParams.get('debug') === 'true';
+
   return NextResponse.json({
     ok: true,
     status: 'online',
     service: 'Upbase B2C Zalo Bot Webhook',
     timestamp: new Date().toISOString(),
+    ...(isDebug ? { recentEvents: getDebugEvents() } : {}),
   });
 }
 
@@ -33,6 +38,11 @@ export async function POST(req: NextRequest) {
 
     if (configuredSecret && incomingSecret && incomingSecret !== configuredSecret) {
       console.warn('[ZaloBot] Secret token mismatch:', { incomingSecret, configuredSecret });
+      recordDebugEvent({
+        time: new Date().toISOString(),
+        body: null,
+        error: `Secret token mismatch: incoming=${incomingSecret}`,
+      });
       return NextResponse.json({ error: 'UNAUTHORIZED_SECRET_TOKEN' }, { status: 403 });
     }
 
@@ -43,9 +53,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Xử lý sự kiện trong nền
-    // Chạy xử lý bot và luôn trả về 200 OK ngay để tránh Zalo timeout
     void processZaloWebhookEvent(body).catch((err) => {
       console.error('[ZaloBot] Lỗi xử lý event:', err);
+      recordDebugEvent({
+        time: new Date().toISOString(),
+        body,
+        error: `processZaloWebhookEvent error: ${err?.message || err}`,
+      });
     });
 
     return NextResponse.json({ ok: true, message: 'Event received' });
