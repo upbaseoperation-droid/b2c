@@ -17,10 +17,27 @@ export const preferredRegion = ['sin1', 'hkg1'];
 export async function GET(req: NextRequest) {
   const isFrameRequest = req.nextUrl.searchParams.get('frame') === '1';
   if (isFrameRequest) {
-    const frameId = req.nextUrl.searchParams.get('frameId') || undefined;
-    const videoUrl = req.nextUrl.searchParams.get('videoUrl') || '';
-    const sec = Number(req.nextUrl.searchParams.get('sec') || 3.5);
-    const coverUrl = req.nextUrl.searchParams.get('coverUrl') || undefined;
+    const sp = req.nextUrl.searchParams;
+    const frameId = sp.get('frameId') || undefined;
+    const videoUrl = sp.get('videoUrl') || '';
+    const sec = Number(sp.get('sec') || 3.5);
+    const coverUrl = sp.get('coverUrl') || undefined;
+    const viewsRaw = sp.get('views');
+    const msecRaw = sp.get('msec');
+    const tagsRaw = sp.get('tags');
+
+    const overlayMeta = {
+      kocHandle: sp.get('handle') || undefined,
+      kocName: sp.get('name') || undefined,
+      timeLabel: sp.get('tl') || undefined,
+      airedAt: sp.get('air') || undefined,
+      views: viewsRaw ? Number(viewsRaw) : null,
+      productTitle: sp.get('title') || undefined,
+      productId: sp.get('pid') || undefined,
+      hashtags: tagsRaw || undefined,
+      quote: sp.get('quote') || undefined,
+      mentionSec: msecRaw ? Number(msecRaw) : null,
+    };
 
     if (videoUrl || frameId || coverUrl) {
       const captured = await captureTikTokProductFrameBuffer({
@@ -28,12 +45,14 @@ export async function GET(req: NextRequest) {
         coverUrl,
         captureSec: Number.isFinite(sec) ? sec : 3.5,
         frameId,
+        overlayMeta,
       });
       if (captured.buffer && captured.buffer.length > 300) {
+        const isPng = captured.buffer[0] === 0x89 && captured.buffer[1] === 0x50;
         return new NextResponse(new Uint8Array(captured.buffer), {
           status: 200,
           headers: {
-            'Content-Type': 'image/jpeg',
+            'Content-Type': isPng ? 'image/png' : 'image/jpeg',
             'Cache-Control': 'public, max-age=3600, s-maxage=3600',
           },
         });

@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { checkSingleLinkServerless } from '../linkAirCheckServer';
+import React from 'react';
+import { ImageResponse } from 'next/og';
+import { checkSingleLinkServerless, formatVnDateTimeFromUnixSec } from '../linkAirCheckServer';
 import type { LinkAirResult } from '../linkAirCheck';
 import { getSharedCrawlerStore, inspectLiveTikTokVideoPage } from '../tiktokOpenSourceEngines';
 import { REAL_B2C_69_STORES } from '../realB2cPlanData';
@@ -1478,9 +1480,273 @@ function extractSingleFrameWithFfmpeg(streamUrl: string, sec: number): Promise<B
   });
 }
 
+let cachedBeVietnamFont: Buffer | null = null;
+const BE_VIETNAM_FONT_PATH = path.join(process.cwd(), 'src/data/BeVietnamPro-SemiBold.ttf');
+
+async function loadBeVietnamFontBuffer(): Promise<Buffer | null> {
+  if (cachedBeVietnamFont) return cachedBeVietnamFont;
+  try {
+    if (fs.existsSync(BE_VIETNAM_FONT_PATH)) {
+      cachedBeVietnamFont = fs.readFileSync(BE_VIETNAM_FONT_PATH);
+      return cachedBeVietnamFont;
+    }
+  } catch {
+    // fallback to remote
+  }
+  try {
+    const res = await fetch(
+      'https://raw.githubusercontent.com/google/fonts/main/ofl/bevietnampro/BeVietnamPro-SemiBold.ttf',
+      { signal: AbortSignal.timeout(3500) }
+    );
+    if (res.ok) {
+      cachedBeVietnamFont = Buffer.from(await res.arrayBuffer());
+      return cachedBeVietnamFont;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+export interface TikTokFrameOverlayMeta {
+  kocHandle?: string | null;
+  kocName?: string | null;
+  timeLabel?: string | null;
+  airedAt?: string | null;
+  views?: number | string | null;
+  productTitle?: string | null;
+  productId?: string | null;
+  hashtags?: string | null;
+  quote?: string | null;
+  mentionSec?: number | string | null;
+}
+
+async function stampTikTokAcceptanceOverlay(
+  rawFrameBuf: Buffer,
+  captureSec: number,
+  meta: TikTokFrameOverlayMeta
+): Promise<Buffer> {
+  try {
+    const fontBuf = await loadBeVietnamFontBuffer();
+    const isPng = rawFrameBuf[0] === 0x89 && rawFrameBuf[1] === 0x50;
+    const mime = isPng ? 'image/png' : 'image/jpeg';
+    const bgDataUrl = `data:${mime};base64,${rawFrameBuf.toString('base64')}`;
+
+    const cleanHandle = String(meta.kocHandle || 'koc').replace(/^@+/, '');
+    const displayName = meta.kocName && meta.kocName !== cleanHandle ? meta.kocName : '';
+    const topTitle = displayName ? `@${cleanHandle} · ${displayName}` : `@${cleanHandle}`;
+    const secBadgeText = `Giây ${Number(captureSec).toFixed(1)}s${
+      meta.timeLabel ? ` (${meta.timeLabel})` : ''
+    }`;
+    const rawProdTitle = (meta.productTitle || '').trim();
+    const shortProdTitle =
+      rawProdTitle.length > 64 ? `${rawProdTitle.slice(0, 62)}...` : rawProdTitle;
+    const cartLabelText = shortProdTitle
+      ? `${shortProdTitle}${meta.productId ? ` [SP: ${meta.productId}]` : ''}`
+      : '';
+    const subStatsParts: string[] = [];
+    if (meta.airedAt && meta.airedAt !== 'Chưa xác định') {
+      subStatsParts.push(`Air: ${meta.airedAt}`);
+    }
+    if (meta.views !== null && meta.views !== undefined && String(meta.views) !== '') {
+      const viewsFormatted =
+        typeof meta.views === 'number' ? meta.views.toLocaleString('vi-VN') : String(meta.views);
+      subStatsParts.push(`${viewsFormatted} lượt xem`);
+    }
+    const subStatsLine = subStatsParts.join(' · ');
+    const cleanQuote = (meta.quote || '').trim();
+    const shortQuote = cleanQuote.length > 82 ? `${cleanQuote.slice(0, 80)}...` : cleanQuote;
+
+    const el = React.createElement(
+      'div',
+      {
+        style: {
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          width: '540px',
+          height: '960px',
+          position: 'relative',
+          backgroundColor: '#0f172a',
+          color: '#ffffff',
+          fontFamily: fontBuf ? 'BeVietnamPro' : 'sans-serif',
+        },
+      },
+      React.createElement('img', {
+        src: bgDataUrl,
+        width: 540,
+        height: 960,
+        style: {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '540px',
+          height: '960px',
+          objectFit: 'cover',
+        },
+      }),
+      // Thanh tiêu đề trên cùng: Tên kênh + Mốc giây chụp
+      React.createElement(
+        'div',
+        {
+          style: {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '14px 16px',
+            backgroundColor: 'rgba(15, 23, 42, 0.84)',
+            borderBottom: '1px solid rgba(255,255,255,0.18)',
+            width: '540px',
+          },
+        },
+        React.createElement(
+          'div',
+          { style: { display: 'flex', fontSize: '15px', color: '#ffffff' } },
+          topTitle.slice(0, 36)
+        ),
+        React.createElement(
+          'div',
+          {
+            style: {
+              display: 'flex',
+              backgroundColor: '#16a34a',
+              borderRadius: '6px',
+              padding: '4px 10px',
+              fontSize: '13px',
+              color: '#ffffff',
+            },
+          },
+          secBadgeText
+        )
+      ),
+      // Khung giao diện TikTok bên dưới: Giỏ hàng cam + Tên kênh @handle + Ngày giờ Air + Lời thoại
+      React.createElement(
+        'div',
+        {
+          style: {
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '14px 16px 18px 16px',
+            backgroundColor: 'rgba(15, 23, 42, 0.88)',
+            borderTop: '1px solid rgba(255,255,255,0.18)',
+            width: '540px',
+          },
+        },
+        cartLabelText
+          ? React.createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: 'rgba(30, 41, 59, 0.96)',
+                  border: '1.5px solid #f97316',
+                  borderRadius: '8px',
+                  padding: '6px 10px',
+                  marginBottom: '10px',
+                },
+              },
+              React.createElement(
+                'div',
+                {
+                  style: {
+                    display: 'flex',
+                    backgroundColor: '#f97316',
+                    color: '#ffffff',
+                    borderRadius: '5px',
+                    padding: '2px 8px',
+                    fontSize: '12px',
+                    marginRight: '8px',
+                  },
+                },
+                'Giỏ hàng'
+              ),
+              React.createElement(
+                'div',
+                {
+                  style: {
+                    display: 'flex',
+                    fontSize: '13px',
+                    color: '#fed7aa',
+                  },
+                },
+                cartLabelText
+              )
+            )
+          : null,
+        React.createElement(
+          'div',
+          {
+            style: {
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '5px',
+            },
+          },
+          React.createElement(
+            'div',
+            { style: { display: 'flex', fontSize: '20px', color: '#ffffff' } },
+            `@${cleanHandle}`
+          ),
+          subStatsLine
+            ? React.createElement(
+                'div',
+                { style: { display: 'flex', fontSize: '13px', color: '#cbd5e1' } },
+                subStatsLine
+              )
+            : null
+        ),
+        meta.hashtags
+          ? React.createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  fontSize: '12px',
+                  color: '#94a3b8',
+                  marginBottom: shortQuote ? '6px' : '0px',
+                },
+              },
+              String(meta.hashtags).slice(0, 72)
+            )
+          : null,
+        shortQuote
+          ? React.createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  backgroundColor: 'rgba(30, 41, 59, 0.92)',
+                  borderLeft: '3px solid #38bdf8',
+                  padding: '5px 10px',
+                  fontSize: '12px',
+                  color: '#e2e8f0',
+                },
+              },
+              `Lời thoại${meta.mentionSec ? ` (${meta.mentionSec}s)` : ''}: "${shortQuote}"`
+            )
+          : null
+      )
+    );
+
+    const imgRes = new ImageResponse(el, {
+      width: 540,
+      height: 960,
+      ...(fontBuf
+        ? { fonts: [{ name: 'BeVietnamPro', data: fontBuf, style: 'normal', weight: 600 }] }
+        : {}),
+    });
+    const stampedBuf = Buffer.from(await imgRes.arrayBuffer());
+    return stampedBuf.length > 1000 ? stampedBuf : rawFrameBuf;
+  } catch {
+    return rawFrameBuf;
+  }
+}
+
 /**
- * Cắt khung hình JPEG tại đúng mốc giây KOC cầm/giới thiệu sản phẩm từ luồng MP4 TikTok,
- * có nhánh dự phòng tải ảnh khung hình bìa độ phân giải cao khi môi trường Serverless không có ffmpeg.
+ * Cắt khung hình tại đúng mốc giây KOC cầm/giới thiệu sản phẩm từ luồng MP4 TikTok (hoặc ảnh bìa gốc trên Serverless)
+ * và đóng dấu trực tiếp giao diện TikTok (Tên kênh @handle, Hộp giỏ hàng màu cam, Ngày giờ Air, Mốc giây & Lời thoại).
  */
 export async function captureTikTokProductFrameBuffer(params: {
   videoUrl: string;
@@ -1488,6 +1754,7 @@ export async function captureTikTokProductFrameBuffer(params: {
   coverUrl?: string | null;
   captureSec: number;
   frameId?: string | null;
+  overlayMeta?: TikTokFrameOverlayMeta;
 }): Promise<{
   buffer: Buffer | null;
   source: 'FFMPEG_FRAME' | 'TIKTOK_COVER' | 'NONE';
@@ -1506,8 +1773,45 @@ export async function captureTikTokProductFrameBuffer(params: {
 
   let streamUrl = params.playableUrl || null;
   let coverUrl = params.coverUrl || null;
+  const mergedMeta: TikTokFrameOverlayMeta = { ...(params.overlayMeta || {}) };
 
-  // Bổ sung luồng MP4 H.264 và ảnh cover JPEG từ TikWM hoặc trang SSR nếu chưa có sẵn
+  if (!streamUrl || !coverUrl || !mergedMeta.kocHandle || !mergedMeta.productTitle) {
+    try {
+      const inspected = await inspectLiveTikTokVideoPage(params.videoUrl);
+      if (inspected) {
+        if (!streamUrl && inspected.playableUrl) streamUrl = inspected.playableUrl;
+        if (!coverUrl && inspected.coverUrl) coverUrl = inspected.coverUrl;
+        if (!mergedMeta.kocHandle && inspected.author?.handle) {
+          mergedMeta.kocHandle = inspected.author.handle;
+        }
+        if (!mergedMeta.kocName && inspected.author?.nickname) {
+          mergedMeta.kocName = inspected.author.nickname;
+        }
+        if (!mergedMeta.productTitle && inspected.cartAnchorTitle) {
+          mergedMeta.productTitle = inspected.cartAnchorTitle;
+        }
+        if (!mergedMeta.productId && inspected.cartProductId) {
+          mergedMeta.productId = inspected.cartProductId;
+        }
+        if (!mergedMeta.airedAt) {
+          mergedMeta.airedAt = formatVnDateTimeFromUnixSec(
+            inspected.createTimeSec,
+            inspected.publishedAt
+          );
+        }
+        if (mergedMeta.views === undefined && inspected.views) {
+          mergedMeta.views = inspected.views;
+        }
+        if (!mergedMeta.hashtags && inspected.hashtags?.length) {
+          mergedMeta.hashtags = inspected.hashtags.slice(0, 5).join(' ');
+        }
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  // Bổ sung luồng MP4 H.264 và ảnh cover JPEG từ TikWM nếu chưa có sẵn
   if (!streamUrl || !coverUrl) {
     try {
       const tikwmRes = await fetch(
@@ -1531,37 +1835,30 @@ export async function captureTikTokProductFrameBuffer(params: {
             streamUrl = data.wmplay;
           }
           const tikwmCover =
-            typeof data.origin_cover === 'string' && data.origin_cover.startsWith('http')
-              ? data.origin_cover
-              : typeof data.cover === 'string' && data.cover.startsWith('http')
-                ? data.cover
+            typeof data.cover === 'string' && data.cover.startsWith('http')
+              ? data.cover
+              : typeof data.origin_cover === 'string' && data.origin_cover.startsWith('http')
+                ? data.origin_cover
                 : null;
           if (!coverUrl && tikwmCover) {
             coverUrl = tikwmCover;
           }
+          if (!mergedMeta.kocHandle && data.author?.unique_id) {
+            mergedMeta.kocHandle = String(data.author.unique_id);
+          }
         }
       }
     } catch {
-      // Tiếp tục thử qua inspectLiveTikTokVideoPage
+      // ignore
     }
   }
 
-  if (!streamUrl || !coverUrl) {
-    try {
-      const inspected = await inspectLiveTikTokVideoPage(params.videoUrl);
-      if (inspected) {
-        if (!streamUrl && inspected.playableUrl) streamUrl = inspected.playableUrl;
-        if (!coverUrl && inspected.coverUrl) coverUrl = inspected.coverUrl;
-      }
-    } catch {
-      // Non-fatal
-    }
-  }
+  let rawBuffer: Buffer | null = null;
+  let rawSource: 'FFMPEG_FRAME' | 'TIKTOK_COVER' | 'NONE' = 'NONE';
 
   // 1. Thử trích xuất chính xác khung hình tại giây captureSec bằng ffmpeg
   if (streamUrl) {
     let ffmpegBuf = await extractSingleFrameWithFfmpeg(streamUrl, params.captureSec);
-    // Nếu luồng SSR của TikTok yêu cầu cookie riêng làm ffmpeg bị 403, tự động thử luồng MP4 không khóa cookie từ TikWM
     if ((!ffmpegBuf || ffmpegBuf.length <= 400) && !isFfmpegUnavailable) {
       try {
         const tikwmRetry = await fetch(
@@ -1591,19 +1888,13 @@ export async function captureTikTokProductFrameBuffer(params: {
       }
     }
     if (ffmpegBuf && ffmpegBuf.length > 400) {
-      if (params.frameId) {
-        storeCapturedFrameBuffer(params.frameId, ffmpegBuf);
-      }
-      return {
-        buffer: ffmpegBuf,
-        source: 'FFMPEG_FRAME',
-        resolvedCoverUrl: coverUrl || undefined,
-      };
+      rawBuffer = ffmpegBuf;
+      rawSource = 'FFMPEG_FRAME';
     }
   }
 
   // 2. Nhánh dự phòng Zero-Crash trên Serverless: tải ảnh khung hình JPEG từ coverUrl
-  if (coverUrl) {
+  if (!rawBuffer && coverUrl) {
     try {
       const imgRes = await fetch(coverUrl, {
         headers: {
@@ -1618,19 +1909,25 @@ export async function captureTikTokProductFrameBuffer(params: {
         const arrBuf = await imgRes.arrayBuffer();
         const buf = Buffer.from(arrBuf);
         if (buf.length > 400) {
-          if (params.frameId) {
-            storeCapturedFrameBuffer(params.frameId, buf);
-          }
-          return {
-            buffer: buf,
-            source: 'TIKTOK_COVER',
-            resolvedCoverUrl: coverUrl,
-          };
+          rawBuffer = buf;
+          rawSource = 'TIKTOK_COVER';
         }
       }
     } catch {
       // ignore
     }
+  }
+
+  if (rawBuffer) {
+    const finalBuf = await stampTikTokAcceptanceOverlay(rawBuffer, params.captureSec, mergedMeta);
+    if (params.frameId) {
+      storeCapturedFrameBuffer(params.frameId, finalBuf);
+    }
+    return {
+      buffer: finalBuf,
+      source: rawSource,
+      resolvedCoverUrl: coverUrl || undefined,
+    };
   }
 
   return { buffer: null, source: 'NONE', resolvedCoverUrl: coverUrl || undefined };
@@ -1641,6 +1938,7 @@ export function buildPublicZaloFrameUrl(params: {
   videoUrl: string;
   captureSec: number;
   coverUrl?: string | null;
+  overlayMeta?: TikTokFrameOverlayMeta;
   relativeOnly?: boolean;
 }): string {
   const qs = new URLSearchParams({
@@ -1651,6 +1949,20 @@ export function buildPublicZaloFrameUrl(params: {
   });
   if (params.coverUrl) {
     qs.set('coverUrl', params.coverUrl);
+  }
+  if (params.overlayMeta?.kocHandle) qs.set('handle', params.overlayMeta.kocHandle);
+  if (params.overlayMeta?.kocName) qs.set('name', params.overlayMeta.kocName);
+  if (params.overlayMeta?.timeLabel) qs.set('tl', params.overlayMeta.timeLabel);
+  if (params.overlayMeta?.airedAt) qs.set('air', params.overlayMeta.airedAt);
+  if (params.overlayMeta?.views !== undefined && params.overlayMeta?.views !== null) {
+    qs.set('views', String(params.overlayMeta.views));
+  }
+  if (params.overlayMeta?.productTitle) qs.set('title', params.overlayMeta.productTitle.slice(0, 70));
+  if (params.overlayMeta?.productId) qs.set('pid', params.overlayMeta.productId);
+  if (params.overlayMeta?.hashtags) qs.set('tags', params.overlayMeta.hashtags.slice(0, 70));
+  if (params.overlayMeta?.quote) qs.set('quote', params.overlayMeta.quote.slice(0, 85));
+  if (params.overlayMeta?.mentionSec !== undefined && params.overlayMeta?.mentionSec !== null) {
+    qs.set('msec', String(params.overlayMeta.mentionSec));
   }
   const pathWithQuery = `/api/integrations/zalo-bot/webhook?${qs.toString()}`;
   if (params.relativeOnly) return pathWithQuery;
@@ -2557,14 +2869,6 @@ export async function processZaloWebhookEvent(
       const frameId = `FRM-${checkResult.contentId || Date.now()}-${Math.round(captureSec * 10)}`;
       const initialCoverUrl = checkResult.coverUrl || undefined;
 
-      const webRelativePhotoUrl = buildPublicZaloFrameUrl({
-        frameId,
-        videoUrl: targetCanonicalVideoUrl,
-        captureSec,
-        coverUrl: initialCoverUrl,
-        relativeOnly: true,
-      });
-
       // Cập nhật trạng thái Deal nếu nhóm đã liên kết và kết quả PASS
       if (currentMapping?.dealCode && isPass) {
         currentMapping.dealStatus = 'ĐÃ_NGHIỆM_THU_AIR';
@@ -2592,6 +2896,31 @@ export async function processZaloWebhookEvent(
         checkResult.firstProductMentionTerm || mentionMoments[0]?.matchedTerm || undefined;
       const firstMentionQuote =
         checkResult.firstProductMentionQuote || mentionMoments[0]?.quote || undefined;
+
+      const overlayMeta: TikTokFrameOverlayMeta = {
+        kocHandle: checkResult.author?.handle || currentMapping?.kocHandle || undefined,
+        kocName: checkResult.author?.name || undefined,
+        timeLabel: holdingTimeLabel,
+        airedAt: airedAtText !== 'Chưa xác định' ? airedAtText : undefined,
+        views: checkResult.metrics?.views ?? null,
+        productTitle: primaryProd?.title || checkResult.productTitle || undefined,
+        productId: primaryProd?.productId || checkResult.productId || undefined,
+        hashtags:
+          checkResult.hashtags && checkResult.hashtags.length > 0
+            ? checkResult.hashtags.map((h) => `#${h.replace(/^#+/, '')}`).join(' ')
+            : undefined,
+        quote: holdingQuote || firstMentionQuote || undefined,
+        mentionSec: firstMentionSec,
+      };
+
+      const webRelativePhotoUrl = buildPublicZaloFrameUrl({
+        frameId,
+        videoUrl: targetCanonicalVideoUrl,
+        captureSec,
+        coverUrl: initialCoverUrl,
+        relativeOnly: true,
+        overlayMeta,
+      });
 
       const productMentionLine =
         firstMentionSec !== null
@@ -2653,15 +2982,16 @@ export async function processZaloWebhookEvent(
       await notifyPendingPromise;
       await replyToChat(resultMsg, webRelativePhotoUrl);
 
-      // Sau khi người dùng đã nhận báo cáo chữ trên Zalo, tiến hành xử lý ảnh frame & ghi lịch sử
+      // Sau khi người dùng đã nhận báo cáo chữ trên Zalo, tiến hành xử lý ảnh frame (kèm đóng dấu giao diện kênh TikTok) & ghi lịch sử
       let resolvedCoverUrl = initialCoverUrl;
-      if (!isFfmpegUnavailable || !resolvedCoverUrl) {
+      if (checkResult.status === 'LIVE') {
         const capturedFrame = await captureTikTokProductFrameBuffer({
           videoUrl: targetCanonicalVideoUrl,
           playableUrl: checkResult.playableUrl,
           coverUrl: checkResult.coverUrl,
           captureSec,
           frameId,
+          overlayMeta,
         });
         resolvedCoverUrl = capturedFrame.resolvedCoverUrl || initialCoverUrl;
       }
@@ -2672,6 +3002,7 @@ export async function processZaloWebhookEvent(
         captureSec,
         coverUrl: resolvedCoverUrl,
         relativeOnly: false,
+        overlayMeta,
       });
 
       recordAirCheckHistory({
