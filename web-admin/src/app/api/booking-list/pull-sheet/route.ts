@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { assertPlanIdAccess } from '@/lib/server/monthlyPlanStore';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
-import { ensureServiceAccountLoaded, GoogleSheetsError, parseSpreadsheetId, readTab } from '@/lib/server/googleSheets';
+import { ensureServiceAccountLoaded, GoogleSheetsError, parseSpreadsheetGid, parseSpreadsheetId, readTab } from '@/lib/server/googleSheets';
 import { applyBrandDecision, columnOf, createListingItem, moveItem, parseBrandDecision, type BrandDecision } from '@/lib/listingBoardRules';
 import { klFromFee, KL_TIERS, type KlCode } from '@/lib/klTiers';
 import { INITIAL_KOCS } from '@/lib/mockData';
@@ -129,7 +129,11 @@ export async function POST(request: NextRequest) {
     }
     const plan = await assertPlanIdAccess(planId, actor, 'write').catch(() => null);
 
-    const { header, rows } = await readTab({ spreadsheetId, tab });
+    const { header, rows } = await readTab({
+      spreadsheetId,
+      tab,
+      sheetGid: parseSpreadsheetGid(body.sheetUrl || ''),
+    });
     const col = (...names: string[]) => header.find(h => names.some(n => normHeader(h) === normHeader(n)));
     const keyCol = col('ID kênh', 'ID Kênh TikTok', 'TikTok ID', 'Handle', 'Kênh KOC');
     const decisionCol = col('Brand duyệt', 'Brand chọn', 'Kết quả Brand', 'Duyệt');

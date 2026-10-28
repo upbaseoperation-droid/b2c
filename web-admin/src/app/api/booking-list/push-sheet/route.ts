@@ -7,6 +7,7 @@ import {
   ensureServiceAccountLoaded,
   GoogleSheetsError,
   listSpreadsheetTabs,
+  parseSpreadsheetGid,
   parseSpreadsheetId,
   saveServiceAccountConfig,
   type SheetColumnPresetMode,
@@ -47,6 +48,9 @@ export async function GET(request: NextRequest) {
     }
     try {
       const info = await listSpreadsheetTabs(spreadsheetId);
+      const gid = parseSpreadsheetGid(sheetUrl);
+      const matchedTabByGid =
+        gid !== null ? info.tabsDetail.find(t => t.sheetId === gid)?.title || null : null;
       return NextResponse.json({
         configured: sa.configured,
         serviceAccountEmail: sa.configured ? sa.email : null,
@@ -54,6 +58,7 @@ export async function GET(request: NextRequest) {
         spreadsheetTitle: info.spreadsheetTitle,
         tabs: info.tabs,
         tabsDetail: info.tabsDetail,
+        matchedTabByGid,
       });
     } catch (err) {
       if (err instanceof GoogleSheetsError) {
@@ -211,6 +216,7 @@ export async function POST(request: NextRequest) {
     const result = await appendNewRows({
       spreadsheetId,
       tab: (body.tab || body.tabName || '').trim(),
+      sheetGid: parseSpreadsheetGid(body.sheetUrl || ''),
       columns,
       rows: cellRows,
       keyColumn: resolvedKeyCol,

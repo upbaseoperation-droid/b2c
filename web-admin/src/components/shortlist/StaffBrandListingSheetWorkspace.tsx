@@ -1590,6 +1590,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         configured?: boolean;
         tabs?: string[];
         tabsDetail?: SheetTabDetailItem[];
+        matchedTabByGid?: string | null;
         error?: string;
       } | null;
       if (data?.configured === false) {
@@ -1603,6 +1604,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             configured?: boolean;
             tabs?: string[];
             tabsDetail?: SheetTabDetailItem[];
+            matchedTabByGid?: string | null;
             error?: string;
           } | null;
         }
@@ -1613,7 +1615,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           setSheetTabsDetail(data.tabsDetail);
         }
         if (data.tabs.length > 0 && (!currentTab || !data.tabs.includes(currentTab))) {
-          onPickTab(data.tabs[0]);
+          onPickTab(data.matchedTabByGid || data.tabs[0]);
         }
       } else if (data?.error) {
         onNotify?.(data.error, 'warning');

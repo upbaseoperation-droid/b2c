@@ -158,6 +158,14 @@ export function parseSpreadsheetId(url: string): string | null {
   return null;
 }
 
+export function parseSpreadsheetGid(url: string): number | null {
+  const trimmed = (url || '').trim();
+  const m = trimmed.match(/[?#&]gid=(\d+)/i);
+  if (!m) return null;
+  const num = Number(m[1]);
+  return Number.isFinite(num) && num >= 0 ? num : null;
+}
+
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
 const b64url = (v: string | Buffer) => Buffer.from(v).toString('base64url');
@@ -384,12 +392,14 @@ const UPDATABLE_COLUMNS = new Set([
 export async function appendNewRows(opts: {
   spreadsheetId: string;
   tab: string;
+  sheetGid?: number | null;
   columns: string[];
   rows: (string | number)[][];
   keyColumn: string;
   dryRun?: boolean;
 }): Promise<AppendResult> {
-  const { spreadsheetId, tab, columns, rows, keyColumn, dryRun = false } = opts;
+  const { spreadsheetId, sheetGid, columns, rows, keyColumn, dryRun = false } = opts;
+  let tab = opts.tab;
   if (!tab.trim() || tab.length > 100) throw new GoogleSheetsError('Tên tab không hợp lệ.', 'INVALID', 400);
   const keyIdx = columns.indexOf(keyColumn);
   if (keyIdx < 0) throw new GoogleSheetsError('Thiếu cột khóa ID kênh.', 'INVALID', 400);
@@ -411,6 +421,13 @@ export async function appendNewRows(opts: {
     }[];
   };
   let targetSheetProp = (meta.sheets || []).find(s => s.properties.title === tab)?.properties;
+  if (!targetSheetProp && sheetGid !== undefined && sheetGid !== null) {
+    const byGid = (meta.sheets || []).find(s => s.properties.sheetId === sheetGid)?.properties;
+    if (byGid?.title) {
+      targetSheetProp = byGid;
+      tab = byGid.title;
+    }
+  }
   const exists = Boolean(targetSheetProp);
   if (!exists && !dryRun) {
     const addRes = (await sheetsFetch(`${spreadsheetId}:batchUpdate`, {
@@ -788,11 +805,27 @@ export async function listSpreadsheetTabs(spreadsheetId: string): Promise<{
  * Đọc toàn bộ một tab: tự động dò dòng tiêu đề cột trong 10 dòng đầu tiên.
  * Trả về mảng đối tượng theo tên cột (bao gồm cả cột ẩn `Mã dòng (Row ID)` nếu có).
  */
-export async function readTab(opts: { spreadsheetId: string; tab: string }): Promise<{ header: string[]; rows: Record<string, string>[] }> {
-  const { spreadsheetId, tab } = opts;
+export async function readTab(opts: { spreadsheetId: string; tab: string; sheetGid?: number | null }): Promise<{ header: string[]; rows: Record<string, string>[] }> {
+  const { spreadsheetId, sheetGid } = opts;
+  let tab = opts.tab;
   if (!tab.trim() || tab.length > 100) throw new GoogleSheetsError('Tên tab không hợp lệ.', 'INVALID', 400);
-  const meta = (await sheetsFetch(`${spreadsheetId}?fields=sheets.properties.title`)) as { sheets?: { properties: { title: string } }[] };
-  if (!(meta.sheets || []).some(s => s.properties.title === tab)) throw new GoogleSheetsError(`Sheet chưa có tab "${tab}".`, 'NOT_FOUND', 404);
+  const meta = (await sheetsFetch(`${spreadsheetId}?fields=sheets.properties(sheetId,title)`)) as {
+    sheets?: { properties: { sheetId?: number; title: string } }[];
+  };
+  const sheetsList = meta.sheets || [];
+  if (!sheetsList.some(s => s.properties.title === tab)) {
+    const byGid =
+      sheetGid !== undefined && sheetGid !== null
+        ? sheetsList.find(s => s.properties.sheetId === sheetGid)
+        : undefined;
+    if (byGid?.properties?.title) {
+      tab = byGid.properties.title;
+    } else if (sheetsList.length === 1 && sheetsList[0].properties.title) {
+      tab = sheetsList[0].properties.title;
+    } else {
+      throw new GoogleSheetsError(`Sheet chưa có tab "${tab}".`, 'NOT_FOUND', 404);
+    }
+  }
   const range = encodeURIComponent(`${quoteTab(tab)}!A1:ZZ`);
   const res = (await sheetsFetch(`${spreadsheetId}/values/${range}`)) as { values?: string[][] };
   const values = res.values || [];
