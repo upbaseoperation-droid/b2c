@@ -86,8 +86,24 @@ interface ZaloGroupMappingItem {
   draftVideoUrl?: string;
   draftReviewNote?: string;
   airedVideoUrl?: string;
+  isAutoDiscovered?: boolean;
+  lastMessageText?: string;
+  lastSenderId?: string;
+  lastSenderName?: string;
+  lastActiveAt?: string;
+  messageCount?: number;
   linkedAt: string;
   updatedAt?: string;
+}
+
+interface ZaloDiscoveredSenderItem {
+  senderId: string;
+  displayName: string;
+  lastChatId: string;
+  lastGroupName?: string;
+  lastMessageText: string;
+  lastSeenAt: string;
+  messageCount: number;
 }
 
 interface ZaloUserPermissionItem {
@@ -226,11 +242,14 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
   });
   const [mappings, setMappings] = useState<ZaloGroupMappingItem[]>([]);
   const [userPermissions, setUserPermissions] = useState<ZaloUserPermissionItem[]>([]);
+  const [discoveredSenders, setDiscoveredSenders] = useState<ZaloDiscoveredSenderItem[]>([]);
   const [airHistory, setAirHistory] = useState<ZaloAirCheckHistoryItem[]>([]);
   const [recentEvents, setRecentEvents] = useState<WebhookDebugEvent[]>([]);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'ALL' | ZaloGroupRole>('ALL');
+  const [roleFilter, setRoleFilter] = useState<'ALL' | 'DISCOVERED' | ZaloGroupRole>('ALL');
+  const [picFilter, setPicFilter] = useState<string>('ALL');
+  const [brandFilter, setBrandFilter] = useState<string>('ALL');
   const [copiedLink, setCopiedLink] = useState(false);
 
   // Modal thêm/sửa liên kết nhóm
@@ -309,6 +328,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
         if (data.webhookInfo) setWebhookInfo(data.webhookInfo);
         if (Array.isArray(data.mappings)) setMappings(data.mappings);
         if (Array.isArray(data.userPermissions)) setUserPermissions(data.userPermissions);
+        if (Array.isArray(data.discoveredSenders)) setDiscoveredSenders(data.discoveredSenders);
         if (data.securityPolicy) setSecurityPolicy(data.securityPolicy);
         if (Array.isArray(data.airHistory)) setAirHistory(data.airHistory);
         if (Array.isArray(data.recentEvents)) setRecentEvents(data.recentEvents);
@@ -661,9 +681,31 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
     }
   };
 
+  const uniquePics = useMemo(() => {
+    const set = new Set<string>();
+    for (const m of mappings) {
+      if (m.picName) set.add(m.picName);
+    }
+    return Array.from(set).sort();
+  }, [mappings]);
+
+  const uniqueBrands = useMemo(() => {
+    const set = new Set<string>();
+    for (const m of mappings) {
+      if (m.brandName) set.add(m.brandName);
+    }
+    return Array.from(set).sort();
+  }, [mappings]);
+
   const filteredMappings = useMemo(() => {
     return mappings.filter((m) => {
-      if (roleFilter !== 'ALL' && m.groupRole !== roleFilter) return false;
+      if (roleFilter === 'DISCOVERED') {
+        if (!m.isAutoDiscovered && !m.lastMessageText) return false;
+      } else if (roleFilter !== 'ALL' && m.groupRole !== roleFilter) {
+        return false;
+      }
+      if (picFilter !== 'ALL' && m.picName !== picFilter) return false;
+      if (brandFilter !== 'ALL' && m.brandName !== brandFilter) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       return (
@@ -673,23 +715,34 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
         (m.kocName && m.kocName.toLowerCase().includes(q)) ||
         (m.kocHandle && m.kocHandle.toLowerCase().includes(q)) ||
         (m.brandName && m.brandName.toLowerCase().includes(q)) ||
-        (m.picName && m.picName.toLowerCase().includes(q))
+        (m.picName && m.picName.toLowerCase().includes(q)) ||
+        (m.lastSenderName && m.lastSenderName.toLowerCase().includes(q))
       );
     });
-  }, [mappings, roleFilter, searchQuery]);
+  }, [mappings, roleFilter, picFilter, brandFilter, searchQuery]);
 
   const groupColumns: Column<ZaloGroupMappingItem>[] = [
     {
       key: 'groupInfo',
-      header: 'Nhóm chat Zalo',
+      header: 'Nhóm chat Zalo & Chat ID',
       render: (row) => (
         <div className="space-y-0.5">
-          <div className="text-xs font-medium text-ink">
-            {row.groupName || row.groupId}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs font-medium text-ink">
+              {row.groupName || row.groupId}
+            </span>
+            {row.isAutoDiscovered && (
+              <Status tone="warning">Mới phát hiện</Status>
+            )}
           </div>
-          <div className="font-mono text-2xs text-ink-3 select-all">
-            ID: {row.groupId}
+          <div className="font-mono text-2xs text-ink-2 select-all">
+            Chat ID: {row.groupId}
           </div>
+          {row.lastMessageText && (
+            <div className="text-2xs text-ink-3 truncate max-w-xs">
+              Tin cuối ({row.lastSenderName || 'Zalo'}): &ldquo;{row.lastMessageText}&rdquo;
+            </div>
+          )}
         </div>
       ),
     },
@@ -1127,9 +1180,14 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
               chips={
                 <Chips
                   value={roleFilter}
-                  onChange={(v) => setRoleFilter(v as 'ALL' | ZaloGroupRole)}
+                  onChange={(v) => setRoleFilter(v as 'ALL' | 'DISCOVERED' | ZaloGroupRole)}
                   items={[
                     { key: 'ALL', label: 'Tất cả nhóm', count: mappings.length },
+                    {
+                      key: 'DISCOVERED',
+                      label: 'Có tin nhắn / Mới phát hiện',
+                      count: mappings.filter((m) => m.isAutoDiscovered || Boolean(m.lastMessageText)).length,
+                    },
                     {
                       key: 'KOC_GROUP',
                       label: 'Nhóm KOC 3 bên',
@@ -1147,6 +1205,34 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                     },
                   ]}
                 />
+              }
+              filters={
+                <div className="flex items-center gap-2">
+                  <select
+                    className="h-8 rounded border border-line-strong bg-surface px-2.5 text-xs text-ink"
+                    value={picFilter}
+                    onChange={(e) => setPicFilter(e.target.value)}
+                  >
+                    <option value="ALL">Tất cả Nhân viên PIC ({uniquePics.length})</option>
+                    {uniquePics.map((pic) => (
+                      <option key={pic} value={pic}>
+                        PIC: {pic}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    className="h-8 rounded border border-line-strong bg-surface px-2.5 text-xs text-ink"
+                    value={brandFilter}
+                    onChange={(e) => setBrandFilter(e.target.value)}
+                  >
+                    <option value="ALL">Tất cả Thương hiệu ({uniqueBrands.length})</option>
+                    {uniqueBrands.map((b) => (
+                      <option key={b} value={b}>
+                        Brand: {b}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               }
               resultCount={filteredMappings.length}
             />
@@ -1487,6 +1573,67 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                 </Button>
               </div>
             </div>
+          </Panel>
+
+          <Panel title="Danh sách Chat ID & Người gửi tự động ghi nhận khi Bot nhận tin nhắn">
+            {discoveredSenders.length === 0 && recentEvents.length === 0 ? (
+              <EmptyState title="Chưa có tin nhắn thực tế nào gửi tới Bot. Hãy vào nhóm Zalo gõ @Bot tttttttupbase /status để hệ thống tự động bắt Chat ID và Sender ID lên bảng này." />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                {discoveredSenders.map((s) => (
+                  <div
+                    key={s.senderId}
+                    className="p-3 rounded border border-line bg-sunken flex items-center justify-between gap-3"
+                  >
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="font-medium text-ink truncate">
+                        Người nhắn: {s.displayName} ({s.messageCount} tin)
+                      </div>
+                      <div className="font-mono text-2xs text-ink-2 select-all">
+                        Sender ID: {s.senderId}
+                      </div>
+                      <div className="font-mono text-2xs text-ink-3 select-all">
+                        Từ Chat ID: {s.lastChatId}
+                      </div>
+                      <div className="text-2xs text-ink-3 truncate">
+                        Nội dung: &ldquo;{s.lastMessageText}&rdquo;
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1.5 shrink-0">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setPermUserId(s.senderId);
+                          setPermDisplayName(s.displayName);
+                          setPermStaffName(s.displayName);
+                          setIsPermModalOpen(true);
+                        }}
+                      >
+                        Cấp quyền Nhân sự
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const existingGrp = mappings.find((m) => m.groupId === s.lastChatId);
+                          if (existingGrp) {
+                            openEditGroupModal(existingGrp);
+                          } else {
+                            setModalGroupId(s.lastChatId);
+                            setModalGroupName(`Nhóm của ${s.displayName}`);
+                            setModalGroupRole('KOC_GROUP');
+                            setIsLinkModalOpen(true);
+                          }
+                        }}
+                      >
+                        Phân quyền Nhóm
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </Panel>
 
           <Panel

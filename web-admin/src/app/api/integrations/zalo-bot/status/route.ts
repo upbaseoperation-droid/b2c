@@ -4,6 +4,8 @@ import {
   getZaloBotSecretToken,
   getAllMappings,
   getAllUserPermissions,
+  getAllDiscoveredSenders,
+  hydrateZaloBotStateFromDb,
   getAirCheckHistory,
   getDebugEvents,
   getSecurityPolicy,
@@ -47,8 +49,10 @@ export async function GET(req: NextRequest) {
     console.error('[ZaloBot Status Error]:', err);
   }
 
+  await hydrateZaloBotStateFromDb();
   const mappings = getAllMappings();
   const userPermissions = getAllUserPermissions();
+  const discoveredSenders = getAllDiscoveredSenders();
   const airHistory = getAirCheckHistory();
   const recentEvents = getDebugEvents();
 
@@ -71,6 +75,7 @@ export async function GET(req: NextRequest) {
       : 'Chưa thiết lập',
     mappings,
     userPermissions,
+    discoveredSenders,
     securityPolicy: getSecurityPolicy(),
     airHistory,
     recentEvents,

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { checkSingleLinkServerless } from '../linkAirCheckServer';
 import type { LinkAirResult } from '../linkAirCheck';
 import { REAL_B2C_69_STORES } from '../realB2cPlanData';
+import { readRecord, upsertRecord } from './sharedRecords';
 
 export type ZaloGroupRole = 'KOC_GROUP' | 'INTERNAL_OPS' | 'BOD_EXECUTIVE';
 
@@ -51,8 +52,24 @@ export interface ZaloGroupMapping {
   draftVideoUrl?: string;
   draftReviewNote?: string;
   airedVideoUrl?: string;
+  isAutoDiscovered?: boolean;
+  lastMessageText?: string;
+  lastSenderId?: string;
+  lastSenderName?: string;
+  lastActiveAt?: string;
+  messageCount?: number;
   linkedAt: string;
   updatedAt?: string;
+}
+
+export interface ZaloDiscoveredSender {
+  senderId: string;
+  displayName: string;
+  lastChatId: string;
+  lastGroupName?: string;
+  lastMessageText: string;
+  lastSeenAt: string;
+  messageCount: number;
 }
 
 export interface ZaloUserPermission {
@@ -111,7 +128,18 @@ const SECURITY_POLICY_FILE_PATH = path.join(process.cwd(), 'src/data/zalo_securi
 const inMemoryMappings = new Map<string, ZaloGroupMapping>();
 const inMemoryAirHistory: ZaloAirCheckHistoryItem[] = [];
 const inMemoryPermissions = new Map<string, ZaloUserPermission>();
+const inMemoryDiscoveredSenders = new Map<string, ZaloDiscoveredSender>();
 let inMemorySecurityPolicy: ZaloBotSecurityPolicy | null = null;
+let lastDbHydratedAt = 0;
+
+interface ZaloBotPersistedState {
+  mappings: Record<string, ZaloGroupMapping>;
+  permissions: Record<string, ZaloUserPermission>;
+  discoveredSenders: Record<string, ZaloDiscoveredSender>;
+  securityPolicy?: ZaloBotSecurityPolicy;
+}
+
+const ZALO_BOT_SHARED_KEY = 'zalo-bot-state-v1';
 const recentDebugEvents: Array<{
   time: string;
   body: any;
@@ -553,16 +581,137 @@ export function getAllMappings(): ZaloGroupMapping[] {
   return Array.from(loadMappings().values());
 }
 
+export function getAllDiscoveredSenders(): ZaloDiscoveredSender[] {
+  return Array.from(inMemoryDiscoveredSenders.values()).sort((a, b) =>
+    (b.lastSeenAt || '').localeCompare(a.lastSeenAt || '')
+  );
+}
+
+/**
+ * Đồng bộ trạng thái Zalo Bot từ PostgreSQL (AppSharedRecord) để đảm bảo 20 nhân viên
+ * thao tác đồng thời trên hàng trăm nhóm KOC không bị ghi đè hoặc mất dữ liệu giữa các Serverless instance.
+ */
+export async function hydrateZaloBotStateFromDb(): Promise<void> {
+  if (Date.now() - lastDbHydratedAt < 5000) return;
+  loadMappings();
+  loadPermissions();
+  getSecurityPolicy();
+  try {
+    const rec = await readRecord<ZaloBotPersistedState>(ZALO_BOT_SHARED_KEY, {
+      mappings: {},
+      permissions: {},
+      discoveredSenders: {},
+    });
+    if (rec?.data) {
+      if (rec.data.mappings && typeof rec.data.mappings === 'object') {
+        for (const [gid, item] of Object.entries(rec.data.mappings)) {
+          if (gid && item) {
+            inMemoryMappings.set(gid, item);
+          }
+        }
+      }
+      if (rec.data.permissions && typeof rec.data.permissions === 'object') {
+        for (const [uid, perm] of Object.entries(rec.data.permissions)) {
+          if (uid && perm) {
+            inMemoryPermissions.set(uid, perm);
+          }
+        }
+      }
+      if (rec.data.discoveredSenders && typeof rec.data.discoveredSenders === 'object') {
+        for (const [sid, sender] of Object.entries(rec.data.discoveredSenders)) {
+          if (sid && sender) {
+            inMemoryDiscoveredSenders.set(sid, sender);
+          }
+        }
+      }
+      if (rec.data.securityPolicy) {
+        inMemorySecurityPolicy = { ...DEFAULT_SECURITY_POLICY, ...rec.data.securityPolicy };
+      }
+    }
+    lastDbHydratedAt = Date.now();
+  } catch {
+    // Fallback an toàn trên bộ nhớ trong
+  }
+}
+
+/**
+ * Lưu nguyên tử (Atomic Merge theo từng groupId / senderId) xuống PostgreSQL
+ * bằng cơ chế Optimistic Locking (revision) để chống xung đột khi nhiều nhóm nhắn cùng lúc.
+ */
+export async function syncZaloBotStateToDb(patch?: {
+  upsertGroup?: ZaloGroupMapping;
+  removeGroupId?: string;
+  upsertPerm?: ZaloUserPermission;
+  removePermId?: string;
+  upsertSender?: ZaloDiscoveredSender;
+  securityPolicy?: ZaloBotSecurityPolicy;
+}): Promise<void> {
+  try {
+    await upsertRecord<ZaloBotPersistedState>(
+      ZALO_BOT_SHARED_KEY,
+      {
+        mappings: Object.fromEntries(loadMappings().entries()),
+        permissions: Object.fromEntries(loadPermissions().entries()),
+        discoveredSenders: Object.fromEntries(inMemoryDiscoveredSenders.entries()),
+        securityPolicy: getSecurityPolicy(),
+      },
+      (current) => {
+        const nextMappings = {
+          ...Object.fromEntries(loadMappings().entries()),
+          ...(current?.mappings || {}),
+        };
+        const nextPermissions = {
+          ...Object.fromEntries(loadPermissions().entries()),
+          ...(current?.permissions || {}),
+        };
+        const nextSenders = {
+          ...Object.fromEntries(inMemoryDiscoveredSenders.entries()),
+          ...(current?.discoveredSenders || {}),
+        };
+
+        if (patch?.upsertGroup) {
+          nextMappings[patch.upsertGroup.groupId] = patch.upsertGroup;
+        }
+        if (patch?.removeGroupId) {
+          delete nextMappings[patch.removeGroupId];
+        }
+        if (patch?.upsertPerm) {
+          nextPermissions[patch.upsertPerm.zaloUserId] = patch.upsertPerm;
+        }
+        if (patch?.removePermId) {
+          delete nextPermissions[patch.removePermId];
+        }
+        if (patch?.upsertSender) {
+          nextSenders[patch.upsertSender.senderId] = patch.upsertSender;
+        }
+
+        return {
+          mappings: nextMappings,
+          permissions: nextPermissions,
+          discoveredSenders: nextSenders,
+          securityPolicy: patch?.securityPolicy || current?.securityPolicy || getSecurityPolicy(),
+        };
+      }
+    );
+  } catch {
+    // Non-fatal fallback
+  }
+}
+
 export function setGroupMapping(mapping: ZaloGroupMapping): void {
   const map = loadMappings();
   map.set(mapping.groupId, mapping);
   saveMappings();
+  void syncZaloBotStateToDb({ upsertGroup: mapping });
 }
 
 export function removeGroupMapping(groupId: string): boolean {
   const map = loadMappings();
   const deleted = map.delete(groupId);
-  if (deleted) saveMappings();
+  if (deleted) {
+    saveMappings();
+    void syncZaloBotStateToDb({ removeGroupId: groupId });
+  }
   return deleted;
 }
 
@@ -574,12 +723,16 @@ export function setUserPermission(perm: ZaloUserPermission): void {
   const map = loadPermissions();
   map.set(perm.zaloUserId, perm);
   savePermissions();
+  void syncZaloBotStateToDb({ upsertPerm: perm });
 }
 
 export function removeUserPermission(zaloUserId: string): boolean {
   const map = loadPermissions();
   const deleted = map.delete(zaloUserId);
-  if (deleted) savePermissions();
+  if (deleted) {
+    savePermissions();
+    void syncZaloBotStateToDb({ removePermId: zaloUserId });
+  }
   return deleted;
 }
 
@@ -635,6 +788,7 @@ export function setSecurityPolicy(nextPolicy: Partial<ZaloBotSecurityPolicy>): Z
   } catch {
     // Non-fatal on serverless read-only fs
   }
+  void syncZaloBotStateToDb({ securityPolicy: inMemorySecurityPolicy });
   return inMemorySecurityPolicy;
 }
 
@@ -1035,11 +1189,68 @@ export async function processZaloWebhookEvent(
   const cleanText = rawText.replace(/@[^\s]+/g, '').trim();
   const lowerClean = cleanText.toLowerCase();
 
+  await hydrateZaloBotStateFromDb();
   const mappings = loadMappings();
-  const currentMapping = mappings.get(chatId);
+  let currentMapping = mappings.get(chatId);
   const securityPolicy = getSecurityPolicy();
   const senderPerm = senderId ? loadPermissions().get(senderId) : undefined;
   const isSimulatedFromWeb = Boolean(options?.skipSendToZalo);
+
+  // TỰ ĐỘNG GHI NHẬN CHAT ID NHÓM VÀ NGƯỜI GỬI NGAY KHI NHẬN TIN NHẮN ĐỂ PHỤC VỤ PHÂN QUYỀN TRÊN WEB
+  if (!isSimulatedFromWeb) {
+    const nowIso = new Date().toISOString();
+    if (!currentMapping) {
+      currentMapping = {
+        groupId: chatId,
+        groupName: `[Mới phát hiện] Nhóm Zalo (${chatId.slice(0, 8)}) — ${senderName}`,
+        groupRole: 'KOC_GROUP',
+        accessStatus: securityPolicy.requireGroupWhitelist ? 'PENDING_APPROVAL' : 'APPROVED',
+        isAutoDiscovered: true,
+        lastMessageText: rawText.slice(0, 120),
+        lastSenderId: senderId || undefined,
+        lastSenderName: senderName,
+        lastActiveAt: nowIso,
+        messageCount: 1,
+        dealStatus: 'ĐANG_QUAY_NHÁP',
+        linkedAt: nowIso,
+        updatedAt: nowIso,
+      };
+      mappings.set(chatId, currentMapping);
+      saveMappings();
+    } else {
+      currentMapping = {
+        ...currentMapping,
+        lastMessageText: rawText.slice(0, 120),
+        lastSenderId: senderId || currentMapping.lastSenderId,
+        lastSenderName: senderName || currentMapping.lastSenderName,
+        lastActiveAt: nowIso,
+        messageCount: (currentMapping.messageCount || 0) + 1,
+        updatedAt: nowIso,
+      };
+      mappings.set(chatId, currentMapping);
+      saveMappings();
+    }
+
+    let discoveredSender: ZaloDiscoveredSender | undefined;
+    if (senderId) {
+      const prevSender = inMemoryDiscoveredSenders.get(senderId);
+      discoveredSender = {
+        senderId,
+        displayName: senderName || prevSender?.displayName || senderId,
+        lastChatId: chatId,
+        lastGroupName: currentMapping.groupName,
+        lastMessageText: rawText.slice(0, 120),
+        lastSeenAt: nowIso,
+        messageCount: (prevSender?.messageCount || 0) + 1,
+      };
+      inMemoryDiscoveredSenders.set(senderId, discoveredSender);
+    }
+
+    void syncZaloBotStateToDb({
+      upsertGroup: currentMapping,
+      upsertSender: discoveredSender,
+    });
+  }
 
   // KIỂM TRA TRẠNG THÁI CHẶN / WHITELIST CỦA NHÓM CHAT
   if (currentMapping?.accessStatus === 'BLOCKED' && !isSimulatedFromWeb) {
