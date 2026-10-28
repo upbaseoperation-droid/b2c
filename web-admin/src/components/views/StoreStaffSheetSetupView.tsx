@@ -4,16 +4,20 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowUpDown,
   CheckCircle2,
+  Code2,
   Columns,
+  Edit3,
   ExternalLink,
   EyeOff,
   FileSpreadsheet,
   KeyRound,
   Lock,
+  Plus,
   RefreshCw,
   RotateCcw,
   Save,
   ShieldCheck,
+  Trash2,
   Users,
 } from 'lucide-react';
 import { resolveStoreStaffAssignment, type StorePortfolioItem } from '../../lib/types';
@@ -41,6 +45,7 @@ import {
   Field,
   FilterBar,
   Input,
+  Modal,
   Panel,
   Person,
   Select,
@@ -50,6 +55,104 @@ import {
   Tabs,
   Textarea,
 } from '../ui';
+
+export interface AppsScriptModuleItem {
+  id: string;
+  name: string;
+  triggerType: 'onEdit' | 'onOpen';
+  targetColumns: string;
+  purpose: string;
+  enabled: boolean;
+  isBuiltIn?: boolean;
+  codeBody: string;
+}
+
+function combineAppsScriptModulesClient(modules: AppsScriptModuleItem[]): string {
+  const activeModules = modules.filter(m => m && m.enabled);
+  const onEditModules = activeModules.filter(m => m.triggerType === 'onEdit');
+  const onOpenModules = activeModules.filter(m => m.triggerType === 'onOpen');
+
+  const lines: string[] = [
+    '/**',
+    ' * Bộ tiện ích Google Apps Script chuẩn UpBase B2C (Tự động sinh từ Web Admin)',
+    ` * Số tác vụ đang kích hoạt: ${activeModules.length}/${modules.length}`,
+    ...activeModules.map((m, idx) => ` * ${idx + 1}. [${m.triggerType}] ${m.name} (${m.targetColumns})`),
+    ' */',
+    '',
+    'function onEdit(e) {',
+    '  if (!e || !e.range) return;',
+    '  var sheet = e.range.getSheet();',
+    '  var row = e.range.getRow();',
+    '  var col = e.range.getColumn();',
+    '  if (row <= 3) return;',
+    '',
+    '  var lastCol = Math.max(sheet.getLastColumn(), col);',
+    '  var row3Values = sheet.getRange(3, 1, 1, lastCol).getValues()[0];',
+    '  var row1Values = sheet.getRange(1, 1, 1, lastCol).getValues()[0];',
+    '',
+    '  function normalizeHeader(text) {',
+    "    return String(text || '')",
+    "      .replace(/[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]/g, '')",
+    "      .replace(/\\s*\\(bổ sung thêm\\)/gi, '')",
+    '      .trim()',
+    '      .toLowerCase();',
+    '  }',
+    '',
+    '  var headerRowIndex = 3;',
+    '  var headers = row3Values.map(normalizeHeader);',
+    '  var hasBrandColInRow3 = headers.some(function (h) {',
+    "    return h === 'brand chọn' || h === 'brand chon' || h === 'brand duyệt' || h === 'kết quả brand';",
+    '  });',
+    '  if (!hasBrandColInRow3) {',
+    '    headerRowIndex = 1;',
+    '    headers = row1Values.map(normalizeHeader);',
+    '  }',
+    '',
+    '  function findCol(candidates) {',
+    '    for (var i = 0; i < headers.length; i++) {',
+    '      if (candidates.indexOf(headers[i]) !== -1) return i + 1;',
+    '    }',
+    '    return -1;',
+    '  }',
+    '',
+    "  var brandColIdx = findCol(['brand chọn', 'brand chon', 'brand duyệt', 'kết quả brand']);",
+    "  var rawValLower = String(e.range.getValue() || '').trim().toLowerCase();",
+    '',
+    '  var ctx = {',
+    '    e: e,',
+    '    sheet: sheet,',
+    '    row: row,',
+    '    col: col,',
+    '    lastCol: lastCol,',
+    '    headerRowIndex: headerRowIndex,',
+    '    headers: headers,',
+    '    brandColIdx: brandColIdx,',
+    '    rawValLower: rawValLower,',
+    '    findCol: findCol',
+    '  };',
+    '',
+  ];
+
+  for (const m of onEditModules) {
+    const fnMatch = m.codeBody.match(/function\s+([a-zA-Z0-9_]+)\s*\(/);
+    const fnName = fnMatch ? fnMatch[1] : `runModule_${m.id}`;
+    lines.push(`  try { ${fnName}(ctx); } catch (err) {}`);
+  }
+
+  lines.push('}', '');
+
+  for (const m of onEditModules) {
+    lines.push(`// --- [${m.id}] ${m.name} ---`);
+    lines.push(m.codeBody.trim(), '');
+  }
+
+  for (const m of onOpenModules) {
+    lines.push(`// --- [${m.id}] ${m.name} ---`);
+    lines.push(m.codeBody.trim(), '');
+  }
+
+  return lines.join('\n');
+}
 
 export interface StoreStaffSheetDraft {
   storeId: string;
@@ -156,12 +259,17 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
   const [saJsonInput, setSaJsonInput] = useState('');
   const [savingSa, setSavingSa] = useState(false);
 
-  // Cấu hình & Đẩy tự động Google Apps Script (onEdit) vào các file Google Sheet của Brand
+  // Quản lý Danh mục Tiện ích Tự động hóa Google Sheet (Apps Script) & Cài đặt lên Sheet Brand
   const [appsScriptConfigured, setAppsScriptConfigured] = useState(false);
   const [appsScriptClientIdMasked, setAppsScriptClientIdMasked] = useState<string | null>(null);
   const [oauthClientIdInput, setOauthClientIdInput] = useState('');
   const [oauthClientSecretInput, setOauthClientSecretInput] = useState('');
   const [oauthRefreshTokenInput, setOauthRefreshTokenInput] = useState('');
+  const [appsScriptModules, setAppsScriptModules] = useState<AppsScriptModuleItem[]>([]);
+  const [defaultAppsScriptModules, setDefaultAppsScriptModules] = useState<AppsScriptModuleItem[]>([]);
+  const [editingModuleDraft, setEditingModuleDraft] = useState<AppsScriptModuleItem | null>(null);
+  const [isAddingNewModule, setIsAddingNewModule] = useState(false);
+  const [showRawCodePreview, setShowRawCodePreview] = useState(false);
   const [appsScriptCodeDraft, setAppsScriptCodeDraft] = useState('');
   const [appsScriptInstalledMap, setAppsScriptInstalledMap] = useState<
     Record<
@@ -171,6 +279,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
         scriptId: string;
         storeName?: string;
         sheetUrl?: string;
+        enabledModuleIds?: string[];
         installedAt: string;
       }
     >
@@ -280,6 +389,8 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
         (d: {
           configured?: boolean;
           clientIdMasked?: string | null;
+          modules?: AppsScriptModuleItem[];
+          defaultModules?: AppsScriptModuleItem[];
           scriptCode?: string;
           installedMap?: Record<
             string,
@@ -288,12 +399,15 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
               scriptId: string;
               storeName?: string;
               sheetUrl?: string;
+              enabledModuleIds?: string[];
               installedAt: string;
             }
           >;
         }) => {
           setAppsScriptConfigured(Boolean(d.configured));
           setAppsScriptClientIdMasked(d.clientIdMasked || null);
+          if (Array.isArray(d.modules)) setAppsScriptModules(d.modules);
+          if (Array.isArray(d.defaultModules)) setDefaultAppsScriptModules(d.defaultModules);
           if (d.scriptCode) setAppsScriptCodeDraft(d.scriptCode);
           if (d.installedMap && typeof d.installedMap === 'object') {
             setAppsScriptInstalledMap(d.installedMap);
@@ -861,8 +975,83 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
     return m ? m[1] : '';
   };
 
-  const handleSaveAppsScriptOAuthConfig = async () => {
+  const handleToggleModuleEnabled = (moduleId: string) => {
+    setAppsScriptModules(prev => {
+      const next = prev.map(m => (m.id === moduleId ? { ...m, enabled: !m.enabled } : m));
+      setAppsScriptCodeDraft(combineAppsScriptModulesClient(next));
+      return next;
+    });
+  };
+
+  const handleStartEditModule = (mod: AppsScriptModuleItem) => {
+    setIsAddingNewModule(false);
+    setEditingModuleDraft({ ...mod });
+  };
+
+  const handleStartAddModule = () => {
+    const newId = `CUSTOM_SCRIPT_${Date.now().toString().slice(-5)}`;
+    setIsAddingNewModule(true);
+    setEditingModuleDraft({
+      id: newId,
+      name: 'Tác vụ Apps Script mới',
+      triggerType: 'onEdit',
+      targetColumns: 'Brand chọn → Ghi chú',
+      purpose: 'Mô tả tác dụng thực tế của Script này khi thao tác trên Google Sheet của Brand.',
+      enabled: true,
+      isBuiltIn: false,
+      codeBody: `function runModule_${newId}(ctx) {\n  // ctx gồm: sheet, row, col, headers, brandColIdx, rawValLower, findCol\n  if (ctx.brandColIdx <= 0 || ctx.col !== ctx.brandColIdx) return;\n}`,
+    });
+  };
+
+  const handleSaveModuleEdit = () => {
+    if (!editingModuleDraft) return;
+    if (!editingModuleDraft.name.trim()) {
+      onNotify?.('Vui lòng nhập Tên tác vụ Apps Script.', 'warning');
+      return;
+    }
+    const cleaned: AppsScriptModuleItem = {
+      ...editingModuleDraft,
+      name: editingModuleDraft.name.trim(),
+      targetColumns: editingModuleDraft.targetColumns.trim() || 'Toàn bộ Sheet',
+      purpose: editingModuleDraft.purpose.trim(),
+      codeBody: editingModuleDraft.codeBody.trim(),
+    };
+    setAppsScriptModules(prev => {
+      const exists = prev.some(m => m.id === cleaned.id);
+      const next = exists
+        ? prev.map(m => (m.id === cleaned.id ? cleaned : m))
+        : [...prev, cleaned];
+      setAppsScriptCodeDraft(combineAppsScriptModulesClient(next));
+      return next;
+    });
+    setEditingModuleDraft(null);
+    setIsAddingNewModule(false);
+    onNotify?.(
+      `Đã cập nhật tác vụ "${cleaned.name}". Bấm "Lưu Danh mục Script & Cấu hình" để lưu lên máy chủ.`,
+      'info'
+    );
+  };
+
+  const handleDeleteModule = (moduleId: string) => {
+    setAppsScriptModules(prev => {
+      const next = prev.filter(m => m.id !== moduleId);
+      setAppsScriptCodeDraft(combineAppsScriptModulesClient(next));
+      return next;
+    });
+    onNotify?.('Đã xóa tác vụ Apps Script khỏi danh mục.', 'info');
+  };
+
+  const handleResetDefaultModules = () => {
+    if (defaultAppsScriptModules.length === 0) return;
+    const cloned = defaultAppsScriptModules.map(m => ({ ...m }));
+    setAppsScriptModules(cloned);
+    setAppsScriptCodeDraft(combineAppsScriptModulesClient(cloned));
+    onNotify?.('Đã khôi phục 6 tác vụ Apps Script mặc định.', 'info');
+  };
+
+  const handleSaveAppsScriptOAuthConfig = async (customModules?: AppsScriptModuleItem[]) => {
     setSavingAppsScriptOAuth(true);
+    const modulesToSave = customModules ?? appsScriptModules;
     try {
       const res = await fetch('/api/booking-list/setup-appscript', {
         method: 'PUT',
@@ -871,6 +1060,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
           ...(oauthClientIdInput.trim() ? { clientId: oauthClientIdInput.trim() } : {}),
           ...(oauthClientSecretInput.trim() ? { clientSecret: oauthClientSecretInput.trim() } : {}),
           ...(oauthRefreshTokenInput.trim() ? { refreshToken: oauthRefreshTokenInput.trim() } : {}),
+          modules: modulesToSave,
           ...(appsScriptCodeDraft.trim() ? { customScriptCode: appsScriptCodeDraft.trim() } : {}),
           verifyToken: Boolean(
             oauthClientIdInput.trim() || oauthClientSecretInput.trim() || oauthRefreshTokenInput.trim()
@@ -881,6 +1071,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
         ok?: boolean;
         configured?: boolean;
         clientIdMasked?: string | null;
+        modules?: AppsScriptModuleItem[];
         scriptCode?: string;
         error?: string;
       } | null;
@@ -889,12 +1080,13 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
       }
       setAppsScriptConfigured(Boolean(data.configured));
       if (data.clientIdMasked) setAppsScriptClientIdMasked(data.clientIdMasked);
+      if (Array.isArray(data.modules)) setAppsScriptModules(data.modules);
       if (data.scriptCode) setAppsScriptCodeDraft(data.scriptCode);
       setOauthClientIdInput('');
       setOauthClientSecretInput('');
       setOauthRefreshTokenInput('');
       onNotify?.(
-        'Đã xác thực và lưu cấu hình Google OAuth2 cho Apps Script API thành công.',
+        'Đã lưu Danh mục Tiện ích Apps Script và cấu hình kết nối OAuth2 thành công.',
         'success'
       );
     } catch (err) {
@@ -918,7 +1110,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
     if (!appsScriptConfigured) {
       setActiveTab('SERVICE_ACCOUNT');
       onNotify?.(
-        'Vui lòng nhập cấu hình Google OAuth2 (Client ID, Client Secret, Refresh Token) ở tab Kết nối Google trước khi bơm Apps Script tự động.',
+        'Vui lòng nhập cấu hình Google OAuth2 (Client ID, Client Secret, Refresh Token) ở tab Kết nối Google trước khi cài đặt Apps Script lên Sheet.',
         'warning'
       );
       return;
@@ -931,6 +1123,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           targets: validTargets,
+          modules: appsScriptModules,
           scriptCode: appsScriptCodeDraft,
         }),
       });
@@ -954,6 +1147,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
             scriptId: string;
             storeName?: string;
             sheetUrl?: string;
+            enabledModuleIds?: string[];
             installedAt: string;
           }
         >;
@@ -971,21 +1165,21 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
         onNotify?.(
           data?.error ||
             data?.results?.[0]?.error ||
-            'Không thể bơm tự động Apps Script vào file Google Sheet.',
+            'Không thể cài đặt Apps Script lên file Google Sheet.',
           'error'
         );
         return;
       }
 
       onNotify?.(
-        `Đã bơm thành công Apps Script (onEdit) vào ${data.successCount}/${validTargets.length} gian hàng${
+        `Đã cài đặt / cập nhật thành công ${appsScriptModules.filter(m => m.enabled).length} tác vụ Apps Script lên ${data.successCount}/${validTargets.length} gian hàng${
           data.failCount ? ` (${data.failCount} lỗi)` : ''
         }.`,
         data.failCount ? 'warning' : 'success'
       );
     } catch (err) {
       onNotify?.(
-        err instanceof Error ? err.message : 'Lỗi kết nối khi đẩy Apps Script.',
+        err instanceof Error ? err.message : 'Lỗi kết nối khi cài đặt Apps Script.',
         'error'
       );
     } finally {
@@ -1611,7 +1805,11 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
             count: fieldPolicyDraft.editableFieldsByRole.SUPPORT.length,
           },
           { key: 'BULK_PASTE', label: 'Dán hàng loạt Link Sheet từ Excel' },
-          { key: 'SERVICE_ACCOUNT', label: 'Tài khoản kết nối Google (Service Account)' },
+          {
+            key: 'SERVICE_ACCOUNT',
+            label: 'Kết nối Google & Tiện ích Apps Script',
+            count: appsScriptModules.filter(m => m.enabled).length || undefined,
+          },
         ]}
         actions={
           activeTab === 'TABLE' && dirtyIds.size > 0 ? (
@@ -2199,9 +2397,34 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
           </Panel>
 
           <Panel
-            title="2. Cài đặt Tập trung Google Apps Script (onEdit) tự động ghi giờ Brand duyệt cho toàn bộ File Sheet của Brand"
+            title="2. Quản lý Danh mục Tiện ích Tự động hóa Google Sheet (Apps Script) & Tác dụng của từng Script"
+            flush
             actions={
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon={RotateCcw}
+                  onClick={handleResetDefaultModules}
+                >
+                  Khôi phục 6 Script mặc định
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={Plus}
+                  onClick={handleStartAddModule}
+                >
+                  Thêm Script mới
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={Code2}
+                  onClick={() => setShowRawCodePreview(prev => !prev)}
+                >
+                  {showRawCodePreview ? 'Ẩn mã gộp Code.gs' : 'Xem mã gộp Code.gs'}
+                </Button>
                 <Button
                   size="sm"
                   variant="secondary"
@@ -2209,7 +2432,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                   disabled={savingAppsScriptOAuth}
                   onClick={() => void handleSaveAppsScriptOAuthConfig()}
                 >
-                  {savingAppsScriptOAuth ? 'Đang xác thực & lưu…' : 'Lưu cấu hình OAuth2 & Mã Script'}
+                  {savingAppsScriptOAuth ? 'Đang lưu…' : 'Lưu Danh mục Script'}
                 </Button>
                 <Button
                   size="sm"
@@ -2225,10 +2448,199 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                   }
                 >
                   {pushingAppsScriptBusy
-                    ? 'Đang bơm Apps Script…'
-                    : `Bơm tự động Apps Script vào tất cả (${stats.withSheet} gian hàng có Sheet)`}
+                    ? 'Đang cài đặt Script…'
+                    : `Cài đặt / Cập nhật Script cho tất cả (${stats.withSheet} gian hàng có Sheet)`}
                 </Button>
               </div>
+            }
+          >
+            <div className="px-3.5 py-2.5 bg-sunken/70 border-b border-line flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-ink-2">
+                  Đang bật{' '}
+                  <strong className="text-ink">
+                    {appsScriptModules.filter(m => m.enabled).length}/{appsScriptModules.length}
+                  </strong>{' '}
+                  tác vụ tự động hóa trên Google Sheet
+                </span>
+                <span className="text-ink-3">·</span>
+                <span className="text-ink-2">
+                  Đã cài đặt lên{' '}
+                  <strong className="text-ink">
+                    {Object.keys(appsScriptInstalledMap).length}
+                  </strong>{' '}
+                  file Google Sheet của Brand
+                </span>
+              </div>
+              <span className="text-2xs text-ink-3">
+                Bấm <strong>Sửa tên / tác dụng / mã</strong> ở từng dòng để đổi tên Script, sửa mô tả tác dụng hoặc tùy chỉnh mã lệnh.
+              </span>
+            </div>
+
+            <DataTable
+              rowKey={m => m.id}
+              rows={appsScriptModules}
+              columns={[
+                {
+                  key: 'enabled',
+                  header: 'Trạng thái',
+                  width: 135,
+                  render: m => (
+                    <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={m.enabled}
+                        onChange={() => handleToggleModuleEnabled(m.id)}
+                        className="h-4 w-4 rounded border-line-strong text-primary focus:ring-0"
+                      />
+                      {m.enabled ? (
+                        <Status tone="positive">Đang bật</Status>
+                      ) : (
+                        <Status tone="neutral">Đang tắt</Status>
+                      )}
+                    </label>
+                  ),
+                },
+                {
+                  key: 'name',
+                  header: 'Tên tác vụ Apps Script',
+                  width: 250,
+                  render: m => (
+                    <div className="space-y-1">
+                      <div className="font-semibold text-ink leading-snug">{m.name}</div>
+                      <div className="flex items-center gap-1.5 text-2xs text-ink-3">
+                        <span className="font-mono">{m.id}</span>
+                        <span>·</span>
+                        <span>{m.isBuiltIn ? 'Mặc định UpBase' : 'Tùy chỉnh'}</span>
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'trigger',
+                  header: 'Sự kiện & Cột tác động trên Sheet',
+                  width: 230,
+                  render: m => (
+                    <div className="space-y-1">
+                      <div>
+                        <Status tone={m.triggerType === 'onEdit' ? 'info' : 'warning'}>
+                          {m.triggerType === 'onEdit'
+                            ? 'onEdit (Tự chạy khi sửa ô)'
+                            : 'onOpen (Menu khi mở file)'}
+                        </Status>
+                      </div>
+                      <div className="text-2xs font-medium text-ink-2">{m.targetColumns}</div>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'purpose',
+                  header: 'Tác dụng thực tế trên Google Sheet của Brand',
+                  render: m => (
+                    <div className="text-xs text-ink-2 leading-relaxed">{m.purpose}</div>
+                  ),
+                },
+                {
+                  key: 'actions',
+                  header: 'Thao tác',
+                  width: 185,
+                  align: 'right',
+                  render: m => (
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        icon={Edit3}
+                        onClick={() => handleStartEditModule(m)}
+                      >
+                        Sửa tên / tác dụng
+                      </Button>
+                      {!m.isBuiltIn && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={Trash2}
+                          onClick={() => handleDeleteModule(m.id)}
+                        >
+                          Xóa
+                        </Button>
+                      )}
+                    </div>
+                  ),
+                },
+              ]}
+            />
+
+            {showRawCodePreview && (
+              <div className="p-3.5 border-t border-line bg-sunken/40 space-y-2">
+                <Field label="Mã gộp Google Apps Script (Code.gs) tự động tổng hợp từ các tác vụ Đang bật ở bảng trên">
+                  <Textarea
+                    rows={12}
+                    value={appsScriptCodeDraft}
+                    onChange={e => setAppsScriptCodeDraft(e.target.value)}
+                    className="font-mono text-2xs"
+                  />
+                </Field>
+              </div>
+            )}
+
+            {appsScriptBatchResults.length > 0 && (
+              <div className="p-3.5 border-t border-line bg-surface">
+                <div className="rounded-lg border border-line overflow-hidden">
+                  <div className="px-3 py-2 bg-sunken border-b border-line flex items-center justify-between text-xs font-semibold text-ink">
+                    <span>
+                      Kết quả cài đặt Apps Script vừa thực thi ({appsScriptBatchResults.length} gian hàng)
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Status tone="positive">
+                        {appsScriptBatchResults.filter(r => r.ok).length} thành công
+                      </Status>
+                      {appsScriptBatchResults.some(r => !r.ok) && (
+                        <Status tone="critical">
+                          {appsScriptBatchResults.filter(r => !r.ok).length} lỗi
+                        </Status>
+                      )}
+                    </div>
+                  </div>
+                  <div className="max-h-52 overflow-y-auto divide-y divide-line bg-surface text-xs">
+                    {appsScriptBatchResults.map((res, idx) => (
+                      <div
+                        key={`${res.storeName}-${idx}`}
+                        className="px-3 py-2 flex flex-wrap items-center justify-between gap-2"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-ink">{res.storeName}</span>
+                          {res.ok ? (
+                            <Status tone="positive">
+                              {res.mode === 'UPDATED' ? 'Đã cập nhật Script' : 'Đã cài mới Script'}
+                            </Status>
+                          ) : (
+                            <Status tone="critical">Lỗi</Status>
+                          )}
+                        </div>
+                        <div className="text-2xs text-ink-3 font-mono">
+                          {res.ok ? `scriptId: ${res.scriptId}` : res.error}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </Panel>
+
+          <Panel
+            title="3. Cấu hình tài khoản Google OAuth2 để cài đặt Apps Script từ Web lên các File Sheet của Brand"
+            actions={
+              <Button
+                size="sm"
+                variant="primary"
+                icon={Save}
+                disabled={savingAppsScriptOAuth}
+                onClick={() => void handleSaveAppsScriptOAuthConfig()}
+              >
+                {savingAppsScriptOAuth ? 'Đang xác thực & lưu…' : 'Lưu cấu hình OAuth2'}
+              </Button>
             }
           >
             <div className="space-y-4">
@@ -2236,7 +2648,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                 <div className="flex items-center gap-2">
                   <span className="text-ink-2">Trạng thái kết nối Google Apps Script API:</span>
                   {appsScriptConfigured ? (
-                    <Status tone="positive">Đã cấu hình OAuth2 (Sẵn sàng bơm Script)</Status>
+                    <Status tone="positive">Đã cấu hình OAuth2 (Sẵn sàng cài đặt Script)</Status>
                   ) : (
                     <Status tone="warning">Chưa cấu hình OAuth2 Refresh Token</Status>
                   )}
@@ -2342,59 +2754,119 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                   />
                 </Field>
               </div>
-
-              <Field label="Mã Google Apps Script (Code.gs) sẽ được bơm tự động vào các file Google Sheet của Brand">
-                <Textarea
-                  rows={10}
-                  value={appsScriptCodeDraft}
-                  onChange={e => setAppsScriptCodeDraft(e.target.value)}
-                  className="font-mono text-2xs"
-                />
-              </Field>
-
-              {appsScriptBatchResults.length > 0 && (
-                <div className="rounded-lg border border-line overflow-hidden">
-                  <div className="px-3 py-2 bg-sunken border-b border-line flex items-center justify-between text-xs font-semibold text-ink">
-                    <span>Kết quả bơm Apps Script vừa thực thi ({appsScriptBatchResults.length} gian hàng)</span>
-                    <div className="flex items-center gap-2">
-                      <Status tone="positive">
-                        {appsScriptBatchResults.filter(r => r.ok).length} thành công
-                      </Status>
-                      {appsScriptBatchResults.some(r => !r.ok) && (
-                        <Status tone="critical">
-                          {appsScriptBatchResults.filter(r => !r.ok).length} lỗi
-                        </Status>
-                      )}
-                    </div>
-                  </div>
-                  <div className="max-h-52 overflow-y-auto divide-y divide-line bg-surface text-xs">
-                    {appsScriptBatchResults.map((res, idx) => (
-                      <div
-                        key={`${res.storeName}-${idx}`}
-                        className="px-3 py-2 flex flex-wrap items-center justify-between gap-2"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-ink">{res.storeName}</span>
-                          {res.ok ? (
-                            <Status tone="positive">
-                              {res.mode === 'UPDATED' ? 'Đã cập nhật Script' : 'Đã tạo mới Script'}
-                            </Status>
-                          ) : (
-                            <Status tone="critical">Lỗi</Status>
-                          )}
-                        </div>
-                        <div className="text-2xs text-ink-3 font-mono">
-                          {res.ok ? `scriptId: ${res.scriptId}` : res.error}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </Panel>
         </div>
       )}
+
+      {/* Hộp thoại Sửa Tên, Tác dụng & Mã lệnh của từng Tác vụ Apps Script */}
+      <Modal
+        open={Boolean(editingModuleDraft)}
+        onClose={() => {
+          setEditingModuleDraft(null);
+          setIsAddingNewModule(false);
+        }}
+        title={
+          isAddingNewModule
+            ? 'Thêm Tác vụ Google Apps Script mới'
+            : `Chỉnh sửa Tác vụ Apps Script: ${editingModuleDraft?.name || ''}`
+        }
+        size="lg"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setEditingModuleDraft(null);
+                setIsAddingNewModule(false);
+              }}
+            >
+              Hủy
+            </Button>
+            <Button variant="primary" icon={Save} onClick={handleSaveModuleEdit}>
+              Áp dụng vào Danh mục Script
+            </Button>
+          </>
+        }
+      >
+        {editingModuleDraft && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+              <div className="md:col-span-7">
+                <Field label="Tên tác vụ Apps Script (Có thể đặt lại tên theo ý muốn)">
+                  <Input
+                    value={editingModuleDraft.name}
+                    onChange={e =>
+                      setEditingModuleDraft(prev =>
+                        prev ? { ...prev, name: e.target.value } : null
+                      )
+                    }
+                    placeholder="VD: Tự động nhảy ngày giờ khi Brand chọn Yes / No"
+                  />
+                </Field>
+              </div>
+              <div className="md:col-span-5">
+                <Field label="Sự kiện kích hoạt trên Google Sheet">
+                  <Select
+                    value={editingModuleDraft.triggerType}
+                    onChange={e =>
+                      setEditingModuleDraft(prev =>
+                        prev
+                          ? {
+                              ...prev,
+                              triggerType: e.target.value === 'onOpen' ? 'onOpen' : 'onEdit',
+                            }
+                          : null
+                      )
+                    }
+                  >
+                    <option value="onEdit">onEdit — Tự chạy tức thì khi người dùng sửa ô</option>
+                    <option value="onOpen">onOpen — Tạo thanh Menu khi mở file Sheet</option>
+                  </Select>
+                </Field>
+              </div>
+            </div>
+
+            <Field label="Cột tác động trên Google Sheet (Giúp nhân sự dễ tra cứu)">
+              <Input
+                value={editingModuleDraft.targetColumns}
+                onChange={e =>
+                  setEditingModuleDraft(prev =>
+                    prev ? { ...prev, targetColumns: e.target.value } : null
+                  )
+                }
+                placeholder="VD: Brand chọn → TG Brand duyệt"
+              />
+            </Field>
+
+            <Field label="Tác dụng thực tế của Script này trên Google Sheet">
+              <Textarea
+                rows={3}
+                value={editingModuleDraft.purpose}
+                onChange={e =>
+                  setEditingModuleDraft(prev =>
+                    prev ? { ...prev, purpose: e.target.value } : null
+                  )
+                }
+                placeholder="Mô tả rõ tác dụng của Script khi Brand hoặc nhân sự thao tác trên Google Sheet..."
+              />
+            </Field>
+
+            <Field label="Mã hàm xử lý Google Apps Script (JavaScript)">
+              <Textarea
+                rows={10}
+                value={editingModuleDraft.codeBody}
+                onChange={e =>
+                  setEditingModuleDraft(prev =>
+                    prev ? { ...prev, codeBody: e.target.value } : null
+                  )
+                }
+                className="font-mono text-2xs"
+              />
+            </Field>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

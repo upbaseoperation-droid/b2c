@@ -4789,7 +4789,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         setIsGoogleSheetModalOpen(false);
                         onOpenSheetSetupScreen('SERVICE_ACCOUNT');
                         onNotify?.(
-                          'Đã mở màn Cấu hình OAuth2 Tập trung. Hãy dán Client ID, Client Secret và Refresh Token để bơm tự động Apps Script.',
+                          'Đã mở màn Quản lý Tiện ích Apps Script & Cấu hình OAuth2. Hãy dán Client ID, Client Secret và Refresh Token để cài đặt Apps Script lên Sheet.',
                           'info'
                         );
                         return;
@@ -4797,21 +4797,21 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       onNotify?.(
                         data?.error ||
                           data?.results?.[0]?.error ||
-                          'Không thể bơm Apps Script vào Sheet này.',
+                          'Không thể cài đặt Apps Script lên Sheet này.',
                         'error'
                       );
                       return;
                     }
                     onNotify?.(
-                      `Đã bơm tự động Apps Script (onEdit ghi giờ Brand duyệt) vào Google Sheet của "${activeStoreName}"!`,
+                      `Đã cài đặt / cập nhật bộ Tiện ích Apps Script lên Google Sheet của "${activeStoreName}"!`,
                       'success'
                     );
                   } catch {
-                    onNotify?.('Lỗi kết nối khi đẩy Apps Script.', 'error');
+                    onNotify?.('Lỗi kết nối khi cài đặt Apps Script.', 'error');
                   }
                 }}
               >
-                Bơm tự động Apps Script (onEdit)
+                Cài đặt Apps Script lên Sheet
               </Button>
             )}
             <Button variant="primary" icon={Check} onClick={handleSaveGoogleSheetUrl}>
