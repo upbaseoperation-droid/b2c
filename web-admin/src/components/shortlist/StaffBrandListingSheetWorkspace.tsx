@@ -95,7 +95,27 @@ import {
   BrandProductDropdownInput,
   buildBrandProductCatalogGroups,
 } from './BrandProductDropdownInput';
-import { ActionMenu, Avatar, Button, Field, Input, Modal, Person, Select, Status } from '../ui';
+import { ActionMenu, Avatar, Button, Field, Input, Modal, PageActions, Person, Select, Status } from '../ui';
+
+const BRAND_REVIEW_PRIORITY_KEYS: StaffListingColumnKey[] = [
+  'idKenh',
+  'tenKenh',
+  'sanPham',
+  'tepKenh',
+  'contentTag',
+  'tepBooking',
+  'giaNetVideo',
+  'phiBookingKemThue',
+  'deXuatUpBase',
+  'brandChon',
+  'lyDoTuChoi',
+  'contentNote',
+  'slaBrandDuyet',
+  'ngayBrandDuyet',
+  'ngayDien',
+  'nhanSuDien',
+  'dot',
+];
 
 const parseThousandNumberInput = (raw: string): number => {
   const digits = String(raw || '').replace(/[^\d]/g, '');
@@ -433,23 +453,14 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     });
   }, [collection.sheets, activeMonth, activeStoreName, b2cStores]);
 
-  // Mặc định mở bộ cột GĐ 1: Bản gửi Brand + hiển thị luôn Thời gian Listing, Thời gian Brand duyệt & SLA Brand duyệt
-  // (Ẩn cột Link kênh trên bảng Web vì đã tích hợp nút mở nhanh TikTok ngay tại cột ID kênh; khi đẩy/copy Google Sheet vẫn xuất đủ 57 cột A -> BE)
+  // Mặc định mở bộ cột GĐ 1: 17 cột trọng tâm phục vụ Listing & Trình Brand duyệt ngay trên màn hình đầu tiên
+  // (Khi đẩy/copy Google Sheet vẫn xuất đủ 57 cột chuẩn A -> BE)
   const [activeColumnPreset, setActiveColumnPreset] = useState<
     'BRAND_WORKING_FILE' | 'ACCEPTANCE_FILE_32' | 'ALL_48' | 'LARK_BASE'
   >('BRAND_WORKING_FILE');
-  const [visibleColumnKeys, setVisibleColumnKeys] = useState<StaffListingColumnKey[]>(() =>
-    Array.from(
-      new Set<StaffListingColumnKey>([
-        'ngayDien',
-        ...STAFF_LISTING_COLUMNS.filter((c) => c.inBrandWorkingFile && c.key !== 'linkKenh').map(
-          (c) => c.key
-        ),
-        'ngayBrandDuyet',
-        'slaBrandDuyet',
-      ])
-    )
-  );
+  const [visibleColumnKeys, setVisibleColumnKeys] = useState<StaffListingColumnKey[]>(() => [
+    ...BRAND_REVIEW_PRIORITY_KEYS,
+  ]);
   const [isColumnPickerOpen, setIsColumnPickerOpen] = useState(false);
 
   const visibleColumns = useMemo(() => {
@@ -460,24 +471,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     // để người dùng nhìn thấy ngay trạng thái duyệt mà không cần cuộn ngang; đồng thời giữ ID kênh ở vị trí đầu tiên để khớp tuyệt đối với sticky left-[72px].
     const priorityOrder: StaffListingColumnKey[] =
       activeColumnPreset === 'BRAND_WORKING_FILE'
-        ? [
-            'idKenh',
-            'tenKenh',
-            'sanPham',
-            'tepKenh',
-            'contentTag',
-            'tepBooking',
-            'giaNetVideo',
-            'phiBookingKemThue',
-            'deXuatUpBase',
-            'brandChon',
-            'lyDoTuChoi',
-            'slaBrandDuyet',
-            'ngayBrandDuyet',
-            'ngayDien',
-            'nhanSuDien',
-            'dot',
-          ]
+        ? BRAND_REVIEW_PRIORITY_KEYS
         : ['idKenh'];
 
     const priorityRank = new Map<StaffListingColumnKey, number>();
@@ -535,25 +529,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   ) => {
     setActiveColumnPreset(preset);
     if (preset === 'ALL_48') {
-      setVisibleColumnKeys(STAFF_LISTING_COLUMNS.map((c) => c.key));
-    } else if (preset === 'BRAND_WORKING_FILE') {
       setVisibleColumnKeys(
-        Array.from(
-          new Set<StaffListingColumnKey>([
-            'ngayDien',
-            ...STAFF_LISTING_COLUMNS.filter(
-              (c) => c.inBrandWorkingFile && c.key !== 'linkKenh'
-            ).map((c) => c.key),
-            'ngayBrandDuyet',
-            'slaBrandDuyet',
-          ])
-        )
+        STAFF_LISTING_COLUMNS.filter((c) => c.index <= 57).map((c) => c.key)
       );
+    } else if (preset === 'BRAND_WORKING_FILE') {
+      setVisibleColumnKeys([...BRAND_REVIEW_PRIORITY_KEYS]);
     } else if (preset === 'ACCEPTANCE_FILE_32') {
       const coreKeys: StaffListingColumnKey[] = [
-        'ngayDien',
-        'dot',
-        'nhanSuDien',
         'idKenh',
         'tenKenh',
         'sanPham',
@@ -561,6 +543,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         'brandChon',
         'ngayBrandDuyet',
         'slaBrandDuyet',
+        'ngayDien',
+        'nhanSuDien',
+        'dot',
       ];
       const acceptanceKeys = STAFF_LISTING_COLUMNS.filter(
         (c) => c.group === 'Chốt Book & Nghiệm thu (File 3.2)'
@@ -568,7 +553,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       setVisibleColumnKeys(Array.from(new Set([...coreKeys, ...acceptanceKeys])));
     } else {
       setVisibleColumnKeys(
-        STAFF_LISTING_COLUMNS.filter((c) => c.inLarkBase).map((c) => c.key)
+        STAFF_LISTING_COLUMNS.filter((c) => c.inLarkBase && c.index <= 57).map((c) => c.key)
       );
     }
   };
@@ -4699,6 +4684,58 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             <Button variant="ghost" onClick={() => setIsGoogleSheetModalOpen(false)}>
               Đóng
             </Button>
+            {(googleSheetUrlDraft.trim() || currentGoogleSheetUrl) && (
+              <Button
+                variant="secondary"
+                icon={Settings}
+                onClick={async () => {
+                  const targetUrl = (googleSheetUrlDraft || currentGoogleSheetUrl || '').trim();
+                  if (!targetUrl) return;
+                  try {
+                    const res = await fetch('/api/booking-list/setup-appscript', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        storeName: activeStoreName,
+                        sheetUrl: targetUrl,
+                      }),
+                    });
+                    const data = (await res.json().catch(() => null)) as {
+                      ok?: boolean;
+                      code?: string;
+                      error?: string;
+                      results?: Array<{ ok: boolean; scriptId?: string; error?: string }>;
+                    } | null;
+                    if (!res.ok || !data?.ok) {
+                      if (data?.code === 'OAUTH_NOT_CONFIGURED' && onOpenSheetSetupScreen) {
+                        setIsGoogleSheetModalOpen(false);
+                        onOpenSheetSetupScreen('SERVICE_ACCOUNT');
+                        onNotify?.(
+                          'Đã mở màn Cấu hình OAuth2 Tập trung. Hãy dán Client ID, Client Secret và Refresh Token để bơm tự động Apps Script.',
+                          'info'
+                        );
+                        return;
+                      }
+                      onNotify?.(
+                        data?.error ||
+                          data?.results?.[0]?.error ||
+                          'Không thể bơm Apps Script vào Sheet này.',
+                        'error'
+                      );
+                      return;
+                    }
+                    onNotify?.(
+                      `Đã bơm tự động Apps Script (onEdit ghi giờ Brand duyệt) vào Google Sheet của "${activeStoreName}"!`,
+                      'success'
+                    );
+                  } catch {
+                    onNotify?.('Lỗi kết nối khi đẩy Apps Script.', 'error');
+                  }
+                }}
+              >
+                Bơm tự động Apps Script (onEdit)
+              </Button>
+            )}
             <Button variant="primary" icon={Check} onClick={handleSaveGoogleSheetUrl}>
               Lưu đường dẫn Google Sheet
             </Button>

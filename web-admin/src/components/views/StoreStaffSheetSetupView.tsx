@@ -156,6 +156,39 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
   const [saJsonInput, setSaJsonInput] = useState('');
   const [savingSa, setSavingSa] = useState(false);
 
+  // Cấu hình & Đẩy tự động Google Apps Script (onEdit) vào các file Google Sheet của Brand
+  const [appsScriptConfigured, setAppsScriptConfigured] = useState(false);
+  const [appsScriptClientIdMasked, setAppsScriptClientIdMasked] = useState<string | null>(null);
+  const [oauthClientIdInput, setOauthClientIdInput] = useState('');
+  const [oauthClientSecretInput, setOauthClientSecretInput] = useState('');
+  const [oauthRefreshTokenInput, setOauthRefreshTokenInput] = useState('');
+  const [appsScriptCodeDraft, setAppsScriptCodeDraft] = useState('');
+  const [appsScriptInstalledMap, setAppsScriptInstalledMap] = useState<
+    Record<
+      string,
+      {
+        spreadsheetId: string;
+        scriptId: string;
+        storeName?: string;
+        sheetUrl?: string;
+        installedAt: string;
+      }
+    >
+  >({});
+  const [savingAppsScriptOAuth, setSavingAppsScriptOAuth] = useState(false);
+  const [pushingAppsScriptBusy, setPushingAppsScriptBusy] = useState(false);
+  const [appsScriptBatchResults, setAppsScriptBatchResults] = useState<
+    Array<{
+      storeName: string;
+      sheetUrl: string;
+      spreadsheetId: string;
+      ok: boolean;
+      scriptId?: string;
+      mode?: 'CREATED' | 'UPDATED';
+      error?: string;
+    }>
+  >([]);
+
   const b2cStores = useMemo(
     () => stores.filter(s => s.isB2cManaged !== false && s.storeName),
     [stores]
@@ -239,6 +272,34 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
         }
         setSaConfigured(false);
       })
+      .catch(() => {});
+
+    fetch('/api/booking-list/setup-appscript')
+      .then((r) => r.json())
+      .then(
+        (d: {
+          configured?: boolean;
+          clientIdMasked?: string | null;
+          scriptCode?: string;
+          installedMap?: Record<
+            string,
+            {
+              spreadsheetId: string;
+              scriptId: string;
+              storeName?: string;
+              sheetUrl?: string;
+              installedAt: string;
+            }
+          >;
+        }) => {
+          setAppsScriptConfigured(Boolean(d.configured));
+          setAppsScriptClientIdMasked(d.clientIdMasked || null);
+          if (d.scriptCode) setAppsScriptCodeDraft(d.scriptCode);
+          if (d.installedMap && typeof d.installedMap === 'object') {
+            setAppsScriptInstalledMap(d.installedMap);
+          }
+        }
+      )
       .catch(() => {});
   }, []);
 
@@ -795,6 +856,143 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
     }
   };
 
+  const extractSpreadsheetIdFromUrl = (url: string): string => {
+    const m = String(url || '').match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    return m ? m[1] : '';
+  };
+
+  const handleSaveAppsScriptOAuthConfig = async () => {
+    setSavingAppsScriptOAuth(true);
+    try {
+      const res = await fetch('/api/booking-list/setup-appscript', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...(oauthClientIdInput.trim() ? { clientId: oauthClientIdInput.trim() } : {}),
+          ...(oauthClientSecretInput.trim() ? { clientSecret: oauthClientSecretInput.trim() } : {}),
+          ...(oauthRefreshTokenInput.trim() ? { refreshToken: oauthRefreshTokenInput.trim() } : {}),
+          ...(appsScriptCodeDraft.trim() ? { customScriptCode: appsScriptCodeDraft.trim() } : {}),
+          verifyToken: Boolean(
+            oauthClientIdInput.trim() || oauthClientSecretInput.trim() || oauthRefreshTokenInput.trim()
+          ),
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        configured?: boolean;
+        clientIdMasked?: string | null;
+        scriptCode?: string;
+        error?: string;
+      } | null;
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || 'Không lưu được cấu hình Google Apps Script API.');
+      }
+      setAppsScriptConfigured(Boolean(data.configured));
+      if (data.clientIdMasked) setAppsScriptClientIdMasked(data.clientIdMasked);
+      if (data.scriptCode) setAppsScriptCodeDraft(data.scriptCode);
+      setOauthClientIdInput('');
+      setOauthClientSecretInput('');
+      setOauthRefreshTokenInput('');
+      onNotify?.(
+        'Đã xác thực và lưu cấu hình Google OAuth2 cho Apps Script API thành công.',
+        'success'
+      );
+    } catch (err) {
+      onNotify?.(
+        err instanceof Error ? err.message : 'Lỗi lưu cấu hình Google Apps Script API.',
+        'error'
+      );
+    } finally {
+      setSavingAppsScriptOAuth(false);
+    }
+  };
+
+  const handleDeployAppsScriptToTargets = async (
+    targets: Array<{ storeName: string; sheetUrl: string }>
+  ) => {
+    const validTargets = targets.filter((t) => Boolean(t.sheetUrl?.trim()));
+    if (validTargets.length === 0) {
+      onNotify?.('Chưa có gian hàng nào gắn Link Google Sheet để cài đặt Apps Script.', 'warning');
+      return;
+    }
+    if (!appsScriptConfigured) {
+      setActiveTab('SERVICE_ACCOUNT');
+      onNotify?.(
+        'Vui lòng nhập cấu hình Google OAuth2 (Client ID, Client Secret, Refresh Token) ở tab Kết nối Google trước khi bơm Apps Script tự động.',
+        'warning'
+      );
+      return;
+    }
+    setPushingAppsScriptBusy(true);
+    setAppsScriptBatchResults([]);
+    try {
+      const res = await fetch('/api/booking-list/setup-appscript', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targets: validTargets,
+          scriptCode: appsScriptCodeDraft,
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        successCount?: number;
+        failCount?: number;
+        results?: Array<{
+          storeName: string;
+          sheetUrl: string;
+          spreadsheetId: string;
+          ok: boolean;
+          scriptId?: string;
+          mode?: 'CREATED' | 'UPDATED';
+          error?: string;
+        }>;
+        installedMap?: Record<
+          string,
+          {
+            spreadsheetId: string;
+            scriptId: string;
+            storeName?: string;
+            sheetUrl?: string;
+            installedAt: string;
+          }
+        >;
+        error?: string;
+      } | null;
+
+      if (data?.installedMap && typeof data.installedMap === 'object') {
+        setAppsScriptInstalledMap(data.installedMap);
+      }
+      if (Array.isArray(data?.results)) {
+        setAppsScriptBatchResults(data.results);
+      }
+
+      if (!res.ok || !data?.ok) {
+        onNotify?.(
+          data?.error ||
+            data?.results?.[0]?.error ||
+            'Không thể bơm tự động Apps Script vào file Google Sheet.',
+          'error'
+        );
+        return;
+      }
+
+      onNotify?.(
+        `Đã bơm thành công Apps Script (onEdit) vào ${data.successCount}/${validTargets.length} gian hàng${
+          data.failCount ? ` (${data.failCount} lỗi)` : ''
+        }.`,
+        data.failCount ? 'warning' : 'success'
+      );
+    } catch (err) {
+      onNotify?.(
+        err instanceof Error ? err.message : 'Lỗi kết nối khi đẩy Apps Script.',
+        'error'
+      );
+    } finally {
+      setPushingAppsScriptBusy(false);
+    }
+  };
+
   // Định nghĩa cột cho DataTable chính
   const tableColumns = useMemo<Column<StoreStaffSheetDraft>[]>(
     () => [
@@ -915,19 +1113,38 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
       {
         key: 'status',
         header: 'Trạng thái & Thao tác',
-        width: 170,
+        width: 220,
         align: 'right',
         render: row => {
           const hasSheet = Boolean(row.bookingSheetUrl.trim());
+          const sheetId = extractSpreadsheetIdFromUrl(row.bookingSheetUrl);
+          const scriptMeta = sheetId ? appsScriptInstalledMap[sheetId] : undefined;
           const isDirty = dirtyIds.has(row.storeId);
           return (
             <div className="flex flex-col items-end gap-1.5">
-              {hasSheet ? (
-                <Status tone="positive">Đã gắn Sheet</Status>
-              ) : (
-                <Status tone="neutral">Chưa gắn Sheet</Status>
-              )}
-              <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center justify-end gap-1">
+                {hasSheet ? (
+                  <Status tone="positive">Đã gắn Sheet</Status>
+                ) : (
+                  <Status tone="neutral">Chưa gắn Sheet</Status>
+                )}
+                {scriptMeta && <Status tone="info">Đã gắn Apps Script</Status>}
+              </div>
+              <div className="flex flex-wrap items-center justify-end gap-1">
+                {hasSheet && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={pushingAppsScriptBusy}
+                    onClick={() =>
+                      void handleDeployAppsScriptToTargets([
+                        { storeName: row.storeName, sheetUrl: row.bookingSheetUrl },
+                      ])
+                    }
+                  >
+                    {scriptMeta ? 'Cập nhật Script' : 'Cài Apps Script'}
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="ghost"
@@ -976,7 +1193,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dirtyIds, saving, onSelectStoreForListing]
+    [dirtyIds, saving, onSelectStoreForListing, appsScriptInstalledMap, pushingAppsScriptBusy]
   );
 
   // Định nghĩa cột cho bảng xem trước Dán hàng loạt
@@ -1935,50 +2152,248 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
       )}
 
       {activeTab === 'SERVICE_ACCOUNT' && (
-        <Panel
-          title="Cấu hình tài khoản kết nối Google Sheets API v4 (Service Account)"
-          actions={
-            <Button
-              size="sm"
-              variant="primary"
-              icon={KeyRound}
-              disabled={savingSa || !saJsonInput.trim()}
-              onClick={() => void handleSaveServiceAccount()}
-            >
-              {savingSa ? 'Đang lưu…' : 'Lưu cấu hình Service Account'}
-            </Button>
-          }
-        >
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-sunken px-3 py-2.5 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="text-ink-2">Trạng thái máy chủ:</span>
-                {saConfigured ? (
-                  <Status tone="positive">Đã kết nối Service Account</Status>
-                ) : (
-                  <Status tone="warning">Chưa cấu hình Service Account</Status>
+        <div className="space-y-4">
+          <Panel
+            title="1. Cấu hình tài khoản kết nối Google Sheets API v4 (Service Account)"
+            actions={
+              <Button
+                size="sm"
+                variant="primary"
+                icon={KeyRound}
+                disabled={savingSa || !saJsonInput.trim()}
+                onClick={() => void handleSaveServiceAccount()}
+              >
+                {savingSa ? 'Đang lưu…' : 'Lưu cấu hình Service Account'}
+              </Button>
+            }
+          >
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-sunken px-3 py-2.5 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-ink-2">Trạng thái máy chủ:</span>
+                  {saConfigured ? (
+                    <Status tone="positive">Đã kết nối Service Account</Status>
+                  ) : (
+                    <Status tone="warning">Chưa cấu hình Service Account</Status>
+                  )}
+                </div>
+                {saEmail && (
+                  <div className="text-ink-2">
+                    Email cấp quyền trên Google Sheet:{' '}
+                    <code className="rounded bg-surface px-2 py-0.5 font-mono text-ink border border-line">
+                      {saEmail}
+                    </code>
+                  </div>
                 )}
               </div>
-              {saEmail && (
+
+              <Field label="Dán nội dung file JSON của Google Service Account (chứa client_email & private_key)">
+                <Textarea
+                  rows={5}
+                  value={saJsonInput}
+                  onChange={e => setSaJsonInput(e.target.value)}
+                  placeholder={'{\n  "type": "service_account",\n  "client_email": "upbase-sheets-bot@project-id.iam.gserviceaccount.com",\n  "private_key": "-----BEGIN PRIVATE KEY-----\\n..."\n}'}
+                />
+              </Field>
+            </div>
+          </Panel>
+
+          <Panel
+            title="2. Cài đặt Tập trung Google Apps Script (onEdit) tự động ghi giờ Brand duyệt cho toàn bộ File Sheet của Brand"
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={Save}
+                  disabled={savingAppsScriptOAuth}
+                  onClick={() => void handleSaveAppsScriptOAuthConfig()}
+                >
+                  {savingAppsScriptOAuth ? 'Đang xác thực & lưu…' : 'Lưu cấu hình OAuth2 & Mã Script'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={RefreshCw}
+                  disabled={pushingAppsScriptBusy || stats.withSheet === 0}
+                  onClick={() =>
+                    void handleDeployAppsScriptToTargets(
+                      Object.values(drafts)
+                        .filter(d => Boolean(d.bookingSheetUrl.trim()))
+                        .map(d => ({ storeName: d.storeName, sheetUrl: d.bookingSheetUrl }))
+                    )
+                  }
+                >
+                  {pushingAppsScriptBusy
+                    ? 'Đang bơm Apps Script…'
+                    : `Bơm tự động Apps Script vào tất cả (${stats.withSheet} gian hàng có Sheet)`}
+                </Button>
+              </div>
+            }
+          >
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-sunken px-3 py-2.5 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-ink-2">Trạng thái kết nối Google Apps Script API:</span>
+                  {appsScriptConfigured ? (
+                    <Status tone="positive">Đã cấu hình OAuth2 (Sẵn sàng bơm Script)</Status>
+                  ) : (
+                    <Status tone="warning">Chưa cấu hình OAuth2 Refresh Token</Status>
+                  )}
+                </div>
                 <div className="text-ink-2">
-                  Email cấp quyền trên Google Sheet:{' '}
-                  <code className="rounded bg-surface px-2 py-0.5 font-mono text-ink border border-line">
-                    {saEmail}
-                  </code>
+                  {appsScriptClientIdMasked ? (
+                    <span>
+                      Client ID đang lưu:{' '}
+                      <code className="rounded bg-surface px-2 py-0.5 font-mono text-ink border border-line">
+                        {appsScriptClientIdMasked}
+                      </code>
+                    </span>
+                  ) : (
+                    <span>
+                      Đã cài Script cho{' '}
+                      <strong className="text-ink">
+                        {Object.keys(appsScriptInstalledMap).length}
+                      </strong>{' '}
+                      file Google Sheet
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-line bg-sunken/50 p-3.5 text-xs text-ink-2 space-y-1.5">
+                <div className="font-semibold text-ink">
+                  Hướng dẫn lấy 3 thông số OAuth2 một lần duy nhất (chỉ mất 2 phút):
+                </div>
+                <div>
+                  <strong>Bước 1:</strong> Mở{' '}
+                  <a
+                    href="https://script.google.com/home/usersettings"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-accent hover:underline"
+                  >
+                    script.google.com/home/usersettings
+                  </a>{' '}
+                  → Bật công tắc <strong>Google Apps Script API: ON</strong>.
+                </div>
+                <div>
+                  <strong>Bước 2:</strong> Trong{' '}
+                  <a
+                    href="https://console.cloud.google.com/apis/library/script.googleapis.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-accent hover:underline"
+                  >
+                    Google Cloud Console → Library
+                  </a>
+                  , bấm <strong>Enable</strong> cho <strong>Apps Script API</strong>. Sau đó vào{' '}
+                  <strong>APIs &amp; Services → Credentials → Create Credentials → OAuth client ID</strong>{' '}
+                  (chọn loại <em>Web application</em>), thêm <code>https://developers.google.com/oauthplayground</code> vào mục{' '}
+                  <em>Authorized redirect URIs</em> để lấy <strong>Client ID</strong> và <strong>Client Secret</strong>.
+                </div>
+                <div>
+                  <strong>Bước 3:</strong> Mở{' '}
+                  <a
+                    href="https://developers.google.com/oauthplayground"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-accent hover:underline"
+                  >
+                    Google OAuth2 Playground
+                  </a>{' '}
+                  → Bấm biểu tượng bánh răng góc phải trên, tích chọn{' '}
+                  <em>Use your own OAuth credentials</em> và dán Client ID + Client Secret vào. Ở cột trái (Step 1), dán 2 quyền:{' '}
+                  <code className="rounded bg-surface px-1 py-0.5 border border-line text-ink">
+                    https://www.googleapis.com/auth/script.projects
+                  </code>{' '}
+                  và{' '}
+                  <code className="rounded bg-surface px-1 py-0.5 border border-line text-ink">
+                    https://www.googleapis.com/auth/spreadsheets
+                  </code>{' '}
+                  → bấm <strong>Authorize APIs</strong> → ở Step 2 bấm{' '}
+                  <strong>Exchange authorization code for tokens</strong> để copy{' '}
+                  <strong>Refresh token</strong> dán vào ô bên dưới.
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Field label="1. Google OAuth Client ID">
+                  <Input
+                    value={oauthClientIdInput}
+                    onChange={e => setOauthClientIdInput(e.target.value)}
+                    placeholder={appsScriptClientIdMasked || '123456789-abc...apps.googleusercontent.com'}
+                  />
+                </Field>
+                <Field label="2. Google OAuth Client Secret">
+                  <Input
+                    type="password"
+                    value={oauthClientSecretInput}
+                    onChange={e => setOauthClientSecretInput(e.target.value)}
+                    placeholder={appsScriptConfigured ? '•••••••• (Đã lưu — nhập mới nếu muốn đổi)' : 'GOCSPX-...'}
+                  />
+                </Field>
+                <Field label="3. Google OAuth Refresh Token">
+                  <Input
+                    type="password"
+                    value={oauthRefreshTokenInput}
+                    onChange={e => setOauthRefreshTokenInput(e.target.value)}
+                    placeholder={appsScriptConfigured ? '•••••••• (Đã lưu — nhập mới nếu muốn đổi)' : '1//04...'}
+                  />
+                </Field>
+              </div>
+
+              <Field label="Mã Google Apps Script (Code.gs) sẽ được bơm tự động vào các file Google Sheet của Brand">
+                <Textarea
+                  rows={10}
+                  value={appsScriptCodeDraft}
+                  onChange={e => setAppsScriptCodeDraft(e.target.value)}
+                  className="font-mono text-2xs"
+                />
+              </Field>
+
+              {appsScriptBatchResults.length > 0 && (
+                <div className="rounded-lg border border-line overflow-hidden">
+                  <div className="px-3 py-2 bg-sunken border-b border-line flex items-center justify-between text-xs font-semibold text-ink">
+                    <span>Kết quả bơm Apps Script vừa thực thi ({appsScriptBatchResults.length} gian hàng)</span>
+                    <div className="flex items-center gap-2">
+                      <Status tone="positive">
+                        {appsScriptBatchResults.filter(r => r.ok).length} thành công
+                      </Status>
+                      {appsScriptBatchResults.some(r => !r.ok) && (
+                        <Status tone="critical">
+                          {appsScriptBatchResults.filter(r => !r.ok).length} lỗi
+                        </Status>
+                      )}
+                    </div>
+                  </div>
+                  <div className="max-h-52 overflow-y-auto divide-y divide-line bg-surface text-xs">
+                    {appsScriptBatchResults.map((res, idx) => (
+                      <div
+                        key={`${res.storeName}-${idx}`}
+                        className="px-3 py-2 flex flex-wrap items-center justify-between gap-2"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-ink">{res.storeName}</span>
+                          {res.ok ? (
+                            <Status tone="positive">
+                              {res.mode === 'UPDATED' ? 'Đã cập nhật Script' : 'Đã tạo mới Script'}
+                            </Status>
+                          ) : (
+                            <Status tone="critical">Lỗi</Status>
+                          )}
+                        </div>
+                        <div className="text-2xs text-ink-3 font-mono">
+                          {res.ok ? `scriptId: ${res.scriptId}` : res.error}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
-
-            <Field label="Dán nội dung file JSON của Google Service Account (chứa client_email & private_key)">
-              <Textarea
-                rows={7}
-                value={saJsonInput}
-                onChange={e => setSaJsonInput(e.target.value)}
-                placeholder={'{\n  "type": "service_account",\n  "client_email": "upbase-sheets-bot@project-id.iam.gserviceaccount.com",\n  "private_key": "-----BEGIN PRIVATE KEY-----\\n..."\n}'}
-              />
-            </Field>
-          </div>
-        </Panel>
+          </Panel>
+        </div>
       )}
     </div>
   );
