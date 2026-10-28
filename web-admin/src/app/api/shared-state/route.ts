@@ -26,7 +26,6 @@ const ALLOWED_SHARED_STATE_KEYS = new Set<string>([
   'custom-knowledge-articles-v1',
   'ads-reports-metadata-v1',
   'cloudflare-r2-config-v1',
-  'google-sheets-config-v1',
 ]);
 
 async function resolveUser(req: NextRequest) {

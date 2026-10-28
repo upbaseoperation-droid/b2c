@@ -2697,6 +2697,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          planId: activeSheetKey,
           sheetUrl: url,
           activeTab: payload.activeTab || sheetTemplateActiveTab || defaultGoogleSheetTab,
           ...payload,

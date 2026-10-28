@@ -9,7 +9,13 @@ export const runtime = 'nodejs';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   // Job đồng bộ tự xác thực bearer secret tại route, không dùng phiên người dùng.
-  if (pathname === '/api/contracts/integrations/wesign/sync') return NextResponse.next();
+  // Webhook va Job tu xac thuc secret tai route, khong dung phien nguoi dung
+  if (
+    pathname === '/api/contracts/integrations/wesign/sync' ||
+    pathname.startsWith('/api/integrations/zalo-bot/webhook')
+  ) {
+    return NextResponse.next();
+  }
 
   // 1. Cho phép truy cập trang login và các API xác thực auth, static files
   if (

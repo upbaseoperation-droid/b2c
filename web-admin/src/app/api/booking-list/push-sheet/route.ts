@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { assertPlanIdAccess } from '@/lib/server/monthlyPlanStore';
+import { assertListingSheetAccess } from '@/lib/server/monthlyPlanStore';
+import { isStaffGlobalAdminOrManager } from '@/lib/rbacScope';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
 import {
   appendNewRows,
@@ -82,10 +83,13 @@ export async function GET(request: NextRequest) {
   });
 }
 
-// PUT /api/booking-list/push-sheet — khai báo hoặc cập nhật thông tin Google Service Account trực tiếp từ giao diện
+// PUT /api/booking-list/push-sheet — khai báo hoặc cập nhật thông tin Google Service Account trực tiếp từ giao diện (chỉ Giám đốc / Admin)
 export async function PUT(request: NextRequest) {
   const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
+  if (!isStaffGlobalAdminOrManager(actor)) {
+    return NextResponse.json({ error: 'Chỉ Giám đốc / Admin được đổi tài khoản dịch vụ Google.', code: 'FORBIDDEN' }, { status: 403 });
+  }
   try {
     const body = (await request.json()) as {
       serviceAccountEmail?: string;
@@ -134,6 +138,7 @@ export async function PATCH(request: NextRequest) {
   if (!actor) return unauthorized();
   try {
     const body = (await request.json()) as {
+      planId?: string;
       sheetUrl?: string;
       activeTab?: string;
       tabVisibility?: { title: string; hidden: boolean }[];
@@ -149,6 +154,10 @@ export async function PATCH(request: NextRequest) {
     if (!spreadsheetId) {
       return NextResponse.json({ error: 'Link Google Sheet không hợp lệ.', code: 'INVALID' }, { status: 400 });
     }
+    if (!body.planId) {
+      return NextResponse.json({ error: 'Thiếu mã kế hoạch hoặc mã Sheet Listing.', code: 'INVALID' }, { status: 400 });
+    }
+    await assertListingSheetAccess(body.planId, actor);
     const sa = await ensureServiceAccountLoaded();
     if (!sa.configured) {
       return NextResponse.json(
@@ -207,7 +216,8 @@ export async function POST(request: NextRequest) {
     if (!sa.configured) {
       return NextResponse.json({ error: 'Chưa cấu hình tài khoản dịch vụ Google. Vui lòng khai báo Service Account hoặc tải file Excel.', code: 'NOT_CONFIGURED' }, { status: 503 });
     }
-    const plan = await assertPlanIdAccess(planId, actor, 'write').catch(() => null);
+    // Sheet nhân sự ("YYYY/MM__Gian") không có kế hoạch: chỉ ghi Sheet, không đưa KOC vào bảng điều phối
+    const plan = await assertListingSheetAccess(planId, actor);
 
     const cellRows: (string | number)[][] = rawRows.map(r => (Array.isArray(r) ? r : r.cells));
     const pushObjects: PushRow[] = rawRows.filter((r): r is PushRow => !Array.isArray(r) && typeof r === 'object' && r !== null && 'handle' in r);

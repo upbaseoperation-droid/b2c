@@ -1060,7 +1060,7 @@ export function KocListingBatchHubView({
           onChange={setActiveSubTab}
           items={[
             { key: 'STAFF_BRAND_SHEET', label: '1. Bảng Listing KOC (Sheet)' },
-            { key: 'APPROVED_DEAL_BOARD', label: '2. Bảng Deal & Nghiệm thu' },
+            { key: 'APPROVED_DEAL_BOARD', label: '2. Quản lý Deal & Booking' },
             ...(isAdmin
               ? [
                   {

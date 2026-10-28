@@ -18,6 +18,7 @@ import { FULL_BRAND_PLAN_ACCESS, type BrandPlanAccess, type BrandPlanSection } f
 import {
   canEditPlanContent,
   canSubmitPlanForApproval,
+  isBookingExecutor,
   planPositionsOf,
   storeLeader,
   storeMainBooking,
@@ -27,8 +28,6 @@ import {
 import { isPersonInField } from '../staffIdentity';
 import type { BrandDetail } from '../types';
 import { INITIAL_MONTHLY_PLANS } from '../monthlyPlanData';
-import { INITIAL_STORE_PORTFOLIOS } from '../mockData';
-import { buildStandalonePlanForStore, matchStoreByStandaloneSlug, parseStandalonePlanId } from '../listingBoardRules';
 import { REAL_MONTHLY_PLANS_OCT_2026 } from '../realLarkPlans202610';
 import { REAL_MONTHLY_PLANS_NOV_2026 } from '../realLarkPlans202611';
 import { checkBreakdownForSubmit } from '../planBreakdownRules';
@@ -310,18 +309,6 @@ function checkPlanAccessWithCatalog(
 }
 
 async function getStoredPlanByIdFast(id: string): Promise<StoredMonthlyPlan | null> {
-  const standalone = parseStandalonePlanId(id);
-  if (standalone) {
-    const { data: catalog } = await readMasterCatalog().catch(() => ({ data: { stores: INITIAL_STORE_PORTFOLIOS, brands: [] } }));
-    const storeList = catalog.stores?.length ? catalog.stores : INITIAL_STORE_PORTFOLIOS;
-    const store = matchStoreByStandaloneSlug(storeList, standalone.storeSlug);
-    if (store) {
-      return {
-        plan: buildStandalonePlanForStore(store, standalone.month),
-        revision: 1,
-      };
-    }
-  }
   if (!isPostgresMonthlyPlanEnabled()) {
     ensureMemoryPlansSeeded();
     const mem = memoryPlansById.get(id);
@@ -348,6 +335,29 @@ export async function assertPlanIdAccess(id: string, actor: UserProfile, action:
   if (!stored) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
   await assertPlanAccess(stored.plan, actor, action);
   return stored.plan;
+}
+
+/**
+ * Quyền thao tác Google Sheet Listing theo khóa gửi lên:
+ * - Mã kế hoạch tháng: quyền sửa kế hoạch, trả về kế hoạch.
+ * - Khóa Sheet nhân sự "YYYY/MM__Tên gian hoặc nhãn": Booking / Leader của gian (hoặc gian thuộc nhãn đó), Giám đốc / Admin; trả về null.
+ */
+export async function assertListingSheetAccess(key: string, actor: UserProfile): Promise<InputPlanBreakdownState | null> {
+  const staffSheet = key.match(/^\d{4}\/\d{2}__(.+)$/);
+  if (!staffSheet) return assertPlanIdAccess(key, actor, 'write');
+  if (isStaffGlobalAdminOrManager(actor)) return null;
+  const { data: catalog } = await readMasterCatalog();
+  const name = staffSheet[1].trim().toLowerCase();
+  const stores = catalog.stores.filter(
+    s => (s.storeName || '').trim().toLowerCase() === name || brandKey(s.brandName || '') === brandKey(name)
+  );
+  const allowed = stores.some(store => {
+    const brand = catalog.brands.find(b => brandKey(b.name) === brandKey(store.brandName || '')) as BrandDetail | undefined;
+    const positions = storePositionsOf(actor, store, brand);
+    return isBookingExecutor(positions) || positions.has('LEADER');
+  });
+  if (!allowed) throw new PlanStoreError('FORBIDDEN', 'Chỉ nhân sự Booking hoặc Leader của gian được thao tác Sheet Listing của gian này.');
+  return null;
 }
 
 /** Bối cảnh quyền trên một kế hoạch: vị trí của người dùng trên gian, nhãn, Account PIC. Dùng cho các bảng làm việc theo người sở hữu. */

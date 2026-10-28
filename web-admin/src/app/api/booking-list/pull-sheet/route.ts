@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { assertPlanIdAccess } from '@/lib/server/monthlyPlanStore';
+import { assertListingSheetAccess } from '@/lib/server/monthlyPlanStore';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
 import { ensureServiceAccountLoaded, GoogleSheetsError, parseSpreadsheetGid, parseSpreadsheetId, readTab } from '@/lib/server/googleSheets';
 import { applyBrandDecision, columnOf, createListingItem, moveItem, parseBrandDecision, type BrandDecision } from '@/lib/listingBoardRules';
 import { klFromFee, KL_TIERS, type KlCode } from '@/lib/klTiers';
-import { INITIAL_KOCS } from '@/lib/mockData';
+import { UPBASE_FULL_KOC_MASTER } from '@/lib/kocMasterDataset';
 import { addKocToSlot, removeKocFromSlot, slotKocHandles, type ContentPlanData } from '@/lib/contentPlanRules';
 import { EMPTY_DEAL_BOARD, sanitizeDealBoard, syncDealSummaryFields, type DealBoardData, type ScriptStatus } from '@/lib/dealBoardRules';
-import type { KocListingItem, ListingBatchCycle } from '@/lib/types';
+import type { KocItem, KocListingItem, ListingBatchCycle } from '@/lib/types';
 import { getPlanActor, handlePlanError, unauthorized } from '../../monthly-plans/_shared';
 
 export const dynamic = 'force-dynamic';
@@ -98,9 +98,17 @@ const parseGradeCell = (v: string | undefined): KlCode | 'TAP UpAffiliate' | nul
 const parseBatchCell = (v: string | undefined): ListingBatchCycle | undefined => {
   if (!v) return undefined;
   const t = v.trim().toLowerCase();
-  if (t.includes('3') || t.includes('30') || t.includes('w4') || t.includes('w5')) return 'BATCH_30';
-  if (t.includes('2') || t.includes('20') || t.includes('w3')) return 'BATCH_20';
-  if (t.includes('1') || t.includes('10') || t.includes('w1') || t.includes('w2')) return 'BATCH_10';
+  // Theo tuần: W1–W2 → Đợt 1, W3 → Đợt 2, W4–W5 → Đợt 3
+  const week = t.match(/(?:\bw|week|tuần)\s*(\d)/);
+  if (week) {
+    const n = Number(week[1]);
+    return n <= 2 ? 'BATCH_10' : n === 3 ? 'BATCH_20' : 'BATCH_30';
+  }
+  // Theo đợt: "Đợt 1" / "1" / "10" (ngày 10), tương tự 2 / 20 và 3 / 30
+  const num = t.match(/\d+/)?.[0];
+  if (num === '1' || num === '10') return 'BATCH_10';
+  if (num === '2' || num === '20') return 'BATCH_20';
+  if (num === '3' || num === '30') return 'BATCH_30';
   return undefined;
 };
 
@@ -127,7 +135,8 @@ export async function POST(request: NextRequest) {
     if (!sa.configured) {
       return NextResponse.json({ error: 'Chưa cấu hình tài khoản dịch vụ Google.', code: 'NOT_CONFIGURED' }, { status: 503 });
     }
-    const plan = await assertPlanIdAccess(planId, actor, 'write').catch(() => null);
+    // Sheet nhân sự ("YYYY/MM__Gian") không có kế hoạch: chỉ trả dữ liệu Sheet, không ghi bảng điều phối
+    const plan = await assertListingSheetAccess(planId, actor);
 
     const { header, rows } = await readTab({
       spreadsheetId,
@@ -244,9 +253,13 @@ export async function POST(request: NextRequest) {
         slotIdByBriefCode.set(bc, s.id);
       }
     }
-    const masterKocByHandle = new Map(
-      INITIAL_KOCS.map(k => [normHandle(k.channelId || ''), k])
-    );
+    // KOC Master thật: bộ dữ liệu gốc, đè bằng bản ghi đã sửa / đồng bộ trên máy chủ
+    const kocDirectory = await readRecord<{ itemsByHandle: Record<string, KocItem> }>('koc-directory-changes', { itemsByHandle: {} });
+    const masterKocByHandle = new Map<string, KocItem>();
+    for (const k of [...UPBASE_FULL_KOC_MASTER, ...Object.values(kocDirectory.data.itemsByHandle || {})]) {
+      const key = normHandle(k.channelId || '');
+      if (key) masterKocByHandle.set(key, k);
+    }
 
     // 1. Bảng điều phối listing
     for (let attempt = 0; attempt < 3; attempt++) {

@@ -367,10 +367,6 @@ const UPDATABLE_COLUMNS = new Set([
   'Người nhận hàng',
   'SĐT nhận hàng',
   'Địa chỉ nhận hàng',
-  'Tên tài khoản ngân hàng',
-  'Số tài khoản',
-  'Ngân hàng',
-  'Số CCCD',
   'Link kịch bản',
   'Link video demo',
   'Link Air',
@@ -382,6 +378,9 @@ const UPDATABLE_COLUMNS = new Set([
   'Đơn hàng 30 ngày',
   'ROI 30 ngày',
 ]);
+
+/** Cột giấy tờ / tài khoản ngân hàng của KOC: chỉ lưu trong app, không ghi lên Google Sheet. */
+const BRAND_SHEET_BLOCKED_TOKENS = new Set(['so cccd', 'cccd', 'ten tai khoan ngan hang', 'so tai khoan', 'ngan hang']);
 
 /**
  * Thêm các dòng mới hoặc cập nhật dòng hiện có vào một tab, giữ nguyên những gì Brand đã điền (Brand chọn, Lý do từ chối).
@@ -399,7 +398,11 @@ export async function appendNewRows(opts: {
   keyColumn: string;
   dryRun?: boolean;
 }): Promise<AppendResult> {
-  const { spreadsheetId, sheetGid, columns, rows, keyColumn, dryRun = false } = opts;
+  const { spreadsheetId, sheetGid, keyColumn, dryRun = false } = opts;
+  // CCCD / tài khoản ngân hàng không bao giờ lên Sheet của Brand (ẩn cột vẫn mở lại hoặc tải file được)
+  const keptIdx = opts.columns.map((c, i) => (BRAND_SHEET_BLOCKED_TOKENS.has(normHeaderToken(c)) ? -1 : i)).filter(i => i >= 0);
+  const columns = keptIdx.map(i => opts.columns[i]);
+  const rows = opts.rows.map(r => keptIdx.map(i => r[i]));
   let tab = opts.tab;
   if (!tab.trim() || tab.length > 100) throw new GoogleSheetsError('Tên tab không hợp lệ.', 'INVALID', 400);
   const keyIdx = columns.indexOf(keyColumn);

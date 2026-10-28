@@ -24,7 +24,6 @@ import {
   KOC_REJECTION_REASONS_CATALOG,
   LARK_31_COLUMNS,
   buildBrandPriceChangeMessage,
-  buildStandalonePlanForStore,
   buildZaloGroupDealConfirmMessage,
   canMove,
   checkKocDuplicateAndPriceWarning,
@@ -38,7 +37,6 @@ import {
   getItemSlaBadge,
   isPlanListable,
   isPlanOfficiallyApproved,
-  isStandaloneListingPlan,
   itemFee,
   itemGrade,
   moveItem,
@@ -167,11 +165,11 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
     [stores, storeOverrides]
   );
 
-  // Hợp nhất kế hoạch 4.1.1 đã có trong kỳ và các gian hàng B2C chưa lập 4.1.1 (Listing tự do độc lập)
+  // Kế hoạch 4.1.1 trong kỳ (kể cả bản nháp), PIC lấy theo Dữ liệu gốc gian hàng
   const allMonthPlans = useMemo(() => {
     const storeByName = new Map(effectiveStores.map(s => [s.storeName.trim().toLowerCase(), s]));
     const storeById = new Map(effectiveStores.map(s => [s.id.toLowerCase(), s]));
-    const inMonth = listable
+    return listable
       .filter(p => p.month === activeMonth)
       .map(p => {
         const matchedSt =
@@ -180,22 +178,6 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
         const overriddenPic = matchedSt?.primaryPic || matchedSt?.b2cOwnerName;
         return overriddenPic ? { ...p, pic: overriddenPic } : p;
       });
-    const coveredStores = new Set<string>();
-    for (const p of inMonth) {
-      if (p.storeId) coveredStores.add(p.storeId.toLowerCase());
-      if (p.storeName) coveredStores.add(p.storeName.trim().toLowerCase());
-    }
-    const standalonePlans: InputPlanBreakdownState[] = [];
-    for (const st of effectiveStores) {
-      if (st.isB2cManaged === false || !st.storeName) continue;
-      const hasPlan =
-        (st.id && coveredStores.has(st.id.toLowerCase())) ||
-        coveredStores.has(st.storeName.trim().toLowerCase());
-      if (!hasPlan) {
-        standalonePlans.push(buildStandalonePlanForStore(st, activeMonth));
-      }
-    }
-    return [...inMonth, ...standalonePlans];
   }, [listable, activeMonth, effectiveStores]);
 
   const storePicOptions = useMemo(
@@ -211,12 +193,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
     return allMonthPlans
       .filter(p => !storePicFilter || (p.pic || '').trim().toLowerCase() === storePicFilter.toLowerCase())
       .filter(p => !q || `${p.storeName || ''} ${p.brandName} ${p.pic || ''}`.toLowerCase().includes(q))
-      .sort((a, b) => {
-        const aStandalone = isStandaloneListingPlan(a) ? 1 : 0;
-        const bStandalone = isStandaloneListingPlan(b) ? 1 : 0;
-        if (aStandalone !== bStandalone) return aStandalone - bStandalone;
-        return (a.storeName || a.title).localeCompare(b.storeName || b.title);
-      });
+      .sort((a, b) => (a.storeName || a.title).localeCompare(b.storeName || b.title));
   }, [allMonthPlans, search, storePicFilter]);
 
   // Tự động chọn kế hoạch đầu tiên hoặc theo context khi dữ liệu sẵn sàng
@@ -978,11 +955,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
               {visiblePlans.map(p => {
                 const planItems = Array.isArray(p.items) ? p.items : [];
                 const required = planItems.filter(i => i && i.category === 'KOC_TIER').reduce((s, i) => s + (i.qty || 0), 0);
-                const suffix = isStandaloneListingPlan(p)
-                  ? 'Listing tự do'
-                  : required > 0
-                  ? `${fmt(required)} KOC`
-                  : 'Chưa chia KL';
+                const suffix = required > 0 ? `${fmt(required)} KOC` : 'Chưa chia KL';
                 return (
                   <option key={p.id} value={p.id}>
                     {p.storeName || p.title} ({p.pic || 'Chưa giao'} · {suffix})
@@ -1087,11 +1060,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
       {plan && progress && (
         <section className="space-y-4">
 
-            {isStandaloneListingPlan(plan) ? (
-              <div className="rounded-lg border border-line bg-sunken px-3.5 py-2 text-xs text-ink-2">
-                Chế độ <strong>Listing & Kết nối Google Sheet độc lập</strong> (chưa lập Plan 4.1.1 kỳ {plan.month}) — Chuyên viên có thể thêm KOC, đẩy danh sách lên Google Sheet của Brand hoặc kéo danh sách KOC từ Google Sheet về ngay lập tức.
-              </div>
-            ) : !isPlanOfficiallyApproved(plan) ? (
+            {!isPlanOfficiallyApproved(plan) ? (
               <div className="rounded-lg border border-warning/40 bg-warning-soft px-3.5 py-2 text-xs text-warning">
                 Kế hoạch 4.1.1 đang ở trạng thái <strong>{plan.status || 'DRAFT'}</strong> — Hệ thống mở khóa cho phép chuyên viên lập sớm Danh sách KOC Đợt 1 (ngày 10–20/T-1) và đẩy Google Sheet xin Brand duyệt trước.
               </div>

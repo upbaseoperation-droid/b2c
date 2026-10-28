@@ -69,10 +69,11 @@ import {
 import type { TikTokVideoInspectionResult } from '../../lib/tiktokVideoInspector';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
 import { LarkPaymentRequestModal } from '../booking/LarkPaymentRequestModal';
+import { DealDetailDrawer } from '../booking/DealDetailDrawer';
 import { DraftBbntPreviewModal } from '../contracts/DraftBbntPreviewModal';
 import { KocQuickViewModal } from '../shortlist/KocQuickViewModal';
 import type { LarkPaymentRequestSlip } from '../../lib/larkPaymentRequestEngine';
-import { ActionMenu, Button, Field, Input, Modal, PageActions, Segmented, Select } from '../ui';
+import { ActionMenu, Button, Field, Input, Modal, PageActions, Segmented, Select, Status } from '../ui';
 
 export interface ApprovedBookingListViewProps {
   kocs: KocItem[];
@@ -134,6 +135,9 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewColumnMode, setViewColumnMode] = useState<'ALL_32' | 'BOOKING_FOCUS' | 'ACCEPTANCE_FOCUS'>('ALL_32');
+  const [viewLayout, setViewLayout] = useState<'LIST_DRAWER' | 'LARK_GRID'>('LIST_DRAWER');
+  const [selectedDrawerItemId, setSelectedDrawerItemId] = useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
   const [items, setItems] = useState<ApprovedBookingListItem[]>(() =>
     loadApprovedBookingList(kocs, stores, deals, currentUserName)
@@ -178,6 +182,16 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [quickViewApprovedItem, setQuickViewApprovedItem] = useState<ApprovedBookingListItem | null>(null);
   const sheetSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const activeDrawerItem = useMemo(() => {
+    if (!selectedDrawerItemId) return null;
+    return items.find((i) => i.id === selectedDrawerItemId) || null;
+  }, [items, selectedDrawerItemId]);
+
+  const openDrawerForItem = (item: ApprovedBookingListItem) => {
+    setSelectedDrawerItemId(item.id);
+    setIsDrawerOpen(true);
+  };
 
   const filteredItems = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -1447,14 +1461,25 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
             <span className="hidden sm:inline-block h-4 w-px bg-line mx-0.5 shrink-0" />
 
             <Segmented
-              value={viewColumnMode}
-              onChange={setViewColumnMode}
+              value={viewLayout}
+              onChange={(val) => setViewLayout(val as 'LIST_DRAWER' | 'LARK_GRID')}
               items={[
-                { key: 'ALL_32', label: 'Đầy đủ cột' },
-                { key: 'BOOKING_FOCUS', label: 'Chốt Deal & Phụ lục SOW' },
-                { key: 'ACCEPTANCE_FOCUS', label: 'Nghiệm thu & Thanh toán' },
+                { key: 'LIST_DRAWER', label: '📋 Danh sách & Chi tiết (Pro)' },
+                { key: 'LARK_GRID', label: '📊 Bảng tính Lark (Grid)' },
               ]}
             />
+
+            {viewLayout === 'LARK_GRID' && (
+              <Segmented
+                value={viewColumnMode}
+                onChange={setViewColumnMode}
+                items={[
+                  { key: 'ALL_32', label: 'Đầy đủ cột' },
+                  { key: 'BOOKING_FOCUS', label: 'Chốt Deal & SOW' },
+                  { key: 'ACCEPTANCE_FOCUS', label: 'Nghiệm thu' },
+                ]}
+              />
+            )}
           </div>
 
           {/* Cụm chỉ số tóm tắt gọn trên 1 dòng */}
@@ -1647,130 +1672,420 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
           </div>
         </div>
 
-        {/* Tầng 3: Bảng dữ liệu List Duyệt Book (Cố định chuẩn 3 cột đầu, không hở khe khi cuộn ngang) */}
-        <div className="overflow-x-auto max-h-[75vh]">
-          <table className="w-full border-collapse text-xs">
-            <thead className="sticky top-0 z-20 bg-sunken border-b border-line">
-              <tr>
-                <th className="sticky left-0 z-30 bg-sunken px-2 py-1.5 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center">
-                  <input
-                    type="checkbox"
-                    checked={
-                      filteredItems.length > 0 &&
-                      selectedIds.length === filteredItems.length
-                    }
-                    onChange={toggleSelectAll}
-                    className="rounded border-line"
-                  />
-                </th>
-                <th className="sticky left-[38px] z-30 bg-sunken px-2.5 py-1.5 border-r border-line w-[142px] min-w-[142px] max-w-[142px] text-left">
-                  <div className="text-2xs font-mono text-ink-3">Cột 1 · Deal &amp; Phụ lục</div>
-                  <div className="font-semibold text-ink truncate">Mã Deal &amp; Phụ lục</div>
-                </th>
-                <th className="sticky left-[180px] z-30 bg-sunken px-2.5 py-1.5 border-r border-line w-[168px] min-w-[168px] max-w-[168px] text-left shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]">
-                  <div className="text-2xs font-mono text-ink-3">Cột 2 · KOC</div>
-                  <div className="font-semibold text-ink truncate">ID kênh &amp; Link</div>
-                </th>
-                <th className="px-2.5 py-1.5 border-r border-line min-w-[175px] text-left">
-                  <div className="text-2xs font-mono text-ink-3">Cột 3 &amp; 4 · Gian hàng</div>
-                  <div className="font-semibold text-ink">Store / Brand · Đợt</div>
-                </th>
-                <th className="px-2.5 py-1.5 border-r border-line min-w-[170px] text-left">
-                  <div className="text-2xs font-mono text-ink-3">Cột 31 &amp; 89 · Nội dung</div>
-                  <div className="font-semibold text-ink">Sản phẩm &amp; Pillar</div>
-                </th>
-
-                {/* Nhóm cột nhân viên điền: Ngày air chốt, Giá cuối cùng, Tạm ứng, Tạo BO */}
-                <th className="px-2.5 py-1.5 border-r border-line min-w-[140px] text-left bg-amber-50">
-                  <div className="text-2xs font-mono text-amber-800 font-semibold">
-                    NV ĐIỀN · Cột 61
-                  </div>
-                  <div className="font-semibold text-ink">Ngày air chốt</div>
-                </th>
-                {viewColumnMode !== 'ACCEPTANCE_FOCUS' && (
-                  <th className="px-2.5 py-1.5 border-r border-line min-w-[115px] text-right">
-                    <div className="text-2xs font-mono text-ink-3">Sheet Listing</div>
-                    <div className="font-semibold text-ink">Giá đề xuất Net</div>
+        {/* Tầng 3: Bảng dữ liệu List Duyệt Book */}
+        {viewLayout === 'LIST_DRAWER' ? (
+          /* Chế độ Danh sách & Chi tiết (Pro) */
+          <div className="overflow-x-auto max-h-[75vh]">
+            <table className="w-full border-collapse text-xs">
+              <thead className="sticky top-0 z-20 bg-sunken border-b border-line text-left">
+                <tr>
+                  <th className="px-2 py-2 border-r border-line w-[38px] min-w-[38px] text-center">
+                    <input
+                      type="checkbox"
+                      checked={
+                        filteredItems.length > 0 &&
+                        selectedIds.length === filteredItems.length
+                      }
+                      onChange={toggleSelectAll}
+                      className="rounded border-line"
+                    />
                   </th>
-                )}
-                <th className="px-2.5 py-1.5 border-r border-line min-w-[145px] text-right bg-amber-50">
-                  <div className="text-2xs font-mono text-amber-800 font-semibold">
-                    NV ĐIỀN · Cột 18
-                  </div>
-                  <div className="font-semibold text-ink">Giá chốt cuối (Net)</div>
-                </th>
-                <th className="px-2.5 py-1.5 border-r border-line min-w-[130px] text-right">
-                  <div className="text-2xs font-mono text-accent">Công thức / 0.9</div>
-                  <div className="font-semibold text-ink">Gross &amp; Bậc KL</div>
-                </th>
-                <th className="px-2.5 py-1.5 border-r border-line min-w-[135px] text-right">
-                  <div className="text-2xs font-mono text-ink-3">Cột 40 &amp; 42</div>
-                  <div className="font-semibold text-ink">Tạm ứng / Còn trả</div>
-                </th>
-
-                {viewColumnMode !== 'ACCEPTANCE_FOCUS' && (
-                  <th className="px-2.5 py-1.5 border-r border-line min-w-[180px] text-left">
-                    <div className="text-2xs font-mono text-ink-3">Cột 17 &amp; 20</div>
-                    <div className="font-semibold text-ink">Loại TK thuế &amp; Hợp tác</div>
+                  <th className="px-3 py-2 border-r border-line min-w-[170px]">
+                    <div className="font-semibold text-ink">Mã Deal &amp; Phụ lục SOW</div>
                   </th>
-                )}
+                  <th className="px-3 py-2 border-r border-line min-w-[180px]">
+                    <div className="font-semibold text-ink">KOC &amp; Kênh TikTok</div>
+                  </th>
+                  <th className="px-3 py-2 border-r border-line min-w-[180px]">
+                    <div className="font-semibold text-ink">Gian hàng &amp; Sản phẩm</div>
+                  </th>
+                  <th className="px-3 py-2 border-r border-line min-w-[140px] text-right">
+                    <div className="font-semibold text-ink">Giá Net / Gross</div>
+                  </th>
+                  <th className="px-3 py-2 border-r border-line min-w-[130px]">
+                    <div className="font-semibold text-ink">Ngày Air &amp; SLA</div>
+                  </th>
+                  <th className="px-3 py-2 border-r border-line min-w-[165px]">
+                    <div className="font-semibold text-ink">Video &amp; Hiệu quả 30d</div>
+                  </th>
+                  <th className="px-3 py-2 text-center min-w-[150px]">
+                    <div className="font-semibold text-ink">Thao tác</div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line bg-surface">
+                {filteredItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-12 text-center text-ink-3">
+                      <div className="flex flex-col items-center gap-2">
+                        <FileSpreadsheet className="w-7 h-7 text-ink-3" />
+                        <div className="font-medium text-ink">
+                          Chưa có Deal nào trong danh sách theo bộ lọc hiện tại
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredItems.map((item) => {
+                    const isSelected = selectedIds.includes(item.id);
+                    const isActive = activeDrawerItem?.id === item.id && isDrawerOpen;
+                    const isAccepted = item.acceptanceStatus === 'DA_NGHIEM_THU';
+                    const hasBo = item.bookingOrderCreated && Boolean(item.maBooking);
+                    const isSowSigned = item.contractAppendixStatus === 'ĐÃ_KÝ';
 
-                {/* Nhóm cột Nghiệm thu Video */}
-                {viewColumnMode !== 'BOOKING_FOCUS' && (
-                  <>
-                    <th className="px-2.5 py-1.5 border-r border-line min-w-[235px] text-left bg-emerald-50">
-                      <div className="text-2xs font-mono text-emerald-800 font-semibold">
-                        NGHIỆM THU · Cột 9
-                      </div>
-                      <div className="font-semibold text-ink">Link video nghiệm thu</div>
-                    </th>
-                    <th className="px-2.5 py-1.5 border-r border-line min-w-[140px] text-left bg-emerald-50">
-                      <div className="text-2xs font-mono text-emerald-800 font-semibold">
-                        NGHIỆM THU · Cột 6 &amp; 7
-                      </div>
-                      <div className="font-semibold text-ink">Ngày air thực tế</div>
-                    </th>
-                    <th className="px-2.5 py-1.5 border-r border-line min-w-[120px] text-left bg-emerald-50">
-                      <div className="text-2xs font-mono text-emerald-800 font-semibold">
-                        SLA · Cột 39
-                      </div>
-                      <div className="font-semibold text-ink">Đúng / Trễ hạn</div>
-                    </th>
-                    <th className="px-2.5 py-1.5 border-r border-line min-w-[155px] text-left bg-emerald-50">
-                      <div className="text-2xs font-mono text-emerald-800 font-semibold">
-                        ADS · Cột 45
-                      </div>
-                      <div className="font-semibold text-ink">Mã Spark Ads</div>
-                    </th>
-                    <th className="px-2.5 py-1.5 border-r border-line min-w-[205px] text-right bg-emerald-50">
-                      <div className="text-2xs font-mono text-emerald-800 font-semibold">
-                        HIỆU QUẢ · Cột 68–70
-                      </div>
-                      <div className="font-semibold text-ink">Views · Đơn · GMV 30d</div>
-                    </th>
-                    <th className="px-2.5 py-1.5 border-r border-line min-w-[150px] text-right bg-emerald-50">
-                      <div className="text-2xs font-mono text-emerald-800 font-semibold">
-                        ROI · Cột 71–76
-                      </div>
-                      <div className="font-semibold text-ink">GPM · ROI · Đánh giá</div>
-                    </th>
-                    <th className="px-2.5 py-1.5 border-r border-line min-w-[165px] text-left">
-                      <div className="text-2xs font-mono text-ink-3">Cột 22 &amp; 30</div>
-                      <div className="font-semibold text-ink">Thanh toán &amp; ND CK</div>
-                    </th>
-                    <th className="px-2.5 py-1.5 border-r border-line min-w-[175px] text-left">
-                      <div className="text-2xs font-mono text-ink-3">Cột 23–26</div>
-                      <div className="font-semibold text-ink">Ngân hàng &amp; CCCD</div>
-                    </th>
-                  </>
-                )}
+                    return (
+                      <tr
+                        key={item.id}
+                        onClick={(e) => {
+                          if ((e.target as HTMLElement).closest('button, input, a')) return;
+                          openDrawerForItem(item);
+                        }}
+                        className={`group transition-colors cursor-pointer ${
+                          isActive
+                            ? 'bg-accent-soft/40 border-l-4 border-l-accent'
+                            : isSelected
+                            ? 'bg-accent-soft/20'
+                            : 'hover:bg-sunken/60'
+                        }`}
+                      >
+                        <td className="px-2 py-2 border-r border-line text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelectOne(item.id)}
+                            className="rounded border-line"
+                          />
+                        </td>
 
-                <th className="px-2.5 py-1.5 text-center min-w-[145px]">
-                  <div className="text-2xs font-mono text-ink-3">Thao tác</div>
-                  <div className="font-semibold text-ink">Deal · SOW · Nghiệm thu</div>
-                </th>
-              </tr>
-            </thead>
+                        {/* Cột 1: Mã Deal & Phụ lục SOW */}
+                        <td className="px-3 py-2 border-r border-line align-middle">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1.5">
+                              {item.maBooking ? (
+                                <span className="font-mono font-bold text-xs text-ink">
+                                  {item.maBooking}
+                                </span>
+                              ) : (
+                                <span className="text-2xs text-warning font-semibold">
+                                  Chưa tạo Deal
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-2xs font-mono text-ink-3 truncate">
+                              {item.contractAppendixCode || (item.maBooking ? `PL-${item.maBooking}-01` : '—')}
+                            </div>
+                            <div className="pt-0.5">
+                              {isSowSigned ? (
+                                <Status tone="positive">Đã ký SOW</Status>
+                              ) : hasBo ? (
+                                <Status tone="warning">Chờ ký SOW</Status>
+                              ) : (
+                                <Status tone="warning">Chờ chốt giá</Status>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Cột 2: KOC & Kênh */}
+                        <td className="px-3 py-2 border-r border-line align-middle">
+                          <div className="space-y-0.5">
+                            <div className="font-semibold text-xs text-ink truncate max-w-[170px]">
+                              {item.tenKenh || item.idKenh}
+                            </div>
+                            <div className="text-2xs font-mono text-ink-3 truncate">
+                              @{item.idKenh.replace(/^@/, '')}
+                            </div>
+                            <span className="inline-block px-1.5 py-0.2 rounded bg-sunken text-3xs font-medium text-ink-3">
+                              TikTok
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Cột 3: Gian hàng & Sản phẩm */}
+                        <td className="px-3 py-2 border-r border-line align-middle">
+                          <div className="space-y-0.5">
+                            <div className="font-semibold text-xs text-ink truncate max-w-[170px]">
+                              {item.storeName}
+                            </div>
+                            <div className="text-2xs text-ink-3 truncate max-w-[170px]" title={item.sanPham}>
+                              {item.sanPham || 'Chưa gán SKU'}
+                            </div>
+                            <div className="text-3xs text-ink-3">Tháng {item.thangPlan}</div>
+                          </div>
+                        </td>
+
+                        {/* Cột 4: Giá Net / Gross */}
+                        <td className="px-3 py-2 border-r border-line align-middle text-right">
+                          <div className="font-mono font-bold text-xs text-ink tabular-nums">
+                            {formatVnd(item.chiPhiBookingNetCuoi)}
+                          </div>
+                          <div className="text-3xs text-ink-3 tabular-nums">
+                            Gross: {formatVndShort(item.chiPhiGrossKemThue)}
+                          </div>
+                          {item.soTienTamUngTruoc > 0 && (
+                            <div className="text-3xs text-accent font-medium tabular-nums">
+                              Ứng: {formatVndShort(item.soTienTamUngTruoc)}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Cột 5: Ngày Air & SLA */}
+                        <td className="px-3 py-2 border-r border-line align-middle">
+                          <div className="font-mono text-xs text-ink font-semibold">
+                            {item.actualAirDate || item.plannedAirDate || '—'}
+                          </div>
+                          <div className="mt-0.5">
+                            <span
+                              className={`inline-block px-1.5 py-0.2 rounded text-3xs font-semibold ${
+                                item.trangThaiSlaAir.startsWith('Trễ')
+                                  ? 'bg-critical-soft text-critical'
+                                  : 'bg-positive-soft text-positive'
+                              }`}
+                            >
+                              {item.trangThaiSlaAir}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Cột 6: Video & Hiệu quả */}
+                        <td className="px-3 py-2 border-r border-line align-middle">
+                          {item.linkAir ? (
+                            <div className="space-y-0.5">
+                              <a
+                                href={item.linkAir}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 text-2xs text-accent hover:underline font-medium truncate max-w-[155px]"
+                              >
+                                <span>Xem video</span>
+                                <ExternalLink className="w-3 h-3 shrink-0" />
+                              </a>
+                              {item.roi30d > 0 && (
+                                <div className="text-2xs font-mono font-semibold text-emerald-800">
+                                  {item.roi30d.toFixed(2)}x · GMV {formatVndShort(item.gmv30d)}
+                                </div>
+                              )}
+                              {item.danhGiaHieuQuaVideo && (
+                                <div className="text-3xs font-medium text-ink-3 truncate">
+                                  {item.danhGiaHieuQuaVideo}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-2xs text-ink-3 italic">Chưa lên video</span>
+                          )}
+                        </td>
+
+                        {/* Cột 7: Thao tác */}
+                        <td className="px-3 py-2 text-center align-middle">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              icon={Eye}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openDrawerForItem(item);
+                              }}
+                            >
+                              Chi tiết
+                            </Button>
+
+                            {!hasBo ? (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                icon={FileCheck}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDealBuilderModal(item);
+                                }}
+                              >
+                                Tạo Deal
+                              </Button>
+                            ) : !isSowSigned ? (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                icon={FileText}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onOpenContractForDeal?.(
+                                    buildBookingDealFromApprovedItem(item),
+                                    'SOW'
+                                  );
+                                }}
+                              >
+                                Ký SOW
+                              </Button>
+                            ) : !isAccepted ? (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                icon={Video}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openAcceptanceModalForRow(item);
+                                }}
+                              >
+                                Nghiệm thu
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                icon={Send}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openLarkPaymentModalForItem(item);
+                                }}
+                              >
+                                Lark
+                              </Button>
+                            )}
+
+                            <ActionMenu
+                              label=""
+                              items={[
+                                {
+                                  label: 'Mở ngăn kéo chi tiết Deal',
+                                  icon: Eye,
+                                  onSelect: () => openDrawerForItem(item),
+                                },
+                                ...(hasBo && onOpenContractForDeal
+                                  ? [
+                                      {
+                                        label: 'Hồ sơ Hợp đồng & Phụ lục SOW',
+                                        icon: FileText,
+                                        onSelect: () =>
+                                          onOpenContractForDeal(
+                                            buildBookingDealFromApprovedItem(item),
+                                            'SOW'
+                                          ),
+                                      },
+                                    ]
+                                  : []),
+                                {
+                                  label: 'Nghiệm thu video & chỉ số',
+                                  icon: Video,
+                                  onSelect: () => openAcceptanceModalForRow(item),
+                                },
+                                {
+                                  label: 'Đối soát & Luồng Lark Approval',
+                                  icon: Send,
+                                  onSelect: () => openLarkPaymentModalForItem(item),
+                                },
+                                ...(item.linkAir
+                                  ? [
+                                      {
+                                        label: 'Soi kịch bản & giỏ hàng TikTok',
+                                        icon: Eye,
+                                        onSelect: () => openDeepVideoInspector(item),
+                                      },
+                                    ]
+                                  : []),
+                              ]}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          /* Chế độ Bảng tính Lark (Lark Grid View) */
+          <div className="overflow-x-auto max-h-[75vh]">
+            <table className="w-full border-collapse text-xs">
+              <thead className="sticky top-0 z-20 bg-sunken border-b border-line">
+                <tr>
+                  <th className="sticky left-0 z-30 bg-sunken px-2 py-1.5 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center">
+                    <input
+                      type="checkbox"
+                      checked={
+                        filteredItems.length > 0 &&
+                        selectedIds.length === filteredItems.length
+                      }
+                      onChange={toggleSelectAll}
+                      className="rounded border-line"
+                    />
+                  </th>
+                  <th className="sticky left-[38px] z-30 bg-sunken px-2.5 py-1.5 border-r border-line w-[142px] min-w-[142px] max-w-[142px] text-left">
+                    <div className="font-semibold text-ink truncate">Mã Deal &amp; Phụ lục SOW</div>
+                  </th>
+                  <th className="sticky left-[180px] z-30 bg-sunken px-2.5 py-1.5 border-r border-line w-[168px] min-w-[168px] max-w-[168px] text-left shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]">
+                    <div className="font-semibold text-ink truncate">Kênh KOC &amp; Link</div>
+                  </th>
+                  <th className="px-2.5 py-1.5 border-r border-line min-w-[175px] text-left">
+                    <div className="font-semibold text-ink">Gian hàng &amp; Đợt</div>
+                  </th>
+                  <th className="px-2.5 py-1.5 border-r border-line min-w-[170px] text-left">
+                    <div className="font-semibold text-ink">Sản phẩm &amp; Pillar</div>
+                  </th>
+
+                  {/* Nhóm cột nhân viên điền: Ngày air chốt, Giá cuối cùng, Tạm ứng, Tạo BO */}
+                  <th className="px-2.5 py-1.5 border-r border-line min-w-[140px] text-left bg-warning-soft/40">
+                    <div className="font-semibold text-ink">Ngày air chốt</div>
+                  </th>
+                  {viewColumnMode !== 'ACCEPTANCE_FOCUS' && (
+                    <th className="px-2.5 py-1.5 border-r border-line min-w-[115px] text-right">
+                      <div className="font-semibold text-ink">Giá đề xuất Net</div>
+                    </th>
+                  )}
+                  <th className="px-2.5 py-1.5 border-r border-line min-w-[145px] text-right bg-warning-soft/40">
+                    <div className="font-semibold text-ink">Giá chốt cuối (Net)</div>
+                  </th>
+                  <th className="px-2.5 py-1.5 border-r border-line min-w-[130px] text-right">
+                    <div className="font-semibold text-ink">Gross &amp; Bậc KL</div>
+                  </th>
+                  <th className="px-2.5 py-1.5 border-r border-line min-w-[135px] text-right">
+                    <div className="font-semibold text-ink">Tạm ứng &amp; Còn lại</div>
+                  </th>
+
+                  {viewColumnMode !== 'ACCEPTANCE_FOCUS' && (
+                    <th className="px-2.5 py-1.5 border-r border-line min-w-[180px] text-left">
+                      <div className="font-semibold text-ink">Loại TK thuế &amp; Hợp tác</div>
+                    </th>
+                  )}
+
+                  {/* Nhóm cột Nghiệm thu Video */}
+                  {viewColumnMode !== 'BOOKING_FOCUS' && (
+                    <>
+                      <th className="px-2.5 py-1.5 border-r border-line min-w-[235px] text-left bg-positive-soft/40">
+                        <div className="font-semibold text-ink">Link video nghiệm thu</div>
+                      </th>
+                      <th className="px-2.5 py-1.5 border-r border-line min-w-[140px] text-left bg-positive-soft/40">
+                        <div className="font-semibold text-ink">Ngày air thực tế</div>
+                      </th>
+                      <th className="px-2.5 py-1.5 border-r border-line min-w-[120px] text-left bg-positive-soft/40">
+                        <div className="font-semibold text-ink">SLA Tiến độ</div>
+                      </th>
+                      <th className="px-2.5 py-1.5 border-r border-line min-w-[155px] text-left bg-positive-soft/40">
+                        <div className="font-semibold text-ink">Mã Spark Ads</div>
+                      </th>
+                      <th className="px-2.5 py-1.5 border-r border-line min-w-[205px] text-right bg-positive-soft/40">
+                        <div className="font-semibold text-ink">Views · Đơn · GMV 30d</div>
+                      </th>
+                      <th className="px-2.5 py-1.5 border-r border-line min-w-[150px] text-right bg-positive-soft/40">
+                        <div className="font-semibold text-ink">ROI &amp; Đánh giá</div>
+                      </th>
+                      <th className="px-2.5 py-1.5 border-r border-line min-w-[165px] text-left">
+                        <div className="font-semibold text-ink">Thanh toán &amp; Luồng Lark</div>
+                      </th>
+                      <th className="px-2.5 py-1.5 border-r border-line min-w-[175px] text-left">
+                        <div className="font-semibold text-ink">Ngân hàng &amp; CCCD</div>
+                      </th>
+                    </>
+                  )}
+
+                  <th className="px-2.5 py-1.5 text-center min-w-[145px]">
+                    <div className="font-semibold text-ink">Thao tác</div>
+                  </th>
+                </tr>
+              </thead>
 
             <tbody className="divide-y divide-line">
               {filteredItems.length === 0 ? (
@@ -2466,6 +2781,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
             </tbody>
           </table>
         </div>
+      )}
       </div>
 
       {/* Hộp thoại Nghiệm thu theo Deal: Bước 1 (Video) -> Bước 2 (Dịch vụ gia tăng) -> Thanh toán Deal */}
@@ -3502,6 +3818,20 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         kocs={kocs}
         stores={stores}
         deals={deals}
+        onNotify={onNotify}
+      />
+
+      <DealDetailDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        deal={activeDrawerItem}
+        allDeals={filteredItems}
+        onSelectDeal={(d) => setSelectedDrawerItemId(d.id)}
+        onOpenContractForDeal={onOpenContractForDeal}
+        onOpenAcceptanceModal={openAcceptanceModalForRow}
+        onOpenLarkPaymentModal={openLarkPaymentModalForItem}
+        onOpenDealBuilderModal={openDealBuilderModal}
+        onOpenTikTokInspector={openDeepVideoInspector}
         onNotify={onNotify}
       />
     </div>

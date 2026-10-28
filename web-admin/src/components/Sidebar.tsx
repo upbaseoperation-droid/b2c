@@ -87,7 +87,7 @@ const NAV = {
   content: { key: 'content', label: 'Kịch bản & Video', icon: FileText },
   delegation: { key: 'manager', label: groupLabel('delegation'), icon: ClipboardList, group: 'delegation' },
   campaigns: { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
-  kocListing: { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
+  kocListing: { key: 'koc-listing', label: 'Quản lý Deal & Booking', icon: Film },
   selfChannel: { key: 'self-channel-hub', label: 'Video kênh Brand & CTV', icon: Clapperboard },
   contracts: { key: 'contracts', label: 'Hợp đồng', icon: FileCheck },
   kocMaster: { key: 'koc-master', label: 'Danh bạ KOC', icon: Contact },

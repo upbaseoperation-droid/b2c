@@ -27,17 +27,7 @@ import {
   recordSigned,
   type ContractDocument,
 } from '../../lib/planDealLink';
-import {
-  buildStandalonePlanForStore,
-  columnOf,
-  isStandaloneListingPlan,
-  itemFee,
-  itemGrade,
-  matchStoreByStandaloneSlug,
-  parseStandalonePlanId,
-  planQuota,
-} from '../../lib/listingBoardRules';
-import { INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
+import { columnOf, itemFee, itemGrade, planQuota } from '../../lib/listingBoardRules';
 import {
   ensureSequentialBriefCodes,
   isBriefReady,
@@ -247,38 +237,14 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     [plans]
   );
   const activeMonth = month || months[0] || '2026/10';
-  const allMonthPlans = useMemo(() => {
-    const inMonth = plans.filter(p => p.month === activeMonth);
-    const coveredStores = new Set<string>();
-    for (const p of inMonth) {
-      if (p.storeId) coveredStores.add(p.storeId.toLowerCase());
-      if (p.storeName) coveredStores.add(p.storeName.trim().toLowerCase());
-    }
-    const standalone: PlanLite[] = [];
-    for (const st of INITIAL_STORE_PORTFOLIOS) {
-      if (st.isB2cManaged === false || !st.storeName) continue;
-      const hasPlan =
-        (st.id && coveredStores.has(st.id.toLowerCase())) ||
-        coveredStores.has(st.storeName.trim().toLowerCase());
-      if (!hasPlan) {
-        standalone.push(buildStandalonePlanForStore(st, activeMonth));
-      }
-    }
-    return [...inMonth, ...standalone];
-  }, [plans, activeMonth]);
-
   const visiblePlans = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return allMonthPlans
+    return plans
+      .filter(p => p.month === activeMonth)
       .filter(p => !q || `${p.storeName || ''} ${p.brandName} ${p.pic || ''}`.toLowerCase().includes(q))
-      .sort((a, b) => {
-        const aStandalone = isStandaloneListingPlan(a) ? 1 : 0;
-        const bStandalone = isStandaloneListingPlan(b) ? 1 : 0;
-        if (aStandalone !== bStandalone) return aStandalone - bStandalone;
-        return (a.storeName || a.title).localeCompare(b.storeName || b.title);
-      });
-  }, [allMonthPlans, search]);
-  const plan = useMemo(() => allMonthPlans.find(p => p.id === selectedId) || null, [allMonthPlans, selectedId]);
+      .sort((a, b) => (a.storeName || a.title).localeCompare(b.storeName || b.title));
+  }, [plans, activeMonth, search]);
+  const plan = useMemo(() => plans.find(p => p.id === selectedId) || null, [plans, selectedId]);
 
   const { data, status, update, saveNow, reload } = usePlanRecord<DealBoardData>('/api/deal-board', plan?.id ?? null, EMPTY_DEAL_BOARD, msg => notify(msg, 'warning'));
   const [syncingSlip, setSyncingSlip] = useState('');
@@ -639,14 +605,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
   const handledFocus = React.useRef(0);
   useEffect(() => {
     if (!focus || handledFocus.current === focus.nonce) return;
-    const standaloneParsed = parseStandalonePlanId(focus.planId);
-    const standaloneTarget = standaloneParsed
-      ? (() => {
-          const st = matchStoreByStandaloneSlug(INITIAL_STORE_PORTFOLIOS, standaloneParsed.storeSlug);
-          return st ? buildStandalonePlanForStore(st, standaloneParsed.month) : undefined;
-        })()
-      : undefined;
-    const target = plans.find(p => p.id === focus.planId) || standaloneTarget;
+    const target = plans.find(p => p.id === focus.planId);
     if (!target) return;
     if (selectedId !== focus.planId) {
       queueMicrotask(() => {

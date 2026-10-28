@@ -195,7 +195,10 @@ function readStoreOverrideByPlan(planOrBrand: InputPlanBreakdownState | string, 
 export const DEFAULT_TEMPLATE_GOOGLE_SHEET_URL =
   'https://docs.google.com/spreadsheets/d/1PhQI6Yu7immdb905Zbf1joD9GkfaUfla2DhoIyD9U4w/edit?gid=1281865760#gid=1281865760';
 
-/** Link Google Sheet booking của Gian hàng / Brand (ưu tiên cấu hình riêng trên Gian hàng -> Store Overrides -> Bảng 3.5 -> Link Template mặc định). */
+/**
+ * Link Google Sheet booking của Gian hàng / Brand (ưu tiên cấu hình riêng trên Gian hàng -> Store Overrides -> Bảng 3.5).
+ * Gian chưa có link trả rỗng để người dùng tự khai báo; không rơi về file Template dùng chung (tránh đẩy KOC của nhiều gian vào một file).
+ */
 export function resolveBrandBookingSheetUrl(
   planOrBrand: InputPlanBreakdownState | string,
   storeName?: string,
@@ -211,7 +214,7 @@ export function resolveBrandBookingSheetUrl(
   const byStore = REAL_BRAND_FILE_CATALOG.find(i => i.storeCode.toLowerCase() === store);
   if (byStore?.bookingSheetUrl) return byStore.bookingSheetUrl;
   const byBrand = findRealBrandFileLinks(brandKey(brandStr));
-  return byBrand?.bookingSheetUrl || DEFAULT_TEMPLATE_GOOGLE_SHEET_URL;
+  return byBrand?.bookingSheetUrl || '';
 }
 
 export const defaultBookingTabName = (
