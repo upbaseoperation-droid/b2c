@@ -696,6 +696,14 @@ export interface TikTokVideoItem {
   isAffiliate: boolean;
   isViralOutlier?: boolean;
   isPinnedOldVideo?: boolean;
+  productId?: string;
+  productUrl?: string;
+  cartProducts?: {
+    productId?: string;
+    title: string;
+    productUrl: string;
+    source?: string;
+  }[];
   productName?: string;
   estimatedGmv?: number;
   itemsSold?: number;

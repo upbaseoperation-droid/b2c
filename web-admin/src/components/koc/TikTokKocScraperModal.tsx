@@ -6,10 +6,12 @@ import {
   AlertTriangle,
   Check,
   Clock,
+  Copy,
   Download,
   ExternalLink,
   FileSpreadsheet,
   History,
+  MessageSquare,
   Music,
   RefreshCw,
   Search,
@@ -21,6 +23,7 @@ import {
 import type { KocItem, TikTokVideoItem, UserProfile } from '../../lib/types';
 import {
   buildScrapedKocsCsv,
+  extractShortTikTokUrlsFromInput,
   mapScrapedResultToKocItem,
   parseTikTokHandles,
   type TikTokScrapedKocResult,
@@ -87,6 +90,10 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   const [loadingMoreHandle, setLoadingMoreHandle] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [failedHandlesList, setFailedHandlesList] = useState<Array<{ handle: string; reason: string }>>([]);
+  const [resolvedShortLinks, setResolvedShortLinks] = useState<
+    Array<{ shortUrl: string; handle: string; videoId?: string; videoUrl?: string }>
+  >([]);
+  const [showComparisonTable, setShowComparisonTable] = useState<boolean>(true);
   const [results, setResults] = useState<TikTokScrapedKocResult[]>([]);
   const [selectedHandle, setSelectedHandle] = useState<string>('');
   const [videoFilter, setVideoFilter] = useState<VideoFilterMode>('ALL');
@@ -103,10 +110,14 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
       setRawInput(initialHandle);
       setVideoLimit(24);
       setRequestedVideoLimit(24);
-      setRequestedHandlesCount(parseTikTokHandles(initialHandle).length);
+      const initCount =
+        parseTikTokHandles(initialHandle).length +
+        extractShortTikTokUrlsFromInput(initialHandle).length;
+      setRequestedHandlesCount(initCount);
       setCompletedHandlesCount(0);
       setErrorMsg(null);
       setFailedHandlesList([]);
+      setResolvedShortLinks([]);
       setResults([]);
       setSelectedHandle('');
       setLoading(false);
@@ -123,6 +134,15 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
     onNotify?.('Đã dừng quét các kênh còn lại. Giữ nguyên các kênh đã thu thập.', 'info');
   };
 
+  const handleCopyOutreachMessage = async (msg: string, handle: string) => {
+    try {
+      await navigator.clipboard.writeText(msg);
+      onNotify?.(`Đã sao chép mẫu lời mời hợp tác kênh @${handle}`, 'success');
+    } catch {
+      onNotify?.('Không sao chép được vào bộ nhớ tạm.', 'warning');
+    }
+  };
+
   const runScrape = async (
     inputToFetch: string,
     targetPeriod: PeriodKey,
@@ -131,7 +151,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   ) => {
     const trimmed = inputToFetch.trim();
     if (!trimmed) {
-      setErrorMsg('Nhập ít nhất một đường dẫn kênh hoặc @handle TikTok để lấy dữ liệu.');
+      setErrorMsg('Nhập ít nhất một đường dẫn kênh, link rút gọn vt.tiktok.com hoặc @handle TikTok để lấy dữ liệu.');
       return;
     }
 
@@ -139,36 +159,49 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    const parsedHandles = parseTikTokHandles(trimmed).slice(0, 30);
-    setRequestedHandlesCount(Math.max(1, parsedHandles.length));
+    const parsedHandles = parseTikTokHandles(trimmed);
+    const shortUrls = extractShortTikTokUrlsFromInput(trimmed);
+    const allInputTokens = [...parsedHandles, ...shortUrls].slice(0, 30);
+    setRequestedHandlesCount(Math.max(1, allInputTokens.length));
     setCompletedHandlesCount(0);
     setRequestedVideoLimit(targetLimit);
     setLoading(true);
     setErrorMsg(null);
     setFailedHandlesList([]);
+    setResolvedShortLinks([]);
 
     // Quét theo lô cuốn chiếu (Micro-Batch 2 kênh/lượt) khi nhập nhiều kênh để hiển thị kết quả tức thì
-    if (parsedHandles.length > 2) {
+    if (allInputTokens.length > 2) {
       const accumulatedResults: TikTokScrapedKocResult[] = [];
       const accumulatedFailures: Array<{ handle: string; reason: string }> = [];
+      const accumulatedShortLinks: Array<{
+        shortUrl: string;
+        handle: string;
+        videoId?: string;
+        videoUrl?: string;
+      }> = [];
       const chunkSize = 2;
 
       try {
-        for (let i = 0; i < parsedHandles.length; i += chunkSize) {
+        for (let i = 0; i < allInputTokens.length; i += chunkSize) {
           if (controller.signal.aborted) break;
-          const chunkHandles = parsedHandles.slice(i, i + chunkSize);
+          const chunkTokens = allInputTokens.slice(i, i + chunkSize);
           const res = await fetch('/api/integrations/tiktok-koc/scrape', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             signal: controller.signal,
             body: JSON.stringify({
-              rawInput: chunkHandles.join(', '),
+              rawInput: chunkTokens.join(', '),
               period: targetPeriod,
               videoLimit: targetLimit,
               forceRefresh,
             }),
           });
           const json = await res.json();
+          if (Array.isArray(json.resolvedShortLinks) && json.resolvedShortLinks.length > 0) {
+            accumulatedShortLinks.push(...json.resolvedShortLinks);
+            setResolvedShortLinks([...accumulatedShortLinks]);
+          }
           if (Array.isArray(json.results) && json.results.length > 0) {
             for (const item of json.results as TikTokScrapedKocResult[]) {
               if (!accumulatedResults.some((r) => r.handle === item.handle)) {
@@ -184,7 +217,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
             accumulatedFailures.push(...json.failedHandles);
             setFailedHandlesList([...accumulatedFailures]);
           }
-          setCompletedHandlesCount(Math.min(parsedHandles.length, i + chunkHandles.length));
+          setCompletedHandlesCount(Math.min(allInputTokens.length, i + chunkTokens.length));
         }
 
         if (accumulatedResults.length > 0) {
@@ -227,6 +260,9 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
         return;
       }
 
+      if (Array.isArray(json.resolvedShortLinks)) {
+        setResolvedShortLinks(json.resolvedShortLinks);
+      }
       setResults(json.results);
       setCompletedHandlesCount(json.results.length);
       if (Array.isArray(json.failedHandles)) {
@@ -237,9 +273,9 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
         rawInput: trimmed,
         results: json.results as TikTokScrapedKocResult[],
       });
-      if (parsedHandles.length > json.results.length) {
+      if (allInputTokens.length > json.results.length) {
         onNotify?.(
-          `Chỉ lấy được ${json.results.length}/${parsedHandles.length} kênh KOC yêu cầu (thiếu ${parsedHandles.length - json.results.length} kênh).`,
+          `Chỉ lấy được ${json.results.length}/${allInputTokens.length} kênh KOC yêu cầu (thiếu ${allInputTokens.length - json.results.length} kênh).`,
           'warning'
         );
       } else if (forceRefresh) {
@@ -378,6 +414,148 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
     onClose();
   };
 
+  const comparisonColumns: Column<TikTokScrapedKocResult>[] = [
+    {
+      key: 'channel',
+      header: 'Kênh KOC',
+      width: 210,
+      render: (r) => {
+        const isCurrent = r.handle === activeResult?.handle;
+        return (
+          <button
+            type="button"
+            onClick={() => setSelectedHandle(r.handle)}
+            className="text-left grid gap-0.5 min-w-0 cursor-pointer"
+          >
+            <span className={`text-xs ${isCurrent ? 'font-bold text-accent' : 'font-semibold text-ink'} truncate`}>
+              {r.channelProfile.nickname}
+            </span>
+            <span className="text-2xs text-ink-3 font-code truncate">@{r.handle}</span>
+          </button>
+        );
+      },
+    },
+    {
+      key: 'verdict',
+      header: 'Đánh giá & Điểm phù hợp',
+      width: 195,
+      render: (r) => {
+        const bi = r.bookingIntelligence;
+        if (!bi) return <span className="text-2xs text-ink-3">—</span>;
+        return (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Status
+              tone={
+                bi.verdict === 'NÊN_BOOK'
+                  ? 'positive'
+                  : bi.verdict === 'CÂN_NHẮC'
+                    ? 'warning'
+                    : 'critical'
+              }
+            >
+              {bi.verdictLabel}
+            </Status>
+            <span className="text-2xs font-semibold text-ink tabular-nums">
+              {bi.fitScore}/100
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'metrics',
+      header: 'Follower · Trung vị 15 bài · Giỏ',
+      align: 'right',
+      width: 210,
+      render: (r) => {
+        const em = r.engagementMetrics;
+        const med15 = em.latest15MedianViews ?? em.medianViews ?? em.avgViews;
+        return (
+          <div className="grid gap-0.5 tabular-nums">
+            <span className="text-xs font-semibold text-ink">
+              {formatFollowers(r.channelProfile.followers)} flw · {formatNumber(med15)} view
+            </span>
+            <span className="text-2xs text-ink-3">
+              Giỏ: {em.affiliateVideoCount ? formatNumber(em.affiliateMedianViews || 0) : '0'} · ER {em.engagementRate}%
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'pricing',
+      header: 'Khung giá Net đề xuất',
+      align: 'right',
+      width: 185,
+      render: (r) => {
+        const bi = r.bookingIntelligence;
+        if (!bi) return <span className="text-2xs text-ink-3">—</span>;
+        const isFoc = bi.suggestedNetRateMin === 0 && bi.suggestedNetRateMax <= 500000;
+        return (
+          <div className="grid gap-0.5 tabular-nums">
+            <span className="text-xs font-semibold text-accent font-code">
+              {isFoc
+                ? 'FOC 0đ – 500K'
+                : `${formatVndShort(bi.suggestedNetRateMin)} – ${formatVndShort(bi.suggestedNetRateMax)}`}
+            </span>
+            <span className="text-2xs text-ink-3">
+              {bi.estimatedCpvVnd > 0 ? `CPV ~${formatNumber(bi.estimatedCpvVnd)}đ/view` : bi.suggestedBookingFormatLabel}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'history',
+      header: 'Lịch sử Upbase & PIC',
+      width: 210,
+      render: (r) => {
+        const hist = r.bookingIntelligence?.historicalUpbaseSummary;
+        if (!hist || !hist.isExistingMasterKoc) {
+          return <Status tone="positive">KOC Mới (Chưa trùng PIC)</Status>;
+        }
+        return (
+          <div className="grid gap-0.5 min-w-0">
+            <span className="text-xs font-medium text-ink tabular-nums">
+              Đã làm {hist.totalPastDeals} deal
+              {hist.historicalRateCard > 0 ? ` · Rate ${formatVndShort(hist.historicalRateCard)}` : ''}
+            </span>
+            <span className="text-2xs text-ink-3 truncate" title={hist.workedPics.join(', ')}>
+              PIC: {hist.workedPics.slice(0, 2).join(', ') || '—'}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'actions',
+      header: 'Thao tác',
+      align: 'right',
+      width: 140,
+      render: (r) => (
+        <div className="flex items-center justify-end gap-1.5">
+          <Button
+            size="sm"
+            variant={r.handle === activeResult?.handle ? 'primary' : 'secondary'}
+            onClick={() => setSelectedHandle(r.handle)}
+          >
+            Xem
+          </Button>
+          {onAddToBrandSheet && (
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={FileSpreadsheet}
+              onClick={() => handlePushToBrandSheet([r])}
+            >
+              Listing
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   const videoColumns: Column<TikTokVideoItem>[] = [
     {
       key: 'content',
@@ -411,9 +589,31 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
             </span>
           </div>
           {v.isAffiliate && (
-            <span className="text-2xs text-positive font-medium truncate" title={v.productName}>
-              Giỏ hàng: {v.productName || 'Sản phẩm TikTok Shop'}
-            </span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {v.productUrl ? (
+                <a
+                  href={v.productUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-2xs text-positive font-medium hover:underline truncate max-w-[260px] inline-flex items-center gap-1"
+                  title={v.productName}
+                >
+                  <ShoppingBag className="w-3 h-3 shrink-0" />
+                  <span className="truncate">Giỏ hàng: {v.productName || 'Sản phẩm TikTok Shop'}</span>
+                  <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                </a>
+              ) : (
+                <span className="text-2xs text-positive font-medium truncate" title={v.productName}>
+                  Giỏ hàng: {v.productName || 'Sản phẩm TikTok Shop'}
+                </span>
+              )}
+              {v.productId && (
+                <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
+                  SP: {v.productId}
+                </span>
+              )}
+            </div>
           )}
         </div>
       ),
@@ -576,7 +776,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                     void runScrape(rawInput, period, videoLimit);
                   }
                 }}
-                placeholder="Nhập @handle hoặc link kênh TikTok (cách nhau bằng dấu phẩy, VD: @megauriviu, @chanhbeauty)..."
+                placeholder="Nhập @handle, link kênh, link video hoặc link rút gọn vt.tiktok.com (VD: @megauriviu, https://vt.tiktok.com/...)..."
                 className="w-full h-9 px-3 rounded-lg border border-line bg-surface text-xs text-ink focus:outline-none focus:border-line-strong font-code"
               />
 
@@ -618,6 +818,22 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                 )}
               </div>
             </div>
+
+            {resolvedShortLinks.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-2xs">
+                <span className="text-ink-3 font-medium">Đã giải mã link rút gọn:</span>
+                {resolvedShortLinks.map((sl) => (
+                  <span
+                    key={sl.shortUrl}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sunken border border-line font-code text-ink-2"
+                  >
+                    <span className="truncate max-w-[160px]">{sl.shortUrl.replace(/^https?:\/\//i, '')}</span>
+                    <span>→</span>
+                    <strong className="text-accent">@{sl.handle}</strong>
+                  </span>
+                ))}
+              </div>
+            )}
 
             {loading && requestedHandlesCount > 1 && (
               <div className="space-y-1 pt-0.5">
@@ -679,48 +895,87 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
             )}
           </div>
 
-          {/* Danh sách các kênh đã quét (nếu quét nhiều kênh) */}
+          {/* Danh sách các kênh đã quét & Bảng so sánh nhanh đa kênh */}
           {results.length > 1 && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-2xs text-ink-3 mr-1">Đã lấy {results.length} kênh:</span>
-              {results.map((r) => {
-                const isSelected = r.handle === activeResult?.handle;
-                const isExisting = existingByHandle.has(r.handle.toLowerCase().replace(/^@+/, ''));
-                const sum = getChannelSummary(r.handle);
-                return (
-                  <button
-                    key={r.handle}
-                    type="button"
-                    onClick={() => setSelectedHandle(r.handle)}
-                    className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border text-xs transition-colors ${
-                      isSelected
-                        ? 'bg-accent-soft border-accent text-ink font-semibold'
-                        : 'bg-surface border-line text-ink-2 hover:bg-canvas'
-                    }`}
-                  >
-                    <span>@{r.handle}</span>
-                    {sum && (
-                      <span
-                        className={`px-1.5 py-0.5 rounded-full text-3xs font-semibold ${
-                          sum.latestReview.verdict === 'NOT_SUITABLE' || sum.notSuitableCount > 0
-                            ? 'bg-critical-soft text-critical'
-                            : sum.latestReview.verdict === 'SUITABLE'
-                              ? 'bg-positive-soft text-positive'
-                              : 'bg-warning-soft text-warning'
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-2xs text-ink-3 mr-1">Đã lấy {results.length} kênh:</span>
+                  {results.map((r) => {
+                    const isSelected = r.handle === activeResult?.handle;
+                    const isExisting = existingByHandle.has(r.handle.toLowerCase().replace(/^@+/, ''));
+                    const sum = getChannelSummary(r.handle);
+                    const bi = r.bookingIntelligence;
+                    return (
+                      <button
+                        key={r.handle}
+                        type="button"
+                        onClick={() => setSelectedHandle(r.handle)}
+                        className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border text-xs transition-colors ${
+                          isSelected
+                            ? 'bg-accent-soft border-accent text-ink font-semibold'
+                            : 'bg-surface border-line text-ink-2 hover:bg-canvas'
                         }`}
                       >
-                        {sum.latestReview.verdictLabel}
-                      </span>
-                    )}
-                    <span className="text-2xs text-ink-3 tabular-nums">
-                      {formatFollowers(r.channelProfile.followers)} flw · Trung vị {formatNumber(r.engagementMetrics.medianViews ?? r.engagementMetrics.avgViews)} · ER {r.engagementMetrics.engagementRate}%
-                    </span>
-                    <span className="text-2xs text-ink-3">
-                      ({isExisting ? 'Đã có' : 'Mới'})
-                    </span>
-                  </button>
-                );
-              })}
+                        <span>@{r.handle}</span>
+                        {bi && (
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-2xs font-semibold tabular-nums ${
+                              bi.verdict === 'NÊN_BOOK'
+                                ? 'bg-positive-soft text-positive'
+                                : bi.verdict === 'CÂN_NHẮC'
+                                  ? 'bg-warning-soft text-warning'
+                                  : 'bg-critical-soft text-critical'
+                            }`}
+                          >
+                            {bi.fitScore}đ
+                          </span>
+                        )}
+                        {sum && (
+                          <span
+                            className={`px-1.5 py-0.5 rounded-full text-2xs font-semibold ${
+                              sum.latestReview.verdict === 'NOT_SUITABLE' || sum.notSuitableCount > 0
+                                ? 'bg-critical-soft text-critical'
+                                : sum.latestReview.verdict === 'SUITABLE'
+                                  ? 'bg-positive-soft text-positive'
+                                  : 'bg-warning-soft text-warning'
+                            }`}
+                          >
+                            {sum.latestReview.verdictLabel}
+                          </span>
+                        )}
+                        <span className="text-2xs text-ink-3 tabular-nums">
+                          {formatFollowers(r.channelProfile.followers)} flw · Trung vị {formatNumber(r.engagementMetrics.latest15MedianViews ?? r.engagementMetrics.medianViews ?? r.engagementMetrics.avgViews)}
+                        </span>
+                        <span className="text-2xs text-ink-3">
+                          ({isExisting ? 'Đã có' : 'Mới'})
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setShowComparisonTable((prev) => !prev)}
+                >
+                  {showComparisonTable ? 'Thu gọn bảng so sánh' : `So sánh ${results.length} kênh`}
+                </Button>
+              </div>
+
+              {showComparisonTable && (
+                <Panel
+                  flush
+                  title={`Bảng so sánh & định giá nhanh (${results.length} kênh vừa quét)`}
+                >
+                  <DataTable
+                    columns={comparisonColumns}
+                    rows={results}
+                    rowKey={(r) => r.handle}
+                    compact
+                  />
+                </Panel>
+              )}
             </div>
           )}
 
@@ -790,6 +1045,32 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                         >
                           Đưa vào Sheet Listing
                         </Button>
+                      )}
+                      {activeResult.bookingIntelligence?.outreachMessageTemplate && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={Copy}
+                          onClick={() =>
+                            void handleCopyOutreachMessage(
+                              activeResult.bookingIntelligence!.outreachMessageTemplate,
+                              activeResult.handle
+                            )
+                          }
+                        >
+                          Sao chép lời mời
+                        </Button>
+                      )}
+                      {activeResult.bookingIntelligence?.zaloDirectUrl && (
+                        <a
+                          href={activeResult.bookingIntelligence.zaloDirectUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-line bg-surface hover:bg-canvas text-2xs font-medium text-accent"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>Nhắn Zalo ({activeResult.channelProfile.extractedPhone})</span>
+                        </a>
                       )}
                       <Button
                         size="sm"
@@ -1022,108 +1303,240 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                 );
               })()}
 
-              {/* Cảnh báo xung đột Sheet Listing & Căn cứ đàm phán giá lịch sử tại UpBase */}
-              {(activeSheetListings.length > 0 || matchedActiveKoc) && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
-                  {activeSheetListings.length > 0 && (
-                    <div className="px-3.5 py-2.5 rounded-xl border border-warning/40 bg-warning-soft/30 space-y-1.5">
+              {/* Khối Đánh giá Đề xuất Book, Khung giá Net gợi ý & Đối soát Lịch sử Lark 3.1 / Danh bạ Upbase */}
+              {activeResult.bookingIntelligence && (() => {
+                const bi = activeResult.bookingIntelligence;
+                const hist = bi.historicalUpbaseSummary;
+                const isFocRange = bi.suggestedNetRateMin === 0 && bi.suggestedNetRateMax <= 500000;
+                return (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+                    <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
-                          <AlertTriangle className="w-3.5 h-3.5 text-warning shrink-0" />
-                          Đang có trong Sheet Listing ({activeSheetListings.length} dòng) — Tránh liên hệ trùng
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-semibold text-ink">
+                            Khuyến nghị Booking &amp; Định giá đàm phán
+                          </span>
+                          <Status
+                            tone={
+                              bi.verdict === 'NÊN_BOOK'
+                                ? 'positive'
+                                : bi.verdict === 'CÂN_NHẮC'
+                                  ? 'warning'
+                                  : 'critical'
+                            }
+                          >
+                            {bi.verdictLabel} ({bi.fitScore}/100)
+                          </Status>
+                        </div>
+                        <span className="text-2xs font-medium text-ink-2">
+                          {bi.suggestedBookingFormatLabel}
                         </span>
                       </div>
-                      <div className="space-y-1">
-                        {activeSheetListings.slice(0, 3).map((item) => (
-                          <div
-                            key={`${item.sheetKey}-${item.dot}`}
-                            className="px-2.5 py-1 rounded-lg bg-surface border border-line text-2xs flex flex-wrap items-center justify-between gap-2"
-                          >
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="font-semibold text-ink">{item.store}</span>
-                              <span className="text-ink-3">({item.thang} · {item.dot})</span>
-                              <span className="text-ink-2">· PIC: <strong>{item.nhanSuDien}</strong></span>
-                            </div>
-                            <div className="flex items-center gap-2 tabular-nums">
-                              {item.giaNetVideo > 0 && (
-                                <span className="font-code font-medium text-ink">
-                                  Net: {formatVnd(item.giaNetVideo)}
-                                </span>
-                              )}
-                              <Status
-                                tone={
-                                  item.brandChon === 'Yes'
-                                    ? 'positive'
-                                    : item.brandChon === 'No'
-                                      ? 'critical'
-                                      : 'warning'
-                                }
-                              >
-                                Brand: {item.brandChon}
-                              </Status>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
-                  {matchedActiveKoc && (
-                    <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface space-y-1.5">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-0.5">
+                        <div className="px-2.5 py-1.5 rounded-lg bg-sunken border border-line">
+                          <span className="text-2xs text-ink-3 block">Khung giá Net đề xuất</span>
+                          <strong className="text-xs font-semibold text-accent font-code tabular-nums">
+                            {isFocRange
+                              ? 'FOC 0đ – 500.000đ'
+                              : `${formatVnd(bi.suggestedNetRateMin)} – ${formatVnd(bi.suggestedNetRateMax)}`}
+                          </strong>
+                        </div>
+                        <div className="px-2.5 py-1.5 rounded-lg bg-sunken border border-line">
+                          <span className="text-2xs text-ink-3 block">CPV dự kiến (theo trung vị)</span>
+                          <strong className="text-xs font-semibold text-ink font-code tabular-nums">
+                            {bi.estimatedCpvVnd > 0
+                              ? `${formatNumber(bi.estimatedCpvVnd)} đ/view`
+                              : 'FOC 0đ'}
+                          </strong>
+                        </div>
+                        <div className="px-2.5 py-1.5 rounded-lg bg-sunken border border-line col-span-2 sm:col-span-1">
+                          <span className="text-2xs text-ink-3 block">Nhãn hàng B2C phù hợp</span>
+                          <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                            {bi.recommendedB2cBrands.map((b) => (
+                              <span
+                                key={b}
+                                className="px-1.5 py-0.5 rounded bg-surface border border-line text-2xs font-medium text-ink"
+                              >
+                                {b}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {bi.riskFlags.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                          {bi.riskFlags.map((flag) => (
+                            <span
+                              key={flag.code}
+                              className={`px-2 py-0.5 rounded-md text-2xs font-medium border ${
+                                flag.severity === 'critical'
+                                  ? 'bg-critical-soft border-critical/30 text-critical'
+                                  : flag.severity === 'warning'
+                                    ? 'bg-warning-soft border-warning/30 text-warning'
+                                    : 'bg-positive-soft border-positive/30 text-positive'
+                              }`}
+                            >
+                              {flag.label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-xs font-semibold text-ink">
-                          Lịch sử hợp tác &amp; Căn cứ đàm phán giá tại UpBase
+                          Đối soát Lịch sử Lark 3.1 &amp; Danh bạ Upbase
                         </span>
-                        {matchedActiveKoc.bookingPic && (
-                          <span className="text-2xs text-ink-3">
-                            PIC gần nhất: <strong className="text-ink">{matchedActiveKoc.bookingPic}</strong>
-                          </span>
+                        {hist.isExistingMasterKoc ? (
+                          <Status tone="warning">
+                            Đã từng làm ({hist.totalPastDeals} deal)
+                          </Status>
+                        ) : (
+                          <Status tone="positive">KOC Mới hoàn toàn</Status>
                         )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs tabular-nums">
-                        <span>
-                          <span className="text-ink-3">Rate Card hồ sơ: </span>
-                          <strong className="text-accent font-code">
-                            {matchedActiveKoc.rateCardVideo > 0
-                              ? formatVnd(matchedActiveKoc.rateCardVideo)
-                              : 'Chưa có'}
-                          </strong>
-                        </span>
-                        {(matchedActiveKoc.minRate || matchedActiveKoc.maxRate) && (
-                          <span>
-                            <span className="text-ink-3">Khung giá từng book: </span>
-                            <strong className="text-ink font-code">
-                              {formatVndShort(matchedActiveKoc.minRate || 0)} –{' '}
-                              {formatVndShort(matchedActiveKoc.maxRate || matchedActiveKoc.rateCardVideo || 0)}
-                            </strong>
-                          </span>
-                        )}
-                        <span>
-                          <span className="text-ink-3">Đã hợp tác: </span>
-                          <strong className="text-ink">
-                            {matchedActiveKoc.totalPastDeals || 0} deal (Paid {matchedActiveKoc.totalPaidVideos || 0} · FOC {matchedActiveKoc.totalFocVideos || 0})
-                          </strong>
-                        </span>
-                        {matchedActiveKoc.totalPastGmv !== undefined && matchedActiveKoc.totalPastGmv > 0 && (
-                          <span>
-                            <span className="text-ink-3">Tổng GMV: </span>
-                            <strong className="text-positive">
-                              {formatVndShort(matchedActiveKoc.totalPastGmv)}
-                            </strong>
-                            {matchedActiveKoc.historicalRoi !== undefined && (
-                              <span className="text-ink-3"> (ROI {matchedActiveKoc.historicalRoi}x)</span>
+
+                      {hist.isExistingMasterKoc ? (
+                        <div className="space-y-1.5 text-2xs">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 tabular-nums">
+                            {hist.historicalRateCard > 0 && (
+                              <span>
+                                <span className="text-ink-3">Rate Card: </span>
+                                <strong className="text-accent font-code">
+                                  {formatVnd(hist.historicalRateCard)}
+                                </strong>
+                              </span>
                             )}
-                          </span>
-                        )}
-                        {matchedActiveKoc.latestBookMonth && (
-                          <span>
-                            <span className="text-ink-3">Book gần nhất: </span>
-                            <strong className="text-ink font-code">{matchedActiveKoc.latestBookMonth}</strong>
-                          </span>
-                        )}
+                            {(hist.historicalMinRate > 0 || hist.historicalMaxRate > 0) && (
+                              <span>
+                                <span className="text-ink-3">Biên độ từng chốt: </span>
+                                <strong className="text-ink font-code">
+                                  {formatVndShort(hist.historicalMinRate)} – {formatVndShort(hist.historicalMaxRate)}
+                                </strong>
+                              </span>
+                            )}
+                            {hist.historicalGmvVnd > 0 && (
+                              <span>
+                                <span className="text-ink-3">GMV lịch sử: </span>
+                                <strong className="text-positive font-code">
+                                  {formatVndShort(hist.historicalGmvVnd)}
+                                </strong>
+                                {hist.historicalRoi > 0 && (
+                                  <span className="text-ink-3"> (ROI {hist.historicalRoi}x)</span>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                          {hist.workedPics.length > 0 && (
+                            <div className="text-2xs text-ink-2">
+                              <span className="text-ink-3">PIC từng phụ trách: </span>
+                              <strong className="text-ink">{hist.workedPics.join(', ')}</strong>
+                            </div>
+                          )}
+                          {hist.recentLarkListings.length > 0 && (
+                            <div className="space-y-1 pt-0.5">
+                              {hist.recentLarkListings.slice(0, 2).map((li, idx) => (
+                                <div
+                                  key={`${li.monthKey}-${li.storeName}-${idx}`}
+                                  className="px-2 py-1 rounded bg-sunken border border-line flex flex-wrap items-center justify-between gap-2"
+                                >
+                                  <span>
+                                    <strong className="text-ink">{li.brandName}</strong> ({li.monthKey}) · PIC: {li.picName}
+                                  </span>
+                                  <span className="font-code tabular-nums text-ink">
+                                    {li.finalFee > 0 ? formatVnd(li.finalFee) : 'FOC 0đ'} · {li.status}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-2xs text-ink-2">
+                          Kênh chưa phát sinh trong 4.811 KOC Master và 2.561 bản ghi Lark 3.1 Listing kỳ 2026/10–2026/11. Có thể chủ động liên hệ mở mới mà không lo trùng PIC nội bộ.
+                        </p>
+                      )}
+
+                      <div className="pt-1 border-t border-line flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-2xs text-ink-2 truncate max-w-md" title={bi.outreachMessageTemplate}>
+                          Mẫu nhắn KOC: &ldquo;{bi.outreachMessageTemplate}&rdquo;
+                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            icon={Copy}
+                            onClick={() =>
+                              void handleCopyOutreachMessage(
+                                bi.outreachMessageTemplate,
+                                activeResult.handle
+                              )
+                            }
+                          >
+                            Sao chép lời mời
+                          </Button>
+                          {bi.zaloDirectUrl && (
+                            <a
+                              href={bi.zaloDirectUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line bg-sunken hover:bg-canvas text-2xs font-semibold text-accent"
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                              <span>Mở Zalo</span>
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  )}
+                  </div>
+                );
+              })()}
+
+              {/* Cảnh báo xung đột Sheet Listing nội bộ (nếu đang lưu tạm trong trình duyệt) */}
+              {activeSheetListings.length > 0 && (
+                <div className="px-3.5 py-2.5 rounded-xl border border-warning/40 bg-warning-soft/30 space-y-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-warning shrink-0" />
+                      Đang có trong Sheet Listing cá nhân ({activeSheetListings.length} dòng) — Tránh liên hệ trùng
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {activeSheetListings.slice(0, 3).map((item) => (
+                      <div
+                        key={`${item.sheetKey}-${item.dot}`}
+                        className="px-2.5 py-1 rounded-lg bg-surface border border-line text-2xs flex flex-wrap items-center justify-between gap-2"
+                      >
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-semibold text-ink">{item.store}</span>
+                          <span className="text-ink-3">({item.thang} · {item.dot})</span>
+                          <span className="text-ink-2">· PIC: <strong>{item.nhanSuDien}</strong></span>
+                        </div>
+                        <div className="flex items-center gap-2 tabular-nums">
+                          {item.giaNetVideo > 0 && (
+                            <span className="font-code font-medium text-ink">
+                              Net: {formatVnd(item.giaNetVideo)}
+                            </span>
+                          )}
+                          <Status
+                            tone={
+                              item.brandChon === 'Yes'
+                                ? 'positive'
+                                : item.brandChon === 'No'
+                                  ? 'critical'
+                                  : 'warning'
+                            }
+                          >
+                            Brand: {item.brandChon}
+                          </Status>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -1137,16 +1550,20 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                     </span>
                     {activeResult.engagementMetrics.promotedProductsSummary.map((prod) => (
                       <a
-                        key={prod.label}
-                        href={prod.latestVideoUrl || activeResult.channelProfile.channelUrl}
+                        key={`${prod.productId || prod.label}`}
+                        href={prod.productUrl || prod.latestVideoUrl || activeResult.channelProfile.channelUrl}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-sunken border border-line text-2xs text-ink hover:border-line-strong"
                       >
                         <span className="truncate max-w-[220px] font-medium">{prod.label}</span>
+                        {prod.productId && (
+                          <span className="font-code text-accent">#{prod.productId.slice(-6)}</span>
+                        )}
                         <span className="text-ink-3 tabular-nums">
                           ({prod.count} bài · {formatNumber(prod.latestViews)} view)
                         </span>
+                        <ExternalLink className="w-2.5 h-2.5 text-ink-3 shrink-0" />
                       </a>
                     ))}
                   </div>

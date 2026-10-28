@@ -2,6 +2,7 @@ import {
   CreatorSegment,
   KocCategory,
   KocItem,
+  KocListingItem,
   KocTier,
   SalaryGrade,
   TepKenh,
@@ -10,6 +11,7 @@ import {
   getSegmentFromSalaryGrade,
 } from './types';
 import { UPBASE_FULL_KOC_MASTER } from './kocMasterDataset';
+import { REAL_LARK_LISTINGS_BY_BOARD_KEY } from './realLarkListings2026';
 import { getVietnamDateYmd } from './format';
 import {
   buildTargetKeywordProfile,
@@ -76,6 +78,55 @@ export interface TikTokPromotedProductItem {
   count: number;
   latestViews: number;
   latestVideoUrl?: string;
+  productId?: string;
+  productUrl?: string;
+}
+
+export interface TikTokKocBookingRiskFlag {
+  code: string;
+  severity: 'critical' | 'warning' | 'positive';
+  label: string;
+}
+
+export interface TikTokKocHistoricalLarkListing {
+  monthKey: string;
+  brandName: string;
+  storeName: string;
+  picName: string;
+  proposedFee: number;
+  finalFee: number;
+  status: string;
+}
+
+export interface TikTokKocBookingIntelligence {
+  fitScore: number;
+  verdict: 'NÊN_BOOK' | 'CÂN_NHẮC' | 'RỦI_RO_CAO';
+  verdictLabel: string;
+  suggestedBookingFormat: 'PAID_CAST' | 'FOC_SEEDING' | 'AFFILIATE_ONLY';
+  suggestedBookingFormatLabel: string;
+  suggestedNetRateMin: number;
+  suggestedNetRateMax: number;
+  estimatedCpvVnd: number;
+  affiliateViewRetentionPct?: number;
+  riskFlags: TikTokKocBookingRiskFlag[];
+  historicalUpbaseSummary: {
+    isExistingMasterKoc: boolean;
+    totalPastDeals: number;
+    totalPaidVideos: number;
+    totalFocVideos: number;
+    historicalMinRate: number;
+    historicalMaxRate: number;
+    historicalRateCard: number;
+    historicalGmvVnd: number;
+    historicalRoi: number;
+    latestBoCode?: string;
+    latestBookMonth?: string;
+    workedPics: string[];
+    recentLarkListings: TikTokKocHistoricalLarkListing[];
+  };
+  recommendedB2cBrands: string[];
+  zaloDirectUrl?: string;
+  outreachMessageTemplate: string;
 }
 
 export interface TikTokEngagementMetrics {
@@ -191,50 +242,105 @@ export interface TikTokScrapedKocResult {
   recentVideos: TikTokVideoItem[];
   affiliateMetrics: TikTokAffiliateMetrics;
   scrapeDiagnostics?: TikTokScrapeDiagnostics;
+  bookingIntelligence?: TikTokKocBookingIntelligence;
   matchedHashtagVideo?: TikTokHashtagDiscoveredVideo;
   competitorCollaboration?: TikTokCompetitorCollaborationInfo;
 }
 
+const RESERVED_NON_HANDLE_TOKENS = new Set([
+  'video',
+  'photo',
+  't',
+  'v',
+  'tag',
+  'music',
+  'discover',
+  'search',
+  'live',
+  'explore',
+  'share',
+  'foryou',
+  'following',
+  'http',
+  'https',
+  'www',
+  'tiktok',
+  'com',
+]);
+
 /**
- * Chuẩn hóa danh sách đầu vào (link kênh TikTok, link video TikTok, hoặc @handle)
+ * Chuẩn hóa danh sách đầu vào (link kênh TikTok, link video TikTok, tin nhắn Zalo/Lark hoặc @handle)
  * thành mảng các handle duy nhất (không có ký tự @).
+ * Loại trừ link rút gọn vt.tiktok.com / vm.tiktok.com / tiktok.com/t/... khỏi việc nhận nhầm làm @handle.
  */
 export function parseTikTokHandles(rawInput: string | string[]): string[] {
-  const rawList = Array.isArray(rawInput)
-    ? rawInput
-    : rawInput.split(/[\r\n,;]+/);
-
+  const fullText = Array.isArray(rawInput) ? rawInput.join('\n') : String(rawInput || '');
   const seen = new Set<string>();
   const handles: string[] = [];
+
+  const addCandidate = (raw: string) => {
+    const clean = raw.trim().toLowerCase().replace(/^@+/, '').replace(/[^a-z0-9._-]/g, '');
+    if (
+      clean.length >= 2 &&
+      clean.length <= 45 &&
+      !RESERVED_NON_HANDLE_TOKENS.has(clean) &&
+      !seen.has(clean)
+    ) {
+      seen.add(clean);
+      handles.push(clean);
+    }
+  };
+
+  // 1. Bắt tất cả link tiktok.com/@handle (kể cả có kèm /video/... hay nằm lẫn trong câu chat)
+  const urlHandleRegex = /tiktok\.com\/@([a-zA-Z0-9._-]{2,45})/gi;
+  let match: RegExpExecArray | null;
+  while ((match = urlHandleRegex.exec(fullText)) !== null) {
+    if (match[1]) addCandidate(match[1]);
+  }
+
+  // 2. Bắt các token theo dòng / dấu phẩy / khoảng trắng
+  const rawList = Array.isArray(rawInput)
+    ? rawInput
+    : rawInput.split(/[\r\n,;\t]+/);
 
   for (const item of rawList) {
     const trimmed = item.trim();
     if (!trimmed) continue;
 
+    // Bỏ qua nếu là link rút gọn vt.tiktok.com / vm.tiktok.com / tiktok.com/t/... (sẽ được phân giải qua resolveTikTokInputToHandlesAndVideos)
+    if (
+      /(?:^|\s|https?:\/\/)(?:vt|vm)\.tiktok\.com\/[a-zA-Z0-9_-]+/i.test(trimmed) ||
+      /tiktok\.com\/(?:t|v)\/[a-zA-Z0-9_-]+/i.test(trimmed)
+    ) {
+      const explicitMentions = trimmed.match(/(?:^|\s)@([a-zA-Z0-9._-]{2,45})/g) || [];
+      for (const m of explicitMentions) addCandidate(m.trim());
+      continue;
+    }
+
     const urlMatch = trimmed.match(/tiktok\.com\/@([a-zA-Z0-9._-]+)/i);
-    let candidate = '';
     if (urlMatch && urlMatch[1]) {
-      candidate = urlMatch[1];
-    } else if (/^https?:\/\//i.test(trimmed)) {
+      addCandidate(urlMatch[1]);
+      continue;
+    }
+
+    // Nếu dòng có chứa @handle nằm giữa câu chữ
+    const inlineMentions = trimmed.match(/(?:^|\s)@([a-zA-Z0-9._-]{2,45})/g);
+    if (inlineMentions && inlineMentions.length > 0) {
+      for (const m of inlineMentions) addCandidate(m.trim());
+      continue;
+    }
+
+    if (/^https?:\/\//i.test(trimmed)) {
       const cleanedUrl = trimmed
         .replace(/^https?:\/\/([a-z0-9-]+\.)?tiktok\.com\//i, '')
         .replace(/^@+/, '')
         .split(/[/?#\s]/)[0]
         .trim();
       if (cleanedUrl && !cleanedUrl.includes(':')) {
-        candidate = cleanedUrl;
+        addCandidate(cleanedUrl);
       }
-    } else {
-      candidate = trimmed
-        .replace(/^@+/, '')
-        .split(/[/?#\s]/)[0]
-        .trim();
-    }
-
-    const clean = candidate.toLowerCase().replace(/[^a-z0-9._-]/g, '');
-    if (clean.length >= 2 && clean !== 'video' && clean !== 'photo' && !seen.has(clean)) {
-      seen.add(clean);
-      handles.push(clean);
+    } else if (!/\s/.test(trimmed)) {
+      addCandidate(trimmed.replace(/^@+/, '').split(/[/?#\s]/)[0]);
     }
   }
 
@@ -247,17 +353,14 @@ export function parseTikTokHandles(rawInput: string | string[]): string[] {
 export function extractDirectVideoUrlsFromInput(
   rawInput: string | string[]
 ): Array<{ handle: string; videoId: string; videoUrl: string }> {
-  const rawList = Array.isArray(rawInput)
-    ? rawInput
-    : rawInput.split(/[\r\n,;]+/);
+  const fullText = Array.isArray(rawInput) ? rawInput.join('\n') : String(rawInput || '');
   const found: Array<{ handle: string; videoId: string; videoUrl: string }> = [];
   const seen = new Set<string>();
 
-  for (const item of rawList) {
-    const m = item
-      .trim()
-      .match(/tiktok\.com\/@([a-zA-Z0-9._-]+)\/(?:video|photo)\/(\d{15,22})/i);
-    if (m && m[1] && m[2]) {
+  const regex = /tiktok\.com\/@([a-zA-Z0-9._-]+)\/(?:video|photo)\/(\d{15,22})/gi;
+  let m: RegExpExecArray | null;
+  while ((m = regex.exec(fullText)) !== null) {
+    if (m[1] && m[2]) {
       const handle = m[1].toLowerCase();
       const videoId = m[2];
       const key = `${handle}_${videoId}`;
@@ -272,6 +375,118 @@ export function extractDirectVideoUrlsFromInput(
     }
   }
   return found;
+}
+
+/**
+ * Tách các đường dẫn rút gọn TikTok (vt.tiktok.com, vm.tiktok.com, tiktok.com/t/...)
+ */
+export function extractShortTikTokUrlsFromInput(rawInput: string | string[]): string[] {
+  const fullText = Array.isArray(rawInput) ? rawInput.join('\n') : String(rawInput || '');
+  const matches =
+    fullText.match(
+      /https?:\/\/(?:(?:vt|vm)\.tiktok\.com\/[A-Za-z0-9_-]+\/?|(?:www\.|m\.)?tiktok\.com\/(?:t|v)\/[A-Za-z0-9_-]+(?:\.html)?\/?)/gi
+    ) || [];
+  const unique = new Set<string>();
+  for (const raw of matches) {
+    const cleaned = raw.replace(/[.,;)]+$/, '').trim();
+    if (cleaned) unique.add(cleaned);
+  }
+  return [...unique];
+}
+
+/**
+ * Tự động phân giải cả @handle, link kênh, link video dài VÀ link rút gọn (vt.tiktok.com / vm.tiktok.com)
+ * thành danh sách @handle chuẩn xác + danh sách video trực tiếp của kênh đó.
+ */
+export async function resolveTikTokInputToHandlesAndVideos(
+  rawInput: string | string[]
+): Promise<{
+  handles: string[];
+  directVideoUrls: Array<{ handle: string; videoId: string; videoUrl: string }>;
+  resolvedShortLinks: Array<{ shortUrl: string; handle: string; videoId?: string; videoUrl?: string }>;
+}> {
+  const baseHandles = parseTikTokHandles(rawInput);
+  const directVideoUrls = extractDirectVideoUrlsFromInput(rawInput);
+  const shortUrls = extractShortTikTokUrlsFromInput(rawInput);
+
+  const handleSet = new Set<string>(baseHandles);
+  const videoMap = new Map<string, { handle: string; videoId: string; videoUrl: string }>();
+  for (const dv of directVideoUrls) {
+    handleSet.add(dv.handle);
+    videoMap.set(`${dv.handle}_${dv.videoId}`, dv);
+  }
+
+  const resolvedShortLinks: Array<{
+    shortUrl: string;
+    handle: string;
+    videoId?: string;
+    videoUrl?: string;
+  }> = [];
+
+  if (shortUrls.length > 0) {
+    await Promise.all(
+      shortUrls.slice(0, 15).map(async (shortUrl) => {
+        try {
+          // 1. Thử phân tích trực tiếp qua inspectLiveTikTokVideoPage (hỗ trợ cả redirect + TikWM + Mobile SSR)
+          const inspected = await inspectLiveTikTokVideoPage(shortUrl);
+          if (inspected && inspected.author.handle && inspected.author.handle !== 'tiktok') {
+            const h = inspected.author.handle.toLowerCase().replace(/^@+/, '');
+            handleSet.add(h);
+            const vUrl = `https://www.tiktok.com/@${h}/video/${inspected.videoId}`;
+            videoMap.set(`${h}_${inspected.videoId}`, {
+              handle: h,
+              videoId: inspected.videoId,
+              videoUrl: vUrl,
+            });
+            resolvedShortLinks.push({
+              shortUrl,
+              handle: h,
+              videoId: inspected.videoId,
+              videoUrl: vUrl,
+            });
+            return;
+          }
+
+          // 2. Dự phòng: Nếu link rút gọn trỏ tới trang Profile (@handle) thay vì trang Video
+          const res = await fetch(shortUrl, {
+            method: 'GET',
+            redirect: 'follow',
+            headers: {
+              'User-Agent':
+                'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
+            },
+            signal: AbortSignal.timeout(5000),
+          });
+          const finalUrl = res.url || '';
+          const handleMatch = finalUrl.match(/tiktok\.com\/@([a-zA-Z0-9._-]+)/i);
+          if (handleMatch && handleMatch[1]) {
+            const h = handleMatch[1].toLowerCase();
+            handleSet.add(h);
+            const videoMatch = finalUrl.match(/\/(?:video|photo)\/(\d{15,22})/i);
+            const vId = videoMatch ? videoMatch[1] : undefined;
+            const vUrl = vId ? `https://www.tiktok.com/@${h}/video/${vId}` : undefined;
+            if (vId && vUrl) {
+              videoMap.set(`${h}_${vId}`, { handle: h, videoId: vId, videoUrl: vUrl });
+            }
+            resolvedShortLinks.push({
+              shortUrl,
+              handle: h,
+              videoId: vId,
+              videoUrl: vUrl,
+            });
+          }
+        } catch {
+          // Bỏ qua nếu link rút gọn lỗi mạng
+        }
+      })
+    );
+  }
+
+  return {
+    handles: [...handleSet],
+    directVideoUrls: [...videoMap.values()],
+    resolvedShortLinks,
+  };
 }
 
 /**
@@ -452,40 +667,98 @@ export async function fetchLiveTikTokPublicProfile(
   }
 
   const taskPromise = (async () => {
-    try {
-      const url = `https://www.tiktok.com/@${encodeURIComponent(clean)}`;
-      const fetched = await fetchTikTokHtmlWithWafBypass(url);
-      if (!fetched) return null;
-
-      const scriptMatch = fetched.html.match(
+    const extractProfileFromHtml = (html: string) => {
+      const scriptMatch = html.match(
         /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
       );
-      if (!scriptMatch || !scriptMatch[1]) return null;
+      if (scriptMatch && scriptMatch[1]) {
+        try {
+          const json = JSON.parse(scriptMatch[1]);
+          const userDetail =
+            json?.__DEFAULT_SCOPE__?.['webapp.user-detail']?.userInfo ||
+            json?.__DEFAULT_SCOPE__?.['webapp.mobile-user-detail']?.userInfo;
+          if (userDetail?.user) {
+            const u = userDetail.user;
+            const s = userDetail.stats || {};
+            return {
+              secUid: typeof u.secUid === 'string' && u.secUid.trim() ? u.secUid.trim() : undefined,
+              nickname: typeof u.nickname === 'string' ? u.nickname : undefined,
+              bio: typeof u.signature === 'string' ? u.signature : undefined,
+              bioLink: typeof u.bioLink?.link === 'string' ? u.bioLink.link : undefined,
+              avatarUrl: typeof u.avatarLarger === 'string' ? u.avatarLarger : undefined,
+              followers: typeof s.followerCount === 'number' ? s.followerCount : undefined,
+              following: typeof s.followingCount === 'number' ? s.followingCount : undefined,
+              totalLikes:
+                typeof s.heartCount === 'number'
+                  ? s.heartCount
+                  : typeof s.heart === 'number'
+                  ? s.heart
+                  : undefined,
+              videoCount: typeof s.videoCount === 'number' ? s.videoCount : undefined,
+              isVerified: Boolean(u.verified),
+            };
+          }
+        } catch {
+          // Tiếp tục thử SIGI_STATE
+        }
+      }
 
-      const json = JSON.parse(scriptMatch[1]);
-      const userDetail = json?.__DEFAULT_SCOPE__?.['webapp.user-detail']?.userInfo;
-      if (!userDetail?.user) return null;
+      const sigiMatch = html.match(/<script id="SIGI_STATE"[^>]*>([\s\S]*?)<\/script>/);
+      if (sigiMatch && sigiMatch[1]) {
+        try {
+          const sigi = JSON.parse(sigiMatch[1]);
+          const users = sigi?.UserModule?.users || {};
+          const stats = sigi?.UserModule?.stats || {};
+          const u = users[clean] || Object.values(users)[0];
+          const s = (u && stats[u.uniqueId]) || stats[clean] || Object.values(stats)[0] || {};
+          if (u && typeof u === 'object') {
+            const uRec = u as Record<string, unknown>;
+            const sRec = s as Record<string, unknown>;
+            return {
+              secUid:
+                typeof uRec.secUid === 'string' && uRec.secUid.trim()
+                  ? uRec.secUid.trim()
+                  : undefined,
+              nickname: typeof uRec.nickname === 'string' ? uRec.nickname : undefined,
+              bio: typeof uRec.signature === 'string' ? uRec.signature : undefined,
+              bioLink: undefined,
+              avatarUrl: typeof uRec.avatarLarger === 'string' ? uRec.avatarLarger : undefined,
+              followers: typeof sRec.followerCount === 'number' ? sRec.followerCount : undefined,
+              following: typeof sRec.followingCount === 'number' ? sRec.followingCount : undefined,
+              totalLikes:
+                typeof sRec.heartCount === 'number'
+                  ? sRec.heartCount
+                  : typeof sRec.heart === 'number'
+                  ? sRec.heart
+                  : undefined,
+              videoCount: typeof sRec.videoCount === 'number' ? sRec.videoCount : undefined,
+              isVerified: Boolean(uRec.verified),
+            };
+          }
+        } catch {
+          // Bỏ qua lỗi parse SIGI_STATE
+        }
+      }
+      return null;
+    };
 
-      const u = userDetail.user;
-      const s = userDetail.stats || {};
+    try {
+      const url = `https://www.tiktok.com/@${encodeURIComponent(clean)}`;
+      // 1. Thử Desktop UA trước
+      const fetchedDesktop = await fetchTikTokHtmlWithWafBypass(url);
+      let profileData = fetchedDesktop ? extractProfileFromHtml(fetchedDesktop.html) : null;
 
-      const profileData = {
-        secUid: typeof u.secUid === 'string' && u.secUid.trim() ? u.secUid.trim() : undefined,
-        nickname: typeof u.nickname === 'string' ? u.nickname : undefined,
-        bio: typeof u.signature === 'string' ? u.signature : undefined,
-        bioLink: typeof u.bioLink?.link === 'string' ? u.bioLink.link : undefined,
-        avatarUrl: typeof u.avatarLarger === 'string' ? u.avatarLarger : undefined,
-        followers: typeof s.followerCount === 'number' ? s.followerCount : undefined,
-        following: typeof s.followingCount === 'number' ? s.followingCount : undefined,
-        totalLikes:
-          typeof s.heartCount === 'number'
-            ? s.heartCount
-            : typeof s.heart === 'number'
-            ? s.heart
-            : undefined,
-        videoCount: typeof s.videoCount === 'number' ? s.videoCount : undefined,
-        isVerified: Boolean(u.verified),
-      };
+      // 2. Dự phòng Mobile UA nếu Desktop SSR bị chặn hoặc thiếu user-detail
+      if (!profileData) {
+        const fetchedMobile = await fetchTikTokHtmlWithWafBypass(url, 5500, {
+          useMobileUa: true,
+        });
+        if (fetchedMobile) {
+          profileData = extractProfileFromHtml(fetchedMobile.html);
+        }
+      }
+
+      if (!profileData) return null;
 
       if (store.profileCache.size >= 1000) {
         const firstKey = store.profileCache.keys().next().value;
@@ -519,6 +792,458 @@ function resolveFallbackCreatorHandle(cleanHandle: string): string | null {
   return REAL_TIKTOK_CHANNEL_FALLBACK_MAP[cleanHandle] || null;
 }
 
+// RULE-PERF-01: O(1) Map Index cho 4.811 KOC Master và 2.561 bản ghi Lark 3.1 Listing
+let _masterKocByHandleMap: Map<string, KocItem> | null = null;
+let _larkListingsByHandleMap: Map<string, KocListingItem[]> | null = null;
+
+function getMasterKocByHandle(cleanHandle: string): KocItem | undefined {
+  if (!_masterKocByHandleMap) {
+    _masterKocByHandleMap = new Map<string, KocItem>();
+    for (const k of UPBASE_FULL_KOC_MASTER) {
+      const h = (k.channelId || '').trim().toLowerCase().replace(/^@+/, '');
+      if (h && !_masterKocByHandleMap.has(h)) {
+        _masterKocByHandleMap.set(h, k);
+      }
+    }
+  }
+  return _masterKocByHandleMap.get(cleanHandle.toLowerCase().replace(/^@+/, ''));
+}
+
+function getLarkListingsByHandle(cleanHandle: string): KocListingItem[] {
+  if (!_larkListingsByHandleMap) {
+    _larkListingsByHandleMap = new Map<string, KocListingItem[]>();
+    for (const items of Object.values(REAL_LARK_LISTINGS_BY_BOARD_KEY)) {
+      if (!Array.isArray(items)) continue;
+      for (const item of items) {
+        const h = (item.kocHandle || item.kocName || '')
+          .trim()
+          .toLowerCase()
+          .replace(/^@+/, '');
+        if (!h) continue;
+        const arr = _larkListingsByHandleMap.get(h);
+        if (arr) {
+          arr.push(item);
+        } else {
+          _larkListingsByHandleMap.set(h, [item]);
+        }
+      }
+    }
+  }
+  return _larkListingsByHandleMap.get(cleanHandle.toLowerCase().replace(/^@+/, '')) || [];
+}
+
+function recommendUpbaseB2cBrandsForChannel(params: {
+  kocCategory: KocCategory;
+  tepKenh: TepKenh;
+  bioAndCaptions: string;
+  existingBrand?: string;
+  larkListings: KocListingItem[];
+}): string[] {
+  const { kocCategory, tepKenh, bioAndCaptions, existingBrand, larkListings } = params;
+  const lower = bioAndCaptions.toLowerCase();
+  const brandSet = new Set<string>();
+
+  if (existingBrand && existingBrand.trim()) {
+    brandSet.add(existingBrand.trim());
+  }
+  for (const li of larkListings) {
+    if (li.brandName && li.brandName.trim()) {
+      brandSet.add(li.brandName.trim());
+    }
+  }
+
+  if (
+    kocCategory === 'Mom and baby' ||
+    tepKenh.includes('Mẹ bé') ||
+    lower.includes('mẹ') ||
+    lower.includes('bé') ||
+    lower.includes('bỉm') ||
+    lower.includes('sơ sinh')
+  ) {
+    brandSet.add('Kutieskin');
+    brandSet.add('Nabizam');
+    brandSet.add('Docilee');
+    brandSet.add('Babé');
+  } else if (
+    lower.includes('mụn') ||
+    lower.includes('treatment') ||
+    lower.includes('phục hồi') ||
+    lower.includes('dược mỹ phẩm') ||
+    tepKenh === 'Bác sỹ/chuyên gia'
+  ) {
+    brandSet.add('Babé');
+    brandSet.add('Rejuran');
+    brandSet.add('Bye Bye Blemish');
+    brandSet.add('EUPC');
+  } else if (
+    lower.includes('son') ||
+    lower.includes('makeup') ||
+    lower.includes('クッション') ||
+    lower.includes('cushion') ||
+    lower.includes('trang điểm') ||
+    tepKenh === 'Makeup Artist'
+  ) {
+    brandSet.add('ClubClio');
+    brandSet.add('Cathy Doll');
+    brandSet.add('Karmart');
+  } else if (
+    lower.includes('tóc') ||
+    lower.includes('gội') ||
+    lower.includes('body') ||
+    lower.includes('nước hoa') ||
+    tepKenh === 'Tóc'
+  ) {
+    brandSet.add('Cindy Bloom');
+    brandSet.add("L'Occitane");
+    brandSet.add('Herbal Care');
+    brandSet.add('Mine');
+  } else {
+    brandSet.add('ClubClio');
+    brandSet.add('Babé');
+    brandSet.add('Rejuran');
+    brandSet.add('EUPC');
+  }
+
+  return [...brandSet].slice(0, 4);
+}
+
+function computeKocBookingIntelligence(params: {
+  cleanHandle: string;
+  nickname: string;
+  followers: number;
+  resolvedPhone?: string;
+  sampleCount: number;
+  latest15MedianViews: number;
+  medianViews: number;
+  affiliateVideoCount: number;
+  affiliateMedianViews: number;
+  organicVideoCount: number;
+  organicMedianViews: number;
+  outlierViralCount: number;
+  pinnedOldVideoCount: number;
+  viewConsistencyRatioPct?: number;
+  daysSinceLastPost?: number;
+  engagementRate: number;
+  kocCategory: KocCategory;
+  tepKenh: TepKenh;
+  bioAndCaptions: string;
+  existingKoc?: KocItem;
+}): TikTokKocBookingIntelligence {
+  const {
+    cleanHandle,
+    nickname,
+    followers,
+    resolvedPhone,
+    sampleCount,
+    latest15MedianViews,
+    medianViews,
+    affiliateVideoCount,
+    affiliateMedianViews,
+    organicVideoCount,
+    organicMedianViews,
+    outlierViralCount,
+    pinnedOldVideoCount,
+    viewConsistencyRatioPct,
+    daysSinceLastPost,
+    engagementRate,
+    kocCategory,
+    tepKenh,
+    bioAndCaptions,
+    existingKoc,
+  } = params;
+
+  const effectiveMedianViews = latest15MedianViews > 0 ? latest15MedianViews : medianViews;
+  const affiliateViewRetentionPct =
+    affiliateVideoCount > 0 && organicVideoCount > 0 && organicMedianViews > 0
+      ? Math.round((affiliateMedianViews / organicMedianViews) * 100)
+      : undefined;
+
+  const riskFlags: TikTokKocBookingRiskFlag[] = [];
+
+  // 1. Đánh giá giữ view khi gắn giỏ hàng
+  if (affiliateViewRetentionPct !== undefined) {
+    if (affiliateViewRetentionPct >= 75) {
+      riskFlags.push({
+        code: 'STEADY_CART_VIEWS',
+        severity: 'positive',
+        label: `Giữ view bán hàng tốt (Bài gắn giỏ đạt ${affiliateViewRetentionPct}% bài thường)`,
+      });
+    } else if (affiliateViewRetentionPct < 45) {
+      riskFlags.push({
+        code: 'CART_VIEW_DROP',
+        severity: 'critical',
+        label: `Tụt view mạnh khi gắn giỏ (Chỉ đạt ${affiliateViewRetentionPct}% so với bài thường)`,
+      });
+    } else if (affiliateViewRetentionPct < 65) {
+      riskFlags.push({
+        code: 'CART_VIEW_MODERATE_DROP',
+        severity: 'warning',
+        label: `View gắn giỏ giảm nhẹ (${affiliateViewRetentionPct}% so với bài thường)`,
+      });
+    }
+  } else if (affiliateVideoCount >= 3) {
+    riskFlags.push({
+      code: 'ACTIVE_CART_SELLER',
+      severity: 'positive',
+      label: `Quen gắn giỏ TikTok Shop (${affiliateVideoCount}/${sampleCount} bài gần đây có giỏ)`,
+    });
+  }
+
+  // 2. Đánh giá tần suất hoạt động gần đây
+  if (daysSinceLastPost !== undefined) {
+    if (daysSinceLastPost > 30) {
+      riskFlags.push({
+        code: 'IDLE_CHANNEL',
+        severity: 'critical',
+        label: `Ngưng đăng bài ${daysSinceLastPost} ngày (Cần kiểm tra kênh còn hoạt động không)`,
+      });
+    } else if (daysSinceLastPost > 14) {
+      riskFlags.push({
+        code: 'SLOW_CADENCE',
+        severity: 'warning',
+        label: `Đã ${daysSinceLastPost} ngày chưa lên video mới`,
+      });
+    } else if (daysSinceLastPost <= 5) {
+      riskFlags.push({
+        code: 'ACTIVE_CHANNEL',
+        severity: 'positive',
+        label: `Kênh đang hoạt động đều (Vừa lên bài ${daysSinceLastPost === 0 ? 'hôm nay' : `${daysSinceLastPost} ngày trước`})`,
+      });
+    }
+  }
+
+  // 3. Đánh giá độ lệch do bài ghim cũ hoặc bài đột biến
+  if (pinnedOldVideoCount > 0 || outlierViralCount > 0) {
+    riskFlags.push({
+      code: 'OUTLIER_BIAS',
+      severity: 'warning',
+      label: `Có ${pinnedOldVideoCount} bài ghim cũ / ${outlierViralCount} bài đột biến — nên chốt giá theo Trung vị 15 bài mới`,
+    });
+  }
+
+  // 4. Đánh giá tỷ lệ tương tác (ER%)
+  if (engagementRate >= 4.5) {
+    riskFlags.push({
+      code: 'HIGH_ER',
+      severity: 'positive',
+      label: `Tương tác thực tế tốt (ER ${engagementRate}%)`,
+    });
+  } else if (engagementRate > 0 && engagementRate < 1.0) {
+    riskFlags.push({
+      code: 'LOW_ER',
+      severity: 'warning',
+      label: `Tỷ lệ tương tác thấp (ER ${engagementRate}%)`,
+    });
+  }
+
+  // 5. Tra cứu lịch sử Lark 3.1 & Danh bạ KOC Master Upbase
+  const larkListings = getLarkListingsByHandle(cleanHandle);
+  const workedPicSet = new Set<string>();
+  if (existingKoc?.bookingPic) {
+    existingKoc.bookingPic
+      .split(/[,;\n]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .forEach((p) => workedPicSet.add(p));
+  }
+  if (existingKoc?.workedPicsList) {
+    existingKoc.workedPicsList
+      .split(/[,;\n]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .forEach((p) => workedPicSet.add(p));
+  }
+  for (const li of larkListings) {
+    if (li.assignedStaffName && li.assignedStaffName.trim()) {
+      workedPicSet.add(li.assignedStaffName.trim());
+    }
+  }
+
+  const larkFees = larkListings
+    .map((li) => Math.max(li.finalFee || 0, li.proposedFee || 0))
+    .filter((f) => f > 0);
+  const historicalMinRate =
+    existingKoc?.minRate && existingKoc.minRate > 1000
+      ? existingKoc.minRate
+      : larkFees.length > 0
+      ? Math.min(...larkFees)
+      : 0;
+  const historicalMaxRate =
+    existingKoc?.maxRate && existingKoc.maxRate > 1000
+      ? existingKoc.maxRate
+      : larkFees.length > 0
+      ? Math.max(...larkFees)
+      : 0;
+  const historicalRateCard =
+    existingKoc?.rateCardVideo && existingKoc.rateCardVideo > 1000
+      ? existingKoc.rateCardVideo
+      : larkFees.length > 0
+      ? larkFees[0]
+      : 0;
+
+  const recentLarkListings: TikTokKocHistoricalLarkListing[] = larkListings
+    .slice(0, 5)
+    .map((li) => ({
+      monthKey: li.monthKey || '2026/10',
+      brandName: li.brandName || li.storeName,
+      storeName: li.storeName,
+      picName: li.assignedStaffName || 'Chuyên viên Booking',
+      proposedFee: li.proposedFee || 0,
+      finalFee: li.finalFee || 0,
+      status:
+        li.brandApprovalStatus === 'BRAND_APPROVED'
+          ? 'Brand đã duyệt'
+          : li.brandApprovalStatus === 'BRAND_REJECTED'
+          ? 'Brand từ chối'
+          : 'Đang đề xuất',
+    }));
+
+  // 6. Tính Điểm phù hợp (fitScore 0-100) từ số liệu thực
+  let fitScore = 55;
+  if (effectiveMedianViews >= 50000) fitScore += 20;
+  else if (effectiveMedianViews >= 15000) fitScore += 14;
+  else if (effectiveMedianViews >= 5000) fitScore += 8;
+  else if (effectiveMedianViews > 0 && effectiveMedianViews < 1500) fitScore -= 12;
+
+  if ((viewConsistencyRatioPct ?? 0) >= 65) fitScore += 8;
+  else if ((viewConsistencyRatioPct ?? 100) < 40) fitScore -= 8;
+
+  if (engagementRate >= 4.0) fitScore += 8;
+  else if (engagementRate > 0 && engagementRate < 1.0) fitScore -= 8;
+
+  if (affiliateViewRetentionPct !== undefined) {
+    if (affiliateViewRetentionPct >= 75) fitScore += 8;
+    else if (affiliateViewRetentionPct < 45) fitScore -= 12;
+  } else if (affiliateVideoCount >= 2) {
+    fitScore += 5;
+  }
+
+  if (daysSinceLastPost !== undefined) {
+    if (daysSinceLastPost > 30) fitScore -= 20;
+    else if (daysSinceLastPost > 14) fitScore -= 8;
+    else if (daysSinceLastPost <= 7) fitScore += 5;
+  }
+
+  if ((existingKoc?.historicalRoi ?? 0) >= 1.5) fitScore += 8;
+  fitScore = Math.max(15, Math.min(98, Math.round(fitScore)));
+
+  const verdict: TikTokKocBookingIntelligence['verdict'] =
+    fitScore >= 72 ? 'NÊN_BOOK' : fitScore >= 50 ? 'CÂN_NHẮC' : 'RỦI_RO_CAO';
+  const verdictLabel =
+    verdict === 'NÊN_BOOK'
+      ? 'Đề xuất Book ngay'
+      : verdict === 'CÂN_NHẮC'
+      ? 'Cần cân nhắc & đàm phán giá'
+      : 'Rủi ro cao / Chỉ nên gửi FOC';
+
+  // 7. Tính Khung giá Net đề xuất (dựa trên View trung vị 15 bài mới + đối chiếu lịch sử giá thực tế tại Upbase)
+  const roundTo50k = (val: number) => Math.max(0, Math.round(val / 50000) * 50000);
+  let suggestedBookingFormat: TikTokKocBookingIntelligence['suggestedBookingFormat'] = 'PAID_CAST';
+  let suggestedBookingFormatLabel = 'Booking Video có Cast';
+  let suggestedNetRateMin = 0;
+  let suggestedNetRateMax = 0;
+
+  if (
+    verdict === 'RỦI_RO_CAO' ||
+    (effectiveMedianViews > 0 && effectiveMedianViews < 2500 && followers < 15000)
+  ) {
+    suggestedBookingFormat = 'FOC_SEEDING';
+    suggestedBookingFormatLabel = 'Gửi mẫu FOC 0đ + Hoa hồng Affiliate';
+    suggestedNetRateMin = 0;
+    suggestedNetRateMax = 500000;
+  } else {
+    // Định mức CPV chuẩn ngành B2C: ~110đ - 180đ / view trung vị 15 bài mới nhất
+    const viewBasedMin = roundTo50k(effectiveMedianViews * 100);
+    const viewBasedMax = roundTo50k(effectiveMedianViews * 170);
+
+    if (historicalRateCard > 1000) {
+      // Nếu đã có lịch sử giá tại Upbase, kết hợp giá lịch sử và phong độ view hiện tại
+      const baseRef =
+        historicalMinRate > 1000
+          ? Math.round((historicalMinRate + historicalRateCard) / 2)
+          : historicalRateCard;
+      suggestedNetRateMin = Math.max(300000, roundTo50k(baseRef * 0.85));
+      suggestedNetRateMax = Math.max(
+        suggestedNetRateMin + 200000,
+        roundTo50k(Math.max(baseRef * 1.1, historicalMaxRate > 0 ? Math.min(historicalMaxRate, baseRef * 1.35) : baseRef * 1.15))
+      );
+    } else if (effectiveMedianViews > 0) {
+      suggestedNetRateMin = Math.max(300000, Math.min(80000000, viewBasedMin));
+      suggestedNetRateMax = Math.max(
+        suggestedNetRateMin + 200000,
+        Math.min(120000000, viewBasedMax)
+      );
+    } else {
+      // Dự phòng theo quy mô follower khi kênh ẩn view
+      const followerBase =
+        followers >= 300000
+          ? 8000000
+          : followers >= 100000
+          ? 3500000
+          : followers >= 30000
+          ? 1200000
+          : 500000;
+      suggestedNetRateMin = followerBase;
+      suggestedNetRateMax = Math.round(followerBase * 1.5);
+    }
+  }
+
+  const midSuggestedRate = Math.round((suggestedNetRateMin + suggestedNetRateMax) / 2);
+  const estimatedCpvVnd =
+    effectiveMedianViews === 0 ? 0 : Math.round(midSuggestedRate / effectiveMedianViews);
+
+  const recommendedB2cBrands = recommendUpbaseB2cBrandsForChannel({
+    kocCategory,
+    tepKenh,
+    bioAndCaptions,
+    existingBrand: existingKoc?.brandName,
+    larkListings,
+  });
+
+  const firstBrand = recommendedB2cBrands[0] || 'Nhãn hàng B2C Upbase';
+  const formatInviteText =
+    suggestedBookingFormat === 'FOC_SEEDING'
+      ? 'gửi tặng sản phẩm trải nghiệm kèm mức hoa hồng Affiliate ưu đãi cao'
+      : 'hợp tác Booking Video review có cast kèm hoa hồng giỏ hàng TikTok Shop';
+
+  const outreachMessageTemplate = `Chào ${nickname || cleanHandle} ạ, mình bên team Booking nhãn hàng ${firstBrand} (Upbase). Mình theo dõi kênh TikTok @${cleanHandle} thấy phong cách ${tepKenh.toLowerCase()} của bạn rất hợp với dòng sản phẩm bên mình. Hiện team đang có chiến dịch ${formatInviteText} trong tháng này, không biết bạn có nhận job không để mình gửi thông tin sản phẩm và brief chi tiết qua nhé!`;
+
+  const zaloDirectUrl = resolvedPhone
+    ? `https://zalo.me/${resolvedPhone.replace(/[^0-9]/g, '')}`
+    : undefined;
+
+  return {
+    fitScore,
+    verdict,
+    verdictLabel,
+    suggestedBookingFormat,
+    suggestedBookingFormatLabel,
+    suggestedNetRateMin,
+    suggestedNetRateMax,
+    estimatedCpvVnd,
+    affiliateViewRetentionPct,
+    riskFlags,
+    historicalUpbaseSummary: {
+      isExistingMasterKoc: Boolean(existingKoc || larkListings.length > 0),
+      totalPastDeals: existingKoc?.totalPastDeals || larkListings.length,
+      totalPaidVideos: existingKoc?.totalPaidVideos || larkFees.length,
+      totalFocVideos: existingKoc?.totalFocVideos || 0,
+      historicalMinRate,
+      historicalMaxRate,
+      historicalRateCard,
+      historicalGmvVnd: existingKoc?.totalPastGmv || existingKoc?.recentRevenue || 0,
+      historicalRoi: existingKoc?.historicalRoi || 0,
+      latestBoCode: existingKoc?.latestBoCode,
+      latestBookMonth: existingKoc?.latestBookMonth || larkListings[0]?.monthKey,
+      workedPics: [...workedPicSet].slice(0, 8),
+      recentLarkListings,
+    },
+    recommendedB2cBrands,
+    zaloDirectUrl,
+    outreachMessageTemplate,
+  };
+}
+
 function buildScrapedResultFromRealData(
   cleanHandle: string,
   period: '7d' | '30d' | '90d',
@@ -541,9 +1266,7 @@ function buildScrapedResultFromRealData(
     enginePath: TikTokScrapeDiagnostics['enginePath'];
   }
 ): TikTokScrapedKocResult {
-  const existingKoc = UPBASE_FULL_KOC_MASTER.find(
-    (k) => k.channelId.toLowerCase().replace(/^@+/, '') === cleanHandle
-  );
+  const existingKoc = getMasterKocByHandle(cleanHandle);
 
   // Bảo vệ hồ sơ KOC nội bộ khi @handle trùng với một tài khoản trắng 0 video trên TikTok
   const isSquatterEmptyProfile =
@@ -665,6 +1388,9 @@ function buildScrapedResultFromRealData(
       engagementRate: v.engagementRate,
       isAffiliate: v.hasCartAnchor,
       productName: v.cartAnchorTitle,
+      productId: v.cartProductId,
+      productUrl: v.cartAnchorUrl,
+      cartProducts: v.cartProducts,
     }))
     .sort((a, b) => compareVideoAirDateDesc(a, b));
 
@@ -783,25 +1509,44 @@ function buildScrapedResultFromRealData(
     );
   }
 
-  // Tổng hợp các sản phẩm / nhãn hàng đang gắn giỏ hoặc gắn thẻ trong tập video vừa cào
-  const productAgg = new Map<
-    string,
-    { label: string; count: number; latestViews: number; latestVideoUrl?: string }
-  >();
+  // Tổng hợp các sản phẩm / nhãn hàng đang gắn giỏ hoặc gắn thẻ trong tập video vừa cào (kèm productId & link TikTok Shop)
+  const productAgg = new Map<string, TikTokPromotedProductItem>();
   for (const v of recentVideos) {
-    const rawLabel = (v.productName || '').trim();
-    if (rawLabel) {
-      const normKey = rawLabel.toLowerCase().slice(0, 60);
+    const itemsToRecord: Array<{ label: string; productId?: string; productUrl?: string }> = [];
+    if (v.cartProducts && v.cartProducts.length > 0) {
+      for (const cp of v.cartProducts) {
+        if (cp.title && cp.title.trim()) {
+          itemsToRecord.push({
+            label: cp.title.trim(),
+            productId: cp.productId,
+            productUrl: cp.productUrl,
+          });
+        }
+      }
+    } else if (v.productName && v.productName.trim()) {
+      itemsToRecord.push({
+        label: v.productName.trim(),
+        productId: v.productId,
+        productUrl: v.productUrl,
+      });
+    }
+
+    for (const item of itemsToRecord) {
+      const normKey = (item.productId || item.label.toLowerCase().slice(0, 60)).trim();
       const prev = productAgg.get(normKey);
       if (prev) {
         prev.count += 1;
         if (v.views > prev.latestViews) prev.latestViews = v.views;
+        if (!prev.productUrl && item.productUrl) prev.productUrl = item.productUrl;
+        if (!prev.productId && item.productId) prev.productId = item.productId;
       } else {
         productAgg.set(normKey, {
-          label: rawLabel,
+          label: item.label,
           count: 1,
           latestViews: v.views,
           latestVideoUrl: v.videoUrl,
+          productId: item.productId,
+          productUrl: item.productUrl,
         });
       }
     }
@@ -828,11 +1573,44 @@ function buildScrapedResultFromRealData(
       ? Number((((avgLikes + avgComments + avgShares) / avgViews) * 100).toFixed(2))
       : existingKoc?.engagementRate || 0;
 
+  const combinedBioAndCaptions = `${bio} ${recentVideos.map((v) => v.caption).join(' ')}`;
   const { kocCategory, tepKenh } = inferCategoryAndTepKenh(
-    `${bio} ${recentVideos.map((v) => v.caption).join(' ')}`,
+    combinedBioAndCaptions,
     existingKoc
   );
   const suggested = classifyByRealFollowers(followers, existingKoc);
+
+  const bookingIntelligence = computeKocBookingIntelligence({
+    cleanHandle,
+    nickname,
+    followers,
+    resolvedPhone,
+    sampleCount,
+    latest15MedianViews,
+    medianViews,
+    affiliateVideoCount,
+    affiliateMedianViews,
+    organicVideoCount,
+    organicMedianViews,
+    outlierViralCount,
+    pinnedOldVideoCount,
+    viewConsistencyRatioPct,
+    daysSinceLastPost,
+    engagementRate,
+    kocCategory,
+    tepKenh,
+    bioAndCaptions: combinedBioAndCaptions,
+    existingKoc,
+  });
+
+  const effectiveRateCard =
+    suggested.rateCardVideo > 0
+      ? suggested.rateCardVideo
+      : bookingIntelligence.suggestedNetRateMin > 0
+      ? Math.round(
+          (bookingIntelligence.suggestedNetRateMin + bookingIntelligence.suggestedNetRateMax) / 2
+        )
+      : 0;
 
   const enginePath: TikTokScrapeDiagnostics['enginePath'] =
     diagnosticsInput?.enginePath ||
@@ -917,6 +1695,7 @@ function buildScrapedResultFromRealData(
       outlierViralCount,
       pinnedOldCount: pinnedOldVideoCount,
     },
+    bookingIntelligence,
     affiliateMetrics: {
       period,
       gmv30d: existingKoc?.recentRevenue || 0,
@@ -947,6 +1726,9 @@ function buildScrapedResultFromRealData(
       topProducts: [],
       suggestedClassification: {
         ...suggested,
+        rateCardVideo: effectiveRateCard,
+        salaryGrade:
+          effectiveRateCard > 0 ? getSalaryGradeFromRate(effectiveRateCard) : suggested.salaryGrade,
         kocCategory,
         tepKenh,
       },
@@ -974,7 +1756,7 @@ async function inspectVideoCandidatesInBatches(
   let triedCreatorListBySecUid = false;
 
   for (let offset = 0; offset < maxCandidatesToInspect; offset += batchSize) {
-    const batch = urlList.slice(offset, offset + batchSize);
+    const batch = urlList.slice(offset + 0, offset + batchSize);
     const inspected = await Promise.all(
       batch.map((u) => inspectLiveTikTokVideoPage(u))
     );
@@ -1014,7 +1796,7 @@ async function inspectVideoCandidatesInBatches(
 
 /**
  * Thu thập dữ liệu thực tế 100% của KOC từ TikTok (Hồ sơ kênh + Các video công khai thực tế mới nhất liên tiếp).
- * Không tự sinh SĐT giả, không tự nội suy View/Tim giả.
+ * Hỗ trợ truyền trực tiếp @handle, link kênh, link video dài hoặc link rút gọn vt.tiktok.com / vm.tiktok.com.
  */
 export async function scrapeTikTokCreatorData(
   rawHandle: string,
@@ -1026,7 +1808,16 @@ export async function scrapeTikTokCreatorData(
   }
 ): Promise<TikTokScrapedKocResult> {
   const startedAtMs = Date.now();
-  const parsedHandles = parseTikTokHandles(rawHandle);
+  let extraResolvedVideos: Array<{ handle: string; videoId: string; videoUrl: string }> = [];
+  let parsedHandles = parseTikTokHandles(rawHandle);
+
+  // Nếu người dùng truyền trực tiếp link rút gọn vt.tiktok.com / vm.tiktok.com vào hàm đơn lẻ
+  if (parsedHandles.length === 0 && extractShortTikTokUrlsFromInput(rawHandle).length > 0) {
+    const resolved = await resolveTikTokInputToHandlesAndVideos(rawHandle);
+    parsedHandles = resolved.handles;
+    extraResolvedVideos = resolved.directVideoUrls;
+  }
+
   const cleanHandle = (parsedHandles[0] || rawHandle)
     .trim()
     .toLowerCase()
@@ -1047,6 +1838,7 @@ export async function scrapeTikTokCreatorData(
   const inlineDirectVideos = extractDirectVideoUrlsFromInput(rawHandle);
   const directVideosForHandle = [
     ...inlineDirectVideos,
+    ...extraResolvedVideos,
     ...(options?.directVideoUrls || []),
   ].filter((v) => v.handle.toLowerCase() === cleanHandle);
 
@@ -1453,6 +2245,15 @@ export function buildScrapedKocsCsv(results: TikTokScrapedKocResult[]): string {
     'ID Kênh (@handle)',
     'Tên kênh TikTok',
     'Link kênh',
+    'Đánh giá đề xuất Book',
+    'Điểm phù hợp (/100)',
+    'Hình thức hợp tác gợi ý',
+    'Khung giá Net đề xuất (VND)',
+    'CPV dự kiến (VND/view)',
+    'Lịch sử Deal Upbase',
+    'PIC từng phụ trách',
+    'Nhãn hàng B2C phù hợp',
+    'Cảnh báo / Điểm mạnh',
     'Tiểu sử (Bio)',
     'SĐT / Zalo (tách từ Bio)',
     'Email (tách từ Bio)',
@@ -1486,14 +2287,40 @@ export function buildScrapedKocsCsv(results: TikTokScrapedKocResult[]): string {
   const rows = results.map((r) => {
     const p = r.channelProfile;
     const e = r.engagementMetrics;
+    const bi = r.bookingIntelligence;
     const v1 = r.recentVideos[0];
     const promotedStr = (e.promotedProductsSummary || [])
-      .map((item) => `${item.label} (${item.count} bài)`)
+      .map((item) =>
+        item.productId
+          ? `${item.label} [SP:${item.productId}] (${item.count} bài)`
+          : `${item.label} (${item.count} bài)`
+      )
       .join('; ');
+    const suggestedRateRange = bi
+      ? bi.suggestedNetRateMin === 0 && bi.suggestedNetRateMax <= 500000
+        ? 'FOC 0đ - 500.000'
+        : `${bi.suggestedNetRateMin} - ${bi.suggestedNetRateMax}`
+      : '';
+    const historyStr = bi?.historicalUpbaseSummary?.isExistingMasterKoc
+      ? `${bi.historicalUpbaseSummary.totalPastDeals} deal (Rate: ${bi.historicalUpbaseSummary.historicalRateCard || 0})`
+      : 'KOC Mới (Chưa có trong Master)';
+    const picsStr = (bi?.historicalUpbaseSummary?.workedPics || []).join(', ');
+    const brandsStr = (bi?.recommendedB2cBrands || []).join(', ');
+    const flagsStr = (bi?.riskFlags || []).map((f) => f.label).join(' | ');
+
     return [
       `@${p.handle}`,
       p.nickname,
       p.channelUrl,
+      bi?.verdictLabel || '',
+      bi?.fitScore ?? '',
+      bi?.suggestedBookingFormatLabel || '',
+      suggestedRateRange,
+      bi?.estimatedCpvVnd ?? '',
+      historyStr,
+      picsStr,
+      brandsStr,
+      flagsStr,
       p.bio,
       p.extractedPhone || '',
       p.extractedEmail || '',

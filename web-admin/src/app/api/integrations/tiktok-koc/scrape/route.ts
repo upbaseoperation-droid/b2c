@@ -3,8 +3,7 @@ import { getAuthenticatedUser } from '@/lib/larkAuth';
 import {
   discoverCompetitorKocs,
   discoverTikTokKocsByHashtag,
-  extractDirectVideoUrlsFromInput,
-  parseTikTokHandles,
+  resolveTikTokInputToHandlesAndVideos,
   scrapeTikTokCreatorData,
   TikTokScrapedKocResult,
 } from '@/lib/tiktokKocScraper';
@@ -103,18 +102,19 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const handles = parseTikTokHandles(raw);
+    const resolved = await resolveTikTokInputToHandlesAndVideos(raw);
+    const handles = resolved.handles;
     if (handles.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Vui lòng nhập đường dẫn kênh, @handle, #hashtag hoặc kênh đối thủ hợp lệ.',
+          message: 'Vui lòng nhập đường dẫn kênh, link rút gọn vt.tiktok.com, @handle, #hashtag hoặc kênh đối thủ hợp lệ.',
         },
         { status: 400 }
       );
     }
 
-    const directVideoUrls = extractDirectVideoUrlsFromInput(raw);
+    const directVideoUrls = resolved.directVideoUrls;
     const videoLimit = Number(searchParams.get('videoLimit') || 24);
     const data = await scrapeTikTokCreatorData(handles[0], period, {
       directVideoUrls,
@@ -123,6 +123,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       mode: 'HANDLE_SCRAPE',
+      resolvedShortLinks: resolved.resolvedShortLinks,
       data,
       results: [data],
     });
@@ -239,18 +240,19 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const handles = parseTikTokHandles(rawInput).slice(0, 30);
+    const resolved = await resolveTikTokInputToHandlesAndVideos(rawInput);
+    const handles = resolved.handles.slice(0, 30);
     if (handles.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Vui lòng nhập ít nhất một đường dẫn, @handle, #hashtag hoặc kênh đối thủ hợp lệ.',
+          message: 'Vui lòng nhập ít nhất một đường dẫn, link rút gọn vt.tiktok.com, @handle, #hashtag hoặc kênh đối thủ hợp lệ.',
         },
         { status: 400 }
       );
     }
 
-    const directVideoUrls = extractDirectVideoUrlsFromInput(rawInput);
+    const directVideoUrls = resolved.directVideoUrls;
     const defaultVideoLimit = handles.length === 1 ? 24 : 16;
     const videoLimit = Number(body.videoLimit || defaultVideoLimit);
     const forceRefresh = Boolean(body.forceRefresh);
@@ -293,6 +295,7 @@ export async function POST(req: NextRequest) {
       mode: 'HANDLE_SCRAPE',
       count: orderedResults.length,
       batchDurationMs: Math.max(1, Date.now() - batchStartedAt),
+      resolvedShortLinks: resolved.resolvedShortLinks,
       failedHandles,
       results: orderedResults,
       data: orderedResults[0] || null,
