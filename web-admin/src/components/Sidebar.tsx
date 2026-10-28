@@ -481,22 +481,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
         </div>
 
-        <div className="shrink-0 px-3 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] border-t border-line">
-          <div className="flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={onOpenProfile}
-              className="flex items-center gap-2.5 min-w-0 text-left rounded-lg p-1 -m-1 hover:bg-sunken transition-colors group cursor-pointer"
-              title="Xem hồ sơ và thiết lập cá nhân"
-            >
-              <Avatar name={currentUser.name} src={currentUser.larkAvatarUrl} size={28} />
-              <div className="min-w-0 leading-tight">
-                <span className="block text-[13px] font-medium text-ink truncate group-hover:text-accent">{currentUser.name}</span>
-                <span className="block text-2xs text-ink-3 truncate mt-0.5">{currentUser.roleTitle}</span>
-              </div>
-            </button>
-
-            <div className="flex items-center shrink-0">
+        <div className="shrink-0 px-2.5 pt-2 pb-[max(0.625rem,env(safe-area-inset-bottom))] border-t border-line space-y-1.5">
+          {/* Hàng công cụ tiện ích & Đăng xuất */}
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-0.5">
               {footerItems.map((f) => {
                 const FooterIcon = f.icon;
                 const isActive = activeTab === f.key;
@@ -506,7 +494,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     type="button"
                     onClick={() => handleItemClick(f.key)}
                     aria-current={isActive ? 'page' : undefined}
-                    className={`h-8 w-8 inline-flex items-center justify-center rounded-md transition-colors ${
+                    className={`h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                       isActive ? 'text-accent bg-accent-soft' : 'text-ink-3 hover:text-ink hover:bg-sunken'
                     }`}
                     title={f.label}
@@ -516,24 +504,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </button>
                 );
               })}
-              {onLogout && (
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  disabled={isLoggingOut}
-                  className="h-8 w-8 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  title="Đăng xuất"
-                  aria-label="Đăng xuất"
-                >
-                  {isLoggingOut ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-accent" />
-                  ) : (
-                    <LogOut className="w-4 h-4" strokeWidth={1.75} />
-                  )}
-                </button>
-              )}
             </div>
+
+            {onLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                disabled={isLoggingOut}
+                className="h-7 w-7 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-critical hover:bg-critical-soft/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                title="Đăng xuất"
+                aria-label="Đăng xuất"
+              >
+                {isLoggingOut ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />
+                ) : (
+                  <LogOut className="w-4 h-4" strokeWidth={1.75} />
+                )}
+              </button>
+            )}
           </div>
+
+          {/* Thẻ định danh người dùng: Không gian rộng rãi, hiển thị trọn vẹn Họ tên & Chức danh */}
+          <button
+            type="button"
+            onClick={onOpenProfile}
+            className="w-full flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-sunken transition-colors text-left group cursor-pointer"
+            title="Xem hồ sơ và thiết lập cá nhân"
+          >
+            <Avatar name={currentUser.name} src={currentUser.larkAvatarUrl} size={32} />
+            <div className="min-w-0 flex-1 leading-tight">
+              <span className="block text-xs font-semibold text-ink truncate group-hover:text-accent">
+                {currentUser.name}
+              </span>
+              <span className="block text-2xs text-ink-3 truncate mt-0.5">
+                {currentUser.roleTitle}
+              </span>
+            </div>
+          </button>
         </div>
       </aside>
     </>
