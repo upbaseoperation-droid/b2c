@@ -6,10 +6,13 @@ import {
   getAllUserPermissions,
   setUserPermission,
   removeUserPermission,
+  getSecurityPolicy,
+  setSecurityPolicy,
   buildDealBriefMessage,
   sendZaloMessage,
   type ZaloGroupMapping,
   type ZaloGroupRole,
+  type ZaloGroupAccessStatus,
   type ZaloDealWorkflowStatus,
   type ZaloUserPermission,
   type ZaloStaffRole,
@@ -30,7 +33,23 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => null);
     const action = String(body?.action || 'LINK').toUpperCase();
 
-    // 1. Quản lý Phân quyền Nhân sự trên Zalo
+    // 1. Quản lý Chính sách Bảo mật Toàn cục (Global Security Policy)
+    if (action === 'UPDATE_SECURITY_POLICY') {
+      const updatedPolicy = setSecurityPolicy({
+        requireGroupWhitelist: Boolean(body?.requireGroupWhitelist),
+        lockRoleElevationFromChat: Boolean(body?.lockRoleElevationFromChat),
+        enforceBrandScopeInInternalGroups: Boolean(body?.enforceBrandScopeInInternalGroups),
+        restrictDraftReviewToStaff: Boolean(body?.restrictDraftReviewToStaff),
+        isolateCrossDealLookupInKocGroup: Boolean(body?.isolateCrossDealLookupInKocGroup),
+      });
+      return NextResponse.json({
+        ok: true,
+        message: 'Đã lưu cấu hình chính sách bảo mật nhóm Zalo.',
+        securityPolicy: updatedPolicy,
+      });
+    }
+
+    // 2. Quản lý Phân quyền Nhân sự trên Zalo
     if (action === 'SAVE_USER_PERMISSION') {
       const zaloUserId = String(body?.zaloUserId || '').trim();
       const staffName = String(body?.staffName || '').trim();
@@ -184,12 +203,24 @@ export async function POST(req: NextRequest) {
             .filter(Boolean)
         : existing?.requiredHashtags || ['UpbaseB2C', 'ReviewChinhHang'];
 
+    const rawAllowedBrands = body?.allowedBrands;
+    const parsedAllowedBrands = Array.isArray(rawAllowedBrands)
+      ? rawAllowedBrands
+      : typeof rawAllowedBrands === 'string' && rawAllowedBrands.trim()
+        ? rawAllowedBrands
+            .split(',')
+            .map((b) => b.trim())
+            .filter(Boolean)
+        : existing?.allowedBrands || (body?.brandName ? [String(body.brandName).trim()] : undefined);
+
     const mapping: ZaloGroupMapping = {
       groupId,
       groupName: body?.groupName
         ? String(body.groupName).trim()
         : existing?.groupName || `[${body?.brandName || 'B2C'} x ${body?.kocName || groupId}]`,
       groupRole: (body?.groupRole || existing?.groupRole || 'KOC_GROUP') as ZaloGroupRole,
+      accessStatus: (body?.accessStatus || existing?.accessStatus || 'APPROVED') as ZaloGroupAccessStatus,
+      allowedBrands: parsedAllowedBrands,
       dealCode: body?.dealCode ? String(body.dealCode).trim() : existing?.dealCode,
       kocHandle: body?.kocHandle
         ? String(body.kocHandle).replace(/^@/, '').trim()

@@ -6,6 +6,17 @@ import { REAL_B2C_69_STORES } from '../realB2cPlanData';
 
 export type ZaloGroupRole = 'KOC_GROUP' | 'INTERNAL_OPS' | 'BOD_EXECUTIVE';
 
+export type ZaloGroupAccessStatus = 'APPROVED' | 'PENDING_APPROVAL' | 'BLOCKED';
+
+export interface ZaloBotSecurityPolicy {
+  requireGroupWhitelist: boolean;
+  lockRoleElevationFromChat: boolean;
+  enforceBrandScopeInInternalGroups: boolean;
+  restrictDraftReviewToStaff: boolean;
+  isolateCrossDealLookupInKocGroup: boolean;
+  updatedAt: string;
+}
+
 export type ZaloDealWorkflowStatus =
   | 'CHỜ_NHẬN_MẪU'
   | 'ĐANG_QUAY_NHÁP'
@@ -20,6 +31,8 @@ export interface ZaloGroupMapping {
   groupId: string;
   groupName?: string;
   groupRole: ZaloGroupRole;
+  accessStatus?: ZaloGroupAccessStatus;
+  allowedBrands?: string[];
   dealCode?: string;
   kocHandle?: string;
   kocName?: string;
@@ -93,10 +106,12 @@ interface QuickKocDirectoryEntry {
 const MAPPINGS_FILE_PATH = path.join(process.cwd(), 'src/data/zalo_group_mappings.json');
 const AIR_HISTORY_FILE_PATH = path.join(process.cwd(), 'src/data/zalo_air_history.json');
 const PERMISSIONS_FILE_PATH = path.join(process.cwd(), 'src/data/zalo_user_permissions.json');
+const SECURITY_POLICY_FILE_PATH = path.join(process.cwd(), 'src/data/zalo_security_policy.json');
 
 const inMemoryMappings = new Map<string, ZaloGroupMapping>();
 const inMemoryAirHistory: ZaloAirCheckHistoryItem[] = [];
 const inMemoryPermissions = new Map<string, ZaloUserPermission>();
+let inMemorySecurityPolicy: ZaloBotSecurityPolicy | null = null;
 const recentDebugEvents: Array<{
   time: string;
   body: any;
@@ -572,6 +587,57 @@ export function getAirCheckHistory(): ZaloAirCheckHistoryItem[] {
   return loadAirHistory();
 }
 
+const DEFAULT_SECURITY_POLICY: ZaloBotSecurityPolicy = {
+  requireGroupWhitelist: false,
+  lockRoleElevationFromChat: true,
+  enforceBrandScopeInInternalGroups: true,
+  restrictDraftReviewToStaff: false,
+  isolateCrossDealLookupInKocGroup: true,
+  updatedAt: '2026-10-28T08:00:00.000Z',
+};
+
+export function getSecurityPolicy(): ZaloBotSecurityPolicy {
+  if (inMemorySecurityPolicy) return inMemorySecurityPolicy;
+  try {
+    if (fs.existsSync(SECURITY_POLICY_FILE_PATH)) {
+      const data = JSON.parse(fs.readFileSync(SECURITY_POLICY_FILE_PATH, 'utf-8'));
+      if (data && typeof data === 'object') {
+        const loaded: ZaloBotSecurityPolicy = { ...DEFAULT_SECURITY_POLICY, ...data };
+        inMemorySecurityPolicy = loaded;
+        return loaded;
+      }
+    }
+  } catch {
+    // Zero-Crash fallback
+  }
+  const fallback: ZaloBotSecurityPolicy = { ...DEFAULT_SECURITY_POLICY };
+  inMemorySecurityPolicy = fallback;
+  return fallback;
+}
+
+export function setSecurityPolicy(nextPolicy: Partial<ZaloBotSecurityPolicy>): ZaloBotSecurityPolicy {
+  const current = getSecurityPolicy();
+  inMemorySecurityPolicy = {
+    ...current,
+    ...nextPolicy,
+    updatedAt: new Date().toISOString(),
+  };
+  try {
+    const dir = path.dirname(SECURITY_POLICY_FILE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(
+      SECURITY_POLICY_FILE_PATH,
+      JSON.stringify(inMemorySecurityPolicy, null, 2),
+      'utf-8'
+    );
+  } catch {
+    // Non-fatal on serverless read-only fs
+  }
+  return inMemorySecurityPolicy;
+}
+
 export function recordAirCheckHistory(item: ZaloAirCheckHistoryItem): void {
   const list = loadAirHistory();
   list.unshift(item);
@@ -939,6 +1005,12 @@ export async function processZaloWebhookEvent(
   ).trim();
 
   const rawText = String(message?.text || body?.text || '').trim();
+  const senderId = String(
+    message?.from?.id ||
+      body?.result?.message?.from?.id ||
+      body?.sender?.id ||
+      ''
+  ).trim();
   const senderName = String(
     message?.from?.display_name ||
       body?.result?.message?.from?.display_name ||
@@ -965,6 +1037,37 @@ export async function processZaloWebhookEvent(
 
   const mappings = loadMappings();
   const currentMapping = mappings.get(chatId);
+  const securityPolicy = getSecurityPolicy();
+  const senderPerm = senderId ? loadPermissions().get(senderId) : undefined;
+  const isSimulatedFromWeb = Boolean(options?.skipSendToZalo);
+
+  // KIỂM TRA TRẠNG THÁI CHẶN / WHITELIST CỦA NHÓM CHAT
+  if (currentMapping?.accessStatus === 'BLOCKED' && !isSimulatedFromWeb) {
+    const blockedMsg =
+      '⛔ BẢO MẬT NHÓM: Nhóm chat này đã bị khóa quyền tương tác với Bot trên hệ thống quản trị Upbase B2C.';
+    await replyToChat(blockedMsg);
+    return { handled: true, reply: blockedMsg, extractedChatId: chatId };
+  }
+
+  if (
+    securityPolicy.requireGroupWhitelist &&
+    !isSimulatedFromWeb &&
+    (!currentMapping || currentMapping.accessStatus === 'PENDING_APPROVAL') &&
+    lowerClean !== '/status' &&
+    !lowerClean.startsWith('/link')
+  ) {
+    const whitelistMsg = [
+      `🔒 BẢO MẬT WHITELIST NHÓM ZALO`,
+      `----------------------------------------`,
+      `• Mã Chat ID của nhóm: ${chatId}`,
+      `• Trạng thái: Chờ Quản trị viên phê duyệt (PENDING_APPROVAL).`,
+      `• Hệ thống đang bật chế độ bắt buộc xác thực nhóm trước khi sử dụng lệnh Bot.`,
+      `👉 Vui lòng gõ /link <MÃ_DEAL> và báo Quản lý duyệt nhóm trên màn hình [Quản lý Bot Zalo] của Web Admin.`,
+    ].join('\n');
+    await replyToChat(whitelistMsg);
+    return { handled: true, reply: whitelistMsg, extractedChatId: chatId };
+  }
+
   const effectiveRole: ZaloGroupRole =
     options?.overrideGroupRole || currentMapping?.groupRole || 'KOC_GROUP';
 
@@ -1104,6 +1207,17 @@ export async function processZaloWebhookEvent(
 
   // 3. LỆNH DUYỆT VIDEO NHÁP (/duyetnhap HOẶC /approve-draft)
   if (lowerClean.startsWith('/duyetnhap') || lowerClean.startsWith('/approve-draft')) {
+    if (
+      securityPolicy.restrictDraftReviewToStaff &&
+      !isSimulatedFromWeb &&
+      (!senderPerm || senderPerm.role === 'KOC')
+    ) {
+      const denyStaff =
+        '⛔ BẢO MẬT QUY TRÌNH: Chỉ nhân sự Upbase (PIC / Leader / Lead B2C) đã đăng ký Zalo User ID mới có quyền phê duyệt bản nháp.';
+      await replyToChat(denyStaff);
+      return { handled: true, reply: denyStaff, extractedChatId: chatId };
+    }
+
     const note = cleanText.replace(/^\/?(?:duyetnhap|approve-draft)\s*/i, '').trim();
     if (currentMapping) {
       currentMapping.dealStatus = 'ĐÃ_DUYỆT_NHÁP';
@@ -1131,6 +1245,17 @@ export async function processZaloWebhookEvent(
 
   // 4. LỆNH YÊU CẦU SỬA VIDEO NHÁP (/suanhap HOẶC /reject-draft)
   if (lowerClean.startsWith('/suanhap') || lowerClean.startsWith('/reject-draft')) {
+    if (
+      securityPolicy.restrictDraftReviewToStaff &&
+      !isSimulatedFromWeb &&
+      (!senderPerm || senderPerm.role === 'KOC')
+    ) {
+      const denyStaff =
+        '⛔ BẢO MẬT QUY TRÌNH: Chỉ nhân sự Upbase (PIC / Leader / Lead B2C) đã đăng ký Zalo User ID mới có quyền gửi yêu cầu sửa bản nháp.';
+      await replyToChat(denyStaff);
+      return { handled: true, reply: denyStaff, extractedChatId: chatId };
+    }
+
     const feedback = cleanText.replace(/^\/?(?:suanhap|reject-draft)\s*/i, '').trim();
     if (!feedback) {
       const warn = '⚠️ Vui lòng nhập nội dung cần KOC chỉnh sửa. Ví dụ: /suanhap Cần quay rõ cảnh thoa kem ở 3 giây đầu và bổ sung hashtag #ClubClio';
@@ -1167,6 +1292,18 @@ export async function processZaloWebhookEvent(
     let mappingToUse = currentMapping;
 
     if (targetDeal) {
+      if (
+        effectiveRole === 'KOC_GROUP' &&
+        securityPolicy.isolateCrossDealLookupInKocGroup &&
+        currentMapping?.dealCode &&
+        currentMapping.dealCode.toLowerCase() !== targetDeal.toLowerCase()
+      ) {
+        const denyCrossDeal =
+          '⛔ BẢO MẬT NHÓM KOC: Nhóm này chỉ được phép xem Brief của Deal đã gắn trực tiếp với nhóm, không được tra cứu chéo mã Deal của KOC khác.';
+        await replyToChat(denyCrossDeal);
+        return { handled: true, reply: denyCrossDeal, extractedChatId: chatId };
+      }
+
       for (const m of mappings.values()) {
         if (
           m.dealCode?.toLowerCase() === targetDeal.toLowerCase() ||
@@ -1199,7 +1336,7 @@ export async function processZaloWebhookEvent(
     return { handled: true, reply: kocMsg, extractedChatId: chatId };
   }
 
-  // 7. LỆNH TRA CỨU NGÂN SÁCH & PNL (/pnl [brand]) — PHÂN QUYỀN CHẶN TRONG NHÓM KOC
+  // 7. LỆNH TRA CỨU NGÂN SÁCH & PNL (/pnl [brand]) — PHÂN QUYỀN CHẶN TRONG NHÓM KOC & KIỂM SOÁT PHẠM VI BRAND
   if (lowerClean === '/pnl' || lowerClean === 'pnl' || lowerClean.startsWith('/pnl ')) {
     if (effectiveRole === 'KOC_GROUP') {
       const deniedMsg =
@@ -1209,6 +1346,31 @@ export async function processZaloWebhookEvent(
     }
 
     const brandQuery = cleanText.replace(/^\/?pnl\s*/i, '').trim();
+    const allowedBrands = currentMapping?.allowedBrands || [];
+    const hasRestrictedBrandScope =
+      effectiveRole === 'INTERNAL_OPS' &&
+      securityPolicy.enforceBrandScopeInInternalGroups &&
+      allowedBrands.length > 0 &&
+      !allowedBrands.some((b) => b === 'ALL' || b.toLowerCase().includes('toàn bộ'));
+
+    if (hasRestrictedBrandScope) {
+      if (!brandQuery) {
+        const scopeHint = `🔒 BẢO MẬT PHẠM VI NHÓM NỘI BỘ: Nhóm này được phân quyền phụ trách các thương hiệu: [${allowedBrands.join(', ')}]. Vui lòng gõ cụ thể: /pnl ${allowedBrands[0]}`;
+        await replyToChat(scopeHint);
+        return { handled: true, reply: scopeHint, extractedChatId: chatId };
+      }
+      const isAllowed = allowedBrands.some(
+        (b) =>
+          b.toLowerCase().includes(brandQuery.toLowerCase()) ||
+          brandQuery.toLowerCase().includes(b.toLowerCase())
+      );
+      if (!isAllowed) {
+        const denyScope = `⛔ BẢO MẬT PHẠM VI BRAND: Nhóm nội bộ này chỉ được cấp quyền tra cứu PnL của [${allowedBrands.join(', ')}], không có quyền xem dữ liệu của "${brandQuery}".`;
+        await replyToChat(denyScope);
+        return { handled: true, reply: denyScope, extractedChatId: chatId };
+      }
+    }
+
     const pnlMsg = buildPnlReportMessage(brandQuery);
     await replyToChat(pnlMsg);
     return { handled: true, reply: pnlMsg, extractedChatId: chatId };
@@ -1228,8 +1390,14 @@ export async function processZaloWebhookEvent(
     return { handled: true, reply: alertMsg, extractedChatId: chatId };
   }
 
-  // 9. LỆNH KIỂM TRA TIẾN ĐỘ SLA (/sla)
+  // 9. LỆNH KIỂM TRA TIẾN ĐỘ SLA (/sla) — CHẶN TRONG NHÓM KOC
   if (lowerClean === '/sla' || lowerClean === 'sla') {
+    if (effectiveRole === 'KOC_GROUP') {
+      const deniedSla =
+        '⛔ PHÂN QUYỀN BẢO MẬT: Lệnh tổng hợp SLA toàn bộ các nhóm KOC chỉ dành cho Nhóm Vận Hành Nội Bộ. Trong nhóm KOC, vui lòng dùng /status để xem tiến độ của nhóm này.';
+      await replyToChat(deniedSla);
+      return { handled: true, reply: deniedSla, extractedChatId: chatId };
+    }
     const slaMsg = buildSlaStatusMessage();
     await replyToChat(slaMsg);
     return { handled: true, reply: slaMsg, extractedChatId: chatId };
@@ -1254,17 +1422,24 @@ export async function processZaloWebhookEvent(
     const rawParam = cleanText.replace(/^\/?link\s*/i, '').trim();
     if (!rawParam) {
       const msg =
-        '⚠️ Vui lòng nhập mã Deal hoặc @handle KOC cần liên kết.\nVí dụ:\n• /link BO261067161\n• /link @po.trann77\n• /link INTERNAL (để đặt làm nhóm vận hành nội bộ)';
+        '⚠️ Vui lòng nhập mã Deal hoặc @handle KOC cần liên kết.\nVí dụ:\n• /link BO261067161\n• /link @po.trann77';
       await replyToChat(msg);
       return { handled: true, reply: msg, extractedChatId: chatId };
     }
 
     const upperParam = rawParam.toUpperCase();
     let groupRole: ZaloGroupRole = 'KOC_GROUP';
-    if (upperParam === 'INTERNAL' || upperParam === 'NOIBO') {
-      groupRole = 'INTERNAL_OPS';
-    } else if (upperParam === 'BOD' || upperParam === 'CEO') {
-      groupRole = 'BOD_EXECUTIVE';
+    if (upperParam === 'INTERNAL' || upperParam === 'NOIBO' || upperParam === 'BOD' || upperParam === 'CEO') {
+      const isManagerSender =
+        isSimulatedFromWeb ||
+        (senderPerm && (senderPerm.role === 'CEO' || senderPerm.role === 'LEAD_B2C' || senderPerm.role === 'LEADER'));
+      if (securityPolicy.lockRoleElevationFromChat && !isManagerSender) {
+        const denyElevation =
+          '⛔ CHẶN NÂNG QUYỀN TRÁI PHÉP: Hệ thống khóa lệnh tự nâng cấp nhóm thành Nội bộ / BOD từ khung chat Zalo. Quản trị viên vui lòng cấp quyền nhóm trực tiếp trên màn hình [Quản lý Bot Zalo] của Web Admin.';
+        await replyToChat(denyElevation);
+        return { handled: true, reply: denyElevation, extractedChatId: chatId };
+      }
+      groupRole = upperParam === 'BOD' || upperParam === 'CEO' ? 'BOD_EXECUTIVE' : 'INTERNAL_OPS';
     }
 
     // Tự động tra cứu thông tin từ danh bạ KOC hoặc Gian hàng nếu khớp

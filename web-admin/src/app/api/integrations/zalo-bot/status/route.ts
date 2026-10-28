@@ -6,6 +6,7 @@ import {
   getAllUserPermissions,
   getAirCheckHistory,
   getDebugEvents,
+  getSecurityPolicy,
 } from '@/lib/server/zaloBot';
 
 export const dynamic = 'force-dynamic';
@@ -70,6 +71,7 @@ export async function GET(req: NextRequest) {
       : 'Chưa thiết lập',
     mappings,
     userPermissions,
+    securityPolicy: getSecurityPolicy(),
     airHistory,
     recentEvents,
   });
