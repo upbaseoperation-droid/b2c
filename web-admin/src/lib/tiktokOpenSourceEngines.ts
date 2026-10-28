@@ -1350,16 +1350,16 @@ export function parseTikTokItemStructToDetail(itemStruct: Record<string, any> | 
         u
       )
   );
+  const rawCoverCandidates = [
+    itemStruct.video?.cover,
+    itemStruct.video?.originCover,
+    itemStruct.video?.zoomCover?.['720'],
+    itemStruct.video?.zoomCover?.['480'],
+    itemStruct.video?.dynamicCover,
+  ].filter((c): c is string => typeof c === 'string' && /^https?:\/\//i.test(c));
   const rawCoverCandidate =
-    itemStruct.video?.originCover ||
-    itemStruct.video?.cover ||
-    itemStruct.video?.dynamicCover ||
-    itemStruct.video?.zoomCover?.['720'] ||
-    itemStruct.video?.zoomCover?.['480'];
-  const coverUrl =
-    typeof rawCoverCandidate === 'string' && /^https?:\/\//i.test(rawCoverCandidate)
-      ? rawCoverCandidate
-      : undefined;
+    rawCoverCandidates.find((c) => !/\.webp(?:[?#]|$)/i.test(c)) || rawCoverCandidates[0];
+  const coverUrl = rawCoverCandidate || undefined;
 
   const rawCaption =
     String(itemStruct.desc || '').trim() ||
@@ -1830,12 +1830,12 @@ export async function inspectLiveTikTokVideoPage(
                     ? d.wmplay
                     : undefined,
               coverUrl:
-                typeof d.ai_dynamic_cover === 'string' && d.ai_dynamic_cover.startsWith('http')
-                  ? d.ai_dynamic_cover
+                typeof d.cover === 'string' && d.cover.startsWith('http')
+                  ? d.cover
                   : typeof d.origin_cover === 'string' && d.origin_cover.startsWith('http')
                     ? d.origin_cover
-                    : typeof d.cover === 'string' && d.cover.startsWith('http')
-                      ? d.cover
+                    : typeof d.ai_dynamic_cover === 'string' && d.ai_dynamic_cover.startsWith('http')
+                      ? d.ai_dynamic_cover
                       : undefined,
               author: {
                 handle,

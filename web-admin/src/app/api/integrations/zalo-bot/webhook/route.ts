@@ -77,10 +77,13 @@ export async function GET(req: NextRequest) {
       });
       if (captured.buffer && captured.buffer.length > 300) {
         const isPng = captured.buffer[0] === 0x89 && captured.buffer[1] === 0x50;
+        const ext = isPng ? 'png' : 'jpg';
         return new NextResponse(new Uint8Array(captured.buffer), {
           status: 200,
           headers: {
             'Content-Type': isPng ? 'image/png' : 'image/jpeg',
+            'Content-Length': String(captured.buffer.length),
+            'Content-Disposition': `inline; filename="tiktok-air-check.${ext}"`,
             'Cache-Control': 'public, max-age=3600, s-maxage=3600',
           },
         });
@@ -102,6 +105,10 @@ export async function GET(req: NextRequest) {
     timestamp: new Date().toISOString(),
     ...(isDebug ? { recentEvents: getDebugEvents() } : {}),
   });
+}
+
+export async function HEAD(req: NextRequest) {
+  return GET(req);
 }
 
 /**

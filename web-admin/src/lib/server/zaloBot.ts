@@ -13,6 +13,13 @@ import { getSharedCrawlerStore, inspectLiveTikTokVideoPage } from '../tiktokOpen
 import { REAL_B2C_69_STORES } from '../realB2cPlanData';
 import { readRecord, upsertRecord } from './sharedRecords';
 import { handleCtvZaloMessage } from './zaloCtvCommands';
+import {
+  executeMobileTikTokListingFromZalo,
+  hasActiveDealWaitingForAir,
+  isDirectTikTokProfileUrl,
+  parseListingNoteFromMessage,
+  tryHandleMobileListingQuickFollowup,
+} from './zaloMobileListing';
 
 export type ZaloGroupRole = 'KOC_GROUP' | 'BRAND_PARTNER' | 'INTERNAL_OPS' | 'BOD_EXECUTIVE';
 
@@ -1377,24 +1384,90 @@ export async function sendZaloMessage(chatId: string, text: string): Promise<boo
 const FRAME_CAPTURE_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
-function storeCapturedFrameBuffer(frameId: string, buffer: Buffer): void {
-  if (!frameId || buffer.length < 300) return;
+const ZALO_FRAMES_SHARED_KEY = 'zalo-frames-cache-v1';
+type SharedFrameCacheMap = Record<string, { base64: string; createdAt: number }>;
+
+function isWebpBuffer(buf?: Buffer | null): boolean {
+  if (!buf || buf.length < 12) return false;
+  return (
+    buf[0] === 0x52 &&
+    buf[1] === 0x49 &&
+    buf[2] === 0x46 &&
+    buf[3] === 0x46 &&
+    buf[8] === 0x57 &&
+    buf[9] === 0x45 &&
+    buf[10] === 0x42 &&
+    buf[11] === 0x50
+  );
+}
+
+function isJpegOrPngBuffer(buf?: Buffer | null): boolean {
+  if (!buf || buf.length < 8) return false;
+  const isPng = buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
+  const isJpeg = buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
+  return isPng || isJpeg;
+}
+
+async function storeCapturedFrameBuffer(frameId: string, buffer: Buffer): Promise<void> {
+  if (!frameId || buffer.length < 300 || isWebpBuffer(buffer)) return;
   if (inMemoryCapturedFrames.size >= 40) {
     const oldestKey = inMemoryCapturedFrames.keys().next().value;
     if (oldestKey) inMemoryCapturedFrames.delete(oldestKey);
   }
-  inMemoryCapturedFrames.set(frameId, { buffer, createdAt: Date.now() });
+  const now = Date.now();
+  inMemoryCapturedFrames.set(frameId, { buffer, createdAt: now });
+
+  try {
+    await upsertRecord<SharedFrameCacheMap>(
+      ZALO_FRAMES_SHARED_KEY,
+      {},
+      (current) => {
+        const next: SharedFrameCacheMap = { ...(current || {}) };
+        next[frameId] = {
+          base64: buffer.toString('base64'),
+          createdAt: now,
+        };
+        const entries = Object.entries(next)
+          .filter(([, v]) => v && typeof v.base64 === 'string' && now - (v.createdAt || 0) < 30 * 60 * 1000)
+          .sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0))
+          .slice(0, 10);
+        return Object.fromEntries(entries);
+      }
+    );
+  } catch {
+    // Non-fatal fallback to in-memory
+  }
 }
 
-export function getCachedFrameBuffer(frameId?: string | null): Buffer | null {
+export async function getCachedFrameBuffer(frameId?: string | null): Promise<Buffer | null> {
   if (!frameId) return null;
   const hit = inMemoryCapturedFrames.get(frameId);
-  if (!hit) return null;
-  if (Date.now() - hit.createdAt > 60 * 60 * 1000) {
-    inMemoryCapturedFrames.delete(frameId);
-    return null;
+  if (hit) {
+    if (Date.now() - hit.createdAt > 60 * 60 * 1000 || isWebpBuffer(hit.buffer)) {
+      inMemoryCapturedFrames.delete(frameId);
+    } else {
+      return hit.buffer;
+    }
   }
-  return hit.buffer;
+
+  try {
+    const shared = await readRecord<SharedFrameCacheMap>(
+      ZALO_FRAMES_SHARED_KEY,
+      {},
+      { skipCache: true, clone: false }
+    );
+    const entry = shared?.data?.[frameId];
+    if (entry?.base64 && Date.now() - (entry.createdAt || 0) < 60 * 60 * 1000) {
+      const buf = Buffer.from(entry.base64, 'base64');
+      if (buf.length > 300 && isJpegOrPngBuffer(buf)) {
+        inMemoryCapturedFrames.set(frameId, { buffer: buf, createdAt: entry.createdAt || Date.now() });
+        return buf;
+      }
+    }
+  } catch {
+    // Ignore shared read error
+  }
+  return null;
 }
 
 function extractSingleFrameWithFfmpeg(streamUrl: string, sec: number): Promise<Buffer | null> {
@@ -1545,26 +1618,34 @@ function formatTikTokCompactCount(val?: number | string | null, fallback = '0'):
 }
 
 async function stampTikTokAcceptanceOverlay(
-  rawFrameBuf: Buffer,
+  rawFrameBuf: Buffer | null,
   captureSec: number,
   meta: TikTokFrameOverlayMeta
 ): Promise<Buffer> {
   try {
     const fontBuf = await loadBeVietnamFontBuffer();
-    const isPng = rawFrameBuf[0] === 0x89 && rawFrameBuf[1] === 0x50;
+    const validRawBg = Boolean(rawFrameBuf && isJpegOrPngBuffer(rawFrameBuf));
+    const isPng = Boolean(rawFrameBuf && rawFrameBuf[0] === 0x89 && rawFrameBuf[1] === 0x50);
     const mime = isPng ? 'image/png' : 'image/jpeg';
-    const bgDataUrl = `data:${mime};base64,${rawFrameBuf.toString('base64')}`;
+    const bgDataUrl =
+      validRawBg && rawFrameBuf
+        ? `data:${mime};base64,${rawFrameBuf.toString('base64')}`
+        : null;
 
     let avatarDataUrl: string | null = null;
-    if (meta.avatarUrl && /^https?:\/\//i.test(meta.avatarUrl)) {
+    if (meta.avatarUrl && /^https?:\/\//i.test(meta.avatarUrl) && !/\.webp(?:[?#]|$)/i.test(meta.avatarUrl)) {
       try {
         const avRes = await fetch(meta.avatarUrl, {
-          headers: { 'User-Agent': FRAME_CAPTURE_UA, Referer: 'https://www.tiktok.com/' },
+          headers: {
+            'User-Agent': FRAME_CAPTURE_UA,
+            Accept: 'image/jpeg,image/png,image/*;q=0.8',
+            Referer: 'https://www.tiktok.com/',
+          },
           signal: AbortSignal.timeout(2200),
         });
         if (avRes.ok) {
           const avBuf = Buffer.from(await avRes.arrayBuffer());
-          if (avBuf.length > 200) {
+          if (avBuf.length > 200 && isJpegOrPngBuffer(avBuf)) {
             const avMime = avBuf[0] === 0x89 && avBuf[1] === 0x50 ? 'image/png' : 'image/jpeg';
             avatarDataUrl = `data:${avMime};base64,${avBuf.toString('base64')}`;
           }
@@ -1618,25 +1699,30 @@ async function stampTikTokAcceptanceOverlay(
           width: '540px',
           height: '960px',
           position: 'relative',
-          backgroundColor: '#000000',
+          backgroundColor: '#0f172a',
+          backgroundImage: bgDataUrl
+            ? undefined
+            : 'linear-gradient(160deg, #1e293b 0%, #0f172a 52%, #090d16 100%)',
           color: '#ffffff',
           fontFamily: fontBuf ? 'BeVietnamPro' : 'sans-serif',
         },
       },
-      // 1. Ảnh nền khung hình video 9:16 toàn màn hình
-      React.createElement('img', {
-        src: bgDataUrl,
-        width: 540,
-        height: 960,
-        style: {
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '540px',
-          height: '960px',
-          objectFit: 'cover',
-        },
-      }),
+      // 1. Ảnh nền khung hình video 9:16 toàn màn hình (chỉ gắn khi là JPEG/PNG hợp lệ cho satori)
+      bgDataUrl
+        ? React.createElement('img', {
+            src: bgDataUrl,
+            width: 540,
+            height: 960,
+            style: {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '540px',
+              height: '960px',
+              objectFit: 'cover',
+            },
+          })
+        : null,
       // 2. Lớp phủ bóng mờ phía trên & Thanh điều hướng TikTok (LIVE | Khám phá | Đang Follow | Dành cho bạn | Tìm kiếm)
       React.createElement(
         'div',
@@ -2242,9 +2328,10 @@ async function stampTikTokAcceptanceOverlay(
         : {}),
     });
     const stampedBuf = Buffer.from(await imgRes.arrayBuffer());
-    return stampedBuf.length > 1000 ? stampedBuf : rawFrameBuf;
+    if (stampedBuf.length > 1000) return stampedBuf;
+    return rawFrameBuf && isJpegOrPngBuffer(rawFrameBuf) ? rawFrameBuf : stampedBuf;
   } catch {
-    return rawFrameBuf;
+    return rawFrameBuf && isJpegOrPngBuffer(rawFrameBuf) ? rawFrameBuf : Buffer.alloc(0);
   }
 }
 
@@ -2265,7 +2352,7 @@ export async function captureTikTokProductFrameBuffer(params: {
   resolvedCoverUrl?: string;
 }> {
   if (params.frameId) {
-    const cached = getCachedFrameBuffer(params.frameId);
+    const cached = await getCachedFrameBuffer(params.frameId);
     if (cached) {
       return {
         buffer: cached,
@@ -2277,14 +2364,14 @@ export async function captureTikTokProductFrameBuffer(params: {
 
   let streamUrl = params.playableUrl || null;
   let coverUrl = params.coverUrl || null;
-  const isCroppedCover = (u?: string | null) =>
-    Boolean(u && /zoomcover|:300:400|:360:360/i.test(u));
+  let tikwmJpegCoverUrl: string | null = null;
+  const isWebpCoverUrl = (u?: string | null) => Boolean(u && /\.webp(?:[?#]|$)/i.test(u));
   const mergedMeta: TikTokFrameOverlayMeta = { ...(params.overlayMeta || {}) };
 
   if (
     !streamUrl ||
     !coverUrl ||
-    isCroppedCover(coverUrl) ||
+    isWebpCoverUrl(coverUrl) ||
     !mergedMeta.kocHandle ||
     !mergedMeta.productTitle ||
     !mergedMeta.avatarUrl
@@ -2293,7 +2380,9 @@ export async function captureTikTokProductFrameBuffer(params: {
       const inspected = await inspectLiveTikTokVideoPage(params.videoUrl);
       if (inspected) {
         if (!streamUrl && inspected.playableUrl) streamUrl = inspected.playableUrl;
-        if ((!coverUrl || isCroppedCover(coverUrl)) && inspected.coverUrl) {
+        if ((!coverUrl || isWebpCoverUrl(coverUrl)) && inspected.coverUrl && !isWebpCoverUrl(inspected.coverUrl)) {
+          coverUrl = inspected.coverUrl;
+        } else if (!coverUrl && inspected.coverUrl) {
           coverUrl = inspected.coverUrl;
         }
         if (!mergedMeta.kocHandle && inspected.author?.handle) {
@@ -2347,8 +2436,8 @@ export async function captureTikTokProductFrameBuffer(params: {
     }
   }
 
-  // Bổ sung luồng MP4 H.264 và ảnh cover 9:16 từ TikWM nếu chưa có sẵn
-  if (!streamUrl || !coverUrl || isCroppedCover(coverUrl)) {
+  // Bổ sung luồng MP4 H.264 và ảnh cover JPEG từ TikWM nếu chưa có sẵn (ưu tiên data.cover JPEG vì next/og không nhận WebP)
+  if (!streamUrl || !coverUrl || isWebpCoverUrl(coverUrl)) {
     try {
       const tikwmRes = await fetch(
         `https://www.tikwm.com/api/?url=${encodeURIComponent(params.videoUrl)}&hd=1`,
@@ -2370,19 +2459,28 @@ export async function captureTikTokProductFrameBuffer(params: {
           } else if (!streamUrl && typeof data.wmplay === 'string' && data.wmplay.startsWith('http')) {
             streamUrl = data.wmplay;
           }
+          if (typeof data.cover === 'string' && data.cover.startsWith('http')) {
+            tikwmJpegCoverUrl = data.cover;
+          }
           const tikwmCover =
-            typeof data.ai_dynamic_cover === 'string' && data.ai_dynamic_cover.startsWith('http')
-              ? data.ai_dynamic_cover
-              : typeof data.cover === 'string' && data.cover.startsWith('http')
-                ? data.cover
-                : typeof data.origin_cover === 'string' && data.origin_cover.startsWith('http')
-                  ? data.origin_cover
+            typeof data.cover === 'string' && data.cover.startsWith('http')
+              ? data.cover
+              : typeof data.origin_cover === 'string' && data.origin_cover.startsWith('http')
+                ? data.origin_cover
+                : typeof data.ai_dynamic_cover === 'string' && data.ai_dynamic_cover.startsWith('http')
+                  ? data.ai_dynamic_cover
                   : null;
-          if ((!coverUrl || isCroppedCover(coverUrl)) && tikwmCover) {
+          if ((!coverUrl || isWebpCoverUrl(coverUrl)) && tikwmCover) {
             coverUrl = tikwmCover;
           }
           if (!mergedMeta.kocHandle && data.author?.unique_id) {
             mergedMeta.kocHandle = String(data.author.unique_id);
+          }
+          if (!mergedMeta.kocName && data.author?.nickname) {
+            mergedMeta.kocName = String(data.author.nickname);
+          }
+          if (!mergedMeta.caption && data.title) {
+            mergedMeta.caption = String(data.title);
           }
         }
       }
@@ -2404,7 +2502,7 @@ export async function captureTikTokProductFrameBuffer(params: {
       const bridgeItem = bridgeState.items?.[vidFromUrl];
       if (bridgeItem?.frameJpegBase64) {
         const buf = Buffer.from(bridgeItem.frameJpegBase64, 'base64');
-        if (buf.length > 1000) {
+        if (buf.length > 1000 && isJpegOrPngBuffer(buf)) {
           rawBuffer = buf;
           rawSource = 'FFMPEG_FRAME';
         }
@@ -2445,16 +2543,21 @@ export async function captureTikTokProductFrameBuffer(params: {
         // ignore retry error
       }
     }
-    if (ffmpegBuf && ffmpegBuf.length > 400) {
+    if (ffmpegBuf && ffmpegBuf.length > 400 && isJpegOrPngBuffer(ffmpegBuf)) {
       rawBuffer = ffmpegBuf;
       rawSource = 'FFMPEG_FRAME';
     }
   }
 
-  // 2. Nhánh dự phòng Zero-Crash trên Serverless: tải ảnh khung hình JPEG từ coverUrl
-  if (!rawBuffer && coverUrl) {
+  // 2. Nhánh dự phòng Zero-Crash trên Serverless: tải ảnh khung hình JPEG/PNG hợp lệ từ coverUrl (hoặc data.cover JPEG của TikWM)
+  const coverCandidates = Array.from(
+    new Set([tikwmJpegCoverUrl, coverUrl].filter((u): u is string => Boolean(u && /^https?:\/\//i.test(u))))
+  );
+
+  for (const candidateUrl of coverCandidates) {
+    if (rawBuffer) break;
     try {
-      const imgRes = await fetch(coverUrl, {
+      const imgRes = await fetch(candidateUrl, {
         headers: {
           'User-Agent': FRAME_CAPTURE_UA,
           Accept: 'image/jpeg,image/png,image/*;q=0.8',
@@ -2466,9 +2569,11 @@ export async function captureTikTokProductFrameBuffer(params: {
       if (imgRes.ok) {
         const arrBuf = await imgRes.arrayBuffer();
         const buf = Buffer.from(arrBuf);
-        if (buf.length > 400) {
+        if (buf.length > 400 && isJpegOrPngBuffer(buf)) {
           rawBuffer = buf;
           rawSource = 'TIKTOK_COVER';
+          coverUrl = candidateUrl;
+          break;
         }
       }
     } catch {
@@ -2476,19 +2581,60 @@ export async function captureTikTokProductFrameBuffer(params: {
     }
   }
 
-  if (rawBuffer) {
-    const finalBuf = await stampTikTokAcceptanceOverlay(rawBuffer, params.captureSec, mergedMeta);
+  // Nếu coverUrl ban đầu trả về WebP và chưa gọi TikWM lấy data.cover JPEG, gọi bổ sung để lấy đúng JPEG
+  if (!rawBuffer && !tikwmJpegCoverUrl && params.videoUrl) {
+    try {
+      const tikwmFallback = await fetch(
+        `https://www.tikwm.com/api/?url=${encodeURIComponent(params.videoUrl)}&hd=1`,
+        {
+          headers: { 'User-Agent': FRAME_CAPTURE_UA, Accept: 'application/json' },
+          signal: AbortSignal.timeout(4000),
+          cache: 'no-store',
+        }
+      );
+      if (tikwmFallback.ok) {
+        const fbJson = await tikwmFallback.json();
+        const fbCover = fbJson?.data?.cover;
+        if (typeof fbCover === 'string' && fbCover.startsWith('http')) {
+          tikwmJpegCoverUrl = fbCover;
+          const imgRes = await fetch(fbCover, {
+            headers: {
+              'User-Agent': FRAME_CAPTURE_UA,
+              Accept: 'image/jpeg,image/png',
+              Referer: 'https://www.tiktok.com/',
+            },
+            signal: AbortSignal.timeout(4000),
+            cache: 'no-store',
+          });
+          if (imgRes.ok) {
+            const buf = Buffer.from(await imgRes.arrayBuffer());
+            if (buf.length > 400 && isJpegOrPngBuffer(buf)) {
+              rawBuffer = buf;
+              rawSource = 'TIKTOK_COVER';
+              coverUrl = fbCover;
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // Luôn kết xuất thành ảnh PNG 540x960 chuẩn giao diện TikTok Mobile qua next/og (kể cả khi rawBuffer = null)
+  const finalBuf = await stampTikTokAcceptanceOverlay(rawBuffer, params.captureSec, mergedMeta);
+  if (finalBuf && finalBuf.length > 500) {
     if (params.frameId) {
-      storeCapturedFrameBuffer(params.frameId, finalBuf);
+      await storeCapturedFrameBuffer(params.frameId, finalBuf);
     }
     return {
       buffer: finalBuf,
-      source: rawSource,
-      resolvedCoverUrl: coverUrl || undefined,
+      source: rawSource !== 'NONE' ? rawSource : 'TIKTOK_COVER',
+      resolvedCoverUrl: tikwmJpegCoverUrl || coverUrl || undefined,
     };
   }
 
-  return { buffer: null, source: 'NONE', resolvedCoverUrl: coverUrl || undefined };
+  return { buffer: null, source: 'NONE', resolvedCoverUrl: tikwmJpegCoverUrl || coverUrl || undefined };
 }
 
 export function buildPublicZaloFrameUrl(params: {
@@ -2505,17 +2651,15 @@ export function buildPublicZaloFrameUrl(params: {
     videoUrl: params.videoUrl,
     sec: String(params.captureSec),
   });
-  if (params.coverUrl) {
+  if (params.relativeOnly && params.coverUrl) {
     qs.set('coverUrl', params.coverUrl);
   }
   if (params.overlayMeta?.kocHandle) qs.set('handle', params.overlayMeta.kocHandle);
-  if (params.overlayMeta?.kocName) qs.set('name', params.overlayMeta.kocName);
-  if (params.overlayMeta?.caption) qs.set('cap', params.overlayMeta.caption.slice(0, 95));
-  if (params.overlayMeta?.timeLabel) qs.set('tl', params.overlayMeta.timeLabel);
-  if (params.overlayMeta?.airedAt) qs.set('air', params.overlayMeta.airedAt);
-  if (params.overlayMeta?.views !== undefined && params.overlayMeta?.views !== null) {
-    qs.set('views', String(params.overlayMeta.views));
+  if (params.overlayMeta?.kocName) qs.set('name', params.overlayMeta.kocName.slice(0, 36));
+  if (params.overlayMeta?.caption) {
+    qs.set('cap', params.overlayMeta.caption.slice(0, params.relativeOnly ? 95 : 55));
   }
+  if (params.overlayMeta?.airedAt) qs.set('air', params.overlayMeta.airedAt);
   if (params.overlayMeta?.likes !== undefined && params.overlayMeta?.likes !== null) {
     qs.set('likes', String(params.overlayMeta.likes));
   }
@@ -2531,12 +2675,22 @@ export function buildPublicZaloFrameUrl(params: {
   if (params.overlayMeta?.durationSeconds) {
     qs.set('dur', String(params.overlayMeta.durationSeconds));
   }
-  if (params.overlayMeta?.productTitle) qs.set('title', params.overlayMeta.productTitle.slice(0, 70));
+  if (params.overlayMeta?.productTitle) {
+    qs.set('title', params.overlayMeta.productTitle.slice(0, 50));
+  }
   if (params.overlayMeta?.productId) qs.set('pid', params.overlayMeta.productId);
-  if (params.overlayMeta?.hashtags) qs.set('tags', params.overlayMeta.hashtags.slice(0, 70));
-  if (params.overlayMeta?.quote) qs.set('quote', params.overlayMeta.quote.slice(0, 85));
-  if (params.overlayMeta?.mentionSec !== undefined && params.overlayMeta?.mentionSec !== null) {
-    qs.set('msec', String(params.overlayMeta.mentionSec));
+  if (params.relativeOnly) {
+    if (params.overlayMeta?.timeLabel) qs.set('tl', params.overlayMeta.timeLabel);
+    if (params.overlayMeta?.views !== undefined && params.overlayMeta?.views !== null) {
+      qs.set('views', String(params.overlayMeta.views));
+    }
+    if (params.overlayMeta?.hashtags) qs.set('tags', params.overlayMeta.hashtags.slice(0, 70));
+    if (params.overlayMeta?.quote) qs.set('quote', params.overlayMeta.quote.slice(0, 85));
+    if (params.overlayMeta?.mentionSec !== undefined && params.overlayMeta?.mentionSec !== null) {
+      qs.set('msec', String(params.overlayMeta.mentionSec));
+    }
+  } else {
+    qs.set('ext', '.png');
   }
   const pathWithQuery = `/api/integrations/zalo-bot/webhook?${qs.toString()}`;
   if (params.relativeOnly) return pathWithQuery;
@@ -2594,8 +2748,8 @@ export async function sendZaloPhoto(
   return false;
 }
 
-const TIKTOK_URL_REGEX = /(https?:\/\/(?:vt\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s]+)/i;
-const TIKTOK_URL_GLOBAL_REGEX = /https?:\/\/(?:vt\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s]+/gi;
+const TIKTOK_URL_REGEX = /(https?:\/\/(?:vt\.tiktok\.com|vm\.tiktok\.com|m\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s]+)/i;
+const TIKTOK_URL_GLOBAL_REGEX = /https?:\/\/(?:vt\.tiktok\.com|vm\.tiktok\.com|m\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s]+/gi;
 const DRAFT_URL_REGEX = /(https?:\/\/(?:drive\.google\.com|docs\.google\.com|www\.capcut\.com|capcut\.com)\/[^\s]+)/i;
 const WAYBILL_AUTO_REGEX =
   /(?:mã\s*vận\s*đơn|mvđ|mvd|vận\s*đơn|tracking)\s*[:=-]?\s*([A-Z0-9]{8,22})|\b((?:SPXVN|GHN|GHTK|VTP|VT|JT|BEST)[A-Z0-9]{6,18})\b/i;
@@ -3554,13 +3708,70 @@ export async function processZaloWebhookEvent(
   const effectiveRole: ZaloGroupRole =
     options?.overrideGroupRole || currentMapping?.groupRole || 'KOC_GROUP';
 
-  // 1. TỰ ĐỘNG BẮT LINK TIKTOK ĐỂ NGHIỆM THU (HỖ TRỢ QUÉT ĐƠN LẺ & QUÉT HÀNG LOẠT NHIỀU LINK TRONG 1 TIN NHẮN)
-  const allTikTokUrls = extractAllTikTokUrls(rawText);
+  // 0. KIỂM TRA PHẢN HỒI NHANH BẰNG PHÍM SỐ SAU KHI VỪA LISTING KOC TỪ ĐIỆN THOẠI (1..5 đổi gian hàng, gõ giá đổi Giá Net, gõ /air để chấm Air)
+  const quickListingFollowup = await tryHandleMobileListingQuickFollowup({
+    chatId,
+    cleanText,
+  });
+  let effectiveRawText = rawText;
+  let effectiveCleanText = cleanText;
+  if (quickListingFollowup.handled) {
+    if (quickListingFollowup.reply) {
+      await replyToChat(quickListingFollowup.reply);
+      return {
+        handled: true,
+        reply: quickListingFollowup.reply,
+        extractedChatId: chatId,
+      };
+    }
+    if (quickListingFollowup.triggerAirUrl) {
+      effectiveRawText = `/air ${quickListingFollowup.triggerAirUrl}`;
+      effectiveCleanText = `/air ${quickListingFollowup.triggerAirUrl}`;
+    }
+  }
+
+  // 1. BỘ PHÂN LUỒNG 4 LỚP TỰ ĐỘNG GIỮA [LISTING KOC TỪ ĐIỆN THOẠI] VÀ [NGHIỆM THU VIDEO AIR]
+  const allTikTokUrls = extractAllTikTokUrls(effectiveRawText);
+  const parsedListingNote = parseListingNoteFromMessage(effectiveCleanText, allTikTokUrls);
+  const isEstablishedKocDealGroup = Boolean(
+    effectiveRole === 'KOC_GROUP' &&
+      currentMapping &&
+      !currentMapping.isAutoDiscovered &&
+      (currentMapping.dealCode || currentMapping.kocHandle)
+  );
+
+  // Trường hợp gõ lệnh trực tiếp /addkoc @handle [brand] [giá] mà không dán URL
+  if (allTikTokUrls.length === 0 && parsedListingNote.isExplicitListCommand) {
+    const mobileListRes = await executeMobileTikTokListingFromZalo({
+      chatId,
+      senderId,
+      senderName,
+      cleanText: effectiveCleanText,
+      urls: [],
+      senderPerm,
+      currentMapping,
+    });
+    await replyToChat(mobileListRes.reply);
+    return {
+      handled: true,
+      reply: mobileListRes.reply,
+      extractedChatId: chatId,
+    };
+  }
+
   if (allTikTokUrls.length > 1) {
+    const preClassifyBatchAsListing =
+      !parsedListingNote.isExplicitAirCommand &&
+      (parsedListingNote.isExplicitListCommand ||
+        parsedListingNote.hasListingSignalInNote ||
+        allTikTokUrls.some((u) => isDirectTikTokProfileUrl(u)));
+
     if (shouldSend && replyConfig.sendScanningProgressMessage) {
       await sendZaloMessage(
         chatId,
-        `⏳ Đang quét nghiệm thu hàng loạt ${allTikTokUrls.length} video TikTok song song...\nVui lòng chờ trong giây lát...`
+        preClassifyBatchAsListing
+          ? `⏳ Đang bóc tách hồ sơ ${allTikTokUrls.length} kênh TikTok & ghi vào Sheet Listing...\nVui lòng chờ trong giây lát...`
+          : `⏳ Đang quét dữ liệu ${allTikTokUrls.length} đường dẫn TikTok song song...\nVui lòng chờ trong giây lát...`
       ).catch(() => false);
     }
 
@@ -3574,6 +3785,50 @@ export async function processZaloWebhookEvent(
           return { url, result };
         })
       );
+
+      const preFetchedMap = new Map<string, LinkAirResult>();
+      for (const b of batchResults) {
+        preFetchedMap.set(b.url, b.result);
+      }
+
+      // Kiểm tra Lớp 2, 3, 4 sau khi giải mã link rút gọn
+      const hasProfileLinkInBatch = batchResults.some(
+        (b) => !b.result.contentId && Boolean(b.result.author?.handle)
+      );
+      const anyActiveDealWaitingAir = batchResults.some(
+        (b) =>
+          b.result.author?.handle &&
+          hasActiveDealWaitingForAir(b.result.author.handle, mappings, {
+            hasProductLink: b.result.hasProductLink,
+            productTitle: b.result.cartProducts?.[0]?.title || b.result.productTitle,
+            caption: b.result.caption,
+            hashtags: b.result.hashtags,
+          }).isWaitingAir
+      );
+
+      const shouldRouteBatchToListing =
+        preClassifyBatchAsListing ||
+        (!parsedListingNote.isExplicitAirCommand &&
+          (hasProfileLinkInBatch || (!isEstablishedKocDealGroup && !anyActiveDealWaitingAir)));
+
+      if (shouldRouteBatchToListing) {
+        const mobileListRes = await executeMobileTikTokListingFromZalo({
+          chatId,
+          senderId,
+          senderName,
+          cleanText: effectiveCleanText,
+          urls: allTikTokUrls,
+          preFetchedResults: preFetchedMap,
+          senderPerm,
+          currentMapping,
+        });
+        await replyToChat(mobileListRes.reply);
+        return {
+          handled: true,
+          reply: mobileListRes.reply,
+          extractedChatId: chatId,
+        };
+      }
 
       let passCount = 0;
       let reviewCount = 0;
@@ -3676,9 +3931,39 @@ export async function processZaloWebhookEvent(
     }
   }
 
-  const linkMatch = rawText.match(TIKTOK_URL_REGEX);
+  const linkMatch = effectiveRawText.match(TIKTOK_URL_REGEX);
   if (linkMatch) {
     const videoUrl = linkMatch[1];
+    const isPreClassifiedAsListing =
+      !parsedListingNote.isExplicitAirCommand &&
+      (parsedListingNote.isExplicitListCommand ||
+        parsedListingNote.hasListingSignalInNote ||
+        isDirectTikTokProfileUrl(videoUrl));
+
+    if (isPreClassifiedAsListing) {
+      if (shouldSend && replyConfig.sendScanningProgressMessage) {
+        await sendZaloMessage(
+          chatId,
+          `⏳ Đang bóc tách hồ sơ kênh TikTok & ghi vào Sheet Listing: ${videoUrl}\nVui lòng chờ trong giây lát...`
+        ).catch(() => false);
+      }
+      const mobileListRes = await executeMobileTikTokListingFromZalo({
+        chatId,
+        senderId,
+        senderName,
+        cleanText: effectiveCleanText,
+        urls: [videoUrl],
+        senderPerm,
+        currentMapping,
+      });
+      await replyToChat(mobileListRes.reply);
+      return {
+        handled: true,
+        reply: mobileListRes.reply,
+        extractedChatId: chatId,
+      };
+    }
+
     const cacheKey = `${videoUrl}|${(currentMapping?.requiredHashtags || []).join(',')}|${currentMapping?.expectedProductUrl || ''}`;
     const cachedAir = inMemoryAirCheckCache.get(cacheKey);
     const hasFreshCache = Boolean(
@@ -3692,7 +3977,7 @@ export async function processZaloWebhookEvent(
       shouldSend && !hasFreshCache && replyConfig.sendScanningProgressMessage
         ? sendZaloMessage(
             chatId,
-            `⏳ Đang quét dữ liệu nghiệm thu video TikTok: ${videoUrl}\nVui lòng chờ trong giây lát...`
+            `⏳ Đang quét dữ liệu TikTok: ${videoUrl}\nVui lòng chờ trong giây lát...`
           ).catch(() => false)
         : Promise.resolve(true);
 
@@ -3713,6 +3998,43 @@ export async function processZaloWebhookEvent(
           result: checkResult,
           expiresAt: Date.now() + 3 * 60 * 1000,
         });
+      }
+
+      // Kiểm tra Lớp 2, 3, 4 sau khi đã giải mã link TikTok (nhận diện link trang cá nhân hoặc lướt TikTok lưu KOC)
+      const isResolvedProfileUrl = !checkResult.contentId && Boolean(checkResult.author?.handle);
+      const activeAirDealCheck = checkResult.author?.handle
+        ? hasActiveDealWaitingForAir(checkResult.author.handle, mappings, {
+            hasProductLink: checkResult.hasProductLink,
+            productTitle: checkResult.cartProducts?.[0]?.title || checkResult.productTitle,
+            caption: checkResult.caption,
+            hashtags: checkResult.hashtags,
+          })
+        : { isWaitingAir: false };
+
+      const shouldAutoRouteSingleToListing =
+        !parsedListingNote.isExplicitAirCommand &&
+        (isResolvedProfileUrl ||
+          (!isEstablishedKocDealGroup && !activeAirDealCheck.isWaitingAir));
+
+      if (shouldAutoRouteSingleToListing) {
+        await notifyPendingPromise;
+        const preFetched = new Map<string, LinkAirResult>([[videoUrl, checkResult]]);
+        const mobileListRes = await executeMobileTikTokListingFromZalo({
+          chatId,
+          senderId,
+          senderName,
+          cleanText: effectiveCleanText,
+          urls: [videoUrl],
+          preFetchedResults: preFetched,
+          senderPerm,
+          currentMapping,
+        });
+        await replyToChat(mobileListRes.reply);
+        return {
+          handled: true,
+          reply: mobileListRes.reply,
+          extractedChatId: chatId,
+        };
       }
 
       const isPass = checkResult.verdict === 'PASS';
@@ -4732,7 +5054,8 @@ export async function processZaloWebhookEvent(
     `🤖 TRỢ LÝ VẬN HÀNH B2C — UPBASE ZALO BOT`,
     `----------------------------------------`,
     `📌 CÁC LỆNH TRONG NHÓM KOC & NGHIỆM THU TỰ ĐỘNG:`,
-    `• Gửi 1 hoặc nhiều link TikTok kèm @Bot: Tự động quét nghiệm thu bài đăng (Air, Giỏ hàng, Thời gian nhắc SP, Ảnh giao diện TikTok, View/Like).`,
+    `• Gửi 1 hoặc nhiều link TikTok: Bot tự động phân biệt 4 lớp giữa [Nghiệm thu Video Air] (trong nhóm Deal KOC / KOC đang chờ Air) và [Listing KOC từ Điện thoại] (khi lướt TikTok bấm Chia sẻ qua Zalo Bot).`,
+    `• /addkoc <link_tiktok/@handle> [tên_brand] [giá_net/foc] : Lưu trực tiếp KOC đang lướt trên điện thoại vào Sheet Listing 57 cột (hỗ trợ gõ phím 1..5 để đổi gian hàng nhanh).`,
     `• /vandon <mã_vận_đơn> : Ghi nhận mã vận đơn hàng mẫu & tự động tính hạn SLA 5 ngày nháp / 7 ngày Air.`,
     `• /nopnhap <link_drive> : KOC nộp link video nháp chờ duyệt.`,
     `• /duyetnhap [ghi chú] : PIC / Brand xác nhận duyệt video nháp cho KOC đăng bài.`,
