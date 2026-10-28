@@ -1037,7 +1037,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
                   return (
                     <div key={group.groupTitle} className="space-y-1">
-                      <div className="text-3xs font-semibold text-ink-3 uppercase tracking-wider px-2 pt-1">
+                      <div className="text-2xs font-semibold text-ink-3 px-2 pt-1">
                         {group.groupTitle}
                       </div>
                       <div className="space-y-0.5">

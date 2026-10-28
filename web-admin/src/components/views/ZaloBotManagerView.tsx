@@ -20,6 +20,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
+import { INITIAL_INTERNAL_STAFF_RBAC } from '@/lib/rbacData';
+import { REAL_B2C_69_STORES } from '@/lib/realB2cPlanData';
 import {
   Panel,
   Button,
@@ -30,12 +32,14 @@ import {
   Modal,
   ConfirmDialog,
   Input,
+  Select,
   Field,
   Textarea,
   EmptyState,
   Status,
   Person,
   Chips,
+  Tabs,
   type Column,
 } from '@/components/ui';
 
@@ -136,6 +140,10 @@ interface ZaloAirCheckHistoryItem {
     title: string;
     productUrl: string;
   }>;
+  holdingScreenshotUrl?: string;
+  holdingMomentSec?: number;
+  holdingMomentTimeLabel?: string;
+  holdingMomentQuote?: string;
   views: number | null;
   likes: number | null;
   hashtags: string[];
@@ -295,6 +303,12 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
   const [airCheckTargetChatId, setAirCheckTargetChatId] = useState('');
   const [isCheckingAir, setIsCheckingAir] = useState(false);
   const [airCheckResult, setAirCheckResult] = useState<any>(null);
+  const [airCheckScreenshot, setAirCheckScreenshot] = useState<{
+    url: string;
+    sec?: number;
+    timeLabel?: string;
+    quote?: string;
+  } | null>(null);
 
   // Bộ thực thi lệnh Bot (Command Simulator) & Broadcast
   const [simCommand, setSimCommand] = useState('/pnl');
@@ -543,6 +557,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
     }
     setIsCheckingAir(true);
     setAirCheckResult(null);
+    setAirCheckScreenshot(null);
     try {
       // Thực thi qua bộ xử lý lệnh của Bot để vừa quét link vừa lưu vào lịch sử nghiệm thu
       const res = await fetch('/api/integrations/zalo-bot/send', {
@@ -559,6 +574,14 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
       const data = await res.json();
       if (res.ok) {
         setAirCheckResult(data.reply);
+        if (data.holdingScreenshotUrl) {
+          setAirCheckScreenshot({
+            url: data.holdingScreenshotUrl,
+            sec: data.holdingMomentSec,
+            timeLabel: data.holdingMomentTimeLabel,
+            quote: data.holdingMomentQuote,
+          });
+        }
         onNotify?.('Đã hoàn tất quét nghiệm thu video TikTok.', 'success');
         void fetchBotStatus();
       } else {
@@ -688,6 +711,106 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
       onNotify?.('Lỗi khi xóa phân quyền.', 'error');
     }
   };
+
+  const handleQuickApproveGroup = async (
+    groupId: string,
+    accessStatus: ZaloGroupAccessStatus = 'APPROVED',
+    groupRole?: ZaloGroupRole
+  ) => {
+    try {
+      const res = await fetch('/api/integrations/zalo-bot/mappings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'QUICK_APPROVE_GROUP',
+          groupId,
+          accessStatus,
+          groupRole,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        onNotify?.(data.message || 'Đã phê duyệt nhanh nhóm Zalo.', 'success');
+        void fetchBotStatus();
+      } else {
+        onNotify?.(data.error || 'Không thể phê duyệt nhóm.', 'error');
+      }
+    } catch {
+      onNotify?.('Lỗi kết nối máy chủ.', 'error');
+    }
+  };
+
+  const handleBulkApproveDiscovered = async () => {
+    try {
+      const res = await fetch('/api/integrations/zalo-bot/mappings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'BULK_APPROVE_DISCOVERED' }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        onNotify?.(data.message || 'Đã phê duyệt toàn bộ nhóm mới.', 'success');
+        void fetchBotStatus();
+      }
+    } catch {
+      onNotify?.('Lỗi kết nối máy chủ.', 'error');
+    }
+  };
+
+  const handleSelectInternalStaffForPerm = (staffId: string) => {
+    const member = INITIAL_INTERNAL_STAFF_RBAC.find((s) => s.id === staffId);
+    if (!member) return;
+    setPermStaffName(member.name);
+    setPermStaffEmail(member.email);
+    if (!permDisplayName) setPermDisplayName(member.name);
+
+    let mappedRole: ZaloStaffRole = 'PIC';
+    if (member.name.includes('Đỗ Văn Giang') || member.position === 'CEO') {
+      mappedRole = 'CEO';
+    } else if (member.role === 'MANAGER' || member.name.includes('Đặng Thị Yến Nhi')) {
+      mappedRole = 'LEAD_B2C';
+    } else if (member.role === 'LEADER' || member.name.includes('Nguyễn Thị Ngọc Tâm')) {
+      mappedRole = 'LEADER';
+    }
+    setPermRole(mappedRole);
+
+    // Liên thông tự động danh sách Thương hiệu phụ trách từ 69 gian hàng B2C + hồ sơ nhân sự
+    if (mappedRole === 'CEO' || mappedRole === 'LEAD_B2C' || member.picBrands?.includes('ALL_BRANDS')) {
+      setPermBrands('Toàn bộ 69 gian hàng B2C');
+    } else {
+      const storeBrands = REAL_B2C_69_STORES.filter(
+        (st) =>
+          st.primaryPic === member.name ||
+          st.b2cOwnerName === member.name ||
+          st.bookingLeader === member.name
+      ).map((st) => st.brandName);
+      const mergedBrands = Array.from(
+        new Set([...(member.picBrands || []), ...storeBrands].filter((b) => b && b !== 'ALL_BRANDS'))
+      );
+      setPermBrands(mergedBrands.length > 0 ? mergedBrands.join(', ') : 'ClubClio, EUPC');
+    }
+  };
+
+  const handleSelectStoreForGroup = (storeName: string) => {
+    const store = REAL_B2C_69_STORES.find((s) => s.storeName === storeName);
+    if (!store) return;
+    setModalStoreName(store.storeName);
+    setModalBrandName(store.brandName);
+    setModalAllowedBrands(store.brandName);
+    if (store.primaryPic || store.b2cOwnerName) {
+      setModalPicName(store.primaryPic || store.b2cOwnerName);
+    }
+    const cleanBrandTag = store.brandName.replace(/\s+/g, '');
+    setModalHashtags(`${cleanBrandTag}, UpbaseB2C, BeautyReview`);
+  };
+
+  const pendingOrDiscoveredCount = useMemo(
+    () =>
+      mappings.filter(
+        (m) => m.accessStatus === 'PENDING_APPROVAL' || Boolean(m.isAutoDiscovered)
+      ).length,
+    [mappings]
+  );
 
   const uniquePics = useMemo(() => {
     const set = new Set<string>();
@@ -848,6 +971,16 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
       align: 'right',
       render: (row) => (
         <div className="flex items-center justify-end gap-1 flex-wrap">
+          {(row.accessStatus === 'PENDING_APPROVAL' || row.isAutoDiscovered) && (
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={Check}
+              onClick={() => handleQuickApproveGroup(row.groupId, 'APPROVED', row.groupRole)}
+            >
+              Duyệt nhóm
+            </Button>
+          )}
           {row.groupRole === 'KOC_GROUP' && (
             <>
               <Button
@@ -895,6 +1028,84 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
             onClick={() => setUnlinkTargetGroupId(row.groupId)}
           >
             Hủy
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  const discoveredSenderColumns: Column<ZaloDiscoveredSenderItem>[] = [
+    {
+      key: 'sender',
+      header: 'Tài khoản Zalo tương tác',
+      render: (row) => (
+        <Person
+          name={row.displayName || row.senderId}
+          sub={`${row.messageCount} tin nhắn • ${new Date(row.lastSeenAt).toLocaleTimeString('vi-VN')}`}
+          size={26}
+        />
+      ),
+    },
+    {
+      key: 'senderId',
+      header: 'Mã người gửi (Sender ID)',
+      render: (row) => (
+        <span className="font-mono text-xs text-ink select-all">{row.senderId}</span>
+      ),
+    },
+    {
+      key: 'lastChatId',
+      header: 'Nhóm Chat ID gần nhất',
+      render: (row) => (
+        <div className="text-xs">
+          <div className="font-mono text-ink select-all">{row.lastChatId}</div>
+          {row.lastGroupName && <div className="text-2xs text-ink-3">{row.lastGroupName}</div>}
+        </div>
+      ),
+    },
+    {
+      key: 'lastMessageText',
+      header: 'Nội dung tin nhắn cuối',
+      render: (row) => (
+        <span className="text-xs text-ink-2 truncate max-w-xs block">
+          &ldquo;{row.lastMessageText}&rdquo;
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Phân quyền nhanh',
+      align: 'right',
+      render: (row) => (
+        <div className="flex items-center justify-end gap-1.5">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              setPermUserId(row.senderId);
+              setPermDisplayName(row.displayName);
+              setPermStaffName(row.displayName);
+              setIsPermModalOpen(true);
+            }}
+          >
+            Cấp quyền Nhân sự
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              const existingGrp = mappings.find((m) => m.groupId === row.lastChatId);
+              if (existingGrp) {
+                openEditGroupModal(existingGrp);
+              } else {
+                setModalGroupId(row.lastChatId);
+                setModalGroupName(`Nhóm của ${row.displayName}`);
+                setModalGroupRole('KOC_GROUP');
+                setIsLinkModalOpen(true);
+              }
+            }}
+          >
+            Phân quyền Nhóm
           </Button>
         </div>
       ),
@@ -978,6 +1189,41 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
           </div>
         );
       },
+    },
+    {
+      key: 'holdingFrame',
+      header: 'Ảnh KOC cầm SP',
+      render: (row) =>
+        row.holdingScreenshotUrl ? (
+          <a
+            href={row.holdingScreenshotUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 group"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={row.holdingScreenshotUrl}
+              alt={`Khung hình KOC @${row.kocHandle}`}
+              className="w-12 h-16 object-cover rounded border border-line bg-sunken shrink-0"
+            />
+            <div className="text-2xs space-y-0.5 max-w-[140px]">
+              <div className="font-mono font-medium text-ink group-hover:text-accent">
+                {row.holdingMomentSec !== undefined ? `Giây ${row.holdingMomentSec}s` : 'Ảnh cắt clip'}
+              </div>
+              {row.holdingMomentTimeLabel && (
+                <div className="font-mono text-ink-3">{row.holdingMomentTimeLabel}</div>
+              )}
+              {row.holdingMomentQuote && (
+                <div className="text-ink-2 line-clamp-2" title={row.holdingMomentQuote}>
+                  &ldquo;{row.holdingMomentQuote}&rdquo;
+                </div>
+              )}
+            </div>
+          </a>
+        ) : (
+          <span className="text-xs text-ink-3">—</span>
+        ),
     },
     {
       key: 'metrics',
@@ -1124,79 +1370,59 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
         <Stat label="Nhân sự được cấp quyền" value={userPermissions.length} />
       </StatRow>
 
-      {/* Thanh điều hướng phân hệ */}
-      <div className="flex items-center justify-between border-b border-line pb-2 flex-wrap gap-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            size="sm"
-            variant={activeTab === 'GROUPS' ? 'primary' : 'secondary'}
-            icon={MessageSquare}
-            onClick={() => setActiveTab('GROUPS')}
-          >
-            Nhóm chat & Tiến độ Deal ({mappings.length})
-          </Button>
-          <Button
-            size="sm"
-            variant={activeTab === 'AIR_CHECK' ? 'primary' : 'secondary'}
-            icon={Play}
-            onClick={() => setActiveTab('AIR_CHECK')}
-          >
-            Nghiệm thu Video TikTok ({airHistory.length})
-          </Button>
-          <Button
-            size="sm"
-            variant={activeTab === 'COMMAND_BROADCAST' ? 'primary' : 'secondary'}
-            icon={Terminal}
-            onClick={() => setActiveTab('COMMAND_BROADCAST')}
-          >
-            Lệnh Bot & Gửi thông báo
-          </Button>
-          <Button
-            size="sm"
-            variant={activeTab === 'RBAC_USERS' ? 'primary' : 'secondary'}
-            icon={Users}
-            onClick={() => setActiveTab('RBAC_USERS')}
-          >
-            Phân quyền Nhân sự ({userPermissions.length})
-          </Button>
-          <Button
-            size="sm"
-            variant={activeTab === 'WEBHOOK_LOGS' ? 'primary' : 'secondary'}
-            icon={ShieldCheck}
-            onClick={() => setActiveTab('WEBHOOK_LOGS')}
-          >
-            Cấu hình & Nhật ký ({recentEvents.length})
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="secondary" icon={RefreshCw} onClick={fetchBotStatus}>
-            {isLoading ? 'Đang tải...' : 'Làm mới'}
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={copiedLink ? Check : Copy}
-            onClick={handleCopyInviteLink}
-          >
-            {copiedLink ? 'Đã sao chép link' : 'Lấy link mời Bot'}
-          </Button>
-        </div>
-      </div>
+      {/* Thanh điều hướng phân hệ chuẩn Design System <Tabs> */}
+      <Tabs
+        value={activeTab}
+        onChange={(k) => setActiveTab(k)}
+        items={[
+          { key: 'GROUPS', label: 'Nhóm chat & Tiến độ Deal', count: mappings.length },
+          { key: 'AIR_CHECK', label: 'Nghiệm thu Video TikTok', count: airHistory.length },
+          { key: 'COMMAND_BROADCAST', label: 'Lệnh Bot & Gửi thông báo' },
+          { key: 'RBAC_USERS', label: 'Phân quyền Nhân sự & Bảo mật', count: userPermissions.length },
+          { key: 'WEBHOOK_LOGS', label: 'Cấu hình & Nhật ký', count: recentEvents.length },
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="secondary" icon={RefreshCw} onClick={fetchBotStatus}>
+              {isLoading ? 'Đang tải...' : 'Làm mới'}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={copiedLink ? Check : Copy}
+              onClick={handleCopyInviteLink}
+            >
+              {copiedLink ? 'Đã sao chép link' : 'Lấy link mời Bot'}
+            </Button>
+          </div>
+        }
+      />
 
       {/* TAB 1: QUẢN LÝ NHÓM CHAT & TIẾN ĐỘ DEAL */}
       {activeTab === 'GROUPS' && (
         <Panel
           title="Danh sách nhóm chat Zalo & Điều phối Deal KOC"
           actions={
-            <Button
-              size="sm"
-              variant="primary"
-              icon={Link2}
-              onClick={() => openEditGroupModal()}
-            >
-              Thêm liên kết nhóm
-            </Button>
+            <div className="flex items-center gap-2">
+              {pendingOrDiscoveredCount > 0 && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={Check}
+                  onClick={handleBulkApproveDiscovered}
+                >
+                  Duyệt tất cả nhóm mới ({pendingOrDiscoveredCount})
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="primary"
+                icon={Link2}
+                onClick={() => openEditGroupModal()}
+              >
+                Thêm liên kết nhóm
+              </Button>
+            </div>
           }
         >
           <div className="space-y-3">
@@ -1237,8 +1463,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
               }
               filters={
                 <div className="flex items-center gap-2">
-                  <select
-                    className="h-8 rounded border border-line-strong bg-surface px-2.5 text-xs text-ink"
+                  <Select
                     value={picFilter}
                     onChange={(e) => setPicFilter(e.target.value)}
                   >
@@ -1248,9 +1473,8 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                         PIC: {pic}
                       </option>
                     ))}
-                  </select>
-                  <select
-                    className="h-8 rounded border border-line-strong bg-surface px-2.5 text-xs text-ink"
+                  </Select>
+                  <Select
                     value={brandFilter}
                     onChange={(e) => setBrandFilter(e.target.value)}
                   >
@@ -1260,7 +1484,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                         Brand: {b}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               }
               resultCount={filteredMappings.length}
@@ -1302,8 +1526,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                 </div>
                 <div>
                   <Field label="Đồng bộ kết quả vào nhóm Zalo (Tùy chọn)">
-                    <select
-                      className="w-full h-9 rounded border border-line-strong bg-surface px-3 text-xs text-ink"
+                    <Select
                       value={airCheckTargetChatId}
                       onChange={(e) => setAirCheckTargetChatId(e.target.value)}
                     >
@@ -1313,7 +1536,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                           {m.groupName || m.groupId} ({m.dealCode || '—'})
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </Field>
                 </div>
               </div>
@@ -1330,10 +1553,38 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
               </div>
 
               {airCheckResult && (
-                <div className="p-3 rounded border border-line bg-sunken">
-                  <pre className="text-xs font-mono text-ink whitespace-pre-wrap">
-                    {airCheckResult}
-                  </pre>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 rounded border border-line bg-sunken">
+                  <div className={airCheckScreenshot ? 'md:col-span-2' : 'md:col-span-3'}>
+                    <pre className="text-xs font-mono text-ink whitespace-pre-wrap">
+                      {airCheckResult}
+                    </pre>
+                  </div>
+                  {airCheckScreenshot && (
+                    <div className="flex flex-col items-start gap-2 border-t md:border-t-0 md:border-l border-line pt-3 md:pt-0 md:pl-3">
+                      <div className="text-xs font-medium text-ink">
+                        Ảnh chụp KOC cầm sản phẩm{' '}
+                        {airCheckScreenshot.sec !== undefined ? `(Giây ${airCheckScreenshot.sec}s)` : ''}
+                      </div>
+                      <a
+                        href={airCheckScreenshot.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={airCheckScreenshot.url}
+                          alt="Ảnh chụp KOC cầm sản phẩm"
+                          className="w-36 h-48 object-cover rounded border border-line bg-surface"
+                        />
+                      </a>
+                      {airCheckScreenshot.quote && (
+                        <div className="text-2xs text-ink-2">
+                          Lời thoại ({airCheckScreenshot.timeLabel || '—'}): &ldquo;{airCheckScreenshot.quote}&rdquo;
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1376,20 +1627,18 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
 
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Chế độ phân quyền nhóm khi kiểm thử">
-                  <select
-                    className="w-full h-9 rounded border border-line-strong bg-surface px-3 text-xs text-ink"
+                  <Select
                     value={simGroupRole}
                     onChange={(e) => setSimGroupRole(e.target.value as ZaloGroupRole)}
                   >
                     <option value="INTERNAL_OPS">Nhóm Vận hành nội bộ (Mở PnL/KOC)</option>
                     <option value="BOD_EXECUTIVE">Nhóm Điều hành BOD (Toàn quyền)</option>
                     <option value="KOC_GROUP">Nhóm KOC 3 bên (Chặn lệnh PnL nội bộ)</option>
-                  </select>
+                  </Select>
                 </Field>
 
                 <Field label="Ngữ cảnh nhóm áp dụng">
-                  <select
-                    className="w-full h-9 rounded border border-line-strong bg-surface px-3 text-xs text-ink"
+                  <Select
                     value={simChatId}
                     onChange={(e) => setSimChatId(e.target.value)}
                   >
@@ -1398,7 +1647,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                         {m.groupName || m.groupId}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Field>
               </div>
 
@@ -1461,8 +1710,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
               </Field>
 
               <Field label="Chọn nhóm Zalo nhận thông báo">
-                <select
-                  className="w-full h-9 rounded border border-line-strong bg-surface px-3 text-xs text-ink"
+                <Select
                   value={broadcastChatId}
                   onChange={(e) => setBroadcastChatId(e.target.value)}
                 >
@@ -1472,7 +1720,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                       {m.groupName || m.groupId} ({GROUP_ROLE_LABEL[m.groupRole]})
                     </option>
                   ))}
-                </select>
+                </Select>
               </Field>
 
               <Field label="Hoặc nhập mã Chat/Group ID trực tiếp">
@@ -1513,156 +1761,121 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
           <Panel title="Chính sách Bảo mật Tương tác theo Nhóm (Group Security Policy)">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
               <div className="p-3 rounded border border-line bg-sunken flex items-center justify-between gap-3">
-                <div className="space-y-0.5">
-                  <div className="font-medium text-ink">
-                    1. Chặn tự nâng quyền nhóm từ khung chat Zalo
+                <div className="space-y-1">
+                  <div className="font-medium text-ink flex items-center gap-2">
+                    <span>1. Chặn tự nâng quyền nhóm từ khung chat Zalo</span>
+                    <Status tone={securityPolicy.lockRoleElevationFromChat ? 'positive' : 'neutral'}>
+                      {securityPolicy.lockRoleElevationFromChat ? 'Đang bật' : 'Đang tắt'}
+                    </Status>
                   </div>
-                  <div className="text-ink-3">
+                  <div className="text-ink-2">
                     Khóa lệnh `/link INTERNAL` và `/link BOD` trên Zalo nếu người gõ không phải Quản lý. Chỉ cấp quyền nhóm Nội bộ / BOD trên Web Admin.
                   </div>
                 </div>
                 <Button
                   size="sm"
-                  variant={securityPolicy.lockRoleElevationFromChat ? 'primary' : 'secondary'}
+                  variant="secondary"
                   onClick={() => handleToggleSecurityPolicy('lockRoleElevationFromChat')}
                 >
-                  {securityPolicy.lockRoleElevationFromChat ? 'Đang bật' : 'Đang tắt'}
+                  {securityPolicy.lockRoleElevationFromChat ? 'Tắt khóa' : 'Bật khóa'}
                 </Button>
               </div>
 
               <div className="p-3 rounded border border-line bg-sunken flex items-center justify-between gap-3">
-                <div className="space-y-0.5">
-                  <div className="font-medium text-ink">
-                    2. Cô lập phạm vi Thương hiệu trong Nhóm Nội bộ
+                <div className="space-y-1">
+                  <div className="font-medium text-ink flex items-center gap-2">
+                    <span>2. Cô lập phạm vi Thương hiệu trong Nhóm Nội bộ</span>
+                    <Status tone={securityPolicy.enforceBrandScopeInInternalGroups ? 'positive' : 'neutral'}>
+                      {securityPolicy.enforceBrandScopeInInternalGroups ? 'Đang bật' : 'Đang tắt'}
+                    </Status>
                   </div>
-                  <div className="text-ink-3">
+                  <div className="text-ink-2">
                     Nhóm `INTERNAL_OPS` của Team nào chỉ được phép gõ `/pnl` tra cứu ngân sách của đúng danh sách Thương hiệu gắn với nhóm đó.
                   </div>
                 </div>
                 <Button
                   size="sm"
-                  variant={securityPolicy.enforceBrandScopeInInternalGroups ? 'primary' : 'secondary'}
+                  variant="secondary"
                   onClick={() => handleToggleSecurityPolicy('enforceBrandScopeInInternalGroups')}
                 >
-                  {securityPolicy.enforceBrandScopeInInternalGroups ? 'Đang bật' : 'Đang tắt'}
+                  {securityPolicy.enforceBrandScopeInInternalGroups ? 'Tắt khóa' : 'Bật khóa'}
                 </Button>
               </div>
 
               <div className="p-3 rounded border border-line bg-sunken flex items-center justify-between gap-3">
-                <div className="space-y-0.5">
-                  <div className="font-medium text-ink">
-                    3. Cô lập Mã Deal trong Nhóm KOC 3 bên
+                <div className="space-y-1">
+                  <div className="font-medium text-ink flex items-center gap-2">
+                    <span>3. Cô lập Mã Deal trong Nhóm KOC 3 bên</span>
+                    <Status tone={securityPolicy.isolateCrossDealLookupInKocGroup ? 'positive' : 'neutral'}>
+                      {securityPolicy.isolateCrossDealLookupInKocGroup ? 'Đang bật' : 'Đang tắt'}
+                    </Status>
                   </div>
-                  <div className="text-ink-3">
+                  <div className="text-ink-2">
                     Chặn thành viên trong nhóm KOC gõ `/brief [mã_deal_khác]` hoặc `/sla` để dò thông tin chiến dịch của KOC khác.
                   </div>
                 </div>
                 <Button
                   size="sm"
-                  variant={securityPolicy.isolateCrossDealLookupInKocGroup ? 'primary' : 'secondary'}
+                  variant="secondary"
                   onClick={() => handleToggleSecurityPolicy('isolateCrossDealLookupInKocGroup')}
                 >
-                  {securityPolicy.isolateCrossDealLookupInKocGroup ? 'Đang bật' : 'Đang tắt'}
+                  {securityPolicy.isolateCrossDealLookupInKocGroup ? 'Tắt khóa' : 'Bật khóa'}
                 </Button>
               </div>
 
               <div className="p-3 rounded border border-line bg-sunken flex items-center justify-between gap-3">
-                <div className="space-y-0.5">
-                  <div className="font-medium text-ink">
-                    4. Bắt buộc duyệt Whitelist Nhóm mới trên Web
+                <div className="space-y-1">
+                  <div className="font-medium text-ink flex items-center gap-2">
+                    <span>4. Bắt buộc duyệt Whitelist Nhóm mới trên Web</span>
+                    <Status tone={securityPolicy.requireGroupWhitelist ? 'positive' : 'neutral'}>
+                      {securityPolicy.requireGroupWhitelist ? 'Đang bật' : 'Đang tắt'}
+                    </Status>
                   </div>
-                  <div className="text-ink-3">
+                  <div className="text-ink-2">
                     Khi Bot được thêm vào nhóm Zalo lạ chưa được duyệt (`APPROVED`) trên Web, Bot sẽ từ chối thực thi lệnh cho đến khi Quản lý mở khóa.
                   </div>
                 </div>
                 <Button
                   size="sm"
-                  variant={securityPolicy.requireGroupWhitelist ? 'primary' : 'secondary'}
+                  variant="secondary"
                   onClick={() => handleToggleSecurityPolicy('requireGroupWhitelist')}
                 >
-                  {securityPolicy.requireGroupWhitelist ? 'Đang bật' : 'Đang tắt'}
+                  {securityPolicy.requireGroupWhitelist ? 'Tắt khóa' : 'Bật khóa'}
                 </Button>
               </div>
 
               <div className="p-3 rounded border border-line bg-sunken flex items-center justify-between gap-3 md:col-span-2">
-                <div className="space-y-0.5">
-                  <div className="font-medium text-ink">
-                    5. Giới hạn lệnh Duyệt / Sửa video nháp (`/duyetnhap`, `/suanhap`) cho Nhân sự nội bộ
+                <div className="space-y-1">
+                  <div className="font-medium text-ink flex items-center gap-2">
+                    <span>5. Giới hạn lệnh Duyệt / Sửa video nháp (`/duyetnhap`, `/suanhap`) cho Nhân sự nội bộ</span>
+                    <Status tone={securityPolicy.restrictDraftReviewToStaff ? 'positive' : 'neutral'}>
+                      {securityPolicy.restrictDraftReviewToStaff ? 'Đang bật' : 'Đang tắt'}
+                    </Status>
                   </div>
-                  <div className="text-ink-3">
+                  <div className="text-ink-2">
                     Khi bật, chỉ tài khoản Zalo đã đăng ký trong bảng Phân quyền Nhân sự (`PIC`, `LEADER`, `LEAD_B2C`, `CEO`) mới được gõ lệnh duyệt bài nháp trong nhóm KOC.
                   </div>
                 </div>
                 <Button
                   size="sm"
-                  variant={securityPolicy.restrictDraftReviewToStaff ? 'primary' : 'secondary'}
+                  variant="secondary"
                   onClick={() => handleToggleSecurityPolicy('restrictDraftReviewToStaff')}
                 >
-                  {securityPolicy.restrictDraftReviewToStaff ? 'Đang bật' : 'Đang tắt'}
+                  {securityPolicy.restrictDraftReviewToStaff ? 'Tắt khóa' : 'Bật khóa'}
                 </Button>
               </div>
             </div>
           </Panel>
 
           <Panel title="Danh sách Chat ID & Người gửi tự động ghi nhận khi Bot nhận tin nhắn">
-            {discoveredSenders.length === 0 && recentEvents.length === 0 ? (
-              <EmptyState title="Chưa có tin nhắn thực tế nào gửi tới Bot. Hãy vào nhóm Zalo gõ @Bot tttttttupbase /status để hệ thống tự động bắt Chat ID và Sender ID lên bảng này." />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                {discoveredSenders.map((s) => (
-                  <div
-                    key={s.senderId}
-                    className="p-3 rounded border border-line bg-sunken flex items-center justify-between gap-3"
-                  >
-                    <div className="space-y-0.5 min-w-0">
-                      <div className="font-medium text-ink truncate">
-                        Người nhắn: {s.displayName} ({s.messageCount} tin)
-                      </div>
-                      <div className="font-mono text-2xs text-ink-2 select-all">
-                        Sender ID: {s.senderId}
-                      </div>
-                      <div className="font-mono text-2xs text-ink-3 select-all">
-                        Từ Chat ID: {s.lastChatId}
-                      </div>
-                      <div className="text-2xs text-ink-3 truncate">
-                        Nội dung: &ldquo;{s.lastMessageText}&rdquo;
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1.5 shrink-0">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => {
-                          setPermUserId(s.senderId);
-                          setPermDisplayName(s.displayName);
-                          setPermStaffName(s.displayName);
-                          setIsPermModalOpen(true);
-                        }}
-                      >
-                        Cấp quyền Nhân sự
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          const existingGrp = mappings.find((m) => m.groupId === s.lastChatId);
-                          if (existingGrp) {
-                            openEditGroupModal(existingGrp);
-                          } else {
-                            setModalGroupId(s.lastChatId);
-                            setModalGroupName(`Nhóm của ${s.displayName}`);
-                            setModalGroupRole('KOC_GROUP');
-                            setIsLinkModalOpen(true);
-                          }
-                        }}
-                      >
-                        Phân quyền Nhóm
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <DataTable
+              columns={discoveredSenderColumns}
+              rows={discoveredSenders}
+              rowKey={(r) => r.senderId}
+              empty={
+                <EmptyState title="Chưa có tin nhắn thực tế nào gửi tới Bot. Hãy vào nhóm Zalo gõ @Bot tttttttupbase /status để hệ thống tự động bắt Chat ID và Sender ID lên bảng này." />
+              }
+            />
           </Panel>
 
           <Panel
@@ -1684,29 +1897,6 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
               rowKey={(r) => r.zaloUserId}
               empty={<EmptyState title="Chưa có nhân sự nào được phân quyền" />}
             />
-          </Panel>
-
-          <Panel title="Quy chuẩn Thẩm quyền Phê duyệt & Bảo mật dữ liệu trên Zalo Bot">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-              <div className="p-3 rounded border border-line bg-sunken space-y-1">
-                <div className="font-medium text-ink">1. Cấp Giám Đốc & CEO</div>
-                <div className="text-ink-2">
-                  Tổng Giám Đốc (Đỗ Văn Giang) & Giám Đốc B2C (Đặng Thị Yến Nhi): Toàn quyền truy xuất PnL 69 gian hàng, nhận cảnh báo vượt trần ngân sách và ký duyệt kế hoạch tháng.
-                </div>
-              </div>
-              <div className="p-3 rounded border border-line bg-sunken space-y-1">
-                <div className="font-medium text-ink">2. Cấp Trưởng Nhóm (Leader)</div>
-                <div className="text-ink-2">
-                  Nguyễn Thị Ngọc Tâm: Phụ trách 8 gian hàng trọng điểm (ClubClio, Cindy Bloom, Mine, EUPC, L&apos;Occitane, Bye Bye Blemish, Rejuran). Các gian hàng khác PIC trình thẳng Giám Đốc B2C.
-                </div>
-              </div>
-              <div className="p-3 rounded border border-line bg-sunken space-y-1">
-                <div className="font-medium text-ink">3. Cơ chế Khóa bảo mật Nhóm KOC</div>
-                <div className="text-ink-2">
-                  Trong các nhóm phân loại là Nhóm KOC 3 bên, Bot tự động chặn mọi lệnh `/pnl`, `/overbudget`, `/digest` và che mờ 4 số cuối CCCD / Tài khoản ngân hàng (`****5678`).
-                </div>
-              </div>
-            </div>
           </Panel>
         </div>
       )}
@@ -1764,28 +1954,40 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
               />
             </Field>
             <Field label="Cấp bảo mật nhóm chat">
-              <select
-                className="w-full h-9 rounded border border-line-strong bg-surface px-3 text-xs text-ink"
+              <Select
                 value={modalGroupRole}
                 onChange={(e) => setModalGroupRole(e.target.value as ZaloGroupRole)}
               >
                 <option value="KOC_GROUP">Nhóm KOC 3 bên (Khóa lệnh PnL nội bộ)</option>
                 <option value="INTERNAL_OPS">Nhóm Vận hành nội bộ (Mở tra cứu KOC/PnL)</option>
                 <option value="BOD_EXECUTIVE">Nhóm Điều hành BOD (Toàn quyền)</option>
-              </select>
+              </Select>
             </Field>
             <Field label="Trạng thái cho phép Bot hoạt động">
-              <select
-                className="w-full h-9 rounded border border-line-strong bg-surface px-3 text-xs text-ink"
+              <Select
                 value={modalAccessStatus}
                 onChange={(e) => setModalAccessStatus(e.target.value as ZaloGroupAccessStatus)}
               >
                 <option value="APPROVED">Đã phê duyệt (Cho phép chạy lệnh)</option>
                 <option value="PENDING_APPROVAL">Chờ phê duyệt (Tạm khóa lệnh)</option>
                 <option value="BLOCKED">Khóa nhóm (Chặn hoàn toàn)</option>
-              </select>
+              </Select>
             </Field>
           </div>
+
+          <Field label="Chọn nhanh Gian hàng chuẩn B2C (tự động điền Thương hiệu & PIC từ hồ sơ gốc)">
+            <Select
+              value=""
+              onChange={(e) => handleSelectStoreForGroup(e.target.value)}
+            >
+              <option value="">-- Chọn trong 69 gian hàng B2C để tự động đồng bộ Brand & PIC --</option>
+              {REAL_B2C_69_STORES.map((s) => (
+                <option key={s.id} value={s.storeName}>
+                  {s.storeName} — Brand: {s.brandName} ({s.primaryPic || s.b2cOwnerName})
+                </option>
+              ))}
+            </Select>
+          </Field>
 
           <Field label="Phạm vi Thương hiệu cho phép nhóm này tra cứu (cách nhau dấu phẩy, nhập ALL nếu toàn bộ)">
             <Input
@@ -1845,11 +2047,17 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
               />
             </Field>
             <Field label="Chuyên viên PIC phụ trách">
-              <Input
-                placeholder="Ví dụ: Hà Thị Thủy"
+              <Select
                 value={modalPicName}
                 onChange={(e) => setModalPicName(e.target.value)}
-              />
+              >
+                <option value="">-- Chọn nhân sự B2C --</option>
+                {INITIAL_INTERNAL_STAFF_RBAC.map((st) => (
+                  <option key={st.id} value={st.name}>
+                    {st.name} ({st.email})
+                  </option>
+                ))}
+              </Select>
             </Field>
           </div>
 
@@ -1888,8 +2096,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
               />
             </Field>
             <Field label="Trạng thái Deal hiện tại">
-              <select
-                className="w-full h-9 rounded border border-line-strong bg-surface px-3 text-xs text-ink"
+              <Select
                 value={modalDealStatus}
                 onChange={(e) => setModalDealStatus(e.target.value as ZaloDealWorkflowStatus)}
               >
@@ -1899,7 +2106,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                 <option value="ĐÃ_DUYỆT_NHÁP">Đã duyệt nháp</option>
                 <option value="ĐÃ_NGHIỆM_THU_AIR">Đã nghiệm thu (Air)</option>
                 <option value="CẦN_CHỈNH_SỬA">Cần chỉnh sửa</option>
-              </select>
+              </Select>
             </Field>
           </div>
 
@@ -1936,15 +2143,14 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
           )}
 
           <Field label="Quyết định phê duyệt">
-            <select
-              className="w-full h-9 rounded border border-line-strong bg-surface px-3 text-xs text-ink"
+            <Select
               value={reviewNextStatus}
               onChange={(e) => setReviewNextStatus(e.target.value as ZaloDealWorkflowStatus)}
             >
               <option value="ĐÃ_DUYỆT_NHÁP">Duyệt video nháp — Cho phép KOC đăng bài</option>
               <option value="CẦN_CHỈNH_SỬA">Yêu cầu chỉnh sửa lại video nháp</option>
               <option value="ĐÃ_NGHIỆM_THU_AIR">Xác nhận đã nghiệm thu lên sóng (Air)</option>
-            </select>
+            </Select>
           </Field>
 
           <Field label="Ghi chú phản hồi gửi vào nhóm Zalo cho KOC">
@@ -1974,6 +2180,20 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
         title="Cấp quyền Nhân sự điều hành trên Zalo Bot"
       >
         <div className="space-y-3">
+          <Field label="Chọn nhanh từ Danh bạ Nhân sự B2C chuẩn (tự động điền Họ tên, Email, Cấp bậc & Thương hiệu)">
+            <Select
+              value=""
+              onChange={(e) => handleSelectInternalStaffForPerm(e.target.value)}
+            >
+              <option value="">-- Chọn nhân sự trong ma trận RBAC gốc --</option>
+              {INITIAL_INTERNAL_STAFF_RBAC.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.name} ({st.email}) — {st.position}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
           <div className="grid grid-cols-2 gap-3">
             <Field label="Mã người dùng Zalo (sender.id) *">
               <Input
@@ -1983,8 +2203,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
               />
             </Field>
             <Field label="Cấp thẩm quyền nghiệp vụ">
-              <select
-                className="w-full h-9 rounded border border-line-strong bg-surface px-3 text-xs text-ink"
+              <Select
                 value={permRole}
                 onChange={(e) => setPermRole(e.target.value as ZaloStaffRole)}
               >
@@ -1993,7 +2212,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                 <option value="LEADER">Trưởng Nhóm Booking (Nguyễn Thị Ngọc Tâm)</option>
                 <option value="PIC">Chuyên viên thực thi (PIC)</option>
                 <option value="KOC">Đối tác KOC / Creator</option>
-              </select>
+              </Select>
             </Field>
           </div>
 

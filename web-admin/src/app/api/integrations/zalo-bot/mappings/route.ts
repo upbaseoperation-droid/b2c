@@ -102,6 +102,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, message: 'Đã xóa phân quyền nhân sự.' });
     }
 
+    if (action === 'BULK_APPROVE_DISCOVERED') {
+      const all = getAllMappings();
+      let approvedCount = 0;
+      for (const m of all) {
+        if (m.accessStatus === 'PENDING_APPROVAL' || m.isAutoDiscovered) {
+          setGroupMapping({
+            ...m,
+            accessStatus: 'APPROVED',
+            isAutoDiscovered: false,
+            updatedAt: new Date().toISOString(),
+          });
+          approvedCount += 1;
+        }
+      }
+      return NextResponse.json({
+        ok: true,
+        approvedCount,
+        message: `Đã phê duyệt nhanh ${approvedCount} nhóm chat Zalo mới phát hiện.`,
+      });
+    }
+
     // 2. Quản lý Nhóm chat Zalo & Thao tác nghiệp vụ
     const groupId = String(body?.groupId || '').trim();
     if (!groupId) {
@@ -114,6 +135,27 @@ export async function POST(req: NextRequest) {
     }
 
     const existing = getAllMappings().find((m) => m.groupId === groupId);
+
+    if (action === 'QUICK_APPROVE_GROUP') {
+      if (!existing) {
+        return NextResponse.json({ ok: false, error: 'Không tìm thấy nhóm liên kết.' }, { status: 404 });
+      }
+      const nextAccess = (body?.accessStatus || 'APPROVED') as ZaloGroupAccessStatus;
+      const nextRole = (body?.groupRole || existing.groupRole || 'KOC_GROUP') as ZaloGroupRole;
+      const updated: ZaloGroupMapping = {
+        ...existing,
+        accessStatus: nextAccess,
+        groupRole: nextRole,
+        isAutoDiscovered: false,
+        updatedAt: new Date().toISOString(),
+      };
+      setGroupMapping(updated);
+      return NextResponse.json({
+        ok: true,
+        mapping: updated,
+        message: `Đã cập nhật trạng thái nhóm [${updated.groupName || groupId}] sang ${nextAccess}.`,
+      });
+    }
 
     if (action === 'SEND_BRIEF') {
       if (!existing) {
