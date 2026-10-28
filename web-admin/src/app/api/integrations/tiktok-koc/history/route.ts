@@ -195,6 +195,7 @@ function buildInitialWeeklySeed(now = new Date()): TikTokCrawlerDailyHistoryItem
       engagementMetrics: {
         sampleVideoCount: 24,
         avgViews: 95000,
+        medianViews: 84000,
         avgLikes: 4200,
         avgComments: 185,
         avgShares: 120,
@@ -280,6 +281,7 @@ function buildInitialWeeklySeed(now = new Date()): TikTokCrawlerDailyHistoryItem
       engagementMetrics: {
         sampleVideoCount: 20,
         avgViews: 54000,
+        medianViews: 48500,
         avgLikes: 2950,
         avgComments: 140,
         avgShares: 85,

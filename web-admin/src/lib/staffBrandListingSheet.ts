@@ -1589,3 +1589,56 @@ export function downloadStaffSheetCsv(
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+export interface KocActiveSheetListingSummary {
+  sheetKey: string;
+  thang: string;
+  store: string;
+  dot: string;
+  nhanSuDien: string;
+  sanPham: string;
+  giaNetVideo: number;
+  brandChon: string;
+  lyDoTuChoi?: string;
+  ngayDien: string;
+}
+
+/**
+ * Tra cứu nhanh xem 1 kênh KOC (@handle) đang được đề xuất trong những Sheet Listing nào
+ * để cảnh báo trùng lặp nhân sự liên hệ và đối chiếu lịch sử Brand duyệt.
+ */
+export function findKocListingsByHandle(rawHandle: string): KocActiveSheetListingSummary[] {
+  if (typeof window === 'undefined' || !rawHandle) return [];
+  const cleanTarget = normalizeTikTokId(rawHandle).toLowerCase();
+  if (!cleanTarget) return [];
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as StaffBrandSheetCollection;
+    if (!parsed || typeof parsed.sheets !== 'object') return [];
+    const found: KocActiveSheetListingSummary[] = [];
+    for (const [sheetKey, rows] of Object.entries(parsed.sheets)) {
+      if (!Array.isArray(rows)) continue;
+      for (const r of rows) {
+        const rowHandle = normalizeTikTokId(r.idKenh || '').toLowerCase();
+        if (rowHandle === cleanTarget) {
+          found.push({
+            sheetKey,
+            thang: r.thang || sheetKey.split('__')[0] || '',
+            store: r.store || sheetKey.split('__')[1] || '',
+            dot: r.dot || 'Đợt 1',
+            nhanSuDien: r.nhanSuDien || 'Chưa gán',
+            sanPham: r.sanPham || '',
+            giaNetVideo: Number(r.giaNetVideo) || 0,
+            brandChon: r.brandChon || 'Chờ duyệt',
+            lyDoTuChoi: r.lyDoTuChoi || undefined,
+            ngayDien: r.ngayDien || '',
+          });
+        }
+      }
+    }
+    return found.sort((a, b) => b.thang.localeCompare(a.thang));
+  } catch {
+    return [];
+  }
+}

@@ -1743,6 +1743,9 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           setScraperOpen(false);
           openProfile(koc.id);
         }}
+        onAddToBrandSheet={(kocsToPush) => {
+          setSheetTargetKocs(kocsToPush);
+        }}
         onApplyResults={({ created, updated }) => {
           const taggedCreated = created.map((c) => ({
             ...c,

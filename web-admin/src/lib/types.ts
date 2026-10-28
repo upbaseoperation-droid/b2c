@@ -585,6 +585,7 @@ export interface KocItem {
   bio?: string; // Tiểu sử kênh TikTok (chứa thông tin giới thiệu, SĐT/Email liên hệ)
   totalLikes?: number; // Tổng lượt thích trên toàn kênh TikTok
   videoCount?: number; // Tổng số video đã đăng trên kênh
+  medianViews?: number; // Lượt xem trung vị trên các video gần nhất (chống lệch do bài xu hướng đột biến)
   avgLikes?: number; // Lượt tim trung bình trên các video gần nhất
   avgComments?: number; // Lượt bình luận trung bình trên các video gần nhất
   avgShares?: number; // Lượt chia sẻ trung bình trên các video gần nhất

@@ -2,14 +2,17 @@
 
 import React, { useMemo, useState } from 'react';
 import {
+  AlertTriangle,
   Check,
   Clock,
   Download,
   ExternalLink,
+  FileSpreadsheet,
   History,
   Music,
   RefreshCw,
   Search,
+  ShoppingBag,
   UserCheck,
   XCircle,
 } from 'lucide-react';
@@ -20,7 +23,8 @@ import {
   parseTikTokHandles,
   type TikTokScrapedKocResult,
 } from '../../lib/tiktokKocScraper';
-import { formatDate, formatNumber, getVietnamDateYmd } from '../../lib/format';
+import { formatDate, formatNumber, formatVnd, formatVndShort, getVietnamDateYmd } from '../../lib/format';
+import { findKocListingsByHandle } from '../../lib/staffBrandListingSheet';
 import { formatFollowers } from './kocUtils';
 import {
   KocChannelReviewBadge,
@@ -51,10 +55,12 @@ interface TikTokKocScraperModalProps {
     results: TikTokScrapedKocResult[];
   }) => void;
   onOpenKocInMaster?: (koc: KocItem) => void;
+  onAddToBrandSheet?: (kocs: KocItem[]) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
 type PeriodKey = '7d' | '30d' | '90d';
+type VideoFilterMode = 'ALL' | 'AFFILIATE' | 'ORGANIC';
 const VIDEO_LIMIT_OPTIONS = [24, 48, 72, 100] as const;
 
 export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
@@ -66,6 +72,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   onApplyResults,
   onSaveScrapedSession,
   onOpenKocInMaster,
+  onAddToBrandSheet,
   onNotify,
 }) => {
   const [rawInput, setRawInput] = useState(initialHandle);
@@ -78,6 +85,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [results, setResults] = useState<TikTokScrapedKocResult[]>([]);
   const [selectedHandle, setSelectedHandle] = useState<string>('');
+  const [videoFilter, setVideoFilter] = useState<VideoFilterMode>('ALL');
   const [reviewModalOpen, setReviewModalOpen] = useState<boolean>(false);
   const [reviewTarget, setReviewTarget] = useState<KocChannelReviewTarget | null>(null);
   const { reviews: channelReviews, getChannelSummary } = useKocChannelReviews();
@@ -198,6 +206,34 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
     const clean = activeResult.handle.trim().toLowerCase().replace(/^@+/, '');
     return existingByHandle.get(clean);
   }, [activeResult, existingByHandle]);
+
+  const activeSheetListings = useMemo(() => {
+    if (!activeResult) return [];
+    return findKocListingsByHandle(activeResult.handle);
+  }, [activeResult]);
+
+  const filteredVideos = useMemo(() => {
+    if (!activeResult) return [];
+    if (videoFilter === 'AFFILIATE') {
+      return activeResult.recentVideos.filter((v) => v.isAffiliate);
+    }
+    if (videoFilter === 'ORGANIC') {
+      return activeResult.recentVideos.filter((v) => !v.isAffiliate);
+    }
+    return activeResult.recentVideos;
+  }, [activeResult, videoFilter]);
+
+  const handlePushToBrandSheet = (itemsToPush: TikTokScrapedKocResult[]) => {
+    if (!onAddToBrandSheet || itemsToPush.length === 0) return;
+    const mapped = itemsToPush.map((item) => {
+      const clean = item.handle.toLowerCase().replace(/^@+/, '');
+      const matched = existingByHandle.get(clean);
+      return mapScrapedResultToKocItem(item, matched, {
+        bookingPic: currentUser?.name,
+      });
+    });
+    onAddToBrandSheet(mapped);
+  };
 
   const handleExportCsv = () => {
     if (results.length === 0) return;
@@ -384,6 +420,17 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                 <Button variant="secondary" icon={Download} onClick={handleExportCsv}>
                   Xuất file CSV
                 </Button>
+                {onAddToBrandSheet && (
+                  <Button
+                    variant="secondary"
+                    icon={FileSpreadsheet}
+                    onClick={() => handlePushToBrandSheet(results)}
+                  >
+                    {results.length === 1
+                      ? 'Đưa vào Sheet Listing'
+                      : `Đưa ${results.length} kênh vào Sheet`}
+                  </Button>
+                )}
                 <Button variant="primary" icon={Check} onClick={handleSaveToMaster}>
                   {results.length === 1
                     ? existingByHandle.has(results[0].handle.toLowerCase().replace(/^@+/, ''))
@@ -484,7 +531,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                       </span>
                     )}
                     <span className="text-2xs text-ink-3 tabular-nums">
-                      {formatFollowers(r.channelProfile.followers)} flw · ER {r.engagementMetrics.engagementRate}%
+                      {formatFollowers(r.channelProfile.followers)} flw · Trung vị {formatNumber(r.engagementMetrics.medianViews ?? r.engagementMetrics.avgViews)} · ER {r.engagementMetrics.engagementRate}%
                     </span>
                     <span className="text-2xs text-ink-3">
                       ({isExisting ? 'Đã có' : 'Mới'})
@@ -552,6 +599,16 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                           ? `Lịch sử ĐG (${activeReviewSummary.totalReviews})`
                           : 'Đánh giá kênh'}
                       </Button>
+                      {onAddToBrandSheet && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={FileSpreadsheet}
+                          onClick={() => handlePushToBrandSheet([activeResult])}
+                        >
+                          Đưa vào Sheet Listing
+                        </Button>
+                      )}
                       <span className="text-2xs text-ink-3">
                         · SĐT:{' '}
                         <strong className="font-semibold text-ink font-code">
@@ -564,6 +621,28 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                           {activeResult.channelProfile.extractedEmail || '—'}
                         </strong>
                       </span>
+                      {activeResult.channelProfile.externalSocialLinks &&
+                        activeResult.channelProfile.externalSocialLinks.length > 0 && (
+                          <span className="inline-flex flex-wrap items-center gap-1.5 text-2xs">
+                            · Liên kết Bio:
+                            {activeResult.channelProfile.externalSocialLinks.map((lnk) => {
+                              const shortHost = lnk
+                                .replace(/^https?:\/\/(www\.)?/i, '')
+                                .split('/')[0];
+                              return (
+                                <a
+                                  key={lnk}
+                                  href={lnk}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="px-1.5 py-0.5 rounded bg-sunken border border-line text-accent hover:underline font-code"
+                                >
+                                  {shortHost}
+                                </a>
+                              );
+                            })}
+                          </span>
+                        )}
                     </div>
 
                     {activeResult.channelProfile.bio && (
@@ -588,7 +667,13 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                     </strong>
                   </span>
                   <span>
-                    <span className="text-ink-3">View TB ({activeResult.recentVideos.length} bài): </span>
+                    <span className="text-ink-3">View trung vị ({activeResult.recentVideos.length} bài): </span>
+                    <strong className="text-accent">
+                      {formatNumber(activeResult.engagementMetrics.medianViews ?? activeResult.engagementMetrics.avgViews)}
+                    </strong>
+                  </span>
+                  <span>
+                    <span className="text-ink-3">View TB: </span>
                     <strong className="text-ink">
                       {formatNumber(activeResult.engagementMetrics.avgViews)}
                     </strong>
@@ -601,6 +686,262 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                   </span>
                 </div>
               </div>
+
+              {/* Lưới 6 chỉ số sức khỏe thật của kênh (Tách bài gắn giỏ vs bài thường, 15 bài mới nhất, độ ổn định & tần suất đăng) */}
+              {(() => {
+                const em = activeResult.engagementMetrics;
+                const affCount = em.affiliateVideoCount ?? activeResult.recentVideos.filter((v) => v.isAffiliate).length;
+                const orgCount = em.organicVideoCount ?? activeResult.recentVideos.length - affCount;
+                const affMedian = em.affiliateMedianViews ?? 0;
+                const orgMedian = em.organicMedianViews ?? 0;
+                const isAffDropWarning =
+                  affCount > 0 && orgCount > 0 && orgMedian > 0 && affMedian < orgMedian * 0.45;
+                const consistency = em.viewConsistencyRatioPct;
+                const daysIdle = em.daysSinceLastPost;
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                    <div className="p-2.5 rounded-lg border border-line bg-surface space-y-0.5">
+                      <span className="text-2xs text-ink-3 block">
+                        View trung vị ({activeResult.recentVideos.length} bài)
+                      </span>
+                      <span className="text-sm font-semibold text-accent tabular-nums block">
+                        {formatNumber(em.medianViews ?? em.avgViews)}
+                      </span>
+                      <span className="text-2xs text-ink-3 tabular-nums block">
+                        View TB: {formatNumber(em.avgViews)}
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg border border-line bg-surface space-y-0.5">
+                      <span className="text-2xs text-ink-3 block">
+                        15 bài mới nhất (trừ ghim cũ)
+                      </span>
+                      <span className="text-sm font-semibold text-ink tabular-nums block">
+                        {formatNumber(em.latest15MedianViews ?? em.medianViews ?? em.avgViews)}
+                      </span>
+                      <span className="text-2xs text-ink-3 tabular-nums block">
+                        TB 15 bài: {formatNumber(em.latest15AvgViews ?? em.avgViews)}
+                      </span>
+                    </div>
+
+                    <div
+                      className={`p-2.5 rounded-lg border space-y-0.5 ${
+                        isAffDropWarning
+                          ? 'border-critical/40 bg-critical-soft/20'
+                          : 'border-line bg-surface'
+                      }`}
+                    >
+                      <span className="text-2xs text-ink-3 block">
+                        Bài gắn giỏ ({affCount}/{activeResult.recentVideos.length} bài)
+                      </span>
+                      <span
+                        className={`text-sm font-semibold tabular-nums block ${
+                          isAffDropWarning ? 'text-critical' : 'text-positive'
+                        }`}
+                      >
+                        {affCount > 0 ? formatNumber(affMedian) : 'Chưa có'}
+                      </span>
+                      <span className="text-2xs text-ink-3 tabular-nums block">
+                        {affCount > 0
+                          ? isAffDropWarning
+                            ? `Tụt view giỏ (TB ${formatNumber(em.affiliateAvgViews || 0)})`
+                            : `TB giỏ: ${formatNumber(em.affiliateAvgViews || 0)}`
+                          : '0 bài gắn giỏ hàng'}
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg border border-line bg-surface space-y-0.5">
+                      <span className="text-2xs text-ink-3 block">
+                        Bài nội dung thường ({orgCount} bài)
+                      </span>
+                      <span className="text-sm font-semibold text-ink tabular-nums block">
+                        {orgCount > 0 ? formatNumber(orgMedian) : '—'}
+                      </span>
+                      <span className="text-2xs text-ink-3 tabular-nums block">
+                        {orgCount > 0 ? `TB thường: ${formatNumber(em.organicAvgViews || 0)}` : 'Toàn bộ gắn giỏ'}
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg border border-line bg-surface space-y-0.5">
+                      <span className="text-2xs text-ink-3 block">
+                        Độ ổn định phong độ
+                      </span>
+                      <span
+                        className={`text-sm font-semibold tabular-nums block ${
+                          consistency !== undefined && consistency < 45
+                            ? 'text-warning'
+                            : 'text-positive'
+                        }`}
+                      >
+                        {consistency !== undefined ? `${consistency}%` : '—'}
+                      </span>
+                      <span className="text-2xs text-ink-3 tabular-nums block">
+                        Giữ &ge; 50% trung vị · ER {em.engagementRate}%
+                      </span>
+                    </div>
+
+                    <div
+                      className={`p-2.5 rounded-lg border space-y-0.5 ${
+                        daysIdle !== undefined && daysIdle > 21
+                          ? 'border-warning/40 bg-warning-soft/20'
+                          : 'border-line bg-surface'
+                      }`}
+                    >
+                      <span className="text-2xs text-ink-3 block">
+                        Nhịp độ đăng bài
+                      </span>
+                      <span className="text-sm font-semibold text-ink tabular-nums block">
+                        {em.postingFrequencyPerWeek !== undefined
+                          ? `${em.postingFrequencyPerWeek} bài/tuần`
+                          : '—'}
+                      </span>
+                      <span
+                        className={`text-2xs tabular-nums block ${
+                          daysIdle !== undefined && daysIdle > 21 ? 'text-warning font-medium' : 'text-ink-3'
+                        }`}
+                      >
+                        {daysIdle !== undefined
+                          ? daysIdle === 0
+                            ? 'Vừa đăng hôm nay'
+                            : `Bài mới nhất: ${daysIdle} ngày trước`
+                          : em.lastVideoPublishedAt
+                            ? `Đăng: ${formatDate(em.lastVideoPublishedAt)}`
+                            : '—'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Cảnh báo xung đột Sheet Listing & Căn cứ đàm phán giá lịch sử tại UpBase */}
+              {(activeSheetListings.length > 0 || matchedActiveKoc) && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+                  {activeSheetListings.length > 0 && (
+                    <div className="px-3.5 py-2.5 rounded-xl border border-warning/40 bg-warning-soft/30 space-y-1.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5 text-warning shrink-0" />
+                          Đang có trong Sheet Listing ({activeSheetListings.length} dòng) — Tránh liên hệ trùng
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {activeSheetListings.slice(0, 3).map((item) => (
+                          <div
+                            key={`${item.sheetKey}-${item.dot}`}
+                            className="px-2.5 py-1 rounded-lg bg-surface border border-line text-2xs flex flex-wrap items-center justify-between gap-2"
+                          >
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-semibold text-ink">{item.store}</span>
+                              <span className="text-ink-3">({item.thang} · {item.dot})</span>
+                              <span className="text-ink-2">· PIC: <strong>{item.nhanSuDien}</strong></span>
+                            </div>
+                            <div className="flex items-center gap-2 tabular-nums">
+                              {item.giaNetVideo > 0 && (
+                                <span className="font-code font-medium text-ink">
+                                  Net: {formatVnd(item.giaNetVideo)}
+                                </span>
+                              )}
+                              <Status
+                                tone={
+                                  item.brandChon === 'Yes'
+                                    ? 'positive'
+                                    : item.brandChon === 'No'
+                                      ? 'critical'
+                                      : 'warning'
+                                }
+                              >
+                                Brand: {item.brandChon}
+                              </Status>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {matchedActiveKoc && (
+                    <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface space-y-1.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-ink">
+                          Lịch sử hợp tác &amp; Căn cứ đàm phán giá tại UpBase
+                        </span>
+                        {matchedActiveKoc.bookingPic && (
+                          <span className="text-2xs text-ink-3">
+                            PIC gần nhất: <strong className="text-ink">{matchedActiveKoc.bookingPic}</strong>
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs tabular-nums">
+                        <span>
+                          <span className="text-ink-3">Rate Card hồ sơ: </span>
+                          <strong className="text-accent font-code">
+                            {matchedActiveKoc.rateCardVideo > 0
+                              ? formatVnd(matchedActiveKoc.rateCardVideo)
+                              : 'Chưa có'}
+                          </strong>
+                        </span>
+                        {(matchedActiveKoc.minRate || matchedActiveKoc.maxRate) && (
+                          <span>
+                            <span className="text-ink-3">Khung giá từng book: </span>
+                            <strong className="text-ink font-code">
+                              {formatVndShort(matchedActiveKoc.minRate || 0)} –{' '}
+                              {formatVndShort(matchedActiveKoc.maxRate || matchedActiveKoc.rateCardVideo || 0)}
+                            </strong>
+                          </span>
+                        )}
+                        <span>
+                          <span className="text-ink-3">Đã hợp tác: </span>
+                          <strong className="text-ink">
+                            {matchedActiveKoc.totalPastDeals || 0} deal (Paid {matchedActiveKoc.totalPaidVideos || 0} · FOC {matchedActiveKoc.totalFocVideos || 0})
+                          </strong>
+                        </span>
+                        {matchedActiveKoc.totalPastGmv !== undefined && matchedActiveKoc.totalPastGmv > 0 && (
+                          <span>
+                            <span className="text-ink-3">Tổng GMV: </span>
+                            <strong className="text-positive">
+                              {formatVndShort(matchedActiveKoc.totalPastGmv)}
+                            </strong>
+                            {matchedActiveKoc.historicalRoi !== undefined && (
+                              <span className="text-ink-3"> (ROI {matchedActiveKoc.historicalRoi}x)</span>
+                            )}
+                          </span>
+                        )}
+                        {matchedActiveKoc.latestBookMonth && (
+                          <span>
+                            <span className="text-ink-3">Book gần nhất: </span>
+                            <strong className="text-ink font-code">{matchedActiveKoc.latestBookMonth}</strong>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Danh sách sản phẩm / nhãn hàng đang gắn giỏ phát hiện trên kênh */}
+              {activeResult.engagementMetrics.promotedProductsSummary &&
+                activeResult.engagementMetrics.promotedProductsSummary.length > 0 && (
+                  <div className="px-3.5 py-2 rounded-xl border border-line bg-surface flex flex-wrap items-center gap-2">
+                    <span className="text-2xs font-semibold text-ink inline-flex items-center gap-1.5 shrink-0">
+                      <ShoppingBag className="w-3.5 h-3.5 text-accent" />
+                      Sản phẩm / Giỏ hàng phát hiện trên kênh:
+                    </span>
+                    {activeResult.engagementMetrics.promotedProductsSummary.map((prod) => (
+                      <a
+                        key={prod.label}
+                        href={prod.latestVideoUrl || activeResult.channelProfile.channelUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-sunken border border-line text-2xs text-ink hover:border-line-strong"
+                      >
+                        <span className="truncate max-w-[220px] font-medium">{prod.label}</span>
+                        <span className="text-ink-3 tabular-nums">
+                          ({prod.count} bài · {formatNumber(prod.latestViews)} view)
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                )}
 
               {/* Khung hiển thị trực tiếp lịch sử đánh giá khi tìm kiếm đúng vào kênh đã có đánh giá */}
               {activeReviewSummary && (
@@ -675,9 +1016,44 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
 
               <Panel
                 flush
-                title={`Video gần nhất trên kênh (${activeResult.recentVideos.length} / ${formatNumber(activeResult.channelProfile.videoCount)} bài)`}
+                title={`Video gần nhất trên kênh (${filteredVideos.length} / ${formatNumber(activeResult.channelProfile.videoCount)} bài)`}
                 actions={
                   <div className="flex flex-wrap items-center gap-2">
+                    <div className="inline-flex items-center rounded-lg border border-line bg-sunken p-0.5 text-2xs">
+                      <button
+                        type="button"
+                        onClick={() => setVideoFilter('ALL')}
+                        className={`px-2 py-1 rounded-md transition-colors ${
+                          videoFilter === 'ALL'
+                            ? 'bg-surface text-ink font-semibold'
+                            : 'text-ink-2 hover:text-ink'
+                        }`}
+                      >
+                        Tất cả ({activeResult.recentVideos.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVideoFilter('AFFILIATE')}
+                        className={`px-2 py-1 rounded-md transition-colors ${
+                          videoFilter === 'AFFILIATE'
+                            ? 'bg-surface text-positive font-semibold'
+                            : 'text-ink-2 hover:text-ink'
+                        }`}
+                      >
+                        Gắn giỏ ({activeResult.recentVideos.filter((v) => v.isAffiliate).length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVideoFilter('ORGANIC')}
+                        className={`px-2 py-1 rounded-md transition-colors ${
+                          videoFilter === 'ORGANIC'
+                            ? 'bg-surface text-ink font-semibold'
+                            : 'text-ink-2 hover:text-ink'
+                        }`}
+                      >
+                        Bài thường ({activeResult.recentVideos.filter((v) => !v.isAffiliate).length})
+                      </button>
+                    </div>
                     {!loading &&
                       loadingMoreHandle !== activeResult.handle &&
                       activeResult.recentVideos.length < requestedVideoLimit && (
@@ -710,7 +1086,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
               >
                 <DataTable
                   columns={videoColumns}
-                  rows={activeResult.recentVideos}
+                  rows={filteredVideos}
                   rowKey={(v) => v.videoId}
                   compact
                 />

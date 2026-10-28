@@ -27,6 +27,7 @@ import {
   getSegmentFromSalaryGrade,
 } from '../lib/types';
 import type { TikTokScrapedKocResult } from '../lib/tiktokKocScraper';
+import { formatNumber } from '../lib/format';
 import {
   extractHandleFromSocialInput,
   formatSocialChannelUrl,
@@ -424,6 +425,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       niche: scrapedCache ? scrapedCache.affiliateMetrics.topCategories.join(', ') : '',
       followers: Number(followers) || 0,
       avgViews: scrapedCache?.engagementMetrics.avgViews || 20000,
+      medianViews: scrapedCache?.engagementMetrics.medianViews,
       rateCardVideo: Number(rateCardVideo) || 0,
       bookingFormat: bookingFormat,
       platforms: activePlatforms,
@@ -624,7 +626,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </span>
               {scrapedCache && (
                 <span className="text-2xs text-positive font-medium">
-                  Đã điền dữ liệu từ @{scrapedCache.handle} ({scrapedCache.recentVideos.length} video, ER {scrapedCache.engagementMetrics.engagementRate}%)
+                  Đã điền dữ liệu từ @{scrapedCache.handle} ({scrapedCache.recentVideos.length} video · Trung vị {formatNumber(scrapedCache.engagementMetrics.medianViews ?? scrapedCache.engagementMetrics.avgViews)} view · ER {scrapedCache.engagementMetrics.engagementRate}%)
                 </span>
               )}
             </div>

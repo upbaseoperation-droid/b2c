@@ -5070,6 +5070,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               }
             : undefined
         }
+        onAddToBrandSheet={(kocsToPush) => {
+          setSheetTargetKocs(kocsToPush);
+        }}
         onNotify={onNotify}
       />
 

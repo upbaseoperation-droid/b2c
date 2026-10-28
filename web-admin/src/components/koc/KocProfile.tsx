@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import type { BookingDealItem, KocItem, TikTokVideoItem, UserProfile } from '../../lib/types';
 import { formatDate, formatNumber, formatVndShort } from '../../lib/format';
+import { computeMedianViews } from '../../lib/tiktokKocScraper';
 import { formatSocialChannelUrl } from '../../lib/kocSocialDiscovery';
 import { syncKocContactToStaffSheets } from '../../lib/staffBrandListingSheet';
 import { useKocChannelReviews } from '../../lib/kocChannelReviewService';
@@ -617,6 +618,7 @@ function TikTokSellerMetricsSection({
   const [liveTotalLikes, setLiveTotalLikes] = useState<number | undefined>(koc.totalLikes);
   const [liveVideoCount, setLiveVideoCount] = useState<number | undefined>(koc.videoCount);
   const [liveAvgLikes, setLiveAvgLikes] = useState<number | undefined>(koc.avgLikes);
+  const [liveMedianViews, setLiveMedianViews] = useState<number | undefined>(koc.medianViews);
   const [liveAvgComments, setLiveAvgComments] = useState<number | undefined>(koc.avgComments);
   const [liveAvgShares, setLiveAvgShares] = useState<number | undefined>(koc.avgShares);
   const [liveEr, setLiveEr] = useState<number | undefined>(koc.engagementRate);
@@ -635,6 +637,7 @@ function TikTokSellerMetricsSection({
         const nextTotalLikes = json.data.channelProfile?.totalLikes;
         const nextVideoCount = json.data.channelProfile?.videoCount;
         const nextAvgLikes = json.data.engagementMetrics?.avgLikes;
+        const nextMedianViews = json.data.engagementMetrics?.medianViews;
         const nextAvgComments = json.data.engagementMetrics?.avgComments;
         const nextAvgShares = json.data.engagementMetrics?.avgShares;
         const nextEr = json.data.engagementMetrics?.engagementRate;
@@ -645,6 +648,7 @@ function TikTokSellerMetricsSection({
         setLiveTotalLikes(nextTotalLikes);
         setLiveVideoCount(nextVideoCount);
         setLiveAvgLikes(nextAvgLikes);
+        setLiveMedianViews(nextMedianViews);
         setLiveAvgComments(nextAvgComments);
         setLiveAvgShares(nextAvgShares);
         setLiveEr(nextEr);
@@ -656,6 +660,7 @@ function TikTokSellerMetricsSection({
             bio: nextBio || koc.bio,
             totalLikes: nextTotalLikes ?? koc.totalLikes,
             videoCount: nextVideoCount ?? koc.videoCount,
+            medianViews: nextMedianViews ?? koc.medianViews,
             avgLikes: nextAvgLikes ?? koc.avgLikes,
             avgComments: nextAvgComments ?? koc.avgComments,
             avgShares: nextAvgShares ?? koc.avgShares,
@@ -678,6 +683,10 @@ function TikTokSellerMetricsSection({
   const totalLikesToShow = liveTotalLikes ?? koc.totalLikes;
   const videoCountToShow = liveVideoCount ?? koc.videoCount;
   const avgLikesToShow = liveAvgLikes ?? koc.avgLikes;
+  const medianViewsToShow =
+    liveMedianViews ??
+    koc.medianViews ??
+    (videosToShow.length > 0 ? computeMedianViews(videosToShow.map((v) => v.views)) : undefined);
   const avgCommentsToShow = liveAvgComments ?? koc.avgComments;
   const avgSharesToShow = liveAvgShares ?? koc.avgShares;
   const erToShow = liveEr ?? koc.engagementRate;
@@ -872,9 +881,11 @@ function TikTokSellerMetricsSection({
               label="Lượt xem trung bình"
               value={formatNumber(koc.avgViews)}
               note={
-                koc.tiktokTotal30dViews
-                  ? `Tổng 30 ngày ${formatFollowers(koc.tiktokTotal30dViews)} view`
-                  : 'Lượt xem trung bình mỗi video'
+                medianViewsToShow !== undefined && medianViewsToShow > 0
+                  ? `View trung vị: ${formatNumber(medianViewsToShow)} view${videosToShow.length > 0 ? ` (${videosToShow.length} bài)` : ''}`
+                  : koc.tiktokTotal30dViews
+                    ? `Tổng 30 ngày ${formatFollowers(koc.tiktokTotal30dViews)} view`
+                    : 'Lượt xem trung bình mỗi video'
               }
             />
             <Stat
@@ -1044,7 +1055,7 @@ function TikTokSellerMetricsSection({
       {/* Danh sách video & nội dung gần nhất trên kênh TikTok */}
       <Panel
         flush
-        title={`Danh sách video & nội dung gần nhất trên kênh (${videosToShow.length}${videoCountToShow ? ` / ${formatNumber(videoCountToShow)}` : ''} bài)`}
+        title={`Danh sách video & nội dung gần nhất trên kênh (${videosToShow.length}${videoCountToShow ? ` / ${formatNumber(videoCountToShow)}` : ''} bài${medianViewsToShow ? ` · View trung vị: ${formatNumber(medianViewsToShow)}` : ''})`}
         actions={
           <div className="flex items-center gap-2">
             {videosToShow.length > 0 && videosToShow.length < 80 && (
@@ -2592,6 +2603,7 @@ function TikTokSellerSyncModal({
             totalLikes: json.data.channelProfile?.totalLikes || updated.totalLikes,
             videoCount: json.data.channelProfile?.videoCount || updated.videoCount,
             avgViews: json.data.engagementMetrics?.avgViews || updated.avgViews,
+            medianViews: json.data.engagementMetrics?.medianViews ?? updated.medianViews,
             engagementRate:
               Number(form.engagementRate) ||
               json.data.engagementMetrics?.engagementRate ||

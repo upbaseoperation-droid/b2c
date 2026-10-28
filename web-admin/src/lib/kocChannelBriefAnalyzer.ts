@@ -733,7 +733,9 @@ export async function analyzeSingleKocChannelForBrief(
       ? Math.round(viewsList.reduce((s, x) => s + x, 0) / viewsList.length)
       : scraped.engagementMetrics.avgViews || existingKoc?.avgViews || 15000;
   const medianViews =
-    viewsList.length > 0 ? computeMedian(viewsList) : avgViews;
+    viewsList.length > 0
+      ? computeMedian(viewsList)
+      : scraped.engagementMetrics.medianViews || avgViews;
   const minViews = viewsList.length > 0 ? Math.min(...viewsList) : 0;
   const maxViews = viewsList.length > 0 ? Math.max(...viewsList) : avgViews;
 

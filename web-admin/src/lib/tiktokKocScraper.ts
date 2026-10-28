@@ -51,6 +51,8 @@ export interface TikTokChannelProfile {
   realName?: string;
   avatarUrl?: string;
   bio: string;
+  bioLink?: string;
+  externalSocialLinks?: string[];
   extractedPhone?: string;
   extractedZalo?: string;
   extractedEmail?: string;
@@ -62,13 +64,50 @@ export interface TikTokChannelProfile {
   isVerified: boolean;
 }
 
+export interface TikTokPromotedProductItem {
+  label: string;
+  count: number;
+  latestViews: number;
+  latestVideoUrl?: string;
+}
+
 export interface TikTokEngagementMetrics {
   sampleVideoCount: number;
   avgViews: number;
+  medianViews: number;
+  latest15MedianViews?: number;
+  latest15AvgViews?: number;
+  affiliateVideoCount?: number;
+  affiliateMedianViews?: number;
+  affiliateAvgViews?: number;
+  organicVideoCount?: number;
+  organicMedianViews?: number;
+  organicAvgViews?: number;
+  viewConsistencyRatioPct?: number;
+  postingFrequencyPerWeek?: number;
+  daysSinceLastPost?: number;
+  lastVideoPublishedAt?: string;
+  promotedProductsSummary?: TikTokPromotedProductItem[];
   avgLikes: number;
   avgComments: number;
   avgShares: number;
   engagementRate: number; // ER% = (avgLikes + avgComments + avgShares) / avgViews * 100
+}
+
+/**
+ * Tính lượt xem trung vị (Median Views) từ danh sách lượt xem của các video
+ * nhằm chống lệch trung bình cộng khi kênh có 1-2 bài xu hướng đột biến.
+ */
+export function computeMedianViews(viewsList: number[]): number {
+  const positive = viewsList.filter((v) => Number.isFinite(v) && v > 0);
+  const source = positive.length > 0 ? positive : viewsList.filter((v) => Number.isFinite(v));
+  if (source.length === 0) return 0;
+  const sorted = [...source].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+  }
+  return Math.round(sorted[mid]);
 }
 
 export interface TikTokAffiliateMetrics {
@@ -211,33 +250,61 @@ export function extractDirectVideoUrlsFromInput(
 }
 
 /**
- * Bóc tách Số điện thoại / Zalo và Email liên hệ thực tế từ tiểu sử (Bio) kênh TikTok.
- * Chỉ trả về khi trong Bio thực sự có SĐT hoặc Email, tuyệt đối không tự sinh số giả.
+ * Bóc tách Số điện thoại / Zalo, Email và Link mạng xã hội / Bio Link thực tế từ tiểu sử (Bio) và nội dung bài đăng.
+ * Chỉ trả về khi thực sự tìm thấy trong văn bản, tuyệt đối không tự sinh số giả.
  */
-export function extractContactsFromBio(bio: string): {
+export function extractContactsFromBio(
+  bio: string,
+  extraText?: string,
+  bioLink?: string
+): {
   phone?: string;
   zalo?: string;
   email?: string;
+  externalLinks?: string[];
 } {
-  if (!bio) return {};
+  const combined = [bio || '', bioLink || '', extraText || ''].filter(Boolean).join('\n');
+  if (!combined.trim()) return {};
 
-  const emailMatch = bio.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  const emailMatch = combined.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
   const email = emailMatch ? emailMatch[0].toLowerCase() : undefined;
 
-  const phoneRegex = /(?:\+84|0)(?:[\s.-]*\d){9}\b/g;
-  const matches = bio.match(phoneRegex);
+  const phoneRegex = /(?:\+84|84|0)(?:[\s.-]*\d){9}\b/g;
+  const matches = combined.match(phoneRegex) || [];
   let phone: string | undefined;
-  if (matches && matches.length > 0) {
-    const normalized = matches[0].replace(/[^\d+]/g, '').replace(/^\+84/, '0');
+  for (const rawMatch of matches) {
+    const normalized = rawMatch
+      .replace(/[^\d+]/g, '')
+      .replace(/^\+?84/, '0');
     if (/^0[35789]\d{8}$/.test(normalized)) {
       phone = normalized;
+      break;
     }
+  }
+
+  const linkSet = new Set<string>();
+  if (bioLink && bioLink.trim()) {
+    linkSet.add(bioLink.trim());
+  }
+  const urlMatches =
+    combined.match(
+      /(?:https?:\/\/)?(?:www\.)?(?:linktr\.ee|beacons\.ai|insta\.bio|bio\.site|m\.me|zalo\.me|facebook\.com|fb\.com|instagram\.com|threads\.net)\/[a-zA-Z0-9._/?=&%-]+/gi
+    ) || [];
+  for (const rawUrl of urlMatches) {
+    const cleaned = rawUrl.replace(/[.,;)]+$/, '').trim();
+    if (cleaned) linkSet.add(cleaned.startsWith('http') ? cleaned : `https://${cleaned}`);
+  }
+
+  const igHandleMatch = (bio || '').match(/\b(?:ig|insta|instagram)\s*[:/-]?\s*@?([a-zA-Z0-9._]{3,30})/i);
+  if (igHandleMatch && igHandleMatch[1] && !/^(com|http|https)$/i.test(igHandleMatch[1])) {
+    linkSet.add(`https://www.instagram.com/${igHandleMatch[1]}`);
   }
 
   return {
     phone,
     zalo: phone,
     email,
+    externalLinks: linkSet.size > 0 ? [...linkSet].slice(0, 4) : undefined,
   };
 }
 
@@ -426,6 +493,7 @@ function buildScrapedResultFromRealData(
   liveProfile: {
     nickname?: string;
     bio?: string;
+    bioLink?: string;
     avatarUrl?: string;
     followers?: number;
     following?: number;
@@ -537,8 +605,9 @@ function buildScrapedResultFromRealData(
       fallbackAuthor?.isVerified
   );
 
-  // Chỉ trích xuất SĐT / Email thực tế trong Bio (hoặc hồ sơ nội bộ UpBase nếu đã ký hợp đồng)
-  const extracted = extractContactsFromBio(bio);
+  // Bóc tách SĐT / Email / Link liên hệ thực tế từ Bio, BioLink và nội dung caption video
+  const combinedCaptions = ownAuthorVideos.map((v) => v.caption || '').join('\n');
+  const extracted = extractContactsFromBio(bio, combinedCaptions, effectiveLiveProfile?.bioLink);
   const bestVideoPhone = ownAuthorVideos.map((v) => v.author.extractedPhone).find(Boolean);
   const bestVideoEmail = ownAuthorVideos.map((v) => v.author.extractedEmail).find(Boolean);
   const resolvedPhone = extracted.phone || bestVideoPhone || existingKoc?.phone || undefined;
@@ -567,6 +636,103 @@ function buildScrapedResultFromRealData(
     sampleCount > 0
       ? Math.round(recentVideos.reduce((s, v) => s + v.views, 0) / sampleCount)
       : existingKoc?.avgViews || 0;
+  const medianViews =
+    sampleCount > 0
+      ? computeMedianViews(recentVideos.map((v) => v.views))
+      : existingKoc?.medianViews || avgViews;
+
+  // Tách 15 bài đăng mới nhất theo thứ tự thời gian (loại trừ sai lệch do các bài cũ được ghim đầu trang)
+  const latest15Slice = recentVideos.slice(0, 15);
+  const latest15MedianViews =
+    latest15Slice.length > 0
+      ? computeMedianViews(latest15Slice.map((v) => v.views))
+      : medianViews;
+  const latest15AvgViews =
+    latest15Slice.length > 0
+      ? Math.round(latest15Slice.reduce((s, v) => s + v.views, 0) / latest15Slice.length)
+      : avgViews;
+
+  // Tách riêng bài có gắn giỏ hàng (Affiliate/Booking) vs bài nội dung thường (Organic)
+  const affiliateVideos = recentVideos.filter((v) => v.isAffiliate);
+  const organicVideos = recentVideos.filter((v) => !v.isAffiliate);
+  const affiliateVideoCount = affiliateVideos.length;
+  const affiliateMedianViews =
+    affiliateVideoCount > 0
+      ? computeMedianViews(affiliateVideos.map((v) => v.views))
+      : 0;
+  const affiliateAvgViews =
+    affiliateVideoCount > 0
+      ? Math.round(affiliateVideos.reduce((s, v) => s + v.views, 0) / affiliateVideoCount)
+      : 0;
+  const organicVideoCount = organicVideos.length;
+  const organicMedianViews =
+    organicVideoCount > 0
+      ? computeMedianViews(organicVideos.map((v) => v.views))
+      : 0;
+  const organicAvgViews =
+    organicVideoCount > 0
+      ? Math.round(organicVideos.reduce((s, v) => s + v.views, 0) / organicVideoCount)
+      : 0;
+
+  // Độ ổn định phong độ: tỷ lệ bài đạt từ 50% view trung vị trở lên
+  const positiveViews = recentVideos.map((v) => v.views).filter((v) => v > 0);
+  const steadyCount =
+    medianViews > 0
+      ? positiveViews.filter((v) => v >= medianViews * 0.5).length
+      : 0;
+  const viewConsistencyRatioPct =
+    positiveViews.length > 0
+      ? Math.round((steadyCount / positiveViews.length) * 100)
+      : undefined;
+
+  // Nhịp độ đăng bài thực tế & số ngày từ bài gần nhất
+  const validTimestamps = recentVideos
+    .map((v) => (v.publishedAt ? new Date(v.publishedAt).getTime() : 0))
+    .filter((t) => Number.isFinite(t) && t > 1000000000000)
+    .sort((a, b) => b - a);
+  const lastVideoPublishedAt = recentVideos[0]?.publishedAt;
+  const daysSinceLastPost =
+    validTimestamps.length > 0
+      ? Math.max(0, Math.floor((Date.now() - validTimestamps[0]) / (1000 * 60 * 60 * 24)))
+      : undefined;
+  let postingFrequencyPerWeek: number | undefined;
+  if (validTimestamps.length >= 2) {
+    const spanDays = Math.max(
+      7,
+      (validTimestamps[0] - validTimestamps[validTimestamps.length - 1]) / (1000 * 60 * 60 * 24)
+    );
+    postingFrequencyPerWeek = Number(
+      Math.min(28, Math.max(0.2, (validTimestamps.length / spanDays) * 7)).toFixed(1)
+    );
+  }
+
+  // Tổng hợp các sản phẩm / nhãn hàng đang gắn giỏ hoặc gắn thẻ trong tập video vừa cào
+  const productAgg = new Map<
+    string,
+    { label: string; count: number; latestViews: number; latestVideoUrl?: string }
+  >();
+  for (const v of recentVideos) {
+    const rawLabel = (v.productName || '').trim();
+    if (rawLabel) {
+      const normKey = rawLabel.toLowerCase().slice(0, 60);
+      const prev = productAgg.get(normKey);
+      if (prev) {
+        prev.count += 1;
+        if (v.views > prev.latestViews) prev.latestViews = v.views;
+      } else {
+        productAgg.set(normKey, {
+          label: rawLabel,
+          count: 1,
+          latestViews: v.views,
+          latestVideoUrl: v.videoUrl,
+        });
+      }
+    }
+  }
+  const promotedProductsSummary = [...productAgg.values()]
+    .sort((a, b) => b.count - a.count || b.latestViews - a.latestViews)
+    .slice(0, 8);
+
   const avgLikes =
     sampleCount > 0
       ? Math.round(recentVideos.reduce((s, v) => s + v.likes, 0) / sampleCount)
@@ -603,6 +769,8 @@ function buildScrapedResultFromRealData(
       realName: existingKoc?.realName || nickname,
       avatarUrl,
       bio,
+      bioLink: effectiveLiveProfile?.bioLink,
+      externalSocialLinks: extracted.externalLinks,
       extractedPhone: resolvedPhone,
       extractedZalo: resolvedPhone,
       extractedEmail: resolvedEmail,
@@ -616,6 +784,20 @@ function buildScrapedResultFromRealData(
     engagementMetrics: {
       sampleVideoCount: sampleCount,
       avgViews,
+      medianViews,
+      latest15MedianViews,
+      latest15AvgViews,
+      affiliateVideoCount,
+      affiliateMedianViews,
+      affiliateAvgViews,
+      organicVideoCount,
+      organicMedianViews,
+      organicAvgViews,
+      viewConsistencyRatioPct,
+      postingFrequencyPerWeek,
+      daysSinceLastPost,
+      lastVideoPublishedAt,
+      promotedProductsSummary,
       avgLikes,
       avgComments,
       avgShares,
@@ -880,6 +1062,7 @@ export function mapScrapedResultToKocItem(
       totalLikes: channelProfile.totalLikes,
       videoCount: channelProfile.videoCount,
       avgViews: engagementMetrics.avgViews,
+      medianViews: engagementMetrics.medianViews,
       avgLikes: engagementMetrics.avgLikes,
       avgComments: engagementMetrics.avgComments,
       avgShares: engagementMetrics.avgShares,
@@ -922,6 +1105,7 @@ export function mapScrapedResultToKocItem(
     bio: channelProfile.bio,
     totalLikes: channelProfile.totalLikes,
     videoCount: channelProfile.videoCount,
+    medianViews: engagementMetrics.medianViews,
     avgLikes: engagementMetrics.avgLikes,
     avgComments: engagementMetrics.avgComments,
     avgShares: engagementMetrics.avgShares,
@@ -994,13 +1178,28 @@ export async function discoverTikTokKocsByHashtag(
     targetKeyword: cleanKeyword || effectiveTag,
   });
 
-  // Gom theo từng KOC duy nhất (ưu tiên video mới đăng nhất của từng KOC)
+  // Gom theo từng KOC duy nhất (ưu tiên video mới đăng nhất của từng KOC, lọc bỏ kênh chính hãng / shop bán hàng)
+  const isLikelyBrandOrShopHandle = (h: string): boolean => {
+    const lower = h.toLowerCase().replace(/^@+/, '');
+    const compact = lower.replace(/[._-]/g, '');
+    if (compact === effectiveTag && effectiveTag.length >= 5) return true;
+    if (
+      /(?:_|-|\.)?(official|vietnamofficial|vnofficial|flagship|mall|chinhhang|storevn|shopvn)$/i.test(
+        lower
+      )
+    ) {
+      return true;
+    }
+    return false;
+  };
+
   const sortedDiscovered = [...rawDiscovered].sort((a, b) =>
     compareTikTokVideoIdDesc(a.videoId, b.videoId)
   );
   const uniqueByHandle = new Map<string, { handle: string; videoId: string; videoUrl: string }>();
   for (const item of sortedDiscovered) {
     if (excludeSet.has(item.handle)) continue;
+    if (isLikelyBrandOrShopHandle(item.handle)) continue;
     if (!uniqueByHandle.has(item.handle)) {
       uniqueByHandle.set(item.handle, item);
     }
@@ -1124,11 +1323,18 @@ export function buildScrapedKocsCsv(results: TikTokScrapedKocResult[]): string {
     'Lượt theo dõi',
     'Tổng lượt thích',
     'Tổng số video',
+    'View trung vị (Median)',
+    'View trung vị 15 bài mới nhất',
+    'View trung vị bài gắn giỏ',
+    'View trung vị bài thường',
     'View TB (video thực tế)',
+    'Độ ổn định phong độ (%)',
+    'Tần suất đăng (bài/tuần)',
     'Tim TB',
     'Bình luận TB',
     'Chia sẻ TB',
     'Tỷ lệ tương tác ER (%)',
+    'Sản phẩm / Nhãn hàng gắn giỏ',
     'Video gần nhất #1 (Link)',
     'Video gần nhất #1 (Caption)',
   ];
@@ -1145,6 +1351,9 @@ export function buildScrapedKocsCsv(results: TikTokScrapedKocResult[]): string {
     const p = r.channelProfile;
     const e = r.engagementMetrics;
     const v1 = r.recentVideos[0];
+    const promotedStr = (e.promotedProductsSummary || [])
+      .map((item) => `${item.label} (${item.count} bài)`)
+      .join('; ');
     return [
       `@${p.handle}`,
       p.nickname,
@@ -1155,11 +1364,18 @@ export function buildScrapedKocsCsv(results: TikTokScrapedKocResult[]): string {
       p.followers,
       p.totalLikes,
       p.videoCount,
+      e.medianViews ?? e.avgViews,
+      e.latest15MedianViews ?? e.medianViews ?? e.avgViews,
+      e.affiliateMedianViews ?? '',
+      e.organicMedianViews ?? '',
       e.avgViews,
+      e.viewConsistencyRatioPct ?? '',
+      e.postingFrequencyPerWeek ?? '',
       e.avgLikes,
       e.avgComments,
       e.avgShares,
       e.engagementRate,
+      promotedStr,
       v1?.videoUrl || '',
       v1?.caption || '',
     ]
@@ -1781,6 +1997,7 @@ export function buildCompetitorKocsCsv(results: TikTokCompetitorKocResult[]): st
     'Link video làm cho đối thủ',
     'Lượt Follow kênh KOC',
     'Tổng lượt thích kênh KOC',
+    'View trung vị kênh KOC',
     'View TB kênh KOC',
     'Tỷ lệ tương tác ER (%)',
     'SĐT / Zalo (tách từ Bio thực)',
@@ -1813,6 +2030,7 @@ export function buildCompetitorKocsCsv(results: TikTokCompetitorKocResult[]): st
       c.latestCollabVideoUrl,
       p.followers,
       p.totalLikes,
+      e.medianViews ?? e.avgViews,
       e.avgViews,
       e.engagementRate,
       p.extractedPhone || '',
