@@ -22,6 +22,9 @@ interface ListingBoardData {
 
 const keyOf = listingBoardKey;
 
+const canonicalListingId = (id?: string) =>
+  (id || '').trim().replace(/^(LI-|LST-|SSR-)/i, '');
+
 function resolveBoardItems(
   boardKey: string,
   rec?: { data: ListingBoardData; revision: number },
@@ -30,17 +33,20 @@ function resolveBoardItems(
   const larkItems = getRealLarkListingsForBoardKey(boardKey, planMeta);
   const dbItems = Array.isArray(rec?.data?.items) ? rec!.data.items : [];
   if (dbItems.length > 0) {
-    if (larkItems.length === 0) return dbItems;
-    const byId = new Map<string, KocListingItem>();
-    for (const item of dbItems) {
-      if (item && item.id) byId.set(item.id, item);
-    }
+    const byCanonical = new Map<string, KocListingItem>();
     for (const larkItem of larkItems) {
-      if (larkItem && larkItem.id && !byId.has(larkItem.id)) {
-        byId.set(larkItem.id, larkItem);
+      if (larkItem && larkItem.id) {
+        byCanonical.set(canonicalListingId(larkItem.id), larkItem);
       }
     }
-    return Array.from(byId.values());
+    for (const item of dbItems) {
+      if (!item || !item.id) continue;
+      const cId = canonicalListingId(item.id);
+      if (!byCanonical.has(cId)) {
+        byCanonical.set(cId, item);
+      }
+    }
+    return Array.from(byCanonical.values());
   }
   return larkItems;
 }

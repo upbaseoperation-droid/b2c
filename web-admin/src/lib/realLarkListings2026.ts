@@ -80859,7 +80859,7 @@ export const REAL_LARK_LISTINGS_BY_BOARD_KEY: Record<string, KocListingItem[]> =
   ]
 };
 
-export const REAL_LARK_LISTINGS_SYNC_VERSION = '2026-10-29-lark31-v2';
+export const REAL_LARK_LISTINGS_SYNC_VERSION = '2026-10-29-lark31-v3';
 
 const normStoreKey = (v?: string) =>
   (v || '').trim().toLowerCase().replace(/[\s\-_]+/g, '');

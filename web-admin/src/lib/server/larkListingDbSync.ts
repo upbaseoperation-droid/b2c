@@ -38,6 +38,9 @@ interface ListingSyncMeta {
 let hasVerifiedInMemory = false;
 let inflightSyncPromise: Promise<ListingSyncMeta | null> | null = null;
 
+const canonicalListingId = (id?: string) =>
+  (id || '').trim().replace(/^(LI-|LST-|SSR-)/i, '');
+
 function mergeBoardItems(
   existingItems: KocListingItem[] | undefined,
   larkItems: KocListingItem[]
@@ -45,17 +48,26 @@ function mergeBoardItems(
   if (!Array.isArray(existingItems) || existingItems.length === 0) {
     return larkItems;
   }
-  const byId = new Map<string, KocListingItem>();
-  for (const item of existingItems) {
-    if (item && item.id) byId.set(item.id, item);
-  }
+  const larkByCanonical = new Map<string, KocListingItem>();
   for (const larkItem of larkItems) {
     if (!larkItem || !larkItem.id) continue;
-    if (!byId.has(larkItem.id)) {
-      byId.set(larkItem.id, larkItem);
+    larkByCanonical.set(canonicalListingId(larkItem.id), larkItem);
+  }
+
+  const byCanonical = new Map<string, KocListingItem>();
+  // Ưu tiên nạp chuẩn bản ghi Lark Base 3.1 trước
+  for (const [cId, larkItem] of larkByCanonical.entries()) {
+    byCanonical.set(cId, larkItem);
+  }
+  // Giữ lại các bản ghi do người dùng thêm thủ công trên web app (không trùng record_id Lark)
+  for (const item of existingItems) {
+    if (!item || !item.id) continue;
+    const cId = canonicalListingId(item.id);
+    if (!byCanonical.has(cId)) {
+      byCanonical.set(cId, item);
     }
   }
-  return Array.from(byId.values());
+  return Array.from(byCanonical.values());
 }
 
 function mergeStaffSheetCollections(
@@ -217,8 +229,17 @@ export async function ensureLarkListingsSyncedToDb(options?: {
             const larkItems = targetBoards.get(bKey) || [];
             totalListingItems += larkItems.length;
             const cur = existingBoardRecords.get(bKey);
-            const curCount = cur?.data?.items?.length || 0;
-            if (!options?.force && cur && cur.revision > 0 && curCount >= larkItems.length) {
+            const curItems = cur?.data?.items || [];
+            const hasLegacyLstPrefix = curItems.some(
+              (it) => it && typeof it.id === 'string' && it.id.startsWith('LST-')
+            );
+            if (
+              !options?.force &&
+              cur &&
+              cur.revision > 0 &&
+              curItems.length === larkItems.length &&
+              !hasLegacyLstPrefix
+            ) {
               return;
             }
             await upsertRecord<{ items: KocListingItem[] }>(
