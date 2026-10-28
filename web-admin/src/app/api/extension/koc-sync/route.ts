@@ -443,7 +443,7 @@ interface ExtensionSyncPayload {
     | 'SCORE_PRODUCT_SUPER_VIP'
     | 'ANALYZE_CHANNEL_AND_SCRIPT'
     | 'SUBMIT_EXTENSION_FEEDBACK';
-  platform?: 'tiktok' | 'instagram' | 'tiktok_ads' | 'douyin';
+  platform?: 'tiktok' | 'instagram' | 'tiktok_ads' | 'douyin' | 'threads' | 'facebook';
   handle?: string;
   productQuery?: string;
   productInput?: string;
@@ -920,37 +920,154 @@ export async function POST(req: NextRequest) {
             ? 'Video trả phí hoặc Gửi mẫu kèm hoa hồng Affiliate cao'
             : 'Suất gửi mẫu FOC kèm hoa hồng Affiliate';
 
-      const cleanTranscriptSnippet = rawTranscript
-        ? rawTranscript.replace(/\[\d{2}:\d{2}\s*-\s*\d{2}:\d{2}\]/g, '').trim().slice(0, 220)
-        : '';
+      const rawTranscriptLines = rawTranscript
+        ? rawTranscript
+            .split(/\r?\n/)
+            .map((l) => l.trim())
+            .filter(Boolean)
+        : [];
+
+      const parsedCues = rawTranscriptLines.map((line, idx) => {
+        const m = line.match(/^\[(\d{1,2}):(\d{2})(?:\s*-\s*(\d{1,2}):(\d{2}))?\]\s*(.*)$/);
+        if (m) {
+          const startSec = Number(m[1]) * 60 + Number(m[2]);
+          const endSec = m[3] !== undefined ? Number(m[3]) * 60 + Number(m[4]) : startSec + 3;
+          return {
+            timeRange: `${m[1].padStart(2, '0')}:${m[2]} - ${(m[3] || m[1]).padStart(2, '0')}:${m[4] || m[2]}`,
+            startSec,
+            endSec,
+            text: m[5].trim(),
+          };
+        }
+        return {
+          timeRange: `${String(Math.floor((idx * 3) / 60)).padStart(2, '0')}:${String((idx * 3) % 60).padStart(2, '0')}`,
+          startSec: idx * 3,
+          endSec: idx * 3 + 3,
+          text: line.replace(/^\[[^\]]+\]\s*/, '').trim(),
+        };
+      });
+
+      const totalTranscriptWords = parsedCues
+        .map((c) => c.text)
+        .join(' ')
+        .split(/\s+/)
+        .filter(Boolean).length;
+
+      const totalCues = parsedCues.length;
+      const hookEndIdx = Math.max(1, Math.min(3, Math.ceil(totalCues * 0.15)));
+      const painEndIdx = Math.max(hookEndIdx + 1, Math.ceil(totalCues * 0.4));
+      const uspEndIdx = Math.max(painEndIdx + 1, Math.ceil(totalCues * 0.8));
+
+      const joinCueGroup = (cues: typeof parsedCues) =>
+        cues.map((c) => `[${c.timeRange}] ${c.text}`).join('\n');
+      const joinPlainText = (cues: typeof parsedCues) =>
+        cues.map((c) => c.text).join(' ');
+
+      const originalBreakdown = {
+        totalLines: totalCues,
+        totalWords: totalTranscriptWords,
+        hookPart:
+          totalCues > 0
+            ? joinCueGroup(parsedCues.slice(0, hookEndIdx))
+            : 'Chưa có phụ đề bóc tách phần mở đầu.',
+        painPointPart:
+          totalCues > hookEndIdx
+            ? joinCueGroup(parsedCues.slice(hookEndIdx, painEndIdx))
+            : totalCues > 0
+              ? joinCueGroup(parsedCues)
+              : 'Chưa có phụ đề phân đoạn dẫn dắt bối cảnh.',
+        uspExperiencePart:
+          totalCues > painEndIdx
+            ? joinCueGroup(parsedCues.slice(painEndIdx, uspEndIdx))
+            : totalCues > 0
+              ? joinCueGroup(parsedCues)
+              : 'Chưa có phụ đề phân đoạn trải nghiệm sản phẩm.',
+        ctaPart:
+          totalCues > uspEndIdx
+            ? joinCueGroup(parsedCues.slice(uspEndIdx))
+            : totalCues > 0
+              ? joinCueGroup(parsedCues.slice(-Math.min(2, totalCues)))
+              : 'Chưa có phụ đề phân đoạn chốt đơn.',
+      };
+
+      const originalHookPlain = joinPlainText(parsedCues.slice(0, hookEndIdx));
+      const originalBodyPlain = joinPlainText(parsedCues.slice(hookEndIdx, uspEndIdx));
+      const originalCtaPlain = joinPlainText(parsedCues.slice(uspEndIdx));
 
       const scriptOutline = {
-        hook3s: `[00:00 - 00:03] Cảnh cận kết cấu thực tế của ${productTitle} trên da/tay + Câu mở đầu: "Đừng vội mua ${productTitle} nếu bạn chưa biết điểm này!"`,
-        bodyUsp: `[00:03 - 00:18] Kiểm chứng trực tiếp công dụng chính trên nền ánh sáng tự nhiên. ${
-          cleanTranscriptSnippet
-            ? `Bám sát ý chính từ bài gốc: "${cleanTranscriptSnippet}..."`
-            : 'So sánh trước & sau khi dùng, nhấn mạnh điểm khác biệt về thành phần và độ thẩm thấu.'
+        hook3s: `[00:00 - 00:05] Mở đầu giữ chân (Hook): Quay cận cảnh kết cấu thực tế của ${productTitle} trên da/tay dưới ánh sáng tự nhiên. Lời thoại gợi ý: "${
+          originalHookPlain
+            ? `${originalHookPlain} — Đừng vội chốt đơn ${productTitle} nếu bạn chưa xem hết kiểm chứng thực tế này!`
+            : `Đừng vội mua ${productTitle} nếu bạn chưa biết 3 điểm khác biệt thực tế này trên da!`
+        }"`,
+        problemLead: `[00:05 - 00:18] Dẫn dắt bối cảnh & Nỗi đau khách hàng: Nêu trực diện vấn đề người dùng hay gặp phải khi chọn sản phẩm cùng phân khúc và lý do quyết định thử ${productTitle}.${
+          parsedCues.slice(hookEndIdx, painEndIdx).length > 0
+            ? ` Bám sát mạch thoại gốc của KOC: "${joinPlainText(parsedCues.slice(hookEndIdx, painEndIdx))}"`
+            : ''
         }`,
-        ctaCart: `[00:18 - 00:25] Chỉ tay xuống góc trái màn hình: "Đợt này gian hàng chính hãng đang trợ giá kèm quà tặng, bấm vào giỏ hàng màu vàng góc trái để áp voucher nhé!"`,
+        bodyUsp: `[00:18 - 00:45] Trải nghiệm thực tế & Chứng minh công dụng USP: Thoa/sử dụng trực tiếp ${productTitle}, zoom cận độ thẩm thấu, độ hoàn thiện và so sánh trước/sau. ${
+          originalBodyPlain
+            ? `Nội dung lời thoại bóc tách đầy đủ từ video: "${originalBodyPlain}"`
+            : 'So sánh trước & sau khi dùng, nhấn mạnh điểm khác biệt về bảng thành phần, cảm giác trên da và độ bền.'
+        }`,
+        socialProof: `[00:45 - 00:55] Tổng kết ưu/nhược điểm & Đối tượng phù hợp: Đánh giá khách quan điểm cộng lớn nhất của ${productTitle} và lưu ý cách dùng để đạt hiệu quả tối đa.`,
+        ctaCart: `[00:55 - Kết thúc] Kêu gọi hành động & Chốt giỏ hàng (CTA): Chỉ tay về biểu tượng giỏ hàng góc trái màn hình. Lời thoại: "${
+          originalCtaPlain
+            ? `${originalCtaPlain} — Đợt này gian hàng chính hãng đang có deal trợ giá kèm quà tặng, mọi người bấm vào giỏ hàng góc trái màn hình để đặt nhé!`
+            : `Đợt này gian hàng chính hãng đang trợ giá kèm quà tặng độc quyền, bấm ngay vào giỏ hàng màu vàng góc trái màn hình để áp voucher nhé!`
+        }"`,
       };
 
       const scriptScenes = [
         {
-          scene: 'Cảnh 1 (0-3s): Mở đầu giữ chân',
-          visual: `Quay cận cảnh kết cấu ${productTitle} trên da dưới ánh sáng tự nhiên`,
+          scene: 'Cảnh 1 (00:00 - 00:05): Mở đầu giữ chân (Hook 5s đầu)',
+          visual: `Quay cận cảnh kết cấu ${productTitle} hoặc biểu cảm bất ngờ khi test sản phẩm dưới ánh sáng tự nhiên`,
+          onScreenText: `Sự thật về ${productTitle} sau khi trải nghiệm thực tế`,
           voiceover: scriptOutline.hook3s,
         },
         {
-          scene: 'Cảnh 2 (3-18s): Chứng minh công dụng USP',
-          visual: 'So sánh trước/sau khi thoa và kiểm tra độ kiềm dầu/thẩm thấu',
+          scene: 'Cảnh 2 (00:05 - 00:18): Bối cảnh & Nỗi đau khách hàng',
+          visual: 'Quay góc trung cảnh KOC chia sẻ tình trạng thực tế trước khi dùng sản phẩm',
+          onScreenText: 'Vấn đề thường gặp & Lý do chọn sản phẩm này',
+          voiceover: scriptOutline.problemLead,
+        },
+        {
+          scene: 'Cảnh 3 (00:18 - 00:45): Trải nghiệm thực tế & Chứng minh USP',
+          visual: 'Cận cảnh thao tác sử dụng trên da/mặt, chia đôi màn hình Before/After rõ nét',
+          onScreenText: 'Test trực tiếp độ thẩm thấu & Công dụng chính',
           voiceover: scriptOutline.bodyUsp,
         },
         {
-          scene: 'Cảnh 3 (18-25s): Kêu gọi bấm giỏ hàng',
-          visual: 'Chỉ tay về góc trái màn hình nơi gắn giỏ hàng TikTok Shop',
+          scene: 'Cảnh 4 (00:45 - 00:55): Đánh giá khách quan & Đối tượng phù hợp',
+          visual: 'KOC cầm sản phẩm ngang mặt, tổng kết 3 điểm ăn tiền nhất',
+          onScreenText: 'Ai nên dùng & Lưu ý quan trọng khi sử dụng',
+          voiceover: scriptOutline.socialProof,
+        },
+        {
+          scene: 'Cảnh 5 (00:55 - Kết thúc): Kêu gọi bấm Giỏ hàng TikTok Shop',
+          visual: 'Chỉ tay xuống góc trái màn hình vị trí neo Giỏ hàng màu vàng kèm hiệu ứng mũi tên',
+          onScreenText: 'Bấm Giỏ hàng góc trái nhận ưu đãi chính hãng',
           voiceover: scriptOutline.ctaCart,
         },
       ];
+
+      const fullScriptText = [
+        `=== KỊCH BẢN CHI TIẾT & BÓC TÁCH VIDEO (@${targetHandle}) ===`,
+        `Sản phẩm trọng tâm: ${productTitle}`,
+        `Nhận xét kênh: ${healthVerdict}`,
+        `Hình thức khuyến nghị: ${suggestedFormat}`,
+        '',
+        '--- PHẦN 1: BÓC TÁCH KỊCH BẢN GỐC TỪ LỜI THOẠI VIDEO ---',
+        `1. Mở đầu (Hook): \n${originalBreakdown.hookPart}`,
+        `2. Dẫn dắt & Bối cảnh: \n${originalBreakdown.painPointPart}`,
+        `3. Trải nghiệm & Chứng minh USP: \n${originalBreakdown.uspExperiencePart}`,
+        `4. Kết bài & Kêu gọi hành động: \n${originalBreakdown.ctaPart}`,
+        '',
+        '--- PHẦN 2: KỊCH BẢN SẢN XUẤT ĐỀ XUẤT (5 PHÂN CẢNH CHI TIẾT) ---',
+        ...scriptScenes.map(
+          (s) => `${s.scene}\n- Cảnh quay: ${s.visual}\n- Chữ trên màn hình: ${s.onScreenText}\n- Lời thoại: ${s.voiceover}`
+        ),
+      ].join('\n');
 
       return NextResponse.json(
         {
@@ -967,8 +1084,10 @@ export async function POST(req: NextRequest) {
               `View trung bình đạt ${new Intl.NumberFormat('vi-VN').format(avgViews)} lượt xem/bài (ER: ${er}%).`,
               `Tỷ lệ chuyển đổi nội dung thương mại phù hợp với mặt hàng ${productTitle}.`,
             ],
+            originalBreakdown,
             scriptOutline,
             scriptScenes,
+            fullScriptText,
           },
         },
         { headers: CORS_HEADERS }
@@ -1207,9 +1326,15 @@ export async function POST(req: NextRequest) {
           }),
           channelId: handle,
           channelLink:
-            body.platform === 'instagram'
-              ? `https://www.instagram.com/${handle}/`
-              : `https://www.tiktok.com/@${handle}`,
+            body.platform === 'threads'
+              ? `https://www.threads.net/@${handle}`
+              : body.platform === 'facebook'
+                ? `https://www.facebook.com/${handle}`
+                : body.platform === 'instagram'
+                  ? `https://www.instagram.com/${handle}/`
+                  : body.platform === 'douyin'
+                    ? `https://www.douyin.com/user/${handle}`
+                    : `https://www.tiktok.com/@${handle}`,
           stageName: body.displayName || prev?.stageName || handle,
           avatarUrl: body.avatarUrl || prev?.avatarUrl,
           bio: body.bio ?? prev?.bio,

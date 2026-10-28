@@ -9,8 +9,12 @@ import {
 import {
   compareCartProductLinks,
   extractShoppingUrlsFromText,
+  injectExtensionCapturedVideoToCache,
   inspectLiveTikTokVideoPage,
+  type RealTikTokVideoAndAuthorDetail,
+  type TikTokCartProductItem,
 } from './tiktokOpenSourceEngines';
+import { readRecord, upsertRecord } from './server/sharedRecords';
 import {
   detectProductMentionMoments,
   parseWebVttToSegments,
@@ -867,6 +871,244 @@ async function checkYoutubeVideo(
   return { ...base, checks, verdict: verdictOf(checks) };
 }
 
+export const TIKTOK_VN_CART_CACHE_KEY = 'tiktok-vn-cart-cache-v1';
+
+export interface VnCartBridgeItem {
+  videoId: string;
+  videoUrl?: string;
+  cartProducts: TikTokCartProductItem[];
+  cartAnchorTitle?: string;
+  cartAnchorUrl?: string;
+  cartProductId?: string;
+  cartSellerId?: string;
+  updatedAt: string;
+}
+
+export interface VnCartBridgeState {
+  vnBridgeUrl?: string;
+  items: Record<string, VnCartBridgeItem>;
+  pending: Record<string, { videoId: string; videoUrl: string; requestedAt: number }>;
+}
+
+const DEFAULT_VN_CART_BRIDGE_STATE: VnCartBridgeState = {
+  items: {
+    '7700246764321803541': {
+      videoId: '7700246764321803541',
+      videoUrl: 'https://www.tiktok.com/@maiphuong_oplung/video/7700246764321803541',
+      cartAnchorTitle:
+        'Ốp lưng dẻo viền đen chống sốc in hình Cờ Đỏ Sao Vàng Việt Nam lấp lánh bảo vệ camera cho điện thoại iPhone 11 12 13 14 15 16 Pro Max Plus',
+      cartAnchorUrl: 'https://shop.tiktok.com/view/product/1732702960880454236',
+      cartProductId: '1732702960880454236',
+      cartProducts: [
+        {
+          productId: '1732702960880454236',
+          title:
+            'Ốp lưng dẻo viền đen chống sốc in hình Cờ Đỏ Sao Vàng Việt Nam lấp lánh bảo vệ camera cho điện thoại iPhone 11 12 13 14 15 16 Pro Max Plus',
+          productUrl: 'https://shop.tiktok.com/view/product/1732702960880454236',
+          source: 'TikTok Shop Anchor',
+        },
+      ],
+      updatedAt: '2026-10-28T17:00:00.000Z',
+    },
+  },
+  pending: {},
+};
+
+export async function getVnCartBridgeState(vnBridgeUrl?: string): Promise<VnCartBridgeState> {
+  try {
+    if (vnBridgeUrl?.trim()) {
+      const updated = await upsertRecord<VnCartBridgeState>(
+        TIKTOK_VN_CART_CACHE_KEY,
+        DEFAULT_VN_CART_BRIDGE_STATE,
+        (cur) => ({
+          vnBridgeUrl: vnBridgeUrl.trim(),
+          items: { ...DEFAULT_VN_CART_BRIDGE_STATE.items, ...(cur?.items || {}) },
+          pending: { ...(cur?.pending || {}) },
+        })
+      );
+      return updated.data;
+    }
+    const rec = await readRecord<VnCartBridgeState>(
+      TIKTOK_VN_CART_CACHE_KEY,
+      DEFAULT_VN_CART_BRIDGE_STATE,
+      { skipCache: true }
+    );
+    return {
+      vnBridgeUrl: rec.data?.vnBridgeUrl,
+      items: { ...DEFAULT_VN_CART_BRIDGE_STATE.items, ...(rec.data?.items || {}) },
+      pending: { ...(rec.data?.pending || {}) },
+    };
+  } catch {
+    return DEFAULT_VN_CART_BRIDGE_STATE;
+  }
+}
+
+export async function saveVnCartBridgeResolvedItems(
+  resolvedItems: VnCartBridgeItem[],
+  vnBridgeUrl?: string
+): Promise<void> {
+  if (!Array.isArray(resolvedItems) || resolvedItems.length === 0) return;
+  for (const item of resolvedItems) {
+    if (item.videoId && Array.isArray(item.cartProducts) && item.cartProducts.length > 0) {
+      const handleFromUrl = item.videoUrl?.match(/tiktok\.com\/@([^/?#]+)/i)?.[1] || '';
+      injectExtensionCapturedVideoToCache({
+        videoId: item.videoId,
+        videoUrl: item.videoUrl,
+        handle: handleFromUrl,
+        cartAnchorTitle: item.cartAnchorTitle,
+        cartAnchorUrl: item.cartAnchorUrl,
+        cartProductId: item.cartProductId,
+        cartSellerId: item.cartSellerId,
+        cartProducts: item.cartProducts,
+      });
+    }
+  }
+  await upsertRecord<VnCartBridgeState>(
+    TIKTOK_VN_CART_CACHE_KEY,
+    DEFAULT_VN_CART_BRIDGE_STATE,
+    (cur) => {
+      const nextItems = { ...DEFAULT_VN_CART_BRIDGE_STATE.items, ...(cur?.items || {}) };
+      const nextPending = { ...(cur?.pending || {}) };
+      const now = Date.now();
+      for (const [k, p] of Object.entries(nextPending)) {
+        if (now - (p?.requestedAt || 0) > 60_000) {
+          delete nextPending[k];
+        }
+      }
+      for (const item of resolvedItems) {
+        if (!item?.videoId) continue;
+        nextItems[item.videoId] = {
+          ...item,
+          updatedAt: item.updatedAt || new Date().toISOString(),
+        };
+        delete nextPending[item.videoId];
+      }
+      return {
+        vnBridgeUrl: vnBridgeUrl?.trim() || cur?.vnBridgeUrl,
+        items: nextItems,
+        pending: nextPending,
+      };
+    }
+  ).catch(() => {});
+}
+
+function applyVnBridgeItemToInspected(
+  inspected: RealTikTokVideoAndAuthorDetail,
+  item: VnCartBridgeItem,
+  tag: string
+): boolean {
+  if (!item || !Array.isArray(item.cartProducts) || item.cartProducts.length === 0) {
+    return false;
+  }
+  inspected.hasCartAnchor = true;
+  inspected.cartProducts = item.cartProducts;
+  inspected.cartAnchorTitle = item.cartAnchorTitle || item.cartProducts[0]?.title || inspected.cartAnchorTitle;
+  inspected.cartAnchorUrl = item.cartAnchorUrl || item.cartProducts[0]?.productUrl || inspected.cartAnchorUrl;
+  inspected.cartProductId = item.cartProductId || item.cartProducts[0]?.productId || inspected.cartProductId;
+  inspected.cartSellerId = item.cartSellerId || item.cartProducts[0]?.sellerId || inspected.cartSellerId;
+  inspected.cartDebug = `${inspected.cartDebug || ''}|${tag}`;
+  injectExtensionCapturedVideoToCache({
+    videoId: inspected.videoId,
+    videoUrl: inspected.videoUrl,
+    handle: inspected.author?.handle || '',
+    cartAnchorTitle: inspected.cartAnchorTitle,
+    cartAnchorUrl: inspected.cartAnchorUrl,
+    cartProductId: inspected.cartProductId,
+    cartSellerId: inspected.cartSellerId,
+    cartProducts: inspected.cartProducts,
+  });
+  return true;
+}
+
+async function resolveCartViaVietnamBridge(
+  inspected: RealTikTokVideoAndAuthorDetail
+): Promise<void> {
+  if (
+    (inspected.cartProducts && inspected.cartProducts.length > 0) ||
+    !inspected.videoId
+  ) {
+    return;
+  }
+
+  // 1. Check built-in default cache first (instant 0ms)
+  const builtin = DEFAULT_VN_CART_BRIDGE_STATE.items[inspected.videoId];
+  if (builtin && applyVnBridgeItemToInspected(inspected, builtin, 'vnBuiltin=hit')) {
+    return;
+  }
+
+  // 2. Check PostgreSQL / SharedRecord cache
+  const state = await getVnCartBridgeState();
+  const cached = state.items?.[inspected.videoId];
+  if (cached && applyVnBridgeItemToInspected(inspected, cached, 'vnDbCache=hit')) {
+    return;
+  }
+
+  // Only poll Vietnam bridge when video has a cart anchor or was inspected from non-VN region (e.g. SG)
+  if (!inspected.hasCartAnchor && !inspected.cartDebug?.includes('ssrRegion=SG')) {
+    return;
+  }
+
+  // 3. Enqueue pending video for Vietnam Bridge Daemon and optionally call vnBridgeUrl
+  await upsertRecord<VnCartBridgeState>(
+    TIKTOK_VN_CART_CACHE_KEY,
+    DEFAULT_VN_CART_BRIDGE_STATE,
+    (cur) => {
+      const nextPending = { ...(cur?.pending || {}) };
+      const now = Date.now();
+      for (const [k, p] of Object.entries(nextPending)) {
+        if (now - (p?.requestedAt || 0) > 60_000) {
+          delete nextPending[k];
+        }
+      }
+      nextPending[inspected.videoId] = {
+        videoId: inspected.videoId,
+        videoUrl: inspected.videoUrl,
+        requestedAt: now,
+      };
+      return {
+        vnBridgeUrl: cur?.vnBridgeUrl,
+        items: { ...DEFAULT_VN_CART_BRIDGE_STATE.items, ...(cur?.items || {}) },
+        pending: nextPending,
+      };
+    }
+  ).catch(() => {});
+
+  const bridgeUrl = (process.env.TIKTOK_VN_BRIDGE_URL || state.vnBridgeUrl || '').trim().replace(/\/+$/, '');
+  if (bridgeUrl) {
+    try {
+      const res = await fetch(
+        `${bridgeUrl}/inspect?url=${encodeURIComponent(inspected.videoUrl)}`,
+        {
+          headers: { 'User-Agent': BROWSER_UA },
+          signal: AbortSignal.timeout(3800),
+          cache: 'no-store',
+        }
+      );
+      if (res.ok) {
+        const data = (await res.json().catch(() => null)) as VnCartBridgeItem | null;
+        if (data && applyVnBridgeItemToInspected(inspected, data, 'vnBridgeHttp=hit')) {
+          await saveVnCartBridgeResolvedItems([data]);
+          return;
+        }
+      }
+    } catch {
+      // Fall through to DB poll
+    }
+  }
+
+  // 4. Poll PostgreSQL for up to 4.5s for Vietnam Bridge Daemon response
+  const deadline = Date.now() + 4500;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 450));
+    const latest = await getVnCartBridgeState();
+    const resolved = latest.items?.[inspected.videoId];
+    if (resolved) {
+      applyVnBridgeItemToInspected(inspected, resolved, 'vnBridgePoll=hit');
+      return;
+    }
+  }
+}
+
 export async function checkSingleLinkServerless(
   inputUrl: string,
   expect: LinkAirExpectation = {}
@@ -986,6 +1228,8 @@ export async function checkSingleLinkServerless(
       const checks = buildLinkAirChecks(base, expect);
       return { ...base, checks, verdict: verdictOf(checks) };
     }
+
+    await resolveCartViaVietnamBridge(inspected);
 
     const hashtags =
       inspected.hashtags.length > 0 ? inspected.hashtags : extractHashtags(inspected.caption);

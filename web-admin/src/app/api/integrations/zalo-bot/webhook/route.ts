@@ -6,6 +6,11 @@ import {
   recordDebugEvent,
   captureTikTokProductFrameBuffer,
 } from '@/lib/server/zaloBot';
+import {
+  getVnCartBridgeState,
+  saveVnCartBridgeResolvedItems,
+  type VnCartBridgeItem,
+} from '@/lib/linkAirCheckServer';
 
 export const dynamic = 'force-dynamic';
 export const preferredRegion = ['sin1', 'hkg1'];
@@ -15,6 +20,23 @@ export const preferredRegion = ['sin1', 'hkg1'];
  * Health check, Debug inspector & Public Frame Image endpoint (?frame=1) cho Zalo Bot sendPhoto
  */
 export async function GET(req: NextRequest) {
+  if (req.nextUrl.searchParams.get('vnBridgePoll') === '1') {
+    const configuredSecret = getZaloBotSecretToken();
+    const incomingSecret =
+      req.headers.get('x-bot-api-secret-token') ||
+      req.headers.get('X-Bot-Api-Secret-Token');
+    if (incomingSecret !== configuredSecret) {
+      return NextResponse.json({ ok: false, error: 'UNAUTHORIZED' }, { status: 403 });
+    }
+    const vnBridgeUrl = req.nextUrl.searchParams.get('vnBridgeUrl') || undefined;
+    const state = await getVnCartBridgeState(vnBridgeUrl);
+    return NextResponse.json({
+      ok: true,
+      pending: Object.values(state.pending || {}),
+      cachedCount: Object.keys(state.items || {}).length,
+    });
+  }
+
   const isFrameRequest = req.nextUrl.searchParams.get('frame') === '1';
   if (isFrameRequest) {
     const sp = req.nextUrl.searchParams;
@@ -106,6 +128,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => null);
     if (!body) {
       return NextResponse.json({ ok: false, error: 'INVALID_BODY' }, { status: 400 });
+    }
+
+    if (body.vnBridgeResolve === true) {
+      const items = (Array.isArray(body.items) ? body.items : []) as VnCartBridgeItem[];
+      await saveVnCartBridgeResolvedItems(items, body.vnBridgeUrl);
+      return NextResponse.json({ ok: true, saved: items.length });
     }
 
     // 3. Xử lý trực tiếp sự kiện để Vercel Serverless không đóng băng tiến trình trước khi quét xong giỏ hàng TikTok
