@@ -1857,6 +1857,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'approved-booking-list',
     'koc-master',
     'ctv-master',
+    'self-channel-hub',
     'input-plan',
     'stores',
     'contracts',
@@ -1922,6 +1923,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'approved-booking-list',
     'koc-master',
     'ctv-master',
+    'self-channel-hub',
     'stores',
     'content',
     'contracts',
@@ -2049,6 +2051,8 @@ const CORE_SYNCED_ROLE_TABS: TabKey[] = [
   'contracts',
   'cloudflare-admin',
   'work-toolkit',
+  'api-settings',
+  'zalo-bot',
 ];
 
 export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {

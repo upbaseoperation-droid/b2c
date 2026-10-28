@@ -98,6 +98,7 @@ const NAV = {
   masterData: { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
   partnerAccess: { key: 'partner-access', label: 'Phân quyền & Nhân sự', icon: KeyRound },
   cloudflareAdmin: { key: 'cloudflare-admin', label: 'Quản lý Cloudflare R2', icon: Cloud },
+  apiSettings: { key: 'api-settings', label: 'Cấu hình API & Công cụ', icon: Sliders },
   workToolkit: { key: 'work-toolkit', label: 'Bộ công cụ tiện ích', icon: Wrench },
 } satisfies Record<string, NavItem>;
 
@@ -176,7 +177,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     },
     {
       title: 'Hệ thống',
-      items: [NAV.masterData, NAV.partnerAccess, NAV.cloudflareAdmin],
+      items: [NAV.masterData, NAV.partnerAccess, NAV.cloudflareAdmin, NAV.apiSettings],
     },
   ];
 }
