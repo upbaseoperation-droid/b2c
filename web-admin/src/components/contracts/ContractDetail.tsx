@@ -6,10 +6,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Camera, CheckCircle2, Download, FileCheck2, FilePlus2, Pencil, RefreshCw, RotateCcw, Scale, ScanSearch } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Camera, CheckCircle2, ChevronLeft, ChevronRight, Download, FileCheck2, FilePlus2, Pencil, RefreshCw, RotateCcw, Scale, ScanSearch } from 'lucide-react';
 import type { BookingDealItem, KocItem } from '../../lib/types';
 import type { ContractField, ContractRecord, ContractRole, DocBlock } from '../../lib/contracts/types';
-import { ActionMenu, Button, ConfirmDialog, EmptyState, Field, Input, Modal, Person, SectionHeader, Select, Status, Textarea } from '../ui';
+import { ActionMenu, Button, ConfirmDialog, EmptyState, Field, Input, Modal, Person, SectionHeader, Segmented, Select, Status, StepMark, Textarea } from '../ui';
 import type { ActionMenuItem, StatusTone } from '../ui';
 import { formatDate } from '../../lib/format';
 import { contractApi, type ContractBootstrap } from './api';
@@ -41,6 +41,10 @@ export function ContractDetail({
   onOpen,
   onCreateAcceptance,
   onCreateSow,
+  onBackToBooking,
+  onPrev,
+  onNext,
+  positionLabel,
 }: {
   record: ContractRecord;
   data: ContractBootstrap;
@@ -53,6 +57,10 @@ export function ContractDetail({
   onOpen: (id: string) => void;
   onCreateAcceptance: () => void;
   onCreateSow?: () => void;
+  onBackToBooking?: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
+  positionLabel?: string;
 }) {
   const me = data.actor;
   const status = contractStatus(record);
@@ -160,18 +168,263 @@ export function ContractDetail({
           : []
       : record.versions.find(v => v.version === selectedVersion)?.acceptanceScreenshots || [];
 
-  return (
-    <div className="space-y-6">
-      <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={onBack} className="-ml-2.5">Hợp đồng</Button>
+  const isSowDoc = record.templateId.endsWith('-SOW');
+  const [workspaceTab, setWorkspaceTab] = useState<'DOCUMENT' | 'APPROVAL'>('DOCUMENT');
 
-      <header className="flex flex-wrap items-start justify-between gap-4">
+  // Tìm bộ 3 hồ sơ liên kết (HĐNT -> Phụ lục SOW -> BBNT) để bấm chuyển nhanh 1 chạm
+  const linkedFrameworkRecord = isFrameworkWithSow
+    ? record
+    : parent && parent.templateId.endsWith('-HDNT')
+      ? parent
+      : data.records.find(
+          r =>
+            r.templateId.endsWith('-HDNT') &&
+            ((record.kocId && r.kocId === record.kocId) || (record.dealId && r.dealId === record.dealId)),
+        );
+  const linkedSowRecord = isSowDoc
+    ? record
+    : parent && parent.templateId.endsWith('-SOW')
+      ? parent
+      : childRecords.find(r => r.templateId.endsWith('-SOW')) ||
+        data.records.find(
+          r =>
+            r.templateId.endsWith('-SOW') &&
+            ((record.dealId && r.dealId === record.dealId) || (record.dealCode && r.dealCode === record.dealCode)),
+        );
+  const linkedAcceptanceRecord = isAcceptanceDoc
+    ? record
+    : childRecords.find(r => isAcceptance(r.templateId)) ||
+      data.records.find(
+        r =>
+          isAcceptance(r.templateId) &&
+          ((record.dealId && r.dealId === record.dealId) ||
+            (linkedSowRecord && r.parentId === linkedSowRecord.id)),
+      );
+
+  // Tính toán tóm tắt tài chính & đối soát thuế ngay trên đầu trang
+  const financialSummary = (() => {
+    const allFields = previewData?.fields || template?.fields || [];
+    const parseNum = (val?: string) => {
+      const raw = (val || '').replace(/[^\d]/g, '');
+      return raw ? Number(raw) : 0;
+    };
+    const baseField =
+      allFields.find(f => f.source === 'netTotal') ||
+      allFields.find(f => f.source === 'lineTotal') ||
+      allFields.find(f => f.source === 'unitPrice');
+    const grossField = allFields.find(f => f.source === 'grossTotal');
+    const pitField = allFields.find(f => f.source === 'pitAmount');
+    const vatField = allFields.find(f => f.source === 'vatAmount');
+    const remField = allFields.find(f => f.source === 'remainingAmount');
+    const customTokenNum = parseNum(
+      shownValues['token:[Tổng tiền trước thuế/sau thuế]'] ||
+        shownValues['token:[Thù lao trọn gói]'] ||
+        shownValues['token:[Thành tiền (VNĐ)]'],
+    );
+    const moneyFields = allFields.filter(
+      f => (f.group === 'MONEY' || f.kind === 'money') && f.source !== 'grossTotal' && f.source !== 'vatAmount' && f.source !== 'pitAmount',
+    );
+    const baseContractValue =
+      (baseField ? parseNum(shownValues[baseField.key]) : 0) ||
+      customTokenNum ||
+      moneyFields.reduce((max, f) => Math.max(max, parseNum(shownValues[f.key])), 0) ||
+      linkedDeal?.totalValue ||
+      0;
+    const grossContractValue = (grossField ? parseNum(shownValues[grossField.key]) : 0) || baseContractValue;
+    const dealValue = linkedDeal?.totalValue || 0;
+    const diff = dealValue > 0 && baseContractValue > 0 ? baseContractValue - dealValue : 0;
+    const subject = template?.subject || 'Cá nhân';
+    const isIndividual = subject === 'Cá nhân' || subject === 'CTV tháng';
+    const explicitPit = pitField ? parseNum(shownValues[pitField.key]) : 0;
+    const explicitVat = vatField ? parseNum(shownValues[vatField.key]) : 0;
+    const pitWithholding =
+      explicitPit || (isIndividual && baseContractValue >= 2000000 ? Math.round(baseContractValue * 0.1) : 0);
+    const remainingPayout = remField ? parseNum(shownValues[remField.key]) : 0;
+    const netPayout =
+      remainingPayout ||
+      (baseContractValue > 0
+        ? grossContractValue > baseContractValue && isIndividual
+          ? baseContractValue
+          : isIndividual
+            ? baseContractValue - pitWithholding
+            : grossContractValue
+        : 0);
+    const advField = allFields.find(f => f.source === 'advanceAmount');
+    const parsedAdvance =
+      (advField ? parseNum(shownValues[advField.key]) : 0) ||
+      parseNum(shownValues['token:[Số tiền tạm ứng đợt 1]']) ||
+      linkedDeal?.advanceAmount ||
+      0;
+    return {
+      baseContractValue,
+      grossContractValue,
+      dealValue,
+      diff,
+      subject,
+      isIndividual,
+      pitWithholding,
+      explicitVat,
+      netPayout,
+      parsedAdvance,
+    };
+  })();
+
+  const partyASigner = signing?.people[0];
+  const partyBSigner = signing?.people[1];
+  const isFullySigned = signing?.status === 'COMPLETED';
+  const partyADone = partyASigner?.action === 2 || isFullySigned;
+  const partyBDone = partyBSigner?.action === 2 || isFullySigned;
+
+  return (
+    <div className="space-y-4">
+      {/* Thanh điều hướng trên cùng */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {onBackToBooking && (
+            <Button variant="secondary" size="sm" icon={ArrowLeft} onClick={onBackToBooking}>
+              Quay về Quản lý Deal &amp; Booking
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" icon={!onBackToBooking ? ArrowLeft : undefined} onClick={onBack} className={!onBackToBooking ? '-ml-2.5' : ''}>
+            Danh sách hợp đồng
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {isSowDoc && isFullySigned && (
+            <Status tone="positive">
+              Phụ lục SOW đã ký hoàn tất — Cấu hình Deal đã khóa
+            </Status>
+          )}
+          {(onPrev || onNext) && (
+            <div className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface px-1.5 py-1">
+              <button
+                type="button"
+                disabled={!onPrev}
+                onClick={onPrev}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium text-ink-2 hover:bg-sunken disabled:opacity-40"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" /> Trước
+              </button>
+              {positionLabel && (
+                <span className="px-1.5 text-2xs font-code text-ink-3 tabular-nums">{positionLabel}</span>
+              )}
+              <button
+                type="button"
+                disabled={!onNext}
+                onClick={onNext}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium text-ink-2 hover:bg-sunken disabled:opacity-40"
+              >
+                Tiếp <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Thanh lộ trình 3 bước pháp lý chuẩn của Deal (Bấm chuyển nhanh giữa HĐNT -> SOW -> BBNT) */}
+      <div className="rounded-xl border border-line bg-surface px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            {
+              idx: 1,
+              label: '1. Hợp đồng nguyên tắc (HĐNT Khung)',
+              sub: linkedFrameworkRecord?.title || 'Theo từng KOC',
+              state: (isFrameworkWithSow
+                ? isFullySigned
+                  ? 'done'
+                  : 'active'
+                : linkedFrameworkRecord
+                  ? 'done'
+                  : 'idle') as 'done' | 'active' | 'idle',
+              isCurrent: isFrameworkWithSow,
+              onClick:
+                !isFrameworkWithSow && linkedFrameworkRecord
+                  ? () => onOpen(linkedFrameworkRecord.id)
+                  : undefined,
+            },
+            {
+              idx: 2,
+              label: '2. Phụ lục SOW (Chốt & Khóa cấu hình Deal)',
+              sub: linkedSowRecord?.title || (onCreateSow ? 'Bấm để lập SOW' : 'Theo từng Deal'),
+              state: (isSowDoc
+                ? isFullySigned
+                  ? 'done'
+                  : 'active'
+                : isAcceptanceDoc || linkedSowRecord?.signing.at(-1)?.status === 'COMPLETED'
+                  ? 'done'
+                  : linkedSowRecord
+                    ? 'active'
+                    : 'idle') as 'done' | 'active' | 'idle',
+              isCurrent: isSowDoc,
+              onClick: !isSowDoc
+                ? linkedSowRecord
+                  ? () => onOpen(linkedSowRecord.id)
+                  : onCreateSow
+                : undefined,
+            },
+            {
+              idx: 3,
+              label: '3. Biên bản nghiệm thu (BBNT theo Link Air)',
+              sub: linkedAcceptanceRecord?.title || (!isAcceptanceDoc && isFullySigned ? 'Bấm để lập BBNT' : 'Quyết toán thanh toán'),
+              state: (isAcceptanceDoc
+                ? isFullySigned
+                  ? 'done'
+                  : 'active'
+                : linkedAcceptanceRecord?.signing.at(-1)?.status === 'COMPLETED'
+                  ? 'done'
+                  : linkedAcceptanceRecord
+                    ? 'active'
+                    : 'idle') as 'done' | 'active' | 'idle',
+              isCurrent: isAcceptanceDoc,
+              onClick: !isAcceptanceDoc
+                ? linkedAcceptanceRecord
+                  ? () => onOpen(linkedAcceptanceRecord.id)
+                  : isFullySigned && !isFrameworkWithSow
+                    ? onCreateAcceptance
+                    : undefined
+                : undefined,
+            },
+          ].map((item, i) => (
+            <React.Fragment key={item.idx}>
+              {i > 0 && <span className="text-ink-3 text-xs">→</span>}
+              <button
+                type="button"
+                disabled={!item.onClick}
+                onClick={item.onClick}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-left transition-colors ${
+                  item.isCurrent
+                    ? 'border-accent bg-accent-soft/35 text-ink'
+                    : item.state === 'done'
+                      ? 'border-positive/30 bg-positive-soft/40 text-ink hover:border-positive'
+                      : 'border-line bg-sunken/40 text-ink-2 hover:border-line-strong'
+                } ${item.onClick ? 'cursor-pointer' : 'cursor-default'}`}
+              >
+                <StepMark done={item.state === 'done' || item.isCurrent} label={item.idx} />
+                <div className="leading-tight">
+                  <div className="text-xs font-semibold text-ink">{item.label}</div>
+                  <div className="text-2xs text-ink-3">{item.sub}</div>
+                </div>
+              </button>
+            </React.Fragment>
+          ))}
+        </div>
+        {linkedDeal && (
+          <span className="text-xs text-ink-2">
+            Deal gắn kết: <span className="font-code font-semibold text-ink">{linkedDeal.dealCode}</span>
+          </span>
+        )}
+      </div>
+
+      {/* Tiêu đề hồ sơ & Thanh tác vụ chính */}
+      <header className="flex flex-wrap items-start justify-between gap-4 bg-surface border border-line rounded-xl px-4 py-3.5">
         <div className="min-w-0 grid gap-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-lg font-semibold text-ink">{record.title}</h2>
             <Status tone={status.tone}>{status.label}</Status>
-            {status.note && <span className="text-[13px] text-ink-3">{status.note}</span>}
+            {status.note && <span className="text-xs text-ink-3">{status.note}</span>}
           </div>
-          <p className="text-[13px] text-ink-2">
+          <p className="text-xs text-ink-2">
             {[record.partner, record.brand, template?.name, `Phiên bản ${record.version}`].filter(Boolean).join(' · ')}
             {record.dealCode && <span className="text-ink-3"> · Booking <span className="font-code">{record.dealCode}</span></span>}
           </p>
@@ -180,522 +433,502 @@ export function ContractDetail({
           {isAcceptanceDoc && (
             <Button
               variant="secondary"
+              size="sm"
               icon={Camera}
               disabled={busy}
               onClick={() => setScreenshotModalOpen(true)}
             >
-              Lấy thông tin Link Air & cắt ảnh nghiệm thu{shownScreenshots.length > 0 ? ` (${shownScreenshots.length})` : ''}
+              Lấy thông tin Link Air &amp; cắt ảnh nghiệm thu{shownScreenshots.length > 0 ? ` (${shownScreenshots.length})` : ''}
             </Button>
           )}
           {isFrameworkWithSow && onCreateSow && me.roles.includes('CREATOR') && (
-            <Button variant="secondary" icon={FilePlus2} disabled={busy} onClick={onCreateSow}>
+            <Button variant="secondary" size="sm" icon={FilePlus2} disabled={busy} onClick={onCreateSow}>
               Tạo phụ lục SOW
             </Button>
           )}
-          {editable && <Button icon={Pencil} onClick={onEdit}>Sửa</Button>}
-          {myStep && <Button disabled={busy} onClick={() => setDialog('changes')}>Yêu cầu sửa</Button>}
-          <a href={`/api/contracts/${record.id}/document`} className="inline-flex items-center gap-1.5 h-[34px] px-3.5 rounded-md border border-line-strong bg-surface text-[13.5px] font-medium text-ink hover:bg-sunken">
-            <Download className="w-4 h-4 text-ink-3" strokeWidth={1.75} />Tải Word
+          {editable && <Button size="sm" icon={Pencil} onClick={onEdit}>Sửa nội dung</Button>}
+          {myStep && <Button size="sm" disabled={busy} onClick={() => setDialog('changes')}>Yêu cầu sửa</Button>}
+          <a href={`/api/contracts/${record.id}/document`} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-line-strong bg-surface text-xs font-medium text-ink hover:bg-sunken">
+            <Download className="w-3.5 h-3.5 text-ink-3" strokeWidth={1.75} />Tải Word
           </a>
           {primary}
           {menu.length > 0 && <ActionMenu items={menu} />}
         </div>
       </header>
 
-      <div className="grid gap-6 items-start lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="grid gap-6 min-w-0">
-          {record.hasCustomTerms && (
-            <div className="rounded-xl border border-warning/50 bg-warning-soft/70 p-4 space-y-1.5">
-              <span className="font-semibold text-xs text-warning-strong flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                Điều khoản KOC đề xuất sửa / Thỏa thuận riêng
-              </span>
-              <p className="text-sm font-medium text-ink">
-                {record.customTermsSummary || 'Hồ sơ có yêu cầu chỉnh sửa riêng so với mẫu chuẩn (Cần Pháp chế thẩm định trước khi chuyển Kế toán)'}
-              </p>
-            </div>
-          )}
-
-          {/* Tiến trình */}
-          <section className="grid gap-3">
-            <SectionHeader title="Tiến trình" />
-            <ol className="bg-surface border border-line rounded-xl divide-y divide-line">
-              <Step title="Soạn hồ sơ" who={record.ownerName} status={record.approval === 'DRAFT' && !record.steps.length ? { label: 'Nháp', tone: 'neutral' } : { label: 'Hoàn tất', tone: 'positive' }} meta={`Phiên bản ${record.version}`} />
-              {record.steps.length === 0 ? (
-                <li className="px-4 py-3 text-[13px] text-ink-3">Chưa gửi duyệt.</li>
+      {/* BÀN KÝ SỐ ĐIỆN TỬ 2 BÊN & ĐỐI SOÁT TÀI CHÍNH (ABOVE THE FOLD) */}
+      <div className="grid gap-4 lg:grid-cols-12">
+        {/* Khối trái (7 cột): Bàn Ký Số Điện Tử 2 Bên (Bên A UpBase <-> Bên B KOC) */}
+        <div className="lg:col-span-7 bg-surface border border-line rounded-xl p-4 flex flex-col justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-ink">Bàn ký số điện tử 2 bên · MISA AMIS weSign</span>
+              {signing ? (
+                <Status tone={signingProgress?.tone || status.tone}>
+                  {isFullySigned ? 'Đã ký đủ 2 bên' : status.label}
+                </Status>
               ) : (
-                record.steps.map((s, i) => (
-                  <Step key={`${s.reviewerId}-${i}`} title={ROLE_LABEL[s.role]} who={s.reviewerName} status={stepStatus(s)} meta={s.decidedAt ? dateTime(s.decidedAt) : undefined} note={s.note} />
-                ))
+                <Status tone={record.approval === 'APPROVED' ? 'warning' : 'neutral'}>
+                  {record.approval === 'APPROVED' ? 'Sẵn sàng trình ký' : 'Chờ duyệt nội bộ'}
+                </Status>
               )}
-              <li className="px-4 py-3.5 grid gap-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[13px] font-medium text-ink">Ký điện tử · MISA AMIS weSign</span>
-                    {signing ? (
-                      <Status tone={signingProgress?.tone || contractStatus(record).tone}>
-                        {signing.status === 'COMPLETED' ? 'Đã ký hoàn tất' : contractStatus(record).label}
-                      </Status>
-                    ) : (
-                      <Status>Chưa trình ký</Status>
-                    )}
-                    {signingProgress && (
-                      <span className="text-2xs font-semibold px-2 py-0.5 rounded-md border border-line bg-sunken text-ink tabular-nums">
-                        {signingProgress.completedCount}/{signingProgress.totalCount} bước ký ({signingProgress.progressPercent}%)
-                      </span>
-                    )}
-                    {signing?.provider === 'DEMO' && (
-                      <span className="text-2xs text-warning">Chế độ ký thử (Chưa gửi MISA)</span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {canStartSigning && (
-                      <Button size="sm" variant="secondary" disabled={busy} onClick={() => setDialog('link')}>
-                        Gắn mã luồng ký weSign
-                      </Button>
-                    )}
-                    {signing && signing.provider !== 'DEMO' && (
-                      <Button
-                        size="sm"
-                        icon={RefreshCw}
-                        disabled={busy}
-                        onClick={() => onAction({ action: 'SYNC_WESIGN' }, 'Đã đồng bộ tiến độ ký từ MISA weSign')}
-                      >
-                        Đồng bộ weSign
-                      </Button>
-                    )}
-                    {signing?.provider === 'DEMO' && coordinator && ['WAITING', 'PARTIAL'].includes(signing.status) && (
-                      <>
-                        <Button size="sm" disabled={busy} onClick={() => onAction({ action: 'DEMO_SIGN_NEXT' })}>
-                          Ký thử người tiếp theo
-                        </Button>
-                        <Button size="sm" variant="ghost" disabled={busy} onClick={() => onAction({ action: 'DEMO_SIGN_REJECT' })}>
-                          Từ chối thử
-                        </Button>
-                      </>
-                    )}
-                    {signing?.status === 'COMPLETED' && signing.provider !== 'DEMO' && (
-                      <a
-                        href={`/api/contracts/${record.id}/document?signed=1`}
-                        className="inline-flex items-center gap-1 rounded-md border border-positive/40 bg-positive-soft px-2.5 py-1 text-xs font-medium text-positive hover:underline"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        Tải bản đã ký weSign (.pdf)
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                {!signing && record.approval !== 'APPROVED' && (
-                  <p className="text-[13px] text-ink-3">
-                    Luồng ký weSign sẽ mở khóa ngay sau khi phiên bản v{record.version} hoàn tất phê duyệt nội bộ.
-                  </p>
-                )}
-                {!signing && record.approval === 'APPROVED' && (
-                  <div className="rounded-lg border border-line bg-sunken/40 p-3 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-2">
-                    <span>
-                      Hồ sơ đã đủ phê duyệt. Nhập <strong>Mã tài liệu (UUID)</strong> từ MISA AMIS weSign để hệ thống tự động theo dõi tiến độ từng bước ký và tải bản PDF hoàn tất.
-                    </span>
-                    {!data.config.wesign && (
-                      <span className="text-2xs text-warning-strong font-medium">
-                        Cần cấu hình biến môi trường WESIGN_ACCESS_TOKEN để đồng bộ trực tiếp với máy chủ MISA
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {signing && signingProgress && (
-                  <div className="rounded-xl border border-line bg-sunken/30 p-3.5 space-y-3">
-                    {/* Thanh tiến độ ký tổng thể */}
-                    <div className="space-y-1.5">
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <span className="font-semibold text-ink">
-                          Tiến độ luồng ký: {signingProgress.summaryText}
-                        </span>
-                        <span className="text-2xs text-ink-3 font-code">
-                          UUID: {signing.documentId}
-                        </span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-line overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-300 ${
-                            signing.status === 'COMPLETED'
-                              ? 'bg-positive'
-                              : signing.status === 'REJECTED'
-                                ? 'bg-critical'
-                                : 'bg-accent'
-                          }`}
-                          style={{ width: `${Math.max(4, signingProgress.progressPercent)}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Cảnh báo người đang giữ lượt ký hiện tại */}
-                    {['WAITING', 'PARTIAL'].includes(signing.status) && signingProgress.currentSignerName && (
-                      <div className="rounded-lg border border-accent/30 bg-accent-soft/40 px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <span className="text-ink">
-                          Đang chờ ký tại lượt hiện hành:{' '}
-                          <strong className="text-accent">{signingProgress.currentSignerName}</strong>
-                          {signingProgress.currentSignerEmail && (
-                            <span className="text-ink-2"> ({signingProgress.currentSignerEmail})</span>
-                          )}
-                        </span>
-                        <Status tone="warning">Đang giữ lượt ký</Status>
-                      </div>
-                    )}
-
-                    {/* Danh sách từng bước ký trả về từ weSign */}
-                    <ul className="divide-y divide-line rounded-lg border border-line bg-surface">
-                      {signing.people.map((p, i) => {
-                        const s = signerStatus(p.action, p.status);
-                        const stepNum = p.level ?? i + 1;
-                        const roleText = p.roleLabel || 'Người ký';
-                        return (
-                          <li key={i} className="px-3 py-2.5 flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <span
-                                className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-2xs font-semibold shrink-0 ${
-                                  p.action === 2
-                                    ? 'bg-positive-soft text-positive border border-positive/30'
-                                    : p.action === 1
-                                      ? 'bg-warning-soft text-warning-strong border border-warning/40'
-                                      : p.action === 3
-                                        ? 'bg-critical-soft text-critical border border-critical/30'
-                                        : 'bg-sunken text-ink-3 border border-line'
-                                }`}
-                              >
-                                {stepNum}
-                              </span>
-                              <Person name={p.name} sub={p.email} size={24} />
-                              <span className="text-2xs px-1.5 py-0.5 rounded bg-sunken border border-line text-ink-2">
-                                {roleText}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              {p.at && <span className="text-2xs text-ink-3 tabular-nums">{dateTime(p.at)}</span>}
-                              <Status tone={s.tone}>{s.label}</Status>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-2xs text-ink-3">
-                      <span>
-                        Đồng bộ gần nhất: {dateTime(signing.syncedAt)} · Đối chiếu bản duyệt v{signing.version}
-                        {signing.name ? ` · Tên trên weSign: ${signing.name}` : ''}
-                      </span>
-                      {signing.provider !== 'DEMO' && ['WAITING', 'PARTIAL'].includes(signing.status) && (
-                        <span>Tự động đọc tiến độ mỗi 2 phút hoặc nhận qua Webhook weSign</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {signing?.error && <p role="alert" className="text-[13px] text-critical">{signing.error}</p>}
-              </li>
-            </ol>
-          </section>
-
-          {/* Kiểm tra nội dung */}
-          <section className="grid gap-3">
-            <SectionHeader
-              title="Kiểm tra nội dung"
-              actions={canCheck && <Button size="sm" icon={ScanSearch} disabled={busy} onClick={() => onAction({ action: 'CHECK' }, 'Đã kiểm tra nội dung')}>Kiểm tra</Button>}
-            />
-            <div className="bg-surface border border-line rounded-xl px-4 py-3">
-              {!current ? (
-                <p className="text-[13px] text-ink-3">
-                  Chưa kiểm tra phiên bản {record.version}.{record.checks.length > 0 && ' Kết quả của phiên bản trước không còn áp dụng.'}
-                </p>
-              ) : current.findings.length === 0 ? (
-                <p className="text-[13px] text-positive">Không thấy vấn đề trong phạm vi đã kiểm tra · {dateTime(current.at)}</p>
-              ) : (
-                <ul className="grid gap-3">
-                  {current.findings.map((f, i) => (
-                    <li
-                      key={i}
-                      onClick={f.fieldKey ? () => setActiveFieldKey(f.fieldKey!) : undefined}
-                      className={`pl-3 border-l-2 ${f.severity === 'ERROR' ? 'border-critical' : f.severity === 'WARNING' ? 'border-warning' : 'border-line-strong'} ${f.fieldKey ? 'cursor-pointer hover:bg-sunken/60 rounded-r py-0.5' : ''}`}
-                    >
-                      <p className="text-[13px] text-ink">
-                        {f.message}
-                        {f.fieldKey && <span className="ml-2 text-2xs text-accent hover:underline">Xem trên hợp đồng ↓</span>}
-                      </p>
-                      {f.evidence && <p className="text-2xs text-ink-3 mt-0.5 line-clamp-2">{f.evidence}</p>}
-                    </li>
-                  ))}
-                  <li className="text-2xs text-ink-3">{current.provider === 'AI' ? 'Gợi ý' : 'Kiểm tra ô bắt buộc'} · {dateTime(current.at)}</li>
-                </ul>
+              {signingProgress && (
+                <span className="text-2xs font-code font-semibold px-2 py-0.5 rounded border border-line bg-sunken text-ink tabular-nums">
+                  {signingProgress.completedCount}/{signingProgress.totalCount} chữ ký ({signingProgress.progressPercent}%)
+                </span>
               )}
             </div>
-          </section>
 
-          {/* Quy chuẩn pháp chế & Luồng phê duyệt */}
-          {(() => {
-            const allFields = previewData?.fields || template?.fields || [];
-            const parseNum = (val?: string) => {
-              const raw = (val || '').replace(/[^\d]/g, '');
-              return raw ? Number(raw) : 0;
-            };
-            const baseField =
-              allFields.find(f => f.source === 'netTotal') ||
-              allFields.find(f => f.source === 'lineTotal') ||
-              allFields.find(f => f.source === 'unitPrice');
-            const customTokenNum = parseNum(
-              shownValues['token:[Tổng tiền trước thuế/sau thuế]'] ||
-                shownValues['token:[Thù lao trọn gói]'] ||
-                shownValues['token:[Thành tiền (VNĐ)]'],
-            );
-            const moneyFields = allFields.filter(
-              f => (f.group === 'MONEY' || f.kind === 'money') && f.source !== 'grossTotal' && f.source !== 'vatAmount' && f.source !== 'pitAmount',
-            );
-            const baseContractValue =
-              (baseField ? parseNum(shownValues[baseField.key]) : 0) ||
-              customTokenNum ||
-              moneyFields.reduce((max, f) => Math.max(max, parseNum(shownValues[f.key])), 0);
-            const advField = allFields.find(f => f.source === 'advanceAmount');
-            const parsedAdvance =
-              (advField ? parseNum(shownValues[advField.key]) : 0) ||
-              parseNum(shownValues['token:[Số tiền tạm ứng đợt 1]']) ||
-              linkedDeal?.advanceAmount ||
-              0;
-            const ruleEvaluation = evaluateContractRules({
-              koc: linkedKoc,
-              deal: linkedDeal,
-              kind: isAcceptance(record.templateId) ? 'ACCEPTANCE' : 'CONTRACT',
-              totalValue: linkedDeal?.totalValue || baseContractValue || 0,
-              advanceAmount: parsedAdvance,
-              actualSettledValue: baseContractValue > 0 ? baseContractValue : undefined,
-              hasCustomTerms: record.hasCustomTerms,
-              isKolForm: record.isKocOwnForm || template?.scope === 'KOC_CUSTOM',
-              availableTemplates: data.templates,
-            });
-
-            return (
-              <section className="grid gap-3">
-                <SectionHeader
-                  title="Quy chuẩn pháp chế & Luồng duyệt"
-                  actions={
-                    <Status tone={ruleEvaluation.isHighValueKoc ? 'warning' : 'positive'}>
-                      {ruleEvaluation.reviewStream.streamName}
-                    </Status>
-                  }
-                />
-                <div className="bg-surface border border-line rounded-xl p-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
-                  <div className="space-y-1">
-                    <span className="text-2xs text-ink-3 block">Mẫu hợp đồng (BR-01)</span>
-                    <span className={`text-xs font-semibold block ${ruleEvaluation.isHighValueKoc ? 'text-accent' : 'text-positive'}`}>
-                      {ruleEvaluation.isHighValueKoc ? '≥ 50 triệu (Được dùng mẫu KOC)' : 'Dưới 50 triệu (100% mẫu UpBase)'}
-                    </span>
-                    <span className="text-2xs text-ink-3 block">{ruleEvaluation.templateCompliance.note}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-2xs text-ink-3 block">Nghĩa vụ ký (BR-03)</span>
-                    <span className={`text-xs font-semibold block ${ruleEvaluation.isContractMandatory ? 'text-ink' : 'text-positive'}`}>
-                      {ruleEvaluation.isContractMandatory ? 'Bắt buộc ký hợp đồng' : 'Miễn HĐ giấy'}
-                    </span>
-                    <span className="text-2xs text-ink-3 block">{ruleEvaluation.contractMandatoryReason}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-2xs text-ink-3 block">Nghiệm thu (BR-04)</span>
-                    <span className={`text-xs font-semibold block ${ruleEvaluation.isAcceptanceMandatory ? 'text-ink' : 'text-positive'}`}>
-                      {ruleEvaluation.isAcceptanceMandatory ? 'Bắt buộc lập BBNT' : 'Thanh lý tự động'}
-                    </span>
-                    <span className="text-2xs text-ink-3 block">{ruleEvaluation.acceptanceMandatoryReason}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-2xs text-ink-3 block">Thời hạn xử lý (SLA)</span>
-                    <span className="text-xs font-semibold text-accent block">TCKT {ruleEvaluation.reviewStream.slaHoursTckt}h · Pháp chế {ruleEvaluation.reviewStream.slaHoursLegal}h</span>
-                    <span className="text-2xs text-ink-3 block">{ruleEvaluation.reviewStream.flowDescription}</span>
-                  </div>
-                </div>
-              </section>
-            );
-          })()}
-
-          {/* Đối soát tài chính & hạn mức Booking (Dành cho Kế toán & Lead) */}
-          {(() => {
-            const allFields = previewData?.fields || template?.fields || [];
-            const parseNum = (val?: string) => {
-              const raw = (val || '').replace(/[^\d]/g, '');
-              return raw ? Number(raw) : 0;
-            };
-            const baseField =
-              allFields.find(f => f.source === 'netTotal') ||
-              allFields.find(f => f.source === 'lineTotal') ||
-              allFields.find(f => f.source === 'unitPrice');
-            const grossField = allFields.find(f => f.source === 'grossTotal');
-            const pitField = allFields.find(f => f.source === 'pitAmount');
-            const vatField = allFields.find(f => f.source === 'vatAmount');
-            const remField = allFields.find(f => f.source === 'remainingAmount');
-            const customTokenNum = parseNum(
-              shownValues['token:[Tổng tiền trước thuế/sau thuế]'] ||
-                shownValues['token:[Thù lao trọn gói]'] ||
-                shownValues['token:[Thành tiền (VNĐ)]'],
-            );
-            const moneyFields = allFields.filter(
-              f => (f.group === 'MONEY' || f.kind === 'money') && f.source !== 'grossTotal' && f.source !== 'vatAmount' && f.source !== 'pitAmount',
-            );
-            const baseContractValue =
-              (baseField ? parseNum(shownValues[baseField.key]) : 0) ||
-              customTokenNum ||
-              moneyFields.reduce((max, f) => Math.max(max, parseNum(shownValues[f.key])), 0);
-            const grossContractValue = (grossField ? parseNum(shownValues[grossField.key]) : 0) || baseContractValue;
-            const dealValue = linkedDeal?.totalValue || 0;
-            const diff = dealValue > 0 && baseContractValue > 0 ? baseContractValue - dealValue : 0;
-            const subject = template?.subject || 'Cá nhân';
-            const isIndividual = subject === 'Cá nhân' || subject === 'CTV tháng';
-            const explicitPit = pitField ? parseNum(shownValues[pitField.key]) : 0;
-            const explicitVat = vatField ? parseNum(shownValues[vatField.key]) : 0;
-            const pitWithholding =
-              explicitPit || (isIndividual && baseContractValue >= 2000000 ? Math.round(baseContractValue * 0.1) : 0);
-            const remainingPayout = remField ? parseNum(shownValues[remField.key]) : 0;
-            const netPayout =
-              remainingPayout ||
-              (baseContractValue > 0
-                ? grossContractValue > baseContractValue && isIndividual
-                  ? baseContractValue
-                  : isIndividual
-                    ? baseContractValue - pitWithholding
-                    : grossContractValue
-                : 0);
-
-            return (
-              <section className="grid gap-3">
-                <SectionHeader
-                  title="Đối soát tài chính & Hạn mức Booking"
-                  actions={
-                    dealValue > 0 && baseContractValue > 0 ? (
-                      <Status tone={diff === 0 ? 'positive' : diff > 0 ? 'critical' : 'warning'}>
-                        {diff === 0
-                          ? 'Khớp 100% giá trị Booking'
-                          : diff > 0
-                            ? `Vượt Booking +${diff.toLocaleString('vi-VN')} đ`
-                            : `Thấp hơn Booking ${Math.abs(diff).toLocaleString('vi-VN')} đ`}
-                      </Status>
-                    ) : (
-                      <span className="text-xs text-ink-2">Chế độ thuế: {subject}</span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {demo && !isFullySigned && (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={CheckCircle2}
+                  disabled={busy}
+                  onClick={() =>
+                    onAction(
+                      { action: 'DEMO_FAST_SIGN' },
+                      isSowDoc
+                        ? 'Đã hoàn tất ký Phụ lục SOW — Cấu hình Deal đã được khóa'
+                        : 'Đã hoàn tất ký đủ 2 bên',
                     )
                   }
+                >
+                  {isSowDoc ? 'Xác nhận đã ký đủ 2 bên (Khóa Deal)' : 'Xác nhận đã ký đủ 2 bên'}
+                </Button>
+              )}
+              {signing?.provider === 'DEMO' && coordinator && ['WAITING', 'PARTIAL'].includes(signing.status) && (
+                <Button size="sm" variant="secondary" disabled={busy} onClick={() => onAction({ action: 'DEMO_SIGN_NEXT' })}>
+                  Ký lượt tiếp theo
+                </Button>
+              )}
+              {canStartSigning && (
+                <Button size="sm" variant="secondary" disabled={busy} onClick={() => setDialog('link')}>
+                  Gắn mã weSign
+                </Button>
+              )}
+              {signing && signing.provider !== 'DEMO' && !isFullySigned && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={RefreshCw}
+                  disabled={busy}
+                  onClick={() => onAction({ action: 'SYNC_WESIGN' }, 'Đã đồng bộ tiến độ ký từ MISA weSign')}
+                >
+                  Đồng bộ weSign
+                </Button>
+              )}
+              {isFullySigned && signing?.provider !== 'DEMO' && (
+                <a
+                  href={`/api/contracts/${record.id}/document?signed=1`}
+                  className="inline-flex items-center gap-1 rounded-md border border-positive/40 bg-positive-soft px-2.5 py-1 text-xs font-medium text-positive hover:underline"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Bản đã ký (.pdf)
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* 2 Thẻ chữ ký Bên A (UpBase) & Bên B (KOC) đối xứng */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Bên A: UpBase */}
+            <div
+              className={`rounded-lg border p-3 flex flex-col justify-between gap-2 ${
+                partyADone
+                  ? 'border-positive/40 bg-positive-soft/35'
+                  : partyASigner?.action === 1
+                    ? 'border-warning/50 bg-warning-soft/40'
+                    : 'border-line bg-sunken/30'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-2xs font-semibold text-ink-2">Bên A · Đại diện UpBase</span>
+                <Status tone={partyADone ? 'positive' : partyASigner?.action === 1 ? 'warning' : 'neutral'}>
+                  {partyADone ? 'Đã ký số' : partyASigner?.action === 1 ? 'Đang giữ lượt ký' : 'Chờ ký'}
+                </Status>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <Person
+                  name={partyASigner?.name || 'Đặng Thị Yến Nhi'}
+                  sub={partyASigner?.email || 'Giám đốc Marketing B2C'}
+                  size={24}
                 />
-                <div className="bg-surface border border-line rounded-xl p-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
-                  <div className="space-y-1">
-                    <span className="text-2xs text-ink-3 block">Giá trị thù lao dịch vụ</span>
-                    <span className="text-sm font-semibold text-ink tabular-nums block">
-                      {baseContractValue > 0 ? `${baseContractValue.toLocaleString('vi-VN')} đ` : 'Chưa điền số tiền'}
-                    </span>
-                    <span className="text-2xs text-ink-3 block">
-                      {grossContractValue > baseContractValue
-                        ? `Tổng gồm thuế: ${grossContractValue.toLocaleString('vi-VN')} đ`
-                        : template?.kind === 'ACCEPTANCE'
-                          ? 'Giá trị nghiệm thu quyết toán'
-                          : 'Tổng thù lao dịch vụ'}
-                    </span>
-                  </div>
+                {partyASigner?.at && (
+                  <span className="text-2xs font-code text-ink-3 tabular-nums">{dateTime(partyASigner.at)}</span>
+                )}
+              </div>
+            </div>
 
-                  <div className="space-y-1">
-                    <span className="text-2xs text-ink-3 block">Hạn mức Deal Booking gốc</span>
-                    <span className="text-sm font-semibold text-ink tabular-nums block">
-                      {linkedDeal ? `${dealValue.toLocaleString('vi-VN')} đ` : 'Hồ sơ độc lập'}
-                    </span>
-                    <span className="text-2xs text-ink-3 block">
-                      {linkedDeal
-                        ? `${linkedDeal.dealCode} · Khung ${linkedDeal.salaryGrade} · Tạm ứng ${linkedDeal.advanceAmount.toLocaleString('vi-VN')} đ`
-                        : 'Không gắn mã Booking'}
-                    </span>
-                  </div>
+            {/* Bên B: Đối tác KOC */}
+            <div
+              className={`rounded-lg border p-3 flex flex-col justify-between gap-2 ${
+                partyBDone
+                  ? 'border-positive/40 bg-positive-soft/35'
+                  : partyBSigner?.action === 1
+                    ? 'border-warning/50 bg-warning-soft/40'
+                    : 'border-line bg-sunken/30'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-2xs font-semibold text-ink-2">Bên B · Đối tác KOC</span>
+                <Status tone={partyBDone ? 'positive' : partyBSigner?.action === 1 ? 'warning' : 'neutral'}>
+                  {partyBDone ? 'Đã ký số' : partyBSigner?.action === 1 ? 'Đang giữ lượt ký' : 'Chờ ký'}
+                </Status>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <Person
+                  name={partyBSigner?.name || record.partner}
+                  sub={partyBSigner?.email || linkedKoc?.channelId || template?.subject || 'KOC'}
+                  size={24}
+                />
+                {partyBSigner?.at && (
+                  <span className="text-2xs font-code text-ink-3 tabular-nums">{dateTime(partyBSigner.at)}</span>
+                )}
+              </div>
+            </div>
+          </div>
 
-                  <div className="space-y-1">
-                    <span className="text-2xs text-ink-3 block">Khấu trừ thuế / Hóa đơn</span>
-                    <span className="text-sm font-semibold text-ink tabular-nums block">
-                      {isIndividual
-                        ? pitWithholding > 0
-                          ? `TNCN 10%: ${pitWithholding.toLocaleString('vi-VN')} đ`
-                          : 'TNCN 0 đ (< 2 triệu)'
-                        : explicitVat > 0
-                          ? `VAT: ${explicitVat.toLocaleString('vi-VN')} đ`
-                          : 'Xuất hóa đơn theo ĐKKD'}
-                    </span>
-                    <span className="text-2xs text-ink-3 block">
-                      {isIndividual ? 'Khấu trừ tại nguồn trước khi chi' : `Đối tác ${subject} xuất hóa đơn`}
-                    </span>
-                  </div>
+          {isFullySigned && isSowDoc && (
+            <div className="rounded-lg border border-positive/30 bg-positive-soft px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-ink">
+              <span className="flex items-center gap-1.5 font-medium text-positive">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                Phụ lục SOW đã ký đủ 2 bên — Cấu hình Deal ({record.dealCode || linkedDeal?.dealCode || 'Deal'}) đã khóa. Phát sinh mới sẽ lập Phụ lục bổ sung (PL-02).
+              </span>
+              {!hasAcceptance && me.roles.includes('CREATOR') && (
+                <Button size="sm" variant="secondary" icon={FilePlus2} onClick={onCreateAcceptance}>
+                  Lập Biên bản nghiệm thu (BBNT)
+                </Button>
+              )}
+            </div>
+          )}
+          {signing?.error && <p role="alert" className="text-xs text-critical">{signing.error}</p>}
+        </div>
 
-                  <div className="space-y-1">
-                    <span className="text-2xs text-ink-3 block">Thực chi cho Bên B (Net)</span>
-                    <span className="text-sm font-semibold text-positive tabular-nums block">
-                      {netPayout > 0 ? `${netPayout.toLocaleString('vi-VN')} đ` : '—'}
-                    </span>
-                    <span className="text-2xs text-ink-3 block">
-                      {isAcceptance(record.templateId) ? 'Đủ điều kiện trình duyệt chi' : 'Tất toán sau khi có BBNT'}
-                    </span>
-                  </div>
+        {/* Khối phải (5 cột): Đối soát Tài chính, Thuế TNCN & Hạn mức Deal */}
+        <div className="lg:col-span-5 bg-surface border border-line rounded-xl p-4 flex flex-col justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-ink">Đối soát tài chính &amp; Thuế</span>
+            {financialSummary.dealValue > 0 && financialSummary.baseContractValue > 0 ? (
+              <Status tone={financialSummary.diff === 0 ? 'positive' : financialSummary.diff > 0 ? 'critical' : 'warning'}>
+                {financialSummary.diff === 0
+                  ? 'Khớp 100% giá trị Booking'
+                  : financialSummary.diff > 0
+                    ? `Vượt Booking +${financialSummary.diff.toLocaleString('vi-VN')} đ`
+                    : `Thấp hơn Booking ${Math.abs(financialSummary.diff).toLocaleString('vi-VN')} đ`}
+              </Status>
+            ) : (
+              <span className="text-2xs text-ink-2">Chế độ thuế: {financialSummary.subject}</span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5 text-xs">
+            <div className="rounded-lg border border-line bg-sunken/30 px-3 py-2">
+              <span className="text-2xs text-ink-3 block">Giá trị thù lao dịch vụ</span>
+              <span className="text-sm font-code font-semibold text-ink tabular-nums block mt-0.5">
+                {financialSummary.baseContractValue > 0 ? `${financialSummary.baseContractValue.toLocaleString('vi-VN')} đ` : 'Theo đơn hàng SOW'}
+              </span>
+              <span className="text-2xs text-ink-3 block truncate">
+                {financialSummary.grossContractValue > financialSummary.baseContractValue
+                  ? `Gross gồm thuế: ${financialSummary.grossContractValue.toLocaleString('vi-VN')} đ`
+                  : 'Thù lao ghi nhận trên văn bản'}
+              </span>
+            </div>
+
+            <div className="rounded-lg border border-line bg-sunken/30 px-3 py-2">
+              <span className="text-2xs text-ink-3 block">Khấu trừ thuế / Hóa đơn</span>
+              <span className="text-sm font-code font-semibold text-ink tabular-nums block mt-0.5">
+                {financialSummary.isIndividual
+                  ? financialSummary.pitWithholding > 0
+                    ? `TNCN 10%: ${financialSummary.pitWithholding.toLocaleString('vi-VN')} đ`
+                    : 'TNCN 0 đ (< 2 triệu)'
+                  : financialSummary.explicitVat > 0
+                    ? `VAT: ${financialSummary.explicitVat.toLocaleString('vi-VN')} đ`
+                    : 'Xuất hóa đơn ĐKKD'}
+              </span>
+              <span className="text-2xs text-ink-3 block truncate">
+                {financialSummary.isIndividual ? 'Khấu trừ tại nguồn' : `Pháp nhân: ${financialSummary.subject}`}
+              </span>
+            </div>
+
+            <div className="rounded-lg border border-line bg-sunken/30 px-3 py-2">
+              <span className="text-2xs text-ink-3 block">Hạn mức Deal gốc</span>
+              <span className="text-sm font-code font-semibold text-ink tabular-nums block mt-0.5">
+                {linkedDeal ? `${financialSummary.dealValue.toLocaleString('vi-VN')} đ` : 'Hồ sơ khung độc lập'}
+              </span>
+              <span className="text-2xs text-ink-3 block truncate">
+                {linkedDeal ? `${linkedDeal.dealCode} · Khung ${linkedDeal.salaryGrade}` : 'Áp dụng cho nhiều Deal'}
+              </span>
+            </div>
+
+            <div className="rounded-lg border border-positive/30 bg-positive-soft/35 px-3 py-2">
+              <span className="text-2xs text-ink-2 block">Thực chi cho Bên B (Net)</span>
+              <span className="text-sm font-code font-semibold text-positive tabular-nums block mt-0.5">
+                {financialSummary.netPayout > 0 ? `${financialSummary.netPayout.toLocaleString('vi-VN')} đ` : '—'}
+              </span>
+              <span className="text-2xs text-ink-3 block truncate">
+                {isAcceptanceDoc ? 'Đủ điều kiện trình duyệt chi' : 'Giải ngân sau khi có BBNT'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {record.hasCustomTerms && (
+        <div className="rounded-xl border border-warning/50 bg-warning-soft/70 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="space-y-0.5">
+            <span className="font-semibold text-xs text-warning-strong flex items-center gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              Điều khoản KOC đề xuất sửa / Thỏa thuận riêng
+            </span>
+            <p className="text-xs font-medium text-ink">
+              {record.customTermsSummary || 'Hồ sơ có yêu cầu chỉnh sửa riêng so với mẫu chuẩn (Cần Pháp chế thẩm định trước khi chuyển Kế toán)'}
+            </p>
+          </div>
+          <Status tone="warning">Luồng duyệt Pháp chế</Status>
+        </div>
+      )}
+
+      {/* KHÔNG GIAN LÀM VIỆC CHÍNH: MẶC ĐỊNH HIỂN THỊ NGAY TỜ HỢP ĐỒNG A4 & CON DẤU KÝ SỐ */}
+      <div className="grid gap-6 items-start lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid gap-4 min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Segmented<'DOCUMENT' | 'APPROVAL'>
+              value={workspaceTab}
+              onChange={setWorkspaceTab}
+              items={[
+                { key: 'DOCUMENT', label: '1. Văn bản hợp đồng A4 & Chữ ký số' },
+                {
+                  key: 'APPROVAL',
+                  label: `2. Tiến trình duyệt nội bộ & Quy chuẩn pháp chế (${record.steps.length} bước${current?.findings.length ? ` · ${current.findings.length} lưu ý` : ''})`,
+                },
+              ]}
+            />
+            {canCheck && (
+              <Button size="sm" variant="secondary" icon={ScanSearch} disabled={busy} onClick={() => onAction({ action: 'CHECK' }, 'Đã kiểm tra nội dung')}>
+                Kiểm tra các ô bắt buộc
+              </Button>
+            )}
+          </div>
+
+          {workspaceTab === 'DOCUMENT' ? (
+            <section className="grid gap-3">
+              {previewError && <p role="alert" className="text-xs text-critical">{previewError}</p>}
+              {previewLoading && !previewData ? (
+                <div className="bg-surface border border-line rounded-xl p-8 text-center text-xs text-ink-3">
+                  Đang dựng văn bản hợp đồng…
+                </div>
+              ) : (
+                <ContractDocumentViewer
+                  title={record.title}
+                  templateName={
+                    record.isKocOwnForm && record.customFile
+                      ? `Tệp KOC: ${record.customFile.filename} · Phiên bản ${selectedVersion}`
+                      : `${template?.name || record.templateId} · Phiên bản ${selectedVersion}`
+                  }
+                  blocks={previewData?.blocks || record.customFile?.blocks || template?.blocks || []}
+                  paragraphs={previewData?.paragraphs || record.customFile?.paragraphs || []}
+                  fields={record.isKocOwnForm ? [] : (previewData?.fields || template?.fields || [])}
+                  values={shownValues}
+                  compareValues={comparePrev && previousSnapshot ? previousSnapshot.values : undefined}
+                  activeFieldKey={activeFieldKey}
+                  onSelectField={key => setActiveFieldKey(key)}
+                  downloadHref={`/api/contracts/${record.id}/document?version=${selectedVersion}`}
+                  signingPeople={selectedVersion === signing?.version ? signing?.people : undefined}
+                  signingDocumentId={signing?.documentId}
+                  partnerName={record.partner}
+                  acceptanceScreenshots={shownScreenshots}
+                  isTemplatePreview={record.isKocOwnForm}
+                  versionSelector={
+                    record.versions.length > 0 ? (
+                      <div className="inline-flex items-center gap-1.5">
+                        <select
+                          aria-label="Chọn phiên bản hợp đồng"
+                          value={selectedVersion}
+                          onChange={e => setSelectedVersion(Number(e.target.value))}
+                          className="h-7 rounded-md border border-line bg-surface px-2 text-2xs font-medium text-ink"
+                        >
+                          <option value={record.version}>Phiên bản {record.version} (hiện tại)</option>
+                          {[...record.versions].reverse().map(v => (
+                            <option key={v.version} value={v.version}>
+                              Phiên bản {v.version}
+                            </option>
+                          ))}
+                        </select>
+                        {previousSnapshot && (
+                          <label className="inline-flex items-center gap-1 text-2xs text-ink-2 cursor-pointer px-1.5">
+                            <input
+                              type="checkbox"
+                              checked={comparePrev}
+                              onChange={e => setComparePrev(e.target.checked)}
+                            />
+                            Đối chiếu v{previousSnapshot.version}
+                          </label>
+                        )}
+                      </div>
+                    ) : undefined
+                  }
+                />
+              )}
+            </section>
+          ) : (
+            <div className="grid gap-5">
+              {/* Tiến trình phê duyệt nội bộ & chi tiết bước ký */}
+              <section className="grid gap-3">
+                <SectionHeader title="Tiến trình phê duyệt nội bộ & Ký số" />
+                <ol className="bg-surface border border-line rounded-xl divide-y divide-line">
+                  <Step title="Soạn hồ sơ" who={record.ownerName} status={record.approval === 'DRAFT' && !record.steps.length ? { label: 'Nháp', tone: 'neutral' } : { label: 'Hoàn tất', tone: 'positive' }} meta={`Phiên bản ${record.version}`} />
+                  {record.steps.length === 0 ? (
+                    <li className="px-4 py-3 text-xs text-ink-3">Chưa gửi duyệt nội bộ.</li>
+                  ) : (
+                    record.steps.map((s, i) => (
+                      <Step key={`${s.reviewerId}-${i}`} title={ROLE_LABEL[s.role]} who={s.reviewerName} status={stepStatus(s)} meta={s.decidedAt ? dateTime(s.decidedAt) : undefined} note={s.note} />
+                    ))
+                  )}
+                  {signing && (
+                    <li className="px-4 py-3.5 grid gap-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <span className="font-semibold text-ink">Chi tiết các bước ký trên MISA AMIS weSign</span>
+                        <span className="text-2xs font-code text-ink-3">UUID: {signing.documentId}</span>
+                      </div>
+                      <ul className="divide-y divide-line rounded-lg border border-line bg-surface">
+                        {signing.people.map((p, i) => {
+                          const s = signerStatus(p.action, p.status);
+                          const stepNum = p.level ?? i + 1;
+                          const roleText = p.roleLabel || 'Người ký';
+                          return (
+                            <li key={i} className="px-3 py-2.5 flex flex-wrap items-center justify-between gap-3">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span
+                                  className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-2xs font-semibold shrink-0 ${
+                                    p.action === 2
+                                      ? 'bg-positive-soft text-positive border border-positive/30'
+                                      : p.action === 1
+                                        ? 'bg-warning-soft text-warning-strong border border-warning/40'
+                                        : p.action === 3
+                                          ? 'bg-critical-soft text-critical border border-critical/30'
+                                          : 'bg-sunken text-ink-3 border border-line'
+                                  }`}
+                                >
+                                  {stepNum}
+                                </span>
+                                <Person name={p.name} sub={p.email} size={24} />
+                                <span className="text-2xs px-1.5 py-0.5 rounded bg-sunken border border-line text-ink-2">
+                                  {roleText}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {p.at && <span className="text-2xs text-ink-3 tabular-nums">{dateTime(p.at)}</span>}
+                                <Status tone={s.tone}>{s.label}</Status>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </li>
+                  )}
+                </ol>
+              </section>
+
+              {/* Kiểm tra nội dung */}
+              <section className="grid gap-3">
+                <SectionHeader
+                  title="Kiểm tra nội dung & Ô bắt buộc"
+                  actions={canCheck && <Button size="sm" icon={ScanSearch} disabled={busy} onClick={() => onAction({ action: 'CHECK' }, 'Đã kiểm tra nội dung')}>Kiểm tra</Button>}
+                />
+                <div className="bg-surface border border-line rounded-xl px-4 py-3">
+                  {!current ? (
+                    <p className="text-xs text-ink-3">
+                      Chưa kiểm tra phiên bản {record.version}.{record.checks.length > 0 && ' Kết quả của phiên bản trước không còn áp dụng.'}
+                    </p>
+                  ) : current.findings.length === 0 ? (
+                    <p className="text-xs text-positive">Không thấy vấn đề trong phạm vi đã kiểm tra · {dateTime(current.at)}</p>
+                  ) : (
+                    <ul className="grid gap-3">
+                      {current.findings.map((f, i) => (
+                        <li
+                          key={i}
+                          onClick={
+                            f.fieldKey
+                              ? () => {
+                                  setWorkspaceTab('DOCUMENT');
+                                  setActiveFieldKey(f.fieldKey!);
+                                }
+                              : undefined
+                          }
+                          className={`pl-3 border-l-2 ${f.severity === 'ERROR' ? 'border-critical' : f.severity === 'WARNING' ? 'border-warning' : 'border-line-strong'} ${f.fieldKey ? 'cursor-pointer hover:bg-sunken/60 rounded-r py-0.5' : ''}`}
+                        >
+                          <p className="text-xs text-ink">
+                            {f.message}
+                            {f.fieldKey && <span className="ml-2 text-2xs text-accent hover:underline">Mở trên văn bản A4 →</span>}
+                          </p>
+                          {f.evidence && <p className="text-2xs text-ink-3 mt-0.5 line-clamp-2">{f.evidence}</p>}
+                        </li>
+                      ))}
+                      <li className="text-2xs text-ink-3">{current.provider === 'AI' ? 'Gợi ý' : 'Kiểm tra ô bắt buộc'} · {dateTime(current.at)}</li>
+                    </ul>
+                  )}
                 </div>
               </section>
-            );
-          })()}
 
-          {/* Xem trực tiếp văn bản hợp đồng trên màn hình */}
-          <section className="grid gap-3">
-            <SectionHeader
-              title="Văn bản hợp đồng trực tiếp"
-            />
-            {previewError && <p role="alert" className="text-[13px] text-critical">{previewError}</p>}
-            {previewLoading && !previewData ? (
-              <div className="bg-surface border border-line rounded-xl p-8 text-center text-[13px] text-ink-3">
-                Đang dựng văn bản hợp đồng…
-              </div>
-            ) : (
-              <ContractDocumentViewer
-                title={record.title}
-                templateName={
-                  record.isKocOwnForm && record.customFile
-                    ? `Tệp KOC: ${record.customFile.filename} · Phiên bản ${selectedVersion}`
-                    : `${template?.name || record.templateId} · Phiên bản ${selectedVersion}`
-                }
-                blocks={previewData?.blocks || record.customFile?.blocks || template?.blocks || []}
-                paragraphs={previewData?.paragraphs || record.customFile?.paragraphs || []}
-                fields={record.isKocOwnForm ? [] : (previewData?.fields || template?.fields || [])}
-                values={shownValues}
-                compareValues={comparePrev && previousSnapshot ? previousSnapshot.values : undefined}
-                activeFieldKey={activeFieldKey}
-                onSelectField={key => setActiveFieldKey(key)}
-                downloadHref={`/api/contracts/${record.id}/document?version=${selectedVersion}`}
-                signingPeople={selectedVersion === signing?.version ? signing.people : undefined}
-                acceptanceScreenshots={shownScreenshots}
-                isTemplatePreview={record.isKocOwnForm}
-                versionSelector={
-                  record.versions.length > 0 ? (
-                    <div className="inline-flex items-center gap-1.5">
-                      <select
-                        aria-label="Chọn phiên bản hợp đồng"
-                        value={selectedVersion}
-                        onChange={e => setSelectedVersion(Number(e.target.value))}
-                        className="h-7 rounded-md border border-line bg-surface px-2 text-2xs font-medium text-ink"
-                      >
-                        <option value={record.version}>Phiên bản {record.version} (hiện tại)</option>
-                        {[...record.versions].reverse().map(v => (
-                          <option key={v.version} value={v.version}>
-                            Phiên bản {v.version}
-                          </option>
-                        ))}
-                      </select>
-                      {previousSnapshot && (
-                        <label className="inline-flex items-center gap-1 text-2xs text-ink-2 cursor-pointer px-1.5">
-                          <input
-                            type="checkbox"
-                            checked={comparePrev}
-                            onChange={e => setComparePrev(e.target.checked)}
-                          />
-                          Đối chiếu v{previousSnapshot.version}
-                        </label>
-                      )}
+              {/* Quy chuẩn pháp chế & Luồng phê duyệt */}
+              {(() => {
+                const ruleEvaluation = evaluateContractRules({
+                  koc: linkedKoc,
+                  deal: linkedDeal,
+                  kind: isAcceptanceDoc ? 'ACCEPTANCE' : 'CONTRACT',
+                  totalValue: linkedDeal?.totalValue || financialSummary.baseContractValue || 0,
+                  advanceAmount: financialSummary.parsedAdvance,
+                  actualSettledValue: financialSummary.baseContractValue > 0 ? financialSummary.baseContractValue : undefined,
+                  hasCustomTerms: record.hasCustomTerms,
+                  isKolForm: record.isKocOwnForm || template?.scope === 'KOC_CUSTOM',
+                  availableTemplates: data.templates,
+                });
+
+                return (
+                  <section className="grid gap-3">
+                    <SectionHeader
+                      title="Quy chuẩn pháp chế & Luồng duyệt"
+                      actions={
+                        <Status tone={ruleEvaluation.isHighValueKoc ? 'warning' : 'positive'}>
+                          {ruleEvaluation.reviewStream.streamName}
+                        </Status>
+                      }
+                    />
+                    <div className="bg-surface border border-line rounded-xl p-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+                      <div className="space-y-1">
+                        <span className="text-2xs text-ink-3 block">Mẫu hợp đồng (BR-01)</span>
+                        <span className={`text-xs font-semibold block ${ruleEvaluation.isHighValueKoc ? 'text-accent' : 'text-positive'}`}>
+                          {ruleEvaluation.isHighValueKoc ? '≥ 50 triệu (Được dùng mẫu KOC)' : 'Dưới 50 triệu (100% mẫu UpBase)'}
+                        </span>
+                        <span className="text-2xs text-ink-3 block">{ruleEvaluation.templateCompliance.note}</span>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-2xs text-ink-3 block">Nghĩa vụ ký (BR-03)</span>
+                        <span className={`text-xs font-semibold block ${ruleEvaluation.isContractMandatory ? 'text-ink' : 'text-positive'}`}>
+                          {ruleEvaluation.isContractMandatory ? 'Bắt buộc ký hợp đồng' : 'Miễn HĐ giấy'}
+                        </span>
+                        <span className="text-2xs text-ink-3 block">{ruleEvaluation.contractMandatoryReason}</span>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-2xs text-ink-3 block">Nghiệm thu (BR-04)</span>
+                        <span className={`text-xs font-semibold block ${ruleEvaluation.isAcceptanceMandatory ? 'text-ink' : 'text-positive'}`}>
+                          {ruleEvaluation.isAcceptanceMandatory ? 'Bắt buộc lập BBNT' : 'Thanh lý tự động'}
+                        </span>
+                        <span className="text-2xs text-ink-3 block">{ruleEvaluation.acceptanceMandatoryReason}</span>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-2xs text-ink-3 block">Thời hạn xử lý (SLA)</span>
+                        <span className="text-xs font-semibold text-accent block">TCKT {ruleEvaluation.reviewStream.slaHoursTckt}h · Pháp chế {ruleEvaluation.reviewStream.slaHoursLegal}h</span>
+                        <span className="text-2xs text-ink-3 block">{ruleEvaluation.reviewStream.flowDescription}</span>
+                      </div>
                     </div>
-                  ) : undefined
-                }
-              />
-            )}
-          </section>
+                  </section>
+                );
+              })()}
+            </div>
+          )}
         </div>
 
         <aside className="bg-surface border border-line rounded-xl divide-y divide-line min-w-0">

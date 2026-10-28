@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchLarkAppAccessToken, getLarkConfig, getAuthenticatedUser } from '@/lib/larkAuth';
+import { fetchLarkAppAccessToken, getAuthenticatedUser } from '@/lib/larkAuth';
 import { isStaffGlobalAdminOrManager } from '@/lib/rbacScope';
 import {
   buildLarkPaymentRequestSlip,
@@ -16,6 +16,7 @@ import { assertCanViewBooking, resolvePlanContext } from '@/lib/server/monthlyPl
 import { EMPTY_DEAL_BOARD, jobPaymentBlocker, sanitizeDealBoard, type DealBoardData, type DealJob } from '@/lib/dealBoardRules';
 import { getPlanActor } from '@/app/api/monthly-plans/_shared';
 import { applySlipStatusToJobs } from '@/lib/server/slipJobSync';
+import { getLarkPaymentIntegrationConfig } from '@/lib/server/larkPaymentApproval';
 
 export const dynamic = 'force-dynamic';
 
@@ -134,25 +135,6 @@ const APPROVER_ROLES_BY_STATUS: Partial<Record<ApprovalStatus, string[]>> = {
   PENDING_FINANCE: ['FINANCE', 'ADMIN'],
   APPROVED: ['FINANCE', 'ADMIN'],
 };
-
-function getLarkPaymentIntegrationConfig() {
-  const lark = getLarkConfig();
-  const appToken = (process.env.LARK_BASE_APP_TOKEN || 'bascnUpbaseB2CPlan41').trim();
-  const paymentTableId = (process.env.LARK_PAYMENT_TABLE_ID || 'tblB2cBookingPayment32').trim();
-  const approvalDefCode = (process.env.LARK_APPROVAL_DEFINITION_CODE || '').trim();
-  const anycrossWebhookUrl = (process.env.ANYCROSS_PAYMENT_WEBHOOK_URL || '').trim();
-
-  return {
-    domain: lark.domain,
-    hasLarkCredentials: lark.isConfigured,
-    appToken,
-    paymentTableId,
-    approvalDefCode: approvalDefCode || 'DEF_B2C_BOOKING_PAYMENT_V2026',
-    hasLiveApprovalDef: Boolean(approvalDefCode),
-    hasAnycrossWebhook: Boolean(anycrossWebhookUrl),
-    anycrossWebhookUrl,
-  };
-}
 
 /**
  * GET /api/integrations/larkbase/payment-requests

@@ -25,7 +25,6 @@ import { StaffBrandListingSheetWorkspace } from '../shortlist/StaffBrandListingS
 import { KocQuickViewModal } from '../shortlist/KocQuickViewModal';
 import { PlanListingBoard } from './PlanListingBoard';
 import { PlanDealBoard } from './PlanDealBoard';
-import { PlanSelfChannelBoard } from './PlanSelfChannelBoard';
 import { StoreStaffSheetSetupView, type StoreSheetSetupTabKey } from './StoreStaffSheetSetupView';
 import { ApprovedBookingListView } from './ApprovedBookingListView';
 import type { ContractDocument } from '../../lib/planDealLink';
@@ -1059,13 +1058,13 @@ export function KocListingBatchHubView({
           }
           onChange={setActiveSubTab}
           items={[
-            { key: 'STAFF_BRAND_SHEET', label: '1. Bảng Listing KOC (Sheet)' },
-            { key: 'APPROVED_DEAL_BOARD', label: '2. Quản lý Deal & Booking' },
+            { key: 'STAFF_BRAND_SHEET', label: 'Bảng Listing KOC' },
+            { key: 'APPROVED_DEAL_BOARD', label: 'Quản lý Deal & Booking' },
             ...(isAdmin
               ? [
                   {
                     key: 'SHEET_STAFF_SETUP' as const,
-                    label: '3. Thiết lập Sheet & Phân quyền',
+                    label: 'Thiết lập Sheet & Phân quyền',
                   },
                 ]
               : []),

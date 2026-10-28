@@ -2,7 +2,7 @@
 import { Prisma } from '@prisma/client';
 import { klLabel, klBaseCost } from '../klTiers';
 import prisma from '../prisma';
-import { invalidateMonthlyPlansCache } from './monthlyPlanStore';
+import { findPlanForStoreMonth, invalidateMonthlyPlansCache } from './monthlyPlanStore';
 import { fetchLarkAppAccessToken, getLarkConfig } from '../larkAuth';
 import type {
   InputPlanBreakdownState,
@@ -535,7 +535,11 @@ async function persistIngestedRecords(records: LarkbaseBookingPlanRecordItem[]):
 
   for (const rec of records) {
     memoryIngestedRecords.set(rec.larkRecordId, rec);
-    const plan = convertLarkbaseRecordToMonthlyPlan(rec);
+    const converted = convertLarkbaseRecordToMonthlyPlan(rec);
+    // Gian đã có kế hoạch trong tháng (thường là bản nháp lập trong app): ghi bản duyệt vào đúng kế hoạch đó
+    // để Listing / Deal / Content đã làm trên bản nháp đi theo, không tách ra kế hoạch thứ hai
+    const existing = await findPlanForStoreMonth({ ...converted, larkRecordId: rec.larkRecordId }).catch(() => null);
+    const plan = existing && existing.id !== converted.id ? { ...converted, id: existing.id } : converted;
     plans.push(plan);
 
     try {

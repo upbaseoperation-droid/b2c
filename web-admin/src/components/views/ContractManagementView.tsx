@@ -8,11 +8,11 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, Eye, FileText, FolderKanban, Plus, RefreshCw, Upload } from 'lucide-react';
+import { CheckCircle2, Download, Eye, FilePlus2, FileText, FolderKanban, Plus, RefreshCw, Upload } from 'lucide-react';
 import type { BookingDealItem, KocItem } from '../../lib/types';
 import type { ContractField, ContractRecord, DocBlock, LegalTemplate } from '../../lib/contracts/types';
 import { formatDate } from '../../lib/format';
-import { Button, Chips, DataTable, EmptyState, FilterBar, Modal, PageActions, Pagination, Panel, Person, Segmented, Status } from '../ui';
+import { Button, Chips, DataTable, EmptyState, FilterBar, Modal, PageActions, Pagination, Panel, Person, Segmented, Stat, StatRow, Status } from '../ui';
 import type { Column } from '../ui';
 import { ApiError, contractApi, type ContractBootstrap } from '../contracts/api';
 import { browserDemoEnabled, downloadBrowserDemo, enableBrowserDemo } from '../contracts/browserDemo';
@@ -28,11 +28,13 @@ import { documentOfTemplate, type ContractDocument } from '../../lib/planDealLin
 /** Yêu cầu mở hồ sơ của một booking hoặc KOC / Hồ sơ pháp lý (từ màn Booking hoặc Danh bạ KOC). `nonce` đổi mỗi lần bấm. */
 export interface ContractIntent {
   dealId?: string;
+  deal?: BookingDealItem;
   kocId?: string;
   legalProfileId?: string;
   nonce: number;
   /** Loại tài liệu cần mở hoặc soạn của deal/KOC: hợp đồng nguyên tắc, SOW hoặc biên bản nghiệm thu. */
   document?: ContractDocument;
+  fromBooking?: boolean;
 }
 
 type Screen =
@@ -48,6 +50,7 @@ export function ContractManagementView({
   intent,
   onNotify,
   onSyncDealContractStatus,
+  onBackToBooking,
   demoMode = false,
   currentUserId,
 }: {
@@ -56,9 +59,16 @@ export function ContractManagementView({
   intent?: ContractIntent | null;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onSyncDealContractStatus?: (dealId: string, patch: Partial<BookingDealItem>) => void;
+  onBackToBooking?: () => void;
   demoMode?: boolean;
   currentUserId?: string;
 }) {
+  const effectiveDeals = useMemo(() => {
+    if (!intent?.deal) return deals;
+    return deals.some(d => d.id === intent.deal!.id)
+      ? deals.map(d => (d.id === intent.deal!.id ? intent.deal! : d))
+      : [intent.deal, ...deals];
+  }, [deals, intent]);
   const [data, setData] = useState<ContractBootstrap | null>(null);
   const [loadError, setLoadError] = useState<ApiError | null>(null);
   const [busy, setBusy] = useState(false);
@@ -136,7 +146,7 @@ export function ContractManagementView({
     } else if (intent.document) {
       // Deal của kế hoạch: mở hồ sơ đã có của đúng loại tài liệu, chưa có thì mở form soạn theo mẫu bản mới
       const doc = intent.document;
-      const deal = deals.find(d => d.id === intent.dealId);
+      const deal = intent.deal || effectiveDeals.find(d => d.id === intent.dealId);
       const koc = kocs.find(k => k.id === (intent.kocId || deal?.kocId));
       const activeProf = resolveActiveLegalProfile(koc, deal, intent.legalProfileId || deal?.legalProfileId);
       const baseSubject = detectSubjectKind(koc, deal);
@@ -148,8 +158,9 @@ export function ContractManagementView({
             : activeProf?.legalType === 'HOUSEHOLD'
               ? 'HKD'
               : baseSubject;
-      const sameKocForDoc = (r: ContractRecord) => r.dealId === intent.dealId || Boolean(deal?.kocId && r.kocId === deal.kocId);
-      const existing = latest(data.records.filter(r => documentOfTemplate(r.templateId) === doc && (doc === 'HDNT' ? sameKocForDoc(r) : r.dealId === intent.dealId)));
+      const sameDeal = (r: ContractRecord) => r.dealId === intent.dealId || Boolean(deal?.dealCode && r.dealCode === deal.dealCode);
+      const sameKocForDoc = (r: ContractRecord) => sameDeal(r) || Boolean(deal?.kocId && r.kocId === deal.kocId);
+      const existing = latest(data.records.filter(r => documentOfTemplate(r.templateId) === doc && (doc === 'HDNT' ? sameKocForDoc(r) : sameDeal(r))));
       if (existing) setScreen({ mode: 'detail', id: existing.id });
       else {
         const templateId = doc === 'HDNT' ? `${subject}-HDNT` : doc === 'SOW' ? `${subject}-SOW` : `${subject}-VID-BBNT`;
@@ -157,16 +168,17 @@ export function ContractManagementView({
           onNotify?.(subject === 'CTV' && doc === 'SOW' ? 'KOC thuộc nhóm CTV kênh không có SOW, chỉ có hợp đồng nguyên tắc và biên bản nghiệm thu theo tháng.' : `Chưa có mẫu ${templateId} trong danh mục biểu mẫu.`, 'warning');
           setScreen({ mode: 'list' });
         } else {
-          const sameKoc = (r: ContractRecord) => r.dealId === intent.dealId || Boolean(deal?.kocId && r.kocId === deal.kocId);
+          const sameKoc = (r: ContractRecord) => sameDeal(r) || Boolean(deal?.kocId && r.kocId === deal.kocId);
           const framework = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && sameKoc(r)));
-          const sow = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'SOW' && r.dealId === intent.dealId));
+          const sow = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'SOW' && sameDeal(r)));
           const parentId = doc === 'SOW' ? framework?.id : doc === 'BBNT' ? sow?.id || framework?.id : undefined;
           setScreen({ mode: 'form', init: { dealId: intent.dealId, kocId: intent.kocId || deal?.kocId, legalProfileId: intent.legalProfileId || deal?.legalProfileId || activeProf?.id, kind: doc === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', docStage: doc, templateId, parentId } });
         }
       }
     } else {
-      const existing = latest(data.records.filter(r => r.dealId === intent.dealId && !isAcceptance(r.templateId)));
-      const deal = deals.find(d => d.id === intent.dealId);
+      const deal = intent.deal || effectiveDeals.find(d => d.id === intent.dealId);
+      const sameDeal = (r: ContractRecord) => r.dealId === intent.dealId || Boolean(deal?.dealCode && r.dealCode === deal.dealCode);
+      const existing = latest(data.records.filter(r => sameDeal(r) && !isAcceptance(r.templateId)));
       const koc = kocs.find(k => k.id === (intent.kocId || deal?.kocId));
       const activeProf = resolveActiveLegalProfile(koc, deal, intent.legalProfileId || deal?.legalProfileId);
       const baseSubject = detectSubjectKind(koc, deal);
@@ -178,7 +190,7 @@ export function ContractManagementView({
             : activeProf?.legalType === 'HOUSEHOLD'
               ? 'HKD'
               : baseSubject;
-      const framework = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && (r.dealId === intent.dealId || Boolean(deal?.kocId && r.kocId === deal.kocId))));
+      const framework = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && (sameDeal(r) || Boolean(deal?.kocId && r.kocId === deal.kocId))));
       const nextStage = subject === 'CTV' ? 'HDNT' : 'SOW';
       const nextTemplateId = nextStage === 'SOW' ? `${subject}-SOW` : `${subject}-HDNT`;
       setScreen(
@@ -210,19 +222,22 @@ export function ContractManagementView({
     try {
       const result = await contractApi<{ record: ContractRecord }>('/api/contracts', { id: record?.id, revision: record?.revision, ...payload });
       await refresh();
-      if (result.record.dealId && onSyncDealContractStatus) {
+      if ((result.record.dealId || result.record.dealCode) && onSyncDealContractStatus) {
         const docKind = documentOfTemplate(result.record.templateId);
         const isCompleted = result.record.signing.at(-1)?.status === 'COMPLETED';
         const vMap = result.record.values || {};
         const docDate = vMap['token:[DDMMYY]'] || vMap['token:[DD/MM/YYYY]'] || '';
         const kocCode = vMap['token:[ID KOC]'] || result.record.dealCode || 'KOC';
+        const targetDealId = result.record.dealId || effectiveDeals.find(d => d.dealCode === result.record.dealCode)?.id || result.record.dealCode || '';
         if (docKind === 'SOW') {
-          onSyncDealContractStatus(result.record.dealId, {
+          onSyncDealContractStatus(targetDealId, {
+            dealCode: result.record.dealCode,
             contractAppendixCode: `PL01-${docDate || '26'}/${kocCode}`,
             contractAppendixStatus: isCompleted ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
           });
         } else if (docKind === 'HDNT') {
-          onSyncDealContractStatus(result.record.dealId, {
+          onSyncDealContractStatus(targetDealId, {
+            dealCode: result.record.dealCode,
             masterContractCode: `${docDate || '26'}/${kocCode}/HĐNT-UPB`,
           });
         }
@@ -293,16 +308,27 @@ export function ContractManagementView({
   const columns: Column<ContractRecord>[] = [
     {
       key: 'title',
-      header: 'Hồ sơ',
-      width: 200,
+      header: 'Hồ sơ & Giai đoạn',
+      width: 230,
       render: r => {
         const tpl = data?.templates.find(t => t.id === r.templateId);
-        const catLabel = tpl?.category ? CATEGORY_LABELS[tpl.category] : undefined;
+        const docStage = documentOfTemplate(r.templateId);
+        const stageBadge =
+          docStage === 'HDNT'
+            ? { label: '1. HĐNT Khung', cls: 'bg-sunken border-line text-ink-2' }
+            : docStage === 'SOW'
+              ? { label: '2. Phụ lục SOW', cls: 'bg-accent-soft/50 border-accent/30 text-accent' }
+              : { label: '3. Nghiệm thu BBNT', cls: 'bg-positive-soft/60 border-positive/30 text-positive' };
         return (
-          <div className="min-w-0 max-w-[260px] leading-tight">
-            <span className="block truncate font-medium text-ink">{r.title}</span>
+          <div className="min-w-0 max-w-[270px] leading-tight space-y-1">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className={`text-2xs font-semibold px-1.5 py-0.5 rounded border shrink-0 ${stageBadge.cls}`}>
+                {stageBadge.label}
+              </span>
+              <span className="block truncate font-semibold text-ink">{r.title}</span>
+            </div>
             <span className="block truncate text-2xs text-ink-3">
-              {r.isKocOwnForm && r.customFile ? `Tệp KOC: ${r.customFile.filename}` : (tpl?.name || r.templateId)} · v{r.version}{catLabel ? ` · ${catLabel}` : ''}
+              {r.isKocOwnForm && r.customFile ? `Tệp KOC: ${r.customFile.filename}` : (tpl?.name || r.templateId)} · v{r.version}
             </span>
           </div>
         );
@@ -310,18 +336,28 @@ export function ContractManagementView({
     },
     {
       key: 'partner',
-      header: 'Đối tác · booking',
-      width: 160,
+      header: 'Đối tác KOC · Booking',
+      width: 170,
       render: r => (
-        <div className="min-w-0 max-w-[200px] leading-tight">
-          <span className="block truncate text-ink">{r.partner}</span>
-          <span className="block truncate text-2xs text-ink-3">{r.brand}{r.dealCode ? <> · <span className="font-code">{r.dealCode}</span></> : ''}</span>
+        <div className="min-w-0 max-w-[210px] leading-tight space-y-0.5">
+          <span className="block truncate font-medium text-ink">{r.partner}</span>
+          <span className="block truncate text-2xs text-ink-3">
+            {r.brand}
+            {r.dealCode ? (
+              <>
+                {' · '}
+                <span className="font-code font-medium text-ink-2">{r.dealCode}</span>
+              </>
+            ) : (
+              ' · Hợp đồng khung'
+            )}
+          </span>
         </div>
       ),
     },
     {
       key: 'status',
-      header: 'Trạng thái',
+      header: 'Trạng thái duyệt',
       width: 130,
       render: r => {
         const s = contractStatus(r);
@@ -335,8 +371,8 @@ export function ContractManagementView({
     },
     {
       key: 'signing',
-      header: 'Tiến độ ký weSign',
-      width: 170,
+      header: 'Ký số 2 bên (weSign)',
+      width: 185,
       render: r => {
         const attempt = r.signing.at(-1);
         const prog = computeSigningProgress(attempt);
@@ -347,13 +383,30 @@ export function ContractManagementView({
             </span>
           );
         }
+        const pA = attempt.people[0];
+        const pB = attempt.people[1];
+        const aDone = pA?.action === 2 || attempt.status === 'COMPLETED';
+        const bDone = pB?.action === 2 || attempt.status === 'COMPLETED';
         return (
-          <div className="grid gap-1 min-w-[140px] max-w-[175px] leading-tight">
+          <div className="grid gap-1 min-w-[155px] max-w-[190px] leading-tight">
             <div className="flex items-center justify-between gap-1 text-2xs">
-              <span className="font-semibold text-ink tabular-nums">
-                {prog.completedCount}/{prog.totalCount} bước
-              </span>
-              <span className="text-ink-2 tabular-nums">{prog.progressPercent}%</span>
+              <div className="flex items-center gap-1">
+                <span
+                  className={`px-1.5 py-0.5 rounded border text-2xs font-medium ${
+                    aDone ? 'border-positive/30 bg-positive-soft text-positive' : 'border-line bg-sunken text-ink-3'
+                  }`}
+                >
+                  Bên A {aDone ? '✓' : '…'}
+                </span>
+                <span
+                  className={`px-1.5 py-0.5 rounded border text-2xs font-medium ${
+                    bDone ? 'border-positive/30 bg-positive-soft text-positive' : 'border-line bg-sunken text-ink-3'
+                  }`}
+                >
+                  Bên B {bDone ? '✓' : '…'}
+                </span>
+              </div>
+              <span className="font-code text-ink-2 tabular-nums">{prog.progressPercent}%</span>
             </div>
             <div className="h-1.5 w-full rounded-full bg-line overflow-hidden">
               <div
@@ -367,15 +420,6 @@ export function ContractManagementView({
                 style={{ width: `${Math.max(6, prog.progressPercent)}%` }}
               />
             </div>
-            {prog.currentSignerName ? (
-              <span className="text-2xs text-ink-3 truncate">
-                {attempt.status === 'REJECTED' ? `Từ chối: ${prog.currentSignerName}` : `Chờ: ${prog.currentSignerName}`}
-              </span>
-            ) : (
-              <span className="text-2xs text-positive truncate">
-                {attempt.status === 'COMPLETED' ? 'Đã ký đủ các bên' : prog.summaryText}
-              </span>
-            )}
           </div>
         );
       },
@@ -384,22 +428,125 @@ export function ContractManagementView({
     { key: 'updated', header: 'Cập nhật', width: 85, align: 'right', render: r => <span className="text-ink-2 tabular-nums text-xs">{formatDate(r.updatedAt)}</span> },
     {
       key: 'preview',
-      header: 'Văn bản',
-      width: 95,
+      header: 'Thao tác nhanh',
+      width: 175,
       align: 'right',
-      render: r => (
-        <button
-          type="button"
-          onClick={e => {
-            e.stopPropagation();
-            setQuickViewRecord(r);
-          }}
-          className="inline-flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-2xs font-medium text-ink hover:bg-sunken"
-        >
-          <Eye className="w-3.5 h-3.5 text-accent" />
-          Xem HĐ
-        </button>
-      ),
+      render: r => {
+        const isSigned = r.signing.at(-1)?.status === 'COMPLETED';
+        const isSow = documentOfTemplate(r.templateId) === 'SOW';
+        const isHdnt = r.templateId.endsWith('-HDNT') && r.templateId !== 'CTV-HDNT';
+        const hasChild = (data?.records || []).some(c => c.parentId === r.id);
+        return (
+          <div className="inline-flex items-center justify-end gap-1.5" onClick={e => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setQuickViewRecord(r)}
+              className="inline-flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-2xs font-medium text-ink hover:bg-sunken"
+            >
+              <Eye className="w-3.5 h-3.5 text-accent" />
+              Xem A4
+            </button>
+            {!isSigned && (data?.demoActors.length ?? 0) > 0 && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    const result = await contractApi<{ record: ContractRecord }>('/api/contracts', {
+                      id: r.id,
+                      revision: r.revision,
+                      action: 'DEMO_FAST_SIGN',
+                    });
+                    await refresh();
+                    if ((result.record.dealId || result.record.dealCode) && onSyncDealContractStatus) {
+                      const docKind = documentOfTemplate(result.record.templateId);
+                      const vMap = result.record.values || {};
+                      const docDate = vMap['token:[DDMMYY]'] || vMap['token:[DD/MM/YYYY]'] || '';
+                      const kocCode = vMap['token:[ID KOC]'] || result.record.dealCode || 'KOC';
+                      const targetDealId =
+                        result.record.dealId ||
+                        effectiveDeals.find(d => d.dealCode === result.record.dealCode)?.id ||
+                        result.record.dealCode ||
+                        '';
+                      if (docKind === 'SOW') {
+                        onSyncDealContractStatus(targetDealId, {
+                          dealCode: result.record.dealCode,
+                          contractAppendixCode: `PL01-${docDate || '26'}/${kocCode}`,
+                          contractAppendixStatus: 'ĐÃ_KÝ',
+                        });
+                      } else if (docKind === 'HDNT') {
+                        onSyncDealContractStatus(targetDealId, {
+                          dealCode: result.record.dealCode,
+                          masterContractCode: `${docDate || '26'}/${kocCode}/HĐNT-UPB`,
+                        });
+                      }
+                    }
+                    onNotify?.(
+                      isSow
+                        ? `Đã ký đủ 2 bên Phụ lục SOW (${r.title}) — Đã khóa cấu hình Deal`
+                        : `Đã ký đủ 2 bên (${r.title})`,
+                      'success',
+                    );
+                  } catch (err) {
+                    onNotify?.((err as Error).message, 'error');
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+                className="inline-flex items-center gap-1 rounded-md border border-positive/40 bg-positive-soft/70 px-2 py-1 text-2xs font-semibold text-positive hover:bg-positive-soft"
+                title="Xác nhận đã ký đủ 2 bên (Bên A & Bên B)"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Ký 2 bên
+              </button>
+            )}
+            {isSigned && isHdnt && (
+              <button
+                type="button"
+                onClick={() =>
+                  setScreen({
+                    mode: 'form',
+                    init: {
+                      dealId: r.dealId,
+                      kocId: r.kocId,
+                      kind: 'CONTRACT',
+                      docStage: 'SOW',
+                      parentId: r.id,
+                      templateId: r.templateId.replace(/-HDNT$/, '-SOW'),
+                    },
+                  })
+                }
+                className="inline-flex items-center gap-1 rounded-md border border-accent/40 bg-accent-soft/60 px-2 py-1 text-2xs font-semibold text-accent hover:bg-accent-soft"
+              >
+                <FilePlus2 className="w-3.5 h-3.5" />
+                Lập SOW
+              </button>
+            )}
+            {isSigned && isSow && !hasChild && (
+              <button
+                type="button"
+                onClick={() =>
+                  setScreen({
+                    mode: 'form',
+                    init: {
+                      dealId: r.dealId,
+                      kocId: r.kocId,
+                      kind: 'ACCEPTANCE',
+                      docStage: 'BBNT',
+                      parentId: r.id,
+                    },
+                  })
+                }
+                className="inline-flex items-center gap-1 rounded-md border border-accent/40 bg-accent-soft/60 px-2 py-1 text-2xs font-semibold text-accent hover:bg-accent-soft"
+              >
+                <FilePlus2 className="w-3.5 h-3.5" />
+                Lập BBNT
+              </button>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -505,65 +652,105 @@ export function ContractManagementView({
         <ContractForm
           key={screen.editId || `new-${screen.init?.dealId || ''}-${screen.init?.kocId || ''}-${screen.init?.legalProfileId || ''}-${screen.init?.kind || ''}-${screen.init?.docStage || ''}-${screen.init?.parentId || ''}-${screen.init?.templateId || ''}-${screen.init?.isKocOwnForm ? 'koc' : 'std'}`}
           data={data}
-          deals={deals}
+          deals={effectiveDeals}
           kocs={kocs}
           record={screen.editId ? record : undefined}
           init={screen.init}
           busy={busy}
           onCancel={() => setScreen(screen.editId ? { mode: 'detail', id: screen.editId } : { mode: 'list' })}
+          onBackToBooking={intent?.fromBooking ? onBackToBooking : undefined}
           onQuickFrameworkCreated={() => { void refresh(); }}
           onSave={(p: ContractFormPayload) => act({ action: screen.editId ? 'EDIT' : 'CREATE', ...p }, screen.editId ? 'Đã lưu phiên bản mới' : 'Đã lưu nháp hợp đồng')}
         />
       ) : screen.mode === 'detail' && record ? (
-        <ContractDetail
-          key={record.id}
-          record={record}
-          data={data}
-          deals={deals}
-          busy={busy}
-          onBack={() => setScreen({ mode: 'list' })}
-          onAction={act}
-          onEdit={() => setScreen({ mode: 'form', editId: record.id })}
-          onOpen={id => setScreen({ mode: 'detail', id })}
-          onCreateAcceptance={() => setScreen({ mode: 'form', init: { dealId: record.dealId, kind: 'ACCEPTANCE', parentId: record.id } })}
-          onCreateSow={() => setScreen({ mode: 'form', init: { dealId: record.dealId, kind: 'CONTRACT', parentId: record.id, templateId: record.templateId.replace(/-HDNT$/, '-SOW') } })}
-          kocs={kocs}
-        />
-      ) : (
-        <Panel flush>
-          <div className="p-4 border-b border-line">
-            <FilterBar
-              search={{ value: search, onChange: setSearch, placeholder: 'Tên hồ sơ, đối tác, nhãn hàng, mã booking' }}
-              chips={<Chips items={chips} value={filter} onChange={setFilter} />}
-              resultCount={search.trim() ? rows.length : undefined}
+        (() => {
+          const curIdx = rows.findIndex(r => r.id === record.id);
+          const prevRec = curIdx > 0 ? rows[curIdx - 1] : undefined;
+          const nextRec = curIdx >= 0 && curIdx < rows.length - 1 ? rows[curIdx + 1] : undefined;
+          return (
+            <ContractDetail
+              key={record.id}
+              record={record}
+              data={data}
+              deals={effectiveDeals}
+              busy={busy}
+              onBack={() => setScreen({ mode: 'list' })}
+              onBackToBooking={intent?.fromBooking ? onBackToBooking : undefined}
+              onPrev={prevRec ? () => setScreen({ mode: 'detail', id: prevRec.id }) : undefined}
+              onNext={nextRec ? () => setScreen({ mode: 'detail', id: nextRec.id }) : undefined}
+              positionLabel={curIdx >= 0 ? `${curIdx + 1}/${rows.length}` : undefined}
+              onAction={act}
+              onEdit={() => setScreen({ mode: 'form', editId: record.id })}
+              onOpen={id => setScreen({ mode: 'detail', id })}
+              onCreateAcceptance={() => setScreen({ mode: 'form', init: { dealId: record.dealId, kind: 'ACCEPTANCE', parentId: record.id } })}
+              onCreateSow={() => setScreen({ mode: 'form', init: { dealId: record.dealId, kind: 'CONTRACT', parentId: record.id, templateId: record.templateId.replace(/-HDNT$/, '-SOW') } })}
+              kocs={kocs}
             />
-          </div>
-          <DataTable
-            columns={columns}
-            rows={rows.slice((page - 1) * pageSize, page * pageSize)}
-            rowKey={r => r.id}
-            onRowClick={r => setScreen({ mode: 'detail', id: r.id })}
-            empty={
-              data.records.length === 0 ? (
-                <EmptyState
-                  title="Chưa có hợp đồng nào"
-                  description="Tạo hợp đồng từ danh mục mẫu pháp chế, hoặc bấm “HĐ” ở một booking để tạo hợp đồng đã điền sẵn."
-                  action={
-                    <div className="flex items-center gap-2">
-                      <Button variant="secondary" icon={FolderKanban} onClick={() => setScreen({ mode: 'catalog' })}>
-                        Xem danh mục mẫu hợp đồng
-                      </Button>
-                      {canCreate && <Button variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>Tạo hợp đồng</Button>}
-                    </div>
-                  }
-                />
-              ) : (
-                <EmptyState title="Không có hồ sơ khớp" />
-              )
-            }
-          />
-          <Pagination page={page} pageSize={pageSize} total={rows.length} onPageChange={setPage} />
-        </Panel>
+          );
+        })()
+      ) : (
+        <div className="space-y-4">
+          <StatRow>
+            <Stat
+              label="Tổng hồ sơ pháp lý"
+              value={`${data.records.length} bộ`}
+              note={`${data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT').length} HĐNT · ${data.records.filter(r => documentOfTemplate(r.templateId) === 'SOW').length} Phụ lục SOW · ${data.records.filter(r => documentOfTemplate(r.templateId) === 'BBNT').length} BBNT`}
+            />
+            <Stat
+              label="Đang chờ duyệt nội bộ"
+              value={`${data.records.filter(r => r.approval === 'IN_REVIEW').length} bộ`}
+              tone={data.records.some(waitingMe) ? 'warning' : undefined}
+              note={`${data.records.filter(waitingMe).length} hồ sơ đang chờ lượt duyệt của bạn`}
+            />
+            <Stat
+              label="Đang trình ký weSign 2 bên"
+              value={`${data.records.filter(awaitingSign).length} bộ`}
+              tone={data.records.some(awaitingSign) ? 'warning' : undefined}
+              note="Theo dõi chữ ký Bên A (UpBase) & Bên B (KOC)"
+            />
+            <Stat
+              label="Đã ký hoàn tất"
+              value={`${data.records.filter(done).length} bộ`}
+              tone="positive"
+              note={`${data.records.filter(needAcceptance).length} Phụ lục SOW đã ký chờ lập BBNT`}
+            />
+          </StatRow>
+
+          <Panel flush>
+            <div className="p-4 border-b border-line">
+              <FilterBar
+                search={{ value: search, onChange: setSearch, placeholder: 'Tên hồ sơ, đối tác, nhãn hàng, mã booking' }}
+                chips={<Chips items={chips} value={filter} onChange={setFilter} />}
+                resultCount={search.trim() ? rows.length : undefined}
+              />
+            </div>
+            <DataTable
+              columns={columns}
+              rows={rows.slice((page - 1) * pageSize, page * pageSize)}
+              rowKey={r => r.id}
+              onRowClick={r => setScreen({ mode: 'detail', id: r.id })}
+              empty={
+                data.records.length === 0 ? (
+                  <EmptyState
+                    title="Chưa có hợp đồng nào"
+                    description="Tạo hợp đồng từ danh mục mẫu pháp chế, hoặc bấm “HĐ” ở một booking để tạo hợp đồng đã điền sẵn."
+                    action={
+                      <div className="flex items-center gap-2">
+                        <Button variant="secondary" icon={FolderKanban} onClick={() => setScreen({ mode: 'catalog' })}>
+                          Xem danh mục mẫu hợp đồng
+                        </Button>
+                        {canCreate && <Button variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>Tạo hợp đồng</Button>}
+                      </div>
+                    }
+                  />
+                ) : (
+                  <EmptyState title="Không có hồ sơ khớp" />
+                )
+              }
+            />
+            <Pagination page={page} pageSize={pageSize} total={rows.length} onPageChange={setPage} />
+          </Panel>
+        </div>
       )}
 
       {/* Xem nhanh văn bản hợp đồng ngay từ bảng danh sách */}
@@ -609,6 +796,8 @@ export function ContractManagementView({
             values={quickViewDoc?.values || quickViewRecord.values}
             downloadHref={`/api/contracts/${quickViewRecord.id}/document`}
             signingPeople={quickViewRecord.signing.at(-1)?.people}
+            signingDocumentId={quickViewRecord.signing.at(-1)?.documentId}
+            partnerName={quickViewRecord.partner}
             acceptanceScreenshots={quickViewRecord.acceptanceScreenshots}
             maxHeight="65vh"
           />

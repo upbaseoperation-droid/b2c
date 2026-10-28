@@ -9,18 +9,22 @@ import {
 import {
   Button,
   ChannelTag,
+  DataTable,
   EmptyState,
   Modal,
+  Pagination,
   Panel,
   Person,
   Segmented,
   Stat,
   StatRow,
   Status,
+  type Column,
 } from '../ui';
 import {
   formatVndShort,
   formatNumber,
+  formatDate,
 } from '../../lib/format';
 import {
   B2C_WEEKLY_MACRO_AIR_SUMMARY,
@@ -29,6 +33,8 @@ import {
   StoreWeeklyAirSyncRecord,
   StoreAirSyncStatus,
   DealAirTimingStatus,
+  type WeeklyAirBucket,
+  type StoreAirDealRecord,
 } from '../../lib/b2cWeeklyAirSyncDataset';
 
 interface WeeklyAirSyncDashboardSectionProps {
@@ -137,7 +143,6 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
   const [governanceFilter, setGovernanceFilter] = useState<'ALL' | 'WITH_LEADER' | 'DIRECT_HEAD'>(selectedGovernanceGlobal);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const deferredSearch = useDeferredValue(searchQuery);
-  const [visibleLimit, setVisibleLimit] = useState<number>(20);
   const [inspectStore, setInspectStore] = useState<StoreWeeklyAirSyncRecord | null>(null);
   const [modalDealFilter, setModalDealFilter] = useState<'ALL' | DealAirTimingStatus>('ALL');
 
@@ -200,6 +205,16 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
     if (selectedSyncStatus === 'ALL') return baseFilteredStores;
     return baseFilteredStores.filter((st) => st.syncStatus === selectedSyncStatus);
   }, [baseFilteredStores, selectedSyncStatus]);
+
+  const [storePage, setStorePage] = useState<number>(1);
+  const storePageSize = 15;
+  const maxStorePage = Math.max(1, Math.ceil(filteredStores.length / storePageSize));
+  const safeStorePage = Math.min(storePage, maxStorePage);
+
+  const pagedStores = useMemo(() => {
+    const start = (safeStorePage - 1) * storePageSize;
+    return filteredStores.slice(start, start + storePageSize);
+  }, [filteredStores, safeStorePage, storePageSize]);
 
   // Tổng hợp chỉ số điều hành trên tập gian hàng đang xem
   const executiveMetrics = useMemo(() => {
@@ -356,6 +371,314 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
     return inspectStore.deals.filter((d) => d.syncTimingStatus === modalDealFilter);
   }, [inspectStore, modalDealFilter]);
 
+  const storeMatrixColumns = useMemo<Column<StoreWeeklyAirSyncRecord>[]>(() => [
+    {
+      key: 'storeName',
+      header: 'Gian hàng & thương hiệu',
+      render: (st) => (
+        <div>
+          <div className="font-semibold text-ink">{st.storeName}</div>
+          <div className="flex items-center gap-1.5 mt-0.5 text-2xs text-ink-3">
+            <ChannelTag channel={st.platform} />
+            <span>·</span>
+            <span>{st.brandName}</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'pic',
+      header: 'PIC & luồng duyệt',
+      render: (st) => (
+        <div>
+          <Person name={st.pic} size={20} />
+          {st.hasLeader && (
+            <div className="text-2xs text-accent font-medium mt-0.5">
+              TN: {st.leaderName}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'syncStatus',
+      header: 'Chẩn đoán air đồng loạt',
+      render: (st) => {
+        const meta = SYNC_STATUS_META[st.syncStatus];
+        return <Status tone={meta.tone}>{meta.label}</Status>;
+      },
+    },
+    {
+      key: 'weeks',
+      header: 'Ma trận lịch tuần (Thực air / Kế hoạch Paid+Brand)',
+      align: 'center',
+      render: (st) => {
+        const w40 = st.weeks.find((w) => w.weekCode === 'W40')!;
+        const w41 = st.weeks.find((w) => w.weekCode === 'W41')!;
+        const w42 = st.weeks.find((w) => w.weekCode === 'W42')!;
+        const w43 = st.weeks.find((w) => w.weekCode === 'W43')!;
+        const w44 = st.weeks.find((w) => w.weekCode === 'W44')!;
+        const w45 = st.weeks.find((w) => w.weekCode === 'W45')!;
+
+        const compactWeeks = [
+          { code: 'W40', air: w40.actualAiredInWeek, plan: Math.max(w40.planCoreVideos, w40.bookedPlannedInWeek) },
+          { code: 'W41', air: w41.actualAiredInWeek, plan: w41.planCoreVideos },
+          { code: 'W42', air: w42.actualAiredInWeek, plan: w42.planCoreVideos },
+          { code: 'W43', air: w43.actualAiredInWeek, plan: w43.planCoreVideos },
+          {
+            code: 'W44-45',
+            air: w44.actualAiredInWeek + w45.actualAiredInWeek,
+            plan: w44.planCoreVideos + w45.planCoreVideos,
+          },
+        ];
+
+        return (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-1 min-w-[235px]">
+            {compactWeeks.map((cw) => {
+              const hasActivity = cw.air > 0 || cw.plan > 0;
+              const isGood = cw.air > 0 && cw.air >= cw.plan * 0.7;
+              const isPartial = cw.air > 0 && cw.air < cw.plan * 0.7;
+              const isMissed =
+                cw.air === 0 &&
+                cw.plan > 0 &&
+                (cw.code === 'W40' || cw.code === 'W41' || cw.code === 'W42');
+
+              return (
+                <div
+                  key={cw.code}
+                  className={`px-1.5 py-1 rounded text-center font-code border ${
+                    isGood
+                      ? 'bg-positive-soft/70 border-positive/30 text-positive'
+                      : isPartial
+                      ? 'bg-warning-soft/70 border-warning/30 text-warning'
+                      : isMissed
+                      ? 'bg-critical-soft/60 border-critical/30 text-critical'
+                      : hasActivity
+                      ? 'bg-sunken border-line text-ink-2'
+                      : 'bg-canvas border-line/60 text-ink-3/60'
+                  }`}
+                >
+                  <span className="block text-2xs font-sans font-medium leading-tight">
+                    {cw.code}
+                  </span>
+                  <span className="block text-xs font-semibold leading-tight mt-0.5">
+                    {cw.air}/{cw.plan}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'burstConcentrationPct',
+      header: 'Độ tụ sóng 3 ngày đỉnh',
+      align: 'right',
+      render: (st) =>
+        st.totalAired > 0 ? (
+          <div>
+            <div className="font-semibold text-ink font-code">{st.burstConcentrationPct}%</div>
+            <div className="text-2xs text-ink-3">
+              Đỉnh {st.peakActualDate.slice(8, 10)}/10 ({st.peakActualCount} video)
+            </div>
+          </div>
+        ) : (
+          <span className="text-ink-3">—</span>
+        ),
+    },
+    {
+      key: 'scheduleAdherencePct',
+      header: 'Khớp lịch hẹn',
+      align: 'right',
+      render: (st) =>
+        st.totalAired > 0 ? (
+          <div>
+            <div
+              className={`font-semibold font-code ${
+                st.scheduleAdherencePct >= 75
+                  ? 'text-positive'
+                  : st.lateCount >= 4
+                  ? 'text-critical'
+                  : 'text-ink-2'
+              }`}
+            >
+              {st.onTimeCount + st.earlyCount} chuẩn · {st.lateCount} trễ
+            </div>
+            <div className="text-2xs text-ink-3">
+              {st.unscheduledCount > 0
+                ? `${st.unscheduledCount} đơn thiếu ngày KH`
+                : `Đạt ${st.scheduleAdherencePct}% đúng hẹn`}
+            </div>
+          </div>
+        ) : (
+          <span className="text-ink-3">Chưa air</span>
+        ),
+    },
+    {
+      key: 'totalAired',
+      header: 'Tiến độ đơn 3.2',
+      align: 'right',
+      render: (st) => (
+        <div>
+          <div className="font-semibold text-ink font-code">
+            {st.totalAired} / {st.totalBooked} đơn
+          </div>
+          <div className="text-2xs text-ink-3">
+            {st.pendingCount > 0 ? (
+              <span className="text-critical font-medium">
+                {st.pendingCount} đơn kẹt chờ air
+              </span>
+            ) : st.totalBooked > 0 ? (
+              <span className="text-positive">Đã air đủ 100%</span>
+            ) : (
+              <span>KH: {st.totalPlanCoreMonth} video</span>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Chi tiết',
+      align: 'right',
+      render: () => (
+        <span className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline">
+          Soi lịch <ChevronRight className="w-3.5 h-3.5" />
+        </span>
+      ),
+    },
+  ], []);
+
+  const modalWeekColumns = useMemo<Column<WeeklyAirBucket>[]>(() => [
+    {
+      key: 'weekCode',
+      header: 'Tuần chiến dịch',
+      render: (w) => <span className="font-code font-semibold text-ink">{w.weekCode}</span>,
+    },
+    {
+      key: 'planPaidVideos',
+      header: 'KH Video Paid',
+      align: 'right',
+      render: (w) => <span className="font-code">{w.planPaidVideos}</span>,
+    },
+    {
+      key: 'planSelfVideos',
+      header: 'KH Kênh Brand',
+      align: 'right',
+      render: (w) => <span className="font-code">{w.planSelfVideos}</span>,
+    },
+    {
+      key: 'planFocVideos',
+      header: 'KH Mẫu FOC (0đ)',
+      align: 'right',
+      render: (w) => <span className="font-code text-ink-3">{w.planFocVideos}</span>,
+    },
+    {
+      key: 'bookedPlannedInWeek',
+      header: 'Đơn hẹn lịch 3.2',
+      align: 'right',
+      render: (w) => <span className="font-code font-medium">{w.bookedPlannedInWeek}</span>,
+    },
+    {
+      key: 'actualAiredInWeek',
+      header: 'Thực tế đã Air',
+      align: 'right',
+      render: (w) => <span className="font-code font-semibold text-positive">{w.actualAiredInWeek}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Đúng/Sớm · Trễ · Chờ',
+      align: 'right',
+      render: (w) => (
+        <span className="font-code text-2xs">
+          <span className="text-positive">{w.onTimeInWeek + w.earlyInWeek} chuẩn</span> ·{' '}
+          <span className={w.lateInWeek > 0 ? 'text-critical font-semibold' : 'text-ink-3'}>
+            {w.lateInWeek} trễ
+          </span>{' '}
+          ·{' '}
+          <span className={w.pendingInWeek > 0 ? 'text-warning font-semibold' : 'text-ink-3'}>
+            {w.pendingInWeek} chờ
+          </span>
+        </span>
+      ),
+    },
+  ], []);
+
+  const modalDealColumns = useMemo<Column<StoreAirDealRecord>[]>(() => [
+    {
+      key: 'code',
+      header: 'Mã BO & KOC',
+      render: (d) => (
+        <div>
+          <div className="font-code font-semibold text-ink">{d.code}</div>
+          <div className="text-2xs text-ink-3">@{d.channelId}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'videoType',
+      header: 'Hạng mục & KL',
+      render: (d) => (
+        <div>
+          <div className="text-ink">{d.videoType}</div>
+          <div className="text-2xs text-ink-3">
+            {d.kl} · {d.pipeline}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'cost',
+      header: 'Cát-xê',
+      align: 'right',
+      render: (d) => <span className="font-code">{formatVndShort(d.cost)}</span>,
+    },
+    {
+      key: 'plannedAirDate',
+      header: 'Ngày dự kiến Air',
+      align: 'center',
+      render: (d) => (
+        <span className="font-code">
+          {d.plannedAirDate ? formatDate(d.plannedAirDate) : <span className="text-ink-3">Trống</span>}
+        </span>
+      ),
+    },
+    {
+      key: 'actualAirDate',
+      header: 'Ngày thực tế Air',
+      align: 'center',
+      render: (d) => (
+        <span className="font-code font-semibold">
+          {d.actualAirDate ? formatDate(d.actualAirDate) : <span className="text-ink-3">Chưa air</span>}
+        </span>
+      ),
+    },
+    {
+      key: 'syncTimingStatus',
+      header: 'Độ khớp lịch',
+      render: (d) => renderDealTimingBadge(d.syncTimingStatus, d.dayDelta),
+    },
+    {
+      key: 'linkAir',
+      header: 'Video',
+      align: 'right',
+      render: (d) =>
+        d.linkAir ? (
+          <a
+            href={d.linkAir}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
+          >
+            Mở link <ExternalLink className="w-3 h-3" />
+          </a>
+        ) : (
+          <span className="text-ink-3">—</span>
+        ),
+    },
+  ], []);
+
   return (
     <div className="space-y-5">
       {/* 1. 4 Ô CHỈ SỐ ĐIỀU HÀNH CỐT LÕI VỀ LỊCH AIR TUẦN & ĐỘ ĐỒNG LOẠT */}
@@ -399,7 +722,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-line">
               <div>
                 <h3 className="text-base font-semibold text-ink">
-                  1. Lịch air kế hoạch vs. thực tế theo tuần (W40 → W45)
+                  Lịch air kế hoạch vs. thực tế theo tuần (W40 → W45)
                 </h3>
               </div>
               {selectedWeekFilter !== 'ALL' && (
@@ -536,7 +859,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-line">
               <div>
                 <h3 className="text-base font-semibold text-ink">
-                  2. Biểu đồ lịch air từng ngày &amp; kiểm tra nổ sóng đồng loạt (Tháng 10/2026)
+                  Biểu đồ lịch air từng ngày &amp; kiểm tra nổ sóng đồng loạt (Tháng 10/2026)
                 </h3>
               </div>
             </div>
@@ -553,7 +876,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
               >
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-ink">Đợt 1 · Ngày 01/10</span>
-                  <span className="text-2xs font-medium text-critical">Hụt lịch (Cột Đỏ)</span>
+                  <span className="text-2xs font-medium text-critical">Hụt lịch</span>
                 </div>
                 <div className="mt-1 text-xs font-semibold font-code text-critical">
                   Thực tế 29 / Kế hoạch 91 video
@@ -570,7 +893,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
               >
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-ink">Đợt 2 · Cao điểm 06–10/10</span>
-                  <span className="text-2xs font-medium text-positive">Air đồng loạt (Cột Xanh lá)</span>
+                  <span className="text-2xs font-medium text-positive">Air đồng loạt đạt đỉnh</span>
                 </div>
                 <div className="mt-1 text-xs font-semibold font-code text-positive">
                   Thực tế 413 / Kế hoạch 296 video
@@ -587,7 +910,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
               >
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-ink">Đợt 3 · Cuối tháng 29–31/10</span>
-                  <span className="text-2xs font-medium text-accent">Đón sóng 11.11 (Cột Xanh lam)</span>
+                  <span className="text-2xs font-medium text-accent">Đón sóng cuối tháng</span>
                 </div>
                 <div className="mt-1 text-xs font-semibold font-code text-accent">
                   Ngày 30/10: Thực tế 31 / KH 27 video
@@ -712,10 +1035,10 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                   </span>
                 </div>
                 <p className="text-xs text-ink-2">
-                  <strong>Cột Xám (Kế hoạch hẹn air):</strong>{' '}
+                  <strong>Kế hoạch hẹn air:</strong>{' '}
                   <strong className="font-code text-ink">{focusedDayRecord.plannedCount} video</strong>
                   {' · '}
-                  <strong>Cột Màu (Thực tế đã air):</strong>{' '}
+                  <strong>Thực tế đã air:</strong>{' '}
                   <strong className="font-code text-positive">{focusedDayRecord.actualCount} video</strong>{' '}
                   (Gồm: {focusedDayRecord.onTimeCount} đúng ngày hẹn, {focusedDayRecord.earlyCount} lên sớm,{' '}
                   {focusedDayRecord.lateSpilloverCount} trễ từ ngày trước dồn sang,{' '}
@@ -860,218 +1183,30 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
         </div>
 
         {/* Bảng Ma trận 8 cột vừa khít màn hình */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead className="bg-canvas text-ink-3 border-b border-line sticky top-0 z-10">
-              <tr>
-                <th className="py-2.5 px-4 font-medium">Gian hàng &amp; thương hiệu</th>
-                <th className="py-2.5 px-3 font-medium">PIC &amp; luồng duyệt</th>
-                <th className="py-2.5 px-3 font-medium">Chẩn đoán air đồng loạt</th>
-                <th className="py-2.5 px-3 font-medium text-center">
-                  Ma trận lịch tuần (Thực air / Kế hoạch Paid+Brand)
-                </th>
-                <th className="py-2.5 px-3 font-medium text-right">Độ tụ sóng 3 ngày đỉnh</th>
-                <th className="py-2.5 px-3 font-medium text-right">Khớp lịch hẹn</th>
-                <th className="py-2.5 px-3 font-medium text-right">Tiến độ đơn 3.2</th>
-                <th className="py-2.5 px-4 font-medium text-right">Chi tiết</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {filteredStores.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="p-8">
-                    <EmptyState
-                      title="Không có gian hàng phù hợp bộ lọc"
-                      description="Thử chọn lại trạng thái đồng loạt hoặc xóa bộ lọc tuần/thương hiệu."
-                    />
-                  </td>
-                </tr>
-              ) : (
-                filteredStores.slice(0, visibleLimit).map((st) => {
-                  const meta = SYNC_STATUS_META[st.syncStatus];
-                  const w40 = st.weeks.find((w) => w.weekCode === 'W40')!;
-                  const w41 = st.weeks.find((w) => w.weekCode === 'W41')!;
-                  const w42 = st.weeks.find((w) => w.weekCode === 'W42')!;
-                  const w43 = st.weeks.find((w) => w.weekCode === 'W43')!;
-                  const w44 = st.weeks.find((w) => w.weekCode === 'W44')!;
-                  const w45 = st.weeks.find((w) => w.weekCode === 'W45')!;
+        <DataTable
+          columns={storeMatrixColumns}
+          rows={pagedStores}
+          rowKey={(st) => st.storeId}
+          onRowClick={(st) => {
+            setModalDealFilter('ALL');
+            setInspectStore(st);
+          }}
+          empty={
+            <EmptyState
+              title="Không có gian hàng phù hợp bộ lọc"
+              description="Thử chọn lại trạng thái đồng loạt hoặc xóa bộ lọc tuần/thương hiệu."
+            />
+          }
+        />
 
-                  const compactWeeks = [
-                    { code: 'W40', air: w40.actualAiredInWeek, plan: Math.max(w40.planCoreVideos, w40.bookedPlannedInWeek) },
-                    { code: 'W41', air: w41.actualAiredInWeek, plan: w41.planCoreVideos },
-                    { code: 'W42', air: w42.actualAiredInWeek, plan: w42.planCoreVideos },
-                    { code: 'W43', air: w43.actualAiredInWeek, plan: w43.planCoreVideos },
-                    {
-                      code: 'W44-45',
-                      air: w44.actualAiredInWeek + w45.actualAiredInWeek,
-                      plan: w44.planCoreVideos + w45.planCoreVideos,
-                    },
-                  ];
-
-                  return (
-                    <tr
-                      key={st.storeId}
-                      onClick={() => {
-                        setModalDealFilter('ALL');
-                        setInspectStore(st);
-                      }}
-                      className="hover:bg-canvas transition-colors cursor-pointer"
-                    >
-                      {/* 1. Gian hàng & Brand */}
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-ink">{st.storeName}</div>
-                        <div className="flex items-center gap-1.5 mt-0.5 text-2xs text-ink-3">
-                          <ChannelTag channel={st.platform} />
-                          <span>·</span>
-                          <span>{st.brandName}</span>
-                        </div>
-                      </td>
-
-                      {/* 2. PIC & Luồng duyệt */}
-                      <td className="py-3 px-3">
-                        <Person name={st.pic} size={20} />
-                        {st.hasLeader && (
-                          <div className="text-2xs text-accent font-medium mt-0.5">
-                            TN: {st.leaderName}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* 3. Chẩn đoán Air đồng loạt */}
-                      <td className="py-3 px-3 max-w-[260px]" title={st.syncDiagnosis}>
-                        <Status tone={meta.tone}>{meta.label}</Status>
-                      </td>
-
-                      {/* 4. Ma trận 5 cột tuần */}
-                      <td className="py-3 px-3">
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-1 min-w-[235px]">
-                          {compactWeeks.map((cw) => {
-                            const hasActivity = cw.air > 0 || cw.plan > 0;
-                            const isGood = cw.air > 0 && cw.air >= cw.plan * 0.7;
-                            const isPartial = cw.air > 0 && cw.air < cw.plan * 0.7;
-                            const isMissed =
-                              cw.air === 0 &&
-                              cw.plan > 0 &&
-                              (cw.code === 'W40' || cw.code === 'W41' || cw.code === 'W42');
-
-                            return (
-                              <div
-                                key={cw.code}
-                                className={`px-1.5 py-1 rounded text-center font-code border ${
-                                  isGood
-                                    ? 'bg-positive-soft/70 border-positive/30 text-positive'
-                                    : isPartial
-                                    ? 'bg-warning-soft/70 border-warning/30 text-warning'
-                                    : isMissed
-                                    ? 'bg-critical-soft/60 border-critical/30 text-critical'
-                                    : hasActivity
-                                    ? 'bg-sunken border-line text-ink-2'
-                                    : 'bg-canvas border-line/60 text-ink-3/60'
-                                }`}
-                              >
-                                <span className="block text-2xs font-sans font-medium leading-tight">
-                                  {cw.code}
-                                </span>
-                                <span className="block text-xs font-semibold leading-tight mt-0.5">
-                                  {cw.air}/{cw.plan}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </td>
-
-                      {/* 5. Độ tụ sóng 3 ngày đỉnh */}
-                      <td className="py-3 px-3 text-right font-code">
-                        {st.totalAired > 0 ? (
-                          <>
-                            <div className="font-semibold text-ink">
-                              {st.burstConcentrationPct}%
-                            </div>
-                            <div className="text-2xs text-ink-3 font-sans">
-                              Đỉnh {st.peakActualDate.slice(8, 10)}/10 ({st.peakActualCount} video)
-                            </div>
-                          </>
-                        ) : (
-                          <span className="text-ink-3">—</span>
-                        )}
-                      </td>
-
-                      {/* 6. Khớp lịch hẹn */}
-                      <td className="py-3 px-3 text-right font-code">
-                        {st.totalAired > 0 ? (
-                          <>
-                            <div
-                              className={`font-semibold ${
-                                st.scheduleAdherencePct >= 75
-                                  ? 'text-positive'
-                                  : st.lateCount >= 4
-                                  ? 'text-critical'
-                                  : 'text-ink-2'
-                              }`}
-                            >
-                              {st.onTimeCount + st.earlyCount} chuẩn · {st.lateCount} trễ
-                            </div>
-                            <div className="text-2xs text-ink-3 font-sans">
-                              {st.unscheduledCount > 0
-                                ? `${st.unscheduledCount} đơn thiếu ngày KH`
-                                : `Đạt ${st.scheduleAdherencePct}% đúng hẹn`}
-                            </div>
-                          </>
-                        ) : (
-                          <span className="text-ink-3">Chưa air</span>
-                        )}
-                      </td>
-
-                      {/* 7. Tiến độ đơn 3.2 */}
-                      <td className="py-3 px-3 text-right font-code">
-                        <div className="font-semibold text-ink">
-                          {st.totalAired} / {st.totalBooked} đơn
-                        </div>
-                        <div className="text-2xs font-sans text-ink-3">
-                          {st.pendingCount > 0 ? (
-                            <span className="text-critical font-medium">
-                              {st.pendingCount} đơn kẹt chờ air
-                            </span>
-                          ) : st.totalBooked > 0 ? (
-                            <span className="text-positive">Đã air đủ 100%</span>
-                          ) : (
-                            <span>KH: {st.totalPlanCoreMonth} video</span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* 8. Hành động */}
-                      <td className="py-3 px-4 text-right">
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline">
-                          Soi lịch <ChevronRight className="w-3.5 h-3.5" />
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {filteredStores.length > 20 && (
-          <div className="p-3 bg-canvas border-t border-line flex items-center justify-between text-xs text-ink-2 px-4">
-            <span>
-              Đang hiển thị <strong className="font-semibold">{Math.min(visibleLimit, filteredStores.length)}</strong> /{' '}
-              <strong className="font-semibold">{filteredStores.length}</strong> gian hàng B2C
-            </span>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() =>
-                setVisibleLimit(visibleLimit >= filteredStores.length ? 20 : filteredStores.length)
-              }
-            >
-              {visibleLimit >= filteredStores.length
-                ? 'Thu gọn về 20 gian hàng'
-                : `Xem toàn bộ ${filteredStores.length} gian hàng`}
-            </Button>
+        {filteredStores.length > storePageSize && (
+          <div className="p-3 bg-canvas border-t border-line">
+            <Pagination
+              page={safeStorePage}
+              total={filteredStores.length}
+              pageSize={storePageSize}
+              onPageChange={setStorePage}
+            />
           </div>
         )}
       </Panel>
@@ -1149,54 +1284,20 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
             {/* Bảng đối chiếu 6 Tuần W40 -> W45 của Gian hàng */}
             <div>
               <h4 className="text-xs font-semibold text-ink mb-2">
-                1. Bảng đối chiếu lịch air kế hoạch tuần vs. thực tế lên sóng
+                Đối chiếu lịch air kế hoạch tuần vs. thực tế lên sóng
               </h4>
-              <div className="overflow-x-auto rounded-lg border border-line">
-                <table className="w-full text-xs text-left">
-                  <thead className="bg-canvas text-ink-3 border-b border-line">
-                    <tr>
-                      <th className="py-2 px-3 font-medium">Tuần chiến dịch</th>
-                      <th className="py-2 px-3 font-medium text-right">KH Video Paid</th>
-                      <th className="py-2 px-3 font-medium text-right">KH Kênh Brand</th>
-                      <th className="py-2 px-3 font-medium text-right">KH Mẫu FOC (0đ)</th>
-                      <th className="py-2 px-3 font-medium text-right">Đơn hẹn lịch 3.2</th>
-                      <th className="py-2 px-3 font-medium text-right">Thực tế đã Air</th>
-                      <th className="py-2 px-3 font-medium text-right">Đúng/Sớm · Trễ · Chờ</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {inspectStore.weeks.map((w) => (
-                      <tr key={w.weekCode} className="hover:bg-canvas/60">
-                        <td className="py-2 px-3 font-code font-semibold text-ink">{w.weekCode}</td>
-                        <td className="py-2 px-3 text-right font-code">{w.planPaidVideos}</td>
-                        <td className="py-2 px-3 text-right font-code">{w.planSelfVideos}</td>
-                        <td className="py-2 px-3 text-right font-code text-ink-3">{w.planFocVideos}</td>
-                        <td className="py-2 px-3 text-right font-code font-medium">{w.bookedPlannedInWeek}</td>
-                        <td className="py-2 px-3 text-right font-code font-semibold text-positive">
-                          {w.actualAiredInWeek}
-                        </td>
-                        <td className="py-2 px-3 text-right font-code text-2xs">
-                          <span className="text-positive">{w.onTimeInWeek + w.earlyInWeek} chuẩn</span> ·{' '}
-                          <span className={w.lateInWeek > 0 ? 'text-critical font-semibold' : 'text-ink-3'}>
-                            {w.lateInWeek} trễ
-                          </span>{' '}
-                          ·{' '}
-                          <span className={w.pendingInWeek > 0 ? 'text-warning font-semibold' : 'text-ink-3'}>
-                            {w.pendingInWeek} chờ
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                columns={modalWeekColumns}
+                rows={inspectStore.weeks}
+                rowKey={(w) => w.weekCode}
+              />
             </div>
 
             {/* Danh sách từng đơn video (BO...) của gian hàng */}
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                 <h4 className="text-xs font-semibold text-ink">
-                  2. Danh sách đơn booking &amp; kiểm tra ngày air thực tế ({inspectedStoreDeals.length} đơn)
+                  Danh sách đơn booking &amp; kiểm tra ngày air thực tế ({inspectedStoreDeals.length} đơn)
                 </h4>
                 <div className="flex flex-wrap items-center gap-1">
                   {(
@@ -1224,69 +1325,17 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                 </div>
               </div>
 
-              {inspectedStoreDeals.length === 0 ? (
-                <div className="p-6 rounded-lg border border-line bg-canvas text-center text-ink-3">
-                  Không có bản ghi đơn booking trong nhóm này.
-                </div>
-              ) : (
-                <div className="max-h-72 overflow-y-auto overflow-x-auto rounded-lg border border-line">
-                  <table className="w-full text-xs text-left">
-                    <thead className="bg-canvas text-ink-3 border-b border-line sticky top-0">
-                      <tr>
-                        <th className="py-2 px-3 font-medium">Mã BO &amp; KOC</th>
-                        <th className="py-2 px-2.5 font-medium">Hạng mục &amp; KL</th>
-                        <th className="py-2 px-2.5 font-medium text-right">Cát-xê</th>
-                        <th className="py-2 px-2.5 font-medium text-center">Ngày dự kiến Air</th>
-                        <th className="py-2 px-2.5 font-medium text-center">Ngày thực tế Air</th>
-                        <th className="py-2 px-2.5 font-medium">Độ khớp lịch</th>
-                        <th className="py-2 px-3 font-medium text-right">Video</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-line">
-                      {inspectedStoreDeals.map((d) => (
-                        <tr key={d.code} className="hover:bg-canvas/60">
-                          <td className="py-2 px-3">
-                            <div className="font-code font-semibold text-ink">{d.code}</div>
-                            <div className="text-2xs text-ink-3">@{d.channelId}</div>
-                          </td>
-                          <td className="py-2 px-2.5">
-                            <div className="text-ink">{d.videoType}</div>
-                            <div className="text-2xs text-ink-3">
-                              {d.kl} · {d.pipeline}
-                            </div>
-                          </td>
-                          <td className="py-2 px-2.5 text-right font-code">
-                            {formatVndShort(d.cost)}
-                          </td>
-                          <td className="py-2 px-2.5 text-center font-code">
-                            {d.plannedAirDate || <span className="text-ink-3">Trống</span>}
-                          </td>
-                          <td className="py-2 px-2.5 text-center font-code font-semibold">
-                            {d.actualAirDate || <span className="text-ink-3">Chưa air</span>}
-                          </td>
-                          <td className="py-2 px-2.5">
-                            {renderDealTimingBadge(d.syncTimingStatus, d.dayDelta)}
-                          </td>
-                          <td className="py-2 px-3 text-right">
-                            {d.linkAir ? (
-                              <a
-                                href={d.linkAir}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
-                              >
-                                Mở link <ExternalLink className="w-3 h-3" />
-                              </a>
-                            ) : (
-                              <span className="text-ink-3">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              <DataTable
+                columns={modalDealColumns}
+                rows={inspectedStoreDeals}
+                rowKey={(d) => d.code}
+                empty={
+                  <EmptyState
+                    title="Không có bản ghi đơn booking trong nhóm này"
+                    description="Thử đổi bộ lọc trạng thái đơn booking phía trên."
+                  />
+                }
+              />
             </div>
           </div>
         )}

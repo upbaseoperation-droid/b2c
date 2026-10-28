@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
       const rendered = await renderTemplate(record.templateId, record.templateHash, record.values);
       next.signing.push({ ...detail, documentId: body.documentId.toLowerCase(), version: record.version, linkedBy: actor.id, linkedAt: new Date().toISOString(), evidenceConfirmedBy: actor.id, evidenceHash: createHash('sha256').update(rendered.paragraphs.join('\n')).digest('hex') });
       event(next, actor, 'LINK_WESIGN', `Đã đối chiếu thủ công với phiên bản v${record.version}; ${body.documentId}`);
-    } else if (typeof body.action === 'string' && ['DEMO_SIGN_START', 'DEMO_SIGN_NEXT', 'DEMO_SIGN_REJECT'].includes(body.action)) {
+    } else if (typeof body.action === 'string' && ['DEMO_SIGN_START', 'DEMO_SIGN_NEXT', 'DEMO_SIGN_REJECT', 'DEMO_FAST_SIGN'].includes(body.action)) {
       next = simulateSigning(record, actor, body.action);
     } else if (body.action === 'SYNC_WESIGN') {
       requireCondition(inScope(record.brand, actor), 'Không có quyền đồng bộ.', 403);

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DataTable, EmptyState, Modal, Panel, Progress, Segmented, Select, Stat, StatRow, Status, STATUS, Toolbar, type Column } from '../ui';
+import { DataTable, EmptyState, Modal, Panel, Person, Progress, Segmented, Select, Stat, StatRow, Status, STATUS, Toolbar, type Column } from '../ui';
 import { formatDate, formatNumber, formatVndShort } from '../../lib/format';
 import type {
   BatchActualRow,
@@ -125,7 +125,15 @@ export const PlanActualReportView: React.FC<{
       render: r => (
         <div>
           <div className="font-medium text-ink">{r.storeName}</div>
-          {sub([r.brandName, r.pic].filter(Boolean).join(' · '))}
+          <div className="flex items-center gap-1.5 mt-0.5 text-2xs text-ink-3">
+            <span>{r.brandName}</span>
+            {r.pic && (
+              <>
+                <span>·</span>
+                <Person name={r.pic} size={16} />
+              </>
+            )}
+          </div>
         </div>
       ),
     },
@@ -140,8 +148,28 @@ export const PlanActualReportView: React.FC<{
         </div>
       ),
     },
-    { key: 'listed', header: 'Đã list', align: 'right', render: r => <div>{formatNumber(r.total.listed)}{sub(`Chốt ${formatNumber(r.total.confirmed)}`)}</div> },
-    { key: 'aired', header: 'Đã air', align: 'right', render: r => <div>{formatNumber(r.total.aired)}{sub(`Nghiệm thu ${formatNumber(r.total.accepted)}`)}</div> },
+    {
+      key: 'listed',
+      header: 'Đã list',
+      align: 'right',
+      render: r => (
+        <div>
+          {formatNumber(r.total.listed)}
+          {sub(`Chốt ${formatNumber(r.total.confirmed)}${r.total.listed > 0 ? ` (${Math.round((r.total.confirmed / r.total.listed) * 100)}%)` : ''}`)}
+        </div>
+      ),
+    },
+    {
+      key: 'aired',
+      header: 'Đã air',
+      align: 'right',
+      render: r => (
+        <div>
+          {formatNumber(r.total.aired)}
+          {sub(`Nghiệm thu ${formatNumber(r.total.accepted)}${r.total.aired > 0 ? ` (${Math.round((r.total.accepted / r.total.aired) * 100)}%)` : ''}`)}
+        </div>
+      ),
+    },
     {
       key: 'carry',
       header: 'Chuyển tháng',

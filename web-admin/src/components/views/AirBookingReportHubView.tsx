@@ -2,13 +2,10 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  Calendar,
   CheckCircle2,
-  AlertTriangle,
   TrendingUp,
   Coins,
   Film,
-  Store,
   Users,
   Search,
   Plus,
@@ -16,7 +13,6 @@ import {
   Trash2,
   Download,
   ExternalLink,
-  Layers,
 } from 'lucide-react';
 import {
   SalaryGrade,
@@ -37,13 +33,37 @@ import {
   deleteStoreAirPlan,
   computeAirBookingComparisonReport,
   STORE_AIR_PLAN_UPDATED_EVENT,
+  type KlComparisonRow,
+  type StoreAirReportItem,
 } from '../../lib/storeAirPlanData';
 import {
   ApprovedBookingListItem,
   loadApprovedBookingList,
   APPROVED_BOOKING_LIST_UPDATED_EVENT,
 } from '../../lib/approvedBookingList';
-import { Button, ConfirmDialog, Modal, PageActions, Segmented } from '../ui';
+import {
+  Button,
+  ConfirmDialog,
+  DataTable,
+  EmptyState,
+  Modal,
+  PageActions,
+  Pagination,
+  Panel,
+  Person,
+  Segmented,
+  Select,
+  Stat,
+  StatRow,
+  Status,
+  type Column,
+} from '../ui';
+import {
+  formatDate,
+  formatNumber,
+  formatVnd,
+  formatVndShort,
+} from '../../lib/format';
 
 interface AirBookingReportHubViewProps {
   currentUser: UserProfile;
@@ -91,6 +111,10 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
   const [selectedBrand] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OVERBUDGET' | 'LATE_AIR' | 'NO_PLAN'>('ALL');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
+
+  // Phân trang bảng gian hàng
+  const [storePage, setStorePage] = useState<number>(1);
+  const storePageSize = 15;
 
   // 5. State Modal thêm/sửa Kế hoạch
   const [isPlanModalOpen, setIsPlanModalOpen] = useState<boolean>(false);
@@ -244,6 +268,14 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
       return true;
     });
   }, [reportSummary.storeReports, searchKeyword, statusFilter]);
+
+  const maxStorePage = Math.max(1, Math.ceil(filteredStoreReports.length / storePageSize));
+  const safeStorePage = Math.min(storePage, maxStorePage);
+
+  const pagedStoreReports = useMemo(() => {
+    const start = (safeStorePage - 1) * storePageSize;
+    return filteredStoreReports.slice(start, start + storePageSize);
+  }, [filteredStoreReports, safeStorePage, storePageSize]);
 
   // Danh sách các booking đang trễ hoặc sắp đến hạn air (Air Alert)
   const pendingAirBookings = useMemo(() => {
@@ -460,8 +492,499 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
     document.body.removeChild(link);
   };
 
+  // Định nghĩa cột bảng Khung lương (KL)
+  const klColumns: Column<KlComparisonRow>[] = [
+    {
+      key: 'kl',
+      header: 'Khung lương (KL)',
+      render: (r) => <span className="font-semibold text-ink">{r.kl}</span>,
+    },
+    {
+      key: 'planVideos',
+      header: 'Video Plan',
+      align: 'right',
+      render: (r) => formatNumber(r.planVideos),
+    },
+    {
+      key: 'planUnitCost',
+      header: 'Đơn giá Plan',
+      align: 'right',
+      render: (r) => formatVnd(r.planUnitCost),
+    },
+    {
+      key: 'planBudget',
+      header: 'Ngân sách Plan',
+      align: 'right',
+      render: (r) => formatVndShort(r.planBudget),
+    },
+    {
+      key: 'actualBookedVideos',
+      header: 'Đã Duyệt Book',
+      align: 'right',
+      render: (r) => <span className="font-medium text-accent">{formatNumber(r.actualBookedVideos)}</span>,
+    },
+    {
+      key: 'actualNetSpend',
+      header: 'Chi phí Net Book',
+      align: 'right',
+      render: (r) => formatVndShort(r.actualNetSpend),
+    },
+    {
+      key: 'actualAiredVideos',
+      header: 'Video Đã Air',
+      align: 'right',
+      render: (r) => <span className="font-semibold text-accent">{formatNumber(r.actualAiredVideos)}</span>,
+    },
+    {
+      key: 'airCompletionRate',
+      header: 'Tiến độ Air',
+      align: 'right',
+      render: (r) => (
+        <span
+          className={`font-semibold ${
+            r.airCompletionRate >= 100
+              ? 'text-positive'
+              : r.airCompletionRate >= 60
+              ? 'text-accent'
+              : 'text-ink-3'
+          }`}
+        >
+          {r.airCompletionRate.toFixed(0)}%
+        </span>
+      ),
+    },
+    {
+      key: 'actualNmv',
+      header: 'NMV Thực tế',
+      align: 'right',
+      render: (r) => (r.actualNmv > 0 ? formatVndShort(r.actualNmv) : <span className="text-ink-3">—</span>),
+    },
+    {
+      key: 'spendDiff',
+      header: 'Lệch Ngân sách',
+      align: 'right',
+      render: (r) => (
+        <span
+          className={`font-semibold ${
+            r.spendDiff > 0
+              ? 'text-critical'
+              : r.spendDiff < 0
+              ? 'text-positive'
+              : 'text-ink-3'
+          }`}
+        >
+          {r.spendDiff > 0 ? `+${formatVndShort(r.spendDiff)}` : formatVndShort(r.spendDiff)}
+        </span>
+      ),
+    },
+    {
+      key: 'burnWarning',
+      header: 'Trạng thái',
+      align: 'center',
+      render: (r) => (
+        <Status
+          tone={
+            r.burnWarning === 'BỘI_CHI'
+              ? 'critical'
+              : r.burnWarning === 'SẮP_TRẦN'
+              ? 'warning'
+              : r.burnWarning === 'CHƯA_PHÁT_SINH'
+              ? 'neutral'
+              : 'positive'
+          }
+        >
+          {r.burnWarning === 'BỘI_CHI'
+            ? 'Bội chi'
+            : r.burnWarning === 'SẮP_TRẦN'
+            ? 'Sắp trần'
+            : r.burnWarning === 'CHƯA_PHÁT_SINH'
+            ? 'Chưa chạy'
+            : 'An toàn'}
+        </Status>
+      ),
+    },
+  ];
+
+  // Định nghĩa cột bảng Gian hàng
+  const storeColumns: Column<StoreAirReportItem>[] = [
+    {
+      key: 'storeName',
+      header: 'Gian hàng & Thương hiệu',
+      render: (r) => (
+        <div>
+          <div className="font-semibold text-ink">{r.storeName}</div>
+          <div className="text-2xs text-ink-3">{r.brandName}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'picName',
+      header: 'Người phụ trách',
+      render: (r) => (
+        <div>
+          <Person name={r.picName} size={20} />
+          {r.leaderName && (
+            <div className="text-2xs text-ink-3 mt-0.5">Leader: {r.leaderName}</div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'planNmv',
+      header: 'NMV Kế hoạch',
+      align: 'right',
+      render: (r) => (r.planNmv > 0 ? formatVndShort(r.planNmv) : <span className="text-ink-3">—</span>),
+    },
+    {
+      key: 'actualNmv',
+      header: 'NMV Thực tế',
+      align: 'right',
+      render: (r) => (
+        <span className="font-semibold text-positive">
+          {r.actualNmv > 0 ? formatVndShort(r.actualNmv) : '0 đ'}
+        </span>
+      ),
+    },
+    {
+      key: 'planBudget',
+      header: 'Ngân sách Plan',
+      align: 'right',
+      render: (r) => (r.planBudget > 0 ? formatVndShort(r.planBudget) : <span className="text-ink-3">—</span>),
+    },
+    {
+      key: 'actualNetSpend',
+      header: 'Đã Duyệt Book',
+      align: 'right',
+      render: (r) => <span className="font-semibold text-ink">{formatVndShort(r.actualNetSpend)}</span>,
+    },
+    {
+      key: 'actualPaidSpend',
+      header: 'Đã Thanh Toán',
+      align: 'right',
+      render: (r) => (r.actualPaidSpend > 0 ? formatVndShort(r.actualPaidSpend) : '0 đ'),
+    },
+    {
+      key: 'budgetBurnRate',
+      header: 'Giải ngân',
+      align: 'center',
+      render: (r) => (
+        <div>
+          <div className="font-semibold text-ink">{r.budgetBurnRate.toFixed(0)}%</div>
+          <div className="w-16 h-1.5 bg-sunken rounded-full mx-auto mt-1 overflow-hidden">
+            <div
+              className={`h-full rounded-full ${
+                r.budgetBurnRate > 100
+                  ? 'bg-critical'
+                  : r.budgetBurnRate >= 85
+                  ? 'bg-warning'
+                  : 'bg-accent'
+              }`}
+              style={{ width: `${Math.min(100, r.budgetBurnRate)}%` }}
+            />
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'actualAiredVideos',
+      header: 'Tiến độ Air',
+      align: 'center',
+      render: (r) => (
+        <div>
+          <div className="font-semibold text-accent">
+            {r.actualAiredVideos} / {r.planVideos || r.actualBookedVideos} video
+          </div>
+          <div className="text-2xs text-ink-3">
+            {r.actualAiredOntime} chuẩn · {r.actualAiredLate} trễ
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'spendStatus',
+      header: 'Trạng thái chi tiêu',
+      align: 'center',
+      render: (r) => (
+        <Status
+          tone={
+            r.spendStatus === 'VƯỢT_NGÂN_SÁCH'
+              ? 'critical'
+              : r.spendStatus === 'SẮP_TRẦN'
+              ? 'warning'
+              : r.spendStatus === 'CHƯA_CÓ_PLAN'
+              ? 'neutral'
+              : 'positive'
+          }
+        >
+          {r.spendStatus === 'VƯỢT_NGÂN_SÁCH'
+            ? 'Vượt ngân sách'
+            : r.spendStatus === 'SẮP_TRẦN'
+            ? 'Sắp trần'
+            : r.spendStatus === 'CHƯA_CÓ_PLAN'
+            ? 'Chưa có plan'
+            : 'An toàn'}
+        </Status>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Thao tác',
+      align: 'center',
+      render: (r) => (
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setDetailStoreName(r.storeName)}
+        >
+          Xem video
+        </Button>
+      ),
+    },
+  ];
+
+  // Định nghĩa cột bảng Cảnh báo Air trễ
+  const pendingColumns: Column<ApprovedBookingListItem>[] = [
+    {
+      key: 'maBooking',
+      header: 'Mã Booking',
+      render: (b) => <span className="font-semibold text-ink">{b.maBooking || 'Chờ tạo BO'}</span>,
+    },
+    {
+      key: 'storeName',
+      header: 'Gian hàng',
+      render: (b) => b.storeName,
+    },
+    {
+      key: 'tenKenh',
+      header: 'KOC / Kênh',
+      render: (b) => (
+        <div>
+          <div className="font-semibold text-ink">{b.tenKenh || b.idKenh}</div>
+          <div className="text-2xs text-ink-3">@{b.idKenh}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'klGrade',
+      header: 'Khung lương',
+      render: (b) => b.klGrade,
+    },
+    {
+      key: 'chiPhiBookingNetCuoi',
+      header: 'Chi phí Net',
+      align: 'right',
+      render: (b) => formatVnd(b.chiPhiBookingNetCuoi || 0),
+    },
+    {
+      key: 'plannedAirDate',
+      header: 'Ngày Air Dự kiến',
+      render: (b) => formatDate(b.plannedAirDate),
+    },
+    {
+      key: 'trangThaiSlaAir',
+      header: 'SLA Air',
+      render: (b) => (
+        <Status tone={b.trangThaiSlaAir?.includes('Trễ') ? 'critical' : 'warning'}>
+          {b.trangThaiSlaAir || 'Chưa lên sóng'}
+        </Status>
+      ),
+    },
+    {
+      key: 'nguoiPhuTrach',
+      header: 'Người phụ trách',
+      render: (b) => <Person name={b.nguoiPhuTrach} size={18} />,
+    },
+    {
+      key: 'linkAir',
+      header: 'Đường dẫn',
+      align: 'center',
+      render: (b) =>
+        b.linkAir ? (
+          <a
+            href={b.linkAir}
+            target="_blank"
+            rel="noreferrer"
+            className="text-accent hover:underline inline-flex items-center gap-1 text-2xs font-medium"
+          >
+            Xem video <ExternalLink className="w-3 h-3" />
+          </a>
+        ) : (
+          <span className="text-ink-3">—</span>
+        ),
+    },
+  ];
+
+  // Định nghĩa cột bảng Kế hoạch Gian hàng
+  const planColumns: Column<StoreAirPlan>[] = [
+    {
+      key: 'monthKey',
+      header: 'Tháng',
+      render: (p) => <span className="font-medium text-ink-2">{p.monthKey}</span>,
+    },
+    {
+      key: 'storeName',
+      header: 'Gian hàng',
+      render: (p) => <span className="font-semibold text-ink">{p.storeName}</span>,
+    },
+    {
+      key: 'brandName',
+      header: 'Thương hiệu',
+      render: (p) => p.brandName,
+    },
+    {
+      key: 'picName',
+      header: 'Người phụ trách',
+      render: (p) => <Person name={p.picName} size={18} />,
+    },
+    {
+      key: 'leaderName',
+      header: 'Leader',
+      render: (p) => (p.leaderName ? <Person name={p.leaderName} size={18} /> : <span className="text-ink-3">—</span>),
+    },
+    {
+      key: 'targetNmv',
+      header: 'Chỉ tiêu NMV',
+      align: 'right',
+      render: (p) => formatVndShort(p.targetNmv),
+    },
+    {
+      key: 'targetBudget',
+      header: 'Ngân sách Net',
+      align: 'right',
+      render: (p) => formatVndShort(p.targetBudget),
+    },
+    {
+      key: 'targetVideos',
+      header: 'Số Video Plan',
+      align: 'right',
+      render: (p) => formatNumber(p.targetVideos),
+    },
+    {
+      key: 'klDetails',
+      header: 'Phân bổ KL',
+      render: (p) => {
+        const activeKls = p.klDetails.filter((d) => d.targetVideos > 0);
+        return (
+          <div className="flex flex-wrap gap-1 max-w-[280px]">
+            {activeKls.length > 0 ? (
+              activeKls.map((k) => (
+                <span
+                  key={k.kl}
+                  className="inline-block px-1.5 py-0.5 bg-sunken text-ink-2 rounded text-2xs"
+                >
+                  {k.kl}: {k.targetVideos}
+                </span>
+              ))
+            ) : (
+              <span className="text-ink-3">Chưa chia KL</span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'actions',
+      header: 'Thao tác',
+      align: 'center',
+      render: (p) => (
+        <div className="flex items-center justify-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleOpenEditPlan(p)}
+            title="Chỉnh sửa kế hoạch"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleDeletePlan(p.id, p.storeName)}
+            title="Xóa kế hoạch"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-critical" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  // Định nghĩa cột bảng Modal Chi tiết Video của Gian hàng
+  const modalColumns: Column<ApprovedBookingListItem>[] = [
+    {
+      key: 'maBooking',
+      header: 'Mã BO',
+      render: (b) => <span className="font-semibold text-ink">{b.maBooking || 'Chờ tạo BO'}</span>,
+    },
+    {
+      key: 'tenKenh',
+      header: 'Kênh KOC',
+      render: (b) => (
+        <div>
+          <div className="font-semibold text-ink">{b.tenKenh || b.idKenh}</div>
+          <div className="text-2xs text-ink-3">@{b.idKenh}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'klGrade',
+      header: 'Khung lương',
+      render: (b) => b.klGrade,
+    },
+    {
+      key: 'chiPhiBookingNetCuoi',
+      header: 'Chi phí Net',
+      align: 'right',
+      render: (b) => formatVnd(b.chiPhiBookingNetCuoi || 0),
+    },
+    {
+      key: 'plannedAirDate',
+      header: 'Ngày Air Dự kiến',
+      render: (b) => formatDate(b.plannedAirDate),
+    },
+    {
+      key: 'actualAirDate',
+      header: 'Ngày Air Thực tế',
+      render: (b) => (b.actualAirDate ? formatDate(b.actualAirDate) : <span className="text-ink-3">Chưa air</span>),
+    },
+    {
+      key: 'gmv',
+      header: 'NMV / GMV',
+      align: 'right',
+      render: (b) => formatVndShort(((b.gmv14d || 0) > 0 ? b.gmv14d : b.gmv30d) || 0),
+    },
+    {
+      key: 'acceptanceStatus',
+      header: 'Nghiệm thu',
+      align: 'center',
+      render: (b) => (
+        <Status tone={b.acceptanceStatus === 'DA_NGHIEM_THU' ? 'positive' : 'warning'}>
+          {b.acceptanceStatus === 'DA_NGHIEM_THU' ? 'Đã duyệt' : 'Chờ duyệt'}
+        </Status>
+      ),
+    },
+    {
+      key: 'linkAir',
+      header: 'Video',
+      align: 'center',
+      render: (b) =>
+        b.linkAir ? (
+          <a
+            href={b.linkAir}
+            target="_blank"
+            rel="noreferrer"
+            className="text-accent hover:underline inline-flex items-center gap-1 text-2xs font-medium"
+          >
+            Xem link <ExternalLink className="w-3 h-3" />
+          </a>
+        ) : (
+          <span className="text-ink-3">—</span>
+        ),
+    },
+  ];
+
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 bg-slate-50 min-h-screen text-slate-800">
+    <div className="flex flex-col gap-5 p-4 sm:p-6 bg-canvas text-ink">
       {/* 1. Thanh hành động trang */}
       <PageActions>
         <Button
@@ -482,7 +1005,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
       </PageActions>
 
       {/* 2. Thanh Chuyển Phân hệ & Bộ lọc Đa chiều */}
-      <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center gap-3">
+      <div className="bg-surface p-3.5 rounded-xl border border-line flex flex-wrap items-center gap-3">
         <Segmented<'REPORT' | 'PLAN_STUDIO'>
           value={activeSubTab}
           onChange={setActiveSubTab}
@@ -491,31 +1014,34 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
             { key: 'PLAN_STUDIO', label: 'Kế hoạch Gian hàng theo KL' },
           ]}
         />
-        <span className="text-slate-200 hidden sm:inline">|</span>
+        <span className="text-line-strong hidden sm:inline">|</span>
+
         {/* Lọc Tháng */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-slate-500">Tháng:</span>
-          <select
+          <span className="text-2xs font-medium text-ink-3">Tháng:</span>
+          <Select
+            aria-label="Tháng"
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="text-xs font-medium px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-800 focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-auto"
           >
             {availableMonths.map((m) => (
               <option key={m} value={m}>
                 Tháng {m}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
-        {/* Lọc Nhân viên (Nếu là Chuyên viên thì cố định của mình, nếu là Quản lý thì chọn được tất cả) */}
+        {/* Lọc Nhân sự */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-slate-500">Nhân sự:</span>
+          <span className="text-2xs font-medium text-ink-3">Nhân sự:</span>
           {isManager ? (
-            <select
+            <Select
+              aria-label="Nhân sự"
               value={selectedPic}
               onChange={(e) => setSelectedPic(e.target.value)}
-              className="text-xs font-medium px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-800 focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-auto"
             >
               <option value="">Toàn bộ nhân sự ({availablePics.length})</option>
               {availablePics.map((p) => (
@@ -523,9 +1049,9 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                   {p}
                 </option>
               ))}
-            </select>
+            </Select>
           ) : (
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-accent-soft border border-accent/25 text-accent rounded-lg text-xs font-medium">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-accent-soft border border-accent/25 text-accent rounded-lg text-2xs font-medium">
               <Users className="w-3.5 h-3.5" />
               <span>{currentUser.name} (Chuyên viên)</span>
             </div>
@@ -534,11 +1060,12 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
 
         {/* Lọc Gian hàng */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-slate-500">Gian hàng:</span>
-          <select
+          <span className="text-2xs font-medium text-ink-3">Gian hàng:</span>
+          <Select
+            aria-label="Gian hàng"
             value={selectedStore}
             onChange={(e) => setSelectedStore(e.target.value)}
-            className="text-xs font-medium px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-800 max-w-[200px] truncate focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-auto max-w-[200px]"
           >
             <option value="">Tất cả gian hàng</option>
             {availableStores.map((s) => (
@@ -546,59 +1073,63 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                 {s.storeName}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         {/* Ô tìm kiếm từ khóa */}
         <div className="flex-1 min-w-[200px] relative">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-ink-3 pointer-events-none" />
           <input
             type="text"
             placeholder="Tìm theo gian hàng, thương hiệu, nhân sự..."
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
-            className="w-full text-xs pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full text-xs pl-8 pr-3 py-1.5 border border-line rounded-lg bg-canvas text-ink focus:outline-hidden focus:border-accent"
           />
         </div>
 
         {/* Lọc trạng thái báo động nhanh */}
         <div className="flex items-center gap-1 text-xs">
           <button
+            type="button"
             onClick={() => setStatusFilter('ALL')}
-            className={`px-2 py-1 rounded-md transition-colors ${
+            className={`px-2 py-1 rounded-md transition-colors cursor-pointer ${
               statusFilter === 'ALL'
-                ? 'bg-primary text-white font-semibold'
-                : 'text-slate-600 hover:bg-slate-100'
+                ? 'bg-ink text-white font-medium'
+                : 'text-ink-2 hover:bg-sunken'
             }`}
           >
             Tất cả ({reportSummary.storeReports.length})
           </button>
           <button
+            type="button"
             onClick={() => setStatusFilter('OVERBUDGET')}
-            className={`px-2 py-1 rounded-md transition-colors ${
+            className={`px-2 py-1 rounded-md transition-colors cursor-pointer ${
               statusFilter === 'OVERBUDGET'
-                ? 'bg-red-600 text-white font-semibold'
-                : 'text-red-700 bg-red-50 hover:bg-red-100'
+                ? 'bg-critical text-white font-medium'
+                : 'text-critical bg-critical-soft hover:bg-critical-soft/80'
             }`}
           >
             Vượt ngân sách ({reportSummary.overbudgetStoresCount})
           </button>
           <button
+            type="button"
             onClick={() => setStatusFilter('LATE_AIR')}
-            className={`px-2 py-1 rounded-md transition-colors ${
+            className={`px-2 py-1 rounded-md transition-colors cursor-pointer ${
               statusFilter === 'LATE_AIR'
-                ? 'bg-amber-600 text-white font-semibold'
-                : 'text-amber-700 bg-amber-50 hover:bg-amber-100'
+                ? 'bg-warning text-white font-medium'
+                : 'text-warning bg-warning-soft hover:bg-warning-soft/80'
             }`}
           >
             Trễ hạn air ({reportSummary.totalLateVideos})
           </button>
           <button
+            type="button"
             onClick={() => setStatusFilter('NO_PLAN')}
-            className={`px-2 py-1 rounded-md transition-colors ${
+            className={`px-2 py-1 rounded-md transition-colors cursor-pointer ${
               statusFilter === 'NO_PLAN'
-                ? 'bg-slate-600 text-white font-semibold'
-                : 'text-slate-700 bg-slate-100 hover:bg-slate-200'
+                ? 'bg-ink-3 text-white font-medium'
+                : 'text-ink-2 bg-sunken hover:bg-line/60'
             }`}
           >
             Chưa có plan ({reportSummary.unbudgetedStoresCount})
@@ -609,574 +1140,122 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
       {/* 3. NỘI DUNG CHÍNH: TAB BÁO CÁO ĐỐI SOÁT */}
       {activeSubTab === 'REPORT' && (
         <div className="flex flex-col gap-6">
-          {/* A. 4 Card KPI Tổng Quan */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Card 1: Doanh số NMV */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-slate-500 mb-2">
-                  <span className="text-xs font-medium">Chỉ tiêu NMV</span>
-                  <TrendingUp className="w-4 h-4 text-emerald-600" />
-                </div>
-                <div className="text-xl font-semibold text-slate-900">
-                  {reportSummary.totalActualNmv.toLocaleString('vi-VN')} đ
-                </div>
-                <div className="text-xs text-slate-500 mt-1">
-                  Mục tiêu kế hoạch: {reportSummary.totalPlanNmv.toLocaleString('vi-VN')} đ
-                </div>
-              </div>
-              <div className="mt-3 pt-3 border-t border-slate-100">
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-slate-500">Tỷ lệ đạt</span>
-                  <span
-                    className={`font-semibold ${
-                      reportSummary.nmvRate >= 100
-                        ? 'text-emerald-600'
-                        : reportSummary.nmvRate >= 70
-                        ? 'text-accent'
-                        : 'text-amber-600'
-                    }`}
-                  >
-                    {reportSummary.nmvRate.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-500 rounded-full"
-                    style={{ width: `${Math.min(100, reportSummary.nmvRate)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Card 2: Ngân sách & Chi tiêu */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-slate-500 mb-2">
-                  <span className="text-xs font-medium">Ngân sách & Chi tiêu</span>
-                  <Coins className="w-4 h-4 text-accent" />
-                </div>
-                <div className="text-xl font-semibold text-slate-900">
-                  {reportSummary.totalBookedNetSpend.toLocaleString('vi-VN')} đ
-                </div>
-                <div className="text-xs text-slate-500 mt-1">
-                  Kế hoạch Net: {reportSummary.totalPlanBudget.toLocaleString('vi-VN')} đ
-                </div>
-              </div>
-              <div className="mt-3 pt-3 border-t border-slate-100">
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-slate-500">Tỷ lệ giải ngân</span>
-                  <span
-                    className={`font-semibold ${
-                      reportSummary.budgetBurnRate > 100
-                        ? 'text-red-600'
-                        : reportSummary.budgetBurnRate >= 85
-                        ? 'text-amber-600'
-                        : 'text-emerald-600'
-                    }`}
-                  >
-                    {reportSummary.budgetBurnRate.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${
-                      reportSummary.budgetBurnRate > 100
-                        ? 'bg-red-500'
-                        : reportSummary.budgetBurnRate >= 85
-                        ? 'bg-amber-500'
-                        : 'bg-accent'
-                    }`}
-                    style={{ width: `${Math.min(100, reportSummary.budgetBurnRate)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Card 3: Tiến độ Air Video */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-slate-500 mb-2">
-                  <span className="text-xs font-medium">Tiến độ Air Video</span>
-                  <Film className="w-4 h-4 text-accent" />
-                </div>
-                <div className="text-xl font-semibold text-slate-900">
-                  {reportSummary.totalAiredVideos} / {reportSummary.totalPlanVideos} video
-                </div>
-                <div className="text-xs text-slate-500 mt-1">
-                  Đã book: {reportSummary.totalBookedVideos} · Chờ lên sóng: {reportSummary.totalWaitingAirVideos}
-                </div>
-              </div>
-              <div className="mt-3 pt-3 border-t border-slate-100">
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-slate-500">Hoàn thành</span>
-                  <span className="font-semibold text-accent">
-                    {reportSummary.airRate.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-accent rounded-full"
-                    style={{ width: `${Math.min(100, reportSummary.airRate)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Card 4: Kiểm soát SLA & Nghiệm thu */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-slate-500 mb-2">
-                  <span className="text-xs font-medium">SLA Air & Nghiệm thu</span>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                </div>
-                <div className="flex items-center gap-3 mt-1">
-                  <div>
-                    <div className="text-sm font-semibold text-emerald-700">
-                      {reportSummary.totalOntimeVideos}
-                    </div>
-                    <div className="text-2xs text-slate-400">Đúng hạn</div>
-                  </div>
-                  <div className="border-l border-slate-200 pl-3">
-                    <div className="text-sm font-semibold text-amber-600">
-                      {reportSummary.totalLateVideos}
-                    </div>
-                    <div className="text-2xs text-slate-400">Trễ hạn</div>
-                  </div>
-                  <div className="border-l border-slate-200 pl-3">
-                    <div className="text-sm font-semibold text-accent">
-                      {reportSummary.totalAcceptedVideos}
-                    </div>
-                    <div className="text-2xs text-slate-400">Đã nghiệm thu</div>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-3 pt-3 border-t border-slate-100 text-xs flex items-center justify-between text-slate-500">
-                <span>Đã chi trả:</span>
-                <span className="font-semibold text-slate-800">
-                  {reportSummary.totalPaidSpend.toLocaleString('vi-VN')} đ
-                </span>
-              </div>
-            </div>
-          </div>
+          {/* A. 4 Card KPI Tổng Quan bằng StatRow & Stat */}
+          <StatRow>
+            <Stat
+              label="Chỉ tiêu NMV"
+              value={formatVndShort(reportSummary.totalActualNmv)}
+              tone={reportSummary.nmvRate >= 100 ? 'positive' : reportSummary.nmvRate >= 70 ? undefined : 'warning'}
+              progress={{ value: reportSummary.totalActualNmv, max: Math.max(1, reportSummary.totalPlanNmv) }}
+              note={`Kế hoạch: ${formatVndShort(reportSummary.totalPlanNmv)} · Đạt ${reportSummary.nmvRate.toFixed(1)}%`}
+              icon={TrendingUp}
+            />
+            <Stat
+              label="Ngân sách Net & Giải ngân"
+              value={formatVndShort(reportSummary.totalBookedNetSpend)}
+              tone={reportSummary.budgetBurnRate > 100 ? 'critical' : reportSummary.budgetBurnRate >= 85 ? 'warning' : 'positive'}
+              progress={{ value: reportSummary.totalBookedNetSpend, max: Math.max(1, reportSummary.totalPlanBudget) }}
+              note={`Kế hoạch Net: ${formatVndShort(reportSummary.totalPlanBudget)} · Tỷ lệ: ${reportSummary.budgetBurnRate.toFixed(1)}%`}
+              icon={Coins}
+            />
+            <Stat
+              label="Tiến độ Air Video"
+              value={`${formatNumber(reportSummary.totalAiredVideos)} / ${formatNumber(reportSummary.totalPlanVideos)} video`}
+              tone={reportSummary.airRate >= 80 ? 'positive' : undefined}
+              progress={{ value: reportSummary.totalAiredVideos, max: Math.max(1, reportSummary.totalPlanVideos) }}
+              note={`Đã book: ${formatNumber(reportSummary.totalBookedVideos)} · Chờ lên sóng: ${formatNumber(reportSummary.totalWaitingAirVideos)}`}
+              icon={Film}
+            />
+            <Stat
+              label="SLA Air & Nghiệm thu"
+              value={`${formatNumber(reportSummary.totalOntimeVideos)} đúng hạn`}
+              tone={reportSummary.totalLateVideos > 0 ? 'warning' : 'positive'}
+              note={`${formatNumber(reportSummary.totalLateVideos)} video trễ · Đã chi: ${formatVndShort(reportSummary.totalPaidSpend)}`}
+              icon={CheckCircle2}
+            />
+          </StatRow>
 
           {/* B. Bảng Đối soát chi tiết theo Phân Tầng KL (Key Level Table) */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-accent" />
-                <h2 className="text-sm font-semibold text-slate-900">
-                  Đối soát chi tiết theo Phân tầng Khung lương (KL)
-                </h2>
-              </div>
-              <span className="text-xs text-slate-500">
-                Tháng: <strong className="text-slate-800">{selectedMonth}</strong>
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-                  <tr>
-                    <th className="py-2.5 px-3">Khung lương (KL)</th>
-                    <th className="py-2.5 px-3 text-right">Video Plan</th>
-                    <th className="py-2.5 px-3 text-right">Đơn giá Plan</th>
-                    <th className="py-2.5 px-3 text-right">Ngân sách Plan</th>
-                    <th className="py-2.5 px-3 text-right">Đã Duyệt Book</th>
-                    <th className="py-2.5 px-3 text-right">Chi phí Net Book</th>
-                    <th className="py-2.5 px-3 text-right">Video Đã Air</th>
-                    <th className="py-2.5 px-3 text-right">Tiến độ Air</th>
-                    <th className="py-2.5 px-3 text-right">NMV Thực tế</th>
-                    <th className="py-2.5 px-3 text-right">Lệch Ngân sách</th>
-                    <th className="py-2.5 px-3 text-center">Trạng thái</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {reportSummary.klBreakdown.map((row) => (
-                    <tr key={row.kl} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-2.5 px-3 font-semibold text-slate-900">
-                        {row.kl}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-medium text-slate-700">
-                        {row.planVideos}
-                      </td>
-                      <td className="py-2.5 px-3 text-right text-slate-600">
-                        {row.planUnitCost.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-medium text-slate-800">
-                        {row.planBudget.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-medium text-accent">
-                        {row.actualBookedVideos}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-semibold text-slate-900">
-                        {row.actualNetSpend.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-semibold text-accent">
-                        {row.actualAiredVideos}
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        <span
-                          className={`font-semibold ${
-                            row.airCompletionRate >= 100
-                              ? 'text-emerald-600'
-                              : row.airCompletionRate >= 60
-                              ? 'text-accent'
-                              : 'text-slate-500'
-                          }`}
-                        >
-                          {row.airCompletionRate.toFixed(0)}%
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-medium text-emerald-700">
-                        {row.actualNmv > 0 ? `${row.actualNmv.toLocaleString('vi-VN')} đ` : '—'}
-                      </td>
-                      <td
-                        className={`py-2.5 px-3 text-right font-semibold ${
-                          row.spendDiff > 0
-                            ? 'text-red-600'
-                            : row.spendDiff < 0
-                            ? 'text-emerald-600'
-                            : 'text-slate-500'
-                        }`}
-                      >
-                        {row.spendDiff > 0 ? '+' : ''}
-                        {row.spendDiff.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="py-2.5 px-3 text-center">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded-full text-2xs font-semibold ${
-                            row.burnWarning === 'BỘI_CHI'
-                              ? 'bg-red-100 text-red-700'
-                              : row.burnWarning === 'SẮP_TRẦN'
-                              ? 'bg-amber-100 text-amber-700'
-                              : row.burnWarning === 'CHƯA_PHÁT_SINH'
-                              ? 'bg-slate-100 text-slate-500'
-                              : 'bg-emerald-100 text-emerald-700'
-                          }`}
-                        >
-                          {row.burnWarning === 'BỘI_CHI'
-                            ? 'Bội chi'
-                            : row.burnWarning === 'SẮP_TRẦN'
-                            ? 'Sắp trần'
-                            : row.burnWarning === 'CHƯA_PHÁT_SINH'
-                            ? 'Chưa chạy'
-                            : 'An toàn'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Panel
+            title="Đối soát chi tiết theo Phân tầng Khung lương (KL)"
+            flush
+            actions={<span className="text-2xs text-ink-3">Tháng {selectedMonth}</span>}
+          >
+            <DataTable
+              columns={klColumns}
+              rows={reportSummary.klBreakdown}
+              rowKey={(r) => r.kl}
+              empty={<EmptyState title="Không có dữ liệu phân tầng khung lương" />}
+            />
+          </Panel>
 
           {/* C. Bảng Tiến độ & Tình trạng Chi tiêu theo từng Gian hàng */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <Store className="w-4 h-4 text-accent" />
-                <h2 className="text-sm font-semibold text-slate-900">
-                  Đối soát theo Gian hàng ({filteredStoreReports.length} gian hàng)
-                </h2>
+          <Panel
+            title={`Đối soát theo Gian hàng (${filteredStoreReports.length} gian hàng)`}
+            flush
+          >
+            <DataTable
+              columns={storeColumns}
+              rows={pagedStoreReports}
+              rowKey={(r) => r.storeName}
+              empty={
+                <EmptyState
+                  title="Không tìm thấy gian hàng nào phù hợp bộ lọc"
+                  description="Thử thay đổi từ khóa tìm kiếm hoặc bỏ chọn trạng thái cảnh báo."
+                />
+              }
+            />
+            {filteredStoreReports.length > storePageSize && (
+              <div className="p-3 bg-canvas border-t border-line">
+                <Pagination
+                  page={safeStorePage}
+                  total={filteredStoreReports.length}
+                  pageSize={storePageSize}
+                  onPageChange={setStorePage}
+                />
               </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-                  <tr>
-                    <th className="py-2.5 px-3">Gian hàng & Brand</th>
-                    <th className="py-2.5 px-3">Người phụ trách</th>
-                    <th className="py-2.5 px-3 text-right">NMV Kế hoạch</th>
-                    <th className="py-2.5 px-3 text-right">NMV Thực tế</th>
-                    <th className="py-2.5 px-3 text-right">Ngân sách Plan</th>
-                    <th className="py-2.5 px-3 text-right">Đã Duyệt Book</th>
-                    <th className="py-2.5 px-3 text-right">Đã Thanh Toán</th>
-                    <th className="py-2.5 px-3 text-center">Giải ngân</th>
-                    <th className="py-2.5 px-3 text-center">Tiến độ Air</th>
-                    <th className="py-2.5 px-3 text-center">Trạng thái chi tiêu</th>
-                    <th className="py-2.5 px-3 text-center">Hành động</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredStoreReports.length === 0 ? (
-                    <tr>
-                      <td colSpan={11} className="py-8 text-center text-slate-400">
-                        Không tìm thấy gian hàng nào phù hợp với bộ lọc hiện tại.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredStoreReports.map((row) => (
-                      <tr key={row.storeName} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-2.5 px-3">
-                          <div className="font-semibold text-slate-900">{row.storeName}</div>
-                          <div className="text-2xs text-slate-500">{row.brandName}</div>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <div className="font-medium text-slate-800">{row.picName}</div>
-                          {row.leaderName && (
-                            <div className="text-2xs text-slate-400">
-                              Leader: {row.leaderName}
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-3 text-right text-slate-600">
-                          {row.planNmv > 0 ? `${row.planNmv.toLocaleString('vi-VN')} đ` : '—'}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-semibold text-emerald-700">
-                          {row.actualNmv > 0 ? `${row.actualNmv.toLocaleString('vi-VN')} đ` : '0 đ'}
-                        </td>
-                        <td className="py-2.5 px-3 text-right text-slate-700">
-                          {row.planBudget > 0 ? `${row.planBudget.toLocaleString('vi-VN')} đ` : '—'}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-semibold text-slate-900">
-                          {row.actualNetSpend.toLocaleString('vi-VN')} đ
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-medium text-emerald-700">
-                          {row.actualPaidSpend > 0
-                            ? `${row.actualPaidSpend.toLocaleString('vi-VN')} đ`
-                            : '0 đ'}
-                        </td>
-                        <td className="py-2.5 px-3 text-center">
-                          <div className="font-semibold text-slate-700">
-                            {row.budgetBurnRate.toFixed(0)}%
-                          </div>
-                          <div className="w-16 h-1.5 bg-slate-100 rounded-full mx-auto mt-1 overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${
-                                row.budgetBurnRate > 100
-                                  ? 'bg-red-500'
-                                  : row.budgetBurnRate >= 85
-                                  ? 'bg-amber-500'
-                                  : 'bg-accent'
-                              }`}
-                              style={{ width: `${Math.min(100, row.budgetBurnRate)}%` }}
-                            />
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-3 text-center">
-                          <div className="font-semibold text-accent">
-                            {row.actualAiredVideos} / {row.planVideos || row.actualBookedVideos} video
-                          </div>
-                          <div className="text-2xs text-slate-400">
-                            {row.actualAiredOntime} đúng hạn · {row.actualAiredLate} trễ
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-3 text-center">
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded-full text-2xs font-semibold ${
-                              row.spendStatus === 'VƯỢT_NGÂN_SÁCH'
-                                ? 'bg-red-100 text-red-700'
-                                : row.spendStatus === 'SẮP_TRẦN'
-                                ? 'bg-amber-100 text-amber-700'
-                                : row.spendStatus === 'CHƯA_CÓ_PLAN'
-                                ? 'bg-slate-200 text-slate-700'
-                                : 'bg-emerald-100 text-emerald-700'
-                            }`}
-                          >
-                            {row.spendStatus === 'VƯỢT_NGÂN_SÁCH'
-                              ? 'Vượt ngân sách'
-                              : row.spendStatus === 'SẮP_TRẦN'
-                              ? 'Sắp trần'
-                              : row.spendStatus === 'CHƯA_CÓ_PLAN'
-                              ? 'Chưa có plan'
-                              : 'An toàn'}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-center">
-                          <button
-                            onClick={() => setDetailStoreName(row.storeName)}
-                            className="px-2.5 py-1 text-2xs font-medium text-accent bg-accent-soft hover:bg-accent-soft/80 rounded-md transition-colors"
-                          >
-                            Xem video
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+            )}
+          </Panel>
 
           {/* D. Danh sách Video Cần Đôn Đốc Air (Air Alert List) */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600" />
-                <h2 className="text-sm font-semibold text-slate-900">
-                  Cảnh báo tiến độ: Video đang chờ lên sóng hoặc trễ hạn ({pendingAirBookings.length} video)
-                </h2>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto max-h-80 overflow-y-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 sticky top-0">
-                  <tr>
-                    <th className="py-2 px-3">Mã Booking</th>
-                    <th className="py-2 px-3">Gian hàng</th>
-                    <th className="py-2 px-3">KOC / Kênh</th>
-                    <th className="py-2 px-3">Khung lương</th>
-                    <th className="py-2 px-3 text-right">Chi phí Net</th>
-                    <th className="py-2 px-3">Ngày Air Dự kiến</th>
-                    <th className="py-2 px-3">SLA Air</th>
-                    <th className="py-2 px-3">Người phụ trách</th>
-                    <th className="py-2 px-3 text-center">Đường dẫn</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {pendingAirBookings.length === 0 ? (
-                    <tr>
-                      <td colSpan={9} className="py-6 text-center text-slate-400">
-                        Tất cả các video đã lên sóng đúng hạn và không có cảnh báo tồn đọng.
-                      </td>
-                    </tr>
-                  ) : (
-                    pendingAirBookings.map((b) => (
-                      <tr key={b.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-2 px-3 font-semibold text-slate-800">
-                          {b.maBooking || 'Chờ tạo BO'}
-                        </td>
-                        <td className="py-2 px-3 text-slate-700">{b.storeName}</td>
-                        <td className="py-2 px-3">
-                          <div className="font-semibold text-slate-900">{b.tenKenh || b.idKenh}</div>
-                          <div className="text-2xs text-slate-400">@{b.idKenh}</div>
-                        </td>
-                        <td className="py-2 px-3 font-medium text-slate-700">{b.klGrade}</td>
-                        <td className="py-2 px-3 text-right font-semibold text-slate-900">
-                          {b.chiPhiBookingNetCuoi?.toLocaleString('vi-VN')} đ
-                        </td>
-                        <td className="py-2 px-3 text-slate-700">{b.plannedAirDate || '—'}</td>
-                        <td className="py-2 px-3">
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded text-2xs font-semibold ${
-                              b.trangThaiSlaAir?.includes('Trễ')
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-amber-100 text-amber-700'
-                            }`}
-                          >
-                            {b.trangThaiSlaAir || 'Chưa lên sóng'}
-                          </span>
-                        </td>
-                        <td className="py-2 px-3 text-slate-700">{b.nguoiPhuTrach}</td>
-                        <td className="py-2 px-3 text-center">
-                          {b.linkAir ? (
-                            <a
-                              href={b.linkAir}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-accent hover:underline flex items-center justify-center gap-1"
-                            >
-                              Xem video <ExternalLink className="w-3 h-3" />
-                            </a>
-                          ) : (
-                            <span className="text-slate-400">Chưa điền link</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Panel
+            title={`Cảnh báo tiến độ: Video đang chờ lên sóng hoặc trễ hạn (${pendingAirBookings.length} video)`}
+            flush
+          >
+            <DataTable
+              columns={pendingColumns}
+              rows={pendingAirBookings}
+              rowKey={(b) => b.id}
+              empty={
+                <EmptyState
+                  title="Tất cả video đã lên sóng đúng hạn"
+                  description="Không có video nào trễ hạn hoặc kẹt chờ air trong phạm vi bộ lọc."
+                />
+              }
+            />
+          </Panel>
         </div>
       )}
 
       {/* 4. NỘI DUNG CHÍNH: TAB THIẾT LẬP KẾ HOẠCH GIAN HÀNG (STORE PLAN STUDIO) */}
       {activeSubTab === 'PLAN_STUDIO' && (
         <div className="flex flex-col gap-6">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-accent" />
-                <h2 className="text-sm font-semibold text-slate-900">
-                  Danh mục Kế hoạch Gian hàng theo KL ({plans.length} kế hoạch)
-                </h2>
-              </div>
-              <Button variant="primary" size="sm" icon={Plus} onClick={handleOpenCreatePlan}>
-                Thêm kế hoạch gian hàng
-              </Button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-                  <tr>
-                    <th className="py-2.5 px-3">Tháng</th>
-                    <th className="py-2.5 px-3">Gian hàng</th>
-                    <th className="py-2.5 px-3">Thương hiệu</th>
-                    <th className="py-2.5 px-3">Người phụ trách</th>
-                    <th className="py-2.5 px-3">Leader</th>
-                    <th className="py-2.5 px-3 text-right">Chỉ tiêu NMV</th>
-                    <th className="py-2.5 px-3 text-right">Ngân sách Net</th>
-                    <th className="py-2.5 px-3 text-right">Số Video Plan</th>
-                    <th className="py-2.5 px-3">Phân bổ KL</th>
-                    <th className="py-2.5 px-3 text-center">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {plans.map((p) => {
-                    const activeKls = p.klDetails.filter((d) => d.targetVideos > 0);
-                    return (
-                      <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-2.5 px-3 font-semibold text-slate-700">{p.monthKey}</td>
-                        <td className="py-2.5 px-3 font-semibold text-slate-900">{p.storeName}</td>
-                        <td className="py-2.5 px-3 text-slate-600">{p.brandName}</td>
-                        <td className="py-2.5 px-3 font-medium text-slate-800">{p.picName}</td>
-                        <td className="py-2.5 px-3 text-slate-500">{p.leaderName || '—'}</td>
-                        <td className="py-2.5 px-3 text-right font-medium text-emerald-700">
-                          {p.targetNmv.toLocaleString('vi-VN')} đ
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-semibold text-slate-900">
-                          {p.targetBudget.toLocaleString('vi-VN')} đ
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-semibold text-accent">
-                          {p.targetVideos}
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <div className="flex flex-wrap gap-1 max-w-[280px]">
-                            {activeKls.length > 0 ? (
-                              activeKls.map((k) => (
-                                <span
-                                  key={k.kl}
-                                  className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded text-2xs"
-                                >
-                                  {k.kl}: {k.targetVideos} video
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-slate-400">Chưa chia KL</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-3 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              onClick={() => handleOpenEditPlan(p)}
-                              className="p-1 text-slate-500 hover:text-accent hover:bg-accent-soft rounded transition-colors"
-                              title="Chỉnh sửa kế hoạch"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDeletePlan(p.id, p.storeName)}
-                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Xóa kế hoạch"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Panel
+            title={`Danh mục Kế hoạch Gian hàng theo KL (${plans.length} kế hoạch)`}
+            flush
+          >
+            <DataTable
+              columns={planColumns}
+              rows={plans}
+              rowKey={(p) => p.id}
+              empty={
+                <EmptyState
+                  title="Chưa có kế hoạch gian hàng nào"
+                  description="Bấm Tạo kế hoạch trên thanh trên để thiết lập kế hoạch mới."
+                />
+              }
+            />
+          </Panel>
         </div>
       )}
 
@@ -1184,41 +1263,41 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
       <Modal
         open={isPlanModalOpen}
         onClose={() => setIsPlanModalOpen(false)}
-        title={editingPlan ? `Chỉnh sửa Kế hoạch: ${editingPlan.storeName}` : 'Tạo Kế hoạch Gian hàng mới'}
+        title={editingPlan ? `Chỉnh sửa kế hoạch: ${planFormData.storeName}` : 'Thiết lập Kế hoạch Gian hàng theo KL'}
         size="2xl"
         footer={
           <div className="flex items-center justify-end gap-2 w-full">
-            <button
-              onClick={() => setIsPlanModalOpen(false)}
-              className="px-4 py-2 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              Hủy bỏ
-            </button>
-            <button
-              onClick={handleSavePlan}
-              className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary-hover transition-colors"
-            >
+            <Button variant="secondary" onClick={() => setIsPlanModalOpen(false)}>
+              Hủy
+            </Button>
+            <Button variant="primary" onClick={handleSavePlan}>
               Lưu kế hoạch
-            </button>
+            </Button>
           </div>
         }
       >
         <div className="flex flex-col gap-4 text-xs">
-          {/* Thông tin cơ bản */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+          {/* Thông tin chung */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Tháng áp dụng</label>
-              <input
-                type="text"
+              <label className="block font-medium text-ink-2 mb-1">Tháng áp dụng</label>
+              <Select
+                aria-label="Tháng áp dụng"
                 value={planFormData.monthKey}
                 onChange={(e) => setPlanFormData({ ...planFormData, monthKey: e.target.value })}
-                placeholder="2026/10"
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white"
-              />
+              >
+                {availableMonths.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </Select>
             </div>
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Gian hàng</label>
-              <select
+
+            <div className="sm:col-span-2">
+              <label className="block font-medium text-ink-2 mb-1">Gian hàng</label>
+              <Select
+                aria-label="Chọn gian hàng"
                 value={planFormData.storeName}
                 onChange={(e) => {
                   const sName = e.target.value;
@@ -1226,10 +1305,9 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                   setPlanFormData({
                     ...planFormData,
                     storeName: sName,
-                    brandName: matched?.brandName || planFormData.brandName,
+                    brandName: matched?.brandName || '',
                   });
                 }}
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white"
               >
                 <option value="">-- Chọn gian hàng --</option>
                 {availableStores.map((s) => (
@@ -1237,84 +1315,87 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                     {s.storeName} ({s.brandName})
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Thương hiệu</label>
-              <input
-                type="text"
-                value={planFormData.brandName}
-                onChange={(e) => setPlanFormData({ ...planFormData, brandName: e.target.value })}
-                placeholder="ClubClio, EUPC..."
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white"
-              />
-            </div>
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Người phụ trách (PIC)</label>
-              <select
+              <label className="block font-medium text-ink-2 mb-1">Người phụ trách (PIC)</label>
+              <Select
+                aria-label="Người phụ trách"
                 value={planFormData.picName}
                 onChange={(e) => setPlanFormData({ ...planFormData, picName: e.target.value })}
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white"
               >
                 {availablePics.map((p) => (
                   <option key={p} value={p}>
                     {p}
                   </option>
                 ))}
-              </select>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block font-medium text-ink-2 mb-1">Trưởng nhóm (Leader)</label>
+              <input
+                type="text"
+                value={planFormData.leaderName}
+                onChange={(e) => setPlanFormData({ ...planFormData, leaderName: e.target.value })}
+                placeholder="Nguyễn Thị Ngọc Tâm (nếu có)"
+                className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-canvas text-ink"
+              />
             </div>
           </div>
 
-          {/* Chỉ số chính */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="p-3 bg-white border border-slate-200 rounded-xl">
-              <label className="block font-semibold text-slate-700 mb-1">Mục tiêu NMV (VNĐ)</label>
+          {/* Chỉ tiêu tổng */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-sunken rounded-lg border border-line">
+            <div>
+              <label className="block font-medium text-ink-2 mb-1">Chỉ tiêu NMV (VNĐ)</label>
               <input
                 type="number"
-                step="1000000"
+                step="10000000"
                 value={planFormData.targetNmv}
                 onChange={(e) =>
                   setPlanFormData({ ...planFormData, targetNmv: Number(e.target.value) || 0 })
                 }
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-semibold text-emerald-700"
+                className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink font-semibold"
               />
             </div>
-            <div className="p-3 bg-white border border-slate-200 rounded-xl">
-              <label className="block font-semibold text-slate-700 mb-1">Tổng ngân sách Net (VNĐ)</label>
+
+            <div>
+              <label className="block font-medium text-ink-2 mb-1">Ngân sách Net (VNĐ)</label>
               <input
                 type="number"
-                step="1000000"
+                step="5000000"
                 value={planFormData.targetBudget}
                 onChange={(e) =>
                   setPlanFormData({ ...planFormData, targetBudget: Number(e.target.value) || 0 })
                 }
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-900"
+                className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink font-semibold"
               />
             </div>
-            <div className="p-3 bg-white border border-slate-200 rounded-xl">
-              <label className="block font-semibold text-slate-700 mb-1">Tổng số Video kế hoạch</label>
+
+            <div>
+              <label className="block font-medium text-ink-2 mb-1">Tổng số Video</label>
               <input
                 type="number"
                 value={planFormData.targetVideos}
                 onChange={(e) =>
                   setPlanFormData({ ...planFormData, targetVideos: Number(e.target.value) || 0 })
                 }
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-semibold text-accent"
+                className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-accent font-semibold"
               />
             </div>
           </div>
 
           {/* Bảng phân rã chi tiết theo từng KL */}
-          <div className="border border-slate-200 rounded-xl overflow-hidden">
-            <div className="px-3.5 py-2.5 bg-slate-50 font-semibold text-slate-800 border-b border-slate-200 flex items-center justify-between">
+          <div className="border border-line rounded-xl overflow-hidden">
+            <div className="px-3.5 py-2 bg-sunken font-semibold text-ink border-b border-line flex items-center justify-between">
               <span>Phân bổ chi tiết theo Phân tầng Khung lương (KL)</span>
-              <span className="text-2xs text-slate-500">
-                Tự động tính thành tiền theo số lượng và đơn giá
-              </span>
             </div>
             <div className="max-h-64 overflow-y-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-100 text-slate-600 sticky top-0">
+                <thead className="bg-canvas text-ink-3 sticky top-0 border-b border-line">
                   <tr>
                     <th className="py-2 px-3">Khung lương (KL)</th>
                     <th className="py-2 px-3 text-right">Số video</th>
@@ -1323,10 +1404,10 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                     <th className="py-2 px-3 text-right">NMV dự kiến (VNĐ)</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {planFormData.klDetails.map((klItem) => (
-                    <tr key={klItem.kl}>
-                      <td className="py-2 px-3 font-semibold text-slate-800">{klItem.kl}</td>
+                    <tr key={klItem.kl} className="hover:bg-canvas">
+                      <td className="py-2 px-3 font-semibold text-ink">{klItem.kl}</td>
                       <td className="py-2 px-3 text-right">
                         <input
                           type="number"
@@ -1340,7 +1421,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                             )
                           }
                           placeholder="0"
-                          className="w-16 px-2 py-1 text-right border border-slate-200 rounded font-semibold text-accent"
+                          className="w-16 px-2 py-1 text-right border border-line rounded bg-canvas font-semibold text-accent"
                         />
                       </td>
                       <td className="py-2 px-3 text-right">
@@ -1356,11 +1437,11 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                             )
                           }
                           placeholder="0"
-                          className="w-28 px-2 py-1 text-right border border-slate-200 rounded text-slate-700"
+                          className="w-28 px-2 py-1 text-right border border-line rounded bg-canvas text-ink"
                         />
                       </td>
-                      <td className="py-2 px-3 text-right font-semibold text-slate-900">
-                        {klItem.allocatedBudget.toLocaleString('vi-VN')} đ
+                      <td className="py-2 px-3 text-right font-semibold text-ink">
+                        {formatVndShort(klItem.allocatedBudget)}
                       </td>
                       <td className="py-2 px-3 text-right">
                         <input
@@ -1375,7 +1456,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                             )
                           }
                           placeholder="0"
-                          className="w-28 px-2 py-1 text-right border border-slate-200 rounded text-emerald-700"
+                          className="w-28 px-2 py-1 text-right border border-line rounded bg-canvas text-positive"
                         />
                       </td>
                     </tr>
@@ -1387,13 +1468,13 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
 
           {/* Ghi chú */}
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Ghi chú chiến lược</label>
+            <label className="block font-medium text-ink-2 mb-1">Ghi chú chiến lược</label>
             <textarea
               rows={2}
               value={planFormData.notes}
               onChange={(e) => setPlanFormData({ ...planFormData, notes: e.target.value })}
               placeholder="Sản phẩm trọng tâm, lưu ý kịch bản, thời điểm Payday..."
-              className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
+              className="w-full px-2.5 py-1.5 border border-line rounded-lg text-xs bg-canvas text-ink"
             />
           </div>
         </div>
@@ -1407,91 +1488,23 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
         size="2xl"
         footer={
           <div className="flex items-center justify-end w-full">
-            <button
-              onClick={() => setDetailStoreName(null)}
-              className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary-hover transition-colors"
-            >
+            <Button variant="secondary" onClick={() => setDetailStoreName(null)}>
               Đóng
-            </button>
+            </Button>
           </div>
         }
       >
-        <div className="flex flex-col gap-3 text-xs">
-          <div className="overflow-x-auto max-h-96 overflow-y-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 sticky top-0">
-                <tr>
-                  <th className="py-2 px-3">Mã BO</th>
-                  <th className="py-2 px-3">Kênh KOC</th>
-                  <th className="py-2 px-3">Khung lương</th>
-                  <th className="py-2 px-3 text-right">Chi phí Net</th>
-                  <th className="py-2 px-3">Ngày Air Dự kiến</th>
-                  <th className="py-2 px-3">Ngày Air Thực tế</th>
-                  <th className="py-2 px-3 text-right">NMV / GMV</th>
-                  <th className="py-2 px-3 text-center">Nghiệm thu</th>
-                  <th className="py-2 px-3 text-center">Video</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {detailStoreBookings.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="py-8 text-center text-slate-400">
-                      Chưa có video booking nào được tạo cho gian hàng này trong tháng {selectedMonth}.
-                    </td>
-                  </tr>
-                ) : (
-                  detailStoreBookings.map((b) => (
-                    <tr key={b.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-2 px-3 font-semibold text-slate-800">
-                        {b.maBooking || 'Chờ tạo BO'}
-                      </td>
-                      <td className="py-2 px-3">
-                        <div className="font-semibold text-slate-900">{b.tenKenh || b.idKenh}</div>
-                        <div className="text-2xs text-slate-400">@{b.idKenh}</div>
-                      </td>
-                      <td className="py-2 px-3 font-medium text-slate-700">{b.klGrade}</td>
-                      <td className="py-2 px-3 text-right font-semibold text-slate-900">
-                        {b.chiPhiBookingNetCuoi?.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="py-2 px-3 text-slate-600">{b.plannedAirDate || '—'}</td>
-                      <td className="py-2 px-3 font-medium text-accent">
-                        {b.actualAirDate || 'Chưa air'}
-                      </td>
-                      <td className="py-2 px-3 text-right font-semibold text-emerald-700">
-                        {((b.gmv14d || 0) > 0 ? b.gmv14d : b.gmv30d)?.toLocaleString('vi-VN') || 0} đ
-                      </td>
-                      <td className="py-2 px-3 text-center">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded text-2xs font-semibold ${
-                            b.acceptanceStatus === 'DA_NGHIEM_THU'
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-amber-100 text-amber-700'
-                          }`}
-                        >
-                          {b.acceptanceStatus === 'DA_NGHIEM_THU' ? 'Đã duyệt' : 'Chờ duyệt'}
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 text-center">
-                        {b.linkAir ? (
-                          <a
-                            href={b.linkAir}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-accent hover:underline flex items-center justify-center gap-1"
-                          >
-                            Xem link <ExternalLink className="w-3 h-3" />
-                          </a>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <DataTable
+          columns={modalColumns}
+          rows={detailStoreBookings}
+          rowKey={(b) => b.id}
+          empty={
+            <EmptyState
+              title={`Chưa có video booking nào trong tháng ${selectedMonth}`}
+              description="Các video được duyệt từ bảng 3.2 sẽ hiển thị tại đây khi phát sinh."
+            />
+          }
+        />
       </Modal>
 
       <ConfirmDialog

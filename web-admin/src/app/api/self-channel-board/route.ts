@@ -4,9 +4,11 @@ import { selfChannelBoardKey } from '@/lib/server/boardKeys';
 import { assertPlanIdAccess, listMonthlyPlans, resolvePlanContext } from '@/lib/server/monthlyPlanStore';
 import {
   EMPTY_SELF_CHANNEL_BOARD,
+  computeSelfPlanTarget,
+  isSelfScriptReady,
   sanitizeSelfChannelBoard,
+  selfBrandScriptBlocker,
   selfJobAcceptanceBlocker,
-  selfJobPaymentBlocker,
   type SelfChannelBoardData,
   type SelfChannelJob,
 } from '@/lib/selfChannelBoardRules';
@@ -32,8 +34,22 @@ export async function GET(request: NextRequest) {
         EMPTY_SELF_CHANNEL_BOARD,
         { clone: false }
       );
+      // Chỉ tiêu Self-channel của từng kế hoạch (4.1.1) để tab Tổng quan so chỉ tiêu với thực tế
+      const plans: Array<{ planId: string; storeName: string; brandName: string; month: string; pic: string; targetQty: number; targetBudgetNet: number }> = [];
       for (const { plan } of storedPlans) {
+        const target = computeSelfPlanTarget(plan);
         const rec = boardRecords.get(keyOf(plan.id));
+        if (target.totalQty > 0 || rec?.data?.jobs?.length) {
+          plans.push({
+            planId: plan.id,
+            storeName: plan.storeName || plan.title,
+            brandName: plan.brandName,
+            month: plan.month,
+            pic: plan.pic || '',
+            targetQty: target.totalQty,
+            targetBudgetNet: target.totalBudgetNet,
+          });
+        }
         if (!rec || !rec.data?.jobs?.length) continue;
         const board = sanitizeSelfChannelBoard(rec.data);
         for (const j of board.jobs) {
@@ -47,7 +63,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      return NextResponse.json({ jobs: allJobs, planCount: storedPlans.length });
+      return NextResponse.json({ jobs: allJobs, plans, planCount: storedPlans.length });
     } catch (err) {
       if (err instanceof RecordError) return NextResponse.json({ error: err.message }, { status: err.status });
       return handlePlanError(err);
@@ -97,6 +113,7 @@ export async function PUT(request: NextRequest) {
       async previous => {
         const prevJobs = new Map(sanitizeSelfChannelBoard(previous).jobs.map(j => [j.id, j]));
         const codes = new Set<string>();
+        const nowIso = new Date().toISOString();
 
         for (const j of incoming.jobs) {
           if (!j.code) throw new RecordError('Mã công việc video không được để trống.', 400);
@@ -105,19 +122,57 @@ export async function PUT(request: NextRequest) {
 
           const old = prevJobs.get(j.id);
 
+          // Brand duyệt kịch bản: đúng thứ tự, mốc thời gian do máy chủ ghi (tính SLA 72h, không tự duyệt)
+          const brandBlocker = selfBrandScriptBlocker(old, j);
+          if (brandBlocker) throw new RecordError(`Job ${j.code}: ${brandBlocker}`, 400);
+          if (j.brandScriptStatus !== (old?.brandScriptStatus ?? 'NOT_SENT')) {
+            if (j.brandScriptStatus === 'PENDING') j.brandScriptSentAt = nowIso;
+            if (j.brandScriptStatus === 'APPROVED' || j.brandScriptStatus === 'REVISION') j.brandScriptDecidedAt = nowIso;
+          }
+
+          // Chỉ quay / nộp video nháp khi kịch bản đã được Brand duyệt
+          if (j.videoQaStatus !== 'WAITING_DRAFT' && (old?.videoQaStatus ?? 'WAITING_DRAFT') === 'WAITING_DRAFT' && !isSelfScriptReady(j)) {
+            throw new RecordError(`Job ${j.code}: kịch bản chưa được Brand duyệt, chưa nộp video nháp được.`, 400);
+          }
+
           // Ràng buộc nghiệm thu Đạt
           if (j.acceptanceStatus === 'PASSED' && old?.acceptanceStatus !== 'PASSED') {
             const blocker = selfJobAcceptanceBlocker(j);
             if (blocker) throw new RecordError(`Không thể nghiệm thu job ${j.code}: ${blocker}`, 400);
           }
 
-          // Ràng buộc lập Đề nghị thanh toán hoặc Đã thanh toán
-          if (
-            (j.paymentStatus === 'REQUESTED' || j.paymentStatus === 'PAID') &&
-            old?.paymentStatus !== j.paymentStatus
-          ) {
-            const blocker = selfJobPaymentBlocker(j);
-            if (blocker) throw new RecordError(`Không thể chuyển trạng thái thanh toán job ${j.code}: ${blocker}`, 400);
+          // Thanh toán do tab Quyết toán ghi (BBNT tháng, ĐNTT Lark, Kế toán xác nhận chi): giữ nguyên giá trị trên máy chủ
+          const locked = old?.paymentStatus === 'REQUESTED' || old?.paymentStatus === 'PAID';
+          const serverPaymentStatus = old?.paymentStatus === 'REQUESTED' || old?.paymentStatus === 'PAID' ? old.paymentStatus : null;
+          if (serverPaymentStatus || j.paymentStatus === 'REQUESTED' || j.paymentStatus === 'PAID') {
+            j.paymentStatus = serverPaymentStatus || (j.feeGross > 0 || j.productionMode === 'CTV_OUTSOURCE' ? 'NONE' : 'NOT_APPLICABLE');
+          }
+          // Kết quả kiểm link đăng chỉ máy chủ ghi (đổi link thì kết quả cũ tự hết hiệu lực vì không khớp link)
+          j.airCheck = old?.airCheck;
+          j.dnttSlipCode = old?.dnttSlipCode;
+          j.requestedAt = old?.requestedAt;
+          j.requestedBy = old?.requestedBy;
+          j.paidAt = old?.paidAt;
+          j.uncRef = old?.uncRef;
+          if (locked && old) {
+            Object.assign(j, {
+              feeGross: old.feeGross,
+              withholdPit10: old.withholdPit10,
+              pitTaxAmount: old.pitTaxAmount,
+              netPayout: old.netPayout,
+              contributorId: old.contributorId,
+              contributorName: old.contributorName,
+              bbntCode: old.bbntCode,
+              acceptanceStatus: old.acceptanceStatus,
+            });
+          }
+        }
+
+        // Việc đã lập ĐNTT / đã chi không bị xóa khỏi bảng
+        const keptIds = new Set(incoming.jobs.map(j => j.id));
+        for (const old of prevJobs.values()) {
+          if (!keptIds.has(old.id) && (old.paymentStatus === 'REQUESTED' || old.paymentStatus === 'PAID')) {
+            throw new RecordError(`Việc ${old.code} đã lập ĐNTT (${old.dnttSlipCode || ''}), không xóa được. Hủy đợt ở tab Quyết toán trước.`, 409);
           }
         }
 

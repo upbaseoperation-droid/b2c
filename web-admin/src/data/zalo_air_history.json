@@ -1,5 +1,114 @@
 [
   {
+    "id": "AIR-1793205160118",
+    "checkedAt": "2026-10-28T16:32:40.118Z",
+    "chatId": "test_grp",
+    "kocHandle": "maiphuong_oplung",
+    "videoUrl": "https://vt.tiktok.com/ZSgpQFvQC/",
+    "verdict": "PASS",
+    "status": "LIVE",
+    "hasProductLink": true,
+    "productTitle": "Ốp lưng chính hãng chất liệu mờ từ tính, tương thích iPhone18 Pro 17, 16, 15, 14, 13, 12,  Pro Max, 17 Pro,  PLUS, bảo vệ camera, nắp sạc từ tính, viền PC mềm bảo vệ.",
+    "productUrl": "https://shop.tiktok.com/vn/pdp/1737608932183541719?source=anchor",
+    "productId": "1737608932183541719",
+    "cartProducts": [
+      {
+        "productId": "1737608932183541719",
+        "title": "Ốp lưng chính hãng chất liệu mờ từ tính, tương thích iPhone18 Pro 17, 16, 15, 14, 13, 12,  Pro Max, 17 Pro,  PLUS, bảo vệ camera, nắp sạc từ tính, viền PC mềm bảo vệ.",
+        "productUrl": "https://shop.tiktok.com/vn/pdp/1737608932183541719?source=anchor"
+      }
+    ],
+    "holdingScreenshotUrl": "/api/integrations/zalo-bot/webhook?frame=1&frameId=FRM-7700246764321803541-46&videoUrl=https%3A%2F%2Fwww.tiktok.com%2F%40maiphuong_oplung%2Fvideo%2F7700246764321803541&sec=4.6&coverUrl=https%3A%2F%2Fp16-common-sign.tiktokcdn.com%2Ftos-alisg-p-0037%2FogIB1bByJ49mCAzWuoKAjUGAizoacSwI9wfiIx%7Etplv-photomode-zoomcover%3A720%3A720.jpeg%3Fdr%3D14555%26x-expires%3D1793376000%26x-signature%3DUFZ%252BG32wFbz7hIF0iRAdKBnVSzo%253D%26t%3D4d5b0474%26ps%3D13740610%26shp%3D81f88b70%26shcp%3D43f4a2f9%26idc%3Dmy2%26ftpl%3D1",
+    "holdingMomentSec": 4.6,
+    "holdingMomentTimeLabel": "00:03 - 00:07",
+    "holdingMomentQuote": "cầm cái ốp lưng này Ra ngoài AI cũng hỏi mua ở đâu đẹp vậy",
+    "airedAtVn": "24/10/2026 21:50",
+    "publishedAt": "2026-10-24",
+    "firstProductAppearanceSec": 3.1,
+    "firstProductMentionTimeLabel": "00:03 - 00:07",
+    "firstProductMentionTerm": "ốp lưng",
+    "firstProductMentionQuote": "cầm cái ốp lưng này Ra ngoài AI cũng hỏi mua ở đâu đẹp vậy",
+    "productMentionMoments": [
+      {
+        "startSec": 3.1,
+        "endSec": 6.6,
+        "timeLabel": "00:03 - 00:07",
+        "matchedTerm": "ốp lưng",
+        "quote": "cầm cái ốp lưng này Ra ngoài AI cũng hỏi mua ở đâu đẹp vậy"
+      },
+      {
+        "startSec": 9.2,
+        "endSec": 11.2,
+        "timeLabel": "00:09 - 00:11",
+        "matchedTerm": "ốp lưng",
+        "quote": "đây là con ốp lưng nhám Cho cảm giác cầm rất"
+      }
+    ],
+    "views": 18000,
+    "likes": 19,
+    "hashtags": [
+      "#viral",
+      "#oplungdienthoai",
+      "#oplungiphone",
+      "#fyp",
+      "#xuhuong"
+    ],
+    "sentToZalo": true
+  },
+  {
+    "id": "AIR-1793204402410",
+    "checkedAt": "2026-10-28T16:20:02.410Z",
+    "chatId": "test_grp",
+    "kocHandle": "dinhthihangxinhtuoi",
+    "videoUrl": "https://vt.tiktok.com/ZSgpMqFgK/",
+    "verdict": "PASS",
+    "status": "LIVE",
+    "hasProductLink": true,
+    "productTitle": "PHOTOOLEX Spotlight Nano 10W Đèn LED Mini 8400mAh Tạo Ánh Sáng Đẹp Cho TikTok Quay Video Chụp Ảnh Cầm Tay 4 Chế Độ Ánh Sáng RGB",
+    "productUrl": "https://shop.tiktok.com/vn/pdp/den-led-photoolex-10w-8400mah-4-mau-sac-lai-di-dong/1731633429454095811?source=anchor",
+    "productId": "1731633429454095811",
+    "cartProducts": [
+      {
+        "productId": "1731633429454095811",
+        "title": "PHOTOOLEX Spotlight Nano 10W Đèn LED Mini 8400mAh Tạo Ánh Sáng Đẹp Cho TikTok Quay Video Chụp Ảnh Cầm Tay 4 Chế Độ Ánh Sáng RGB",
+        "productUrl": "https://shop.tiktok.com/vn/pdp/den-led-photoolex-10w-8400mah-4-mau-sac-lai-di-dong/1731633429454095811?source=anchor"
+      }
+    ],
+    "holdingScreenshotUrl": "/api/integrations/zalo-bot/webhook?frame=1&frameId=FRM-7649939364679519509-17&videoUrl=https%3A%2F%2Fwww.tiktok.com%2F%40dinhthihangxinhtuoi%2Fvideo%2F7649939364679519509&sec=1.7&coverUrl=https%3A%2F%2Fp16-common-sign.tiktokcdn.com%2Ftos-alisg-p-0037%2FocP9siLIBAAqinU8R0E2kaYCM3CiIEpV7BsoZ%7Etplv-photomode-zoomcover%3A720%3A720.jpeg%3Fdr%3D14555%26x-expires%3D1793376000%26x-signature%3D67i5DsyMPBK12ZVZ7b2nWnTJ04Y%253D%26t%3D4d5b0474%26ps%3D13740610%26shp%3D81f88b70%26shcp%3D43f4a2f9%26idc%3Dmy2%26ftpl%3D1",
+    "holdingMomentSec": 1.7,
+    "holdingMomentTimeLabel": "00:00 - 00:03",
+    "holdingMomentQuote": "giảm giá giảm giá cuối cùng cả một cây đèn photolex",
+    "airedAtVn": "11/06/2026 08:11",
+    "publishedAt": "2026-06-11",
+    "firstProductAppearanceSec": 0.2,
+    "firstProductMentionTimeLabel": "00:00 - 00:03",
+    "firstProductMentionTerm": "PHOTOOLEX",
+    "firstProductMentionQuote": "giảm giá giảm giá cuối cùng cả một cây đèn photolex",
+    "productMentionMoments": [
+      {
+        "startSec": 0.2,
+        "endSec": 3.4,
+        "timeLabel": "00:00 - 00:03",
+        "matchedTerm": "PHOTOOLEX",
+        "quote": "giảm giá giảm giá cuối cùng cả một cây đèn photolex"
+      },
+      {
+        "startSec": 7,
+        "endSec": 9,
+        "timeLabel": "00:07 - 00:09",
+        "matchedTerm": "PHOTOOLEX",
+        "quote": "anh chị mình đi mua Cho em cả cái bộ đèn photolex"
+      }
+    ],
+    "views": 6442,
+    "likes": 8,
+    "hashtags": [
+      "#hangxinhtuoi",
+      "#denphotoolex"
+    ],
+    "sentToZalo": true
+  },
+  {
     "id": "AIR-1793195417912",
     "checkedAt": "2026-10-28T13:50:17.912Z",
     "chatId": "test_grp",

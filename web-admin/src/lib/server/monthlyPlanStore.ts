@@ -345,19 +345,24 @@ export async function assertPlanIdAccess(id: string, actor: UserProfile, action:
 export async function assertListingSheetAccess(key: string, actor: UserProfile): Promise<InputPlanBreakdownState | null> {
   const staffSheet = key.match(/^\d{4}\/\d{2}__(.+)$/);
   if (!staffSheet) return assertPlanIdAccess(key, actor, 'write');
-  if (isStaffGlobalAdminOrManager(actor)) return null;
+  await assertStoreBookingAccess(staffSheet[1], actor);
+  return null;
+}
+
+/** Booking / Leader của gian (theo mã gian, tên gian, hoặc gian thuộc nhãn trùng tên), Giám đốc / Admin. */
+export async function assertStoreBookingAccess(storeIdOrName: string, actor: UserProfile): Promise<void> {
+  if (isStaffGlobalAdminOrManager(actor)) return;
   const { data: catalog } = await readMasterCatalog();
-  const name = staffSheet[1].trim().toLowerCase();
+  const name = storeIdOrName.trim().toLowerCase();
   const stores = catalog.stores.filter(
-    s => (s.storeName || '').trim().toLowerCase() === name || brandKey(s.brandName || '') === brandKey(name)
+    s => normKey(s.id) === name || normKey(s.storeName) === name || brandKey(s.brandName || '') === brandKey(name)
   );
   const allowed = stores.some(store => {
     const brand = catalog.brands.find(b => brandKey(b.name) === brandKey(store.brandName || '')) as BrandDetail | undefined;
     const positions = storePositionsOf(actor, store, brand);
     return isBookingExecutor(positions) || positions.has('LEADER');
   });
-  if (!allowed) throw new PlanStoreError('FORBIDDEN', 'Chỉ nhân sự Booking hoặc Leader của gian được thao tác Sheet Listing của gian này.');
-  return null;
+  if (!allowed) throw new PlanStoreError('FORBIDDEN', 'Chỉ nhân sự Booking hoặc Leader của gian được thao tác Sheet của gian này.');
 }
 
 /** Bối cảnh quyền trên một kế hoạch: vị trí của người dùng trên gian, nhãn, Account PIC. Dùng cho các bảng làm việc theo người sở hữu. */
@@ -440,6 +445,51 @@ export async function allPlanIdsForSync(): Promise<string[]> {
   return (await loadAllStoredPlans()).map(r => r.plan.id);
 }
 
+const normKey = (v?: string) => (v || '').trim().toLowerCase();
+
+/** Cùng gian, cùng tháng: so mã gian; khi mã khác nhau (bản Larkbase có thể mang mã gian tự sinh) thì so tên gian. */
+function isSameStoreMonth(a: InputPlanBreakdownState, b: InputPlanBreakdownState): boolean {
+  if (!a.month || a.month !== b.month) return false;
+  if (a.storeId && b.storeId && normKey(a.storeId) === normKey(b.storeId)) return true;
+  return Boolean(normKey(a.storeName)) && normKey(a.storeName) === normKey(b.storeName);
+}
+
+/**
+ * Mỗi gian chỉ có một kế hoạch mỗi tháng. Chọn kế hoạch đang dùng (chưa lưu trữ) của cùng gian, cùng tháng:
+ * ưu tiên bản đã gắn đúng bản ghi Larkbase, rồi bản cùng mã, rồi bản tạo sớm nhất.
+ */
+function pickPlanForStoreMonth(plans: InputPlanBreakdownState[], plan: InputPlanBreakdownState): InputPlanBreakdownState | null {
+  const candidates = plans.filter(p => String(p.status) !== 'ARCHIVED' && isSameStoreMonth(p, plan));
+  if (candidates.length === 0) return null;
+  return (
+    candidates.find(p => plan.larkRecordId && p.larkRecordId === plan.larkRecordId) ||
+    candidates.find(p => p.id === plan.id) ||
+    [...candidates].sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''))[0]
+  );
+}
+
+/**
+ * Mọi kế hoạch cùng nhãn, cùng tháng (không lọc theo quyền xem). Chỉ dùng cho kiểm tra phía máy chủ
+ * như cảnh báo trùng KOC giữa các gian; không trả nguyên kế hoạch ra trình duyệt.
+ */
+export async function listPlansOfBrandMonth(brandName: string, month: string): Promise<InputPlanBreakdownState[]> {
+  return (await loadAllStoredPlans())
+    .map(r => r.plan)
+    .filter(p => p.month === month && String(p.status) !== 'ARCHIVED' && brandKey(p.brandName || '') === brandKey(brandName));
+}
+
+/**
+ * Mọi kế hoạch của một tháng (không lọc theo quyền xem). Chỉ dùng phía máy chủ cho quyết toán CTV xuyên gian
+ * (Partnership / Kế toán); không trả nguyên kế hoạch ra trình duyệt.
+ */
+export async function listPlansOfMonth(month: string): Promise<InputPlanBreakdownState[]> {
+  return (await loadAllStoredPlans()).map(r => r.plan).filter(p => p.month === month && String(p.status) !== 'ARCHIVED');
+}
+
+export async function findPlanForStoreMonth(plan: InputPlanBreakdownState): Promise<InputPlanBreakdownState | null> {
+  return pickPlanForStoreMonth((await loadAllStoredPlans()).map(r => r.plan), plan);
+}
+
 async function loadAllStoredPlans(actorForSeed?: UserProfile): Promise<StoredMonthlyPlan[]> {
   if (!isPostgresMonthlyPlanEnabled()) {
     ensureMemoryPlansSeeded();
@@ -479,7 +529,13 @@ async function loadAllStoredPlans(actorForSeed?: UserProfile): Promise<StoredMon
     } else if (!hasVerifiedRealLarkPlans) {
       hasVerifiedRealLarkPlans = true;
       const existingById = new Map(rows.map(r => [r.id, r]));
-      const allRealPlans = [...REAL_MONTHLY_PLANS_OCT_2026, ...REAL_MONTHLY_PLANS_NOV_2026];
+      const rowPlans = rows.map(r => toStored(r).plan);
+      // Gian đã có kế hoạch trong tháng (thường là bản nháp lập trong app): ghi bản Lark vào đúng kế hoạch đó, không tạo bản thứ hai
+      const allRealPlans = [...REAL_MONTHLY_PLANS_OCT_2026, ...REAL_MONTHLY_PLANS_NOV_2026].map(p => {
+        if (existingById.has(p.id)) return p;
+        const same = pickPlanForStoreMonth(rowPlans, p);
+        return same ? { ...p, id: same.id } : p;
+      });
       const staleOrMissingRealPlans = allRealPlans.filter(p => {
         const existing = existingById.get(p.id);
         if (!existing) return true;
@@ -583,7 +639,7 @@ async function syncRealLarkPlans(plansToSync = [...REAL_MONTHLY_PLANS_OCT_2026, 
 async function seedInitialPlans(actor: UserProfile) {
   for (const plan of INITIAL_MONTHLY_PLANS) {
     try {
-      await createMonthlyPlan(plan, actor);
+      await createMonthlyPlan(plan, actor, { seeding: true });
     } catch (err) {
       // Bỏ qua nếu đã có người khác nạp cùng lúc
       if (!(err instanceof PlanStoreError && err.code === 'EXISTS')) throw err;
@@ -591,8 +647,19 @@ async function seedInitialPlans(actor: UserProfile) {
   }
 }
 
-export async function createMonthlyPlan(plan: InputPlanBreakdownState, actor: UserProfile): Promise<StoredMonthlyPlan> {
+export async function createMonthlyPlan(
+  plan: InputPlanBreakdownState,
+  actor: UserProfile,
+  opts: { seeding?: boolean } = {}
+): Promise<StoredMonthlyPlan> {
   if (!plan?.id) throw new PlanStoreError('INVALID', 'Thiếu mã kế hoạch.');
+  // Khi nạp dữ liệu mẫu, danh sách kế hoạch đang được tải nên không tra lại (tránh tự chờ chính mình)
+  if (!opts.seeding) {
+    const same = await findPlanForStoreMonth(plan);
+    if (same && same.id !== plan.id) {
+      throw new PlanStoreError('EXISTS', `Gian ${plan.storeName || plan.storeId || ''} đã có kế hoạch tháng ${plan.month} (${same.id}). Mở kế hoạch đó để làm tiếp thay vì tạo mới.`);
+    }
+  }
   await assertPlanAccess(plan, actor, 'write');
   if (!isStaffGlobalAdminOrManager(actor)) {
     const { data: catalog } = await readMasterCatalog();

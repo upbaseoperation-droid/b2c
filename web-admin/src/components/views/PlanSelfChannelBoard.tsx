@@ -3,10 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
-  Check,
   CheckCircle2,
   ChevronRight,
-  Download,
   ExternalLink,
   FileCheck2,
   FileText,
@@ -16,9 +14,7 @@ import {
   Lock,
   Plus,
   RefreshCw,
-  RotateCcw,
   Search,
-  Send,
   Trash2,
   User,
   Users,
@@ -27,9 +23,9 @@ import {
 import { Button, ConfirmDialog, Field, Input, Modal, Progress, Select, Status, Textarea } from '../ui';
 import { getVietnamDateYmd } from '../../lib/format';
 import { usePlanRecord } from '../../lib/usePlanRecord';
+import { AirCheckResult, BrandChannelHandlesBar } from './self-channel/SelfChannelAirCheck';
 import { fetchClientMonthlyPlans, getCachedClientMonthlyPlans } from '../../lib/useMonthlyPlanSync';
 import type { InputPlanBreakdownState, Contributor } from '../../lib/types';
-import { INITIAL_CONTRIBUTORS } from '../../lib/selfChannelData';
 import type { ContentSlot } from '../../lib/contentPlanRules';
 import { resolveWeekRows } from '../../lib/planBreakdownRules';
 import {
@@ -41,6 +37,10 @@ import {
   SELF_PRODUCTION_MODE_LABEL,
   SELF_SAMPLE_LABEL,
   SELF_SCRIPT_LABEL,
+  SELF_BRAND_SCRIPT_LABEL,
+  BRAND_SCRIPT_SLA_HOURS,
+  brandScriptWaitingHours,
+  type SelfBrandScriptStatus,
   SELF_STAGE_LABEL,
   SELF_VIDEO_QA_LABEL,
   applyContributorToSelfJob,
@@ -54,15 +54,12 @@ import {
   type SelfAcceptanceStatus,
   type SelfChannelBoardData,
   type SelfChannelJob,
-  type SelfContributorSummary,
   type SelfFormatKey,
   type SelfJobStage,
-  type SelfPaymentStatus,
   type SelfPublishPlatform,
   type SelfProductionMode,
   type SelfSampleStatus,
   type SelfScriptStatus,
-  type SelfSettlementBatch,
   type SelfVideoQaStatus,
 } from '../../lib/selfChannelBoardRules';
 
@@ -70,6 +67,10 @@ export interface PlanSelfChannelBoardProps {
   contributors?: Contributor[];
   currentUserName?: string;
   onNotify?: (message: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+  /** Mở đúng kế hoạch này (bấm từ Tổng quan / Hàng chờ duyệt); nonce đổi để mở lại cùng kế hoạch */
+  focus?: { planId: string; nonce: number } | null;
+  /** Mở tab Quyết toán (BBNT tháng, ĐNTT Lark, Kế toán xác nhận đã chi) */
+  onOpenSettlement?: () => void;
 }
 
 const fmt = (v: number) => Math.round(Number(v) || 0).toLocaleString('vi-VN');
@@ -88,20 +89,34 @@ const TD = 'border-b border-line px-2 py-1.5 align-middle text-[13px] text-ink';
 
 type PlanLite = InputPlanBreakdownState;
 
+/** Trạng thái Brand duyệt kịch bản; quá hạn SLA chỉ cảnh báo để raise, không tự duyệt. */
+function BrandScriptBadge({ job }: { job: SelfChannelJob }) {
+  const hours = brandScriptWaitingHours(job);
+  const overdue = hours !== null && hours > BRAND_SCRIPT_SLA_HOURS;
+  const tone = job.brandScriptStatus === 'APPROVED' ? 'positive' : job.brandScriptStatus === 'REVISION' || overdue ? 'critical' : job.brandScriptStatus === 'PENDING' ? 'warning' : 'neutral';
+  return (
+    <Status tone={tone}>
+      {SELF_BRAND_SCRIPT_LABEL[job.brandScriptStatus]}
+      {hours !== null ? ` · ${Math.floor(hours)}h` : ''}
+      {overdue ? ' · quá hạn, raise Brand' : ''}
+    </Status>
+  );
+}
+
 export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
   contributors,
   currentUserName = 'Chuyên viên',
   onNotify,
+  focus,
+  onOpenSettlement,
 }) => {
   const notify = useCallback(
     (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => onNotify?.(msg, type),
     [onNotify]
   );
 
-  const effectiveContributors = useMemo(
-    () => (contributors && contributors.length > 0 ? contributors : INITIAL_CONTRIBUTORS),
-    [contributors]
-  );
+  // Danh bạ CTV thật (máy chủ); không còn rơi về CTV mẫu
+  const effectiveContributors = useMemo(() => contributors || [], [contributors]);
 
   // 1. Quản lý danh sách Kế hoạch tháng
   const [plans, setPlans] = useState<PlanLite[]>(() => getCachedClientMonthlyPlans() || []);
@@ -111,6 +126,18 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
   const [month, setMonth] = useState('');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Nhảy tới kế hoạch được chọn từ màn khác, khi danh sách kế hoạch đã tải
+  const [appliedFocusNonce, setAppliedFocusNonce] = useState<number | null>(null);
+  if (focus && focus.nonce !== appliedFocusNonce) {
+    const target = plans.find(p => p.id === focus.planId);
+    if (target) {
+      setAppliedFocusNonce(focus.nonce);
+      setMonth(target.month);
+      setSearch('');
+      setSelectedId(target.id);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -168,6 +195,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
     data: board,
     update: updateBoard,
     status: saveStatus,
+    reload: reloadBoard,
   } = usePlanRecord<SelfChannelBoardData>(
     '/api/self-channel-board',
     activePlan?.id ?? null,
@@ -218,7 +246,6 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
   // 5. Quản lý Modal Chi tiết Job
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [activeJobDraft, setActiveJobDraft] = useState<SelfChannelJob | null>(null);
-  const [isPushingLarkSingle, setIsPushingLarkSingle] = useState(false);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -234,11 +261,6 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
       }
     });
   }, [activeJobId, board.jobs]);
-
-  // 6. Quản lý Modal Chốt bảng công & ĐNTT gom theo CTV
-  const [isSettlementModalOpen, setIsSettlementModalOpen] = useState(false);
-  const [pushingCtvBatchId, setPushingCtvBatchId] = useState<string | null>(null);
-  const [batchUncInput, setBatchUncInput] = useState<Record<string, string>>({});
 
   // 7. Đồng bộ Job video từ Kế hoạch & Content Brief
   const [isSyncing, setIsSyncing] = useState(false);
@@ -384,6 +406,32 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
   };
 
   // Helper lưu trực tiếp draft vào board.jobs ngay khi bấm các nút chốt bước (tránh mất dữ liệu khi đóng modal)
+  const [checkingAirJobId, setCheckingAirJobId] = useState<string | null>(null);
+  const handleCheckAir = async (job: SelfChannelJob) => {
+    if (!activePlan) return;
+    setCheckingAirJobId(job.id);
+    try {
+      const res = await fetch('/api/self-channel-board/air-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId: activePlan.id, jobId: job.id }),
+      });
+      const body = (await res.json().catch(() => null)) as { airCheck?: SelfChannelJob['airCheck']; error?: string } | null;
+      if (!res.ok || !body?.airCheck) {
+        notify(body?.error || 'Không kiểm được link đăng.', 'error');
+        return;
+      }
+      const check = body.airCheck;
+      setActiveJobDraft(d => (d && d.id === job.id ? { ...d, airCheck: check, views: check.views ?? d.views } : d));
+      await reloadBoard();
+      notify(check.verdict === 'PASS' ? `Link đăng của ${job.code} đạt.` : `Link đăng của ${job.code}: ${check.issues[0] || 'cần xem lại'}`, check.verdict === 'PASS' ? 'success' : 'warning');
+    } catch {
+      notify('Lỗi mạng khi kiểm link đăng.', 'error');
+    } finally {
+      setCheckingAirJobId(null);
+    }
+  };
+
   const applyAndPersistDraft = useCallback(
     (nextDraft: SelfChannelJob, successMsg?: string) => {
       const fin = computeJobFinancials(
@@ -459,345 +507,6 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
     notify(`Đã lưu thay đổi cho công việc ${finalizedDraft.code}.`, 'success');
   };
 
-  // Gửi ĐNTT 1 Job sang Lark từ Modal
-  const handlePushSingleJobToLark = async () => {
-    if (!activeJobDraft || !activePlan) return;
-    const blocker = selfJobPaymentBlocker(activeJobDraft);
-    if (blocker) {
-      notify(blocker, 'warning');
-      return;
-    }
-    setIsPushingLarkSingle(true);
-    let slipCode = `DNTT-SC-${activeJobDraft.code}`;
-
-    try {
-      const res = await fetch('/api/integrations/larkbase/payment-requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requestType: 'SETTLEMENT',
-          deals: [
-            {
-              id: activeJobDraft.id,
-              jobId: activeJobDraft.id,
-              dealId: activeJobDraft.code,
-              kocName: activeJobDraft.contributorName,
-              channelName: activeJobDraft.contributorName,
-              brandName: activePlan.brandName,
-              campaignName: `${activePlan.storeName || activePlan.brandName} · Video Kênh Brand`,
-              stage: 'CẦN_THANH_TOÁN',
-              dealType: 'VIDEO_SELF_CHANNEL',
-              rateCard: activeJobDraft.feeGross,
-              finalAmount: activeJobDraft.feeGross,
-              totalValue: activeJobDraft.feeGross,
-              linkAir: activeJobDraft.airLink || 'https://drive.google.com/ctv-video',
-              postedDate: activeJobDraft.airedAt || activeJobDraft.acceptedAt || getVietnamDateYmd(),
-              postDate: activeJobDraft.airedAt || activeJobDraft.acceptedAt || getVietnamDateYmd(),
-              contractScanUrl: `https://drive.google.com/ctv-contract/${activeJobDraft.contributorId || activeJobDraft.code}`,
-              signedContractUrl: `https://drive.google.com/ctv-contract/${activeJobDraft.contributorId || activeJobDraft.code}`,
-            },
-          ],
-          kocs: [],
-          sharedPayeeOverride: {
-            bankName: activeJobDraft.bankName || 'Techcombank',
-            bankAccount: activeJobDraft.bankAccount || '',
-            bankHolder: activeJobDraft.bankHolder || activeJobDraft.contributorName,
-            legalId: activeJobDraft.legalId || '',
-            hasIdCardScan: true,
-            linkAir: activeJobDraft.airLink || 'https://drive.google.com/ctv-video',
-            postedDate: activeJobDraft.airedAt,
-            sparkAdsCode: activeJobDraft.sparkAdsCode || 'SELF_CHANNEL',
-            adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
-            contractUrl: activeJobDraft.contractNo || `HD-CTV-${activeJobDraft.code}`,
-            bbntUrl: activeJobDraft.bbntCode || `BBNT-${activeJobDraft.code}`,
-          },
-          actorName: currentUserName,
-          month: activePlan.month || getVietnamDateYmd().slice(0, 7),
-          note: `ĐNTT video Self-channel ${activeJobDraft.code} cho ${activeJobDraft.contributorName}`,
-        }),
-      });
-      const body = await res.json().catch(() => null);
-      if (res.ok && body?.slip?.slipCode) {
-        slipCode = body.slip.slipCode;
-      }
-    } catch {
-      // Fallback cục bộ
-    } finally {
-      setIsPushingLarkSingle(false);
-    }
-
-    const updatedJob: SelfChannelJob = {
-      ...activeJobDraft,
-      paymentStatus: 'REQUESTED',
-      dnttSlipCode: slipCode,
-      requestedAt: getVietnamDateYmd(),
-      requestedBy: currentUserName,
-      updatedAt: new Date().toISOString(),
-    };
-
-    setActiveJobDraft(updatedJob);
-    updateBoard({
-      ...board,
-      jobs: board.jobs.map(j => (j.id === updatedJob.id ? updatedJob : j)),
-    });
-    notify(`Đã gửi đề nghị thanh toán sang Lark thành công: ${slipCode}`, 'success');
-  };
-
-  // Đẩy ĐNTT Gom theo CTV trong Modal Quyết toán
-  const handlePushContributorBatch = async (ctv: SelfContributorSummary) => {
-    if (!activePlan) return;
-    if (ctv.acceptedUnpaidJobs.length === 0) {
-      notify('CTV này không có video nào đủ điều kiện chờ thanh toán.', 'warning');
-      return;
-    }
-    if (!ctv.legalReady) {
-      notify(`Hồ sơ CTV chưa đủ điều kiện: ${ctv.missingReason}`, 'warning');
-      return;
-    }
-
-    setPushingCtvBatchId(ctv.contributorName);
-    let slipCode = `DNTT-CTV-${Date.now().toString().slice(-6)}`;
-
-    try {
-      const dealPayloads = ctv.acceptedUnpaidJobs.map(j => ({
-        id: j.id,
-        jobId: j.id,
-        dealId: j.code,
-        kocName: ctv.contributorName,
-        channelName: ctv.contributorName,
-        brandName: activePlan.brandName,
-        campaignName: `${activePlan.storeName || activePlan.brandName} · Video Kênh Brand`,
-        stage: 'CẦN_THANH_TOÁN',
-        dealType: 'VIDEO_SELF_CHANNEL',
-        rateCard: j.feeGross,
-        finalAmount: j.feeGross,
-        totalValue: j.feeGross,
-        linkAir: j.airLink || 'https://drive.google.com/ctv-video',
-        postedDate: j.airedAt || getVietnamDateYmd(),
-        postDate: j.airedAt || getVietnamDateYmd(),
-        contractScanUrl: `https://drive.google.com/ctv-contract/${ctv.contributorId || j.code}`,
-        signedContractUrl: `https://drive.google.com/ctv-contract/${ctv.contributorId || j.code}`,
-      }));
-
-      const res = await fetch('/api/integrations/larkbase/payment-requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requestType: 'SETTLEMENT',
-          deals: dealPayloads,
-          kocs: [],
-          sharedPayeeOverride: {
-            bankName: ctv.bankName || 'Techcombank',
-            bankAccount: ctv.bankAccount || '',
-            bankHolder: ctv.bankHolder || ctv.contributorName,
-            legalId: ctv.legalId || '',
-            hasIdCardScan: true,
-            linkAir: dealPayloads[0]?.linkAir || 'https://drive.google.com/ctv-video',
-            postedDate: dealPayloads[0]?.postedDate,
-            sparkAdsCode: 'SELF_CHANNEL_CTV',
-            adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
-            contractUrl: ctv.contractNo || `HD-CTV-${ctv.contributorName}`,
-            bbntUrl: `BBNT-CTV-${ctv.contributorName}-${activePlan.month}`,
-          },
-          actorName: currentUserName,
-          month: activePlan.month || getVietnamDateYmd().slice(0, 7),
-          note: `Chốt bảng công CTV (${ctv.acceptedUnpaidJobs.length} video) cho ${ctv.contributorName}`,
-        }),
-      });
-      const body = await res.json().catch(() => null);
-      if (res.ok && body?.slip?.slipCode) {
-        slipCode = body.slip.slipCode;
-      }
-    } catch {
-      // Fallback
-    } finally {
-      setPushingCtvBatchId(null);
-    }
-
-    const targetJobIds = new Set(ctv.acceptedUnpaidJobs.map(j => j.id));
-    const nowYmd = getVietnamDateYmd();
-
-    const newBatch: SelfSettlementBatch = {
-      id: `batch-${Date.now()}`,
-      slipCode,
-      contributorName: ctv.contributorName,
-      contributorId: ctv.contributorId,
-      jobIds: ctv.acceptedUnpaidJobs.map(j => j.id),
-      jobCodes: ctv.acceptedUnpaidJobs.map(j => j.code),
-      grossTotal: ctv.pendingGross,
-      pitTaxTotal: ctv.pendingPitTax,
-      netTotal: ctv.pendingNet,
-      status: 'REQUESTED',
-      requestedAt: nowYmd,
-      requestedBy: currentUserName,
-      note: `Bảng công ${ctv.acceptedUnpaidJobs.length} video`,
-    };
-
-    const shouldWithholdPit = ctv.pendingGross >= 2000000;
-    const nextJobs = board.jobs.map(j => {
-      if (!targetJobIds.has(j.id)) return j;
-      const fin = computeJobFinancials(
-        j.feeGross,
-        j.productionMode,
-        shouldWithholdPit ? true : j.withholdPit10
-      );
-      return {
-        ...j,
-        withholdPit10: fin.withholdPit10,
-        pitTaxAmount: fin.pitTaxAmount,
-        netPayout: fin.netPayout,
-        paymentStatus: 'REQUESTED' as SelfPaymentStatus,
-        dnttSlipCode: slipCode,
-        requestedAt: nowYmd,
-        requestedBy: currentUserName,
-        updatedAt: new Date().toISOString(),
-      };
-    });
-
-    updateBoard({
-      ...board,
-      settlementBatches: [newBatch, ...board.settlementBatches],
-      jobs: nextJobs,
-    });
-    notify(`Đã lập phiếu ĐNTT ${slipCode} cho CTV ${ctv.contributorName}.`, 'success');
-  };
-
-  // Xác nhận giải ngân cho cả lô đợt quyết toán
-  const handleConfirmDisbursedBatch = (batch: SelfSettlementBatch) => {
-    const unc = batchUncInput[batch.id]?.trim();
-    if (!unc) {
-      notify('Vui lòng nhập Mã lệnh chi / UNC trước khi xác nhận giải ngân.', 'warning');
-      return;
-    }
-    const nowYmd = getVietnamDateYmd();
-    const batchJobIds = new Set(batch.jobIds);
-
-    const nextBatches = board.settlementBatches.map(b => {
-      if (b.id !== batch.id) return b;
-      return {
-        ...b,
-        status: 'PAID' as const,
-        paidAt: nowYmd,
-        uncRef: unc,
-      };
-    });
-
-    const nextJobs = board.jobs.map(j => {
-      if (!batchJobIds.has(j.id)) return j;
-      return {
-        ...j,
-        paymentStatus: 'PAID' as SelfPaymentStatus,
-        paidAt: nowYmd,
-        uncRef: unc,
-        updatedAt: new Date().toISOString(),
-      };
-    });
-
-    updateBoard({
-      ...board,
-      settlementBatches: nextBatches,
-      jobs: nextJobs,
-    });
-    notify(`Đã ghi nhận giải ngân cho đợt ${batch.slipCode}.`, 'success');
-  };
-
-  // Thu hồi đợt ĐNTT đang ở trạng thái REQUESTED (chưa giải ngân) để mở khóa sửa lại Job
-  const handleRevokeSettlementBatch = (batch: SelfSettlementBatch) => {
-    if (batch.status === 'PAID') {
-      notify('Đợt thanh toán đã có UNC giải ngân nên không thể thu hồi.', 'warning');
-      return;
-    }
-    const batchJobIds = new Set(batch.jobIds);
-    const nextBatches = board.settlementBatches.filter(b => b.id !== batch.id);
-    const nextJobs = board.jobs.map(j => {
-      if (!batchJobIds.has(j.id)) return j;
-      return {
-        ...j,
-        paymentStatus: 'NONE' as SelfPaymentStatus,
-        dnttSlipCode: undefined,
-        requestedAt: undefined,
-        requestedBy: undefined,
-        updatedAt: new Date().toISOString(),
-      };
-    });
-    updateBoard({
-      ...board,
-      settlementBatches: nextBatches,
-      jobs: nextJobs,
-    });
-    notify(`Đã thu hồi phiếu ${batch.slipCode} và mở khóa ${batch.jobIds.length} video để chỉnh sửa.`, 'info');
-  };
-
-  // Xuất file CSV Bảng kê nghiệm thu & chấm công chi tiết cho 1 CTV
-  const handleExportContributorBbntCsv = (ctv: SelfContributorSummary) => {
-    const ctvJobs = board.jobs.filter(
-      j =>
-        (!j.lifecycleStatus || j.lifecycleStatus === 'ACTIVE') &&
-        ((ctv.contributorId && j.contributorId === ctv.contributorId) ||
-          j.contributorName.trim() === ctv.contributorName.trim())
-    );
-    if (ctvJobs.length === 0) {
-      notify('Không có dữ liệu video của CTV này để xuất bảng kê.', 'warning');
-      return;
-    }
-    const headers = [
-      'Mã Job',
-      'Tuần',
-      'Định dạng',
-      'Sản phẩm / SKU',
-      'Ngày đăng',
-      'Link Air',
-      'Trạng thái Nghiệm thu',
-      'Mã BBNT',
-      'Thù lao Gross (VNĐ)',
-      'Thuế TNCN 10% (VNĐ)',
-      'Thực nhận Net (VNĐ)',
-      'Trạng thái Thanh toán',
-      'Mã phiếu ĐNTT',
-      'Số HĐ CTV',
-      'CCCD / MST',
-      'Ngân hàng & Số TK',
-    ];
-    const escapeCsv = (val: string | number | undefined) => {
-      const s = String(val ?? '').replace(/"/g, '""');
-      return `"${s}"`;
-    };
-    const rows = ctvJobs.map(j => [
-      j.code,
-      j.week,
-      SELF_FORMAT_LABEL[j.formatKey],
-      j.skuCode ? `${j.productName} (${j.skuCode})` : j.productName,
-      j.airedAt || 'Chưa đăng',
-      j.airLink || '',
-      SELF_ACCEPTANCE_LABEL[j.acceptanceStatus],
-      j.bbntCode || '',
-      j.feeGross,
-      j.pitTaxAmount,
-      j.netPayout,
-      SELF_PAYMENT_LABEL[j.paymentStatus],
-      j.dnttSlipCode || '',
-      j.contractNo || ctv.contractNo || '',
-      j.legalId || ctv.legalId || '',
-      `${j.bankName || ctv.bankName || ''} - ${j.bankAccount || ctv.bankAccount || ''} (${j.bankHolder || ctv.bankHolder || ''})`,
-    ]);
-
-    const csvContent =
-      '\uFEFF' +
-      [headers.map(escapeCsv).join(','), ...rows.map(r => r.map(escapeCsv).join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    const safeName = ctv.contributorName.replace(/[^a-zA-Z0-9_-]/g, '_');
-    link.download = `BBNT_BangCong_CTV_${safeName}_${activePlan?.month || 'Plan'}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    notify(`Đã xuất bảng kê nghiệm thu (CSV) cho CTV ${ctv.contributorName}.`, 'success');
-  };
-
-  // Gán nhanh CTV trực tiếp trên dòng bảng (tự động áp đơn giá, kiểm tra mẫu sẵn có & đồng bộ pháp lý/ngân hàng)
   const handleAssignCtvInline = (jobId: string, contributorId: string) => {
     const ctv = effectiveContributors.find(c => c.id === contributorId);
     if (!ctv) return;
@@ -1046,17 +755,15 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
             Thêm Job video
           </Button>
 
-          <Button
-            size="sm"
-            variant="primary"
-            icon={Wallet}
-            onClick={() => setIsSettlementModalOpen(true)}
-            disabled={!activePlan}
-          >
-            Chốt bảng công & ĐNTT CTV
-          </Button>
+          {onOpenSettlement && (
+            <Button size="sm" variant="primary" icon={Wallet} onClick={onOpenSettlement}>
+              Quyết toán CTV
+            </Button>
+          )}
         </div>
       </div>
+
+      {activePlan && <BrandChannelHandlesBar key={activePlan.id} planId={activePlan.id} onNotify={notify} />}
 
       {/* 2. CẢNH BÁO TÀI CHÍNH & TỔNG HỢP CHỈ TIÊU VS THỰC TẾ */}
       {summary && (
@@ -1491,6 +1198,10 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                             </option>
                           ))}
                         </Select>
+
+                        {job.scriptStatus !== 'NOT_NEEDED' && (
+                          <BrandScriptBadge job={job} />
+                        )}
 
                         <Select
                           value={job.sampleStatus}
@@ -2075,6 +1786,38 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                 </Field>
               </div>
 
+              {activeJobDraft.scriptStatus !== 'NOT_NEEDED' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                  <Field label="Brand duyệt kịch bản">
+                    <Select
+                      value={activeJobDraft.brandScriptStatus}
+                      onChange={e =>
+                        setActiveJobDraft({
+                          ...activeJobDraft,
+                          brandScriptStatus: e.target.value as SelfBrandScriptStatus,
+                        })
+                      }
+                    >
+                      {Object.entries(SELF_BRAND_SCRIPT_LABEL).map(([val, lbl]) => (
+                        <option key={val} value={val}>
+                          {lbl}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label="Brand yêu cầu sửa / ghi chú" className="md:col-span-2">
+                    <Input
+                      value={activeJobDraft.brandScriptNote || ''}
+                      onChange={e => setActiveJobDraft({ ...activeJobDraft, brandScriptNote: e.target.value })}
+                      placeholder="Bắt buộc khi Brand yêu cầu sửa"
+                    />
+                  </Field>
+                  <div className="md:col-span-3">
+                    <BrandScriptBadge job={activeJobDraft} />
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Field label="Link Google Drive video nháp">
                   <Input
@@ -2262,6 +2005,28 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                   />
                 </Field>
               </div>
+
+              {/* Kiểm link đăng (máy chủ): đúng kênh Brand, bài còn hiển thị; ảnh bìa làm ảnh nghiệm thu */}
+              {(() => {
+                const savedLink = board.jobs.find(j => j.id === activeJobDraft.id)?.airLink.trim() || '';
+                const linkSaved = Boolean(activeJobDraft.airLink.trim()) && savedLink === activeJobDraft.airLink.trim();
+                return (
+                  <div className="flex flex-wrap items-start justify-between gap-3 rounded border border-line bg-sunken/40 p-2.5">
+                    <AirCheckResult check={activeJobDraft.airCheck} currentLink={activeJobDraft.airLink} />
+                    <div className="text-right space-y-1">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={!linkSaved || checkingAirJobId !== null}
+                        onClick={() => handleCheckAir(activeJobDraft)}
+                      >
+                        {checkingAirJobId === activeJobDraft.id ? 'Đang kiểm…' : 'Kiểm tra link đăng'}
+                      </Button>
+                      {!linkSaved && activeJobDraft.airLink.trim() && <div className="text-2xs text-ink-3">Lưu thay đổi trước khi kiểm.</div>}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <Field label="Ngày đăng (Lên sóng)">
@@ -2463,21 +2228,11 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                 </div>
 
                 <Field label="Trạng thái thanh toán">
-                  <Select
-                    value={activeJobDraft.paymentStatus}
-                    onChange={e =>
-                      setActiveJobDraft({
-                        ...activeJobDraft,
-                        paymentStatus: e.target.value as SelfPaymentStatus,
-                      })
-                    }
-                  >
-                    {Object.entries(SELF_PAYMENT_LABEL).map(([val, lbl]) => (
-                      <option key={val} value={val}>
-                        {lbl}
-                      </option>
-                    ))}
-                  </Select>
+                  <div className="pt-1">
+                    <Status tone={activeJobDraft.paymentStatus === 'PAID' ? 'positive' : activeJobDraft.paymentStatus === 'REQUESTED' ? 'info' : 'neutral'}>
+                      {SELF_PAYMENT_LABEL[activeJobDraft.paymentStatus]}
+                    </Status>
+                  </div>
                 </Field>
               </div>
 
@@ -2508,275 +2263,12 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-line">
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    icon={Send}
-                    disabled={Boolean(selfJobPaymentBlocker(activeJobDraft)) || activeJobDraft.paymentStatus !== 'NONE' || isPushingLarkSingle}
-                    onClick={handlePushSingleJobToLark}
-                  >
-                    {isPushingLarkSingle ? 'Đang gửi sang Lark…' : 'Đẩy phiếu ĐNTT sang Lark'}
-                  </Button>
-                  {activeJobDraft.dnttSlipCode && (
-                    <span className="text-xs font-medium text-blue-700">
-                      Mã phiếu Lark: {activeJobDraft.dnttSlipCode}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder="Mã lệnh chi / UNC ngân hàng..."
-                    value={activeJobDraft.uncRef || ''}
-                    onChange={e => setActiveJobDraft({ ...activeJobDraft, uncRef: e.target.value })}
-                    className="w-56 h-8 text-xs"
-                  />
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={Check}
-                    onClick={() => {
-                      if (!activeJobDraft.uncRef?.trim()) {
-                        notify('Vui lòng nhập Mã lệnh chi / UNC.', 'warning');
-                        return;
-                      }
-                      const next: SelfChannelJob = {
-                        ...activeJobDraft,
-                        paymentStatus: 'PAID',
-                        paidAt: getVietnamDateYmd(),
-                      };
-                      applyAndPersistDraft(next, `Đã xác nhận giải ngân thành công cho video ${activeJobDraft.code}.`);
-                    }}
-                  >
-                    Xác nhận Đã giải ngân (PAID)
-                  </Button>
-                </div>
+              <div className="pt-2 border-t border-line text-xs text-ink-3">
+                BBNT sản lượng tháng, ĐNTT Lark và xác nhận đã chi (Kế toán) làm ở tab <strong>Quyết toán</strong>, gom theo CTV qua mọi gian.
+                {activeJobDraft.dnttSlipCode && <span className="ml-1 text-ink">Mã phiếu: {activeJobDraft.dnttSlipCode}</span>}
+                {activeJobDraft.bbntCode && <span className="ml-1 text-ink">· BBNT: {activeJobDraft.bbntCode}</span>}
+                {activeJobDraft.uncRef && <span className="ml-1 text-ink">· UNC: {activeJobDraft.uncRef}</span>}
               </div>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* 5. MODAL CHỐT BẢNG CÔNG & ĐNTT GOM THEO CTV */}
-      {isSettlementModalOpen && summary && (
-        <Modal
-          open={isSettlementModalOpen}
-          onClose={() => setIsSettlementModalOpen(false)}
-          title="Chốt bảng công & Đề nghị thanh toán CTV"
-          size="xl"
-          footer={
-            <div className="flex items-center justify-end w-full">
-              <Button size="sm" variant="secondary" onClick={() => setIsSettlementModalOpen(false)}>
-                Đóng
-              </Button>
-            </div>
-          }
-        >
-          <div className="space-y-6 max-h-[75vh] overflow-y-auto px-1">
-            {/* Danh sách CTV chờ chốt công */}
-            <div className="space-y-3">
-              <div className="text-sm font-semibold text-ink border-b border-line pb-2 flex items-center justify-between">
-                <span>Danh sách CTV thực hiện Video trong Kế hoạch</span>
-                <span className="text-xs font-normal text-ink-3">
-                  {summary.byContributor.length} cộng tác viên
-                </span>
-              </div>
-
-              {summary.byContributor.length === 0 ? (
-                <div className="py-6 text-center text-xs text-ink-3">
-                  Chưa có công việc nào gắn với CTV trong tháng này.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {summary.byContributor.map(ctv => (
-                    <div
-                      key={ctv.contributorName}
-                      className="rounded-lg border border-line bg-surface p-3.5 space-y-2.5"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm text-ink">{ctv.contributorName}</span>
-                          <span className="rounded bg-sunken px-2 py-0.5 text-2xs text-ink-2">
-                            {ctv.totalJobs} video tổng · {ctv.acceptedUnpaidJobs.length} video chờ chi
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`rounded px-2 py-0.5 text-2xs font-medium ${
-                              ctv.legalReady
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : 'bg-rose-50 text-rose-700 border border-rose-200'
-                            }`}
-                          >
-                            {ctv.legalReady ? 'Hồ sơ pháp lý đầy đủ' : ctv.missingReason}
-                          </span>
-
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            icon={Download}
-                            onClick={() => handleExportContributorBbntCsv(ctv)}
-                          >
-                            Xuất BBNT (CSV)
-                          </Button>
-
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            icon={Send}
-                            disabled={
-                              ctv.acceptedUnpaidJobs.length === 0 ||
-                              !ctv.legalReady ||
-                              pushingCtvBatchId === ctv.contributorName
-                            }
-                            onClick={() => handlePushContributorBatch(ctv)}
-                          >
-                            {pushingCtvBatchId === ctv.contributorName
-                              ? 'Đang đẩy Lark…'
-                              : 'Lập phiếu ĐNTT & Đẩy Lark'}
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Chi tiết tài chính */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded border border-line bg-sunken/40 p-2 text-xs">
-                        <div>
-                          <div className="text-2xs text-ink-3">Số HĐ / CCCD</div>
-                          <div className="font-medium text-ink">
-                            {ctv.contractNo || '—'} / {ctv.legalId || '—'}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-2xs text-ink-3">Tài khoản nhận tiền</div>
-                          <div className="font-medium text-ink">
-                            {ctv.bankName ? `${ctv.bankName} · ${ctv.bankAccount}` : 'Chưa có thông tin'}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-2xs text-ink-3">Tổng Gross chờ thanh toán</div>
-                          <div className="font-semibold text-ink">{fmt(ctv.pendingGross)} đ</div>
-                        </div>
-                        <div>
-                          <div className="text-2xs text-ink-3">Thực nhận Net (sau 10% thuế)</div>
-                          <div className="font-semibold text-emerald-700">{fmt(ctv.pendingNet)} đ</div>
-                        </div>
-                      </div>
-
-                      {/* Danh sách mã công việc chờ chi */}
-                      {ctv.acceptedUnpaidJobs.length > 0 && (
-                        <div className="text-2xs text-ink-3 flex items-center gap-1.5 flex-wrap">
-                          <span>Các video nghiệm thu chờ chi:</span>
-                          {ctv.acceptedUnpaidJobs.map(j => (
-                            <span
-                              key={j.id}
-                              className="rounded bg-surface border border-line px-1.5 py-0.5 font-medium text-ink"
-                            >
-                              {j.code} ({fmt(j.netPayout)}đ)
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Lịch sử các đợt ĐNTT đã lập */}
-            <div className="space-y-3 pt-3 border-t border-line">
-              <div className="text-sm font-semibold text-ink border-b border-line pb-2 flex items-center justify-between">
-                <span>Lịch sử các đợt Đề nghị thanh toán (Lark)</span>
-                <span className="text-xs font-normal text-ink-3">
-                  {board.settlementBatches.length} đợt đã lập
-                </span>
-              </div>
-
-              {board.settlementBatches.length === 0 ? (
-                <div className="py-6 text-center text-xs text-ink-3">
-                  Chưa có đợt đề nghị thanh toán nào được lập.
-                </div>
-              ) : (
-                <div className="overflow-x-auto rounded border border-line bg-surface">
-                  <table className="w-full border-collapse text-left text-xs">
-                    <thead>
-                      <tr>
-                        <th className={TH}>Mã phiếu ĐNTT</th>
-                        <th className={TH}>Người thụ hưởng</th>
-                        <th className={TH}>Số lượng Video</th>
-                        <th className={TH}>Tổng tiền (Gross / Net)</th>
-                        <th className={TH}>Ngày lập</th>
-                        <th className={TH}>Trạng thái</th>
-                        <th className={`${TH} text-right`}>Giải ngân / UNC</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {board.settlementBatches.map(b => (
-                        <tr key={b.id} className="hover:bg-sunken/40">
-                          <td className={`${TD} font-semibold text-primary`}>{b.slipCode}</td>
-                          <td className={TD}>{b.contributorName}</td>
-                          <td className={TD}>{b.jobCodes.join(', ')}</td>
-                          <td className={TD}>
-                            <div className="font-semibold text-ink">{fmt(b.grossTotal)} đ</div>
-                            <div className="text-2xs text-emerald-700">Net: {fmt(b.netTotal)} đ</div>
-                          </td>
-                          <td className={TD}>
-                            <div>{b.requestedAt}</div>
-                            <div className="text-2xs text-ink-3">{b.requestedBy}</div>
-                          </td>
-                          <td className={TD}>
-                            <span
-                              className={`rounded px-2 py-0.5 text-2xs font-medium ${
-                                b.status === 'PAID'
-                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                  : 'bg-blue-50 text-blue-700 border border-blue-200'
-                              }`}
-                            >
-                              {b.status === 'PAID' ? 'Đã giải ngân' : 'Chờ giải ngân'}
-                            </span>
-                            {b.uncRef && <div className="text-2xs text-ink-3 mt-0.5">UNC: {b.uncRef}</div>}
-                          </td>
-                          <td className={`${TD} text-right`}>
-                            {b.status === 'REQUESTED' ? (
-                              <div className="flex items-center justify-end gap-1.5">
-                                <input
-                                  type="text"
-                                  placeholder="Nhập mã UNC..."
-                                  value={batchUncInput[b.id] || ''}
-                                  onChange={e =>
-                                    setBatchUncInput({ ...batchUncInput, [b.id]: e.target.value })
-                                  }
-                                  className="h-7 w-32 rounded border border-line-strong bg-surface px-2 text-2xs text-ink focus:border-focus focus:outline-none"
-                                />
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={() => handleConfirmDisbursedBatch(b)}
-                                >
-                                  Xác nhận chi
-                                </Button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRevokeSettlementBatch(b)}
-                                  className="inline-flex items-center gap-1 rounded border border-rose-200 bg-rose-50 px-2 py-1 text-2xs font-medium text-rose-700 hover:bg-rose-100"
-                                  title="Thu hồi đợt ĐNTT này để mở khóa sửa lại Job"
-                                >
-                                  <RotateCcw className="h-3 w-3" />
-                                  <span>Thu hồi</span>
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-2xs text-emerald-700 font-medium">Hoàn tất ({b.paidAt})</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
             </div>
           </div>
         </Modal>

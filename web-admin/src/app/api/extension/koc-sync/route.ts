@@ -19,6 +19,7 @@ import {
 } from '@/lib/kocVideoWeeklyHistory';
 import {
   injectExtensionCapturedVideoToCache,
+  inspectLiveTikTokVideoPage,
   type TikTokCartProductItem,
 } from '@/lib/tiktokOpenSourceEngines';
 
@@ -50,6 +51,7 @@ const LEADER_NGOC_TAM_KEYWORDS = [
 function resolveStoreApprover(storeName: string, brandName: string): {
   leaderName: string;
   directorName: string;
+  marketingDirector: string;
   routingLabel: string;
 } {
   const combined = `${storeName} ${brandName}`.toLowerCase();
@@ -58,12 +60,14 @@ function resolveStoreApprover(storeName: string, brandName: string): {
     return {
       leaderName: 'Nguyễn Thị Ngọc Tâm',
       directorName: 'Đặng Thị Yến Nhi',
+      marketingDirector: 'Đặng Thị Yến Nhi',
       routingLabel: 'Leader Nguyễn Thị Ngọc Tâm → GĐ Marketing Đặng Thị Yến Nhi',
     };
   }
   return {
     leaderName: 'Trực tiếp (Không qua Leader)',
     directorName: 'Đặng Thị Yến Nhi',
+    marketingDirector: 'Đặng Thị Yến Nhi',
     routingLabel: 'PIC trình trực tiếp GĐ Marketing Đặng Thị Yến Nhi',
   };
 }
@@ -74,6 +78,14 @@ function normalizeHandle(raw?: string | null): string {
     .toLowerCase()
     .replace(/^@+/, '')
     .replace(/\s+/g, '');
+}
+
+function stripHandlePunct(raw?: string | null): string {
+  return normalizeHandle(raw).replace(/[._-]+/g, '');
+}
+
+function dedupeHandleLetters(raw?: string | null): string {
+  return stripHandlePunct(raw).replace(/([a-z])\1+/g, '$1');
 }
 
 function maskSensitive(raw?: string | null): string {
@@ -92,15 +104,36 @@ function getTierFromFollowers(followers: number): { tier: KocTier; tierLabel: st
 
 // O(1) Index Maps theo RULE-PERF-01
 let masterKocByHandle: Map<string, KocItem> | null = null;
+let masterKocByStripped: Map<string, KocItem> | null = null;
+let masterKocByFuzzy: Map<string, KocItem> | null = null;
 let dealsByHandle: Map<string, BookingDealItem[]> | null = null;
 
 function ensureMasterIndexes() {
-  if (!masterKocByHandle) {
+  if (!masterKocByHandle || !masterKocByStripped || !masterKocByFuzzy) {
     masterKocByHandle = new Map<string, KocItem>();
+    masterKocByStripped = new Map<string, KocItem>();
+    masterKocByFuzzy = new Map<string, KocItem>();
     for (const item of UPBASE_FULL_KOC_MASTER) {
       const key = normalizeHandle(item.channelId || item.id);
-      if (key && !masterKocByHandle.has(key)) {
+      if (!key) continue;
+      const dealsCount = Number(item.totalPastDeals || 0);
+      const prevExact = masterKocByHandle.get(key);
+      if (!prevExact || Number(prevExact.totalPastDeals || 0) < dealsCount) {
         masterKocByHandle.set(key, item);
+      }
+      const stripped = stripHandlePunct(key);
+      if (stripped) {
+        const prevStripped = masterKocByStripped.get(stripped);
+        if (!prevStripped || Number(prevStripped.totalPastDeals || 0) < dealsCount) {
+          masterKocByStripped.set(stripped, item);
+        }
+      }
+      const fuzzy = dedupeHandleLetters(key);
+      if (fuzzy) {
+        const prevFuzzy = masterKocByFuzzy.get(fuzzy);
+        if (!prevFuzzy || Number(prevFuzzy.totalPastDeals || 0) < dealsCount) {
+          masterKocByFuzzy.set(fuzzy, item);
+        }
       }
     }
   }
@@ -119,6 +152,23 @@ function ensureMasterIndexes() {
   }
 }
 
+function resolveMasterKocByHandle(handle: string): KocItem | undefined {
+  if (!handle) return undefined;
+  const exact = masterKocByHandle?.get(handle);
+  const stripped = masterKocByStripped?.get(stripHandlePunct(handle));
+  const fuzzy = masterKocByFuzzy?.get(dedupeHandleLetters(handle));
+  if (
+    exact &&
+    fuzzy &&
+    Number(fuzzy.totalPastDeals || 0) > Number(exact.totalPastDeals || 0) &&
+    (String(fuzzy.realName || '') === String(exact.realName || '') ||
+      Number(fuzzy.totalPastDeals || 0) >= Number(exact.totalPastDeals || 0) * 3)
+  ) {
+    return fuzzy;
+  }
+  return exact || stripped || fuzzy;
+}
+
 async function resolveActor(req: NextRequest) {
   const actor = await requestActor(req).catch(() => null);
   if (actor) return actor;
@@ -134,6 +184,8 @@ export async function GET(req: NextRequest) {
     ensureMasterIndexes();
     const { searchParams } = new URL(req.url);
     const handle = normalizeHandle(searchParams.get('handle'));
+    const videoIdParam = String(searchParams.get('videoId') || '').trim();
+    const videoUrlParam = String(searchParams.get('videoUrl') || '').trim();
 
     const customRecord = await readRecord<KocDirectoryChangesData>(KOC_DIRECTORY_KEY, {
       itemsByHandle: {},
@@ -171,12 +223,105 @@ export async function GET(req: NextRequest) {
     }));
 
     const customKoc = handle ? customRecord.data.itemsByHandle?.[handle] : undefined;
-    const masterKoc = handle ? masterKocByHandle?.get(handle) : undefined;
+    const masterKoc = handle ? resolveMasterKocByHandle(handle) : undefined;
     const mergedKoc: KocItem | null = customKoc
-      ? { ...(masterKoc || {}), ...customKoc }
+      ? {
+          ...(masterKoc || {}),
+          ...customKoc,
+          ...(masterKoc
+            ? {
+                id: masterKoc.id,
+                salaryGrade: masterKoc.salaryGrade,
+                segment: masterKoc.segment,
+                rateCardVideo: masterKoc.rateCardVideo,
+                minRate: masterKoc.minRate,
+                maxRate: masterKoc.maxRate,
+                totalPastDeals: masterKoc.totalPastDeals,
+                totalPaidVideos: masterKoc.totalPaidVideos,
+                totalFocVideos: masterKoc.totalFocVideos,
+                latestBookMonth: masterKoc.latestBookMonth,
+                latestBoCode: masterKoc.latestBoCode,
+                reliabilityScore: masterKoc.reliabilityScore,
+              }
+            : {}),
+        }
       : masterKoc || null;
 
-    const historyDeals = handle ? dealsByHandle?.get(handle) || [] : [];
+    const canonicalMasterHandle = normalizeHandle(masterKoc?.channelId || handle);
+    const historyDeals = handle
+      ? dealsByHandle?.get(canonicalMasterHandle) || dealsByHandle?.get(handle) || []
+      : [];
+
+    let inspectedVideo: Record<string, unknown> | null = null;
+    if (videoIdParam || videoUrlParam) {
+      const targetUrl =
+        videoUrlParam && videoUrlParam.includes('/video/')
+          ? videoUrlParam
+          : handle && videoIdParam
+            ? `https://www.tiktok.com/@${handle}/video/${videoIdParam}`
+            : '';
+      if (targetUrl) {
+        try {
+          const liveDetail = await inspectLiveTikTokVideoPage(targetUrl);
+          if (liveDetail) {
+            inspectedVideo = {
+              videoId: liveDetail.videoId,
+              videoUrl: liveDetail.videoUrl,
+              handle: liveDetail.author.handle,
+              caption: liveDetail.caption,
+              hashtags: liveDetail.hashtags,
+              publishedAt: liveDetail.publishedAt,
+              durationSeconds: liveDetail.durationSeconds,
+              views: liveDetail.views,
+              likes: liveDetail.likes,
+              comments: liveDetail.comments,
+              shares: liveDetail.shares,
+              saves: liveDetail.saves,
+              engagementRate: liveDetail.engagementRate,
+              hasYellowCart: Boolean(liveDetail.hasCartAnchor || (liveDetail.cartProducts && liveDetail.cartProducts.length > 0)),
+              cartAnchorTitle: liveDetail.cartAnchorTitle || '',
+              cartAnchorUrl: liveDetail.cartAnchorUrl || '',
+              cartProductId: liveDetail.cartProductId || '',
+              cartSellerId: liveDetail.cartSellerId || '',
+              cartProducts: liveDetail.cartProducts || [],
+              transcriptText: liveDetail.transcriptText || '',
+              subtitleUrl: liveDetail.subtitleUrl || '',
+              playableUrl: liveDetail.playableUrl || '',
+              onScreenStickers: liveDetail.onScreenStickers || [],
+            };
+          }
+        } catch {
+          // ignore live video fallback error
+        }
+      }
+      if (!inspectedVideo && videoIdParam) {
+        const regVid = videoHistoryRecord.data.registeredVideosById?.[videoIdParam];
+        if (regVid) {
+          inspectedVideo = {
+            videoId: regVid.videoId,
+            videoUrl: regVid.linkAir || `https://www.tiktok.com/@${regVid.kocChannelId}/video/${regVid.videoId}`,
+            handle: regVid.kocChannelId,
+            caption: regVid.videoTitle || regVid.productName || '',
+            publishedAt: regVid.airDate || '2026-10-20',
+            hasYellowCart: Boolean(regVid.productName || regVid.productId),
+            cartAnchorTitle: regVid.productName || '',
+            cartProductId: regVid.productId || '',
+            cartProducts: regVid.productName
+              ? [
+                  {
+                    productId: regVid.productId || '',
+                    title: regVid.productName,
+                    shopName: regVid.storeName || regVid.brandName || 'TikTok Shop',
+                    productUrl: regVid.productId
+                      ? `https://shop.tiktok.com/view/product/${regVid.productId}?region=VN&locale=vi-VN`
+                      : '',
+                  },
+                ]
+              : [],
+          };
+        }
+      }
+    }
 
     const storesSummary = REAL_B2C_69_STORES.map((s) => {
       const routing = resolveStoreApprover(s.storeName, s.brandName);
@@ -273,6 +418,7 @@ export async function GET(req: NextRequest) {
         })),
         stores: storesSummary,
         registeredVideos,
+        inspectedVideo,
       },
       { headers: CORS_HEADERS }
     );
@@ -956,7 +1102,7 @@ export async function POST(req: NextRequest) {
     const avgViews = Math.max(0, Math.round(Number(body.avgViews || 0)));
     const medianViews = Math.max(0, Math.round(Number(body.medianViews || avgViews)));
     const rateNet = Math.max(0, Math.round(Number(body.rateCardNet || 0)));
-    const existingMaster = masterKocByHandle?.get(handle);
+    const existingMaster = resolveMasterKocByHandle(handle);
 
     if (Array.isArray(body.recentVideos)) {
       for (const rv of body.recentVideos.slice(0, 30)) {
@@ -1006,9 +1152,23 @@ export async function POST(req: NextRequest) {
         }))
       : existingMaster?.recentVideos || [];
 
-    const effectiveRate = rateNet > 0 ? rateNet : Math.round(Number(existingMaster?.rateCardVideo || 0));
-    const salaryGrade = getSalaryGradeFromRate(effectiveRate);
-    const segment = getSegmentFromSalaryGrade(salaryGrade);
+    const isFocProposal = body.bookingFormatLabel === 'Suất gửi mẫu FOC';
+    const masterRate = Math.round(Number(existingMaster?.rateCardVideo || 0));
+    const effectiveRate = isFocProposal
+      ? 0
+      : body.action === 'SYNC_KOC_PROFILE' && masterRate > 0
+        ? masterRate
+        : rateNet > 0
+          ? rateNet
+          : masterRate;
+    const salaryGrade =
+      body.action === 'SYNC_KOC_PROFILE' && existingMaster?.salaryGrade && !isFocProposal
+        ? existingMaster.salaryGrade
+        : getSalaryGradeFromRate(effectiveRate);
+    const segment =
+      body.action === 'SYNC_KOC_PROFILE' && existingMaster?.segment && !isFocProposal
+        ? existingMaster.segment
+        : getSegmentFromSalaryGrade(salaryGrade);
     const tierInfo = getTierFromFollowers(followers || existingMaster?.followers || 10000);
     const storeName = String(body.storeName || existingMaster?.proposedStores || '').trim();
     const brandName = String(
@@ -1163,6 +1323,19 @@ export async function POST(req: NextRequest) {
           bookingPic: savedKoc.bookingPic,
           metricsUpdatedAt: savedKoc.metricsUpdatedAt,
         },
+        deal:
+          body.action === 'CREATE_DEAL_PROPOSAL'
+            ? {
+                dealCode: `BO2610-${Date.now().toString().slice(-6)}`,
+                handle,
+                storeName,
+                brandName,
+                bookingFormatLabel: body.bookingFormatLabel || 'Video trả phí',
+                rateCardNet: effectiveRate,
+                picName: savedKoc.bookingPic,
+                status: 'CHỜ_DUYỆT',
+              }
+            : undefined,
         routing,
       },
       { headers: CORS_HEADERS }

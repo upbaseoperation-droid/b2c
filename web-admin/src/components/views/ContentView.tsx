@@ -4,7 +4,6 @@ import React, { useState, useMemo } from 'react';
 import { formatVndShort, getVietnamDateYmd } from '../../lib/format';
 import { ActionMenu, Button, ConfirmDialog, Field, Input, Modal, PageActions, Panel, Select, Status, Tabs, Textarea } from '../ui';
 import { ContentPlanBoard } from './ContentPlanBoard';
-import { PlanSelfChannelBoard } from './PlanSelfChannelBoard';
 import { BrandMonthlyPlanForm } from './BrandMonthlyPlanForm';
 import {
   CheckCircle,
@@ -57,7 +56,7 @@ interface ContentViewProps {
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
-type ContentSubTab = 'BRAND_PLAN' | 'CONTENT_PLAN' | 'SELF_CHANNEL_BOARD' | 'CONTENT_ITEMS' | 'SCRIPTS' | 'DRAFT_VIDEOS' | 'PUBLICATIONS';
+type ContentSubTab = 'BRAND_PLAN' | 'CONTENT_PLAN' | 'CONTENT_ITEMS' | 'SCRIPTS' | 'DRAFT_VIDEOS' | 'PUBLICATIONS';
 
 const PILLAR_OPTIONS = [
   'Nỗi đau - Giải pháp',
@@ -711,7 +710,6 @@ export const ContentView: React.FC<ContentViewProps> = ({
         items={[
           { key: 'BRAND_PLAN', label: 'Plan tháng của Brand' },
           { key: 'CONTENT_PLAN', label: 'Kế hoạch content' },
-          { key: 'SELF_CHANNEL_BOARD', label: 'Sản xuất & Nghiệm thu Self-channel' },
           { key: 'CONTENT_ITEMS', label: 'Kho nội dung', count: contentItems.length },
           { key: 'SCRIPTS', label: 'Chờ duyệt kịch bản', count: scripts.filter(s => s.status === 'PENDING').length },
           { key: 'DRAFT_VIDEOS', label: 'Video nháp KOC' },
@@ -738,13 +736,6 @@ export const ContentView: React.FC<ContentViewProps> = ({
           initialPlanId={initialPlanId}
           initialStoreName={initialStoreName}
           initialMonth={initialMonth}
-          onNotify={onNotify}
-        />
-      )}
-
-      {activeSubTab === 'SELF_CHANNEL_BOARD' && (
-        <PlanSelfChannelBoard
-          currentUserName={currentUserName}
           onNotify={onNotify}
         />
       )}

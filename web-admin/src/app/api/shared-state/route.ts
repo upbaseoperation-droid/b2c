@@ -212,6 +212,13 @@ export async function PUT(req: NextRequest) {
     for (const key of keysToProcess) {
       let dataToSave = updatesMap[key];
 
+      // Sheet nhân sự lưu theo từng dòng qua /api/staff-listing-sheets (có kiểm quyền theo gian).
+      // Ở đây chỉ nhận lần nạp đầu khi máy chủ chưa có dữ liệu, không cho ghi đè cả kho.
+      if (key === 'staff-brand-listing-sheets-v1') {
+        const existing = await readRecord<unknown>(key, null);
+        if (existing.revision > 0) continue;
+      }
+
       // Giới hạn số lượng bản ghi cho logs và screenshots để tránh phình dung lượng
       if (key === 'video-acceptance-screenshots-v1' && Array.isArray(dataToSave)) {
         dataToSave = dataToSave.slice(0, 100);

@@ -1,5 +1,4 @@
-import type { BookingDealItem, KocItem, StorePortfolioItem } from './types';
-import { pushSharedStateToDb } from './sharedStateClient';
+import type { BookingDealItem, KocItem, StorePortfolioItem, KocListingItem } from './types';
 
 export type FillMode = 'AUTO_SYSTEM' | 'FORMULA' | 'MANUAL_STAFF';
 
@@ -1109,6 +1108,109 @@ export function buildStaffListingRowFromKoc(params: {
 }
 
 /**
+ * Chuyển đổi một bản ghi KocListingItem (từ Lark Base 3.1 / PlanListingBoard) sang StaffListingSheetRow
+ */
+export function buildStaffListingRowFromListingItem(
+  item: KocListingItem,
+  defaultStaffName?: string
+): StaffListingSheetRow {
+  const cleanId = normalizeTikTokId(item.kocHandle || '');
+  const linkKenh = cleanId ? buildTikTokChannelUrl(cleanId) : '';
+  const netFee = Math.max(0, Number(item.finalFee ?? item.proposedFee ?? 0));
+  const grossFee = computeGrossFeeWithTax(netFee);
+  const tepBooking = item.salaryGrade || computeTepBookingFromNetFee(netFee);
+
+  const brandChon =
+    item.brandApprovalStatus === 'BRAND_APPROVED'
+      ? 'Yes'
+      : item.brandApprovalStatus === 'BRAND_REJECTED'
+        ? 'No'
+        : 'Chờ duyệt';
+
+  const trangThai =
+    item.kocNegotiationStatus === 'TERMS_AGREED'
+      ? 'Đã đồng ý giá'
+      : item.kocNegotiationStatus === 'NEGOTIATION_FAILED'
+        ? 'Từ chối'
+        : item.kocNegotiationStatus === 'PRICE_NEGOTIATING'
+          ? 'Đang deal'
+          : 'Chưa liên hệ';
+
+  const dot =
+    item.batchCycle === 'BATCH_10'
+      ? 'Đợt 1'
+      : item.batchCycle === 'BATCH_20'
+        ? 'Đợt 2'
+        : item.batchCycle === 'BATCH_30'
+          ? 'Đợt 3'
+          : 'Đợt 1';
+
+  return recalculateStaffListingRow({
+    id: `SSR-${item.id.replace(/^LI-/, '')}`,
+    kocId: item.kocId,
+    createdAt: item.createdAt || new Date().toISOString(),
+    ngayDien: item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : '',
+    thang: item.monthKey || '2026/10',
+    nhanSuDien: item.assignedStaffName || defaultStaffName || 'Chưa phân công',
+    dot,
+    store: item.storeName,
+    sanPham: item.pillarName || '',
+    idKenh: cleanId,
+    tenKenh: item.kocName || cleanId,
+    linkKenh,
+    follower: Number(item.followersCount || 0),
+    tepKenh: item.niche || '',
+    contentTag: item.videoFormat || 'Review trực tiếp',
+    tepBooking,
+    giaDaHopTacTruocDo: netFee,
+    loaiGia: 'Booking video',
+    giaNetVideo: netFee,
+    phiBookingKemThue: grossFee,
+    trangThai,
+    deXuatUpBase: 'Recommend',
+    contentNote: item.staffComment || '',
+    brandChon,
+    lyDoTuChoi: item.brandFeedback || '',
+    thanhQuaHopTac: '',
+    leaderNote: '',
+    gmvDaHopTac: 0,
+    doanhSo: 0,
+    soMonBanRa: 0,
+    gpm: 0,
+    aov: 0,
+    viewTrungBinh: 0,
+    gmvTuVideoPct: 80,
+    gmvTuLivePct: 14,
+    gmvTuTheSanPhamPct: 6,
+    namPct: 22,
+    nuPct: 78,
+    tuoi18_24Pct: 35,
+    tuoi25_34Pct: 45,
+    tuoiTren35Pct: 20,
+    tuoiOtherPct: 20,
+    location: 'Việt Nam',
+    ngayAirPlan: '',
+    gmvTarget: 0,
+    viewTrungVi: 0,
+    ctrPct: 4.5,
+    crPct: 2.8,
+    viewTarget: 0,
+    tyLeTuongTacPct: 0,
+    email: '',
+    zalo: '',
+    nguoiNhanHang: item.kocName || cleanId,
+    sdtNhanHang: '',
+    diaChiNhanHang: '',
+    tenTaiKhoanNganHang: item.kocName || '',
+    soTaiKhoan: '',
+    nganHang: '',
+    soCccd: '',
+    brandReviewedAt: item.brandApprovedAt,
+    ngayBrandDuyet: item.brandApprovedAt ? new Date(item.brandApprovedAt).toLocaleDateString('vi-VN') : '',
+  });
+}
+
+/**
  * Tự động tính toán lại các cột công thức, ghi nhận thời gian Brand duyệt và đo lường SLA khi nhân viên sửa dòng
  */
 export function recalculateStaffListingRow(
@@ -1321,15 +1423,102 @@ export function loadStaffSheetCollection(
   return initial;
 }
 
+/** Phần thay đổi của Sheet nhân sự gửi lên máy chủ: dòng thêm / sửa và id dòng xóa theo từng Sheet. */
+export interface StaffSheetChanges {
+  sheets?: Record<string, { upserts?: StaffListingSheetRow[]; deletes?: string[] }>;
+  googleSheetUrls?: BrandGoogleSheetLinkMap;
+  fieldEditPolicy?: StaffSheetFieldEditPolicy;
+}
+
+/** So bản trước và bản sau trên máy này, lấy ra dòng thêm / sửa / xóa (không gửi cả kho, tránh ghi đè dòng người khác). */
+export function diffStaffSheetCollections(
+  prev: StaffBrandSheetCollection | null,
+  next: StaffBrandSheetCollection
+): StaffSheetChanges | null {
+  const changes: StaffSheetChanges = {};
+  const sheetKeys = new Set([...Object.keys(prev?.sheets || {}), ...Object.keys(next.sheets || {})]);
+  for (const key of sheetKeys) {
+    const before = new Map((prev?.sheets?.[key] || []).map(r => [r.id, JSON.stringify(r)]));
+    const afterRows = next.sheets?.[key] || [];
+    const afterIds = new Set(afterRows.map(r => r.id));
+    const upserts = afterRows.filter(r => before.get(r.id) !== JSON.stringify(r));
+    const deletes = [...before.keys()].filter(id => !afterIds.has(id));
+    if (upserts.length || deletes.length) {
+      (changes.sheets ||= {})[key] = { ...(upserts.length ? { upserts } : {}), ...(deletes.length ? { deletes } : {}) };
+    }
+  }
+  for (const [store, url] of Object.entries(next.googleSheetUrls || {})) {
+    if ((prev?.googleSheetUrls || {})[store] !== url) (changes.googleSheetUrls ||= {})[store] = url;
+  }
+  if (next.fieldEditPolicy && JSON.stringify(next.fieldEditPolicy) !== JSON.stringify(prev?.fieldEditPolicy)) {
+    changes.fieldEditPolicy = next.fieldEditPolicy;
+  }
+  return changes.sheets || changes.googleSheetUrls || changes.fieldEditPolicy ? changes : null;
+}
+
+// Gom các lần lưu liên tiếp rồi gửi một lần (giữ thứ tự: dòng xóa rồi thêm lại thì tính là thêm)
+let pendingStaffSheetChanges: StaffSheetChanges | null = null;
+let staffSheetFlushTimer: ReturnType<typeof setTimeout> | null = null;
+
+function queueStaffSheetChanges(changes: StaffSheetChanges): void {
+  const pending: StaffSheetChanges = pendingStaffSheetChanges || {};
+  for (const [key, c] of Object.entries(changes.sheets || {})) {
+    const cur = ((pending.sheets ||= {})[key] ||= {});
+    const upserts = new Map((cur.upserts || []).map(r => [r.id, r]));
+    const deletes = new Set(cur.deletes || []);
+    for (const id of c.deletes || []) {
+      upserts.delete(id);
+      deletes.add(id);
+    }
+    for (const r of c.upserts || []) {
+      deletes.delete(r.id);
+      upserts.set(r.id, r);
+    }
+    cur.upserts = [...upserts.values()];
+    cur.deletes = [...deletes];
+  }
+  if (changes.googleSheetUrls) pending.googleSheetUrls = { ...(pending.googleSheetUrls || {}), ...changes.googleSheetUrls };
+  if (changes.fieldEditPolicy) pending.fieldEditPolicy = changes.fieldEditPolicy;
+  pendingStaffSheetChanges = pending;
+
+  if (staffSheetFlushTimer) clearTimeout(staffSheetFlushTimer);
+  staffSheetFlushTimer = setTimeout(() => {
+    const body = pendingStaffSheetChanges;
+    pendingStaffSheetChanges = null;
+    staffSheetFlushTimer = null;
+    if (!body) return;
+    fetch('/api/staff-listing-sheets', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+      .then(async res => {
+        if (res.ok) return;
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        console.warn(`[staffSheet] Không lưu được lên máy chủ (HTTP ${res.status}): ${data?.error || ''}`);
+        window.dispatchEvent(new CustomEvent('upbase:staff-sheet-save-failed', { detail: { status: res.status, error: data?.error } }));
+      })
+      .catch(err => console.warn('[staffSheet] Lỗi mạng khi lưu Sheet nhân sự:', err));
+  }, 300);
+}
+
 export function saveStaffSheetCollection(
   collection: StaffBrandSheetCollection,
   emitEvent = true
 ): void {
   if (typeof window === 'undefined') return;
   try {
+    const prevRaw = window.localStorage.getItem(STORAGE_KEY);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(collection));
     if (emitEvent) {
-      pushSharedStateToDb('staff-brand-listing-sheets-v1', collection);
+      let prev: StaffBrandSheetCollection | null = null;
+      try {
+        prev = prevRaw ? (JSON.parse(prevRaw) as StaffBrandSheetCollection) : null;
+      } catch {
+        prev = null;
+      }
+      const changes = diffStaffSheetCollections(prev, collection);
+      if (changes) queueStaffSheetChanges(changes);
       window.dispatchEvent(new CustomEvent(STAFF_SHEET_UPDATED_EVENT, { detail: collection }));
       window.dispatchEvent(new CustomEvent('upbase:staff-brand-listing-sheet-updated', { detail: collection }));
     }

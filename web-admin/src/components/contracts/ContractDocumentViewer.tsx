@@ -37,6 +37,8 @@ export interface ContractDocumentViewerProps {
   downloadHref?: string;
   versionSelector?: React.ReactNode;
   signingPeople?: SigningPerson[];
+  signingDocumentId?: string;
+  partnerName?: string;
   maxHeight?: string;
   compactToolbar?: boolean;
   isTemplatePreview?: boolean;
@@ -56,6 +58,8 @@ export function ContractDocumentViewer({
   downloadHref,
   versionSelector,
   signingPeople,
+  signingDocumentId,
+  partnerName,
   maxHeight = '760px',
   compactToolbar = false,
   isTemplatePreview = false,
@@ -192,7 +196,7 @@ export function ContractDocumentViewer({
       if (p.boldPrefix && p.boldPrefix > 0 && p.boldPrefix < text.length) {
         return (
           <>
-            <strong className="font-semibold">{text.slice(0, p.boldPrefix)}</strong>
+            <span className="font-semibold">{text.slice(0, p.boldPrefix)}</span>
             {text.slice(p.boldPrefix)}
           </>
         );
@@ -216,7 +220,7 @@ export function ContractDocumentViewer({
           const bEnd = Math.min(prefixSlice.length, p.boldPrefix);
           nodes.push(
             <React.Fragment key={`txt-${idx}`}>
-              <strong className="font-semibold">{prefixSlice.slice(0, bEnd)}</strong>
+              <span className="font-semibold">{prefixSlice.slice(0, bEnd)}</span>
               {prefixSlice.slice(bEnd)}
             </React.Fragment>,
           );
@@ -272,12 +276,12 @@ export function ContractDocumentViewer({
               ? `${fieldTitle} · Đổi từ "${prevVal || 'Trống'}" sang "${val}"`
               : `${fieldTitle}: ${val}${onSelectField ? ' (Bấm để sửa ô này)' : ''}`
           }
-          className={`field-mark inline px-1 py-0.5 font-medium text-black transition-colors ${
+          className={`field-mark inline px-1 py-0.5 rounded-xs font-medium text-ink transition-colors ${
             changed
-              ? 'bg-blue-100 text-blue-950 border-b-2 border-blue-600'
-              : 'bg-[#fff2a8] border-b border-[#eab308]'
-          } ${isSelected ? 'ring-2 ring-accent bg-amber-200' : ''} ${
-            onSelectField ? 'cursor-pointer hover:bg-amber-100' : ''
+              ? 'bg-accent-soft text-accent border-b-2 border-accent'
+              : 'bg-accent-soft/45 border-b border-accent/50'
+          } ${isSelected ? 'ring-2 ring-accent bg-accent-soft' : ''} ${
+            onSelectField ? 'cursor-pointer hover:bg-accent-soft/80' : ''
           }`}
         >
           {val}
@@ -293,12 +297,12 @@ export function ContractDocumentViewer({
         onClick={onSelectField ? () => onSelectField(f.key) : undefined}
         onKeyDown={onSelectField ? e => (e.key === 'Enter' || e.key === ' ') && onSelectField(f.key) : undefined}
         title={`${fieldTitle}${f.required ? ' (Bắt buộc điền)' : ' (Tùy chọn)'}${onSelectField ? ' · Bấm để nhập' : ''}`}
-        className={`field-mark inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-sans text-[12px] leading-snug transition-colors ${
+        className={`field-mark inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-sans text-2xs leading-snug transition-colors ${
           f.required
-            ? 'bg-amber-50 text-amber-900 border border-dashed border-amber-500 font-medium'
-            : 'bg-neutral-100 text-neutral-600 border border-dashed border-neutral-400'
-        } ${isSelected ? 'ring-2 ring-accent bg-amber-100' : ''} ${
-          onSelectField ? 'cursor-pointer hover:bg-amber-100/80' : ''
+            ? 'bg-warning-soft/75 text-warning-strong border border-dashed border-warning font-medium'
+            : 'bg-sunken text-ink-2 border border-dashed border-line-strong'
+        } ${isSelected ? 'ring-2 ring-accent bg-warning-soft' : ''} ${
+          onSelectField ? 'cursor-pointer hover:border-accent' : ''
         }`}
       >
         [{fieldTitle}{f.required ? ' *' : ''}]
@@ -360,29 +364,61 @@ export function ContractDocumentViewer({
                 <tr key={rIdx}>
                   {row.map((cell, cIdx) => {
                     const signer = rIdx === 0 && signingPeople ? signingPeople[cIdx] : undefined;
+                    const defaultPartyRole = cIdx === 0 ? 'Đại diện Bên A (UpBase)' : `Đại diện Bên B (${partnerName || 'KOC / Đối tác'})`;
                     return (
                       <td
                         key={cIdx}
                         colSpan={cell.colSpan}
-                        className="w-1/2 align-top text-center px-3 pt-2 pb-16"
+                        className="w-1/2 align-top text-center px-3 pt-2 pb-12"
                       >
                         {cell.blocks.map((b, bIdx) => renderBlock(b, `${idx}-r${rIdx}-c${cIdx}-${bIdx}`))}
-                        {signer && (
+                        {signer ? (
                           <div
-                            className={`mt-4 inline-flex flex-col items-center rounded-md border px-3 py-2 font-sans text-[12px] ${
+                            className={`mt-4 mx-auto max-w-[260px] rounded-lg border px-3.5 py-2.5 font-sans text-left text-2xs space-y-1 ${
                               signer.action === 2
-                                ? 'border-emerald-600/60 bg-emerald-50/90 text-emerald-900'
+                                ? 'border-positive/50 bg-positive-soft/75 text-ink'
                                 : signer.action === 3
-                                  ? 'border-red-500/60 bg-red-50 text-red-900'
-                                  : 'border-amber-500/60 bg-amber-50/80 text-amber-900'
+                                  ? 'border-critical/50 bg-critical-soft/75 text-ink'
+                                  : 'border-warning/50 bg-warning-soft/75 text-ink'
                             }`}
                           >
-                            <span className="font-semibold uppercase tracking-wide">
-                              {signer.action === 2 ? 'Đã ký xác nhận' : signer.status}
-                            </span>
-                            <span className="font-medium mt-0.5">{signer.name}</span>
-                            {signer.email && <span className="text-2xs opacity-75">{signer.email}</span>}
+                            <div
+                              className={`flex items-center justify-between gap-1.5 font-semibold ${
+                                signer.action === 2
+                                  ? 'text-positive'
+                                  : signer.action === 3
+                                    ? 'text-critical'
+                                    : 'text-warning-strong'
+                              }`}
+                            >
+                              <span className="inline-flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                                {signer.action === 2 ? 'Đã ký điện tử · MISA weSign' : signer.status}
+                              </span>
+                            </div>
+                            <div className="font-semibold text-xs text-ink">{signer.name}</div>
+                            <div className="text-2xs text-ink-2">
+                              {signer.roleLabel || defaultPartyRole}
+                              {signer.email ? ` · ${signer.email}` : ''}
+                            </div>
+                            {signer.at && (
+                              <div className="text-2xs text-ink-3 font-code">
+                                Ký lúc: {signer.at}
+                              </div>
+                            )}
+                            {signingDocumentId && (
+                              <div className="text-2xs text-ink-3 font-code truncate pt-0.5 border-t border-line/60">
+                                Mã chứng thực: {signingDocumentId}
+                              </div>
+                            )}
                           </div>
+                        ) : (
+                          !isTemplatePreview && (
+                            <div className="mt-4 mx-auto max-w-[240px] rounded-lg border border-dashed border-line-strong bg-sunken/40 px-3 py-2.5 font-sans text-center text-2xs text-ink-3 space-y-0.5">
+                              <div className="font-medium text-ink-2">{defaultPartyRole}</div>
+                              <div>Vị trí đóng dấu &amp; chữ ký số weSign</div>
+                            </div>
+                          )
                         )}
                       </td>
                     );
@@ -461,32 +497,32 @@ export function ContractDocumentViewer({
     return (
       <div className="doc-screenshot-section my-5 pt-3 border-t border-[#333] space-y-3">
         {inspectionMeta && (
-          <div className="border border-[#333] p-3 bg-[#faf9f5] rounded-xs text-[13px] leading-snug space-y-1.5">
-            <p className="font-semibold uppercase text-[13.5px] text-[#111]">
-              THÔNG TIN LINK AIR, CHỈ SỐ TƯƠNG TÁC & ĐỐI SOÁT KỊCH BẢN NGHIỆM THU
+          <div className="border border-[#333] p-3 bg-[#faf9f5] rounded-xs text-xs leading-snug space-y-1.5">
+            <p className="font-semibold text-xs text-[#111]">
+              Thông tin Link Air, chỉ số tương tác &amp; đối soát kịch bản nghiệm thu
             </p>
             <p className="text-[#222]">
-              <strong className="font-semibold">• Link bài đăng (Link Air):</strong>{' '}
-              <span className="font-mono break-all">{inspectionMeta.resolvedUrl}</span>
+              <span className="font-semibold">• Link bài đăng (Link Air):</span>{' '}
+              <span className="font-code break-all">{inspectionMeta.resolvedUrl}</span>
             </p>
             <p className="text-[#222]">
-              <strong className="font-semibold">• Kênh đăng tải:</strong> @{inspectionMeta.authorHandle} ({inspectionMeta.authorNickname}) ·{' '}
-              <strong className="font-semibold">Mã Video ID:</strong> {inspectionMeta.videoId || '—'} ·{' '}
-              <strong className="font-semibold">Ngày giờ đăng:</strong> {inspectionMeta.publishedTimeFormatted || '—'} ·{' '}
-              <strong className="font-semibold">Thời lượng:</strong> {inspectionMeta.durationSeconds} giây
+              <span className="font-semibold">• Kênh đăng tải:</span> @{inspectionMeta.authorHandle} ({inspectionMeta.authorNickname}) ·{' '}
+              <span className="font-semibold">Mã Video ID:</span> {inspectionMeta.videoId || '—'} ·{' '}
+              <span className="font-semibold">Ngày giờ đăng:</span> {inspectionMeta.publishedTimeFormatted || '—'} ·{' '}
+              <span className="font-semibold">Thời lượng:</span> {inspectionMeta.durationSeconds} giây
             </p>
             <p className="text-[#222]">
-              <strong className="font-semibold">• Chỉ số tương tác tại thời điểm nghiệm thu:</strong>{' '}
-              Lượt xem: <strong>{formatNumber(inspectionMeta.viewsCount)}</strong> · Thả tim: <strong>{formatNumber(inspectionMeta.likesCount)}</strong> · Bình luận: <strong>{formatNumber(inspectionMeta.commentsCount)}</strong> · Chia sẻ: <strong>{formatNumber(inspectionMeta.sharesCount)}</strong> · Lượt lưu: <strong>{formatNumber(inspectionMeta.savesCount)}</strong> (ER: <strong>{inspectionMeta.engagementRate}%</strong>)
+              <span className="font-semibold">• Chỉ số tương tác tại thời điểm nghiệm thu:</span>{' '}
+              Lượt xem: <span className="font-semibold">{formatNumber(inspectionMeta.viewsCount)}</span> · Thả tim: <span className="font-semibold">{formatNumber(inspectionMeta.likesCount)}</span> · Bình luận: <span className="font-semibold">{formatNumber(inspectionMeta.commentsCount)}</span> · Chia sẻ: <span className="font-semibold">{formatNumber(inspectionMeta.sharesCount)}</span> · Lượt lưu: <span className="font-semibold">{formatNumber(inspectionMeta.savesCount)}</span> (ER: <span className="font-semibold">{inspectionMeta.engagementRate}%</span>)
             </p>
             <p className="text-[#222]">
-              <strong className="font-semibold">• Giỏ hàng TikTok Shop:</strong>{' '}
+              <span className="font-semibold">• Giỏ hàng TikTok Shop:</span>{' '}
               {inspectionMeta.hasCartAnchor
                 ? `Đã gắn giỏ hàng (${inspectionMeta.cartAnchorTitle || 'Sản phẩm chiến dịch'})`
                 : 'Chưa gắn giỏ hàng trên bài đăng'}
             </p>
             <p className="text-[#222]">
-              <strong className="font-semibold">• Đối soát kịch bản & nội dung:</strong>{' '}
+              <span className="font-semibold">• Đối soát kịch bản &amp; nội dung:</span>{' '}
               {inspectionMeta.scriptSummaryNote}
               {inspectionMeta.hashtags.length > 0 ? ` · Hashtag: ${inspectionMeta.hashtags.slice(0, 6).join(' ')}` : ''}
             </p>
@@ -494,14 +530,14 @@ export function ContractDocumentViewer({
         )}
 
         <div>
-          <p className="font-semibold uppercase text-[14px] text-[#111] mb-2">
-            HÌNH ẢNH CHỤP MÀN HÌNH VIDEO LÚC SẢN PHẨM XUẤT HIỆN (MINH CHỨNG NGHIỆM THU)
+          <p className="font-semibold text-xs text-[#111] mb-2">
+            Hình ảnh chụp màn hình video lúc sản phẩm xuất hiện (Minh chứng nghiệm thu)
           </p>
           <div className="doc-screenshot-grid grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-2">
             {acceptanceScreenshots.map((shot, sIdx) => (
               <div
                 key={shot.id || sIdx}
-                className="doc-screenshot-card border border-[#333] p-2.5 bg-[#faf9f5] rounded-xs text-[12.5px] leading-snug"
+                className="doc-screenshot-card border border-[#333] p-2.5 bg-[#faf9f5] rounded-xs text-xs leading-snug"
               >
                 <div className="bg-black rounded-xs overflow-hidden mb-2 flex items-center justify-center max-h-[240px]">
                   <img
@@ -516,7 +552,7 @@ export function ContractDocumentViewer({
                 </p>
                 {shot.note && <p className="text-[#333] mt-0.5">Ghi chú: {shot.note}</p>}
                 {shot.videoUrl && (
-                  <p className="text-2xs text-[#555] font-mono break-all mt-0.5">
+                  <p className="text-2xs text-[#555] font-code break-all mt-0.5">
                     Link video: {shot.videoUrl}
                   </p>
                 )}
@@ -539,7 +575,7 @@ export function ContractDocumentViewer({
       <div
         ref={inModal ? undefined : containerRef}
         style={inModal ? undefined : { maxHeight }}
-        className="overflow-auto bg-[#eaedf1] p-3 sm:p-5 lg:p-6 rounded-b-xl"
+        className="overflow-auto bg-sunken p-3 sm:p-5 lg:p-6 rounded-b-xl"
       >
         <div
           ref={inModal ? undefined : printRef}
@@ -548,12 +584,12 @@ export function ContractDocumentViewer({
             fontSize: `${Math.round(14 * (zoom / 100))}px`,
             lineHeight: 1.6,
           }}
-          className="mx-auto w-full max-w-[816px] min-h-[1056px] bg-white text-black shadow-[0_1px_3px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.08)] border border-[#d0d4d9] rounded-none px-6 py-8 sm:px-14 sm:py-12 selection:bg-[#fff2a8]"
+          className="mx-auto w-full max-w-[816px] min-h-[1056px] bg-white text-black shadow-2xs border border-line-strong rounded-none px-6 py-8 sm:px-14 sm:py-12"
         >
           {/* Header biểu mẫu chuẩn Microsoft Word */}
           <div className="doc-header mb-6 pb-2 border-b border-[#d8d8d8] text-2xs text-[#555] flex items-center justify-between gap-2">
-            <span className="font-sans font-medium uppercase tracking-wider text-[#666]">Phòng Pháp chế · Upbase B2C</span>
-            <div className="text-right font-mono text-[#333]">
+            <span className="font-sans font-medium tracking-wide text-[#666]">Phòng Pháp chế · UpBase B2C</span>
+            <div className="text-right font-code text-[#333]">
               {headerBlocks.length > 0 ? (
                 headerBlocks.map((b, i) => renderBlock(b, `hdr-${i}`))
               ) : (
@@ -583,9 +619,9 @@ export function ContractDocumentViewer({
                 <div key={`ftr-${i}`}>{renderBlock(b, `ftr-${i}`)}</div>
               ))
             ) : (
-              <span>Hệ thống Quản lý Hợp đồng B2C Upbase</span>
+              <span>Hệ thống Quản lý Hợp đồng B2C UpBase</span>
             )}
-            <span className="font-mono">Trang 1 / 1</span>
+            <span className="font-code">Trang 1 / 1</span>
           </div>
         </div>
       </div>
@@ -597,7 +633,7 @@ export function ContractDocumentViewer({
       {/* Thanh công cụ kiểm tra hợp đồng */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 border-b border-line bg-surface">
         <div className="flex flex-wrap items-center gap-2 min-w-0">
-          <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink">
             <FileText className="w-4 h-4 text-accent shrink-0" strokeWidth={1.75} />
             <span className="truncate">{templateName || 'Bản xem văn bản hợp đồng (A4)'}</span>
           </span>
@@ -609,20 +645,20 @@ export function ContractDocumentViewer({
               </span>
             ) : (
               <span
-                className={`inline-flex items-center gap-1 text-2xs ${
+                className={`inline-flex items-center gap-1 text-2xs px-2 py-0.5 rounded-md border ${
                   missingRequired.length === 0
-                    ? 'text-ink-2'
-                    : 'text-amber-800 font-medium'
+                    ? 'border-positive/30 bg-positive-soft/60 text-positive font-medium'
+                    : 'border-warning/40 bg-warning-soft/70 text-warning-strong font-medium'
                 }`}
               >
                 {missingRequired.length === 0 ? (
                   <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-positive" />
                     Đủ {requiredFields.length}/{requiredFields.length} mục bắt buộc · Đã điền {filledCount}/{uniqueFields.length} ô
                   </>
                 ) : (
                   <>
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                    <AlertCircle className="w-3.5 h-3.5 text-warning-strong" />
                     Còn {missingRequired.length} mục bắt buộc chưa điền ({requiredFields.length - missingRequired.length}/{requiredFields.length})
                   </>
                 )}
@@ -636,7 +672,7 @@ export function ContractDocumentViewer({
               onClick={jumpToNextMissing}
               className="text-2xs font-medium text-accent hover:underline"
             >
-              Tới mục trống tiếp theo
+              Tới mục trống tiếp theo →
             </button>
           )}
         </div>
@@ -649,13 +685,13 @@ export function ContractDocumentViewer({
             onClick={() => setHighlight(v => !v)}
             className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-2xs font-medium border transition-colors ${
               highlight
-                ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                ? 'bg-accent-soft/50 border-accent/40 text-accent'
                 : 'bg-surface border-line text-ink-2 hover:bg-sunken'
             }`}
             title="Bật/tắt tô màu các vị trí điền dữ liệu trên mặt hợp đồng"
           >
             {highlight ? <Highlighter className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            {highlight ? 'Đang đánh dấu chỗ điền' : 'Bản in Word chuẩn'}
+            {highlight ? 'Đang đánh dấu chỗ điền' : 'Bản in chuẩn'}
           </button>
 
           {!compactToolbar && (

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
 import { dealBoardKey, listingBoardKey } from '@/lib/server/boardKeys';
-import { assertCanViewBooking, listMonthlyPlans, resolvePlanContext } from '@/lib/server/monthlyPlanStore';
+import { assertCanViewBooking, listPlansOfBrandMonth, resolvePlanContext, listMonthlyPlans } from '@/lib/server/monthlyPlanStore';
 import { readRecordsBatch } from '@/lib/server/sharedRecords';
 import { columnOf, itemFee } from '@/lib/listingBoardRules';
 import { guardListingSave } from '@/lib/listingBoardGuard';
@@ -20,12 +20,87 @@ interface ListingBoardData {
 
 const keyOf = listingBoardKey;
 
-// GET /api/listing-board?planId=... — danh sách KOC đã list cho một kế hoạch tháng
+// GET /api/listing-board?planId=... hoặc ?storeName=...&month=... hoặc ?summary=true
 export async function GET(request: NextRequest) {
   const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
-  const planId = request.nextUrl.searchParams.get('planId') || '';
-  if (!planId) return NextResponse.json({ error: 'Thiếu mã kế hoạch.' }, { status: 400 });
+
+  // GET /api/listing-board?all=true — Lấy toàn bộ KOC đã list của mọi kế hoạch
+  if (request.nextUrl.searchParams.get('all') === 'true') {
+    try {
+      const storedList = await listMonthlyPlans(actor);
+      const planKeys = storedList.map((r) => keyOf(r.plan.id));
+      const records = await readRecordsBatch<ListingBoardData>(planKeys, { items: [] });
+      const allItems: KocListingItem[] = [];
+      for (const rec of records.values()) {
+        if (rec.data?.items && Array.isArray(rec.data.items)) {
+          allItems.push(...rec.data.items);
+        }
+      }
+      return NextResponse.json({ items: allItems, count: allItems.length });
+    } catch (err) {
+      return handlePlanError(err);
+    }
+  }
+
+  // GET /api/listing-board?summary=true — Thống kê số lượng KOC đã list theo từng gian và tháng
+  if (request.nextUrl.searchParams.get('summary') === 'true') {
+    try {
+      const storedList = await listMonthlyPlans(actor);
+      const planKeys = storedList.map((r) => ({
+        planId: r.plan.id,
+        storeName: r.plan.storeName || r.plan.title,
+        month: r.plan.month,
+        key: keyOf(r.plan.id),
+      }));
+      const records = await readRecordsBatch<ListingBoardData>(
+        planKeys.map((p) => p.key),
+        { items: [] }
+      );
+      const summary: Record<string, { storeName: string; month: string; count: number; planId: string }> = {};
+      for (const p of planKeys) {
+        const rec = records.get(p.key);
+        const count = rec?.data?.items?.length || 0;
+        if (count > 0) {
+          summary[`${p.month}__${p.storeName}`] = {
+            storeName: p.storeName,
+            month: p.month,
+            count,
+            planId: p.planId,
+          };
+        }
+      }
+      return NextResponse.json({ summary });
+    } catch (err) {
+      return handlePlanError(err);
+    }
+  }
+
+  let planId = request.nextUrl.searchParams.get('planId') || '';
+  const storeNameParam = request.nextUrl.searchParams.get('storeName')?.trim();
+  const monthParam = request.nextUrl.searchParams.get('month')?.trim();
+
+  // Nếu không truyền planId nhưng truyền storeName và month, tự động tìm kế hoạch phù hợp
+  if (!planId && storeNameParam && monthParam) {
+    try {
+      const norm = (s?: string) => (s || '').trim().toLowerCase().replace(/[\s\-_]+/g, '');
+      const storedList = await listMonthlyPlans(actor);
+      const targetStore = norm(storeNameParam);
+      const matched = storedList.find(
+        (r) =>
+          r.plan.month === monthParam &&
+          (norm(r.plan.storeName) === targetStore ||
+            norm(r.plan.title) === targetStore)
+      );
+      if (matched) {
+        planId = matched.plan.id;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (!planId) return NextResponse.json({ error: 'Thiếu mã kế hoạch hoặc gian hàng không hợp lệ.' }, { status: 400 });
   // GET /api/listing-board?planId=...&view=duplicates — KOC của kế hoạch này đang được list ở gian khác cùng nhãn, cùng tháng (để cảnh báo)
   if (request.nextUrl.searchParams.get('view') === 'duplicates') {
     try {
@@ -34,9 +109,9 @@ export async function GET(request: NextRequest) {
       const norm = (v?: string) => (v || '').replace(/^@/, '').trim().toLowerCase();
       const mine = await readRecord<ListingBoardData>(keyOf(planId), { items: [] });
       const myHandles = new Set((mine.data.items || []).filter(i => i.overallStatus !== 'DROPPED').map(i => norm(i.kocHandle)).filter(Boolean));
-      const siblings = (await listMonthlyPlans(actor))
-        .map(p => p.plan)
-        .filter(p => p.id !== planId && p.month === ctx.plan.month && norm(p.brandName) === norm(ctx.plan.brandName));
+      // Quét mọi gian cùng nhãn, cùng tháng — kể cả gian người dùng không được xem — vì đó chính là trùng cần cảnh báo.
+      // Chỉ trả về tên gian, người phụ trách và trạng thái.
+      const siblings = (await listPlansOfBrandMonth(ctx.plan.brandName, ctx.plan.month)).filter(p => p.id !== planId);
       const records = await readRecordsBatch<ListingBoardData>(siblings.map(p => keyOf(p.id)), { items: [] });
       const duplicates: { handle: string; storeName: string; pic: string; status: string }[] = [];
       for (const p of siblings) {
@@ -95,19 +170,25 @@ export async function PUT(request: NextRequest) {
     const items = guarded.map(raw => {
       const i: KocListingItem = { ...raw, sourcePlanId: planId };
       const prev = prevById.get(i.id);
-      if (prev) {
-        const wasApproved =
-          prev.brandApprovalStatus === 'BRAND_APPROVED' || prev.overallStatus === 'FINAL_APPROVED';
-        // Nếu tăng giá sau khi Brand đã duyệt hoặc đã chốt Deal, bắt buộc đưa về chờ Brand duyệt lại (L3)
-        if (wasApproved && itemFee(i) > itemFee(prev) && columnOf(i) !== 'DROPPED') {
-          return {
-            ...i,
-            overallStatus: 'SUBMITTED' as const,
-            brandApprovalStatus: 'BRAND_PENDING' as const,
-            lastSheetDecision: undefined,
-            lastSheetDecisionAt: undefined,
-          };
-        }
+      const wasApproved = Boolean(prev && (prev.brandApprovalStatus === 'BRAND_APPROVED' || prev.overallStatus === 'FINAL_APPROVED'));
+      // Nếu tăng giá sau khi Brand đã duyệt hoặc đã chốt Deal, bắt buộc đưa về chờ Brand duyệt lại (L3):
+      // xóa căn cứ duyệt cũ (ngày duyệt, bằng chứng) và đánh mốc tăng giá để "Yes" cũ trên Sheet không tự duyệt lại
+      if (prev && wasApproved && itemFee(i) > itemFee(prev) && columnOf(i) !== 'DROPPED') {
+        return {
+          ...i,
+          overallStatus: 'SUBMITTED' as const,
+          brandApprovalStatus: 'BRAND_PENDING' as const,
+          brandApprovedAt: undefined,
+          brandApprovedBy: undefined,
+          brandApprovalEvidence: undefined,
+          brandRepricedAt: new Date().toISOString(),
+          lastSheetDecision: undefined,
+          lastSheetDecisionAt: undefined,
+        };
+      }
+      // Brand duyệt trong app (có bằng chứng / FOC): ghi lại giá được duyệt
+      if (i.brandApprovalStatus === 'BRAND_APPROVED' && !wasApproved) {
+        return { ...i, brandApprovedFee: itemFee(i), brandRepricedAt: undefined };
       }
       return i;
     });

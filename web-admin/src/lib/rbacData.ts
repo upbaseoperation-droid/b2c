@@ -1943,6 +1943,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'zalo-bot'
   ],
   FINANCE: [
+    'self-channel-hub',
     'store-air-plan-report',
     'contracts',
     'dashboard-finance',

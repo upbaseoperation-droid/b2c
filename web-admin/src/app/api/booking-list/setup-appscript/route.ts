@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseSpreadsheetId } from '@/lib/server/googleSheets';
 import { readRecord, upsertRecord } from '@/lib/server/sharedRecords';
+import { assertStoreBookingAccess } from '@/lib/server/monthlyPlanStore';
+import { isStaffGlobalAdminOrManager } from '@/lib/rbacScope';
+import { getPlanActor, handlePlanError, unauthorized } from '../../monthly-plans/_shared';
+
+const forbidden = (error: string) => NextResponse.json({ ok: false, code: 'FORBIDDEN', error }, { status: 403 });
 
 export const dynamic = 'force-dynamic';
 
@@ -61,7 +66,7 @@ const DEFAULT_APPS_SCRIPT_MODULES: AppsScriptModuleItem[] = [
     ctx.sheet.getRange(ctx.headerRowIndex, timeColIdx).setValue('TG Brand duyệt');
   }
   var rawVal = ctx.rawValLower;
-  var isReviewed = ['yes', 'no', 'cân nhắc', 'can nhac', 'duyệt', 'từ chối', 'đồng ý'].indexOf(rawVal) !== -1;
+  var isReviewed = ['yes', 'y', 'ok', 'duyệt', 'đã duyệt', 'đồng ý', 'dong y', 'no', 'n', 'từ chối', 'không', 'cân nhắc', 'can nhac', 'maybe'].indexOf(rawVal) !== -1;
   var timeCell = ctx.sheet.getRange(ctx.row, timeColIdx);
   if (isReviewed) {
     var nowStr = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm');
@@ -666,7 +671,8 @@ async function deployBoundAppsScriptToSpreadsheet(params: {
   return { scriptId: newScriptId, mode: 'CREATED' };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!(await getPlanActor(request))) return unauthorized();
   const cfg = await loadOAuthConfig();
   const installedMap = await loadInstalledMap();
   const maskedClientId = cfg.clientId
@@ -689,7 +695,11 @@ export async function GET() {
   });
 }
 
+// PUT — cấu hình OAuth, bộ module và code Apps Script: chỉ Giám đốc / Admin (code này chạy trên Sheet của mọi Brand)
 export async function PUT(request: NextRequest) {
+  const actor = await getPlanActor(request);
+  if (!actor) return unauthorized();
+  if (!isStaffGlobalAdminOrManager(actor)) return forbidden('Chỉ Giám đốc / Admin được cấu hình Apps Script.');
   try {
     const body = (await request.json().catch(() => ({}))) as {
       clientId?: string;
@@ -781,7 +791,12 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+// POST — cài Apps Script lên Sheet. Giám đốc / Admin: mọi gian, được gửi kèm bộ module riêng.
+// Booking / Leader: chỉ gian mình, luôn dùng bộ module đã lưu (không nhận code từ trình duyệt).
 export async function POST(request: NextRequest) {
+  const actor = await getPlanActor(request);
+  if (!actor) return unauthorized();
+  const isAdmin = isStaffGlobalAdminOrManager(actor);
   try {
     const body = (await request.json().catch(() => ({}))) as {
       targets?: Array<{
@@ -816,6 +831,16 @@ export async function POST(request: NextRequest) {
         { ok: false, error: 'Chưa có link Google Sheet nào được chọn để cài đặt Apps Script.' },
         { status: 400 }
       );
+    }
+    if (!isAdmin) {
+      if (body.modules || body.storeMatrix || body.scriptCode || rawTargets.some(t => t.moduleIds || t.applyAppsScript !== undefined)) {
+        return forbidden('Chỉ Giám đốc / Admin được đổi bộ module Apps Script khi cài.');
+      }
+      try {
+        for (const t of rawTargets) await assertStoreBookingAccess(t.storeId || t.storeName || '', actor);
+      } catch (err) {
+        return handlePlanError(err);
+      }
     }
 
     const cfg = await loadOAuthConfig();

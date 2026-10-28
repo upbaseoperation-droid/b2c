@@ -31,7 +31,8 @@ import type {
   SelfChannelVideoTask,
   UserProfile,
 } from '../../lib/types';
-import { INITIAL_CONTRIBUTORS, INITIAL_SELF_CHANNEL_TASKS } from '../../lib/selfChannelData';
+
+import { SELF_FORMAT_LABEL, type SelfFormatKey } from '../../lib/selfChannelBoardRules';
 import { formatDate, formatVnd, formatVndShort, getVietnamDateYmd } from '../../lib/format';
 import { LegalOcrModal } from '../LegalOcrModal';
 import {
@@ -86,18 +87,23 @@ export interface CtvManagementViewProps {
   onOpenSelfChannelHub?: (ctv?: Contributor) => void;
   onNavigateBackToMaster?: () => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+  /** Chỉ Partnership / Giám đốc / Admin được thêm, sửa CTV; người khác chỉ xem */
+  canEdit?: boolean;
 }
 
 const hasLegalInfo = (c: Contributor) => Boolean(c.cccd && c.cccd.trim().length >= 9);
+const NO_CONTRIBUTORS: Contributor[] = [];
+const NO_TASKS: SelfChannelVideoTask[] = [];
 
 export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
-  contributors: propContributors = INITIAL_CONTRIBUTORS,
-  tasks = INITIAL_SELF_CHANNEL_TASKS,
+  contributors: propContributors = NO_CONTRIBUTORS,
+  tasks = NO_TASKS,
   selectedCtvId: propSelectedCtvId,
   onContributorCreated,
   onContributorUpdated,
   onOpenSelfChannelHub,
   onNotify,
+  canEdit = false,
 }) => {
   const [localCtvs, setLocalCtvs] = useState<Contributor[]>(propContributors);
   const [syncedCtvs, setSyncedCtvs] = useState(propContributors);
@@ -140,12 +146,12 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
     phone: '',
     email: '',
     role: 'ALL_IN_ONE' as ContributorRole,
-    niche: 'Mẹ & Bé, Chăm sóc da',
-    contentPic: 'Quỳnh Như',
+    niche: '',
+    contentPic: '',
     channelLink: '',
-    unitRateAllInOne: 1500000,
+    unitRateAllInOne: 0,
     monthlyCapacityVideos: 12,
-    bankName: 'Techcombank',
+    bankName: '',
     bankAccount: '',
     bankAccountName: '',
     shippingAddress: '',
@@ -290,12 +296,12 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
       role: createForm.role,
       status: 'ACTIVE',
       contentPic: createForm.contentPic,
-      partnershipPic: 'Việt Hoàng',
+      partnershipPic: '', // máy chủ ghi người tạo
       contractStatus: 'PENDING_SIGN',
       bankName: createForm.bankName,
       bankAccount: createForm.bankAccount.trim(),
       bankAccountName: createForm.bankAccountName.trim().toUpperCase() || createForm.name.trim().toUpperCase(),
-      unitRateAllInOne: Number(createForm.unitRateAllInOne) || 1500000,
+      unitRateAllInOne: Number(createForm.unitRateAllInOne) || undefined,
       monthlyCapacityVideos: Number(createForm.monthlyCapacityVideos) || 12,
       shippingRecipientName: createForm.name.trim(),
       shippingPhone: createForm.phone.trim(),
@@ -344,6 +350,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
             onShowQr={() => setQrTarget(activeCtv)}
             onAssignTask={() => onOpenSelfChannelHub?.(activeCtv)}
             onSave={(updated, msg) => applyUpdate(updated, msg)}
+            readOnly={!canEdit}
           />
 
           {ocrTarget && (
@@ -501,11 +508,13 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
 
   return (
     <div ref={rootRef} className="space-y-4">
-      <PageActions>
-        <Button size="sm" variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
-          Thêm CTV
-        </Button>
-      </PageActions>
+      {canEdit && (
+        <PageActions>
+          <Button size="sm" variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
+            Thêm CTV
+          </Button>
+        </PageActions>
+      )}
 
       <Panel flush>
         <div className="p-4 border-b border-line space-y-2.5">
@@ -736,7 +745,9 @@ export function CtvProfileDetail({
   onShowQr,
   onAssignTask,
   onSave,
+  readOnly = false,
 }: {
+  readOnly?: boolean;
   ctv: Contributor;
   tasks: SelfChannelVideoTask[];
   nav: {
@@ -778,10 +789,12 @@ export function CtvProfileDetail({
     bankName: ctv.bankName,
     bankAccount: ctv.bankAccount,
     bankAccountName: ctv.bankAccountName,
-    unitRateAllInOne: ctv.unitRateAllInOne || 1500000,
-    unitRateShootingOnly: ctv.unitRateShootingOnly || 900000,
-    unitRateEditOnly: ctv.unitRateEditOnly || 500000,
-    unitRateScriptOnly: ctv.unitRateScriptOnly || 300000,
+    unitRateAllInOne: ctv.unitRateAllInOne || 0,
+    unitRateShootingOnly: ctv.unitRateShootingOnly || 0,
+    unitRateEditOnly: ctv.unitRateEditOnly || 0,
+    unitRateScriptOnly: ctv.unitRateScriptOnly || 0,
+    formatRates: { ...(ctv.formatRates || {}) } as NonNullable<Contributor['formatRates']>,
+    zaloUserId: ctv.zaloUserId || '',
     monthlyCapacityVideos: ctv.monthlyCapacityVideos || 12,
     shippingRecipientName: ctv.shippingRecipientName || ctv.name,
     shippingPhone: ctv.shippingPhone || ctv.phone,
@@ -1038,7 +1051,7 @@ export function CtvProfileDetail({
       label: 'Hàng mẫu & Lịch sử vận đơn',
       count: sampleShippingHistory.length || undefined,
     },
-    { key: 'EDIT_PROFILE', label: 'Cập nhật hồ sơ chuyên sâu' },
+    ...(readOnly ? [] : [{ key: 'EDIT_PROFILE' as const, label: 'Cập nhật hồ sơ chuyên sâu' }]),
   ];
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -1073,6 +1086,10 @@ export function CtvProfileDetail({
       unitRateShootingOnly: Number(editForm.unitRateShootingOnly) || 0,
       unitRateEditOnly: Number(editForm.unitRateEditOnly) || 0,
       unitRateScriptOnly: Number(editForm.unitRateScriptOnly) || 0,
+      formatRates: Object.fromEntries(
+        Object.entries(editForm.formatRates).filter(([, v]) => Number(v) > 0).map(([k, v]) => [k, Number(v)])
+      ),
+      zaloUserId: editForm.zaloUserId.trim() || undefined,
       monthlyCapacityVideos: Number(editForm.monthlyCapacityVideos) || 12,
       shippingRecipientName: editForm.shippingRecipientName.trim(),
       shippingPhone: editForm.shippingPhone.trim(),
@@ -1318,9 +1335,11 @@ export function CtvProfileDetail({
           <Button variant="secondary" icon={QrCode} onClick={onShowQr}>
             Mã QR
           </Button>
-          <Button variant="secondary" icon={FileScan} onClick={onScanDocs}>
-            {missingLegal ? 'Đọc ảnh CCCD' : 'Đọc lại CCCD'}
-          </Button>
+          {!readOnly && (
+            <Button variant="secondary" icon={FileScan} onClick={onScanDocs}>
+              {missingLegal ? 'Đọc ảnh CCCD' : 'Đọc lại CCCD'}
+            </Button>
+          )}
           <Button variant="primary" icon={Video} onClick={onAssignTask}>
             Giao việc video kênh
           </Button>
@@ -1860,7 +1879,7 @@ export function CtvProfileDetail({
                     )}
                   </div>
 
-                  <form onSubmit={handleAddOnHandSku} className="flex items-center gap-2 pt-2 max-w-md">
+                  {!readOnly && <form onSubmit={handleAddOnHandSku} className="flex items-center gap-2 pt-2 max-w-md">
                     <Input
                       value={newSkuInput}
                       onChange={(e) => setNewSkuInput(e.target.value)}
@@ -1869,7 +1888,7 @@ export function CtvProfileDetail({
                     <Button type="submit" variant="secondary" icon={Plus}>
                       Thêm SKU
                     </Button>
-                  </form>
+                  </form>}
                 </div>
               </Panel>
 
@@ -2145,6 +2164,32 @@ export function CtvProfileDetail({
                     />
                   </Field>
                 </div>
+
+                {/* Giá chuẩn theo 5 loại video Self-channel (4.1.1): Job lấy giá này, Partnership sửa được theo từng job */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  {(Object.keys(SELF_FORMAT_LABEL) as SelfFormatKey[]).map((key) => (
+                    <Field key={key} label={`${SELF_FORMAT_LABEL[key]} (đ)`} noWrap>
+                      <Input
+                        type="number"
+                        value={editForm.formatRates[key] ?? ''}
+                        onChange={(e) =>
+                          setEditForm((p) => ({
+                            ...p,
+                            formatRates: { ...p.formatRates, [key]: Number(e.target.value) },
+                          }))
+                        }
+                      />
+                    </Field>
+                  ))}
+                </div>
+
+                <Field label="Zalo ID (để bot nhận diện CTV trong nhóm)">
+                  <Input
+                    value={editForm.zaloUserId}
+                    onChange={(e) => setEditForm((p) => ({ ...p, zaloUserId: e.target.value }))}
+                    placeholder="Mã người dùng Zalo của CTV"
+                  />
+                </Field>
 
                 {/* Khối Hậu cần gửi hàng mẫu & Bối cảnh */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-line">

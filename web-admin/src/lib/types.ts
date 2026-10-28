@@ -2439,6 +2439,8 @@ export interface StorePortfolioItem {
   storeUrl?: string;
   bookingSheetUrl?: string; // Link Google Sheet Listing / Booking riêng của gian hàng
   defaultSheetTab?: string; // Tên tab Google Sheet mặc định của gian hàng
+  /** Kênh của Brand để đăng video Self-channel (handle hoặc link kênh) theo nền tảng; dùng kiểm link đăng đúng kênh */
+  selfChannelHandles?: Partial<Record<'tiktok' | 'shopee' | 'facebook' | 'instagram' | 'youtube', string>>;
   serviceModel: ServiceModel;
   difficultyTier: StoreDifficultyTier;
   difficultyMultiplier: number; // 0.80, 1.00, 1.25, 1.50 (Bảng 2. Hệ số gian hàng)
@@ -3513,7 +3515,10 @@ export interface Contributor {
   unitRateShootingOnly?: number; // Giá chỉ quay thô / diễn xuất
   unitRateEditOnly?: number; // Giá dựng hậu kỳ lẻ
   unitRateScriptOnly?: number; // Giá viết kịch bản lẻ
+  /** Giá chuẩn (Gross) theo 5 loại video Self-channel của 4.1.1; Partnership sửa được theo từng job */
+  formatRates?: Partial<Record<Exclude<keyof PlanWeekRow['self'], 'budgetNet'>, number>>;
   monthlyCapacityVideos?: number; // Công suất nhận việc tối đa (video/tháng)
+  zaloUserId?: string; // Zalo ID để bot nhận diện CTV trong nhóm
 
   // Hậu cần gửi hàng mẫu (SLA 48h) & Đặc điểm bối cảnh VJ
   shippingRecipientName?: string;

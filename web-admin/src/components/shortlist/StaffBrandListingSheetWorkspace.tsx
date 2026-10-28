@@ -55,6 +55,7 @@ import {
   TEP_KENH_OPTIONS,
   TRANG_THAI_OPTIONS,
   buildStaffListingRowFromKoc,
+  buildStaffListingRowFromListingItem,
   canStaffEditSheetField,
   computeGrossFeeWithTax,
   computeListingToBrandSla,
@@ -409,6 +410,63 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     [activeMonth, activeStoreName]
   );
 
+  const [serverSummary, setServerSummary] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    fetch('/api/listing-board?summary=true', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.summary) {
+          const counts: Record<string, number> = {};
+          for (const [k, v] of Object.entries(data.summary as Record<string, { count: number }>)) {
+            counts[k] = v.count;
+          }
+          setServerSummary(counts);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const fetchedSheetsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    let cancelled = false;
+    const currentRows = collection?.sheets?.[activeSheetKey];
+    if (fetchedSheetsRef.current.has(activeSheetKey)) return;
+    if (currentRows && currentRows.length > 0) {
+      fetchedSheetsRef.current.add(activeSheetKey);
+      return;
+    }
+    fetchedSheetsRef.current.add(activeSheetKey);
+    fetch(
+      `/api/listing-board?storeName=${encodeURIComponent(activeStoreName)}&month=${encodeURIComponent(activeMonth)}`,
+      { cache: 'no-store' }
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled || !data?.items || !Array.isArray(data.items) || data.items.length === 0) return;
+        const mappedRows = data.items.map((item: KocListingItem) =>
+          buildStaffListingRowFromListingItem(item, currentUserName)
+        );
+        setCollection((prev) => {
+          if (prev?.sheets?.[activeSheetKey] && prev.sheets[activeSheetKey].length > 0) return prev;
+          const next = {
+            ...prev,
+            sheets: {
+              ...(prev?.sheets || {}),
+              [activeSheetKey]: mappedRows,
+            },
+          };
+          saveStaffSheetCollection(next, false);
+          return next;
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSheetKey, activeStoreName, activeMonth, collection?.sheets, currentUserName]);
+
   const rows: StaffListingSheetRow[] = useMemo(
     () => (Array.isArray(collection?.sheets?.[activeSheetKey]) ? collection.sheets[activeSheetKey] : []),
     [collection, activeSheetKey]
@@ -441,18 +499,24 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         storeNamesWithData.add(key.slice(prefix.length));
       }
     });
+    Object.entries(serverSummary).forEach(([key, count]) => {
+      if (key.startsWith(prefix) && count > 0) {
+        storeNamesWithData.add(key.slice(prefix.length));
+      }
+    });
     storeNamesWithData.add(activeStoreName);
     return Array.from(storeNamesWithData).map((sName) => {
       const st = b2cStores.find((s) => s.storeName === sName);
       const sheetList = collection?.sheets?.[makeSheetKey(activeMonth, sName)];
-      const count = Array.isArray(sheetList) ? sheetList.length : 0;
+      const localCount = Array.isArray(sheetList) ? sheetList.length : 0;
+      const count = localCount > 0 ? localCount : (serverSummary[makeSheetKey(activeMonth, sName)] || 0);
       return {
         storeName: sName,
         brandName: st?.brandName || sName.split(/[-_]/)[0].trim(),
         count,
       };
     });
-  }, [collection.sheets, activeMonth, activeStoreName, b2cStores]);
+  }, [activeMonth, collection?.sheets, serverSummary, activeStoreName, b2cStores]);
 
   // Mặc định mở bộ cột GĐ 1: 17 cột trọng tâm phục vụ Listing & Trình Brand duyệt ngay trên màn hình đầu tiên
   // (Khi đẩy/copy Google Sheet vẫn xuất đủ 57 cột chuẩn A -> BE)

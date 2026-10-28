@@ -729,6 +729,75 @@ export function buildInitialApprovedBookingList(
   return items;
 }
 
+function mergeDealsAndKocsIntoApprovedList(
+  list: ApprovedBookingListItem[],
+  kocs: KocItem[],
+  deals: BookingDealItem[]
+): ApprovedBookingListItem[] {
+  if (list.length === 0) return list;
+
+  // RULE-PERF-01: O(1) Map lookup cho KOC và Deal
+  const kocByHandle = new Map<string, KocItem>();
+  const kocById = new Map<string, KocItem>();
+  for (const k of kocs) {
+    if (k.id) kocById.set(k.id, k);
+    const h = normalizeTikTokId(k.channelId).toLowerCase();
+    if (h) kocByHandle.set(h, k);
+  }
+
+  const dealByCode = new Map<string, BookingDealItem>();
+  const dealByJobId = new Map<string, BookingDealItem>();
+  for (const d of deals) {
+    if (d.id) dealByCode.set(d.id.toUpperCase(), d);
+    if (d.dealCode) dealByCode.set(d.dealCode.toUpperCase(), d);
+    if (d.jobId) dealByJobId.set(d.jobId, d);
+  }
+
+  return list.map((rawItem) => {
+    const cleanHandle = normalizeTikTokId(rawItem.idKenh).toLowerCase();
+    const matchedKoc =
+      (rawItem.kocId ? kocById.get(rawItem.kocId) : undefined) ||
+      (cleanHandle ? kocByHandle.get(cleanHandle) : undefined);
+
+    const matchedDeal =
+      (rawItem.maBooking ? dealByCode.get(rawItem.maBooking.toUpperCase()) : undefined) ||
+      (rawItem.linkedDealId ? dealByCode.get(rawItem.linkedDealId.toUpperCase()) : undefined) ||
+      dealByJobId.get(rawItem.id);
+
+    const next: ApprovedBookingListItem = {
+      ...rawItem,
+      kocId: rawItem.kocId || matchedKoc?.id,
+      tenKenh: rawItem.tenKenh || matchedKoc?.stageName || matchedKoc?.realName || rawItem.idKenh,
+      follower: rawItem.follower || matchedKoc?.followers || 0,
+      tenTaiKhoanNganHang:
+        rawItem.tenTaiKhoanNganHang || matchedDeal?.kocBankHolder || matchedKoc?.realName || '',
+      soTaiKhoan:
+        rawItem.soTaiKhoan || matchedDeal?.kocBankAccount || matchedKoc?.bankAccount || '',
+      nganHang:
+        rawItem.nganHang || matchedDeal?.kocBankName || matchedKoc?.bankName || '',
+      soCccd:
+        rawItem.soCccd || matchedDeal?.kocIdCardNumber || matchedKoc?.cccd || '',
+      sdtNhanHang: rawItem.sdtNhanHang || matchedKoc?.shippingPhone || matchedKoc?.phone || '',
+      diaChiNhanHang: rawItem.diaChiNhanHang || matchedKoc?.shippingAddress || '',
+      masterContractCode:
+        matchedDeal?.masterContractCode || rawItem.masterContractCode,
+      contractAppendixCode:
+        matchedDeal?.contractAppendixCode || rawItem.contractAppendixCode,
+      contractAppendixStatus:
+        matchedDeal?.contractAppendixStatus === 'ĐÃ_KÝ'
+          ? 'ĐÃ_KÝ'
+          : matchedDeal?.contractAppendixStatus || rawItem.contractAppendixStatus,
+      larkApprovalInstanceCode:
+        matchedDeal?.larkFinalApprovalCode || rawItem.larkApprovalInstanceCode,
+      linkAir: rawItem.linkAir || matchedDeal?.tiktokVideoUrl || matchedDeal?.videoUrl || '',
+      actualAirDate: rawItem.actualAirDate || matchedDeal?.postedDate || '',
+      sparkAdsCode: rawItem.sparkAdsCode || matchedDeal?.sparkAdsCode || '',
+    };
+
+    return recalculateApprovedBookingItem(next);
+  });
+}
+
 export function loadApprovedBookingList(
   kocs: KocItem[] = [],
   stores: StorePortfolioItem[] = [],
@@ -736,20 +805,28 @@ export function loadApprovedBookingList(
   defaultStaffName?: string
 ): ApprovedBookingListItem[] {
   if (typeof window === 'undefined') {
-    return buildInitialApprovedBookingList(kocs, stores, deals, defaultStaffName);
+    return mergeDealsAndKocsIntoApprovedList(
+      buildInitialApprovedBookingList(kocs, stores, deals, defaultStaffName),
+      kocs,
+      deals
+    );
   }
   try {
     const raw = window.localStorage.getItem(APPROVED_BOOKING_LIST_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as ApprovedBookingListItem[];
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map(recalculateApprovedBookingItem);
+        return mergeDealsAndKocsIntoApprovedList(parsed, kocs, deals);
       }
     }
   } catch {
     // ignore storage errors
   }
-  const initial = buildInitialApprovedBookingList(kocs, stores, deals, defaultStaffName);
+  const initial = mergeDealsAndKocsIntoApprovedList(
+    buildInitialApprovedBookingList(kocs, stores, deals, defaultStaffName),
+    kocs,
+    deals
+  );
   saveApprovedBookingList(initial, false);
   return initial;
 }

@@ -62,9 +62,11 @@ import {
   VideoFormatsMasterView, 
   StoresMasterView, 
   StaffMasterView,
-  ContributorsMasterView,
+  PartnershipStaffPanel,
   StaffSearchSelect
 } from './master-data';
+import { CtvManagementView } from './CtvManagementView';
+import type { CtvDirectoryAccess, PartnershipStaffEntry } from '../../lib/ctvDirectory';
 import { AssignmentLogList } from './master-data/AssignmentLogList';
 import { codeForName, withStaffCode } from '../../lib/staffIdentity';
 import {
@@ -143,10 +145,16 @@ interface MasterDataHubViewProps {
   onNavigateToBrandProfile?: (brandName: string) => void;
   onNavigateToStoreProfile?: (storeName: string) => void;
   onNavigateToCtvProfile?: (ctvId?: string) => void;
+  /** Quyền trên danh bạ CTV và danh sách Partnership (máy chủ trả về) */
+  ctvAccess?: CtvDirectoryAccess;
+  partnershipStaff?: PartnershipStaffEntry[];
+  onSavePartnershipStaff?: (staff: PartnershipStaffEntry[]) => Promise<boolean>;
   deals?: BookingDealItem[];
   onNavigateToKocPortal?: (kocId: string | null) => void;
   onSelectDealForContract?: (deal: BookingDealItem) => void;
 }
+
+const NO_PARTNERSHIP_STAFF: PartnershipStaffEntry[] = [];
 
 export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   currentUser,
@@ -156,13 +164,15 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   kocs = INITIAL_KOCS,
   deals,
   contributors = INITIAL_CONTRIBUTORS,
+  ctvAccess,
+  partnershipStaff = NO_PARTNERSHIP_STAFF,
+  onSavePartnershipStaff,
   onNotify,
   onOpenQuickBookWithKoc,
   onKocCreated,
   onKocUpdated,
   onContributorCreated,
   onContributorUpdated,
-  onContributorDeleted,
   onNavigateToBrandProfile,
   onNavigateToStoreProfile,
   onNavigateToCtvProfile,
@@ -1640,15 +1650,23 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
       {/* SUB-TAB: DỮ LIỆU GỐC CỘNG TÁC VIÊN / VJ */}
       {activeSubTab === 'ctvs' && (
-        <ContributorsMasterView
-          contributors={contributors}
-          currentUser={currentUser}
-          onContributorCreated={onContributorCreated}
-          onContributorUpdated={onContributorUpdated}
-          onContributorDeleted={onContributorDeleted}
-          onNavigateToCtvProfile={onNavigateToCtvProfile}
-          onNotify={onNotify}
-        />
+        <div className="space-y-4">
+          <PartnershipStaffPanel
+            staff={partnershipStaff}
+            canManage={Boolean(ctvAccess?.canManagePartnership)}
+            onSave={onSavePartnershipStaff}
+          />
+          {/* Cùng một danh bạ CTV với tab Danh bạ trong Video kênh & CTV (lưu máy chủ, Partnership quản lý) */}
+          <CtvManagementView
+            contributors={contributors}
+            currentUser={currentUser}
+            canEdit={Boolean(ctvAccess?.canEdit)}
+            onContributorCreated={onContributorCreated}
+            onContributorUpdated={onContributorUpdated}
+            onOpenSelfChannelHub={() => onNavigateToCtvProfile?.()}
+            onNotify={onNotify}
+          />
+        </div>
       )}
 
       {/* SUB-TAB: NHÂN SỰ BOOKING & VẬN HÀNH */}

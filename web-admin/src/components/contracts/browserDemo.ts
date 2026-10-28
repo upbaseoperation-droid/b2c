@@ -462,6 +462,48 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
         .map(f => ({ severity: 'ERROR', message: `Chưa điền: ${f.title || f.label}`, evidence: f.context, fieldKey: f.key })),
     });
     event(next, actor, 'RULE_CHECK');
+  } else if (body.action === 'DEMO_FAST_SIGN') {
+    const at = new Date().toISOString();
+    for (const s of next.steps) {
+      if (s.status !== 'APPROVED') {
+        s.status = 'APPROVED';
+        s.decidedAt = at;
+        s.note = s.note || 'Đã duyệt kiểm tra hạn mức & điều khoản';
+      }
+    }
+    if (next.steps.length === 0) {
+      next.steps.push({
+        role: 'FINANCE',
+        reviewerId: 'demo-finance',
+        reviewerName: 'Lê Thị Thu Hà',
+        status: 'APPROVED',
+        note: 'Đã duyệt hạn mức Booking & thuế',
+        version: next.version,
+        decidedAt: at,
+      });
+    }
+    next.approval = 'APPROVED';
+    next.signing.push({
+      documentId: crypto.randomUUID(),
+      name: next.title,
+      version: next.version,
+      linkedBy: actor.id,
+      linkedAt: at,
+      syncedAt: at,
+      provider: 'DEMO',
+      status: 'COMPLETED',
+      sourceStatus: -3,
+      completedCount: 2,
+      totalCount: 2,
+      progressPercent: 100,
+      evidenceConfirmedBy: actor.id,
+      evidenceHash: '',
+      people: [
+        { name: 'Upbase (Công ty CP Công nghệ UpBase)', email: 'hddt@upbase.asia', role: 0, roleLabel: 'Đại diện Bên A', level: 1, action: 2, status: 'Đã ký', at: at },
+        { name: next.partner, email: 'partner@booking.upbase.vn', role: 0, roleLabel: 'Đại diện Bên B (KOC)', level: 2, action: 2, status: 'Đã ký', at: at },
+      ],
+    });
+    event(next, actor, 'DEMO_FAST_SIGN', 'Đã hoàn tất ký số đủ 2 bên (UpBase & KOC) và khóa cấu hình Deal');
   } else if (['DEMO_SIGN_START', 'DEMO_SIGN_NEXT', 'DEMO_SIGN_REJECT'].includes(String(body.action))) {
     assertCanSign(record, actor);
     const attempt = next.signing.at(-1);

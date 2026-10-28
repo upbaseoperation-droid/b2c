@@ -8,6 +8,10 @@ export type SelfFormatKey = Exclude<keyof PlanWeekRow['self'], 'budgetNet'>;
 export type SelfProductionMode = 'CTV_OUTSOURCE' | 'INHOUSE';
 export type SelfSampleStatus = 'NOT_NEEDED' | 'ON_HAND' | 'PENDING_SHIP' | 'SHIPPING' | 'RECEIVED';
 export type SelfScriptStatus = 'NOT_NEEDED' | 'DRAFT' | 'SUBMITTED' | 'REVISION' | 'APPROVED';
+/** Brand duyệt kịch bản (sau khi Content duyệt nội bộ, trước khi quay). Brand im lặng chỉ cảnh báo, không tự duyệt. */
+export type SelfBrandScriptStatus = 'NOT_SENT' | 'PENDING' | 'REVISION' | 'APPROVED';
+/** Brand chưa phản hồi kịch bản quá số giờ này thì cảnh báo / raise (không Auto-Pass). */
+export const BRAND_SCRIPT_SLA_HOURS = 72;
 export type SelfVideoQaStatus = 'WAITING_DRAFT' | 'DRAFT_SUBMITTED' | 'REVISION' | 'INTERNAL_QA_PASSED' | 'BRAND_APPROVED';
 export type SelfPublishPlatform = 'TIKTOK_BRAND' | 'SHOPEE_VIDEO' | 'FACEBOOK_PAGE' | 'INSTAGRAM' | 'YOUTUBE_SHORTS';
 export type SelfAcceptanceStatus = 'PENDING' | 'PASSED' | 'REVISION' | 'REJECTED';
@@ -41,6 +45,13 @@ export const SELF_SCRIPT_LABEL: Record<SelfScriptStatus, string> = {
   SUBMITTED: 'Đã nộp kịch bản',
   REVISION: 'Yêu cầu sửa kịch bản',
   APPROVED: 'Đã duyệt kịch bản',
+};
+
+export const SELF_BRAND_SCRIPT_LABEL: Record<SelfBrandScriptStatus, string> = {
+  NOT_SENT: 'Chưa gửi Brand',
+  PENDING: 'Chờ Brand duyệt kịch bản',
+  REVISION: 'Brand yêu cầu sửa kịch bản',
+  APPROVED: 'Brand đã duyệt kịch bản',
 };
 
 export const SELF_VIDEO_QA_LABEL: Record<SelfVideoQaStatus, string> = {
@@ -115,6 +126,10 @@ export interface SelfChannelJob {
   scriptStatus: SelfScriptStatus;
   scriptUrl?: string;
   scriptNote?: string;
+  brandScriptStatus: SelfBrandScriptStatus;
+  brandScriptSentAt?: string;
+  brandScriptDecidedAt?: string;
+  brandScriptNote?: string;
   videoQaStatus: SelfVideoQaStatus;
   draftVideoUrl: string;
   finalDriveUrl?: string;
@@ -134,6 +149,8 @@ export interface SelfChannelJob {
   sparkAdsCode?: string;
   views?: number;
   gmv?: number;
+  /** Kết quả kiểm link đăng (máy chủ ghi): đúng kênh Brand, bài còn hiển thị, ảnh bìa làm ảnh nghiệm thu */
+  airCheck?: SelfAirCheck;
   acceptanceStatus: SelfAcceptanceStatus;
   acceptedAt?: string;
   acceptedBy?: string;
@@ -153,6 +170,21 @@ export interface SelfChannelJob {
   paymentNote?: string;
   lifecycleStatus?: 'ACTIVE' | 'CANCELLED';
   updatedAt: string;
+}
+
+export interface SelfAirCheck {
+  verdict: 'PASS' | 'REVIEW' | 'FAIL';
+  checkedAt: string;
+  checkedBy: string;
+  checkedLink: string;
+  platform: string | null;
+  authorHandle: string | null;
+  expectedHandle: string | null;
+  publishedAt: string | null;
+  views: number | null;
+  coverUrl: string | null;
+  /** Các mục không đạt / cần xem lại */
+  issues: string[];
 }
 
 export interface SelfSettlementBatch {
@@ -222,6 +254,13 @@ export function sanitizeSelfChannelBoard(raw?: Partial<SelfChannelBoardData> | n
       j.scriptStatus && j.scriptStatus in SELF_SCRIPT_LABEL ? j.scriptStatus : 'NOT_NEEDED';
     const videoQaStatus: SelfVideoQaStatus =
       j.videoQaStatus && j.videoQaStatus in SELF_VIDEO_QA_LABEL ? j.videoQaStatus : 'WAITING_DRAFT';
+    // Job cũ (trước khi có bước Brand duyệt kịch bản) đã quay hoặc xong: coi như Brand đã duyệt để không chặn ngược
+    const brandScriptStatus: SelfBrandScriptStatus =
+      j.brandScriptStatus && j.brandScriptStatus in SELF_BRAND_SCRIPT_LABEL
+        ? j.brandScriptStatus
+        : scriptStatus === 'APPROVED' && videoQaStatus !== 'WAITING_DRAFT'
+        ? 'APPROVED'
+        : 'NOT_SENT';
     const publishPlatform: SelfPublishPlatform =
       j.publishPlatform && j.publishPlatform in SELF_PLATFORM_LABEL ? j.publishPlatform : 'TIKTOK_BRAND';
     const acceptanceStatus: SelfAcceptanceStatus =
@@ -277,6 +316,10 @@ export function sanitizeSelfChannelBoard(raw?: Partial<SelfChannelBoardData> | n
       scriptStatus,
       scriptUrl: j.scriptUrl ? String(j.scriptUrl) : undefined,
       scriptNote: j.scriptNote ? String(j.scriptNote) : undefined,
+      brandScriptStatus,
+      brandScriptSentAt: j.brandScriptSentAt ? String(j.brandScriptSentAt) : undefined,
+      brandScriptDecidedAt: j.brandScriptDecidedAt ? String(j.brandScriptDecidedAt) : undefined,
+      brandScriptNote: j.brandScriptNote ? String(j.brandScriptNote) : undefined,
       videoQaStatus,
       draftVideoUrl: String(j.draftVideoUrl || ''),
       finalDriveUrl: j.finalDriveUrl ? String(j.finalDriveUrl) : undefined,
@@ -290,6 +333,7 @@ export function sanitizeSelfChannelBoard(raw?: Partial<SelfChannelBoardData> | n
       deadline: String(j.deadline || ''),
       sparkAdsCode: j.sparkAdsCode ? String(j.sparkAdsCode) : undefined,
       views: typeof j.views === 'number' ? j.views : undefined,
+      airCheck: j.airCheck && typeof j.airCheck === 'object' && j.airCheck.verdict ? { ...j.airCheck, issues: Array.isArray(j.airCheck.issues) ? j.airCheck.issues.map(String) : [] } : undefined,
       gmv: typeof j.gmv === 'number' ? j.gmv : undefined,
       acceptanceStatus,
       acceptedAt: j.acceptedAt ? String(j.acceptedAt) : undefined,
@@ -344,7 +388,7 @@ export function selfJobStageOf(job: SelfChannelJob): SelfJobStage {
     return 'BRIEF';
   }
   if (
-    (job.scriptStatus !== 'APPROVED' && job.scriptStatus !== 'NOT_NEEDED') ||
+    !isSelfScriptReady(job) ||
     (job.productionMode === 'CTV_OUTSOURCE' &&
       job.sampleStatus !== 'RECEIVED' &&
       job.sampleStatus !== 'ON_HAND' &&
@@ -364,7 +408,38 @@ export function selfJobStageOf(job: SelfChannelJob): SelfJobStage {
   return 'SETTLEMENT';
 }
 
+/** Kịch bản sẵn sàng để quay: không cần kịch bản, hoặc Content duyệt nội bộ và Brand đã duyệt. */
+export function isSelfScriptReady(job: Pick<SelfChannelJob, 'scriptStatus' | 'brandScriptStatus'>): boolean {
+  return job.scriptStatus === 'NOT_NEEDED' || (job.scriptStatus === 'APPROVED' && job.brandScriptStatus === 'APPROVED');
+}
+
+/** Số giờ Brand chưa phản hồi kịch bản (null nếu không đang chờ Brand). */
+export function brandScriptWaitingHours(job: Pick<SelfChannelJob, 'brandScriptStatus' | 'brandScriptSentAt'>, now = Date.now()): number | null {
+  if (job.brandScriptStatus !== 'PENDING' || !job.brandScriptSentAt) return null;
+  const sent = Date.parse(job.brandScriptSentAt);
+  return Number.isFinite(sent) ? Math.max(0, (now - sent) / 3_600_000) : null;
+}
+
+/** Chuyển bước Brand duyệt kịch bản hợp lệ (máy chủ kiểm khi lưu). */
+export function selfBrandScriptBlocker(prev: SelfChannelJob | undefined, next: SelfChannelJob): string | null {
+  const from = prev?.brandScriptStatus ?? 'NOT_SENT';
+  const to = next.brandScriptStatus;
+  if (from === to) return null;
+  if (to === 'PENDING' && next.scriptStatus !== 'APPROVED') return 'Content phải duyệt kịch bản nội bộ trước khi gửi Brand.';
+  if ((to === 'APPROVED' || to === 'REVISION') && from !== 'PENDING') return 'Chỉ ghi kết quả Brand khi kịch bản đang chờ Brand duyệt.';
+  if (to === 'REVISION' && !next.brandScriptNote?.trim()) return 'Ghi lại nội dung Brand yêu cầu sửa kịch bản.';
+  return null;
+}
+
 export function selfJobAcceptanceBlocker(job: SelfChannelJob): string | null {
+  // Link đăng phải được máy chủ kiểm (đúng kênh Brand, còn hiển thị) và khớp link hiện tại
+  if (!job.airCheck || job.airCheck.checkedLink !== job.airLink.trim()) {
+    if (job.airLink.trim()) return 'Chưa kiểm tra link đăng (bấm Kiểm tra link đăng).';
+  } else if (job.airCheck.verdict === 'FAIL') {
+    return `Link đăng không đạt kiểm tra: ${job.airCheck.issues.join('; ') || 'xem chi tiết'}.`;
+  } else if (job.airCheck.verdict === 'REVIEW' && !job.acceptanceNote?.trim()) {
+    return 'Link đăng cần xem lại: ghi chú lý do vẫn nghiệm thu Đạt.';
+  }
   if (job.videoQaStatus !== 'INTERNAL_QA_PASSED' && job.videoQaStatus !== 'BRAND_APPROVED') {
     return 'Video nháp chưa được duyệt QA nội bộ.';
   }
@@ -373,9 +448,6 @@ export function selfJobAcceptanceBlocker(job: SelfChannelJob): string | null {
   }
   if (!job.airedAt.trim()) {
     return 'Chưa nhập ngày đăng video.';
-  }
-  if (job.productionMode === 'CTV_OUTSOURCE' && job.feeGross > 0 && !job.bbntCode?.trim()) {
-    return 'Job thuê CTV có phí bắt buộc phải có Mã Biên bản nghiệm thu (BBNT) hoặc Bảng chấm công.';
   }
   return null;
 }
@@ -395,6 +467,10 @@ export function selfJobPaymentBlocker(job: SelfChannelJob): string | null {
   }
   if (!job.bankName?.trim() || !job.bankAccount?.trim() || !job.bankHolder?.trim()) {
     return 'Thiếu thông tin tài khoản ngân hàng (Ngân hàng, Số TK, Chủ TK).';
+  }
+  // BBNT sản lượng tháng của CTV (thay cho BBNT từng video lúc nghiệm thu)
+  if (job.productionMode === 'CTV_OUTSOURCE' && !job.bbntCode?.trim()) {
+    return 'Chưa có Biên bản nghiệm thu (BBNT) sản lượng tháng của CTV.';
   }
   return null;
 }
@@ -539,6 +615,10 @@ export function createSelfChannelJob(
     scriptStatus: partial.scriptStatus || (partial.formatKey === 'nhacText' ? 'NOT_NEEDED' : 'DRAFT'),
     scriptUrl: partial.scriptUrl,
     scriptNote: partial.scriptNote,
+    brandScriptStatus: partial.brandScriptStatus || 'NOT_SENT',
+    brandScriptSentAt: partial.brandScriptSentAt,
+    brandScriptDecidedAt: partial.brandScriptDecidedAt,
+    brandScriptNote: partial.brandScriptNote,
     videoQaStatus: partial.videoQaStatus || 'WAITING_DRAFT',
     draftVideoUrl: partial.draftVideoUrl || '',
     finalDriveUrl: partial.finalDriveUrl,
@@ -585,11 +665,11 @@ export function createSelfChannelJob(
  * Áp dụng thông tin CTV từ Danh bạ (Contributor) vào Job video:
  * - Tự động điền Hợp đồng, CCCD/MST, Tài khoản ngân hàng, Thư mục Drive, Địa chỉ nhận mẫu.
  * - Tự động đối chiếu SKU với danh sách hàng mẫu có sẵn tại nhà CTV (onHandProducts) để chuyển trạng thái sang ON_HAND.
- * - Tự động áp đơn giá chuẩn của CTV (unitRateAllInOne / unitRateShootingOnly / unitRateEditOnly) nếu Job đang để 0đ.
+ * - Áp giá chuẩn của CTV theo loại video của Job (formatRates) nếu Job đang để 0đ; giá đã nhập trên Job (Partnership sửa) được giữ.
+ * - Không tự điền số HĐ / ngân hàng giả: thiếu thì để trống để điều kiện thanh toán chặn đúng.
  */
 export function applyContributorToSelfJob(job: SelfChannelJob, ctv: Contributor): SelfChannelJob {
-  const defaultRate =
-    ctv.unitRateAllInOne || ctv.unitRateShootingOnly || ctv.unitRateEditOnly || ctv.unitRateScriptOnly || 0;
+  const defaultRate = ctv.formatRates?.[job.formatKey] || ctv.unitRateAllInOne || 0;
   const nextFeeGross = job.feeGross > 0 ? job.feeGross : defaultRate;
   const fin = computeJobFinancials(nextFeeGross, 'CTV_OUTSOURCE', job.withholdPit10 || nextFeeGross >= 2000000);
 
@@ -618,9 +698,9 @@ export function applyContributorToSelfJob(job: SelfChannelJob, ctv: Contributor)
     contributorId: ctv.id,
     contributorName: ctv.name,
     channelOrPhone: ctv.phone || ctv.channelLink || job.channelOrPhone,
-    contractNo: ctv.contractCode || job.contractNo || 'HD-CTV-2026',
+    contractNo: ctv.contractCode || job.contractNo || '',
     legalId: ctv.cccd || ctv.taxCode || job.legalId || '',
-    bankName: ctv.bankName || job.bankName || 'Techcombank',
+    bankName: ctv.bankName || job.bankName || '',
     bankAccount: ctv.bankAccount || job.bankAccount || '',
     bankHolder: ctv.bankAccountName || job.bankHolder || ctv.name,
     finalDriveUrl: ctv.driveFolderUrl || job.finalDriveUrl,
@@ -908,16 +988,18 @@ export function summarizeSelfChannelBoard(
   });
 
   const contribMap = new Map<string, SelfChannelJob[]>();
+  // Gom theo mã CTV (hai CTV trùng tên không bị gộp); job cũ chưa có mã thì theo tên
   for (const j of activeJobs) {
     const name = j.contributorName.trim();
     if (!name && j.productionMode === 'INHOUSE') continue;
-    const k = name || '(Chưa gán CTV)';
+    const k = j.contributorId || name || '(Chưa gán CTV)';
     const list = contribMap.get(k) || [];
     list.push(j);
     contribMap.set(k, list);
   }
 
-  const byContributor: SelfContributorSummary[] = Array.from(contribMap.entries()).map(([cName, cJobs]) => {
+  const byContributor: SelfContributorSummary[] = Array.from(contribMap.entries()).map(([groupKey, cJobs]) => {
+    const cName = cJobs.find(j => j.contributorName.trim())?.contributorName.trim() || groupKey;
     const firstWithDetails = cJobs.find(j => j.contractNo || j.legalId || j.bankAccount) || cJobs[0];
     const acceptedUnpaidJobs = cJobs.filter(j => j.acceptanceStatus === 'PASSED' && j.feeGross > 0 && j.paymentStatus === 'NONE');
     const requestedJobs = cJobs.filter(j => j.paymentStatus === 'REQUESTED');

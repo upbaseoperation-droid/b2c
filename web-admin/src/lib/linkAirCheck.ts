@@ -3,7 +3,7 @@
  * (giữ khớp với crawler-worker/src/core/types.ts).
  */
 
-export type LinkAirPlatform = 'tiktok' | 'instagram' | 'facebook' | 'shopee';
+export type LinkAirPlatform = 'tiktok' | 'instagram' | 'facebook' | 'shopee' | 'youtube';
 export type LinkAirStatus = 'LIVE' | 'UNAVAILABLE' | 'INVALID_LINK' | 'BLOCKED' | 'ERROR';
 export type LinkAirVerdict = 'PASS' | 'REVIEW' | 'FAIL';
 export type LinkAirCheckStatus = 'PASS' | 'WARN' | 'FAIL';
@@ -106,6 +106,7 @@ export const LINK_AIR_PLATFORM_LABEL: Record<LinkAirPlatform, string> = {
   shopee: 'Shopee Video',
   facebook: 'Facebook',
   instagram: 'Instagram',
+  youtube: 'YouTube',
 };
 
 export const LINK_AIR_VERDICT_LABEL: Record<LinkAirVerdict, string> = {

@@ -1,0 +1,813 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
+
+#upbase-b2c-ext-root {
+  --ub-canvas: #F6F5F2;
+  --ub-surface: #FFFFFF;
+  --ub-sunken: #EFEDE8;
+  --ub-ink: #1A1A18;
+  --ub-ink-2: #4A4944;
+  --ub-ink-3: #7A7872;
+  --ub-line: #E4E2DC;
+  --ub-line-strong: #C8C5BC;
+  --ub-primary: #2B2B2B;
+  --ub-accent: #24457A;
+  --ub-pos: #1F6F43;
+  --ub-pos-fg: #1F6F43;
+  --ub-pos-bg: #E8F5EE;
+  --ub-warn: #9A6700;
+  --ub-warn-fg: #9A6700;
+  --ub-warn-bg: #FEF4E2;
+  --ub-crit: #B42318;
+  --ub-crit-fg: #B42318;
+  --ub-crit-bg: #FEECEB;
+
+  position: fixed;
+  top: 56px;
+  right: 12px;
+  z-index: 2147483640;
+  font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ub-ink);
+  box-sizing: border-box;
+}
+
+#upbase-b2c-ext-root.ub-Root--left {
+  right: auto;
+  left: 12px;
+}
+
+#upbase-b2c-ext-root * {
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.ub-LauncherWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ub-LauncherBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  background: var(--ub-surface);
+  color: var(--ub-ink);
+  border: 1px solid var(--ub-line-strong);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(26, 26, 24, 0.08);
+}
+
+.ub-LauncherBtn:hover {
+  background: var(--ub-sunken);
+}
+
+.ub-LauncherDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ub-pos-fg);
+}
+
+.ub-Panel {
+  width: 372px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 76px);
+  display: flex;
+  flex-direction: column;
+  background: var(--ub-surface);
+  border: 1px solid var(--ub-line-strong);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(26, 26, 24, 0.12);
+  overflow: hidden;
+}
+
+.ub-Panel--compact {
+  width: 288px;
+}
+
+.ub-Header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  background: var(--ub-canvas);
+  border-bottom: 1px solid var(--ub-line);
+  user-select: none;
+}
+
+.ub-HeaderTitleWrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: move;
+  flex: 1;
+  min-width: 0;
+}
+
+.ub-BrandMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.ub-BrandMark img,
+.ub-BrandMark svg {
+  height: 18px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.ub-HeaderTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ub-ink);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ub-HeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.ub-IconBtn {
+  height: 22px;
+  padding: 0 5px;
+  background: var(--ub-surface);
+  color: var(--ub-ink-2);
+  border: 1px solid var(--ub-line);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ub-IconBtn:hover {
+  background: var(--ub-sunken);
+  color: var(--ub-ink);
+}
+
+.ub-IconBtn--active {
+  background: var(--ub-sunken);
+  color: var(--ub-accent);
+  border-color: var(--ub-line-strong);
+  font-weight: 600;
+}
+
+.ub-ProfileStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--ub-surface);
+  border-bottom: 1px solid var(--ub-line);
+}
+
+.ub-ProfileLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ub-Avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ub-sunken);
+  border: 1px solid var(--ub-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ub-ink-2);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.ub-Avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ub-HandleName {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ub-ink);
+  word-break: break-word;
+}
+
+.ub-SubMeta {
+  font-size: 12px;
+  color: var(--ub-ink-2);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+}
+
+.ub-Badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ub-Badge--pos {
+  background: var(--ub-pos-bg);
+  color: var(--ub-pos-fg);
+}
+
+.ub-Badge--warn {
+  background: var(--ub-warn-bg);
+  color: var(--ub-warn-fg);
+}
+
+.ub-Badge--crit {
+  background: var(--ub-crit-bg);
+  color: var(--ub-crit-fg);
+}
+
+.ub-Badge--neutral {
+  background: var(--ub-sunken);
+  color: var(--ub-ink-2);
+}
+
+.ub-Tabs {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--ub-canvas);
+  border-bottom: 1px solid var(--ub-line);
+  padding: 0 2px;
+}
+
+.ub-TabBtn {
+  padding: 5px 2px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ub-ink-2);
+  cursor: pointer;
+  white-space: nowrap;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ub-TabBtn:hover {
+  color: var(--ub-ink);
+}
+
+.ub-TabBtn--active {
+  color: var(--ub-accent);
+  border-bottom-color: var(--ub-accent);
+  background: var(--ub-surface);
+}
+
+.ub-Body {
+  padding: 6px 8px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+
+.ub-StickyFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 5px 8px;
+  background: var(--ub-canvas);
+  border-top: 1px solid var(--ub-line);
+  flex-shrink: 0;
+}
+
+.ub-StatRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.ub-StatCard {
+  padding: 4px 5px;
+  background: var(--ub-canvas);
+  border: 1px solid var(--ub-line);
+  border-radius: 4px;
+}
+
+.ub-StatLabel {
+  font-size: 12px;
+  color: var(--ub-ink-2);
+  margin-bottom: 1px;
+  line-height: 1.25;
+}
+
+.ub-StatVal {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ub-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ub-QuickToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 3px 6px;
+  background: var(--ub-canvas);
+  border: 1px solid var(--ub-line);
+  border-radius: 4px;
+}
+
+.ub-CollapsibleTools {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ub-CollapsibleTools--open {
+  display: flex;
+}
+
+.ub-HealthStrip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  background: var(--ub-surface);
+  border: 1px solid var(--ub-line);
+  border-radius: 5px;
+  padding: 5px 8px;
+}
+
+.ub-HealthItemLabel,
+.ub-HealthLabel {
+  font-size: 12px;
+  color: var(--ub-ink-3);
+}
+
+.ub-HealthItemVal,
+.ub-HealthVal {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ub-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ub-FilterBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 5px 8px;
+  background: var(--ub-sunken);
+  border-radius: 5px;
+  font-size: 12px;
+}
+
+.ub-CheckLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ub-ink);
+  cursor: pointer;
+}
+
+.ub-Select,
+.ub-Input {
+  height: 26px;
+  padding: 0 6px;
+  background: var(--ub-surface);
+  color: var(--ub-ink);
+  border: 1px solid var(--ub-line-strong);
+  border-radius: 4px;
+  font-size: 12px;
+  width: 100%;
+}
+
+.ub-Select:focus,
+.ub-Input:focus {
+  outline: none;
+  border-color: var(--ub-accent);
+}
+
+.ub-CompareBox {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.ub-CompareItem {
+  padding: 5px 8px;
+  background: var(--ub-surface);
+  border: 1px solid var(--ub-line);
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ub-TableWrap {
+  border: 1px solid var(--ub-line);
+  border-radius: 5px;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 155px;
+}
+
+.ub-Table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.ub-Table th {
+  background: var(--ub-canvas);
+  color: var(--ub-ink-2);
+  font-weight: 600;
+  text-align: left;
+  padding: 4px 4px;
+  border-bottom: 1px solid var(--ub-line);
+  position: sticky;
+  top: 0;
+  white-space: nowrap;
+}
+
+.ub-Table td {
+  padding: 4px 4px;
+  border-bottom: 1px solid var(--ub-line);
+  color: var(--ub-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ub-Table tr:last-child td {
+  border-bottom: none;
+}
+
+.ub-Table tr:hover td {
+  background: var(--ub-canvas);
+}
+
+.ub-Num {
+  text-align: right !important;
+}
+
+.ub-SectionBox {
+  padding: 7px 9px;
+  background: var(--ub-canvas);
+  border: 1px solid var(--ub-line);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ub-SectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.ub-SectionTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ub-ink);
+  margin: 0;
+}
+
+.ub-KeyValGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+  font-size: 12px;
+}
+
+.ub-KeyValItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  border-bottom: 1px dashed var(--ub-line);
+  padding-bottom: 3px;
+}
+
+.ub-KeyLabel {
+  color: var(--ub-ink-2);
+}
+
+.ub-KeyVal {
+  font-weight: 600;
+  color: var(--ub-ink);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ub-FormGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.ub-Field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ub-Field--full {
+  grid-column: 1 / -1;
+}
+
+.ub-Label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ub-ink-2);
+}
+
+.ub-ProductCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  background: var(--ub-surface);
+  border: 1px solid var(--ub-line);
+  border-radius: 4px;
+  margin-top: 3px;
+}
+
+.ub-ProductCardInfo {
+  min-width: 0;
+  flex: 1;
+}
+
+.ub-ProductTitle,
+.ub-ProductCardTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ub-ink);
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.ub-ProductMeta,
+.ub-ProductCardMeta {
+  font-size: 12px;
+  color: var(--ub-ink-3);
+}
+
+.ub-TranscriptBox {
+  background: var(--ub-surface);
+  border: 1px solid var(--ub-line);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+.ub-TranscriptContent {
+  font-size: 12px;
+  color: var(--ub-ink-2);
+  max-height: 64px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  margin-top: 3px;
+}
+
+.ub-CommentBox {
+  padding: 6px 8px;
+  background: var(--ub-surface);
+  border: 1px solid var(--ub-line);
+  border-radius: 4px;
+}
+
+.ub-BtnRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.ub-BtnPrimary {
+  height: 28px;
+  padding: 0 10px;
+  background: var(--ub-primary);
+  color: #FFFFFF;
+  border: 1px solid var(--ub-primary);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ub-BtnPrimary:hover {
+  opacity: 0.92;
+}
+
+.ub-BtnPrimary:disabled,
+.ub-BtnSecondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ub-BtnSecondary {
+  height: 28px;
+  padding: 0 9px;
+  background: var(--ub-surface);
+  color: var(--ub-ink);
+  border: 1px solid var(--ub-line-strong);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ub-BtnSecondary:hover {
+  background: var(--ub-sunken);
+}
+
+.ub-Notice {
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ub-Notice--pos {
+  background: var(--ub-pos-bg);
+  color: var(--ub-pos-fg);
+  border: 1px solid #B7E1C8;
+}
+
+.ub-Notice--crit {
+  background: var(--ub-crit-bg);
+  color: var(--ub-crit-fg);
+  border: 1px solid #F7C5C0;
+}
+
+.ub-Notice--warn {
+  background: var(--ub-warn-bg);
+  color: var(--ub-warn-fg);
+  border: 1px solid #F6D99C;
+}
+
+.ub-SubNav {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  padding: 2px;
+  background: var(--ub-sunken);
+  border: 1px solid var(--ub-line);
+  border-radius: 5px;
+}
+
+.ub-SubNavBtn {
+  height: 23px;
+  padding: 0 2px;
+  background: transparent;
+  color: var(--ub-ink-2);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ub-SubNavBtn:hover {
+  color: var(--ub-ink);
+}
+
+.ub-SubNavBtn--active {
+  background: var(--ub-surface);
+  color: var(--ub-accent);
+  border-color: var(--ub-line-strong);
+}
+
+.ub-PlayerBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 5px 8px;
+  background: var(--ub-canvas);
+  border: 1px solid var(--ub-line);
+  border-radius: 5px;
+  font-size: 12px;
+}
+
+/* Nhãn số liệu & trạng thái bằng chữ gắn trực tiếp lên từng thẻ Video trên lưới TikTok/Douyin */
+.ub-GridCardOverlay {
+  font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: rgba(255, 255, 255, 0.96);
+  color: #1A1A18;
+  border: 1px solid #C8C5BC;
+  border-radius: 5px;
+  padding: 4px 6px;
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.25;
+  box-shadow: 0 1px 4px rgba(26, 26, 24, 0.06);
+  z-index: 25;
+  position: relative;
+}
+
+.ub-GridCardTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 3px;
+}
+
+.ub-GridTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ub-GridTag--pos {
+  background: #E8F5EE;
+  color: #1F6F43;
+}
+
+.ub-GridTag--warn {
+  background: #FEF4E2;
+  color: #9A6700;
+}
+
+.ub-GridTag--accent {
+  background: #EEF2F8;
+  color: #24457A;
+}
+
+.ub-GridCardStats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 6px;
+  color: #4A4944;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ub-GridCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 3px;
+  padding-top: 3px;
+  border-top: 1px dashed #E4E2DC;
+  font-size: 12px;
+}
+
+.ub-GridQuickBtn {
+  height: 22px;
+  padding: 0 6px;
+  background: #2B2B2B;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ub-GridQuickBtn:hover {
+  opacity: 0.9;
+}

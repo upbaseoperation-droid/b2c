@@ -51,3 +51,16 @@ Knowledge - MD/
 .claude/
 ECC/
 .github/
+
+# Temporary and build caches
+.next-prod*/
+.next-verify*/
+_metadata/
+*/_metadata/
+updog-mod/
+*.xml
+*.manifest.json
+web-admin/*.cjs
+web-admin/*.xml
+web-admin/tmp-*
+

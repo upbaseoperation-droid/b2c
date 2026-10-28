@@ -467,6 +467,14 @@ export function computeAirBookingComparisonReport(params: {
   filteredBookings.forEach((b) => {
     if (b.storeName) allStoreNames.add(b.storeName);
   });
+  kocListings.forEach((l) => {
+    if (l.storeName && (!selectedMonth || l.monthKey === selectedMonth)) {
+      if (selectedPic && normalizeName(l.assignedStaffName) !== normalizeName(selectedPic)) return;
+      if (selectedStore && normalizeName(l.storeName) !== normalizeName(selectedStore)) return;
+      if (selectedBrand && normalizeName(l.brandName) !== normalizeName(selectedBrand)) return;
+      allStoreNames.add(l.storeName);
+    }
+  });
 
   // 3. Xây dựng báo cáo theo từng gian hàng
   const storeReports: StoreAirReportItem[] = [];
@@ -530,23 +538,24 @@ export function computeAirBookingComparisonReport(params: {
       }
     });
 
+    const matchedListings = kocListings.filter(
+      (l) => normalizeName(l.storeName) === normalizeName(sName) && (!selectedMonth || l.monthKey === selectedMonth)
+    );
+
     // Nếu không có trong bookings, thử tìm trong kocListings
-    if (matchedBookings.length === 0 && kocListings.length > 0) {
-      const matchedListings = kocListings.filter((l) => normalizeName(l.storeName) === normalizeName(sName));
-      if (matchedListings.length > 0) {
-        actualBookedVideos = matchedListings.length;
-        matchedListings.forEach((l) => {
-          const fee = l.finalFee || l.proposedFee || 0;
-          actualNetSpend += fee;
-          actualGrossSpend += fee / 0.9;
-          if (l.actualAirDate || l.publishedVideoUrl || l.airVideoStage === 'AIRED') {
-            actualAiredVideos++;
-            actualAiredOntime++;
-          } else {
-            actualWaitingAir++;
-          }
-        });
-      }
+    if (matchedBookings.length === 0 && matchedListings.length > 0) {
+      actualBookedVideos = matchedListings.length;
+      matchedListings.forEach((l) => {
+        const fee = l.finalFee || l.proposedFee || 0;
+        actualNetSpend += fee;
+        actualGrossSpend += fee / 0.9;
+        if (l.actualAirDate || l.publishedVideoUrl || l.airVideoStage === 'AIRED') {
+          actualAiredVideos++;
+          actualAiredOntime++;
+        } else {
+          actualWaitingAir++;
+        }
+      });
     }
 
     const airProgressRate = planVideos > 0 ? (actualAiredVideos / planVideos) * 100 : (actualAiredVideos > 0 ? 100 : 0);
@@ -569,8 +578,8 @@ export function computeAirBookingComparisonReport(params: {
       airStatus = 'CẦN_ĐÔN_ĐỐC';
     }
 
-    const brandName = matchedPlan?.brandName || matchedBookings[0]?.brandName || 'Thương hiệu';
-    const picName = matchedPlan?.picName || matchedBookings[0]?.nguoiPhuTrach || 'Chưa gán';
+    const brandName = matchedPlan?.brandName || matchedBookings[0]?.brandName || matchedListings[0]?.brandName || 'Thương hiệu';
+    const picName = matchedPlan?.picName || matchedBookings[0]?.nguoiPhuTrach || matchedListings[0]?.assignedStaffName || 'Chưa gán';
     const leaderName = matchedPlan?.leaderName || matchedBookings[0]?.leaderName;
 
     storeReports.push({

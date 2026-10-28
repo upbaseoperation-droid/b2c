@@ -1,0 +1,107 @@
+{
+  "manifest_version": 3,
+  "name": "Upbase B2C - KOC, TikTok Seller, TikTok Ads & Nghiệm thu Air Link",
+  "version": "1.4.0",
+  "description": "Phân tích KOC, nhãn lưới bài đăng, bóc giỏ hàng & chấm điểm mặt hàng, phụ đề WebVTT, tải MP4/MP3/Ảnh trên TikTok & Douyin, đồng bộ Seller & Ads.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "clipboardWrite",
+    "declarativeNetRequest",
+    "downloads"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "upbase_tiktok_net_rules",
+        "enabled": true,
+        "path": "net_rules.json"
+      }
+    ]
+  },
+  "host_permissions": [
+    "https://*.tiktok.com/*",
+    "https://*.tiktokshop.com/*",
+    "https://*.tiktokglobalshop.com/*",
+    "https://*.tiktokcdn.com/*",
+    "https://*.tiktokcdn-us.com/*",
+    "https://*.tiktokv.com/*",
+    "https://*.douyin.com/*",
+    "https://*.instagram.com/*",
+    "https://*.upbase.vn/*",
+    "http://localhost:3000/*",
+    "http://127.0.0.1:3000/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Upbase B2C KOC, Seller, Ads & Air Link Extension",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon-16.png",
+      "32": "icon-32.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "upbase-logo.png",
+        "icon-32.png",
+        "icon-128.png",
+        "koc-master-db.json"
+      ],
+      "matches": [
+        "https://*.tiktok.com/*",
+        "https://*.tiktokshop.com/*",
+        "https://*.tiktokglobalshop.com/*",
+        "https://*.douyin.com/*",
+        "https://*.instagram.com/*"
+      ]
+    }
+  ],
+  "content_scripts": [
+    {
+      "run_at": "document_start",
+      "world": "MAIN",
+      "matches": [
+        "https://*.tiktok.com/*",
+        "https://*.tiktokshop.com/*",
+        "https://*.tiktokglobalshop.com/*",
+        "https://*.douyin.com/*",
+        "https://*.instagram.com/*"
+      ],
+      "js": [
+        "page-interceptor.js"
+      ]
+    },
+    {
+      "run_at": "document_idle",
+      "matches": [
+        "https://*.tiktok.com/*",
+        "https://*.tiktokshop.com/*",
+        "https://*.tiktokglobalshop.com/*",
+        "https://*.douyin.com/*",
+        "https://*.instagram.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "styles.css"
+      ]
+    }
+  ]
+}

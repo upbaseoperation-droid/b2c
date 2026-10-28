@@ -32,7 +32,7 @@ import type {
   KocItem,
   StorePortfolioItem,
 } from '../../lib/types';
-import { formatNumber, formatVnd, formatVndShort, getVietnamDateYmd } from '../../lib/format';
+import { formatDate, formatNumber, formatVnd, formatVndShort, getVietnamDateYmd } from '../../lib/format';
 
 const parseThousandNumberInput = (raw: string): number => {
   const digits = String(raw || '').replace(/[^\d]/g, '');
@@ -67,13 +67,37 @@ import {
   normalizeTikTokId,
 } from '../../lib/staffBrandListingSheet';
 import type { TikTokVideoInspectionResult } from '../../lib/tiktokVideoInspector';
+import type { ContractRecord } from '../../lib/contracts/types';
+import { documentOfTemplate } from '../../lib/planDealLink';
+import { contractApi, type ContractBootstrap } from '../contracts/api';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
 import { LarkPaymentRequestModal } from '../booking/LarkPaymentRequestModal';
 import { DealDetailDrawer } from '../booking/DealDetailDrawer';
 import { DraftBbntPreviewModal } from '../contracts/DraftBbntPreviewModal';
 import { KocQuickViewModal } from '../shortlist/KocQuickViewModal';
 import type { LarkPaymentRequestSlip } from '../../lib/larkPaymentRequestEngine';
-import { ActionMenu, Button, Field, Input, Modal, PageActions, Segmented, Select, Status } from '../ui';
+import {
+  ActionMenu,
+  Button,
+  Chips,
+  DataTable,
+  EmptyState,
+  Field,
+  FilterBar,
+  Input,
+  Modal,
+  PageActions,
+  Pagination,
+  Panel,
+  Person,
+  Segmented,
+  Select,
+  Stat,
+  StatRow,
+  Status,
+  Textarea,
+  type Column,
+} from '../ui';
 
 export interface ApprovedBookingListViewProps {
   kocs: KocItem[];
@@ -132,16 +156,81 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   const [selectedStore, setSelectedStore] = useState<string>(initialStoreName || 'ALL');
   const [filterPipeline, setFilterPipeline] = useState<string>('ALL');
   const [filterAcceptance, setFilterAcceptance] = useState<string>('ALL');
+  const [stageChip, setStageChip] = useState<'ALL' | 'PENDING_DEAL' | 'PENDING_SOW' | 'PENDING_ACCEPTANCE' | 'ACCEPTED' | 'SETTLED'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewColumnMode, setViewColumnMode] = useState<'ALL_32' | 'BOOKING_FOCUS' | 'ACCEPTANCE_FOCUS'>('ALL_32');
   const [viewLayout, setViewLayout] = useState<'LIST_DRAWER' | 'LARK_GRID'>('LIST_DRAWER');
   const [selectedDrawerItemId, setSelectedDrawerItemId] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(20);
+  const [contractRecords, setContractRecords] = useState<ContractRecord[]>([]);
 
-  const [items, setItems] = useState<ApprovedBookingListItem[]>(() =>
+  const [rawItems, setItems] = useState<ApprovedBookingListItem[]>(() =>
     loadApprovedBookingList(kocs, stores, deals, currentUserName)
   );
+
+  // Đồng bộ tự động khi deals hoặc kocs từ phân hệ khác (Hợp đồng, PlanDealBoard, Danh bạ KOC) thay đổi
+  const [prevSyncDeps, setPrevSyncDeps] = useState<{ deals: BookingDealItem[]; kocs: KocItem[] }>({
+    deals,
+    kocs,
+  });
+  if (prevSyncDeps.deals !== deals || prevSyncDeps.kocs !== kocs) {
+    setPrevSyncDeps({ deals, kocs });
+    setItems(loadApprovedBookingList(kocs, stores, deals, currentUserName));
+  }
+
+  // Tải danh sách hồ sơ Hợp đồng / SOW / BBNT thực tế từ /api/contracts (có fallback an toàn)
+  useEffect(() => {
+    let cancelled = false;
+    contractApi<ContractBootstrap>('/api/contracts')
+      .then((res) => {
+        if (!cancelled && Array.isArray(res?.records)) {
+          setContractRecords(res.records);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [deals]);
+
+  // RULE-SYNC-01 & RULE-PERF-01: Đồng bộ O(1) trạng thái ký HĐNT / Phụ lục SOW thực tế từ /api/contracts vào danh sách
+  const items = useMemo(() => {
+    if (contractRecords.length === 0) return rawItems;
+    const sowByDeal = new Map<string, ContractRecord>();
+    const hdntByKoc = new Map<string, ContractRecord>();
+    for (const r of contractRecords) {
+      const docKind = documentOfTemplate(r.templateId);
+      if (docKind === 'SOW') {
+        const idKey = (r.dealId || '').trim().toUpperCase();
+        const codeKey = (r.dealCode || '').trim().toUpperCase();
+        if (idKey && !sowByDeal.has(idKey)) sowByDeal.set(idKey, r);
+        if (codeKey && !sowByDeal.has(codeKey)) sowByDeal.set(codeKey, r);
+      } else if (docKind === 'HDNT' && r.kocId && !hdntByKoc.has(r.kocId)) {
+        hdntByKoc.set(r.kocId, r);
+      }
+    }
+    return rawItems.map((it) => {
+      const codeKey = (it.maBooking || '').trim().toUpperCase();
+      const dealIdKey = (it.linkedDealId || `deal-from-32-${it.id}`).trim().toUpperCase();
+      const matchedSow = (codeKey ? sowByDeal.get(codeKey) : undefined) || sowByDeal.get(dealIdKey);
+      const matchedHdnt = it.kocId ? hdntByKoc.get(it.kocId) : undefined;
+      if (!matchedSow && !matchedHdnt) return it;
+      const isSowSigned = matchedSow?.signing.at(-1)?.status === 'COMPLETED';
+      return {
+        ...it,
+        masterContractCode: matchedHdnt?.title || it.masterContractCode,
+        contractAppendixCode: matchedSow?.title || it.contractAppendixCode,
+        contractAppendixStatus: isSowSigned
+          ? 'ĐÃ_KÝ'
+          : matchedSow
+          ? 'CHỜ_KÝ'
+          : it.contractAppendixStatus,
+      };
+    });
+  }, [rawItems, contractRecords]);
 
   const [prevInitKey, setPrevInitKey] = useState(`${initialStoreName || ''}|${initialMonthKey || ''}`);
   const currentInitKey = `${initialStoreName || ''}|${initialMonthKey || ''}`;
@@ -193,7 +282,8 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     setIsDrawerOpen(true);
   };
 
-  const filteredItems = useMemo(() => {
+  // Danh sách sau khi lọc theo Tháng + Gian hàng + Từ khóa (dùng để tính số lượng trên Chips)
+  const scopedItems = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return items.filter((it) => {
       if (selectedMonth !== 'ALL' && it.thangPlan !== selectedMonth) return false;
@@ -207,6 +297,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
           it.idKenh.toLowerCase().includes(q) ||
           it.tenKenh.toLowerCase().includes(q) ||
           it.maBooking.toLowerCase().includes(q) ||
+          (it.contractAppendixCode || '').toLowerCase().includes(q) ||
           it.storeName.toLowerCase().includes(q) ||
           it.brandName.toLowerCase().includes(q) ||
           it.sanPham.toLowerCase().includes(q) ||
@@ -217,10 +308,64 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     });
   }, [items, selectedMonth, selectedStore, filterPipeline, filterAcceptance, searchQuery, editingRowId]);
 
+  const chipCounts = useMemo(() => {
+    let pendingDeal = 0;
+    let pendingSow = 0;
+    let pendingAcceptance = 0;
+    let accepted = 0;
+    let settled = 0;
+    for (const it of scopedItems) {
+      const hasBo = it.bookingOrderCreated && Boolean(it.maBooking);
+      const isSowSigned = it.contractAppendixStatus === 'ĐÃ_KÝ';
+      const isAccepted = it.acceptanceStatus === 'DA_NGHIEM_THU';
+      const isSettled =
+        it.trangThaiPhieuThanhToan === 'Đã lập ĐNTT' ||
+        it.trangThaiPhieuThanhToan === 'Đã thanh toán';
+      if (!hasBo) pendingDeal++;
+      else if (!isSowSigned) pendingSow++;
+      if (hasBo && !isAccepted) pendingAcceptance++;
+      if (isAccepted) accepted++;
+      if (isSettled) settled++;
+    }
+    return {
+      all: scopedItems.length,
+      pendingDeal,
+      pendingSow,
+      pendingAcceptance,
+      accepted,
+      settled,
+    };
+  }, [scopedItems]);
+
+  const filteredItems = useMemo(() => {
+    if (stageChip === 'ALL') return scopedItems;
+    return scopedItems.filter((it) => {
+      if (it.id === editingRowId) return true;
+      const hasBo = it.bookingOrderCreated && Boolean(it.maBooking);
+      const isSowSigned = it.contractAppendixStatus === 'ĐÃ_KÝ';
+      const isAccepted = it.acceptanceStatus === 'DA_NGHIEM_THU';
+      const isSettled =
+        it.trangThaiPhieuThanhToan === 'Đã lập ĐNTT' ||
+        it.trangThaiPhieuThanhToan === 'Đã thanh toán';
+      if (stageChip === 'PENDING_DEAL') return !hasBo;
+      if (stageChip === 'PENDING_SOW') return hasBo && !isSowSigned;
+      if (stageChip === 'PENDING_ACCEPTANCE') return hasBo && !isAccepted;
+      if (stageChip === 'ACCEPTED') return isAccepted;
+      if (stageChip === 'SETTLED') return isSettled;
+      return true;
+    });
+  }, [scopedItems, stageChip, editingRowId]);
+
+  const paginatedListItems = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredItems.slice(start, start + pageSize);
+  }, [filteredItems, page, pageSize]);
+
   // Thống kê tổng hợp trên List Duyệt Book
   const stats = useMemo(() => {
     const total = filteredItems.length;
     const boCreatedCount = filteredItems.filter((i) => i.bookingOrderCreated && i.maBooking).length;
+    const sowSignedCount = filteredItems.filter((i) => i.contractAppendixStatus === 'ĐÃ_KÝ').length;
     const acceptedCount = filteredItems.filter((i) => i.acceptanceStatus === 'DA_NGHIEM_THU').length;
     const totalFinalNet = filteredItems.reduce((s, i) => s + (Number(i.chiPhiBookingNetCuoi) || 0), 0);
     const totalGross = filteredItems.reduce((s, i) => s + (Number(i.chiPhiGrossKemThue) || 0), 0);
@@ -229,6 +374,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     return {
       total,
       boCreatedCount,
+      sowSignedCount,
       pendingBoCount: total - boCreatedCount,
       acceptedCount,
       totalFinalNet,
@@ -238,12 +384,41 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     };
   }, [filteredItems]);
 
+  // Các trường thuộc điều khoản hợp đồng SOW bị khóa sau khi Phụ lục SOW đã ký hoàn tất (ĐÃ_KÝ)
+  const SOW_LOCKED_FIELDS = useMemo(
+    () =>
+      new Set<keyof ApprovedBookingListItem>([
+        'idKenh',
+        'sanPham',
+        'plannedAirDate',
+        'chiPhiBookingNetCuoi',
+        'soTienTamUngTruoc',
+        'loaiTaiKhoanThanhToan',
+      ]),
+    []
+  );
+
   // Chỉnh sửa trực tiếp trên từng dòng (Ngày air chốt, Giá cuối cùng, Tạm ứng, Sản phẩm, Ghi chú...)
   const handleFieldChange = <K extends keyof ApprovedBookingListItem>(
     id: string,
     field: K,
     value: ApprovedBookingListItem[K]
   ) => {
+    const targetRow = items.find((i) => i.id === id);
+    if (
+      targetRow &&
+      targetRow.contractAppendixStatus === 'ĐÃ_KÝ' &&
+      SOW_LOCKED_FIELDS.has(field)
+    ) {
+      onNotify?.(
+        `Phụ lục SOW (${
+          targetRow.contractAppendixCode || `PL-${targetRow.maBooking}-01`
+        }) đã ký hoàn tất — điều khoản hợp đồng đã khóa. Để điều chỉnh, vui lòng mở cấu hình Deal và chọn "Lập Phụ lục bổ sung".`,
+        'warning'
+      );
+      return;
+    }
+
     setEditingRowId(id);
     let updatedRowRef: ApprovedBookingListItem | null = null;
     updateItemsAndSync((prev) =>
@@ -320,6 +495,26 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     () => items.find((i) => i.id === dealBuilderTargetId) || null,
     [items, dealBuilderTargetId]
   );
+
+  const isDealBuilderSowLocked = dealDraftAppendixStatus === 'ĐÃ_KÝ';
+
+  const nextAmendmentAppendixCode = useMemo(() => {
+    const baseCode = dealDraftCode || dealBuilderItem?.maBooking || 'BO2610-201';
+    const currentPl = dealDraftAppendixCode || '';
+    const matchSeq = currentPl.match(/-(\d+)$/);
+    const nextSeq = matchSeq ? Number(matchSeq[1]) + 1 : 2;
+    return generateDealAppendixCode(baseCode, nextSeq);
+  }, [dealDraftCode, dealDraftAppendixCode, dealBuilderItem]);
+
+  const handleUnlockForAmendmentAppendix = () => {
+    const nextCode = nextAmendmentAppendixCode;
+    setDealDraftAppendixCode(nextCode);
+    setDealDraftAppendixStatus('CHỜ_KÝ');
+    onNotify?.(
+      `Đã mở khóa cấu hình Deal để lập Phụ lục bổ sung / điều chỉnh ${nextCode} (Trạng thái: Chờ ký).`,
+      'info'
+    );
+  };
 
   const openDealBuilderModal = (item: ApprovedBookingListItem) => {
     const seqIdx = items.findIndex((x) => x.id === item.id);
@@ -1389,8 +1584,261 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     );
   };
 
+  const listColumns = useMemo<Column<ApprovedBookingListItem>[]>(
+    () => [
+      {
+        key: 'koc',
+        header: 'KOC & Kênh phát sóng',
+        width: 210,
+        render: (item) => (
+          <Person
+            name={item.tenKenh || item.idKenh}
+            sub={`@${item.idKenh.replace(/^@/, '')} · ${item.klGrade || 'KL3'}`}
+            size={28}
+          />
+        ),
+      },
+      {
+        key: 'deal',
+        header: 'Mã Deal & Phụ lục SOW',
+        width: 175,
+        render: (item) => (
+          <div className="leading-tight space-y-0.5">
+            <div className="font-code font-medium text-ink">
+              {item.maBooking || 'Chưa cấp mã BO'}
+            </div>
+            <div className="text-2xs font-code text-ink-3 truncate max-w-[165px]">
+              {item.contractAppendixCode ||
+                (item.maBooking ? `PL-${item.maBooking}-01` : 'Chưa lập phụ lục')}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'store',
+        header: 'Gian hàng & Sản phẩm',
+        width: 205,
+        render: (item) => (
+          <div className="leading-tight space-y-0.5">
+            <div className="font-medium text-ink truncate max-w-[195px]">
+              {item.storeName}
+            </div>
+            <div
+              className="text-2xs text-ink-3 truncate max-w-[195px]"
+              title={item.sanPham}
+            >
+              {item.sanPham || item.brandName} · {item.thangPlan}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'cost',
+        header: 'Chi phí Net / Gross',
+        align: 'right',
+        width: 145,
+        render: (item) => (
+          <div className="leading-tight space-y-0.5 tabular-nums">
+            <div className="font-semibold text-ink">
+              {formatVnd(item.chiPhiBookingNetCuoi)}
+            </div>
+            <div className="text-2xs text-ink-3">
+              Gross {formatVndShort(item.chiPhiGrossKemThue)}
+              {item.soTienTamUngTruoc > 0
+                ? ` · Ứng ${formatVndShort(item.soTienTamUngTruoc)}`
+                : ''}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'air',
+        header: 'Lịch Air & Hiệu quả 30d',
+        width: 175,
+        render: (item) => (
+          <div className="leading-tight space-y-0.5 tabular-nums">
+            <div className="font-code text-ink">
+              {item.actualAirDate
+                ? formatDate(item.actualAirDate)
+                : item.plannedAirDate
+                ? `Dự kiến ${formatDate(item.plannedAirDate)}`
+                : 'Chưa chốt lịch'}
+            </div>
+            <div className="text-2xs text-ink-3 truncate max-w-[165px]">
+              {item.linkAir
+                ? `GMV ${formatVndShort(item.gmv30d)} · ROI ${item.roi30d.toFixed(2)}x`
+                : item.trangThaiSlaAir}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'status',
+        header: 'Trạng thái',
+        width: 155,
+        render: (item) => {
+          const hasBo = item.bookingOrderCreated && Boolean(item.maBooking);
+          const isSowSigned = item.contractAppendixStatus === 'ĐÃ_KÝ';
+          const isAccepted = item.acceptanceStatus === 'DA_NGHIEM_THU';
+          const isPaid = item.trangThaiPhieuThanhToan === 'Đã thanh toán';
+          const statusObj = isPaid
+            ? { label: 'Đã thanh toán', tone: 'positive' as const, sub: item.larkSlipCode || 'Hoàn tất' }
+            : isAccepted
+            ? { label: 'Đã nghiệm thu', tone: 'positive' as const, sub: item.trangThaiPhieuThanhToan }
+            : isSowSigned
+            ? { label: 'Đang thực thi', tone: 'info' as const, sub: 'Đã ký SOW · Chờ air' }
+            : hasBo
+            ? { label: 'Chờ ký SOW', tone: 'warning' as const, sub: 'Đã cấp mã Deal' }
+            : { label: 'Chờ tạo deal', tone: 'warning' as const, sub: 'Chốt giá & ngày air' };
+          const steps = [hasBo, isSowSigned, isAccepted, isPaid];
+          return (
+            <div className="leading-tight space-y-1">
+              <div className="flex items-center gap-2">
+                <Status tone={statusObj.tone}>{statusObj.label}</Status>
+                <span
+                  className="inline-flex items-center gap-1"
+                  title="Tiến trình 4 chặng: Tạo Deal → Ký SOW → Nghiệm thu → Thanh toán"
+                >
+                  {steps.map((done, idx) => (
+                    <span
+                      key={idx}
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        done ? 'bg-positive' : 'bg-line-strong'
+                      }`}
+                    />
+                  ))}
+                </span>
+              </div>
+              <div className="text-2xs text-ink-3 truncate max-w-[145px]">
+                {statusObj.sub}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        key: 'actions',
+        header: 'Thao tác',
+        align: 'right',
+        width: 150,
+        render: (item) => {
+          const hasBo = item.bookingOrderCreated && Boolean(item.maBooking);
+          const isSowSigned = item.contractAppendixStatus === 'ĐÃ_KÝ';
+          const isAccepted = item.acceptanceStatus === 'DA_NGHIEM_THU';
+          const mappedDeal = buildBookingDealFromApprovedItem(item);
+
+          return (
+            <div
+              className="inline-flex items-center justify-end gap-1.5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {!hasBo ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => openDealBuilderModal(item)}
+                >
+                  Tạo deal
+                </Button>
+              ) : !isSowSigned && onOpenContractForDeal ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => onOpenContractForDeal(mappedDeal, 'SOW')}
+                >
+                  Ký SOW
+                </Button>
+              ) : !isAccepted ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => openAcceptanceModalForRow(item)}
+                >
+                  Nghiệm thu
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => openLarkPaymentModalForItem(item)}
+                >
+                  Lập ĐNTT
+                </Button>
+              )}
+
+              <ActionMenu
+                items={[
+                  {
+                    label: 'Xem hồ sơ Deal & SOW',
+                    icon: Eye,
+                    onSelect: () => openDrawerForItem(item),
+                  },
+                  {
+                    label: 'Cấu hình điều khoản SOW',
+                    icon: FileCheck,
+                    onSelect: () => openDealBuilderModal(item),
+                  },
+                  ...(onOpenContractForDeal
+                    ? [
+                        {
+                          label: 'Hợp đồng nguyên tắc (HĐNT)',
+                          icon: FileText,
+                          onSelect: () => onOpenContractForDeal(mappedDeal, 'HDNT'),
+                        },
+                        {
+                          label: isSowSigned ? 'Xem Phụ lục SOW' : 'Soạn & Ký Phụ lục SOW',
+                          icon: FileText,
+                          onSelect: () => onOpenContractForDeal(mappedDeal, 'SOW'),
+                        },
+                        {
+                          label: 'Biên bản nghiệm thu (BBNT)',
+                          icon: FileText,
+                          onSelect: () => onOpenContractForDeal(mappedDeal, 'BBNT'),
+                        },
+                      ]
+                    : []),
+                  {
+                    label: 'Xem nháp BBNT',
+                    icon: FileText,
+                    onSelect: () => setDraftBbntPreviewDeal(mappedDeal),
+                  },
+                  {
+                    label: 'Nghiệm thu video & chỉ số',
+                    icon: Video,
+                    onSelect: () => openAcceptanceModalForRow(item),
+                  },
+                  {
+                    label: 'Lập phiếu thanh toán Lark',
+                    icon: Send,
+                    onSelect: () => openLarkPaymentModalForItem(item),
+                  },
+                  {
+                    label: 'Xem nhanh hồ sơ KOC',
+                    icon: Eye,
+                    onSelect: () => setQuickViewApprovedItem(item),
+                  },
+                  ...(item.linkAir
+                    ? [
+                        {
+                          label: 'Đối soát kịch bản & giỏ hàng',
+                          icon: Eye,
+                          onSelect: () => openDeepVideoInspector(item),
+                        },
+                      ]
+                    : []),
+                ]}
+              />
+            </div>
+          );
+        },
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [onOpenContractForDeal]
+  );
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <PageActions>
         {onNavigateTab && (
           <Button
@@ -1404,598 +1852,252 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               })
             }
           >
-            Về Sheet Listing
+            Về Bảng Listing
           </Button>
         )}
-        {onNavigateTab && (
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={ExternalLink}
-            onClick={() => onNavigateTab('booking')}
-          >
-            Mở Quản lý Booking
-          </Button>
-        )}
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={RefreshCw}
+          onClick={handlePullBrandApprovedFromSheets}
+        >
+          Đồng bộ từ Sheet
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={Video}
+          onClick={() => openAcceptanceModalForRow()}
+        >
+          Nghiệm thu video
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={Send}
+          onClick={() => openLarkPaymentModalForItem()}
+        >
+          Lập phiếu Lark
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          icon={FileCheck}
+          onClick={() => handleCreateBookingOrders()}
+        >
+          Tạo Deal &amp; SOW ({selectedIds.length > 0 ? selectedIds.length : stats.pendingBoCount})
+        </Button>
+        <ActionMenu
+          label="Tiện ích khác"
+          items={[
+            {
+              label: 'Thêm dòng trực tiếp',
+              icon: Plus,
+              onSelect: handleAddDirectApprovedRow,
+            },
+            {
+              label: 'Sao chép Google Sheet (Kèm tiêu đề)',
+              icon: Copy,
+              onSelect: () => void handleCopyTsv(true),
+            },
+            {
+              label: 'Sao chép Google Sheet (Chỉ dữ liệu)',
+              icon: Copy,
+              onSelect: () => void handleCopyTsv(false),
+            },
+            {
+              label: 'Xuất file CSV (Chuẩn File 3.2)',
+              icon: Download,
+              onSelect: () =>
+                downloadApprovedBookingListCsv(
+                  filteredItems,
+                  selectedMonth,
+                  selectedStore
+                ),
+            },
+          ]}
+        />
       </PageActions>
 
-      {/* Khung làm việc tích hợp: Ngữ cảnh + Chỉ số + Bộ lọc + Bảng List Duyệt Book */}
-      <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
-        {/* Tầng 1: Chọn Tháng / Gian hàng + Chế độ xem cột + Chỉ số tóm tắt */}
-        <div className="px-3 py-2 border-b border-line bg-sunken/40 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              aria-label="Chọn tháng"
-              className="h-7 px-2 text-xs font-semibold rounded-md border border-line-strong bg-surface text-ink shrink-0 focus:outline-none focus:border-ink"
-            >
-              {MONTH_OPTIONS.map((m) => (
-                <option key={m} value={m}>
-                  {m === 'ALL' ? 'Tất cả tháng' : `Tháng ${m}`}
-                </option>
-              ))}
-            </select>
+      {/* Hàng 4 chỉ số tổng quan chuẩn DESIGN_SYSTEM.md §5 & §7 */}
+      <StatRow size="sm">
+        <Stat
+          label="Tổng deal duyệt"
+          value={stats.total}
+          numeric={stats.total}
+          note={`${stats.boCreatedCount} đã cấp mã BO · ${stats.pendingBoCount} chờ tạo deal`}
+        />
+        <Stat
+          label="Ngân sách Net chốt"
+          value={formatVnd(stats.totalFinalNet)}
+          numeric={stats.totalFinalNet}
+          note={`Gross kèm thuế ${formatVndShort(stats.totalGross)}`}
+        />
+        <Stat
+          label="Phụ lục SOW & Nghiệm thu"
+          value={`${stats.acceptedCount} / ${stats.total}`}
+          progress={{ value: stats.acceptedCount, max: Math.max(1, stats.total) }}
+          note={`${stats.sowSignedCount} đã ký SOW · ${stats.acceptedCount} đã nghiệm thu video`}
+        />
+        <Stat
+          label="Doanh số GMV 30 ngày"
+          value={formatVnd(stats.totalGmv30d)}
+          numeric={stats.totalGmv30d}
+          tone={stats.avgRoi >= 2 ? 'positive' : undefined}
+          note={`ROI trung bình ${stats.avgRoi}x`}
+        />
+      </StatRow>
 
-            <select
-              value={selectedStore}
-              onChange={(e) => setSelectedStore(e.target.value)}
-              aria-label="Chọn Gian hàng / Brand"
-              className="h-7 px-2.5 text-xs font-semibold rounded-md border border-line-strong bg-surface text-ink max-w-[240px] truncate shrink-0 focus:outline-none focus:border-ink"
-            >
-              <option value="ALL">Tất cả Brand / Gian hàng ({items.length})</option>
-              {b2cStores.map((st) => {
-                const count = items.filter(
-                  (i) =>
-                    i.storeName === st.storeName &&
-                    (selectedMonth === 'ALL' || i.thangPlan === selectedMonth)
-                ).length;
-                return (
-                  <option key={st.id} value={st.storeName}>
-                    {st.brandName} — {st.storeName} ({count})
-                  </option>
-                );
-              })}
-            </select>
+      {/* Khung bảng chính chuẩn Panel flush + FilterBar + Chips + DataTable + Pagination */}
+      <Panel flush>
+        <div className="p-3.5 sm:p-4 border-b border-line bg-surface">
+          <FilterBar
+            search={{
+              value: searchQuery,
+              onChange: (v) => {
+                setSearchQuery(v);
+                setPage(1);
+              },
+              placeholder: 'Tìm mã BO, mã SOW, @id_kênh, tên KOC, sản phẩm...',
+            }}
+            resultCount={filteredItems.length}
+            filters={
+              <>
+                <Select
+                  value={selectedMonth}
+                  onChange={(e) => {
+                    setSelectedMonth(e.target.value);
+                    setPage(1);
+                  }}
+                  aria-label="Chọn tháng"
+                  className="w-auto min-w-[130px]"
+                >
+                  {MONTH_OPTIONS.map((m) => (
+                    <option key={m} value={m}>
+                      {m === 'ALL' ? 'Tất cả tháng' : `Tháng ${m}`}
+                    </option>
+                  ))}
+                </Select>
 
-            <span className="hidden sm:inline-block h-4 w-px bg-line mx-0.5 shrink-0" />
+                <Select
+                  value={selectedStore}
+                  onChange={(e) => {
+                    setSelectedStore(e.target.value);
+                    setPage(1);
+                  }}
+                  aria-label="Chọn Gian hàng"
+                  className="w-auto min-w-[200px] max-w-[260px]"
+                >
+                  <option value="ALL">Tất cả gian hàng ({items.length})</option>
+                  {b2cStores.map((st) => {
+                    const count = items.filter(
+                      (i) =>
+                        i.storeName === st.storeName &&
+                        (selectedMonth === 'ALL' || i.thangPlan === selectedMonth)
+                    ).length;
+                    return (
+                      <option key={st.id} value={st.storeName}>
+                        {st.brandName} — {st.storeName} ({count})
+                      </option>
+                    );
+                  })}
+                </Select>
 
-            <Segmented
-              value={viewLayout}
-              onChange={(val) => setViewLayout(val as 'LIST_DRAWER' | 'LARK_GRID')}
-              items={[
-                { key: 'LIST_DRAWER', label: '📋 Danh sách & Chi tiết (Pro)' },
-                { key: 'LARK_GRID', label: '📊 Bảng tính Lark (Grid)' },
-              ]}
-            />
+                <Segmented
+                  value={viewLayout}
+                  onChange={(val) => setViewLayout(val as 'LIST_DRAWER' | 'LARK_GRID')}
+                  items={[
+                    { key: 'LIST_DRAWER', label: 'Danh sách' },
+                    { key: 'LARK_GRID', label: 'Bảng tính Lark' },
+                  ]}
+                />
 
-            {viewLayout === 'LARK_GRID' && (
-              <Segmented
-                value={viewColumnMode}
-                onChange={setViewColumnMode}
+                {viewLayout === 'LARK_GRID' && (
+                  <Segmented
+                    value={viewColumnMode}
+                    onChange={setViewColumnMode}
+                    items={[
+                      { key: 'ALL_32', label: 'Đầy đủ cột' },
+                      { key: 'BOOKING_FOCUS', label: 'Chốt Deal & SOW' },
+                      { key: 'ACCEPTANCE_FOCUS', label: 'Nghiệm thu' },
+                    ]}
+                  />
+                )}
+
+                {selectedIds.length > 0 && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    icon={Trash2}
+                    onClick={handleDeleteSelected}
+                  >
+                    Xóa ({selectedIds.length})
+                  </Button>
+                )}
+              </>
+            }
+            chips={
+              <Chips
+                label="Trạng thái"
+                value={stageChip}
+                onChange={(val) => {
+                  setStageChip(val);
+                  setPage(1);
+                }}
                 items={[
-                  { key: 'ALL_32', label: 'Đầy đủ cột' },
-                  { key: 'BOOKING_FOCUS', label: 'Chốt Deal & SOW' },
-                  { key: 'ACCEPTANCE_FOCUS', label: 'Nghiệm thu' },
+                  { key: 'ALL', label: 'Tất cả', count: chipCounts.all },
+                  { key: 'PENDING_DEAL', label: 'Chờ tạo deal', count: chipCounts.pendingDeal },
+                  { key: 'PENDING_SOW', label: 'Chờ ký SOW', count: chipCounts.pendingSow },
+                  { key: 'PENDING_ACCEPTANCE', label: 'Chờ nghiệm thu', count: chipCounts.pendingAcceptance },
+                  { key: 'ACCEPTED', label: 'Đã nghiệm thu', count: chipCounts.accepted },
+                  { key: 'SETTLED', label: 'Đã lập ĐNTT', count: chipCounts.settled },
                 ]}
               />
-            )}
-          </div>
-
-          {/* Cụm chỉ số tóm tắt gọn trên 1 dòng */}
-          <div className="flex flex-wrap items-center gap-3 px-2.5 py-1 rounded-md bg-surface border border-line text-xs shrink-0">
-            <div className="flex items-center gap-1" title={`${stats.boCreatedCount} đã tạo Deal & SOW · ${stats.pendingBoCount} chờ tạo Deal`}>
-              <span className="text-ink-3">Duyệt:</span>
-              <strong className="text-ink tabular-nums">{stats.total} KOC</strong>
-              <span className="text-2xs text-ink-3 tabular-nums">
-                ({stats.boCreatedCount} Deal)
-              </span>
-            </div>
-            <span className="h-3 w-px bg-line" />
-            <div className="flex items-center gap-1" title={`Gross kèm thuế: ${formatVnd(stats.totalGross)}`}>
-              <span className="text-ink-3">Net chốt:</span>
-              <strong className="text-ink tabular-nums">
-                {formatVndShort(stats.totalFinalNet)}
-              </strong>
-              <span className="text-2xs text-ink-3 tabular-nums">
-                (Gross {formatVndShort(stats.totalGross)})
-              </span>
-            </div>
-            <span className="h-3 w-px bg-line" />
-            <div className="flex items-center gap-1">
-              <span className="text-ink-3">Nghiệm thu:</span>
-              <strong className="text-positive tabular-nums">
-                {stats.acceptedCount}/{stats.total}
-              </strong>
-            </div>
-            <span className="h-3 w-px bg-line" />
-            <div className="flex items-center gap-1">
-              <span className="text-ink-3">GMV 30d:</span>
-              <strong className="text-ink tabular-nums">
-                {formatVndShort(stats.totalGmv30d)}
-              </strong>
-              <span className="text-2xs font-semibold text-emerald-700 tabular-nums">
-                · ROI {stats.avgRoi}x
-              </span>
-            </div>
-          </div>
+            }
+          />
         </div>
 
-        {/* Tầng 2: Thanh công cụ Tìm kiếm + Lọc trạng thái + Thao tác nghiệp vụ (Gói gọn 1 hàng) */}
-        <div className="px-3 py-2 border-b border-line bg-surface flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <div className="relative w-48 sm:w-56">
-              <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm mã Deal, Phụ lục SOW, @id_kênh, SP..."
-                className="w-full h-7 pl-7 pr-2 text-xs rounded-md border border-line-strong bg-surface text-ink focus:outline-none focus:border-ink"
-              />
-            </div>
-
-            <select
-              value={filterPipeline}
-              onChange={(e) => setFilterPipeline(e.target.value)}
-              className="h-7 px-2 text-xs rounded-md border border-line-strong bg-surface text-ink"
-            >
-              <option value="ALL">Trạng thái Deal: Tất cả</option>
-              <option value="Chờ chốt giá & ngày air">Chờ chốt giá &amp; ngày air</option>
-              <option value="Sẵn sàng tạo BO">Sẵn sàng tạo Deal &amp; SOW</option>
-              <option value="Đang thực thi (Đã tạo BO)">Đang thực thi (Đã tạo Deal &amp; SOW)</option>
-              <option value="Đã nghiệm thu video">Đã nghiệm thu video</option>
-              <option value="Đã quyết toán">Đã quyết toán</option>
-            </select>
-
-            <select
-              value={filterAcceptance}
-              onChange={(e) => setFilterAcceptance(e.target.value)}
-              className="h-7 px-2 text-xs rounded-md border border-line-strong bg-surface text-ink"
-            >
-              <option value="ALL">Nghiệm thu: Tất cả</option>
-              <option value="CHUA_NGHIEM_THU">Chưa nghiệm thu</option>
-              <option value="DA_NGHIEM_THU">Đã nghiệm thu</option>
-            </select>
-
-            {selectedIds.length > 0 && (
-              <Button
-                variant="danger"
-                size="sm"
-                icon={Trash2}
-                onClick={handleDeleteSelected}
-              >
-                Xóa ({selectedIds.length})
-              </Button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={RefreshCw}
-              onClick={handlePullBrandApprovedFromSheets}
-            >
-              Đồng bộ từ Sheet
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Plus}
-              onClick={handleAddDirectApprovedRow}
-            >
-              Thêm dòng
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Copy}
-              onClick={() => void handleCopyTsv(true)}
-            >
-              Copy Google Sheet
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Video}
-              onClick={() => openAcceptanceModalForRow()}
-            >
-              Nghiệm thu theo Deal (2 bước)
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Send}
-              onClick={() => openLarkPaymentModalForItem()}
-            >
-              Đối soát &amp; Luồng Lark Approval
-            </Button>
-
-            <Button
-              variant="primary"
-              size="sm"
-              icon={FileCheck}
-              onClick={() => handleCreateBookingOrders()}
-            >
-              Tạo Deal &amp; Phụ lục (
-              {selectedIds.length > 0 ? selectedIds.length : stats.pendingBoCount})
-            </Button>
-
-            <ActionMenu
-              label="Xuất dữ liệu & Tiện ích"
-              items={[
-                {
-                  label: 'Copy Google Sheet (Kèm tiêu đề cột)',
-                  icon: Copy,
-                  onSelect: () => void handleCopyTsv(true),
-                },
-                {
-                  label: 'Copy Google Sheet (Chỉ dòng dữ liệu)',
-                  icon: Copy,
-                  onSelect: () => void handleCopyTsv(false),
-                },
-                {
-                  label: 'Xuất file CSV (Chuẩn File 3.2)',
-                  icon: Download,
-                  onSelect: () =>
-                    downloadApprovedBookingListCsv(
-                      filteredItems,
-                      selectedMonth,
-                      selectedStore
-                    ),
-                },
-                ...(onNavigateTab
-                  ? [
-                      {
-                        label: 'Mở Quản lý Booking',
-                        icon: ExternalLink,
-                        onSelect: () => onNavigateTab('booking'),
-                      },
-                      {
-                        label: 'Về Sheet Listing Brand',
-                        icon: ArrowLeft,
-                        onSelect: () =>
-                          onNavigateTab('koc-listing', {
-                            storeName: selectedStore !== 'ALL' ? selectedStore : undefined,
-                            monthKey: selectedMonth !== 'ALL' ? selectedMonth : undefined,
-                          }),
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-          </div>
-        </div>
-
-        {/* Tầng 3: Bảng dữ liệu List Duyệt Book */}
         {viewLayout === 'LIST_DRAWER' ? (
-          /* Chế độ Danh sách & Chi tiết (Pro) */
-          <div className="overflow-x-auto max-h-[75vh]">
-            <table className="w-full border-collapse text-xs">
-              <thead className="sticky top-0 z-20 bg-sunken border-b border-line text-left">
-                <tr>
-                  <th className="px-2 py-2 border-r border-line w-[38px] min-w-[38px] text-center">
-                    <input
-                      type="checkbox"
-                      checked={
-                        filteredItems.length > 0 &&
-                        selectedIds.length === filteredItems.length
-                      }
-                      onChange={toggleSelectAll}
-                      className="rounded border-line"
-                    />
-                  </th>
-                  <th className="px-3 py-2 border-r border-line min-w-[170px]">
-                    <div className="font-semibold text-ink">Mã Deal &amp; Phụ lục SOW</div>
-                  </th>
-                  <th className="px-3 py-2 border-r border-line min-w-[180px]">
-                    <div className="font-semibold text-ink">KOC &amp; Kênh TikTok</div>
-                  </th>
-                  <th className="px-3 py-2 border-r border-line min-w-[180px]">
-                    <div className="font-semibold text-ink">Gian hàng &amp; Sản phẩm</div>
-                  </th>
-                  <th className="px-3 py-2 border-r border-line min-w-[140px] text-right">
-                    <div className="font-semibold text-ink">Giá Net / Gross</div>
-                  </th>
-                  <th className="px-3 py-2 border-r border-line min-w-[130px]">
-                    <div className="font-semibold text-ink">Ngày Air &amp; SLA</div>
-                  </th>
-                  <th className="px-3 py-2 border-r border-line min-w-[165px]">
-                    <div className="font-semibold text-ink">Video &amp; Hiệu quả 30d</div>
-                  </th>
-                  <th className="px-3 py-2 text-center min-w-[150px]">
-                    <div className="font-semibold text-ink">Thao tác</div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line bg-surface">
-                {filteredItems.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="py-12 text-center text-ink-3">
-                      <div className="flex flex-col items-center gap-2">
-                        <FileSpreadsheet className="w-7 h-7 text-ink-3" />
-                        <div className="font-medium text-ink">
-                          Chưa có Deal nào trong danh sách theo bộ lọc hiện tại
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredItems.map((item) => {
-                    const isSelected = selectedIds.includes(item.id);
-                    const isActive = activeDrawerItem?.id === item.id && isDrawerOpen;
-                    const isAccepted = item.acceptanceStatus === 'DA_NGHIEM_THU';
-                    const hasBo = item.bookingOrderCreated && Boolean(item.maBooking);
-                    const isSowSigned = item.contractAppendixStatus === 'ĐÃ_KÝ';
-
-                    return (
-                      <tr
-                        key={item.id}
-                        onClick={(e) => {
-                          if ((e.target as HTMLElement).closest('button, input, a')) return;
-                          openDrawerForItem(item);
-                        }}
-                        className={`group transition-colors cursor-pointer ${
-                          isActive
-                            ? 'bg-accent-soft/40 border-l-4 border-l-accent'
-                            : isSelected
-                            ? 'bg-accent-soft/20'
-                            : 'hover:bg-sunken/60'
-                        }`}
-                      >
-                        <td className="px-2 py-2 border-r border-line text-center">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleSelectOne(item.id)}
-                            className="rounded border-line"
-                          />
-                        </td>
-
-                        {/* Cột 1: Mã Deal & Phụ lục SOW */}
-                        <td className="px-3 py-2 border-r border-line align-middle">
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-1.5">
-                              {item.maBooking ? (
-                                <span className="font-mono font-bold text-xs text-ink">
-                                  {item.maBooking}
-                                </span>
-                              ) : (
-                                <span className="text-2xs text-warning font-semibold">
-                                  Chưa tạo Deal
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-2xs font-mono text-ink-3 truncate">
-                              {item.contractAppendixCode || (item.maBooking ? `PL-${item.maBooking}-01` : '—')}
-                            </div>
-                            <div className="pt-0.5">
-                              {isSowSigned ? (
-                                <Status tone="positive">Đã ký SOW</Status>
-                              ) : hasBo ? (
-                                <Status tone="warning">Chờ ký SOW</Status>
-                              ) : (
-                                <Status tone="warning">Chờ chốt giá</Status>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Cột 2: KOC & Kênh */}
-                        <td className="px-3 py-2 border-r border-line align-middle">
-                          <div className="space-y-0.5">
-                            <div className="font-semibold text-xs text-ink truncate max-w-[170px]">
-                              {item.tenKenh || item.idKenh}
-                            </div>
-                            <div className="text-2xs font-mono text-ink-3 truncate">
-                              @{item.idKenh.replace(/^@/, '')}
-                            </div>
-                            <span className="inline-block px-1.5 py-0.2 rounded bg-sunken text-3xs font-medium text-ink-3">
-                              TikTok
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* Cột 3: Gian hàng & Sản phẩm */}
-                        <td className="px-3 py-2 border-r border-line align-middle">
-                          <div className="space-y-0.5">
-                            <div className="font-semibold text-xs text-ink truncate max-w-[170px]">
-                              {item.storeName}
-                            </div>
-                            <div className="text-2xs text-ink-3 truncate max-w-[170px]" title={item.sanPham}>
-                              {item.sanPham || 'Chưa gán SKU'}
-                            </div>
-                            <div className="text-3xs text-ink-3">Tháng {item.thangPlan}</div>
-                          </div>
-                        </td>
-
-                        {/* Cột 4: Giá Net / Gross */}
-                        <td className="px-3 py-2 border-r border-line align-middle text-right">
-                          <div className="font-mono font-bold text-xs text-ink tabular-nums">
-                            {formatVnd(item.chiPhiBookingNetCuoi)}
-                          </div>
-                          <div className="text-3xs text-ink-3 tabular-nums">
-                            Gross: {formatVndShort(item.chiPhiGrossKemThue)}
-                          </div>
-                          {item.soTienTamUngTruoc > 0 && (
-                            <div className="text-3xs text-accent font-medium tabular-nums">
-                              Ứng: {formatVndShort(item.soTienTamUngTruoc)}
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Cột 5: Ngày Air & SLA */}
-                        <td className="px-3 py-2 border-r border-line align-middle">
-                          <div className="font-mono text-xs text-ink font-semibold">
-                            {item.actualAirDate || item.plannedAirDate || '—'}
-                          </div>
-                          <div className="mt-0.5">
-                            <span
-                              className={`inline-block px-1.5 py-0.2 rounded text-3xs font-semibold ${
-                                item.trangThaiSlaAir.startsWith('Trễ')
-                                  ? 'bg-critical-soft text-critical'
-                                  : 'bg-positive-soft text-positive'
-                              }`}
-                            >
-                              {item.trangThaiSlaAir}
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* Cột 6: Video & Hiệu quả */}
-                        <td className="px-3 py-2 border-r border-line align-middle">
-                          {item.linkAir ? (
-                            <div className="space-y-0.5">
-                              <a
-                                href={item.linkAir}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center gap-1 text-2xs text-accent hover:underline font-medium truncate max-w-[155px]"
-                              >
-                                <span>Xem video</span>
-                                <ExternalLink className="w-3 h-3 shrink-0" />
-                              </a>
-                              {item.roi30d > 0 && (
-                                <div className="text-2xs font-mono font-semibold text-emerald-800">
-                                  {item.roi30d.toFixed(2)}x · GMV {formatVndShort(item.gmv30d)}
-                                </div>
-                              )}
-                              {item.danhGiaHieuQuaVideo && (
-                                <div className="text-3xs font-medium text-ink-3 truncate">
-                                  {item.danhGiaHieuQuaVideo}
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-2xs text-ink-3 italic">Chưa lên video</span>
-                          )}
-                        </td>
-
-                        {/* Cột 7: Thao tác */}
-                        <td className="px-3 py-2 text-center align-middle">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              icon={Eye}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openDrawerForItem(item);
-                              }}
-                            >
-                              Chi tiết
-                            </Button>
-
-                            {!hasBo ? (
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                icon={FileCheck}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openDealBuilderModal(item);
-                                }}
-                              >
-                                Tạo Deal
-                              </Button>
-                            ) : !isSowSigned ? (
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                icon={FileText}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onOpenContractForDeal?.(
-                                    buildBookingDealFromApprovedItem(item),
-                                    'SOW'
-                                  );
-                                }}
-                              >
-                                Ký SOW
-                              </Button>
-                            ) : !isAccepted ? (
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                icon={Video}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openAcceptanceModalForRow(item);
-                                }}
-                              >
-                                Nghiệm thu
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                icon={Send}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openLarkPaymentModalForItem(item);
-                                }}
-                              >
-                                Lark
-                              </Button>
-                            )}
-
-                            <ActionMenu
-                              label=""
-                              items={[
-                                {
-                                  label: 'Mở ngăn kéo chi tiết Deal',
-                                  icon: Eye,
-                                  onSelect: () => openDrawerForItem(item),
-                                },
-                                ...(hasBo && onOpenContractForDeal
-                                  ? [
-                                      {
-                                        label: 'Hồ sơ Hợp đồng & Phụ lục SOW',
-                                        icon: FileText,
-                                        onSelect: () =>
-                                          onOpenContractForDeal(
-                                            buildBookingDealFromApprovedItem(item),
-                                            'SOW'
-                                          ),
-                                      },
-                                    ]
-                                  : []),
-                                {
-                                  label: 'Nghiệm thu video & chỉ số',
-                                  icon: Video,
-                                  onSelect: () => openAcceptanceModalForRow(item),
-                                },
-                                {
-                                  label: 'Đối soát & Luồng Lark Approval',
-                                  icon: Send,
-                                  onSelect: () => openLarkPaymentModalForItem(item),
-                                },
-                                ...(item.linkAir
-                                  ? [
-                                      {
-                                        label: 'Soi kịch bản & giỏ hàng TikTok',
-                                        icon: Eye,
-                                        onSelect: () => openDeepVideoInspector(item),
-                                      },
-                                    ]
-                                  : []),
-                              ]}
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <DataTable
+              columns={listColumns}
+              rows={paginatedListItems}
+              rowKey={(r) => r.id}
+              stickyLast
+              onRowClick={(row) => openDrawerForItem(row)}
+              rowClassName={(row) =>
+                activeDrawerItem?.id === row.id && isDrawerOpen
+                  ? 'bg-accent-soft/40'
+                  : undefined
+              }
+              empty={
+                <EmptyState
+                  title="Chưa có Deal nào khớp bộ lọc"
+                  description="Thử chuyển sang Tất cả trạng thái hoặc đồng bộ các dòng Brand đã duyệt từ Sheet Listing."
+                  action={
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={RefreshCw}
+                      onClick={handlePullBrandApprovedFromSheets}
+                    >
+                      Đồng bộ từ Sheet Listing
+                    </Button>
+                  }
+                />
+              }
+            />
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={filteredItems.length}
+              onPageChange={setPage}
+              onPageSizeChange={(n) => {
+                setPageSize(n);
+                setPage(1);
+              }}
+            />
+          </>
         ) : (
           /* Chế độ Bảng tính Lark (Lark Grid View) */
           <div className="overflow-x-auto max-h-[75vh]">
@@ -2027,7 +2129,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                   </th>
 
                   {/* Nhóm cột nhân viên điền: Ngày air chốt, Giá cuối cùng, Tạm ứng, Tạo BO */}
-                  <th className="px-2.5 py-1.5 border-r border-line min-w-[140px] text-left bg-warning-soft/40">
+                  <th className="px-2.5 py-1.5 border-r border-line min-w-[140px] text-left">
                     <div className="font-semibold text-ink">Ngày air chốt</div>
                   </th>
                   {viewColumnMode !== 'ACCEPTANCE_FOCUS' && (
@@ -2035,7 +2137,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                       <div className="font-semibold text-ink">Giá đề xuất Net</div>
                     </th>
                   )}
-                  <th className="px-2.5 py-1.5 border-r border-line min-w-[145px] text-right bg-warning-soft/40">
+                  <th className="px-2.5 py-1.5 border-r border-line min-w-[145px] text-right">
                     <div className="font-semibold text-ink">Giá chốt cuối (Net)</div>
                   </th>
                   <th className="px-2.5 py-1.5 border-r border-line min-w-[130px] text-right">
@@ -2054,22 +2156,22 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                   {/* Nhóm cột Nghiệm thu Video */}
                   {viewColumnMode !== 'BOOKING_FOCUS' && (
                     <>
-                      <th className="px-2.5 py-1.5 border-r border-line min-w-[235px] text-left bg-positive-soft/40">
+                      <th className="px-2.5 py-1.5 border-r border-line min-w-[235px] text-left">
                         <div className="font-semibold text-ink">Link video nghiệm thu</div>
                       </th>
-                      <th className="px-2.5 py-1.5 border-r border-line min-w-[140px] text-left bg-positive-soft/40">
+                      <th className="px-2.5 py-1.5 border-r border-line min-w-[140px] text-left">
                         <div className="font-semibold text-ink">Ngày air thực tế</div>
                       </th>
-                      <th className="px-2.5 py-1.5 border-r border-line min-w-[120px] text-left bg-positive-soft/40">
+                      <th className="px-2.5 py-1.5 border-r border-line min-w-[120px] text-left">
                         <div className="font-semibold text-ink">SLA Tiến độ</div>
                       </th>
-                      <th className="px-2.5 py-1.5 border-r border-line min-w-[155px] text-left bg-positive-soft/40">
+                      <th className="px-2.5 py-1.5 border-r border-line min-w-[155px] text-left">
                         <div className="font-semibold text-ink">Mã Spark Ads</div>
                       </th>
-                      <th className="px-2.5 py-1.5 border-r border-line min-w-[205px] text-right bg-positive-soft/40">
+                      <th className="px-2.5 py-1.5 border-r border-line min-w-[205px] text-right">
                         <div className="font-semibold text-ink">Views · Đơn · GMV 30d</div>
                       </th>
-                      <th className="px-2.5 py-1.5 border-r border-line min-w-[150px] text-right bg-positive-soft/40">
+                      <th className="px-2.5 py-1.5 border-r border-line min-w-[150px] text-right">
                         <div className="font-semibold text-ink">ROI &amp; Đánh giá</div>
                       </th>
                       <th className="px-2.5 py-1.5 border-r border-line min-w-[165px] text-left">
@@ -2081,7 +2183,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                     </>
                   )}
 
-                  <th className="px-2.5 py-1.5 text-center min-w-[145px]">
+                  <th className="px-2.5 py-1.5 text-right min-w-[135px]">
                     <div className="font-semibold text-ink">Thao tác</div>
                   </th>
                 </tr>
@@ -2153,11 +2255,11 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                       >
                         {item.bookingOrderCreated && item.maBooking ? (
                           <div className="space-y-0.5">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-xs font-semibold text-emerald-800">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-positive-soft text-positive font-code text-xs font-semibold">
                               <CheckCircle2 className="w-3 h-3 shrink-0" />
                               <span className="truncate">{item.maBooking}</span>
                             </span>
-                            <div className="text-2xs font-mono text-ink-2 truncate" title={`HĐNT: ${item.masterContractCode || '—'} · Phụ lục Deal: ${item.contractAppendixCode || '—'}`}>
+                            <div className="text-2xs font-code text-ink-2 truncate" title={`HĐNT: ${item.masterContractCode || '—'} · Phụ lục Deal: ${item.contractAppendixCode || '—'}`}>
                               {item.contractAppendixCode || `PL-${item.maBooking}-01`} ({item.contractAppendixStatus || 'CHỜ_KÝ'})
                             </div>
                             <div className="flex items-center justify-between gap-1 text-2xs text-ink-3">
@@ -2175,9 +2277,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           </div>
                         ) : (
                           <div className="space-y-1">
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-2xs font-medium text-amber-800">
-                              Chờ tạo Deal
-                            </span>
+                            <Status tone="warning">Chờ tạo deal</Status>
                             <div>
                               <button
                                 type="button"
@@ -2274,14 +2374,14 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                       </td>
 
                       {/* Cột 61: Nhân viên điền P.Ngày air (Ngày air chốt) */}
-                      <td className="px-2.5 py-2 border-r border-line align-middle bg-amber-50/25">
+                      <td className="px-2.5 py-2 border-r border-line align-middle">
                         <input
                           type="date"
                           value={item.plannedAirDate}
                           onChange={(e) =>
                             handleFieldChange(item.id, 'plannedAirDate', e.target.value)
                           }
-                          className="w-full h-7 px-2 rounded border border-amber-300 bg-surface font-mono text-xs text-ink focus:outline-none focus:border-ink"
+                          className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink focus:outline-none focus:border-ink"
                         />
                         <div className="text-2xs text-ink-3 mt-0.5">
                           Tuần KH: {computeWeekLabelFromDate(item.plannedAirDate) || '—'}
@@ -2290,13 +2390,13 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
 
                       {/* Giá đề xuất ban đầu trên Sheet Listing */}
                       {viewColumnMode !== 'ACCEPTANCE_FOCUS' && (
-                        <td className="px-2.5 py-2 border-r border-line align-middle text-right font-mono text-xs text-ink-3 tabular-nums">
+                        <td className="px-2.5 py-2 border-r border-line align-middle text-right font-code text-xs text-ink-3 tabular-nums">
                           {formatVnd(item.giaDeXuatNet)}
                         </td>
                       )}
 
                       {/* Cột 18: Nhân viên điền Giá cuối cùng của Deal (Video Asset + Dịch vụ gia tăng) */}
-                      <td className="px-2.5 py-2 border-r border-line align-middle bg-amber-50/25">
+                      <td className="px-2.5 py-2 border-r border-line align-middle">
                         <input
                           type="text"
                           inputMode="numeric"
@@ -2308,16 +2408,16 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               parseThousandNumberInput(e.target.value)
                             )
                           }
-                          className="w-full h-7 px-2 rounded border border-amber-300 bg-surface text-right font-mono font-semibold text-xs text-ink tabular-nums focus:outline-none focus:border-ink"
+                          className="w-full h-7 px-2 rounded border border-line bg-surface text-right font-code font-semibold text-xs text-ink tabular-nums focus:outline-none focus:border-ink"
                         />
-                        <div className="text-2xs text-right font-mono text-ink-3 mt-0.5">
+                        <div className="text-2xs text-right font-code text-ink-3 mt-0.5">
                           Video: {formatVndShort(item.videoAssetNetCost ?? item.chiPhiBookingNetCuoi)}
                           {(item.addonServicesNetCost || 0) > 0
                             ? ` · DV: +${formatVndShort(item.addonServicesNetCost || 0)}`
                             : ' · DV: Gộp gói'}
                         </div>
                         {(item.khauTruHangMucHuy || 0) > 0 && (
-                          <div className="text-2xs text-right font-mono text-rose-700 font-semibold">
+                          <div className="text-2xs text-right font-code text-critical font-semibold">
                             Khấu trừ phần hủy: -{formatVndShort(item.khauTruHangMucHuy || 0)}
                           </div>
                         )}
@@ -2325,10 +2425,10 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
 
                       {/* Gross kèm thuế TNCN & Bậc KL */}
                       <td className="px-2.5 py-2 border-r border-line align-middle text-right">
-                        <div className="font-mono font-semibold text-xs text-ink tabular-nums">
+                        <div className="font-code font-semibold text-xs text-ink tabular-nums">
                           {formatVnd(item.chiPhiGrossKemThue)}
                         </div>
-                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-sunken border border-line font-mono text-2xs font-semibold text-ink-2 mt-0.5">
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-sunken border border-line font-code text-2xs font-semibold text-ink-2 mt-0.5">
                           {item.klGrade}
                         </span>
                       </td>
@@ -2349,10 +2449,10 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               )
                             }
                             placeholder="0"
-                            className="w-full bg-transparent text-right font-mono text-xs text-ink tabular-nums focus:outline-none"
+                            className="w-full bg-transparent text-right font-code text-xs text-ink tabular-nums focus:outline-none"
                           />
                         </div>
-                        <div className="text-2xs font-mono font-semibold text-ink tabular-nums">
+                        <div className="text-2xs font-code font-semibold text-ink tabular-nums">
                           Còn trả: {formatVnd(item.soTienCanThanhToan)}
                         </div>
                       </td>
@@ -2388,7 +2488,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                       {viewColumnMode !== 'BOOKING_FOCUS' && (
                         <>
                           {/* Cột 9: Nghiệm thu Bước 1 (Video Asset) -> Bước 2 (Dịch vụ gia tăng) */}
-                          <td className="px-2.5 py-2 border-r border-line align-middle bg-emerald-50/20">
+                          <td className="px-2.5 py-2 border-r border-line align-middle">
                             <div className="space-y-1">
                               <input
                                 type="text"
@@ -2396,7 +2496,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                 onChange={(e) =>
                                   handleFieldChange(item.id, 'linkAir', e.target.value)
                                 }
-                                placeholder="Bước 1: Dán link video TikTok nghiệm thu..."
+                                placeholder="Dán link video TikTok nghiệm thu..."
                                 className="w-full h-7 px-2 rounded border border-line bg-surface text-xs text-ink"
                               />
                               {item.linkAir ? (
@@ -2407,7 +2507,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                         href={item.linkAir}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-2xs font-semibold text-emerald-700 hover:underline"
+                                        className="text-2xs font-semibold text-positive hover:underline"
                                       >
                                         Mở video ↗
                                       </a>
@@ -2420,7 +2520,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                         · Đối soát Brief &amp; Giỏ
                                       </button>
                                     </div>
-                                    <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 text-2xs font-semibold">
+                                    <span className="px-1.5 py-0.2 rounded bg-positive-soft text-positive text-2xs font-semibold">
                                       B1: Đã nghiệm thu Video
                                     </span>
                                   </div>
@@ -2428,8 +2528,8 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                     <span
                                       className={
                                         item.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL'
-                                          ? 'text-emerald-700 font-semibold'
-                                          : 'text-amber-700 font-semibold'
+                                          ? 'text-positive font-semibold'
+                                          : 'text-warning font-semibold'
                                       }
                                     >
                                       {item.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL'
@@ -2453,7 +2553,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                     onClick={() => openAcceptanceModalForRow(item)}
                                     className="font-semibold text-accent hover:underline"
                                   >
-                                    + Nghiệm thu B1→B2
+                                    + Nghiệm thu
                                   </button>
                                 </div>
                               )}
@@ -2461,7 +2561,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           </td>
 
                           {/* Cột 6 & 7: Ngày air thực tế & Tuần real */}
-                          <td className="px-2.5 py-2 border-r border-line align-middle bg-emerald-50/20">
+                          <td className="px-2.5 py-2 border-r border-line align-middle">
                             <input
                               type="date"
                               value={item.actualAirDate}
@@ -2472,24 +2572,27 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                   e.target.value
                                 )
                               }
-                              className="w-full h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-ink"
+                              className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
                             />
-                            <div className="text-2xs font-mono text-ink-3 mt-0.5">
-                              Tuần real: <strong>{item.tuanReal || '—'}</strong> · Tháng:{' '}
-                              {item.thangAirReal || '—'}
+                            <div className="text-2xs font-code text-ink-3 mt-0.5">
+                              Tuần real:{' '}
+                              <span className="font-semibold text-ink">
+                                {item.tuanReal || '—'}
+                              </span>{' '}
+                              · Tháng: {item.thangAirReal || '—'}
                             </div>
                           </td>
 
                           {/* Cột 39: Trễ / Đúng hạn điền link air */}
-                          <td className="px-2.5 py-2 border-r border-line align-middle bg-emerald-50/20">
+                          <td className="px-2.5 py-2 border-r border-line align-middle">
                             <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${
+                              className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
                                 item.trangThaiSlaAir.startsWith('Trễ')
-                                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                  ? 'bg-critical-soft text-critical'
                                   : item.trangThaiSlaAir === 'Đúng hạn' ||
                                     item.trangThaiSlaAir.startsWith('Sớm')
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : 'bg-surface text-ink-3 border-line'
+                                  ? 'bg-positive-soft text-positive'
+                                  : 'bg-sunken text-ink-3 border border-line'
                               }`}
                             >
                               {item.trangThaiSlaAir}
@@ -2497,7 +2600,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           </td>
 
                           {/* Cột 45: Mã ủy quyền Spark Ads */}
-                          <td className="px-2.5 py-2 border-r border-line align-middle bg-emerald-50/20">
+                          <td className="px-2.5 py-2 border-r border-line align-middle">
                             <input
                               type="text"
                               value={item.sparkAdsCode}
@@ -2509,15 +2612,15 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                 )
                               }
                               placeholder="Mã Spark Ads..."
-                              className="w-full h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-ink"
+                              className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
                             />
                           </td>
 
-                          {/* Cột 68-70: Views 30d, Đơn hàng 30d, GMV 30d (Có nhãn nội tuyến rõ ràng) */}
-                          <td className="px-2.5 py-2 border-r border-line align-middle text-right bg-emerald-50/20 space-y-1">
+                          {/* Cột 68-70: Views 30d, Đơn hàng 30d, GMV 30d */}
+                          <td className="px-2.5 py-2 border-r border-line align-middle text-right space-y-1">
                             <div className="grid grid-cols-2 gap-1">
                               <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
-                                <span className="text-3xs text-ink-3 shrink-0">View</span>
+                                <span className="text-2xs text-ink-3 shrink-0">View</span>
                                 <input
                                   type="text"
                                   inputMode="numeric"
@@ -2530,11 +2633,11 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                     )
                                   }
                                   title="Views 30 ngày"
-                                  className="w-full min-w-0 bg-transparent text-right font-mono text-2xs text-ink tabular-nums focus:outline-none"
+                                  className="w-full min-w-0 bg-transparent text-right font-code text-2xs text-ink tabular-nums focus:outline-none"
                                 />
                               </div>
                               <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
-                                <span className="text-3xs text-ink-3 shrink-0">Đơn</span>
+                                <span className="text-2xs text-ink-3 shrink-0">Đơn</span>
                                 <input
                                   type="text"
                                   inputMode="numeric"
@@ -2547,12 +2650,12 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                     )
                                   }
                                   title="Số đơn hàng 30 ngày"
-                                  className="w-full min-w-0 bg-transparent text-right font-mono text-2xs text-ink tabular-nums focus:outline-none"
+                                  className="w-full min-w-0 bg-transparent text-right font-code text-2xs text-ink tabular-nums focus:outline-none"
                                 />
                               </div>
                             </div>
                             <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
-                              <span className="text-3xs font-medium text-emerald-800 shrink-0">
+                              <span className="text-2xs font-medium text-positive shrink-0">
                                 GMV
                               </span>
                               <input
@@ -2567,28 +2670,28 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                   )
                                 }
                                 title="GMV 30 ngày (VNĐ)"
-                                className="w-full min-w-0 bg-transparent text-right font-mono font-semibold text-xs text-emerald-800 tabular-nums focus:outline-none"
+                                className="w-full min-w-0 bg-transparent text-right font-code font-semibold text-xs text-positive tabular-nums focus:outline-none"
                               />
                             </div>
                           </td>
 
                           {/* Cột 71-76: GPM, ROI 30d & Đánh giá hiệu quả video */}
-                          <td className="px-2.5 py-2 border-r border-line align-middle text-right bg-emerald-50/20 space-y-0.5">
-                            <div className="font-mono font-semibold text-xs text-ink tabular-nums">
+                          <td className="px-2.5 py-2 border-r border-line align-middle text-right space-y-0.5">
+                            <div className="font-code font-semibold text-xs text-ink tabular-nums">
                               ROI: {item.roi30d.toFixed(2)}x
                             </div>
-                            <div className="text-2xs font-mono text-ink-3 tabular-nums">
+                            <div className="text-2xs font-code text-ink-3 tabular-nums">
                               GPM: {formatVnd(item.gpm30d)}
                             </div>
                             <span
                               className={`inline-block px-1.5 py-0.2 rounded text-2xs font-semibold truncate max-w-[140px] ${
                                 item.danhGiaHieuQuaVideo.startsWith('Winner')
-                                  ? 'bg-emerald-100 text-emerald-800'
+                                  ? 'bg-positive-soft text-positive'
                                   : item.danhGiaHieuQuaVideo.startsWith('Đạt KPI') ||
                                     item.danhGiaHieuQuaVideo.startsWith('FOC Hiệu quả')
                                   ? 'bg-accent-soft text-accent'
                                   : item.danhGiaHieuQuaVideo.startsWith('Cần tối ưu')
-                                  ? 'bg-rose-100 text-rose-800'
+                                  ? 'bg-critical-soft text-critical'
                                   : 'bg-sunken text-ink-3'
                               }`}
                               title={item.danhGiaHieuQuaVideo}
@@ -2610,10 +2713,10 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               }
                               className={`w-full h-7 px-1.5 rounded border text-xs font-semibold ${
                                 item.trangThaiPhieuThanhToan === 'Đã thanh toán'
-                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  ? 'bg-positive-soft text-positive border-line'
                                   : item.trangThaiPhieuThanhToan === 'Đủ điều kiện ĐNTT' ||
                                     item.trangThaiPhieuThanhToan === 'Đã lập ĐNTT'
-                                  ? 'bg-accent-soft text-accent border-accent/25'
+                                  ? 'bg-accent-soft text-accent border-line'
                                   : 'bg-surface text-ink border-line'
                               }`}
                             >
@@ -2623,13 +2726,16 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                 </option>
                               ))}
                             </select>
-                            <div className="text-2xs font-mono text-ink-2 truncate">
-                              TT theo Deal: <strong>{formatVnd(item.soTienCanThanhToan)}</strong>
+                            <div className="text-2xs font-code text-ink-2 truncate">
+                              TT theo Deal:{' '}
+                              <span className="font-semibold text-ink">
+                                {formatVnd(item.soTienCanThanhToan)}
+                              </span>
                             </div>
                             {item.larkApprovalInstanceCode ? (
                               <div className="flex items-center justify-between gap-1 text-2xs">
                                 <span
-                                  className="px-1.5 py-0.2 rounded bg-accent-soft text-accent font-mono font-semibold truncate"
+                                  className="px-1.5 py-0.2 rounded bg-accent-soft text-accent font-code font-semibold truncate"
                                   title={item.larkApprovalRouteSummary || item.larkApprovalInstanceCode}
                                 >
                                   {item.larkSlipCode || item.larkApprovalInstanceCode}
@@ -2645,7 +2751,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             ) : (
                               <div className="flex items-center justify-between gap-1 text-2xs">
                                 <span
-                                  className="font-mono text-ink-3 truncate max-w-[115px]"
+                                  className="font-code text-ink-3 truncate max-w-[115px]"
                                   title={item.noiDungChuyenKhoan}
                                 >
                                   {item.noiDungChuyenKhoan}
@@ -2668,110 +2774,138 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             <div className="font-medium text-ink truncate max-w-[170px]">
                               {item.tenTaiKhoanNganHang || '—'}
                             </div>
-                            <div className="font-mono text-ink-2">
+                            <div className="font-code text-ink-2">
                               {item.soTaiKhoan || '—'} · {item.nganHang || '—'}
                             </div>
-                            <div className="font-mono text-2xs text-ink-3">
+                            <div className="font-code text-2xs text-ink-3">
                               CCCD: {item.soCccd || '—'}
                             </div>
                           </td>
                         </>
                       )}
 
-                      {/* Thao tác trên dòng: Tạo Deal & Phụ lục / Nghiệm thu 2 bước / Luồng Lark Approval */}
-                      <td className="px-2.5 py-2 align-middle text-center">
-                        <div className="flex flex-col gap-1">
+                      {/* Thao tác trên dòng: 1 Nút chính duy nhất theo tiến trình + ActionMenu phụ */}
+                      <td className="px-2.5 py-2 align-middle text-right">
+                        <div
+                          className="inline-flex items-center justify-end gap-1.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {!item.bookingOrderCreated ? (
                             <Button
                               variant="primary"
                               size="sm"
-                              icon={FileCheck}
                               onClick={() => openDealBuilderModal(item)}
                             >
-                              Tạo Deal &amp; Phụ lục
+                              Tạo Deal
+                            </Button>
+                          ) : item.contractAppendixStatus !== 'ĐÃ_KÝ' && onOpenContractForDeal ? (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() =>
+                                onOpenContractForDeal(
+                                  buildBookingDealFromApprovedItem(item),
+                                  'SOW'
+                                )
+                              }
+                            >
+                              Ký SOW
+                            </Button>
+                          ) : item.acceptanceStatus !== 'DA_NGHIEM_THU' ? (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => openAcceptanceModalForRow(item)}
+                            >
+                              Nghiệm thu
                             </Button>
                           ) : (
-                            <>
-                              {onOpenContractForDeal && (
-                                <Button
-                                  variant={
-                                    item.contractAppendixStatus === 'ĐÃ_KÝ'
-                                      ? 'secondary'
-                                      : 'primary'
-                                  }
-                                  size="sm"
-                                  icon={FileText}
-                                  onClick={() =>
-                                    onOpenContractForDeal(
-                                      buildBookingDealFromApprovedItem(item),
-                                      'SOW'
-                                    )
-                                  }
-                                >
-                                  {item.contractAppendixStatus === 'ĐÃ_KÝ'
-                                    ? 'Xem Phụ lục SOW'
-                                    : 'Ký Phụ lục SOW'}
-                                </Button>
-                              )}
-                              <Button
-                                variant={
-                                  item.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL'
-                                    ? 'secondary'
-                                    : onOpenContractForDeal
-                                      ? 'secondary'
-                                      : 'primary'
-                                }
-                                size="sm"
-                                icon={Video}
-                                onClick={() => openAcceptanceModalForRow(item)}
-                              >
-                                {item.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL'
-                                  ? 'Đã nghiệm thu Deal'
-                                  : isAccepted
-                                    ? 'Nghiệm thu phần khác'
-                                    : 'Nghiệm thu Video (B1)'}
-                              </Button>
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                icon={FileText}
-                                onClick={() =>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => openLarkPaymentModalForItem(item)}
+                            >
+                              Lập ĐNTT
+                            </Button>
+                          )}
+
+                          <ActionMenu
+                            items={[
+                              {
+                                label: 'Xem hồ sơ Deal & SOW',
+                                icon: Eye,
+                                onSelect: () => openDrawerForItem(item),
+                              },
+                              {
+                                label: 'Sửa cấu hình Deal & SOW',
+                                icon: FileCheck,
+                                onSelect: () => openDealBuilderModal(item),
+                              },
+                              ...(onOpenContractForDeal
+                                ? [
+                                    {
+                                      label: 'Hợp đồng nguyên tắc (HĐNT)',
+                                      icon: FileText,
+                                      onSelect: () =>
+                                        onOpenContractForDeal(
+                                          buildBookingDealFromApprovedItem(item),
+                                          'HDNT'
+                                        ),
+                                    },
+                                    {
+                                      label: 'Phụ lục SOW',
+                                      icon: FileText,
+                                      onSelect: () =>
+                                        onOpenContractForDeal(
+                                          buildBookingDealFromApprovedItem(item),
+                                          'SOW'
+                                        ),
+                                    },
+                                    {
+                                      label: 'Biên bản nghiệm thu (BBNT)',
+                                      icon: FileText,
+                                      onSelect: () =>
+                                        onOpenContractForDeal(
+                                          buildBookingDealFromApprovedItem(item),
+                                          'BBNT'
+                                        ),
+                                    },
+                                  ]
+                                : []),
+                              {
+                                label: 'Xem nháp BBNT',
+                                icon: FileText,
+                                onSelect: () =>
                                   setDraftBbntPreviewDeal(
                                     buildBookingDealFromApprovedItem(item)
-                                  )
-                                }
-                              >
-                                Xem nháp BBNT (Phụ lục)
-                              </Button>
-                              {(item.sequentialAcceptanceStage ===
-                                '3_DA_NGHIEM_THU_TOAN_DEAL' ||
-                                item.soTienTamUngTruoc > 0 ||
-                                Boolean(item.larkApprovalInstanceCode)) && (
-                                <Button
-                                  variant={
-                                    item.larkApprovalInstanceCode ? 'secondary' : 'primary'
-                                  }
-                                  size="sm"
-                                  icon={Send}
-                                  onClick={() => openLarkPaymentModalForItem(item)}
-                                >
-                                  {item.larkApprovalInstanceCode
-                                    ? `Lark: ${item.larkSlipCode || 'Đã tạo'}`
-                                    : 'Tạo luồng Lark Approval'}
-                                </Button>
-                              )}
-                              {item.linkAir && (
-                                <button
-                                  type="button"
-                                  onClick={() => openDeepVideoInspector(item)}
-                                  className="inline-flex items-center justify-center gap-1 text-2xs font-semibold text-accent hover:underline"
-                                >
-                                  <Eye className="w-3 h-3" />
-                                  <span>Soi Brief &amp; Giỏ hàng</span>
-                                </button>
-                              )}
-                            </>
-                          )}
+                                  ),
+                              },
+                              {
+                                label: 'Nghiệm thu video & quyền lợi',
+                                icon: Video,
+                                onSelect: () => openAcceptanceModalForRow(item),
+                              },
+                              {
+                                label: 'Luồng duyệt thanh toán Lark',
+                                icon: Send,
+                                onSelect: () => openLarkPaymentModalForItem(item),
+                              },
+                              {
+                                label: 'Xem hồ sơ KOC',
+                                icon: Eye,
+                                onSelect: () => setQuickViewApprovedItem(item),
+                              },
+                              ...(item.linkAir
+                                ? [
+                                    {
+                                      label: 'Đối soát kịch bản & giỏ hàng',
+                                      icon: Eye,
+                                      onSelect: () => openDeepVideoInspector(item),
+                                    },
+                                  ]
+                                : []),
+                            ]}
+                          />
                         </div>
                       </td>
                     </tr>
@@ -2782,32 +2916,18 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
           </table>
         </div>
       )}
-      </div>
+      </Panel>
 
-      {/* Hộp thoại Nghiệm thu theo Deal: Bước 1 (Video) -> Bước 2 (Dịch vụ gia tăng) -> Thanh toán Deal */}
+      {/* Hộp thoại Nghiệm thu video & quyền lợi */}
       <Modal
         open={isAcceptanceModalOpen}
         onClose={() => setIsAcceptanceModalOpen(false)}
-        title="Nghiệm thu theo Deal: Bước 1 (Asset Video) → Bước 2 (Dịch vụ gia tăng) → Thanh toán Deal"
+        title="Nghiệm thu video & quyền lợi"
         size="2xl"
         footer={
           <>
             <Button variant="ghost" onClick={() => setIsAcceptanceModalOpen(false)}>
-              Đóng
-            </Button>
-            <Button
-              variant="secondary"
-              icon={Eye}
-              disabled={parsedAcceptanceRows.length === 0}
-              onClick={() => {
-                const firstRow = parsedAcceptanceRows[0];
-                openDeepVideoInspector(
-                  firstRow?.matchedItem,
-                  firstRow?.linkAir
-                );
-              }}
-            >
-              Đối soát sâu Kịch bản &amp; Giỏ hàng
+              Hủy
             </Button>
             <Button
               variant="secondary"
@@ -2817,7 +2937,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
             >
               {isInspectingTikTokLinks
                 ? 'Đang quét TikTok...'
-                : 'Quét số liệu thực từ link TikTok'}
+                : 'Quét số liệu TikTok'}
             </Button>
             <Button
               variant="secondary"
@@ -2825,7 +2945,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               disabled={parsedAcceptanceRows.length === 0}
               onClick={handleConfirmVideoAcceptanceMapping}
             >
-              Lưu Nghiệm thu ({parsedAcceptanceRows.length})
+              Lưu nghiệm thu ({parsedAcceptanceRows.length})
             </Button>
             <Button
               variant="primary"
@@ -2833,7 +2953,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               disabled={parsedAcceptanceRows.length === 0}
               onClick={handleSaveAcceptanceAndOpenLarkApproval}
             >
-              Lưu Nghiệm thu &amp; Tạo luồng Lark Approval
+              Lưu &amp; Lập ĐNTT Lark
             </Button>
           </>
         }
@@ -2878,13 +2998,13 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               </div>
               <div className="px-2.5 py-1.5 rounded border border-line bg-surface">
                 <div className="text-2xs text-ink-3">Đúng hạn SLA</div>
-                <div className="text-xs font-semibold text-emerald-700 tabular-nums">
+                <div className="text-xs font-semibold text-positive tabular-nums">
                   {acceptanceModalStats.onTimeCount}/{acceptanceModalStats.total}
                 </div>
               </div>
               <div className="px-2.5 py-1.5 rounded border border-line bg-surface">
                 <div className="text-2xs text-ink-3">Tổng GMV 30d</div>
-                <div className="text-xs font-semibold text-emerald-800 tabular-nums">
+                <div className="text-xs font-semibold text-positive tabular-nums">
                   {formatVndShort(acceptanceModalStats.totalGmv)}
                 </div>
               </div>
@@ -2899,7 +3019,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
 
           {/* Tầng 2: Ô dán nhanh danh sách link TikTok (hỗ trợ dán 1 hoặc nhiều link) */}
           <Field label="Dán Link Video TikTok cần nghiệm thu (Mỗi dòng 1 video: Link_TikTok | Mã_Spark_Ads | Views_30d | GMV_30d | Đơn_30d | Ngày_Air)">
-            <textarea
+            <Textarea
               rows={3}
               value={acceptanceBulkText}
               onChange={(e) => {
@@ -2907,7 +3027,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                 setAcceptanceBulkText(e.target.value);
               }}
               placeholder="https://www.tiktok.com/@katthy.review/video/7425819201928371 | #SPARK-KATTHY | 32000 | 18500000 | 64 | 2026-10-25"
-              className="w-full p-2 rounded-lg border border-line bg-surface font-mono text-xs text-ink focus:outline-none focus:border-ink"
+              className="font-code text-xs"
             />
           </Field>
 
@@ -2915,11 +3035,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
           <div className="border border-line rounded-lg overflow-hidden bg-surface">
             <div className="px-3 py-2 bg-sunken border-b border-line flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-semibold text-ink">
-                Bảng đối soát &amp; chỉnh sửa trực tiếp trường nghiệm thu (
-                {acceptanceModalStats.matchedCount}/{acceptanceModalStats.total} dòng đã gắn Deal & SOW)
-              </span>
-              <span className="text-2xs text-ink-3">
-                Chỉnh trực tiếp Ngày air, Mã Spark Ads, Views, Đơn, GMV ngay trên từng dòng bên dưới
+                Bảng đối soát nghiệm thu ({acceptanceModalStats.matchedCount}/{acceptanceModalStats.total} dòng đã gắn Deal &amp; SOW)
               </span>
             </div>
             <div className="max-h-80 overflow-x-auto overflow-y-auto">
@@ -2988,11 +3104,11 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                       <tr key={idx} className="hover:bg-sunken/30 align-top">
                         {/* Cột 1: Kênh KOC & Link Video + Kết quả quét thực tế */}
                         <td className="px-2.5 py-2 border-r border-line space-y-1">
-                          <div className="font-mono font-semibold text-ink">
+                          <div className="font-code font-semibold text-ink">
                             @{row.channelHandle || m?.idKenh || 'Chưa rõ'}
                           </div>
                           {row.videoId && (
-                            <div className="font-mono text-2xs text-ink-3">
+                            <div className="font-code text-2xs text-ink-3">
                               ID: {row.videoId}
                             </div>
                           )}
@@ -3002,7 +3118,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                 href={row.linkAir}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-2xs font-semibold text-emerald-700 hover:underline"
+                                className="text-2xs font-semibold text-positive hover:underline"
                               >
                                 Mở video ↗
                               </a>
@@ -3021,10 +3137,10 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                 <span
                                   className={`px-1.5 py-0.2 rounded font-semibold ${
                                     insp.verdict === 'ĐẠT_CHUẨN'
-                                      ? 'bg-emerald-100 text-emerald-800'
+                                      ? 'bg-positive-soft text-positive'
                                       : insp.verdict === 'CẦN_KIỂM_TRA'
-                                      ? 'bg-amber-100 text-amber-800'
-                                      : 'bg-rose-100 text-rose-800'
+                                      ? 'bg-warning-soft text-warning'
+                                      : 'bg-critical-soft text-critical'
                                   }`}
                                 >
                                   {insp.verdict === 'ĐẠT_CHUẨN'
@@ -3092,20 +3208,20 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             )}
                           </select>
                           {m ? (
-                            <div className="flex items-center justify-between gap-1 text-2xs text-emerald-700 font-medium">
+                            <div className="flex items-center justify-between gap-1 text-2xs text-positive font-medium">
                               <span>
                                 ✓ Deal:{' '}
-                                <strong className="font-mono">
+                                <span className="font-code font-semibold text-ink">
                                   {m.maBooking || 'Tự cấp khi lưu'}
-                                </strong>{' '}
+                                </span>{' '}
                                 · {m.sanPham}
                               </span>
-                              <span className="font-mono font-semibold text-ink">
+                              <span className="font-code font-semibold text-ink">
                                 Net: {formatVnd(finalCost)}
                               </span>
                             </div>
                           ) : (
-                            <div className="text-2xs text-amber-700">
+                            <div className="text-2xs text-warning">
                               Chưa có trong List duyệt — sẽ tự tìm từ Sheet Listing Brand
                             </div>
                           )}
@@ -3119,19 +3235,19 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             onChange={(e) =>
                               updateDraftRowField(idx, 'actualAirDate', e.target.value)
                             }
-                            className="w-full h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-ink"
+                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
                           />
-                          <div className="flex items-center justify-between gap-1 text-2xs font-mono">
+                          <div className="flex items-center justify-between gap-1 text-2xs font-code">
                             <span className="text-ink-3">
                               KH: {m?.plannedAirDate || '—'} ({computeWeekLabelFromDate(row.actualAirDate)})
                             </span>
                             <span
                               className={`px-1.5 py-0.2 rounded font-sans font-semibold ${
                                 sla.statusText.startsWith('Trễ')
-                                  ? 'bg-rose-100 text-rose-800'
+                                  ? 'bg-critical-soft text-critical'
                                   : sla.statusText === 'Đúng hạn' ||
                                     sla.statusText.startsWith('Sớm')
-                                  ? 'bg-emerald-100 text-emerald-800'
+                                  ? 'bg-positive-soft text-positive'
                                   : 'bg-sunken text-ink-3'
                               }`}
                             >
@@ -3149,7 +3265,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               updateDraftRowField(idx, 'sparkAdsCode', e.target.value)
                             }
                             placeholder="#SPARK-..."
-                            className="w-full h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-ink"
+                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
                           />
                           <div className="text-2xs text-ink-3">
                             {row.sparkAdsCode ? 'Đã có mã ủy quyền Ads' : 'Chưa nhập mã Ads'}
@@ -3160,7 +3276,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                         <td className="px-2.5 py-2 border-r border-line space-y-1">
                           <div className="grid grid-cols-2 gap-1">
                             <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
-                              <span className="text-3xs text-ink-3 shrink-0">View</span>
+                              <span className="text-2xs text-ink-3 shrink-0">View</span>
                               <input
                                 type="text"
                                 inputMode="numeric"
@@ -3172,11 +3288,11 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                     parseThousandNumberInput(e.target.value)
                                   )
                                 }
-                                className="w-full bg-transparent text-right font-mono text-2xs text-ink tabular-nums focus:outline-none"
+                                className="w-full bg-transparent text-right font-code text-2xs text-ink tabular-nums focus:outline-none"
                               />
                             </div>
                             <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
-                              <span className="text-3xs text-ink-3 shrink-0">Đơn</span>
+                              <span className="text-2xs text-ink-3 shrink-0">Đơn</span>
                               <input
                                 type="text"
                                 inputMode="numeric"
@@ -3188,12 +3304,12 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                     parseThousandNumberInput(e.target.value)
                                   )
                                 }
-                                className="w-full bg-transparent text-right font-mono text-2xs text-ink tabular-nums focus:outline-none"
+                                className="w-full bg-transparent text-right font-code text-2xs text-ink tabular-nums focus:outline-none"
                               />
                             </div>
                           </div>
                           <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
-                            <span className="text-3xs font-medium text-emerald-800 shrink-0">
+                            <span className="text-2xs font-medium text-positive shrink-0">
                               GMV
                             </span>
                             <input
@@ -3207,14 +3323,14 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                   parseThousandNumberInput(e.target.value)
                                 )
                               }
-                              className="w-full bg-transparent text-right font-mono font-semibold text-xs text-emerald-800 tabular-nums focus:outline-none"
+                              className="w-full bg-transparent text-right font-code font-semibold text-xs text-positive tabular-nums focus:outline-none"
                             />
                           </div>
                         </td>
 
                         {/* Cột 6: ROI · GPM · Đánh giá hiệu quả · ĐNTT */}
                         <td className="px-2.5 py-2 text-right space-y-0.5">
-                          <div className="font-mono font-semibold text-xs text-ink tabular-nums">
+                          <div className="font-code font-semibold text-xs text-ink tabular-nums">
                             ROI: {roi > 0 ? `${roi}x` : '0.00x'}{' '}
                             <span className="text-2xs font-normal text-ink-3">
                               (GPM {formatVndShort(gpm)})
@@ -3224,12 +3340,12 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             <span
                               className={`inline-block px-1.5 py-0.2 rounded text-2xs font-semibold ${
                                 effectivenessLabel.startsWith('Winner')
-                                  ? 'bg-emerald-100 text-emerald-800'
+                                  ? 'bg-positive-soft text-positive'
                                   : effectivenessLabel.startsWith('Đạt KPI') ||
                                     effectivenessLabel.startsWith('FOC Hiệu quả')
                                   ? 'bg-accent-soft text-accent'
                                   : effectivenessLabel.startsWith('Cần tối ưu')
-                                  ? 'bg-rose-100 text-rose-800'
+                                  ? 'bg-critical-soft text-critical'
                                   : 'bg-sunken text-ink-3'
                               }`}
                             >
@@ -3237,7 +3353,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             </span>
                           </div>
                           {m && (
-                            <div className="text-2xs font-mono text-emerald-700 font-semibold">
+                            <div className="text-2xs font-code text-positive font-semibold">
                               Đủ ĐK ĐNTT · Còn trả: {formatVndShort(remainPay)}
                             </div>
                           )}
@@ -3255,10 +3371,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
             <div className="px-3 py-2 bg-sunken border-b border-line flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-semibold text-ink inline-flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-accent" />
-                Bước 2: Nghiệm thu Dịch vụ gia tăng &amp; Quyền lợi theo Deal (Mở khóa sau khi Bước 1 có Video)
-              </span>
-              <span className="text-2xs font-mono text-ink-2">
-                Kế toán đối soát &amp; thanh toán theo từng Deal (Phụ lục Deal)
+                Bước 2: Nghiệm thu Dịch vụ gia tăng &amp; Quyền lợi theo Deal
               </span>
             </div>
 
@@ -3301,26 +3414,26 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-line">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono font-semibold text-ink">
+                        <span className="font-code font-semibold text-ink">
                           Deal: {m.maBooking || 'Sẽ cấp mã BO'} · @{m.idKenh}
                         </span>
-                        <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-mono text-2xs text-ink-2">
+                        <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-code text-2xs text-ink-2">
                           HĐNT: {m.masterContractCode || generateMasterContractCode(m.idKenh, m.kocId)}
                         </span>
-                        <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-mono text-2xs text-ink-2">
+                        <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-code text-2xs text-ink-2">
                           Phụ lục: {m.contractAppendixCode || `PL-${m.maBooking || 'DEAL'}-01`}
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 font-mono text-2xs">
+                      <div className="flex flex-wrap items-center gap-2 font-code text-2xs">
                         <span>Video: {formatVnd(videoCost)}</span>
                         <span>+ DV kèm: {formatVnd(addonsCost)}</span>
                         {droppedCost > 0 && (
-                          <span className="text-rose-700 font-semibold">
+                          <span className="text-critical font-semibold">
                             - Khấu trừ hủy: {formatVnd(droppedCost)}
                           </span>
                         )}
-                        <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold">
-                          Kế toán thanh toán Deal: {formatVnd(effectiveDealPayable)}
+                        <span className="px-2 py-0.5 rounded bg-positive-soft text-positive font-semibold">
+                          Thanh toán Deal: {formatVnd(effectiveDealPayable)}
                         </span>
                         <button
                           type="button"
@@ -3339,16 +3452,16 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               buildBookingDealFromApprovedItem(mergedItem)
                             );
                           }}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-accent/15 hover:bg-accent/25 border border-accent/30 text-accent font-sans font-semibold text-2xs transition-colors"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-accent-soft text-accent font-sans font-semibold text-2xs transition-colors"
                         >
                           <FileText className="w-3 h-3" />
-                          Xem &amp; Kiểm tra nháp BBNT (Theo Phụ lục)
+                          Xem nháp BBNT
                         </button>
                       </div>
                     </div>
 
                     {!hasVideoStep1 ? (
-                      <div className="flex items-center gap-2 p-2 rounded bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
+                      <div className="flex items-center gap-2 p-2 rounded bg-warning-soft text-warning text-xs font-medium">
                         <Lock className="w-3.5 h-3.5 shrink-0" />
                         <span>
                           Đang khóa Bước 2: Cần điền Link Video nghiệm thu ở Bước 1 trước khi nghiệm thu các phần dịch vụ gia tăng của Deal.
@@ -3372,10 +3485,10 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             >
                               <div className="flex items-center justify-between gap-2">
                                 <span className="font-semibold text-ink inline-flex items-center gap-1">
-                                  <Unlock className="w-3 h-3 text-emerald-600 shrink-0" />
+                                  <Unlock className="w-3 h-3 text-positive shrink-0" />
                                   {addon.termLabel}
                                 </span>
-                                <span className="font-mono text-2xs text-ink-3">
+                                <span className="font-code text-2xs text-ink-3">
                                   {addon.allocatedCostVnd
                                     ? formatVnd(addon.allocatedCostVnd)
                                     : 'Gộp trong gói Deal'}
@@ -3408,7 +3521,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                     }));
                                   }}
                                   placeholder="Mã Spark Ads / Link bài Reup / Link bàn giao file..."
-                                  className="sm:col-span-7 h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-ink"
+                                  className="sm:col-span-7 h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
                                 />
                                 <select
                                   value={effectiveStatus}
@@ -3430,10 +3543,10 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                   }}
                                   className={`sm:col-span-5 h-7 px-1.5 rounded border text-xs font-semibold ${
                                     effectiveStatus === 'VERIFIED'
-                                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                      ? 'bg-positive-soft text-positive border-line'
                                       : effectiveStatus === 'DROPPED'
-                                        ? 'bg-rose-50 text-rose-800 border-rose-200'
-                                        : 'bg-amber-50 text-amber-800 border-amber-200'
+                                        ? 'bg-critical-soft text-critical border-line'
+                                        : 'bg-warning-soft text-warning border-line'
                                   }`}
                                 >
                                   <option value="VERIFIED">Đã nghiệm thu</option>
@@ -3454,53 +3567,97 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         </div>
       </Modal>
 
-      {/* Hộp thoại Tạo Deal (Asset Video + Dịch vụ gia tăng) & Lập Phụ lục Hợp đồng */}
+      {/* Hộp thoại Tạo Deal & Phụ lục SOW */}
       <Modal
         open={Boolean(dealBuilderItem)}
         onClose={() => setDealBuilderTargetId(null)}
-        title="Tạo Deal & Lập Phụ lục Hợp đồng (1 Video Asset + Dịch vụ gia tăng)"
+        title={
+          isDealBuilderSowLocked
+            ? 'Chi tiết Deal & Phụ lục SOW (Đã ký)'
+            : 'Tạo Deal & Phụ lục SOW'
+        }
         size="xl"
         footer={
           <>
             <Button variant="ghost" onClick={() => setDealBuilderTargetId(null)}>
-              Hủy
+              Đóng
             </Button>
-            <Button
-              variant={onOpenContractForDeal ? 'secondary' : 'primary'}
-              icon={FileCheck}
-              onClick={() => handleSaveDealBuilderModal(false)}
-            >
-              Lưu Deal &amp; Phát hành Phụ lục
-            </Button>
-            {onOpenContractForDeal && (
+            {isDealBuilderSowLocked ? (
               <Button
                 variant="primary"
-                icon={FileText}
-                onClick={() => handleSaveDealBuilderModal(true)}
+                icon={Unlock}
+                onClick={handleUnlockForAmendmentAppendix}
               >
-                Lưu Deal &amp; Ký Phụ lục SOW
+                Lập Phụ lục bổ sung ({nextAmendmentAppendixCode})
               </Button>
+            ) : (
+              <>
+                <Button
+                  variant={onOpenContractForDeal ? 'secondary' : 'primary'}
+                  icon={FileCheck}
+                  onClick={() => handleSaveDealBuilderModal(false)}
+                >
+                  Lưu Deal &amp; Phát hành Phụ lục
+                </Button>
+                {onOpenContractForDeal && (
+                  <Button
+                    variant="primary"
+                    icon={FileText}
+                    onClick={() => handleSaveDealBuilderModal(true)}
+                  >
+                    Lưu Deal &amp; Ký Phụ lục SOW
+                  </Button>
+                )}
+              </>
             )}
           </>
         }
       >
         {dealBuilderItem && (
           <div className="space-y-4 text-xs">
+            {/* Cảnh báo khóa điều khoản khi Phụ lục SOW đã ký hoàn tất */}
+            {isDealBuilderSowLocked ? (
+              <div className="p-3 rounded-lg bg-warning-soft border border-line flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-warning font-medium">
+                  <Lock className="w-4 h-4 shrink-0" />
+                  <span>
+                    Phụ lục SOW ({dealDraftAppendixCode}) đã ký hoàn tất — các điều khoản đơn giá, ngày air cam kết và hạng mục bàn giao đã được khóa để bảo toàn hồ sơ pháp lý.
+                  </span>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={Unlock}
+                  onClick={handleUnlockForAmendmentAppendix}
+                >
+                  Lập Phụ lục bổ sung ({nextAmendmentAppendixCode})
+                </Button>
+              </div>
+            ) : (
+              <div className="p-2.5 rounded-lg bg-positive-soft/60 border border-line flex items-center gap-2 text-positive font-medium">
+                <Unlock className="w-4 h-4 shrink-0" />
+                <span>
+                  Phụ lục SOW đang ở trạng thái <span className="font-semibold">Chờ ký</span> — được phép chỉnh sửa toàn bộ đơn giá, ngày air dự kiến và quyền lợi đi kèm trước khi ký kết.
+                </span>
+              </div>
+            )}
+
             {/* Khối 1: Định danh Deal & Phụ lục Hợp đồng (1 HĐNT/KOC + 1 Phụ lục/Deal) */}
             <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="font-semibold text-ink inline-flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-accent" />
-                  1. Định danh Deal &amp; Phụ lục Hợp đồng (KOC: @{dealBuilderItem.idKenh} · {dealBuilderItem.storeName})
+                  Định danh Deal &amp; Phụ lục SOW (KOC: @{dealBuilderItem.idKenh} · {dealBuilderItem.storeName})
                 </span>
-                <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-semibold text-emerald-800">
-                  Brand đã duyệt
-                </span>
+                <Status tone={isDealBuilderSowLocked ? 'positive' : 'warning'}>
+                  {isDealBuilderSowLocked ? 'Đã ký SOW (Đã khóa)' : 'Cho phép chỉnh sửa'}
+                </Status>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <Field label="Mã Deal (Booking Order)">
                   <Input
                     value={dealDraftCode}
+                    disabled={isDealBuilderSowLocked}
                     onChange={(e) => {
                       const nextCode = e.target.value;
                       setDealDraftCode(nextCode);
@@ -3511,6 +3668,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                 <Field label="Mã Hợp đồng nguyên tắc (1 HĐNT / KOC)">
                   <Input
                     value={dealDraftMasterContract}
+                    disabled={isDealBuilderSowLocked}
                     onChange={(e) => setDealDraftMasterContract(e.target.value)}
                   />
                 </Field>
@@ -3518,21 +3676,22 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                   <div className="flex items-center gap-1.5">
                     <Input
                       value={dealDraftAppendixCode}
+                      disabled={isDealBuilderSowLocked}
                       onChange={(e) => setDealDraftAppendixCode(e.target.value)}
                     />
-                    <select
+                    <Select
                       value={dealDraftAppendixStatus}
                       onChange={(e) =>
                         setDealDraftAppendixStatus(
                           e.target.value as DealContractAppendixStatus
                         )
                       }
-                      className="h-9 px-2 rounded-lg border border-line bg-surface text-xs font-semibold text-ink shrink-0"
+                      className="w-auto shrink-0"
                     >
                       <option value="CHỜ_KÝ">Chờ ký PL</option>
                       <option value="ĐÃ_KÝ">Đã ký PL</option>
                       <option value="CHƯA_LẬP">Chưa lập</option>
-                    </select>
+                    </Select>
                   </div>
                 </Field>
               </div>
@@ -3542,13 +3701,14 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
             <div className="p-3 rounded-lg border border-line bg-surface space-y-2.5">
               <div className="font-semibold text-ink inline-flex items-center gap-1.5">
                 <Video className="w-3.5 h-3.5 text-accent" />
-                2. Asset bên trong Deal: Video gốc ({dealBuilderItem.sanPham || dealBuilderItem.brandName})
+                Hạng mục chính: Video gốc ({dealBuilderItem.sanPham || dealBuilderItem.brandName})
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <Field label="Ngày air dự kiến (Asset Video)">
                   <Input
                     type="date"
                     value={dealDraftPlannedAirDate}
+                    disabled={isDealBuilderSowLocked}
                     onChange={(e) => setDealDraftPlannedAirDate(e.target.value)}
                   />
                 </Field>
@@ -3556,6 +3716,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                   <Input
                     type="text"
                     inputMode="numeric"
+                    disabled={isDealBuilderSowLocked}
                     value={formatNumber(Number(dealDraftVideoNetCost) || 0)}
                     onChange={(e) =>
                       setDealDraftVideoNetCost(parseThousandNumberInput(e.target.value))
@@ -3566,6 +3727,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                   <Input
                     type="text"
                     inputMode="numeric"
+                    disabled={isDealBuilderSowLocked}
                     value={formatNumber(Number(dealDraftAdvanceAmount) || 0)}
                     onChange={(e) =>
                       setDealDraftAdvanceAmount(parseThousandNumberInput(e.target.value))
@@ -3580,7 +3742,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-semibold text-ink inline-flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5 text-accent" />
-                  3. Dịch vụ gia tăng &amp; Quyền lợi đi kèm trong Deal (Nghiệm thu ở Bước 2 sau Video)
+                  Dịch vụ gia tăng &amp; Quyền lợi đi kèm trong Deal
                 </span>
                 <div className="flex flex-wrap items-center gap-1">
                   {[
@@ -3627,6 +3789,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                       <button
                         key={preset.type}
                         type="button"
+                        disabled={isDealBuilderSowLocked}
                         onClick={() =>
                           handleTogglePresetAddonInBuilder(
                             preset.type,
@@ -3635,9 +3798,9 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             preset.days
                           )
                         }
-                        className={`px-2 py-1 rounded border text-2xs font-semibold transition-colors ${
+                        className={`px-2 py-1 rounded border text-2xs font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none ${
                           active
-                            ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                            ? 'bg-ink border-ink text-white'
                             : 'bg-sunken border-line text-ink-2 hover:bg-surface'
                         }`}
                       >
@@ -3662,6 +3825,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                       <div className="sm:col-span-5">
                         <input
                           type="text"
+                          disabled={isDealBuilderSowLocked}
                           value={addon.termLabel}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -3671,13 +3835,14 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               )
                             );
                           }}
-                          className="w-full h-7 px-2 rounded border border-line bg-surface font-medium text-xs text-ink"
+                          className="w-full h-7 px-2 rounded border border-line bg-surface font-medium text-xs text-ink disabled:bg-sunken disabled:text-ink-3"
                         />
                       </div>
                       <div className="sm:col-span-3 flex items-center gap-1">
                         <span className="text-2xs text-ink-3 shrink-0">Thời hạn:</span>
                         <input
                           type="number"
+                          disabled={isDealBuilderSowLocked}
                           value={addon.durationDays}
                           onChange={(e) => {
                             const days = Math.max(1, Number(e.target.value) || 30);
@@ -3687,7 +3852,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               )
                             );
                           }}
-                          className="w-14 h-7 px-1.5 rounded border border-line bg-surface font-mono text-xs text-right text-ink"
+                          className="w-14 h-7 px-1.5 rounded border border-line bg-surface font-code text-xs text-right text-ink disabled:bg-sunken disabled:text-ink-3"
                         />
                         <span className="text-2xs text-ink-3">ngày</span>
                       </div>
@@ -3696,6 +3861,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                         <input
                           type="text"
                           inputMode="numeric"
+                          disabled={isDealBuilderSowLocked}
                           value={formatNumber(Number(addon.allocatedCostVnd) || 0)}
                           onChange={(e) => {
                             const cost = parseThousandNumberInput(e.target.value);
@@ -3705,21 +3871,23 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               )
                             );
                           }}
-                          className="w-full h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-right font-semibold text-ink tabular-nums"
+                          className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-right font-semibold text-ink tabular-nums disabled:bg-sunken disabled:text-ink-3"
                         />
                       </div>
                       <div className="sm:col-span-1 text-right">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setDealDraftAddons((prev) =>
-                              prev.filter((_, i) => i !== idx)
-                            )
-                          }
-                          className="text-rose-600 hover:text-rose-800 text-xs font-semibold"
-                        >
-                          Xóa
-                        </button>
+                        {!isDealBuilderSowLocked && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDealDraftAddons((prev) =>
+                                prev.filter((_, i) => i !== idx)
+                              )
+                            }
+                            className="text-critical hover:underline text-xs font-semibold"
+                          >
+                            Xóa
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -3727,10 +3895,15 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               )}
 
               {/* Tóm tắt Tổng giá trị Deal cho Phụ lục & Kế toán */}
-              <div className="pt-2 border-t border-line flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
+              <div className="pt-2 border-t border-line flex flex-wrap items-center justify-between gap-2 font-code text-xs">
                 <div className="text-ink-2">
-                  Cấu trúc Deal: <strong>1 Asset Video</strong> ({formatVnd(dealDraftVideoNetCost)}) +{' '}
-                  <strong>{dealDraftAddons.length} Dịch vụ gia tăng</strong> (
+                  Cấu trúc Deal:{' '}
+                  <span className="font-semibold text-ink">1 Asset Video</span> (
+                  {formatVnd(dealDraftVideoNetCost)}) +{' '}
+                  <span className="font-semibold text-ink">
+                    {dealDraftAddons.length} Dịch vụ gia tăng
+                  </span>{' '}
+                  (
                   {formatVnd(
                     dealDraftAddons.reduce(
                       (s, a) => s + (Number(a.allocatedCostVnd) || 0),
@@ -3739,7 +3912,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                   )}
                   )
                 </div>
-                <div className="px-2.5 py-1 rounded bg-emerald-50 border border-emerald-200 font-semibold text-emerald-800">
+                <div className="px-2.5 py-1 rounded bg-sunken border border-line font-semibold text-ink">
                   Tổng giá trị Deal (Ghi trên Phụ lục):{' '}
                   {formatVnd(
                     dealDraftVideoNetCost +
@@ -3826,12 +3999,16 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         onClose={() => setIsDrawerOpen(false)}
         deal={activeDrawerItem}
         allDeals={filteredItems}
+        kocs={kocs}
+        contractRecords={contractRecords}
         onSelectDeal={(d) => setSelectedDrawerItemId(d.id)}
         onOpenContractForDeal={onOpenContractForDeal}
+        onOpenDraftBbntPreview={(d) => setDraftBbntPreviewDeal(d)}
         onOpenAcceptanceModal={openAcceptanceModalForRow}
         onOpenLarkPaymentModal={openLarkPaymentModalForItem}
         onOpenDealBuilderModal={openDealBuilderModal}
         onOpenTikTokInspector={openDeepVideoInspector}
+        onOpenKocProfile={(it) => setQuickViewApprovedItem(it)}
         onNotify={onNotify}
       />
     </div>

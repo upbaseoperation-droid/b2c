@@ -525,11 +525,14 @@ export function toLark31Rows(items: KocListingItem[]): (string | number)[][] {
 
 export type BrandDecision = 'APPROVED' | 'REJECTED' | 'CONSIDER' | 'NONE';
 
-/** Đọc ô "Brand duyệt" theo quy ước bảng 3.1: Yes, No, Cân nhắc; để trống là chưa trả lời. */
+/**
+ * Đọc ô "Brand duyệt" theo quy ước bảng 3.1: Yes, No, Cân nhắc; để trống là chưa trả lời.
+ * Bộ từ khóa phải khớp module "TG Brand duyệt" của Apps Script (setup-appscript/route.ts).
+ */
 export function parseBrandDecision(raw: string | undefined): BrandDecision {
   const v = (raw || '').trim().toLowerCase();
   if (!v) return 'NONE';
-  if (['yes', 'y', 'duyệt', 'đã duyệt', 'ok'].includes(v)) return 'APPROVED';
+  if (['yes', 'y', 'duyệt', 'đã duyệt', 'ok', 'đồng ý', 'dong y'].includes(v)) return 'APPROVED';
   if (['no', 'n', 'từ chối', 'không'].includes(v)) return 'REJECTED';
   if (v.includes('cân nhắc') || v.includes('can nhac') || v === 'maybe') return 'CONSIDER';
   return 'NONE';
@@ -541,6 +544,8 @@ export interface BrandDecisionResult {
   changed: boolean;
   /** KOC từng bị Brand từ chối nay được duyệt lại. */
   restored: boolean;
+  /** "Yes" trên Sheet có từ trước lần tăng giá, chưa phải Brand duyệt giá mới. */
+  stale?: boolean;
 }
 
 /**
@@ -548,13 +553,22 @@ export interface BrandDecisionResult {
  * Chỉ áp khi giá trị trên sheet ĐỔI so với lần đọc trước, nên không ghi đè thao tác tay của nhân viên:
  * nhân viên đã đưa KOC bị No về lại trong app thì lần đọc sau (sheet vẫn No) không cho rớt lại.
  * Brand đổi No thành Yes (nhân viên bảo vệ được KOC): khôi phục KOC rồi chuyển sang Thương lượng.
+ * KOC đã tăng giá sau khi Brand duyệt: chỉ nhận "Yes" có cột thời gian Brand duyệt (decidedAt) sau mốc tăng giá,
+ * còn lại coi là "Yes" cũ của giá trước (stale), không duyệt và không ghi nhớ để lần đọc sau xét lại.
  */
-export function applyBrandDecision(item: KocListingItem, decision: BrandDecision, opts: { reason?: string; note?: string; actor: string }): BrandDecisionResult {
+export function applyBrandDecision(
+  item: KocListingItem,
+  decision: BrandDecision,
+  opts: { reason?: string; note?: string; actor: string; decidedAt?: string }
+): BrandDecisionResult {
   const { reason, note, actor } = opts;
   const prev: BrandDecision = item.lastSheetDecision ?? 'NONE';
   if (decision === prev) return { item, changed: false, restored: false };
+  if (decision === 'APPROVED' && item.brandRepricedAt && !(opts.decidedAt && opts.decidedAt > item.brandRepricedAt)) {
+    return { item, changed: false, restored: false, stale: true };
+  }
 
-  const now = new Date().toISOString();
+  const now = opts.decidedAt || new Date().toISOString();
   let next: KocListingItem = item;
   let changed = false;
   let restored = false;
@@ -576,7 +590,9 @@ export function applyBrandDecision(item: KocListingItem, decision: BrandDecision
       brandApprovalStatus: 'BRAND_APPROVED',
       brandApprovedAt: next.brandApprovedAt || now,
       brandApprovedBy: next.brandApprovedBy || actor,
-      brandDecidedAt: next.brandDecidedAt || now,
+      brandDecidedAt: item.brandRepricedAt ? now : next.brandDecidedAt || now,
+      brandApprovedFee: itemFee(next),
+      brandRepricedAt: undefined,
     };
     changed = next !== item;
   } else if (decision === 'REJECTED') {

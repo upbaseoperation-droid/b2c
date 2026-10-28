@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { assertListingSheetAccess } from '@/lib/server/monthlyPlanStore';
+import { assertListingSheetAccess, planStoreOf } from '@/lib/server/monthlyPlanStore';
+import { readMasterCatalog } from '@/lib/server/masterCatalogStore';
+import { storeCoBookings, storeMainBooking } from '@/lib/storePositions';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
 import { ensureServiceAccountLoaded, GoogleSheetsError, parseSpreadsheetGid, parseSpreadsheetId, readTab } from '@/lib/server/googleSheets';
 import { applyBrandDecision, columnOf, createListingItem, moveItem, parseBrandDecision, type BrandDecision } from '@/lib/listingBoardRules';
 import { klFromFee, KL_TIERS, type KlCode } from '@/lib/klTiers';
 import { UPBASE_FULL_KOC_MASTER } from '@/lib/kocMasterDataset';
+import { parseVnDateTimeToMs } from '@/lib/staffBrandListingSheet';
 import { addKocToSlot, removeKocFromSlot, slotKocHandles, type ContentPlanData } from '@/lib/contentPlanRules';
 import { EMPTY_DEAL_BOARD, sanitizeDealBoard, syncDealSummaryFields, type DealBoardData, type ScriptStatus } from '@/lib/dealBoardRules';
 import type { KocItem, KocListingItem, ListingBatchCycle } from '@/lib/types';
@@ -84,6 +87,7 @@ interface SheetDecision {
   brandDemoDecision?: ScriptStatus | null;
   brandDemoNote?: string;
   airLink?: string;
+  decidedAt?: string;
 }
 
 const parseGradeCell = (v: string | undefined): KlCode | 'TAP UpAffiliate' | null => {
@@ -93,6 +97,13 @@ const parseGradeCell = (v: string | undefined): KlCode | 'TAP UpAffiliate' | nul
   if (/FOC|FREECAST|TAP|0Đ|0D/.test(t)) return 'TAP UpAffiliate';
   const found = KL_TIERS.find(tier => t.includes(tier.code));
   return found ? found.code : null;
+};
+
+/** Ô thời gian Brand duyệt dạng "dd/MM/yyyy HH:mm" giờ Việt Nam (Apps Script ghi) → ISO. */
+const parseSheetDecidedAt = (v: string | undefined): string | undefined => {
+  if (!v || !/\d{1,2}[/-]\d{1,2}[/-]\d{4}\s+\d{1,2}:\d{1,2}/.test(v.trim())) return undefined;
+  const ms = parseVnDateTimeToMs(v);
+  return ms === null ? undefined : new Date(ms).toISOString();
 };
 
 const parseBatchCell = (v: string | undefined): ListingBatchCycle | undefined => {
@@ -162,6 +173,8 @@ export async function POST(request: NextRequest) {
     const brandDemoCol = col('Brand duyệt demo');
     const brandDemoNoteCol = col('Ghi chú sửa demo');
     const airLinkCol = col('Link Air', 'Link nghiệm thu');
+    // Cột do Apps Script đóng dấu khi Brand chọn: mốc thật để tính SLA và để phân biệt "Yes" mới với "Yes" cũ
+    const decidedAtCol = col('TG Brand duyệt', 'Thời gian Brand duyệt', 'Ngày Brand duyệt');
 
     if (!keyCol) return NextResponse.json({ error: 'Tab chưa có cột "ID kênh".', code: 'INVALID' }, { status: 400 });
 
@@ -198,6 +211,7 @@ export async function POST(request: NextRequest) {
         brandDemoDecision: brandDemoCol ? parseScriptStageDecision(r[brandDemoCol]) : null,
         brandDemoNote: brandDemoNoteCol ? (r[brandDemoNoteCol] || '').trim() : undefined,
         airLink: airLinkCol ? (r[airLinkCol] || '').trim() : undefined,
+        decidedAt: decidedAtCol ? parseSheetDecidedAt(r[decidedAtCol]) : undefined,
       };
       decisionsByComposite.set(compKey, entry);
       const prev = decisions.get(handle);
@@ -253,6 +267,16 @@ export async function POST(request: NextRequest) {
         slotIdByBriefCode.set(bc, s.id);
       }
     }
+    // Người phụ trách KOC nhập từ Sheet: cột PIC là chữ gõ tay, chỉ nhận khi khớp một Booking của gian
+    // (quyền sửa KOC theo người phụ trách dựa vào tên này); không khớp thì giao Booking chính
+    const { data: catalog } = await readMasterCatalog();
+    const planStore = planStoreOf(plan, catalog);
+    const mainBooking = planStore ? storeMainBooking(planStore) : '';
+    const storeBookers = planStore ? [mainBooking, ...storeCoBookings(planStore), planStore.backupOwnerName || ''].filter(Boolean) : [];
+    const foldName = (v?: string) => normHeader(v || '');
+    const resolveImportPic = (raw?: string) =>
+      storeBookers.find(n => raw && foldName(n) === foldName(raw)) || mainBooking || plan.pic || actor.name;
+
     // KOC Master thật: bộ dữ liệu gốc, đè bằng bản ghi đã sửa / đồng bộ trên máy chủ
     const kocDirectory = await readRecord<{ itemsByHandle: Record<string, KocItem> }>('koc-directory-changes', { itemsByHandle: {} });
     const masterKocByHandle = new Map<string, KocItem>();
@@ -287,26 +311,48 @@ export async function POST(request: NextRequest) {
         matchedHandles.add(handle);
         matchedSheetKeys.add(compKey);
         if (d.briefCode) matchedSheetKeys.add(`${handle}::${d.briefCode}`);
-        const r = applyBrandDecision(item, d.decision, { reason: d.reason, note: d.note, actor: actor.name });
-        let updatedItem = r.item;
+        // Giá trên Sheet chỉ cập nhật giá đề xuất khi Brand chưa duyệt (Brand duyệt đúng giá đang thấy trên Sheet).
+        // KOC Brand đã duyệt / đang chờ duyệt lại giá mới / đã chốt: đổi giá phải làm trong app để Brand duyệt lại (L3, L4)
+        let base = item;
+        const appFee = item.finalFee ?? item.proposedFee;
+        if (typeof d.fee === 'number' && d.fee >= 0 && d.fee !== appFee) {
+          const fromCol = columnOf(item);
+          const priceOpen =
+            item.brandApprovalStatus !== 'BRAND_APPROVED' && !item.brandRepricedAt && (fromCol === 'DRAFT' || fromCol === 'WAIT_BRAND');
+          if (priceOpen) {
+            changes.push({ handle, briefCode: bCode || undefined, field: 'Giá net video', app: feeText(appFee), sheet: feeText(d.fee) });
+            base = { ...item, proposedFee: d.fee, finalFee: undefined };
+          } else {
+            changes.push({
+              handle,
+              briefCode: bCode || undefined,
+              field: 'Giá net video',
+              app: feeText(appFee),
+              sheet: feeText(d.fee),
+              conflict:
+                fromCol === 'CONFIRMED'
+                  ? 'Giá trên Sheet khác giá đã chốt — không ghi đè.'
+                  : 'Giá trên Sheet khác giá trong app (Brand đã duyệt hoặc đang chờ duyệt giá mới) — không ghi đè. Đổi giá trong app rồi đẩy Sheet để Brand duyệt lại.',
+            });
+          }
+        }
+        const r = applyBrandDecision(base, d.decision, { reason: d.reason, note: d.note, actor: actor.name, decidedAt: d.decidedAt });
+        const updatedItem = r.item;
+        if (r.stale) {
+          changes.push({
+            handle,
+            briefCode: bCode || undefined,
+            field: 'Brand duyệt',
+            app: 'Chờ Brand duyệt giá mới',
+            sheet: 'Yes (từ trước lần tăng giá)',
+            conflict: 'Brand chưa chọn lại sau khi tăng giá — chưa tính là duyệt.',
+          });
+        }
         if (r.changed && d.decision !== 'NONE') {
           changes.push({ handle, briefCode: bCode || undefined, field: 'Brand duyệt', app: item.brandApprovalStatus, sheet: d.decision });
         }
         if (d.decision === 'REJECTED' && columnOf(item) === 'CONFIRMED') {
           changes.push({ handle, briefCode: bCode || undefined, field: 'Brand duyệt', app: 'Đã chốt', sheet: 'No', conflict: 'KOC đã chốt trong app nhưng Sheet ghi Brand từ chối — giữ nguyên, cần trao đổi lại với Brand.' });
-        }
-        if (columnOf(item) === 'CONFIRMED' && typeof d.fee === 'number' && d.fee !== (item.finalFee ?? item.proposedFee)) {
-          changes.push({ handle, briefCode: bCode || undefined, field: 'Giá net video', app: feeText(item.finalFee ?? item.proposedFee), sheet: feeText(d.fee), conflict: 'Giá trên Sheet khác giá đã chốt — không ghi đè.' });
-        }
-        // Đồng bộ lại Giá net video nếu Brand sửa giá trên Sheet (nhưng không ghi đè item đã CONFIRMED — L4)
-        if (
-          columnOf(updatedItem) !== 'CONFIRMED' &&
-          typeof d.fee === 'number' &&
-          d.fee >= 0 &&
-          d.fee !== (updatedItem.finalFee ?? updatedItem.proposedFee)
-        ) {
-          changes.push({ handle, briefCode: bCode || undefined, field: 'Giá net video', app: feeText(updatedItem.finalFee ?? updatedItem.proposedFee), sheet: feeText(d.fee) });
-          updatedItem = { ...updatedItem, proposedFee: d.fee, finalFee: d.fee };
         }
         if (!r.changed) c.unchanged += 1;
         else if (r.restored) {
@@ -350,14 +396,14 @@ export async function POST(request: NextRequest) {
           actorName: actor.name,
           batchCycle: d.batchCycle || 'BATCH_10',
         });
-        if (d.pic) newItem.assignedStaffName = d.pic.slice(0, 120);
+        newItem.assignedStaffName = resolveImportPic(d.pic);
         if (d.productName) newItem.pillarName = d.productName.slice(0, 120);
         if (d.briefCode && slotIdByBriefCode.has(d.briefCode)) {
           newItem.planSlotId = slotIdByBriefCode.get(d.briefCode);
         }
         newItem = moveItem(newItem, 'WAIT_BRAND', actor.name).item || newItem;
         if (d.decision !== 'NONE') {
-          newItem = applyBrandDecision(newItem, d.decision, { reason: d.reason, note: d.note, actor: actor.name }).item;
+          newItem = applyBrandDecision(newItem, d.decision, { reason: d.reason, note: d.note, actor: actor.name, decidedAt: d.decidedAt }).item;
         }
         items.push(newItem);
         c.imported += 1;

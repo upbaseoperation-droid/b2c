@@ -4,10 +4,54 @@ import type { ContractActor, ContractRecord } from './types';
 
 export function simulateSigning(record: ContractRecord, actor: ContractActor, action: string) {
   requireCondition(process.env.NODE_ENV !== 'production', 'Giả lập ký chỉ dùng trong môi trường phát triển.', 403);
-  assertCanSign(record, actor);
   const next = structuredClone(record);
-  let attempt = next.signing.at(-1);
   const now = new Date().toISOString();
+  if (action === 'DEMO_FAST_SIGN') {
+    for (const s of next.steps) {
+      if (s.status !== 'APPROVED') {
+        s.status = 'APPROVED';
+        s.decidedAt = now;
+        s.note = s.note || 'Đã duyệt kiểm tra hạn mức & điều khoản';
+      }
+    }
+    if (next.steps.length === 0) {
+      next.steps.push({
+        role: 'FINANCE',
+        reviewerId: 'demo-finance',
+        reviewerName: 'Lê Thị Thu Hà',
+        status: 'APPROVED',
+        note: 'Đã duyệt hạn mức Booking & thuế',
+        version: next.version,
+        decidedAt: now,
+      });
+    }
+    next.approval = 'APPROVED';
+    const completedAttempt = {
+      documentId: randomUUID(),
+      name: next.title,
+      version: next.version,
+      linkedBy: actor.id,
+      linkedAt: now,
+      syncedAt: now,
+      provider: 'DEMO' as const,
+      status: 'COMPLETED' as const,
+      sourceStatus: -3,
+      completedCount: 2,
+      totalCount: 2,
+      progressPercent: 100,
+      evidenceConfirmedBy: actor.id,
+      evidenceHash: '',
+      people: [
+        { name: 'Upbase (Công ty CP Công nghệ UpBase)', email: 'hddt@upbase.asia', role: 0, roleLabel: 'Đại diện Bên A', level: 1, action: 2, status: 'Đã ký', at: now },
+        { name: next.partner, email: 'partner@booking.upbase.vn', role: 0, roleLabel: 'Đại diện Bên B (KOC)', level: 2, action: 2, status: 'Đã ký', at: now },
+      ],
+    };
+    next.signing.push(completedAttempt);
+    event(next, actor, 'DEMO_FAST_SIGN', 'Đã hoàn tất ký số đủ 2 bên (UpBase & KOC) và khóa cấu hình Deal');
+    return next;
+  }
+  assertCanSign(record, actor);
+  let attempt = next.signing.at(-1);
   if (action === 'DEMO_SIGN_START') {
     requireCondition(!attempt || ['REJECTED', 'CANCELLED'].includes(attempt.status), 'Đã có lượt ký đang hoạt động hoặc hoàn tất.');
     attempt = {
