@@ -18,7 +18,7 @@ import {
   KocItem,
   BookingDealItem
 } from '@/lib/types';
-import { ActionMenu, ConfirmDialog, FilterBar, Modal, PageActions, Button, Select, Stat, StatRow, Tabs } from '../ui';
+import { ActionMenu, ConfirmDialog, FilterBar, Modal, PageActions, PageHeaderNav, Segmented, Button, Select, Stat, StatRow, Tabs } from '../ui';
 import { formatVnd, formatVndShort } from '../../lib/format';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 import { StaffBrandListingSheetWorkspace } from '../shortlist/StaffBrandListingSheetWorkspace';
@@ -1047,29 +1047,31 @@ export function KocListingBatchHubView({
   };
 
   return (
-    <div className="space-y-4">
-      <Tabs
-        value={
-          activeSubTab === 'APPROVED_DEAL_BOARD'
-            ? 'APPROVED_DEAL_BOARD'
-            : isAdmin && activeSubTab === 'SHEET_STAFF_SETUP'
-              ? 'SHEET_STAFF_SETUP'
-              : 'STAFF_BRAND_SHEET'
-        }
-        onChange={setActiveSubTab}
-        items={[
-          { key: 'STAFF_BRAND_SHEET', label: '1. Bảng Listing KOC (Google Sheet)' },
-          { key: 'APPROVED_DEAL_BOARD', label: '2. Bảng Deal & Nghiệm thu (Đã duyệt)' },
-          ...(isAdmin
-            ? [
-                {
-                  key: 'SHEET_STAFF_SETUP' as const,
-                  label: '3. Thiết lập Google Sheet & Phân quyền Sửa Trường',
-                },
-              ]
-            : []),
-        ]}
-      />
+    <div className="space-y-2">
+      <PageHeaderNav>
+        <Segmented
+          value={
+            activeSubTab === 'APPROVED_DEAL_BOARD'
+              ? 'APPROVED_DEAL_BOARD'
+              : isAdmin && activeSubTab === 'SHEET_STAFF_SETUP'
+                ? 'SHEET_STAFF_SETUP'
+                : 'STAFF_BRAND_SHEET'
+          }
+          onChange={setActiveSubTab}
+          items={[
+            { key: 'STAFF_BRAND_SHEET', label: '1. Bảng Listing KOC (Sheet)' },
+            { key: 'APPROVED_DEAL_BOARD', label: '2. Bảng Deal & Nghiệm thu' },
+            ...(isAdmin
+              ? [
+                  {
+                    key: 'SHEET_STAFF_SETUP' as const,
+                    label: '3. Thiết lập Sheet & Phân quyền',
+                  },
+                ]
+              : []),
+          ]}
+        />
+      </PageHeaderNav>
 
       {(activeSubTab === 'STAFF_BRAND_SHEET' || (!isAdmin && activeSubTab === 'SHEET_STAFF_SETUP')) && (
         <StaffBrandListingSheetWorkspace

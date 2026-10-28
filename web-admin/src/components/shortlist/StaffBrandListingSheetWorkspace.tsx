@@ -14,6 +14,7 @@ import {
   Eye,
   FileSpreadsheet,
   FileText,
+  Key,
   Link2,
   Lock,
   Mail,
@@ -1660,16 +1661,68 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     }
   };
 
+  const [isServiceAccountConfigured, setIsServiceAccountConfigured] = useState<boolean>(true);
+  const [isShowingSaJsonInput, setIsShowingSaJsonInput] = useState<boolean>(false);
+  const [pushSaJsonDraft, setPushSaJsonDraft] = useState<string>('');
+  const [savingPushSa, setSavingPushSa] = useState<boolean>(false);
+
   useEffect(() => {
     fetch('/api/booking-list/push-sheet')
       .then((r) => r.json())
       .then((d: { configured?: boolean }) => {
         if (!d?.configured) {
-          void tryRestoreServiceAccountFromLocalCache();
+          void tryRestoreServiceAccountFromLocalCache().then((restored) => {
+            setIsServiceAccountConfigured(restored);
+          });
+        } else {
+          setIsServiceAccountConfigured(true);
         }
       })
       .catch(() => {});
   }, []);
+
+  const handleSavePushServiceAccount = async () => {
+    if (!pushSaJsonDraft.trim()) return;
+    setSavingPushSa(true);
+    try {
+      const res = await fetch('/api/booking-list/push-sheet', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serviceAccountJson: pushSaJsonDraft.trim() }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        configured?: boolean;
+        serviceAccountEmail?: string;
+        error?: string;
+      } | null;
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || 'Không lưu được cấu hình Google Service Account.');
+      }
+      setIsServiceAccountConfigured(true);
+      setIsShowingSaJsonInput(false);
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem('upbase_b2c_google_sa_config_v1', pushSaJsonDraft.trim());
+        } catch {
+          /* ignore */
+        }
+      }
+      onNotify?.(
+        `Đã lưu Google Service Account (${data.serviceAccountEmail || 'thành công'}). Bắt đầu đối soát...`,
+        'success'
+      );
+      setPushSaJsonDraft('');
+      if (pushSheetUrl.trim()) {
+        void fetchTabsForSheetUrl(pushSheetUrl, pushSheetTab, (t) => setPushSheetTab(t));
+        void handleRunPushDiffPreview(pushSheetUrl, pushSheetTab, pushScope, pushColMode);
+      }
+    } catch (err) {
+      onNotify?.(err instanceof Error ? err.message : 'Lỗi lưu Service Account.', 'error');
+    } finally {
+      setSavingPushSa(false);
+    }
+  };
 
   const fetchTabsForSheetUrl = async (
     url: string,
@@ -1692,8 +1745,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         error?: string;
       } | null;
       if (data?.configured === false) {
+        setIsServiceAccountConfigured(false);
         const restored = await tryRestoreServiceAccountFromLocalCache();
         if (restored) {
+          setIsServiceAccountConfigured(true);
           res = await fetch(
             `/api/booking-list/push-sheet?sheetUrl=${encodeURIComponent(cleanUrl)}`,
             { cache: 'no-store' }
@@ -1715,7 +1770,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         if (data.tabs.length > 0 && (!currentTab || !data.tabs.includes(currentTab))) {
           onPickTab(data.matchedTabByGid || data.tabs[0]);
         }
-      } else if (data?.error) {
+      } else if (data?.error && data?.configured !== false) {
         onNotify?.(data.error, 'warning');
       }
     } catch {
@@ -1806,16 +1861,26 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       if (!res.ok && body?.code === 'NOT_CONFIGURED') {
         const restored = await tryRestoreServiceAccountFromLocalCache();
         if (restored) {
+          setIsServiceAccountConfigured(true);
           res = await fetch('/api/booking-list/push-sheet', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: reqPayload,
           });
           body = await res.json().catch(() => null);
+        } else {
+          setIsServiceAccountConfigured(false);
+          setIsShowingSaJsonInput(true);
+          return;
         }
       }
       if (!res.ok) {
-        onNotify?.(body?.error || `Lỗi đối soát Google Sheet (${res.status})`, 'error');
+        if (body?.code === 'NOT_CONFIGURED') {
+          setIsServiceAccountConfigured(false);
+          setIsShowingSaJsonInput(true);
+        } else {
+          onNotify?.(body?.error || `Lỗi đối soát Google Sheet (${res.status})`, 'error');
+        }
         return;
       }
       setPushDiffReport({
@@ -1844,10 +1909,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     setPushSheetUrl(initialUrl);
     setPushSheetTab(initialTab);
     setPushDiffReport(null);
+    setIsShowingSaJsonInput(false);
     setIsPushSheetModalOpen(true);
     if (initialUrl) {
       void fetchTabsForSheetUrl(initialUrl, initialTab, (t) => setPushSheetTab(t));
-      void handleRunPushDiffPreview(initialUrl, initialTab, initialScope, pushColMode);
     }
   };
 
@@ -2677,17 +2742,95 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   };
 
   return (
-    <div className="space-y-3">
-      {/* Khung làm việc tích hợp: 2 thanh điều khiển tinh gọn + Bảng dữ liệu chuẩn Google Sheet */}
+    <div className="space-y-2">
+      <PageActions>
+        <div className="hidden xl:flex items-center gap-2 px-2.5 h-8 rounded-md bg-sunken/70 border border-line text-2xs">
+          <div className="flex items-center gap-1">
+            <span className="text-ink-3">KOC:</span>
+            <strong className="text-ink tabular-nums">
+              {formatNumber(sheetStats.totalCount)}
+            </strong>
+          </div>
+          <span className="h-3 w-px bg-line" />
+          <div className="flex items-center gap-1">
+            <span className="text-ink-3">Duyệt:</span>
+            <strong className="text-positive tabular-nums">
+              {formatNumber(sheetStats.brandApprovedCount)}/{formatNumber(sheetStats.totalCount)}
+            </strong>
+          </div>
+          <span className="h-3 w-px bg-line" />
+          <div
+            className="flex items-center gap-1"
+            title="Đo lường SLA từ thời điểm Listing KOC mới lên đến khi Brand phản hồi (Cam kết chuẩn: ≤ 48h)"
+          >
+            <Clock className="w-3 h-3 text-accent shrink-0" />
+            <span className="text-ink-3">SLA:</span>
+            {sheetStats.reviewedCount > 0 ? (
+              <strong
+                className={`tabular-nums ${
+                  sheetStats.onTimeCount === sheetStats.reviewedCount
+                    ? 'text-positive'
+                    : 'text-warning'
+                }`}
+              >
+                {sheetStats.onTimeCount}/{sheetStats.reviewedCount} ({sheetStats.avgReviewHours}h)
+              </strong>
+            ) : (
+              <strong className="text-ink-2 tabular-nums">Chờ</strong>
+            )}
+            {sheetStats.overdueWaitCount > 0 && (
+              <span className="px-1 rounded bg-rose-50 border border-rose-200 text-rose-700 font-semibold text-2xs">
+                {sheetStats.overdueWaitCount} trễ
+              </span>
+            )}
+          </div>
+          <span className="h-3 w-px bg-line" />
+          <div className="flex items-center gap-1">
+            <span className="text-ink-3">Net:</span>
+            <strong className="text-ink tabular-nums">
+              {formatVndShort(sheetStats.totalNet)}
+            </strong>
+          </div>
+          <span className="h-3 w-px bg-line" />
+          <div className="flex items-center gap-1">
+            <span className="text-ink-3">Gross:</span>
+            <strong className="text-accent tabular-nums">
+              {formatVndShort(sheetStats.totalGross)}
+            </strong>
+          </div>
+        </div>
+
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={RefreshCw}
+          onClick={handleOpenPullSheetModal}
+        >
+          Kéo từ Sheet
+        </Button>
+
+        <Button
+          variant="primary"
+          size="sm"
+          icon={Upload}
+          onClick={handleOpenPushSheetModal}
+        >
+          {selectedRowIds.length > 0
+            ? `Đẩy ${selectedRowIds.length} dòng`
+            : `Đẩy lên Sheet (${displayedRows.length})`}
+        </Button>
+      </PageActions>
+
+      {/* Khung làm việc tích hợp: 2 thanh điều khiển 1 dòng sát mép + Bảng dữ liệu chuẩn Google Sheet */}
       <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
-        {/* Thanh 1: Ngữ cảnh Tháng / Gian hàng + Phân quyền PIC & Support + Link Google Sheet + 4 Chỉ số tóm tắt */}
-        <div className="px-3 py-2 border-b border-line bg-sunken/40 flex flex-wrap items-center justify-between gap-2">
+        {/* Thanh 1 (1 dòng duy nhất): Ngữ cảnh Tháng / Gian hàng / PIC / Link Sheet (Trái) + Chế độ cột / Chọn KOC / Thêm dòng / Tạo Deal (Phải) */}
+        <div className="px-3 py-1.5 border-b border-line bg-sunken/40 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
             <select
               value={activeMonth}
               onChange={(e) => onChangeMonth(e.target.value)}
               aria-label="Chọn tháng"
-              className="h-8 px-2.5 text-xs font-semibold rounded-md border border-line-strong bg-surface text-ink shrink-0 focus:outline-none focus:border-ink"
+              className="h-7 px-2 text-xs font-semibold rounded-md border border-line-strong bg-surface text-ink shrink-0 focus:outline-none focus:border-ink"
             >
               {MONTH_OPTIONS.map((m) => (
                 <option key={m} value={m}>
@@ -2700,7 +2843,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               value={activeStoreName}
               onChange={(e) => onChangeStore(e.target.value)}
               aria-label="Chọn Brand / Gian hàng"
-              className="h-8 px-2.5 text-xs font-semibold rounded-md border border-line-strong bg-surface text-ink max-w-[260px] truncate shrink-0 focus:outline-none focus:border-ink"
+              className="h-7 px-2 text-xs font-semibold rounded-md border border-line-strong bg-surface text-ink max-w-[230px] truncate shrink-0 focus:outline-none focus:border-ink"
             >
               {b2cStores.map((st) => {
                 const c = (
@@ -2714,8 +2857,6 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               })}
             </select>
 
-            <span className="h-4 w-px bg-line mx-0.5 shrink-0" />
-
             {/* Cụm hiển thị gọn: Nút bấm xem danh sách PIC gian hàng & Quyền + Link Google Sheet */}
             <div className="flex flex-wrap items-center gap-1.5 text-2xs">
               <div ref={picPopoverRef} className="relative">
@@ -2723,7 +2864,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   type="button"
                   onClick={() => setIsPicPopoverOpen((v) => !v)}
                   aria-expanded={isPicPopoverOpen}
-                  className="h-8 inline-flex items-center gap-1.5 px-2.5 rounded-md bg-surface border border-line-strong text-ink font-medium hover:bg-sunken transition-colors"
+                  className="h-7 inline-flex items-center gap-1.5 px-2 rounded-md bg-surface border border-line-strong text-ink font-medium hover:bg-sunken transition-colors"
                 >
                   <Users className="w-3.5 h-3.5 text-accent shrink-0" />
                   <span>PIC ({storePicTotalCount})</span>
@@ -2902,16 +3043,16 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               </div>
 
               {currentGoogleSheetUrl ? (
-                <div className="inline-flex items-center rounded-md border border-line-strong bg-surface overflow-hidden h-8">
+                <div className="inline-flex items-center rounded-md border border-line-strong bg-surface overflow-hidden h-7">
                   <a
                     href={currentGoogleSheetUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-2.5 h-full text-accent font-medium hover:bg-sunken transition-colors"
+                    className="inline-flex items-center gap-1 px-2 h-full text-accent font-medium hover:bg-sunken transition-colors"
                     title={currentGoogleSheetUrl}
                   >
                     <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
-                    <span>Mở Google Sheet</span>
+                    <span>Mở Sheet</span>
                     <ExternalLink className="w-3 h-3 shrink-0" />
                   </a>
                   <button
@@ -2935,7 +3076,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       setIsGoogleSheetModalOpen(true);
                     }
                   }}
-                  className="h-8 inline-flex items-center gap-1 px-2.5 rounded-md bg-surface border border-line-strong text-warning font-medium hover:bg-sunken"
+                  className="h-7 inline-flex items-center gap-1 px-2 rounded-md bg-surface border border-line-strong text-warning font-medium hover:bg-sunken"
                 >
                   <Link2 className="w-3.5 h-3.5 shrink-0" />
                   <span>Gắn Link Sheet</span>
@@ -2944,91 +3085,162 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             </div>
           </div>
 
-          {/* Cụm phải Thanh 1: Chỉ số tóm tắt gọn + Đồng bộ Google Sheet */}
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <div className="flex flex-wrap items-center gap-2.5 px-2.5 h-8 rounded-md bg-surface border border-line text-xs">
-              <div className="flex items-center gap-1">
-                <span className="text-ink-3">KOC:</span>
-                <strong className="text-ink tabular-nums">
-                  {formatNumber(sheetStats.totalCount)}
-                </strong>
-              </div>
-              <span className="h-3 w-px bg-line" />
-              <div className="flex items-center gap-1">
-                <span className="text-ink-3">Brand duyệt:</span>
-                <strong className="text-positive tabular-nums">
-                  {formatNumber(sheetStats.brandApprovedCount)}/{formatNumber(sheetStats.totalCount)}
-                </strong>
-              </div>
-              <span className="h-3 w-px bg-line" />
-              <div
-                className="flex items-center gap-1"
-                title="Đo lường SLA từ thời điểm Listing KOC mới lên đến khi Brand phản hồi (Cam kết chuẩn: ≤ 48h)"
+          {/* Cụm phải Thanh 1: Chế độ cột + Nút Cột + Chọn KOC + Thêm dòng + Tạo Deal + Khác */}
+          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+            <div className="inline-flex items-center p-0.5 rounded-md bg-surface border border-line text-2xs">
+              <button
+                type="button"
+                onClick={() => applyColumnPreset('BRAND_WORKING_FILE')}
+                className={`px-2 py-0.5 rounded transition-colors ${
+                  activeColumnPreset === 'BRAND_WORKING_FILE'
+                    ? 'bg-ink text-surface font-semibold shadow-2xs'
+                    : 'text-ink-2 hover:text-ink'
+                }`}
               >
-                <Clock className="w-3.5 h-3.5 text-accent shrink-0" />
-                <span className="text-ink-3">SLA:</span>
-                {sheetStats.reviewedCount > 0 ? (
-                  <strong
-                    className={`tabular-nums ${
-                      sheetStats.onTimeCount === sheetStats.reviewedCount
-                        ? 'text-positive'
-                        : 'text-warning'
-                    }`}
-                  >
-                    {sheetStats.onTimeCount}/{sheetStats.reviewedCount} ({sheetStats.avgReviewHours}h)
-                  </strong>
-                ) : (
-                  <strong className="text-ink-2 tabular-nums">Chờ duyệt</strong>
-                )}
-                {sheetStats.overdueWaitCount > 0 && (
-                  <span className="ml-0.5 px-1.5 py-0.2 rounded bg-rose-50 border border-rose-200 text-rose-700 font-semibold text-2xs">
-                    {sheetStats.overdueWaitCount} trễ
-                  </span>
-                )}
-              </div>
-              <span className="h-3 w-px bg-line" />
-              <div className="flex items-center gap-1">
-                <span className="text-ink-3">Net:</span>
-                <strong className="text-ink tabular-nums">
-                  {formatVndShort(sheetStats.totalNet)}
-                </strong>
-              </div>
-              <span className="h-3 w-px bg-line" />
-              <div className="flex items-center gap-1">
-                <span className="text-ink-3">Gross:</span>
-                <strong className="text-accent tabular-nums">
-                  {formatVndShort(sheetStats.totalGross)}
-                </strong>
-              </div>
+                1. Trình Brand (17)
+              </button>
+              <button
+                type="button"
+                onClick={() => applyColumnPreset('ACCEPTANCE_FILE_32')}
+                className={`px-2 py-0.5 rounded transition-colors ${
+                  activeColumnPreset === 'ACCEPTANCE_FILE_32'
+                    ? 'bg-ink text-surface font-semibold shadow-2xs'
+                    : 'text-ink-2 hover:text-ink'
+                }`}
+              >
+                2. Đi Air &amp; Nghiệm thu
+              </button>
+              <button
+                type="button"
+                onClick={() => applyColumnPreset('ALL_48')}
+                className={`px-2 py-0.5 rounded transition-colors ${
+                  activeColumnPreset === 'ALL_48'
+                    ? 'bg-ink text-surface font-semibold shadow-2xs'
+                    : 'text-ink-2 hover:text-ink'
+                }`}
+              >
+                Đầy đủ (57)
+              </button>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setIsColumnPickerOpen((v) => !v)}
+              className={`h-7 inline-flex items-center gap-1 px-2 rounded-md border text-2xs font-medium transition-colors ${
+                isColumnPickerOpen
+                  ? 'bg-ink text-surface border-ink'
+                  : 'bg-surface text-ink-2 border-line hover:bg-sunken hover:text-ink'
+              }`}
+              title="Bật/tắt hiển thị từng cột trên bảng"
+            >
+              <Columns className="w-3.5 h-3.5 shrink-0" />
+              <span>
+                Cột ({visibleColumns.length}/57)
+              </span>
+            </button>
 
             <Button
               variant="secondary"
               size="sm"
-              icon={RefreshCw}
-              onClick={handleOpenPullSheetModal}
+              icon={UserPlus}
+              onClick={handleOpenDirectoryPickerModal}
             >
-              Kéo từ Sheet
+              Chọn KOC
             </Button>
 
             <Button
-              variant="primary"
+              variant="secondary"
               size="sm"
-              icon={Upload}
-              onClick={handleOpenPushSheetModal}
+              icon={Plus}
+              onClick={handleAddBlankRow}
             >
-              {selectedRowIds.length > 0
-                ? `Đẩy ${selectedRowIds.length} dòng lên Sheet`
-                : `Đẩy lên Sheet (${displayedRows.length})`}
+              Thêm dòng
             </Button>
+
+            {sheetStats.brandApprovedCount > 0 && (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={ArrowRight}
+                onClick={() => handleOpenCreateDealsModal()}
+              >
+                {sheetStats.readyToCreateDealsCount > 0
+                  ? `Tạo Deal (${sheetStats.readyToCreateDealsCount})`
+                  : `Deal (${sheetStats.brandApprovedCount})`}
+              </Button>
+            )}
+
+            <ActionMenu
+              label="Khác"
+              items={[
+                {
+                  label: `Tạo các Deal từ KOC Brand đã duyệt (${sheetStats.brandApprovedCount} KOC)`,
+                  icon: ArrowRight,
+                  onSelect: () => handleOpenCreateDealsModal(),
+                },
+                ...(onOpenDealBoard
+                  ? [
+                      {
+                        label: `Mở Bảng Deal & Nghiệm thu (${sheetStats.alreadyCreatedDealsCount} Deal đã tạo)`,
+                        icon: FileText,
+                        onSelect: () =>
+                          onOpenDealBoard({
+                            storeName: activeStoreName,
+                            monthKey: activeMonth,
+                          }),
+                      },
+                    ]
+                  : []),
+                {
+                  label: `Gửi mail mời KOC (${
+                    selectedRowIds.length > 0 ? selectedRowIds.length : displayedRows.length
+                  })`,
+                  icon: Mail,
+                  onSelect: () => handleOpenOutreachForSelection('COMPOSE'),
+                },
+                {
+                  label: 'Copy bảng gửi Brand (Google Sheet)',
+                  icon: Copy,
+                  onSelect: () => {
+                    void handleCopyTsv('BRAND_WORKING_COLS');
+                  },
+                },
+                {
+                  label: 'Xuất file CSV / Excel',
+                  icon: Download,
+                  onSelect: () =>
+                    downloadStaffSheetCsv(rows, visibleColumns, activeStoreName, activeMonth),
+                },
+                {
+                  label: `Chọn nhanh dòng Brand duyệt (${sheetStats.brandApprovedCount})`,
+                  icon: CheckCircle2,
+                  onSelect: handleSelectAllBrandApproved,
+                },
+                {
+                  label: 'Thiết lập & Sort File Google Sheet (Ẩn tháng, Ẩn cột, Sort SP/NV)',
+                  icon: Settings,
+                  onSelect: handleOpenSheetTemplateModal,
+                },
+                {
+                  label: currentGoogleSheetUrl
+                    ? 'Đổi Link Google Sheet'
+                    : 'Gắn Link Google Sheet',
+                  icon: Link2,
+                  onSelect: () => {
+                    setGoogleSheetUrlDraft(currentGoogleSheetUrl);
+                    setIsGoogleSheetModalOpen(true);
+                  },
+                },
+              ]}
+            />
           </div>
         </div>
 
-        {/* Thanh 2: Bộ lọc gọn + Chuyển nhanh Giai đoạn cột + Tác vụ thêm KOC / Tạo Deal */}
+        {/* Thanh 2 (1 dòng duy nhất): Tìm kiếm + Bộ lọc + Sort (Trái) & Chú giải nguồn cột / Chỉ số thu gọn (Phải) */}
         <div className="px-3 py-1.5 border-b border-line bg-surface flex flex-wrap items-center justify-between gap-2">
           {/* Bên trái: Tìm kiếm, Lọc, Sắp xếp */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <div className="relative w-44 sm:w-52">
+            <div className="relative w-44 sm:w-56">
               <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
@@ -3120,154 +3332,20 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             )}
           </div>
 
-          {/* Bên phải: Chế độ cột + Nút Cột + Chọn KOC + Tạo Deal + Menu */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <div className="inline-flex items-center p-0.5 rounded-md bg-sunken border border-line text-2xs">
-              <button
-                type="button"
-                onClick={() => applyColumnPreset('BRAND_WORKING_FILE')}
-                className={`px-2 py-0.5 rounded transition-colors ${
-                  activeColumnPreset === 'BRAND_WORKING_FILE'
-                    ? 'bg-surface text-ink font-semibold shadow-2xs'
-                    : 'text-ink-2 hover:text-ink'
-                }`}
-              >
-                1. Trình Brand (15 cột)
-              </button>
-              <button
-                type="button"
-                onClick={() => applyColumnPreset('ACCEPTANCE_FILE_32')}
-                className={`px-2 py-0.5 rounded transition-colors ${
-                  activeColumnPreset === 'ACCEPTANCE_FILE_32'
-                    ? 'bg-surface text-ink font-semibold shadow-2xs'
-                    : 'text-ink-2 hover:text-ink'
-                }`}
-              >
-                2. Đi Air &amp; Nghiệm thu
-              </button>
-              <button
-                type="button"
-                onClick={() => applyColumnPreset('ALL_48')}
-                className={`px-2 py-0.5 rounded transition-colors ${
-                  activeColumnPreset === 'ALL_48'
-                    ? 'bg-surface text-ink font-semibold shadow-2xs'
-                    : 'text-ink-2 hover:text-ink'
-                }`}
-              >
-                Đầy đủ ({STAFF_LISTING_COLUMNS.length} cột)
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsColumnPickerOpen((v) => !v)}
-              className={`h-7 inline-flex items-center gap-1 px-2 rounded-md border text-2xs font-medium transition-colors ${
-                isColumnPickerOpen
-                  ? 'bg-ink text-surface border-ink'
-                  : 'bg-surface text-ink-2 border-line hover:bg-sunken hover:text-ink'
-              }`}
-              title="Bật/tắt hiển thị từng cột trên bảng"
-            >
-              <Columns className="w-3.5 h-3.5 shrink-0" />
-              <span>
-                Cột ({visibleColumns.length}/{STAFF_LISTING_COLUMNS.length})
-              </span>
-            </button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={UserPlus}
-              onClick={handleOpenDirectoryPickerModal}
-            >
-              Chọn KOC
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Plus}
-              onClick={handleAddBlankRow}
-            >
-              Thêm dòng
-            </Button>
-
-            {sheetStats.brandApprovedCount > 0 && (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={ArrowRight}
-                onClick={() => handleOpenCreateDealsModal()}
-              >
-                {sheetStats.readyToCreateDealsCount > 0
-                  ? `Tạo Deal (${sheetStats.readyToCreateDealsCount} mới)`
-                  : `Đồng bộ Deal (${sheetStats.brandApprovedCount})`}
-              </Button>
-            )}
-
-            <ActionMenu
-              label="Khác"
-              items={[
-                {
-                  label: `Tạo các Deal từ KOC Brand đã duyệt (${sheetStats.brandApprovedCount} KOC)`,
-                  icon: ArrowRight,
-                  onSelect: () => handleOpenCreateDealsModal(),
-                },
-                ...(onOpenDealBoard
-                  ? [
-                      {
-                        label: `Mở Bảng Deal & Nghiệm thu (${sheetStats.alreadyCreatedDealsCount} Deal đã tạo)`,
-                        icon: FileText,
-                        onSelect: () =>
-                          onOpenDealBoard({
-                            storeName: activeStoreName,
-                            monthKey: activeMonth,
-                          }),
-                      },
-                    ]
-                  : []),
-                {
-                  label: `Gửi mail mời KOC (${
-                    selectedRowIds.length > 0 ? selectedRowIds.length : displayedRows.length
-                  })`,
-                  icon: Mail,
-                  onSelect: () => handleOpenOutreachForSelection('COMPOSE'),
-                },
-                {
-                  label: 'Copy bảng gửi Brand (Google Sheet)',
-                  icon: Copy,
-                  onSelect: () => {
-                    void handleCopyTsv('BRAND_WORKING_COLS');
-                  },
-                },
-                {
-                  label: 'Xuất file CSV / Excel',
-                  icon: Download,
-                  onSelect: () =>
-                    downloadStaffSheetCsv(rows, visibleColumns, activeStoreName, activeMonth),
-                },
-                {
-                  label: `Chọn nhanh dòng Brand duyệt (${sheetStats.brandApprovedCount})`,
-                  icon: CheckCircle2,
-                  onSelect: handleSelectAllBrandApproved,
-                },
-                {
-                  label: 'Thiết lập & Sort File Google Sheet (Ẩn tháng, Ẩn cột, Sort SP/NV)',
-                  icon: Settings,
-                  onSelect: handleOpenSheetTemplateModal,
-                },
-                {
-                  label: currentGoogleSheetUrl
-                    ? 'Đổi Link Google Sheet'
-                    : 'Gắn Link Google Sheet',
-                  icon: Link2,
-                  onSelect: () => {
-                    setGoogleSheetUrlDraft(currentGoogleSheetUrl);
-                    setIsGoogleSheetModalOpen(true);
-                  },
-                },
-              ]}
-            />
+          {/* Bên phải Thanh 2: Chú giải màu cột (Tự động / Công thức / NV điền) lấp đầy cân đối khoảng trống phải */}
+          <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-2 shrink-0">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              Tự động: Danh bạ KOC
+            </span>
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              Công thức: Tự tính
+            </span>
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sunken text-ink-2 border border-line font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-ink-3" />
+              NV điền: Nhập / chọn
+            </span>
           </div>
         </div>
 
@@ -4985,7 +5063,89 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               )}
             </div>
 
-            {!pushDiffReport ? (
+            {!isServiceAccountConfigured ? (
+              <div className="p-3.5 bg-warning-soft/40 border-b border-line space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="p-1 rounded-md bg-warning text-white shrink-0 mt-0.5">
+                    <Key className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="text-xs font-semibold text-ink">
+                      Chưa cấu hình tài khoản Google Service Account
+                    </div>
+                    <div className="text-2xs text-ink-2 leading-relaxed">
+                      Hệ thống cần tài khoản dịch vụ Google để đọc và ghi trực tiếp lên Google Sheet của Brand.
+                      Bạn có thể dán mã khóa Service Account JSON ngay bên dưới, hoặc xuất file Excel / Copy 57 cột chuẩn để dán thủ công vào Sheet.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Khung dán Service Account JSON nhanh */}
+                <div className="space-y-2 pt-2 border-t border-line/60">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xs font-medium text-ink">
+                      Khai báo Service Account JSON trực tiếp:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsShowingSaJsonInput((v) => !v)}
+                      className="text-2xs text-accent font-medium hover:underline"
+                    >
+                      {isShowingSaJsonInput ? 'Thu gọn ô dán khóa' : 'Dán mã khóa JSON'}
+                    </button>
+                  </div>
+
+                  {isShowingSaJsonInput && (
+                    <div className="space-y-2">
+                      <textarea
+                        rows={3}
+                        value={pushSaJsonDraft}
+                        onChange={(e) => setPushSaJsonDraft(e.target.value)}
+                        placeholder='{"type": "service_account", "project_id": "...", "private_key": "...", "client_email": "..."}'
+                        className="w-full p-2 rounded-md border border-line bg-surface text-ink text-2xs font-code focus:outline-none focus:border-focus"
+                      />
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          disabled={savingPushSa || !pushSaJsonDraft.trim()}
+                          onClick={() => void handleSavePushServiceAccount()}
+                        >
+                          {savingPushSa ? 'Đang lưu…' : 'Lưu Service Account & Bắt đầu đối soát'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Các phương án dự phòng tải Excel / Copy TSV */}
+                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-line/60">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Download}
+                    onClick={() =>
+                      downloadStaffSheetCsv(
+                        getTargetRowsForPush(pushScope),
+                        getColsForPush(pushColMode),
+                        activeStoreName,
+                        activeMonth
+                      )
+                    }
+                  >
+                    Tải file CSV / Excel ({getTargetRowsForPush(pushScope).length} dòng)
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Copy}
+                    onClick={() => void handleCopyTsv('ALL_48_COLS')}
+                  >
+                    Copy 57 cột (Dán Ctrl+V vào Google Sheet)
+                  </Button>
+                </div>
+              </div>
+            ) : !pushDiffReport ? (
               <div className="p-6 text-center text-ink-3 space-y-2">
                 <div>
                   {pushBusy
