@@ -48,6 +48,8 @@ export interface LinkAirResult {
   statusDetail: string | null;
   author: { handle: string | null; name: string | null; profileUrl: string | null; followers: number | null };
   publishedAt: string | null;
+  publishedTimeSec?: number | null;
+  airedAtVn?: string | null;
   caption: string;
   hashtags: string[];
   mentions: string[];
@@ -61,10 +63,15 @@ export interface LinkAirResult {
   cartProducts?: LinkAirCartProduct[];
   onScreenStickers?: string[];
   transcriptText?: string | null;
+  playableUrl?: string | null;
+  coverUrl?: string | null;
   firstProductAppearanceSec?: number | null;
   firstProductMentionTimeLabel?: string | null;
   firstProductMentionTerm?: string | null;
   firstProductMentionQuote?: string | null;
+  bestHoldingMomentSec?: number | null;
+  bestHoldingMomentTimeLabel?: string | null;
+  bestHoldingMomentQuote?: string | null;
   productMentionMoments?: Array<{
     startSec: number;
     endSec: number;
@@ -127,7 +134,7 @@ export function buildLinkAirCsv(results: LinkAirResult[]): string {
     'Kết luận',
     'Trạng thái bài',
     'Kênh',
-    'Ngày air',
+    'Ngày giờ air (VN)',
     'View',
     'Like',
     'Bình luận',
@@ -150,7 +157,7 @@ export function buildLinkAirCsv(results: LinkAirResult[]): string {
     LINK_AIR_VERDICT_LABEL[r.verdict],
     r.status,
     r.author.handle ? `@${r.author.handle}` : r.author.name ?? '',
-    r.publishedAt ? r.publishedAt.slice(0, 10) : '',
+    r.airedAtVn || (r.publishedAt ? r.publishedAt.slice(0, 10) : ''),
     r.metrics.views,
     r.metrics.likes,
     r.metrics.comments,

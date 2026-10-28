@@ -495,6 +495,15 @@ const PRODUCT_CATEGORY_PHRASES = [
   'lăn khử mùi',
   'nước hoa',
   'viên uống',
+  'cây đèn',
+  'bộ đèn',
+  'đèn led',
+  'đèn pin',
+  'đèn chụp ảnh',
+  'nước giặt',
+  'bàn chải',
+  'máy rửa mặt',
+  'máy sấy',
 ];
 
 const GENERIC_TITLE_STOPWORDS = new Set([
@@ -640,6 +649,28 @@ const GENERIC_TITLE_STOPWORDS = new Set([
   'pham',
   'chu',
   'luc',
+  'quay',
+  'chup',
+  'anh',
+  'tay',
+  'che',
+  'do',
+  'tao',
+  'dep',
+  'nho',
+  'gon',
+  'tien',
+  'loi',
+  'pin',
+  'sac',
+  'mau',
+  'led',
+  'spotlight',
+  'nano',
+  'rgb',
+  'cao',
+  'cap',
+  'tot',
 ]);
 
 const PRODUCT_SHORTHAND_EXPANSIONS: Record<string, string[]> = {
@@ -726,7 +757,7 @@ export function detectProductMentionMoments(params: {
   const allProductTitles = [
     productName || '',
     cartAnchorTitle || '',
-    ...cartProducts.map((p) => p.title || ''),
+    ...cartProducts.flatMap((p) => [p.title || '', p.anchorKeyword || '']),
     caption || '',
   ]
     .filter(Boolean)
@@ -771,6 +802,17 @@ export function detectProductMentionMoments(params: {
       (/^[A-Z0-9]{4,}$/.test(tok) || (/^[A-Z][a-z0-9]{3,}$/.test(tok) && tok.toLowerCase() === foldedTok))
     ) {
       addCandidate(tok, 1);
+      // Bổ sung biến thể lược bỏ chữ cái lặp liên tiếp (VD: PHOTOOLEX -> photolex) để khớp chính xác khi Whisper ASR phiên âm thiếu chữ lặp
+      const dedupedFolded = foldedTok.replace(/(.)\1+/g, '$1');
+      if (
+        dedupedFolded !== foldedTok &&
+        dedupedFolded.length >= 4 &&
+        !GENERIC_TITLE_STOPWORDS.has(dedupedFolded) &&
+        !seenFolded.has(dedupedFolded)
+      ) {
+        seenFolded.add(dedupedFolded);
+        candidateTerms.push({ label: tok, folded: dedupedFolded, priority: 1 });
+      }
     }
   }
 

@@ -433,6 +433,7 @@ export interface RealTikTokVideoAndAuthorDetail {
   subtitleUrl?: string;
   transcriptText?: string;
   playableUrl?: string;
+  coverUrl?: string;
   author: {
     handle: string;
     secUid?: string;
@@ -614,19 +615,21 @@ export function extractTikTokShopAnchorInfo(itemStruct: Record<string, unknown>)
 
       if (innerObj || rawExtraStr) {
         const rawProductId =
-          parseIdCandidate(innerObj?.product_id) ||
-          parseIdCandidate(innerObj?.material_id) ||
           (rawExtraStr ? rawExtraStr.match(/"product_id"\s*:\s*"?(\d{10,25})"?/)?.[1] : '') ||
           (rawExtraStr ? rawExtraStr.match(/"material_id"\s*:\s*"?(\d{10,25})"?/)?.[1] : '') ||
-          outerId;
+          outerId ||
+          parseIdCandidate(innerObj?.product_id) ||
+          parseIdCandidate(innerObj?.material_id);
 
         const rawSellerId =
+          (rawExtraStr ? rawExtraStr.match(/"seller_id"\s*:\s*"?(\d{10,25})"?/)?.[1] : undefined) ||
           parseIdCandidate(innerObj?.seller_id) ||
-          (rawExtraStr ? rawExtraStr.match(/"seller_id"\s*:\s*"?(\d{10,25})"?/)?.[1] : undefined);
+          undefined;
 
         const rawSkuId =
+          (rawExtraStr ? rawExtraStr.match(/"sku_id"\s*:\s*"?(\d{10,25})"?/)?.[1] : undefined) ||
           parseIdCandidate(innerObj?.sku_id) ||
-          (rawExtraStr ? rawExtraStr.match(/"sku_id"\s*:\s*"?(\d{10,25})"?/)?.[1] : undefined);
+          undefined;
 
         const fullTitle = (typeof innerObj?.title === 'string' && innerObj.title.trim()) || '';
         const elasticTitle = (typeof innerObj?.elastic_title === 'string' && innerObj.elastic_title.trim()) || '';
@@ -1252,6 +1255,16 @@ export function parseTikTokItemStructToDetail(itemStruct: Record<string, any> | 
   const playableUrl = playUrlCandidates.find(
     (u) => typeof u === 'string' && /^https:\/\/[\w.-]+\.(?:tiktokcdn|tiktokcdn-us|tiktokv|muscdn|byteoversea|byteicdn)\.com\//i.test(u)
   );
+  const rawCoverCandidate =
+    itemStruct.video?.zoomCover?.['720'] ||
+    itemStruct.video?.zoomCover?.['480'] ||
+    itemStruct.video?.cover ||
+    itemStruct.video?.originCover ||
+    itemStruct.video?.dynamicCover;
+  const coverUrl =
+    typeof rawCoverCandidate === 'string' && /^https?:\/\//i.test(rawCoverCandidate)
+      ? rawCoverCandidate
+      : undefined;
 
   const rawCaption =
     String(itemStruct.desc || '').trim() ||
@@ -1324,6 +1337,7 @@ export function parseTikTokItemStructToDetail(itemStruct: Record<string, any> | 
     onScreenStickers: onScreenStickers.length > 0 ? onScreenStickers : undefined,
     subtitleUrl,
     playableUrl,
+    coverUrl,
     author: {
       handle,
       secUid,
@@ -1588,7 +1602,9 @@ export async function inspectLiveTikTokVideoPage(
       // Nếu phát hiện video có giỏ hàng (hoặc bị CapCut type 54 đè trên bản Desktop) nhưng chưa lấy được chi tiết sản phẩm,
       // tự động gọi nhánh Mobile iOS 17 Safari (kỹ thuật Ông Chú MMO __tpt_mobile=1) để lấy trọn vẹn anchors type 33/35/38
       if (
-        (result.hasCartAnchor || itemStruct?.AnchorTypes?.includes?.('54')) &&
+        (result.hasCartAnchor ||
+          itemStruct?.AnchorTypes?.includes?.('33') ||
+          itemStruct?.AnchorTypes?.includes?.('54')) &&
         (!result.cartProducts || result.cartProducts.length === 0)
       ) {
         const mobileFetched = await fetchTikTokHtmlWithWafBypass(videoUrl, 5500, {
@@ -1619,6 +1635,32 @@ export async function inspectLiveTikTokVideoPage(
             } catch {
               // ignore mobile parse error
             }
+          }
+        }
+
+        // Nhánh dự phòng số 2: Truy vấn trực tiếp qua /api/creator/item_list/ (có truyền region=VN & priority_region=VN)
+        if (
+          (!result.cartProducts || result.cartProducts.length === 0) &&
+          result.author.secUid &&
+          result.author.handle
+        ) {
+          try {
+            const creatorItems = await fetchTikTokCreatorVideoListBySecUid(
+              result.author.handle,
+              result.author.secUid,
+              15
+            );
+            const matchedVideo = creatorItems.find((v) => v.videoId === result.videoId);
+            if (matchedVideo?.cartProducts && matchedVideo.cartProducts.length > 0) {
+              result.hasCartAnchor = true;
+              result.cartProducts = matchedVideo.cartProducts;
+              result.cartAnchorTitle = matchedVideo.cartAnchorTitle || result.cartAnchorTitle;
+              result.cartAnchorUrl = matchedVideo.cartAnchorUrl || result.cartAnchorUrl;
+              result.cartProductId = matchedVideo.cartProductId || result.cartProductId;
+              result.cartSellerId = matchedVideo.cartSellerId || result.cartSellerId;
+            }
+          } catch {
+            // ignore fallback error
           }
         }
       }

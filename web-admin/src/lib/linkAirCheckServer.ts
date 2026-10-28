@@ -100,6 +100,28 @@ function unixSecondsToIso(seconds: number | null | undefined): string | null {
   return new Date(seconds * 1000).toISOString();
 }
 
+export function formatVnDateTimeFromUnixSec(
+  seconds: number | null | undefined,
+  fallbackYmd?: string | null
+): string | null {
+  if (seconds && Number.isFinite(seconds) && seconds > 1_000_000_000) {
+    // Múi giờ Việt Nam UTC+7 (chuẩn DD/MM/YYYY HH:mm)
+    const vnMs = seconds * 1000 + 7 * 3600 * 1000;
+    const d = new Date(vnMs);
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const yyyy = d.getUTCFullYear();
+    const hh = String(d.getUTCHours()).padStart(2, '0');
+    const min = String(d.getUTCMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+  }
+  if (fallbackYmd && /^\d{4}-\d{2}-\d{2}/.test(fallbackYmd)) {
+    const [y, m, d] = fallbackYmd.slice(0, 10).split('-');
+    return `${d}/${m}/${y}`;
+  }
+  return null;
+}
+
 function readJsonNumber(source: string, key: string, from = 0): number | null {
   const pattern = new RegExp(`"${key}":(\\d+)`, 'g');
   pattern.lastIndex = from;
@@ -887,6 +909,39 @@ export async function checkSingleLinkServerless(
       uspKeywords: expect.requiredKeywords,
     });
 
+    const holdingRegex =
+      /(?:cầm|về tay|trên tay|cả bộ|cây đèn|chai này|lọ này|tuýp này|hộp này|em này|như thế này|như này|đây này|bôi|thoa|test)/i;
+    const preferredHoldingMoment =
+      mentionDetection.productMentionMoments.find((m) => holdingRegex.test(m.quote)) ||
+      mentionDetection.productMentionMoments[0];
+    const fallbackHoldingSeg =
+      !preferredHoldingMoment && subtitleSegments.length > 0
+        ? subtitleSegments.find((s) => holdingRegex.test(s.text)) || subtitleSegments[0]
+        : undefined;
+    const rawHoldingStartSec =
+      preferredHoldingMoment?.startSec ??
+      fallbackHoldingSeg?.startSec ??
+      mentionDetection.firstProductAppearanceSec ??
+      null;
+    const maxSafeSec =
+      inspected.durationSeconds && inspected.durationSeconds > 3
+        ? Math.max(1.5, inspected.durationSeconds - 1.5)
+        : 30;
+    const bestHoldingMomentSec =
+      rawHoldingStartSec !== null
+        ? Number(Math.min(maxSafeSec, Math.max(1.5, rawHoldingStartSec + 1.5)).toFixed(1))
+        : 3.5;
+    const bestHoldingMomentTimeLabel =
+      preferredHoldingMoment?.timeLabel ||
+      fallbackHoldingSeg?.timeLabel ||
+      mentionDetection.firstProductMentionTimeLabel ||
+      '00:02 - 00:05';
+    const bestHoldingMomentQuote =
+      preferredHoldingMoment?.quote ||
+      fallbackHoldingSeg?.text ||
+      mentionDetection.firstProductMentionQuote ||
+      null;
+
     const combinedTextForPolicy = [
       inspected.caption,
       ...(inspected.onScreenStickers || []),
@@ -911,6 +966,8 @@ export async function checkSingleLinkServerless(
         followers: inspected.author.followers,
       },
       publishedAt: inspected.publishedAt,
+      publishedTimeSec: inspected.createTimeSec || null,
+      airedAtVn: formatVnDateTimeFromUnixSec(inspected.createTimeSec, inspected.publishedAt),
       caption: inspected.caption,
       hashtags,
       mentions: extractMentions(inspected.caption),
@@ -930,10 +987,15 @@ export async function checkSingleLinkServerless(
       cartProducts: inspected.cartProducts || [],
       onScreenStickers: inspected.onScreenStickers,
       transcriptText,
+      playableUrl: inspected.playableUrl || null,
+      coverUrl: inspected.coverUrl || null,
       firstProductAppearanceSec: mentionDetection.firstProductAppearanceSec,
       firstProductMentionTimeLabel: mentionDetection.firstProductMentionTimeLabel || null,
       firstProductMentionTerm: mentionDetection.firstProductMentionTerm || null,
       firstProductMentionQuote: mentionDetection.firstProductMentionQuote || null,
+      bestHoldingMomentSec,
+      bestHoldingMomentTimeLabel,
+      bestHoldingMomentQuote,
       productMentionMoments: mentionDetection.productMentionMoments,
       policyViolations: policyViolations.length > 0 ? policyViolations : undefined,
       limitations: [],

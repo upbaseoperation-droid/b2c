@@ -43,7 +43,39 @@ import {
   type Column,
 } from '@/components/ui';
 
-type ZaloGroupRole = 'KOC_GROUP' | 'INTERNAL_OPS' | 'BOD_EXECUTIVE';
+type ZaloGroupRole = 'KOC_GROUP' | 'BRAND_PARTNER' | 'INTERNAL_OPS' | 'BOD_EXECUTIVE';
+
+type ZaloAutoReplyKey =
+  | 'AIR_CHECK_RESULT'
+  | 'AIR_CHECK_PHOTO_CAPTION'
+  | 'BRIEF_MESSAGE'
+  | 'DRAFT_RECEIVED'
+  | 'DRAFT_APPROVED'
+  | 'DRAFT_REJECTED'
+  | 'BRAND_PROGRESS_REPORT';
+
+interface ZaloAutoReplyTemplateItem {
+  key: ZaloAutoReplyKey;
+  label: string;
+  triggerHint: string;
+  content: string;
+  availablePlaceholders: string[];
+}
+
+interface ZaloBroadcastTemplateItem {
+  id: string;
+  label: string;
+  targetRole: ZaloGroupRole | 'ALL';
+  content: string;
+}
+
+interface ZaloBotReplyConfigState {
+  sendHoldingPhotoOnAirCheck: boolean;
+  sendScanningProgressMessage: boolean;
+  autoReplyTemplates: ZaloAutoReplyTemplateItem[];
+  broadcastTemplates: ZaloBroadcastTemplateItem[];
+  updatedAt?: string;
+}
 
 type ZaloGroupAccessStatus = 'APPROVED' | 'PENDING_APPROVAL' | 'BLOCKED';
 
@@ -144,6 +176,19 @@ interface ZaloAirCheckHistoryItem {
   holdingMomentSec?: number;
   holdingMomentTimeLabel?: string;
   holdingMomentQuote?: string;
+  airedAtVn?: string;
+  publishedAt?: string;
+  firstProductAppearanceSec?: number | null;
+  firstProductMentionTimeLabel?: string;
+  firstProductMentionTerm?: string;
+  firstProductMentionQuote?: string;
+  productMentionMoments?: Array<{
+    startSec: number;
+    endSec: number;
+    timeLabel: string;
+    matchedTerm: string;
+    quote: string;
+  }>;
   views: number | null;
   likes: number | null;
   hashtags: string[];
@@ -155,6 +200,8 @@ interface WebhookDebugEvent {
   body: any;
   extractedChatId?: string;
   replySent?: boolean;
+  replyText?: string;
+  replyPhotoUrl?: string;
   error?: string;
 }
 
@@ -165,8 +212,233 @@ interface ZaloBotManagerProps {
 
 const GROUP_ROLE_LABEL: Record<ZaloGroupRole, string> = {
   KOC_GROUP: 'Nhóm KOC 3 bên',
+  BRAND_PARTNER: 'Nhóm làm việc với Brand',
   INTERNAL_OPS: 'Nhóm Vận hành nội bộ',
   BOD_EXECUTIVE: 'Nhóm Điều hành BOD',
+};
+
+const DEFAULT_CLIENT_REPLY_CONFIG: ZaloBotReplyConfigState = {
+  sendHoldingPhotoOnAirCheck: true,
+  sendScanningProgressMessage: true,
+  autoReplyTemplates: [
+    {
+      key: 'AIR_CHECK_RESULT',
+      label: '1. Kết quả nghiệm thu video TikTok (Quét link Air)',
+      triggerHint: 'Tự động gửi khi KOC / PIC / Brand dán link video TikTok vào nhóm',
+      availablePlaceholders: [
+        '{verdictIcon}',
+        '{kocHandle}',
+        '{airedAt}',
+        '{statusText}',
+        '{cartText}',
+        '{productLinks}',
+        '{mentionLine}',
+        '{holdingLine}',
+        '{views}',
+        '{likes}',
+        '{hashtags}',
+        '{dealSyncNote}',
+      ],
+      content: [
+        '📊 KẾT QUẢ NGHIỆM THU VIDEO TIKTOK',
+        '----------------------------------------',
+        '• Đánh giá: {verdictIcon}',
+        '• Tác giả kênh: @{kocHandle}',
+        '• Ngày giờ lên sóng (Air): {airedAt}',
+        '• Tình trạng: {statusText}',
+        '• Giỏ hàng: {cartText}',
+        '{productLinks}',
+        '{mentionLine}',
+        '{holdingLine}',
+        '• Lượt xem: {views} | Lượt thích: {likes}',
+        '• Hashtags: {hashtags}',
+        '----------------------------------------',
+        '{dealSyncNote}',
+      ].join('\n'),
+    },
+    {
+      key: 'AIR_CHECK_PHOTO_CAPTION',
+      label: '2. Chú thích dưới ảnh chụp KOC cầm sản phẩm (sendPhoto)',
+      triggerHint: 'Đính kèm dưới bức ảnh cắt từ clip tại mốc giây KOC cầm sản phẩm',
+      availablePlaceholders: [
+        '{kocHandle}',
+        '{holdingSec}',
+        '{holdingTimeLabel}',
+        '{airedAt}',
+        '{mentionSec}',
+        '{productTitle}',
+        '{holdingQuote}',
+      ],
+      content: [
+        '📸 Ảnh chụp KOC @{kocHandle} cầm sản phẩm ở giây {holdingSec}s ({holdingTimeLabel})',
+        '📅 Ngày giờ Air: {airedAt} | ⏱️ Nhắc SP lần đầu: Giây {mentionSec}s',
+        '🛒 SP: {productTitle}',
+        '💬 Lời thoại: "{holdingQuote}"',
+      ].join('\n'),
+    },
+    {
+      key: 'BRIEF_MESSAGE',
+      label: '3. Bản tin Brief chiến dịch KOC (/brief)',
+      triggerHint: 'Phản hồi khi gõ lệnh /brief hoặc bấm nút Gửi Brief trên Web-Admin',
+      availablePlaceholders: [
+        '{dealCode}',
+        '{brandName}',
+        '{storeName}',
+        '{kocName}',
+        '{productName}',
+        '{pillarName}',
+        '{briefSummary}',
+        '{hashtags}',
+        '{deadlineDate}',
+        '{picName}',
+      ],
+      content: [
+        '📋 BRIEF CHIẾN DỊCH BOOKING KOC - UPBASE B2C',
+        '----------------------------------------',
+        '• Mã Deal: {dealCode}',
+        '• Thương hiệu: {brandName} ({storeName})',
+        '• KOC thực hiện: {kocName}',
+        '• Sản phẩm trọng tâm: {productName}',
+        '• Trụ cột nội dung: {pillarName}',
+        '• Yêu cầu kịch bản & góc quay:',
+        '  {briefSummary}',
+        '• Hashtag bắt buộc: {hashtags}',
+        '• Hạn nộp video nháp (SLA): {deadlineDate}',
+        '• Chuyên viên phụ trách (PIC): {picName}',
+        '----------------------------------------',
+        '👉 Cách nộp bài ngay trong nhóm:',
+        '1. Nộp link video nháp (Google Drive): Gõ /nopnhap <link_drive>',
+        '2. Nộp link TikTok đã đăng (Air): Dán trực tiếp link TikTok kèm tag @Bot để hệ thống tự động quét nghiệm thu.',
+      ].join('\n'),
+    },
+    {
+      key: 'DRAFT_RECEIVED',
+      label: '4. Xác nhận tiếp nhận video nháp (/nopnhap)',
+      triggerHint: 'Phản hồi khi KOC gửi link Google Drive / CapCut hoặc gõ /nopnhap',
+      availablePlaceholders: ['{senderName}', '{dealCode}', '{brandName}', '{draftUrl}', '{picName}'],
+      content: [
+        '📥 ĐÃ TIẾP NHẬN VIDEO DEMO / NHÁP',
+        '----------------------------------------',
+        '• Người nộp: {senderName}',
+        '• Mã Deal: {dealCode}',
+        '• Thương hiệu: {brandName}',
+        '• Link bản nháp: {draftUrl}',
+        '• Trạng thái mới: ĐÃ_NỘP_NHÁP (Chờ PIC/Brand duyệt)',
+        '----------------------------------------',
+        '🔔 Nhắc PIC phụ trách ({picName}): Sau khi kiểm tra nội dung, hãy gõ:',
+        '• /duyetnhap [ghi chú] -> Để phê duyệt cho KOC đăng bài.',
+        '• /suanhap <nội dung cần sửa> -> Để yêu cầu KOC chỉnh sửa.',
+      ].join('\n'),
+    },
+    {
+      key: 'DRAFT_APPROVED',
+      label: '5. Thông báo phê duyệt video nháp (/duyetnhap)',
+      triggerHint: 'Phản hồi khi PIC hoặc Đại diện Brand gõ /duyetnhap',
+      availablePlaceholders: ['{dealCode}', '{brandName}', '{kocName}', '{senderName}', '{reviewNote}'],
+      content: [
+        '✅ PHÊ DUYỆT VIDEO NHÁP THÀNH CÔNG',
+        '----------------------------------------',
+        '• Mã Deal: {dealCode} ({brandName})',
+        '• KOC: {kocName}',
+        '• Người duyệt: {senderName}',
+        '• Ghi chú duyệt: {reviewNote}',
+        '• Trạng thái Deal: ĐÃ_DUYỆT_NHÁP',
+        '----------------------------------------',
+        '👉 Khi đăng video lên TikTok xong, KOC chỉ cần gửi link TikTok vào nhóm này để Bot nghiệm thu tự động!',
+      ].join('\n'),
+    },
+    {
+      key: 'DRAFT_REJECTED',
+      label: '6. Thông báo yêu cầu chỉnh sửa video nháp (/suanhap)',
+      triggerHint: 'Phản hồi khi PIC hoặc Đại diện Brand gõ /suanhap <nội dung>',
+      availablePlaceholders: ['{dealCode}', '{brandName}', '{senderName}', '{feedback}'],
+      content: [
+        '🛠️ YÊU CẦU CHỈNH SỬA VIDEO NHÁP',
+        '----------------------------------------',
+        '• Mã Deal: {dealCode} ({brandName})',
+        '• Người yêu cầu: {senderName}',
+        '• Nội dung cần điều chỉnh: {feedback}',
+        '• Trạng thái Deal: CẦN_CHỈNH_SỬA',
+        '----------------------------------------',
+        '👉 Sau khi chỉnh sửa xong, KOC gửi lại link Google Drive mới kèm lệnh /nopnhap nhé!',
+      ].join('\n'),
+    },
+    {
+      key: 'BRAND_PROGRESS_REPORT',
+      label: '7. Báo cáo tiến độ chiến dịch dành cho Nhóm Brand (/tiendo, /baocaobrand)',
+      triggerHint: 'Phản hồi trong Nhóm làm việc với Nhãn hàng (BRAND_PARTNER) khi gõ /tiendo hoặc /baocaobrand',
+      availablePlaceholders: [
+        '{brandName}',
+        '{leaderName}',
+        '{storeSummary}',
+        '{airedSummary}',
+        '{pendingDraftSummary}',
+      ],
+      content: [
+        '📊 BÁO CÁO TIẾN ĐỘ CHIẾN DỊCH NHÃN HÀNG: {brandName}',
+        '• Quản lý điều phối Upbase: {leaderName}',
+        '----------------------------------------',
+        '{storeSummary}',
+        '----------------------------------------',
+        '📌 TÌNH HÌNH NGHIỆM THU & BẢN NHÁP:',
+        '{airedSummary}',
+        '{pendingDraftSummary}',
+        '----------------------------------------',
+        '👉 Lệnh hỗ trợ Nhãn hàng trong nhóm: /listing (xem KOC đề xuất), /nhapchoduyet (xem demo chờ duyệt), /duyetkoc <@handle>, /duyetnhap <@handle>.',
+      ].join('\n'),
+    },
+  ],
+  broadcastTemplates: [
+    {
+      id: 'brief_reminder',
+      label: 'Mẫu gửi Brief chiến dịch KOC',
+      targetRole: 'KOC_GROUP',
+      content: [
+        '📋 THÔNG BÁO BRIEF CHIẾN DỊCH BOOKING KOC',
+        '• Thương hiệu: ClubClio Vietnam',
+        '• Sản phẩm: Phấn nước Clio Kill Cover Mesh Glow Cushion',
+        '• Yêu cầu nội dung: Quay cận cảnh chất kem che khuyết điểm dưới ánh sáng tự nhiên trong 3 giây đầu, gắn giỏ hàng sản phẩm chính hãng góc trái.',
+        '• Hashtag bắt buộc: #ClubClio #ClioCushion #BeautyReview',
+        '• Hạn nộp video nháp: 30/10/2026',
+        '👉 Khi quay xong bản nháp, KOC gửi link Google Drive kèm lệnh /nopnhap vào nhóm nhé!',
+      ].join('\n'),
+    },
+    {
+      id: 'brand_listing_submit',
+      label: 'Mẫu trình Nhãn hàng duyệt danh sách KOC (SLA 48h)',
+      targetRole: 'BRAND_PARTNER',
+      content: [
+        '📑 TRÌNH DUYỆT DANH SÁCH KOC ĐỀ XUẤT CHIẾN DỊCH THÁNG',
+        '• Kính gửi Anh/Chị đại diện Nhãn hàng,',
+        '• Team Booking Upbase đã cập nhật danh sách KOC đề xuất đợt mới kèm phân tích GMV, View trung vị và mức giá Net dự kiến.',
+        '• Anh/Chị có thể gõ trực tiếp trong nhóm này:',
+        '  - /listing : Để xem nhanh danh sách KOC đang chờ duyệt',
+        '  - /duyetkoc <@handle> : Để chốt chọn KOC ngay trên Zalo (đo SLA 48h)',
+        '  - /tuchoikoc <@handle> <lý do> : Để báo đổi KOC khác',
+      ].join('\n'),
+    },
+    {
+      id: 'brand_draft_review',
+      label: 'Mẫu mời Nhãn hàng duyệt Video Demo của KOC',
+      targetRole: 'BRAND_PARTNER',
+      content: [
+        '🎬 BÁO CÁO VIDEO DEMO KOC MỚI NỘP CHỜ BRAND DUYỆT',
+        '• Team Upbase đã kiểm tra sơ bộ kịch bản và gửi link video nháp của KOC lên hệ thống.',
+        '• Anh/Chị đại diện Nhãn hàng vui lòng gõ /nhapchoduyet để xem danh sách link Drive và phản hồi bằng lệnh /duyetnhap hoặc /suanhap nhé!',
+      ].join('\n'),
+    },
+    {
+      id: 'sla_24h',
+      label: 'Mẫu nhắc hạn nộp video (SLA 24h)',
+      targetRole: 'KOC_GROUP',
+      content: [
+        '⏰ NHẮC LỊCH NỘP VIDEO CHIẾN DỊCH (CÒN 24 GIỜ)',
+        '• Chào bạn, thời hạn nộp video nháp cho chiến dịch đang sắp đến hạn.',
+        '• Vui lòng gửi link Google Drive video nháp vào nhóm kèm lệnh: /nopnhap <link_drive>',
+        '• Nếu đã được duyệt nháp và đăng bài lên TikTok, hãy gửi link TikTok kèm tag @Bot để hệ thống nghiệm thu tự động.',
+      ].join('\n'),
+    },
+  ],
 };
 
 const DEAL_STATUS_META: Record<
@@ -227,12 +499,15 @@ const MESSAGE_TEMPLATES: Array<{ id: string; label: string; content: string }> =
 ];
 
 const QUICK_COMMANDS: Array<{ cmd: string; label: string; role: ZaloGroupRole }> = [
+  { cmd: '/listing', label: 'Brand: Danh sách KOC đề xuất', role: 'BRAND_PARTNER' },
+  { cmd: '/tiendo', label: 'Brand: Báo cáo tiến độ & ngân sách Brand', role: 'BRAND_PARTNER' },
+  { cmd: '/nhapchoduyet', label: 'Brand: Danh sách Demo chờ duyệt', role: 'BRAND_PARTNER' },
+  { cmd: '/duyetkoc @po.trann77', label: 'Brand: Chốt duyệt KOC', role: 'BRAND_PARTNER' },
   { cmd: '/pnl', label: 'Tổng hợp PnL 69 gian hàng', role: 'BOD_EXECUTIVE' },
   { cmd: '/pnl clubclio', label: 'Chi tiết PnL ClubClio', role: 'INTERNAL_OPS' },
   { cmd: '/pnl eupc', label: 'Chi tiết PnL EUPC', role: 'INTERNAL_OPS' },
   { cmd: '/overbudget', label: 'Quét gian hàng vượt trần', role: 'BOD_EXECUTIVE' },
   { cmd: '/koc @po.trann77', label: 'Tra cứu KOC @po.trann77', role: 'INTERNAL_OPS' },
-  { cmd: '/koc @chutieuhan10012001', label: 'Tra cứu KOC @chutieuhan10012001', role: 'INTERNAL_OPS' },
   { cmd: '/brief', label: 'Xem Brief nhóm hiện tại', role: 'KOC_GROUP' },
   { cmd: '/tomtat', label: 'Tóm tắt hội thoại & tiến độ nhóm', role: 'KOC_GROUP' },
   { cmd: '/sla', label: 'Báo cáo tiến độ SLA', role: 'INTERNAL_OPS' },
@@ -243,7 +518,12 @@ const QUICK_COMMANDS: Array<{ cmd: string; label: string; role: ZaloGroupRole }>
 
 export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProps) {
   const [activeTab, setActiveTab] = useState<
-    'GROUPS' | 'AIR_CHECK' | 'COMMAND_BROADCAST' | 'RBAC_USERS' | 'WEBHOOK_LOGS'
+    | 'GROUPS'
+    | 'AIR_CHECK'
+    | 'REPLY_TEMPLATES'
+    | 'COMMAND_BROADCAST'
+    | 'RBAC_USERS'
+    | 'WEBHOOK_LOGS'
   >('GROUPS');
   const [isLoading, setIsLoading] = useState(false);
   const [botInfo, setBotInfo] = useState<any>({
@@ -261,6 +541,14 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
   const [discoveredSenders, setDiscoveredSenders] = useState<ZaloDiscoveredSenderItem[]>([]);
   const [airHistory, setAirHistory] = useState<ZaloAirCheckHistoryItem[]>([]);
   const [recentEvents, setRecentEvents] = useState<WebhookDebugEvent[]>([]);
+  const [replyConfig, setReplyConfig] = useState<ZaloBotReplyConfigState>(
+    DEFAULT_CLIENT_REPLY_CONFIG
+  );
+  const [selectedReplyKey, setSelectedReplyKey] = useState<ZaloAutoReplyKey>('AIR_CHECK_RESULT');
+  const [isSavingReplyConfig, setIsSavingReplyConfig] = useState(false);
+  const [newBroadcastLabel, setNewBroadcastLabel] = useState('');
+  const [newBroadcastRole, setNewBroadcastRole] = useState<ZaloGroupRole | 'ALL'>('BRAND_PARTNER');
+  const [newBroadcastContent, setNewBroadcastContent] = useState('');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'DISCOVERED' | ZaloGroupRole>('ALL');
@@ -293,7 +581,11 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
   const [reviewNote, setReviewNote] = useState('');
 
   // Modal xem trước nội dung vừa gửi
-  const [previewModalData, setPreviewModalData] = useState<{ title: string; content: string } | null>(null);
+  const [previewModalData, setPreviewModalData] = useState<{
+    title: string;
+    content: string;
+    photoUrl?: string;
+  } | null>(null);
 
   // Confirm dialog hủy liên kết
   const [unlinkTargetGroupId, setUnlinkTargetGroupId] = useState<string | null>(null);
@@ -352,6 +644,9 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
         if (Array.isArray(data.userPermissions)) setUserPermissions(data.userPermissions);
         if (Array.isArray(data.discoveredSenders)) setDiscoveredSenders(data.discoveredSenders);
         if (data.securityPolicy) setSecurityPolicy(data.securityPolicy);
+        if (data.replyConfig && Array.isArray(data.replyConfig.autoReplyTemplates)) {
+          setReplyConfig(data.replyConfig);
+        }
         if (Array.isArray(data.airHistory)) setAirHistory(data.airHistory);
         if (Array.isArray(data.recentEvents)) setRecentEvents(data.recentEvents);
       }
@@ -804,6 +1099,145 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
     setModalHashtags(`${cleanBrandTag}, UpbaseB2C, BeautyReview`);
   };
 
+  const selectedReplyTemplate = useMemo(
+    () =>
+      replyConfig.autoReplyTemplates.find((t) => t.key === selectedReplyKey) ||
+      replyConfig.autoReplyTemplates[0] ||
+      DEFAULT_CLIENT_REPLY_CONFIG.autoReplyTemplates[0],
+    [replyConfig.autoReplyTemplates, selectedReplyKey]
+  );
+
+  const liveTemplatePreview = useMemo(() => {
+    const sampleVars: Record<string, string> = {
+      verdictIcon: '✅ ĐẠT (PASS)',
+      kocHandle: 'po.trann77',
+      airedAt: '28/10/2026 20:15 (Giờ VN)',
+      statusText: 'Đang công khai (Live/Air)',
+      cartText: 'Đã gắn giỏ hàng (Phấn nước Clio Kill Cover Mesh Glow Cushion [Mã SP: 1730981234567890123])',
+      productLinks: '• Link sản phẩm: https://shop.tiktok.com/view/product/1730981234567890123?region=VN&locale=vi-VN',
+      mentionLine: '• Thời gian KOC nhắc SP: Lần đầu ở giây 2.4s (00:02 - 00:05) — Từ khóa "phấn nước clio"',
+      holdingLine: '• Khoảnh khắc KOC cầm SP (cắt ảnh): Giây 3.8s (00:03 - 00:06) — "Em cushion Clio bản hồng này che phủ cực đỉnh"',
+      views: '128.450',
+      likes: '6.820',
+      hashtags: '#ClubClio #ClioCushion #UpbaseB2C',
+      dealSyncNote: '✅ Đã đồng bộ kết quả vào Deal [BO261067161] (ClubClio) — Trạng thái: ĐÃ_NGHIỆM_THU_AIR',
+      holdingSec: '3.8',
+      holdingTimeLabel: '00:03 - 00:06',
+      mentionSec: '2.4',
+      productTitle: 'Phấn nước Clio Kill Cover Mesh Glow Cushion SPF50+',
+      holdingQuote: 'Em cushion Clio bản hồng này che phủ cực đỉnh',
+      dealCode: 'BO261067161',
+      brandName: 'ClubClio',
+      storeName: 'ClubClio_TikTok_Flagship',
+      kocName: 'Phương Thảo (@po.trann77)',
+      productName: 'Phấn nước Clio Kill Cover Mesh Glow Cushion',
+      pillarName: 'Review trực tiếp trải nghiệm thực tế',
+      briefSummary: 'Quay cận cảnh chất phấn trong 3 giây đầu, test độ che phủ và gắn giỏ hàng góc trái.',
+      deadlineDate: '31/10/2026',
+      picName: 'Hà Thị Thủy',
+      senderName: 'Phương Thảo',
+      draftUrl: 'https://drive.google.com/file/d/1ClioDemoVideo/view',
+      reviewNote: 'Hình ảnh sáng đẹp, âm thanh rõ, KOC đăng bài đúng khung giờ 20h nhé.',
+      feedback: 'Cần bổ sung cảnh quay cận vỏ hộp ở giây thứ 2 và thêm hashtag #ClubClio.',
+      leaderName: 'Nguyễn Thị Ngọc Tâm (Leader 8 gian hàng trọng điểm)',
+      storeSummary: '🏪 ClubClio_TikTok_Flagship: Chỉ tiêu 25 Paid / 40 FOC | Đã Air: 19 video | Ngân sách Net: 68.000.000 ₫ / 95.000.000 ₫',
+      airedSummary: '• Video đã lên sóng (Air): 19 video (71.5% ngân sách)\n  1. @po.trann77 (28/10/2026 20:15) — View: 128.450',
+      pendingDraftSummary: '• Video Demo đang chờ Brand duyệt: 2 bản nháp (Gõ /nhapchoduyet để xem link)',
+    };
+    const raw = selectedReplyTemplate?.content || '';
+    return raw.replace(/\{([a-zA-Z0-9_]+)\}/g, (_, token) => sampleVars[token] ?? `{${token}}`);
+  }, [selectedReplyTemplate]);
+
+  const handleUpdateSelectedAutoReplyContent = (nextContent: string) => {
+    setReplyConfig((prev) => ({
+      ...prev,
+      autoReplyTemplates: prev.autoReplyTemplates.map((t) =>
+        t.key === selectedReplyKey ? { ...t, content: nextContent } : t
+      ),
+    }));
+  };
+
+  const handleInsertPlaceholder = (placeholder: string) => {
+    const current = selectedReplyTemplate?.content || '';
+    handleUpdateSelectedAutoReplyContent(`${current}${current.endsWith('\n') || !current ? '' : ' '}${placeholder}`);
+  };
+
+  const handleSaveReplyConfig = async (customNext?: ZaloBotReplyConfigState) => {
+    const payload = customNext || replyConfig;
+    setIsSavingReplyConfig(true);
+    try {
+      const res = await fetch('/api/integrations/zalo-bot/mappings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'UPDATE_REPLY_CONFIG',
+          ...payload,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.replyConfig) setReplyConfig(data.replyConfig);
+        onNotify?.('Đã lưu kịch bản & mẫu tin nhắn trả lời của Bot.', 'success');
+      } else {
+        onNotify?.(data?.error || 'Không thể lưu kịch bản tin nhắn.', 'error');
+      }
+    } catch {
+      onNotify?.('Lỗi kết nối máy chủ khi lưu kịch bản.', 'error');
+    } finally {
+      setIsSavingReplyConfig(false);
+    }
+  };
+
+  const handleResetReplyConfig = async () => {
+    setIsSavingReplyConfig(true);
+    try {
+      const res = await fetch('/api/integrations/zalo-bot/mappings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'RESET_REPLY_CONFIG' }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.replyConfig) setReplyConfig(data.replyConfig);
+        onNotify?.('Đã khôi phục toàn bộ mẫu tin nhắn trả lời của Bot về mặc định.', 'info');
+      }
+    } catch {
+      onNotify?.('Lỗi khôi phục mặc định.', 'error');
+    } finally {
+      setIsSavingReplyConfig(false);
+    }
+  };
+
+  const handleAddBroadcastTemplate = async () => {
+    if (!newBroadcastLabel.trim() || !newBroadcastContent.trim()) {
+      onNotify?.('Vui lòng nhập Tên mẫu thông báo và Nội dung tin nhắn.', 'error');
+      return;
+    }
+    const newItem: ZaloBroadcastTemplateItem = {
+      id: `tpl_${Date.now()}`,
+      label: newBroadcastLabel.trim(),
+      targetRole: newBroadcastRole,
+      content: newBroadcastContent.trim(),
+    };
+    const nextCfg: ZaloBotReplyConfigState = {
+      ...replyConfig,
+      broadcastTemplates: [newItem, ...(replyConfig.broadcastTemplates || [])],
+    };
+    setReplyConfig(nextCfg);
+    setNewBroadcastLabel('');
+    setNewBroadcastContent('');
+    await handleSaveReplyConfig(nextCfg);
+  };
+
+  const handleDeleteBroadcastTemplate = async (id: string) => {
+    const nextCfg: ZaloBotReplyConfigState = {
+      ...replyConfig,
+      broadcastTemplates: (replyConfig.broadcastTemplates || []).filter((t) => t.id !== id),
+    };
+    setReplyConfig(nextCfg);
+    await handleSaveReplyConfig(nextCfg);
+  };
+
   const pendingOrDiscoveredCount = useMemo(
     () =>
       mappings.filter(
@@ -884,7 +1318,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
         const tone =
           row.groupRole === 'BOD_EXECUTIVE'
             ? 'positive'
-            : row.groupRole === 'INTERNAL_OPS'
+            : row.groupRole === 'INTERNAL_OPS' || row.groupRole === 'BRAND_PARTNER'
               ? 'warning'
               : 'neutral';
         const access = row.accessStatus || 'APPROVED';
@@ -1115,11 +1549,16 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
   const airHistoryColumns: Column<ZaloAirCheckHistoryItem>[] = [
     {
       key: 'checkedAt',
-      header: 'Thời gian quét',
+      header: 'Giờ quét & Ngày giờ Air',
       render: (row) => (
-        <span className="text-xs font-mono text-ink-3">
-          {new Date(row.checkedAt).toLocaleString('vi-VN')}
-        </span>
+        <div className="text-xs space-y-0.5">
+          <div className="font-mono font-medium text-ink">
+            Air: {row.airedAtVn || (row.publishedAt ? row.publishedAt.slice(0, 10) : '—')}
+          </div>
+          <div className="font-mono text-2xs text-ink-3">
+            Quét: {new Date(row.checkedAt).toLocaleString('vi-VN')}
+          </div>
+        </div>
       ),
     },
     {
@@ -1181,6 +1620,17 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                 Link SP {primaryId ? `(${primaryId})` : ''} <ExternalLink className="w-3 h-3 shrink-0" />
               </a>
             )}
+            {row.firstProductAppearanceSec !== null &&
+              row.firstProductAppearanceSec !== undefined && (
+                <div className="text-2xs text-ink-2 font-mono">
+                  Nhắc SP: Giây {row.firstProductAppearanceSec}s
+                  {row.firstProductMentionTimeLabel ? ` (${row.firstProductMentionTimeLabel})` : ''}
+                  {row.firstProductMentionTerm ? ` • "${row.firstProductMentionTerm}"` : ''}
+                  {row.productMentionMoments && row.productMentionMoments.length > 1
+                    ? ` (${row.productMentionMoments.length} lần)`
+                    : ''}
+                </div>
+              )}
             <div className="text-2xs font-mono text-ink-3 truncate">
               {row.hashtags?.length
                 ? row.hashtags.map((h) => `#${h.replace(/^#+/, '')}`).join(' ')
@@ -1351,12 +1801,40 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
     },
     {
       key: 'content',
-      header: 'Nội dung tin nhắn',
+      header: 'Tin nhắn gửi tới Bot',
       render: (row) => (
-        <span className="text-xs text-ink truncate max-w-md block" title={JSON.stringify(row.body)}>
+        <span className="text-xs text-ink truncate max-w-xs block" title={JSON.stringify(row.body)}>
           {row.body?.result?.message?.text || row.body?.message?.text || JSON.stringify(row.body)}
         </span>
       ),
+    },
+    {
+      key: 'replyText',
+      header: 'Tin nhắn Bot đã trả lời',
+      render: (row) =>
+        row.replyText ? (
+          <div className="flex items-center justify-between gap-2 max-w-md">
+            <span className="text-xs text-ink-2 truncate font-mono">
+              {row.replyText.split('\n')[0]}
+            </span>
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={MessageSquare}
+              onClick={() =>
+                setPreviewModalData({
+                  title: `Chi tiết phản hồi của Bot (${new Date(row.time).toLocaleTimeString('vi-VN')})`,
+                  content: row.replyText || '',
+                  photoUrl: row.replyPhotoUrl,
+                })
+              }
+            >
+              Xem tin trả lời
+            </Button>
+          </div>
+        ) : (
+          <span className="text-xs text-ink-3">—</span>
+        ),
     },
   ];
 
@@ -1367,7 +1845,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
         <Stat label="Trạng thái Webhook" value="Hoạt động" tone="positive" />
         <Stat label="Tên Zalo Bot" value={botInfo.display_name || 'Bot tttttttupbase'} />
         <Stat label="Nhóm chat đang quản lý" value={mappings.length} />
-        <Stat label="Nhân sự được cấp quyền" value={userPermissions.length} />
+        <Stat label="Mẫu tin nhắn trả lời" value={replyConfig.autoReplyTemplates.length} />
       </StatRow>
 
       {/* Thanh điều hướng phân hệ chuẩn Design System <Tabs> */}
@@ -1377,6 +1855,11 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
         items={[
           { key: 'GROUPS', label: 'Nhóm chat & Tiến độ Deal', count: mappings.length },
           { key: 'AIR_CHECK', label: 'Nghiệm thu Video TikTok', count: airHistory.length },
+          {
+            key: 'REPLY_TEMPLATES',
+            label: 'Kịch bản & Tin nhắn Bot',
+            count: replyConfig.autoReplyTemplates.length,
+          },
           { key: 'COMMAND_BROADCAST', label: 'Lệnh Bot & Gửi thông báo' },
           { key: 'RBAC_USERS', label: 'Phân quyền Nhân sự & Bảo mật', count: userPermissions.length },
           { key: 'WEBHOOK_LOGS', label: 'Cấu hình & Nhật ký', count: recentEvents.length },
@@ -1447,6 +1930,11 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                       key: 'KOC_GROUP',
                       label: 'Nhóm KOC 3 bên',
                       count: mappings.filter((m) => m.groupRole === 'KOC_GROUP').length,
+                    },
+                    {
+                      key: 'BRAND_PARTNER',
+                      label: 'Nhóm làm việc với Brand',
+                      count: mappings.filter((m) => m.groupRole === 'BRAND_PARTNER').length,
                     },
                     {
                       key: 'INTERNAL_OPS',
@@ -1603,6 +2091,272 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
         </div>
       )}
 
+      {/* TAB 2B: KỊCH BẢN & QUẢN LÝ TIN NHẮN TRẢ LỜI CỦA BOT */}
+      {activeTab === 'REPLY_TEMPLATES' && (
+        <div className="space-y-4">
+          <Panel
+            title="Cấu hình hành vi phản hồi tự động khi quét nghiệm thu"
+            actions={
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleResetReplyConfig}
+                  disabled={isSavingReplyConfig}
+                >
+                  Khôi phục mặc định
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => handleSaveReplyConfig()}
+                  disabled={isSavingReplyConfig}
+                >
+                  {isSavingReplyConfig ? 'Đang lưu...' : 'Lưu kịch bản trả lời'}
+                </Button>
+              </div>
+            }
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div className="p-3 rounded border border-line bg-sunken flex items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="font-medium text-ink flex items-center gap-2">
+                    <span>Tự động chụp & gửi ảnh KOC cầm sản phẩm vào nhóm Zalo</span>
+                    <Status tone={replyConfig.sendHoldingPhotoOnAirCheck ? 'positive' : 'neutral'}>
+                      {replyConfig.sendHoldingPhotoOnAirCheck ? 'Đang bật' : 'Đang tắt'}
+                    </Status>
+                  </div>
+                  <div className="text-ink-2">
+                    Khi phát hiện link TikTok, Bot tự động cắt khung hình tại giây KOC giơ sản phẩm và gọi `sendPhoto` vào nhóm chat.
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    const nextCfg = {
+                      ...replyConfig,
+                      sendHoldingPhotoOnAirCheck: !replyConfig.sendHoldingPhotoOnAirCheck,
+                    };
+                    setReplyConfig(nextCfg);
+                    void handleSaveReplyConfig(nextCfg);
+                  }}
+                >
+                  {replyConfig.sendHoldingPhotoOnAirCheck ? 'Tắt gửi ảnh' : 'Bật gửi ảnh'}
+                </Button>
+              </div>
+
+              <div className="p-3 rounded border border-line bg-sunken flex items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="font-medium text-ink flex items-center gap-2">
+                    <span>Gửi tin nhắn báo &ldquo;Đang quét dữ liệu...&rdquo; tức thì</span>
+                    <Status tone={replyConfig.sendScanningProgressMessage ? 'positive' : 'neutral'}>
+                      {replyConfig.sendScanningProgressMessage ? 'Đang bật' : 'Đang tắt'}
+                    </Status>
+                  </div>
+                  <div className="text-ink-2">
+                    Phản hồi ngay lập tức vào nhóm Zalo khi vừa nhận link TikTok để KOC/PIC biết Bot đang xử lý.
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    const nextCfg = {
+                      ...replyConfig,
+                      sendScanningProgressMessage: !replyConfig.sendScanningProgressMessage,
+                    };
+                    setReplyConfig(nextCfg);
+                    void handleSaveReplyConfig(nextCfg);
+                  }}
+                >
+                  {replyConfig.sendScanningProgressMessage ? 'Tắt thông báo chờ' : 'Bật thông báo chờ'}
+                </Button>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel title="Soạn thảo 7 Kịch bản Tin nhắn Trả lời Tự động của Bot (Auto-Reply Templates)">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              {/* Cột trái: Danh sách 7 mẫu kịch bản */}
+              <div className="lg:col-span-4 space-y-1.5">
+                {replyConfig.autoReplyTemplates.map((tpl) => {
+                  const isSelected = tpl.key === selectedReplyKey;
+                  return (
+                    <button
+                      key={tpl.key}
+                      type="button"
+                      onClick={() => setSelectedReplyKey(tpl.key)}
+                      className={`w-full text-left p-2.5 rounded border transition-colors ${
+                        isSelected
+                          ? 'bg-sunken border-line-strong text-ink font-medium'
+                          : 'bg-surface border-line text-ink-2 hover:bg-sunken'
+                      }`}
+                    >
+                      <div className="text-xs">{tpl.label}</div>
+                      <div className="text-2xs text-ink-3 mt-0.5 line-clamp-2">{tpl.triggerHint}</div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Cột phải: Khung chỉnh sửa nội dung & Xem trước (Live Preview) */}
+              <div className="lg:col-span-8 space-y-3">
+                <div className="p-2.5 rounded bg-sunken border border-line flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-xs font-medium text-ink">{selectedReplyTemplate?.label}</div>
+                    <div className="text-2xs text-ink-3">{selectedReplyTemplate?.triggerHint}</div>
+                  </div>
+                  <span className="font-mono text-2xs px-1.5 py-0.5 rounded bg-surface border border-line text-ink-2">
+                    {selectedReplyTemplate?.key}
+                  </span>
+                </div>
+
+                <Field label="Biến dữ liệu động (Bấm vào biến để chèn nhanh vào mẫu tin nhắn)">
+                  <div className="flex flex-wrap gap-1.5">
+                    {(selectedReplyTemplate?.availablePlaceholders || []).map((ph) => (
+                      <Button
+                        key={ph}
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => handleInsertPlaceholder(ph)}
+                      >
+                        {ph}
+                      </Button>
+                    ))}
+                  </div>
+                </Field>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Field label="Nội dung kịch bản Bot trả lời (có thể sửa trực tiếp)">
+                    <Textarea
+                      rows={12}
+                      value={selectedReplyTemplate?.content || ''}
+                      onChange={(e) => handleUpdateSelectedAutoReplyContent(e.target.value)}
+                      className="font-mono text-xs"
+                    />
+                  </Field>
+
+                  <Field label="Xem trước tin nhắn thực tế khi gửi vào nhóm Zalo">
+                    <div className="p-3 rounded border border-line bg-sunken h-[258px] overflow-y-auto">
+                      <pre className="text-xs font-mono text-ink whitespace-pre-wrap leading-relaxed">
+                        {liveTemplatePreview}
+                      </pre>
+                    </div>
+                  </Field>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-line">
+                  <Button
+                    variant="secondary"
+                    onClick={handleResetReplyConfig}
+                    disabled={isSavingReplyConfig}
+                  >
+                    Khôi phục mặc định
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => handleSaveReplyConfig()}
+                    disabled={isSavingReplyConfig}
+                  >
+                    {isSavingReplyConfig ? 'Đang lưu...' : 'Lưu mẫu tin nhắn trả lời'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel title="Quản lý Thư viện Mẫu Thông Báo Chủ Động (Broadcast Templates cho KOC / Brand / Nội bộ)">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div className="lg:col-span-5 space-y-3 border-b lg:border-b-0 lg:border-r border-line pb-4 lg:pb-0 lg:pr-4">
+                <div className="text-xs font-medium text-ink">Thêm mẫu thông báo mới vào thư viện</div>
+                <Field label="Tên gợi nhớ mẫu thông báo">
+                  <Input
+                    placeholder="Ví dụ: Mẫu mời Brand duyệt danh sách KOC đợt 2..."
+                    value={newBroadcastLabel}
+                    onChange={(e) => setNewBroadcastLabel(e.target.value)}
+                  />
+                </Field>
+                <Field label="Nhóm đối tượng áp dụng">
+                  <Select
+                    value={newBroadcastRole}
+                    onChange={(e) => setNewBroadcastRole(e.target.value as ZaloGroupRole | 'ALL')}
+                  >
+                    <option value="BRAND_PARTNER">Nhóm làm việc với Brand (BRAND_PARTNER)</option>
+                    <option value="KOC_GROUP">Nhóm KOC 3 bên (KOC_GROUP)</option>
+                    <option value="INTERNAL_OPS">Nhóm Vận hành nội bộ (INTERNAL_OPS)</option>
+                    <option value="BOD_EXECUTIVE">Nhóm Điều hành BOD (BOD_EXECUTIVE)</option>
+                    <option value="ALL">Tất cả các nhóm</option>
+                  </Select>
+                </Field>
+                <Field label="Nội dung mẫu tin nhắn">
+                  <Textarea
+                    rows={5}
+                    placeholder="Nhập nội dung mẫu thông báo để tái sử dụng nhanh..."
+                    value={newBroadcastContent}
+                    onChange={(e) => setNewBroadcastContent(e.target.value)}
+                  />
+                </Field>
+                <div className="flex justify-end">
+                  <Button variant="primary" onClick={handleAddBroadcastTemplate}>
+                    Thêm vào thư viện mẫu
+                  </Button>
+                </div>
+              </div>
+
+              <div className="lg:col-span-7 space-y-2.5">
+                <div className="text-xs font-medium text-ink">
+                  Danh sách mẫu thông báo đang lưu ({(replyConfig.broadcastTemplates || []).length} mẫu)
+                </div>
+                <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                  {(replyConfig.broadcastTemplates || []).map((tpl) => (
+                    <div
+                      key={tpl.id}
+                      className="p-3 rounded border border-line bg-sunken space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-ink">{tpl.label}</span>
+                          <Status tone="neutral">
+                            {tpl.targetRole === 'ALL'
+                              ? 'Tất cả nhóm'
+                              : GROUP_ROLE_LABEL[tpl.targetRole as ZaloGroupRole] || tpl.targetRole}
+                          </Status>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            icon={Send}
+                            onClick={() => {
+                              setBroadcastText(tpl.content);
+                              setActiveTab('COMMAND_BROADCAST');
+                            }}
+                          >
+                            Đưa vào khung gửi tin
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            icon={Trash2}
+                            onClick={() => handleDeleteBroadcastTemplate(tpl.id)}
+                          >
+                            Xóa
+                          </Button>
+                        </div>
+                      </div>
+                      <pre className="text-2xs font-mono text-ink-2 whitespace-pre-wrap line-clamp-3">
+                        {tpl.content}
+                      </pre>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Panel>
+        </div>
+      )}
+
       {/* TAB 3: BỘ THỰC THI LỆNH BOT & GỬI THÔNG BÁO */}
       {activeTab === 'COMMAND_BROADCAST' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1632,6 +2386,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                     onChange={(e) => setSimGroupRole(e.target.value as ZaloGroupRole)}
                   >
                     <option value="INTERNAL_OPS">Nhóm Vận hành nội bộ (Mở PnL/KOC)</option>
+                    <option value="BRAND_PARTNER">Nhóm làm việc với Brand (Mở Listing/Demo/Tiến độ Brand)</option>
                     <option value="BOD_EXECUTIVE">Nhóm Điều hành BOD (Toàn quyền)</option>
                     <option value="KOC_GROUP">Nhóm KOC 3 bên (Chặn lệnh PnL nội bộ)</option>
                   </Select>
@@ -1654,7 +2409,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
               <Field label="Nhập cú pháp lệnh Bot (hoặc dán link Google Drive / TikTok)">
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Ví dụ: /pnl clubclio, /koc @po.trann77, /overbudget, /brief, /digest..."
+                    placeholder="Ví dụ: /listing, /tiendo, /nhapchoduyet, /duyetkoc @po.trann77, /pnl clubclio..."
                     value={simCommand}
                     onChange={(e) => setSimCommand(e.target.value)}
                     className="flex-1 font-mono"
@@ -1686,7 +2441,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                 </div>
                 <pre className="text-xs font-mono text-ink whitespace-pre-wrap leading-relaxed">
                   {simOutput ||
-                    'Bấm vào một lệnh mẫu phía trên (ví dụ: /pnl, /pnl clubclio, /overbudget, /koc @po.trann77) để xem kết quả truy xuất dữ liệu thực tế từ hệ thống.'}
+                    'Bấm vào một lệnh mẫu phía trên (ví dụ: /listing, /tiendo, /pnl clubclio, /koc @po.trann77) để xem kết quả truy xuất dữ liệu thực tế từ hệ thống.'}
                 </pre>
               </div>
             </div>
@@ -1694,9 +2449,12 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
 
           <Panel title="Gửi thông báo theo Mẫu nghiệp vụ (Broadcast Message)">
             <div className="space-y-3">
-              <Field label="Chọn nhanh mẫu thông báo chuẩn B2C">
+              <Field label="Chọn nhanh mẫu thông báo chuẩn B2C (tùy chỉnh tại tab Kịch bản & Tin nhắn Bot)">
                 <div className="flex flex-wrap gap-1.5">
-                  {MESSAGE_TEMPLATES.map((tpl) => (
+                  {(replyConfig.broadcastTemplates?.length
+                    ? replyConfig.broadcastTemplates
+                    : MESSAGE_TEMPLATES
+                  ).map((tpl) => (
                     <Button
                       key={tpl.id}
                       size="sm"
@@ -1959,6 +2717,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                 onChange={(e) => setModalGroupRole(e.target.value as ZaloGroupRole)}
               >
                 <option value="KOC_GROUP">Nhóm KOC 3 bên (Khóa lệnh PnL nội bộ)</option>
+                <option value="BRAND_PARTNER">Nhóm làm việc với Brand (Duyệt KOC, Demo & Báo cáo Brand)</option>
                 <option value="INTERNAL_OPS">Nhóm Vận hành nội bộ (Mở tra cứu KOC/PnL)</option>
                 <option value="BOD_EXECUTIVE">Nhóm Điều hành BOD (Toàn quyền)</option>
               </Select>
@@ -2264,6 +3023,17 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
               {previewModalData?.content}
             </pre>
           </div>
+          {previewModalData?.photoUrl && (
+            <div className="p-3 rounded border border-line bg-sunken space-y-1.5">
+              <div className="text-2xs font-medium text-ink-2">Ảnh đính kèm Bot đã gửi:</div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewModalData.photoUrl}
+                alt="Ảnh Bot phản hồi"
+                className="w-36 h-48 object-cover rounded border border-line bg-surface"
+              />
+            </div>
+          )}
           <div className="flex justify-end">
             <Button variant="primary" onClick={() => setPreviewModalData(null)}>
               Đóng

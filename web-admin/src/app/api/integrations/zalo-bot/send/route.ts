@@ -45,6 +45,10 @@ export async function POST(req: NextRequest) {
         ok: true,
         handled: result.handled,
         reply: result.reply || 'Lệnh đã được xử lý.',
+        holdingScreenshotUrl: result.holdingScreenshotUrl,
+        holdingMomentSec: result.holdingMomentSec,
+        holdingMomentTimeLabel: result.holdingMomentTimeLabel,
+        holdingMomentQuote: result.holdingMomentQuote,
         sentToZalo: sendToZalo,
       });
     }

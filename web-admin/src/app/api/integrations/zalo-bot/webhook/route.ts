@@ -4,15 +4,47 @@ import {
   processZaloWebhookEvent,
   getDebugEvents,
   recordDebugEvent,
+  captureTikTokProductFrameBuffer,
 } from '@/lib/server/zaloBot';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/integrations/zalo-bot/webhook
- * Health check & Debug inspector endpoint
+ * Health check, Debug inspector & Public Frame Image endpoint (?frame=1) cho Zalo Bot sendPhoto
  */
 export async function GET(req: NextRequest) {
+  const isFrameRequest = req.nextUrl.searchParams.get('frame') === '1';
+  if (isFrameRequest) {
+    const frameId = req.nextUrl.searchParams.get('frameId') || undefined;
+    const videoUrl = req.nextUrl.searchParams.get('videoUrl') || '';
+    const sec = Number(req.nextUrl.searchParams.get('sec') || 3.5);
+    const coverUrl = req.nextUrl.searchParams.get('coverUrl') || undefined;
+
+    if (videoUrl || frameId || coverUrl) {
+      const captured = await captureTikTokProductFrameBuffer({
+        videoUrl,
+        coverUrl,
+        captureSec: Number.isFinite(sec) ? sec : 3.5,
+        frameId,
+      });
+      if (captured.buffer && captured.buffer.length > 300) {
+        return new NextResponse(new Uint8Array(captured.buffer), {
+          status: 200,
+          headers: {
+            'Content-Type': 'image/jpeg',
+            'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+          },
+        });
+      }
+      const redirectTarget = captured.resolvedCoverUrl || coverUrl;
+      if (redirectTarget && /^https?:\/\//i.test(redirectTarget)) {
+        return NextResponse.redirect(redirectTarget, 302);
+      }
+    }
+    return new NextResponse('Frame not found', { status: 404 });
+  }
+
   const isDebug = req.nextUrl.searchParams.get('debug') === 'true';
 
   return NextResponse.json({
@@ -52,8 +84,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'INVALID_BODY' }, { status: 400 });
     }
 
-    // 3. Xử lý sự kiện trong nền
-    void processZaloWebhookEvent(body).catch((err) => {
+    // 3. Xử lý trực tiếp sự kiện để Vercel Serverless không đóng băng tiến trình trước khi quét xong giỏ hàng TikTok
+    await processZaloWebhookEvent(body).catch((err) => {
       console.error('[ZaloBot] Lỗi xử lý event:', err);
       recordDebugEvent({
         time: new Date().toISOString(),

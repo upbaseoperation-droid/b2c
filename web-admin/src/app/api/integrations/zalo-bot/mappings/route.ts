@@ -8,6 +8,9 @@ import {
   removeUserPermission,
   getSecurityPolicy,
   setSecurityPolicy,
+  getReplyConfig,
+  setReplyConfig,
+  resetReplyConfigToDefault,
   hydrateZaloBotStateFromDb,
   buildDealBriefMessage,
   sendZaloMessage,
@@ -48,6 +51,40 @@ export async function POST(req: NextRequest) {
         ok: true,
         message: 'Đã lưu cấu hình chính sách bảo mật nhóm Zalo.',
         securityPolicy: updatedPolicy,
+      });
+    }
+
+    // 1B. Quản lý Kịch bản & Tin nhắn trả lời của Bot (Reply Templates & Broadcast Templates)
+    if (action === 'UPDATE_REPLY_CONFIG') {
+      const updatedReplyConfig = setReplyConfig({
+        sendHoldingPhotoOnAirCheck:
+          typeof body?.sendHoldingPhotoOnAirCheck === 'boolean'
+            ? body.sendHoldingPhotoOnAirCheck
+            : undefined,
+        sendScanningProgressMessage:
+          typeof body?.sendScanningProgressMessage === 'boolean'
+            ? body.sendScanningProgressMessage
+            : undefined,
+        autoReplyTemplates: Array.isArray(body?.autoReplyTemplates)
+          ? body.autoReplyTemplates
+          : undefined,
+        broadcastTemplates: Array.isArray(body?.broadcastTemplates)
+          ? body.broadcastTemplates
+          : undefined,
+      });
+      return NextResponse.json({
+        ok: true,
+        message: 'Đã lưu cấu hình kịch bản & mẫu tin nhắn trả lời của Bot.',
+        replyConfig: updatedReplyConfig,
+      });
+    }
+
+    if (action === 'RESET_REPLY_CONFIG') {
+      const resetCfg = resetReplyConfigToDefault();
+      return NextResponse.json({
+        ok: true,
+        message: 'Đã khôi phục toàn bộ mẫu tin nhắn trả lời của Bot về mặc định.',
+        replyConfig: resetCfg,
       });
     }
 

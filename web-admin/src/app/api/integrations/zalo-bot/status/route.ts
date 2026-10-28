@@ -9,6 +9,7 @@ import {
   getAirCheckHistory,
   getDebugEvents,
   getSecurityPolicy,
+  getReplyConfig,
 } from '@/lib/server/zaloBot';
 
 export const dynamic = 'force-dynamic';
@@ -77,6 +78,7 @@ export async function GET(req: NextRequest) {
     userPermissions,
     discoveredSenders,
     securityPolicy: getSecurityPolicy(),
+    replyConfig: getReplyConfig(),
     airHistory,
     recentEvents,
   });
