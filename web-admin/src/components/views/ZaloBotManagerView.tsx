@@ -122,6 +122,9 @@ interface ZaloGroupMappingItem {
   draftVideoUrl?: string;
   draftReviewNote?: string;
   airedVideoUrl?: string;
+  trackingCode?: string;
+  sampleShippedAt?: string;
+  sparkAdsCode?: string;
   isAutoDiscovered?: boolean;
   lastMessageText?: string;
   lastSenderId?: string;
@@ -509,6 +512,10 @@ const QUICK_COMMANDS: Array<{ cmd: string; label: string; role: ZaloGroupRole }>
   { cmd: '/overbudget', label: 'Quét gian hàng vượt trần', role: 'BOD_EXECUTIVE' },
   { cmd: '/koc @po.trann77', label: 'Tra cứu KOC @po.trann77', role: 'INTERNAL_OPS' },
   { cmd: '/brief', label: 'Xem Brief nhóm hiện tại', role: 'KOC_GROUP' },
+  { cmd: '/vandon SPXVN048291823', label: 'KOC: Báo mã vận đơn & tính hạn SLA 5-7 ngày', role: 'KOC_GROUP' },
+  { cmd: '/ads #7F9A2B8C1D4E', label: 'KOC: Nộp mã ủy quyền Spark Ads', role: 'KOC_GROUP' },
+  { cmd: '/bbnt', label: 'Đối soát 4 cổng BBNT & Bảng tính Thuế/Thanh toán', role: 'KOC_GROUP' },
+  { cmd: '/nhacnho', label: 'Nội bộ: Tự động nhắc hạn SLA hàng loạt', role: 'INTERNAL_OPS' },
   { cmd: '/tomtat', label: 'Tóm tắt hội thoại & tiến độ nhóm', role: 'KOC_GROUP' },
   { cmd: '/sla', label: 'Báo cáo tiến độ SLA', role: 'INTERNAL_OPS' },
   { cmd: '/digest', label: 'Báo cáo tổng hợp cuối ngày', role: 'BOD_EXECUTIVE' },
@@ -574,6 +581,8 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
   const [modalHashtags, setModalHashtags] = useState('');
   const [modalDeadlineDate, setModalDeadlineDate] = useState('31/10/2026');
   const [modalDealStatus, setModalDealStatus] = useState<ZaloDealWorkflowStatus>('ĐANG_QUAY_NHÁP');
+  const [modalTrackingCode, setModalTrackingCode] = useState('');
+  const [modalSparkAdsCode, setModalSparkAdsCode] = useState('');
 
   // Modal duyệt / cập nhật trạng thái nháp
   const [reviewModalTarget, setReviewModalTarget] = useState<ZaloGroupMappingItem | null>(null);
@@ -686,6 +695,8 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
       setModalHashtags((item.requiredHashtags || []).join(', '));
       setModalDeadlineDate(item.deadlineDate || '31/10/2026');
       setModalDealStatus(item.dealStatus || 'ĐANG_QUAY_NHÁP');
+      setModalTrackingCode(item.trackingCode || '');
+      setModalSparkAdsCode(item.sparkAdsCode || '');
     } else {
       setModalGroupId('');
       setModalGroupName('');
@@ -703,6 +714,8 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
       setModalHashtags('ClubClio, UpbaseB2C, BeautyReview');
       setModalDeadlineDate('31/10/2026');
       setModalDealStatus('ĐANG_QUAY_NHÁP');
+      setModalTrackingCode('');
+      setModalSparkAdsCode('');
     }
     setIsLinkModalOpen(true);
   };
@@ -757,6 +770,8 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
           requiredHashtags: modalHashtags,
           deadlineDate: modalDeadlineDate.trim(),
           dealStatus: modalDealStatus,
+          trackingCode: modalTrackingCode.trim(),
+          sparkAdsCode: modalSparkAdsCode.trim(),
         }),
       });
       if (res.ok) {
@@ -773,7 +788,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
 
   const handleGroupQuickAction = async (
     groupId: string,
-    action: 'SEND_BRIEF' | 'SEND_SLA_REMINDER'
+    action: 'SEND_BRIEF' | 'SEND_SLA_REMINDER' | 'SEND_BBNT_SUMMARY'
   ) => {
     try {
       const res = await fetch('/api/integrations/zalo-bot/mappings', {
@@ -786,12 +801,44 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
         onNotify?.(data.message || 'Đã thực thi tác vụ thành công.', 'success');
         if (data.previewText) {
           setPreviewModalData({
-            title: action === 'SEND_BRIEF' ? 'Nội dung Brief đã phát đi' : 'Nội dung Nhắc hạn SLA đã phát đi',
+            title:
+              action === 'SEND_BRIEF'
+                ? 'Nội dung Brief đã phát đi'
+                : action === 'SEND_BBNT_SUMMARY'
+                  ? 'Phiếu đối soát BBNT & Bóc tách Thuế/Thanh toán'
+                  : 'Nội dung Nhắc hạn SLA đã phát đi',
             content: data.previewText,
           });
         }
       } else {
         onNotify?.(data.error || 'Không thể thực thi tác vụ.', 'error');
+      }
+    } catch {
+      onNotify?.('Lỗi kết nối máy chủ.', 'error');
+    }
+  };
+
+  const handleBulkSlaReminder = async () => {
+    try {
+      const res = await fetch('/api/integrations/zalo-bot/mappings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'BULK_SLA_REMINDER',
+          brandName: brandFilter !== 'ALL' ? brandFilter : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        onNotify?.(data.message || 'Đã phát thông báo nhắc hạn SLA tự động.', 'success');
+        if (data.previewText) {
+          setPreviewModalData({
+            title: 'Báo cáo Rà soát & Nhắc hạn SLA Tự động Hàng loạt',
+            content: data.previewText,
+          });
+        }
+      } else {
+        onNotify?.(data.error || 'Không thể chạy nhắc hạn SLA hàng loạt.', 'error');
       }
     } catch {
       onNotify?.('Lỗi kết nối máy chủ.', 'error');
@@ -1395,6 +1442,20 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
             <div className="text-2xs text-ink-3">
               Hạn SLA: {row.deadlineDate || '—'}
             </div>
+            {(row.trackingCode || row.sparkAdsCode) && (
+              <div className="flex items-center gap-1 flex-wrap text-2xs font-mono text-ink-2">
+                {row.trackingCode && (
+                  <span className="px-1 py-0.5 rounded bg-sunken border border-line">
+                    MVĐ: {row.trackingCode}
+                  </span>
+                )}
+                {row.sparkAdsCode && (
+                  <span className="px-1 py-0.5 rounded bg-sunken border border-line">
+                    Ads: {row.sparkAdsCode.slice(0, 12)}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         );
       },
@@ -1436,6 +1497,14 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                 }}
               >
                 Duyệt bài
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={ShieldCheck}
+                onClick={() => handleGroupQuickAction(row.groupId, 'SEND_BBNT_SUMMARY')}
+              >
+                Phiếu BBNT
               </Button>
               <Button
                 size="sm"
@@ -1897,6 +1966,14 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                   Duyệt tất cả nhóm mới ({pendingOrDiscoveredCount})
                 </Button>
               )}
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={Clock}
+                onClick={handleBulkSlaReminder}
+              >
+                Nhắc hạn SLA hàng loạt
+              </Button>
               <Button
                 size="sm"
                 variant="primary"
@@ -2866,6 +2943,23 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                 <option value="ĐÃ_NGHIỆM_THU_AIR">Đã nghiệm thu (Air)</option>
                 <option value="CẦN_CHỈNH_SỬA">Cần chỉnh sửa</option>
               </Select>
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Mã vận đơn gửi mẫu (/vandon)">
+              <Input
+                placeholder="Ví dụ: SPXVN048291823"
+                value={modalTrackingCode}
+                onChange={(e) => setModalTrackingCode(e.target.value)}
+              />
+            </Field>
+            <Field label="Mã ủy quyền quảng cáo Spark Ads (/ads)">
+              <Input
+                placeholder="Ví dụ: #7F9A2B8C1D4E5F"
+                value={modalSparkAdsCode}
+                onChange={(e) => setModalSparkAdsCode(e.target.value)}
+              />
             </Field>
           </div>
 

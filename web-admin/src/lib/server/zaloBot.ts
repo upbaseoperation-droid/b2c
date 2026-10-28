@@ -93,6 +93,9 @@ export interface ZaloGroupMapping {
   draftVideoUrl?: string;
   draftReviewNote?: string;
   airedVideoUrl?: string;
+  trackingCode?: string;
+  sampleShippedAt?: string;
+  sparkAdsCode?: string;
   isAutoDiscovered?: boolean;
   lastMessageText?: string;
   lastSenderId?: string;
@@ -2592,7 +2595,230 @@ export async function sendZaloPhoto(
 }
 
 const TIKTOK_URL_REGEX = /(https?:\/\/(?:vt\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s]+)/i;
+const TIKTOK_URL_GLOBAL_REGEX = /https?:\/\/(?:vt\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s]+/gi;
 const DRAFT_URL_REGEX = /(https?:\/\/(?:drive\.google\.com|docs\.google\.com|www\.capcut\.com|capcut\.com)\/[^\s]+)/i;
+const WAYBILL_AUTO_REGEX =
+  /(?:mã\s*vận\s*đơn|mvđ|mvd|vận\s*đơn|tracking)\s*[:=-]?\s*([A-Z0-9]{8,22})|\b((?:SPXVN|GHN|GHTK|VTP|VT|JT|BEST)[A-Z0-9]{6,18})\b/i;
+const SPARK_ADS_AUTO_REGEX =
+  /(?:mã\s*(?:spark\s*)?ads|code\s*ads|spark\s*ads|mã\s*quảng\s*cáo)\s*[:=-]?\s*(#[A-Za-z0-9+/=_-]{8,90}|[A-Za-z0-9+/=_-]{14,90})/i;
+
+export function extractAllTikTokUrls(text: string): string[] {
+  const matches = text.match(TIKTOK_URL_GLOBAL_REGEX) || [];
+  const unique: string[] = [];
+  for (const raw of matches) {
+    const cleaned = raw.replace(/[.,;!?)]+$/, '').trim();
+    if (cleaned && !unique.includes(cleaned)) {
+      unique.push(cleaned);
+    }
+  }
+  return unique.slice(0, 8);
+}
+
+export function formatVnDatePlusDays(daysToAdd: number): string {
+  const targetMs = Date.now() + daysToAdd * 24 * 60 * 60 * 1000;
+  return new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(targetMs));
+}
+
+/**
+ * Dựng phiếu đối soát điều kiện BBNT (4 cổng) & Bóc tách Thuế / Thanh toán cho Deal (/bbnt, /thanhtoan)
+ */
+export function buildSettlementSummaryMessage(
+  mapping: ZaloGroupMapping | undefined,
+  chatId: string,
+  queryDealOrHandle?: string
+): string {
+  let targetMapping = mapping;
+  const q = String(queryDealOrHandle || '').replace(/^@/, '').trim().toLowerCase();
+  if (q) {
+    for (const m of loadMappings().values()) {
+      if (
+        m.dealCode?.toLowerCase() === q ||
+        m.kocHandle?.toLowerCase() === q ||
+        m.kocName?.toLowerCase().includes(q)
+      ) {
+        targetMapping = m;
+        break;
+      }
+    }
+  }
+
+  const handleKey = (targetMapping?.kocHandle || q || '').replace(/^@/, '').toLowerCase();
+  const matchedKoc =
+    KOC_BY_HANDLE_INDEX.get(handleKey) ||
+    QUICK_KOC_CATALOG.find(
+      (k) =>
+        (targetMapping?.kocName &&
+          k.stageName.toLowerCase().includes(targetMapping.kocName.toLowerCase())) ||
+        (q && k.stageName.toLowerCase().includes(q))
+    );
+
+  const feeNet = Math.round(
+    Number(targetMapping?.bookingFeeNet || matchedKoc?.rateCardNet || 5000000)
+  );
+  const isCompanyTax = Boolean(
+    matchedKoc?.taxAccountType && matchedKoc.taxAccountType.toLowerCase().includes('doanh nghiệp')
+  );
+  // Cá nhân khấu trừ 10% TNCN tại nguồn (Gross = Net / 0.9); Doanh nghiệp cộng 8% VAT
+  const feeGross = isCompanyTax
+    ? Math.round(feeNet * 1.08)
+    : Math.round(feeNet / 0.9);
+  const taxAmount = Math.max(0, feeGross - feeNet);
+  const taxPolicyLabel = isCompanyTax
+    ? 'Hóa đơn GTGT Doanh nghiệp (VAT 8%)'
+    : 'Khấu trừ Thuế TNCN 10% tại nguồn';
+
+  const gate1DraftDone = Boolean(
+    targetMapping?.draftVideoUrl ||
+      targetMapping?.dealStatus === 'ĐÃ_DUYỆT_NHÁP' ||
+      targetMapping?.dealStatus === 'ĐÃ_NGHIỆM_THU_AIR'
+  );
+  const gate2AirDone = Boolean(
+    targetMapping?.airedVideoUrl || targetMapping?.dealStatus === 'ĐÃ_NGHIỆM_THU_AIR'
+  );
+  const gate3AdsDone = Boolean(targetMapping?.sparkAdsCode);
+  const gate4BankReady = Boolean(matchedKoc?.maskedBankAccount);
+
+  const passedGates = [gate1DraftDone, gate2AirDone, gate3AdsDone, gate4BankReady].filter(
+    Boolean
+  ).length;
+  const readyForPayment = gate1DraftDone && gate2AirDone && gate4BankReady;
+
+  return [
+    `🧾 PHIẾU ĐỐI SOÁT NGHIỆM THU (BBNT) & ĐỀ NGHỊ THANH TOÁN`,
+    `----------------------------------------`,
+    `• Mã Deal: ${targetMapping?.dealCode || 'Chưa liên kết (/link)'} | Thương hiệu: ${targetMapping?.brandName || matchedKoc?.brandName || '—'}`,
+    `• Gian hàng: ${targetMapping?.storeName || 'Gian hàng chính hãng'}`,
+    `• Đối tác KOC: ${targetMapping?.kocName || matchedKoc?.stageName || '—'} ${targetMapping?.kocHandle || matchedKoc?.handle ? `(@${targetMapping?.kocHandle || matchedKoc?.handle})` : ''}`,
+    `• PIC phụ trách: ${targetMapping?.picName || matchedKoc?.bookingPic || '—'} | Cấp duyệt: ${targetMapping?.leaderName || resolveLeaderForBrand(targetMapping?.brandName || matchedKoc?.brandName)}`,
+    `----------------------------------------`,
+    `1. KIỂM TRA 4 CỔNG ĐIỀU KIỆN NGHIỆM THU (${passedGates}/4 ĐẠT):`,
+    `   ${gate1DraftDone ? '✅' : '⏳'} Cổng 1 (Duyệt bản nháp): ${targetMapping?.draftVideoUrl ? `Đã duyệt (${targetMapping.draftVideoUrl})` : gate1DraftDone ? 'Đã duyệt kịch bản/nháp' : 'Chưa nộp/duyệt nháp (/nopnhap)'}`,
+    `   ${gate2AirDone ? '✅' : '⏳'} Cổng 2 (Nghiệm thu bài đăng Air): ${targetMapping?.airedVideoUrl ? `ĐẠT (${targetMapping.airedVideoUrl})` : 'Chưa có link TikTok Air đạt chuẩn'}`,
+    `   ${gate3AdsDone ? '✅' : '⚠️'} Cổng 3 (Mã ủy quyền Spark Ads): ${targetMapping?.sparkAdsCode ? `Đã cấp (${targetMapping.sparkAdsCode})` : 'Chưa cập nhật (Gõ /ads <mã_spark_ads> để lưu)'}`,
+    `   ${gate4BankReady ? '✅' : '⚠️'} Cổng 4 (Hồ sơ Thuế & Ngân hàng): ${matchedKoc ? `${matchedKoc.bankName} (${matchedKoc.maskedBankAccount}) | CCCD/MST: ${matchedKoc.maskedCccd}` : 'Cần Kế toán xác nhận STK/CCCD'}`,
+    `----------------------------------------`,
+    `2. BÓC TÁCH CHI PHÍ & THUẾ (ĐỐI SOÁT KẾ TOÁN):`,
+    `   • Cơ chế thuế áp dụng: ${taxPolicyLabel}`,
+    `   • Tổng giá trị Gross: ${formatVnd(feeGross)}`,
+    `   • Thuế ${isCompanyTax ? 'GTGT (8%)' : 'TNCN khấu trừ (10%)'}: ${formatVnd(taxAmount)}`,
+    `   • Thực chi Net chuyển khoản cho KOC: ${formatVnd(feeNet)}`,
+    `----------------------------------------`,
+    readyForPayment
+      ? `✅ KẾT LUẬN: Đủ điều kiện lập Biên bản nghiệm thu (BBNT) & trình Kế toán giải ngân (Kỳ thanh toán ngày 10 & 25 hàng tháng).`
+      : `👉 HƯỚNG DẪN HOÀN TẤT: ${!gate2AirDone ? 'KOC dán link TikTok đã đăng vào nhóm để Bot nghiệm thu tự động.' : !gate3AdsDone ? 'KOC gửi mã quảng cáo bằng lệnh /ads <mã_spark_ads>.' : 'Cập nhật đủ 4 cổng nghiệm thu trước khi trình thanh toán.'}`,
+  ].join('\n');
+}
+
+/**
+ * Quét toàn bộ nhóm KOC đang chạy và phát tin nhắc hạn SLA tự động theo từng bước nghẽn (/nhacnho)
+ */
+export async function runBulkSlaReminders(options?: {
+  actuallySend?: boolean;
+  filterBrand?: string;
+}): Promise<{ summaryText: string; remindedCount: number; details: Array<{ groupId: string; dealCode: string; status: string; actionNote: string }> }> {
+  const brandQ = String(options?.filterBrand || '').trim().toLowerCase();
+  const activeGroups = getAllMappings().filter(
+    (m) =>
+      m.groupRole === 'KOC_GROUP' &&
+      m.accessStatus !== 'BLOCKED' &&
+      (!brandQ || (m.brandName || '').toLowerCase().includes(brandQ))
+  );
+
+  const details: Array<{ groupId: string; dealCode: string; status: string; actionNote: string }> = [];
+  let remindedCount = 0;
+
+  for (const grp of activeGroups) {
+    let reminderBody = '';
+    let actionNote = '';
+
+    if (grp.dealStatus === 'CHỜ_NHẬN_MẪU') {
+      actionNote = 'Nhắc cập nhật mã vận đơn hàng mẫu (/vandon)';
+      reminderBody = [
+        `📦 NHẮC TIẾN ĐỘ GIAO NHẬN SẢN PHẨM MẪU (SLA 2-3 NGÀY)`,
+        `• Mã Deal: ${grp.dealCode || '—'} (${grp.brandName || '—'})`,
+        `• KOC: ${grp.kocName || grp.kocHandle || '—'} | PIC: ${grp.picName || '—'}`,
+        `👉 Nếu đã gửi hoặc nhận được sản phẩm mẫu, vui lòng gõ /vandon <mã_vận_đơn> để hệ thống kích hoạt mốc SLA 5 ngày quay nháp.`,
+      ].join('\n');
+    } else if (grp.dealStatus === 'ĐANG_QUAY_NHÁP' || grp.dealStatus === 'CẦN_CHỈNH_SỬA') {
+      actionNote =
+        grp.dealStatus === 'CẦN_CHỈNH_SỬA'
+          ? 'Nhắc KOC nộp lại bản nháp đã chỉnh sửa (/nopnhap)'
+          : `Nhắc KOC nộp bản nháp (Hạn SLA: ${grp.deadlineDate || 'Sắp đến hạn'})`;
+      reminderBody = [
+        `⏰ NHẮC HẠN NỘP VIDEO DEMO / NHÁP (${grp.dealCode || 'DEAL'})`,
+        `• Thương hiệu: ${grp.brandName || '—'} | KOC: ${grp.kocName || grp.kocHandle || '—'}`,
+        `• Trạng thái hiện tại: ${grp.dealStatus} | Hạn chót SLA: ${grp.deadlineDate || 'Trong vòng 24h tới'}`,
+        grp.draftReviewNote ? `• Lưu ý chỉnh sửa: ${grp.draftReviewNote}` : '',
+        `👉 KOC vui lòng gửi link Google Drive bản nháp kèm lệnh /nopnhap <link_drive> vào nhóm đúng cam kết nhé!`,
+      ]
+        .filter(Boolean)
+        .join('\n');
+    } else if (grp.dealStatus === 'ĐÃ_NỘP_NHÁP') {
+      actionNote = `Nhắc PIC (${grp.picName || 'Booking'}) & Brand duyệt bản nháp (/duyetnhap)`;
+      reminderBody = [
+        `🔔 NHẮC DUYỆT VIDEO NHÁP ĐANG CHỜ (SLA 24H)`,
+        `• Mã Deal: ${grp.dealCode || '—'} (${grp.brandName || '—'}) — KOC: ${grp.kocName || grp.kocHandle || '—'}`,
+        `• Link bản nháp đã nộp: ${grp.draftVideoUrl || 'Đã gửi trong nhóm'}`,
+        `👉 Nhờ PIC (${grp.picName || 'Booking'}) kiểm tra và gõ /duyetnhap hoặc /suanhap <nội dung> để KOC kịp lịch đăng bài.`,
+      ].join('\n');
+    } else if (grp.dealStatus === 'ĐÃ_DUYỆT_NHÁP') {
+      actionNote = 'Nhắc KOC đăng bài TikTok gắn giỏ hàng & dán link nghiệm thu';
+      reminderBody = [
+        `🚀 NHẮC LỊCH ĐĂNG VIDEO LÊN SÓNG (AIR) & GẮN GIỎ HÀNG`,
+        `• Mã Deal: ${grp.dealCode || '—'} (${grp.brandName || '—'}) — Bản nháp đã được phê duyệt!`,
+        `• Hạn lên sóng: ${grp.deadlineDate || 'Hôm nay'}`,
+        `👉 Ngay sau khi đăng video lên TikTok ở chế độ Công khai kèm giỏ hàng và hashtag chuẩn, KOC dán link TikTok vào nhóm để Bot nghiệm thu tự động nhé!`,
+      ].join('\n');
+    } else if (grp.dealStatus === 'ĐÃ_NGHIỆM_THU_AIR' && !grp.sparkAdsCode) {
+      actionNote = 'Đã Air — Nhắc KOC bổ sung mã quảng cáo Spark Ads (/ads) để làm BBNT';
+      reminderBody = [
+        `🔑 NHẮC BỔ SUNG MÃ QUẢNG CÁO SPARK ADS ĐỂ THANH TOÁN`,
+        `• Mã Deal: ${grp.dealCode || '—'} (${grp.brandName || '—'}) đã nghiệm thu bài đăng Air thành công.`,
+        `👉 Để hoàn tất hồ sơ BBNT và giải ngân đúng kỳ, KOC vui lòng gửi mã ủy quyền quảng cáo bằng lệnh: /ads <mã_spark_ads>`,
+      ].join('\n');
+    } else {
+      actionNote = 'Đã hoàn tất nghiệm thu Air & đủ mã Spark Ads';
+    }
+
+    details.push({
+      groupId: grp.groupId,
+      dealCode: grp.dealCode || grp.groupId,
+      status: grp.dealStatus,
+      actionNote,
+    });
+
+    if (reminderBody) {
+      remindedCount += 1;
+      if (options?.actuallySend) {
+        await sendZaloMessage(grp.groupId, reminderBody).catch(() => false);
+      }
+    }
+  }
+
+  const lines = [
+    `🔔 BÁO CÁO RÀ SOÁT & NHẮC HẠN SLA TỰ ĐỘNG (${remindedCount}/${activeGroups.length} NHÓM CẦN XỬ LÝ)`,
+    `----------------------------------------`,
+    ...details.map(
+      (d, idx) =>
+        `${idx + 1}. [${d.dealCode}] (${d.status})\n   → ${d.actionNote}`
+    ),
+    `----------------------------------------`,
+    options?.actuallySend
+      ? `✅ Hệ thống đã tự động phát tin nhắn nhắc việc tới ${remindedCount} nhóm KOC tương ứng.`
+      : `💡 Chế độ rà soát nhanh: Đã xác định ${remindedCount} nhóm cần nhắc việc.`,
+  ];
+
+  return {
+    summaryText: lines.join('\n'),
+    remindedCount,
+    details,
+  };
+}
 
 /**
  * Dựng nội dung Brief chuẩn cho nhóm KOC
@@ -3328,7 +3554,128 @@ export async function processZaloWebhookEvent(
   const effectiveRole: ZaloGroupRole =
     options?.overrideGroupRole || currentMapping?.groupRole || 'KOC_GROUP';
 
-  // 1. TỰ ĐỘNG BẮT LINK TIKTOK ĐỂ NGHIỆM THU (AIR CHECK) HOẶC LỆNH /air, /check
+  // 1. TỰ ĐỘNG BẮT LINK TIKTOK ĐỂ NGHIỆM THU (HỖ TRỢ QUÉT ĐƠN LẺ & QUÉT HÀNG LOẠT NHIỀU LINK TRONG 1 TIN NHẮN)
+  const allTikTokUrls = extractAllTikTokUrls(rawText);
+  if (allTikTokUrls.length > 1) {
+    if (shouldSend && replyConfig.sendScanningProgressMessage) {
+      await sendZaloMessage(
+        chatId,
+        `⏳ Đang quét nghiệm thu hàng loạt ${allTikTokUrls.length} video TikTok song song...\nVui lòng chờ trong giây lát...`
+      ).catch(() => false);
+    }
+
+    try {
+      const batchResults = await Promise.all(
+        allTikTokUrls.map(async (url) => {
+          const result = await checkSingleLinkServerless(url, {
+            requiredHashtags: currentMapping?.requiredHashtags,
+            expectedProductUrl: currentMapping?.expectedProductUrl,
+          });
+          return { url, result };
+        })
+      );
+
+      let passCount = 0;
+      let reviewCount = 0;
+      let failCount = 0;
+      const itemLines: string[] = [];
+
+      for (let i = 0; i < batchResults.length; i += 1) {
+        const { url, result } = batchResults[i];
+        if (result.verdict === 'PASS') passCount += 1;
+        else if (result.verdict === 'REVIEW') reviewCount += 1;
+        else failCount += 1;
+
+        const badge =
+          result.verdict === 'PASS'
+            ? '✅ ĐẠT'
+            : result.verdict === 'REVIEW'
+              ? '⚠️ RÀ SOÁT'
+              : '❌ LỖI';
+        const prodTitle =
+          result.cartProducts?.[0]?.title ||
+          result.productTitle ||
+          (result.hasProductLink ? 'Đã gắn giỏ hàng' : 'Chưa gắn giỏ hàng');
+        const prodLink =
+          result.cartProducts?.[0]?.productUrl ||
+          result.productUrl ||
+          (result.productId
+            ? `https://shop.tiktok.com/view/product/${result.productId}?region=VN&locale=vi-VN`
+            : '');
+        const mentionText =
+          result.firstProductAppearanceSec !== null &&
+          result.firstProductAppearanceSec !== undefined
+            ? `Nhắc SP: ${result.firstProductAppearanceSec}s`
+            : 'Chưa rõ giây nhắc SP';
+
+        itemLines.push(
+          `${i + 1}. ${badge} | @${result.author?.handle || 'koc'} (${result.airedAtVn || 'Đã Air'})`,
+          `   • Video: ${url}`,
+          `   • Giỏ hàng: ${result.hasProductLink ? `Có (${prodTitle})` : 'Chưa phát hiện giỏ hàng'}${prodLink ? `\n   • Link SP: ${prodLink}` : ''}`,
+          `   • ${mentionText} | View: ${result.metrics?.views ? result.metrics.views.toLocaleString('vi-VN') : '—'} | Like: ${result.metrics?.likes ? result.metrics.likes.toLocaleString('vi-VN') : '—'}`
+        );
+
+        recordAirCheckHistory({
+          id: `AIR-${Date.now()}-${i}`,
+          checkedAt: new Date().toISOString(),
+          chatId,
+          dealCode: currentMapping?.dealCode,
+          brandName: currentMapping?.brandName,
+          kocHandle: result.author?.handle || currentMapping?.kocHandle || 'unknown',
+          videoUrl: url,
+          verdict: result.verdict,
+          status: result.status,
+          hasProductLink: Boolean(result.hasProductLink),
+          productTitle: result.cartProducts?.[0]?.title || result.productTitle || undefined,
+          productUrl: prodLink || undefined,
+          productId: result.cartProducts?.[0]?.productId || result.productId || undefined,
+          airedAtVn: result.airedAtVn || undefined,
+          publishedAt: result.publishedAt || undefined,
+          firstProductAppearanceSec: result.firstProductAppearanceSec ?? null,
+          views: result.metrics?.views ?? null,
+          likes: result.metrics?.likes ?? null,
+          hashtags: result.hashtags || [],
+          sentToZalo: shouldSend,
+        });
+      }
+
+      if (currentMapping?.dealCode && passCount > 0) {
+        const firstPassed = batchResults.find((b) => b.result.verdict === 'PASS');
+        currentMapping.dealStatus = 'ĐÃ_NGHIỆM_THU_AIR';
+        if (firstPassed) currentMapping.airedVideoUrl = firstPassed.url;
+        currentMapping.updatedAt = new Date().toISOString();
+        mappings.set(chatId, currentMapping);
+        saveMappings();
+      }
+
+      const batchSummaryMsg = [
+        `📊 KẾT QUẢ QUÉT NGHIỆM THU HÀNG LOẠT (${allTikTokUrls.length} VIDEO TIKTOK)`,
+        `----------------------------------------`,
+        `• Tổng hợp: ✅ ${passCount} ĐẠT | ⚠️ ${reviewCount} CẦN RÀ SOÁT | ❌ ${failCount} KHÔNG ĐẠT`,
+        currentMapping?.dealCode
+          ? `• Đồng bộ Deal: [${currentMapping.dealCode}] (${currentMapping.brandName || 'B2C'})`
+          : '',
+        `----------------------------------------`,
+        ...itemLines,
+        `----------------------------------------`,
+        `👉 Gõ /bbnt để kiểm tra điều kiện lập Biên bản nghiệm thu & thanh toán.`,
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+      await replyToChat(batchSummaryMsg);
+      return {
+        handled: true,
+        reply: batchSummaryMsg,
+        extractedChatId: chatId,
+      };
+    } catch (err: any) {
+      const errMsg = `❌ Lỗi khi quét nghiệm thu hàng loạt: ${err?.message || 'Lỗi kết nối'}.`;
+      await replyToChat(errMsg);
+      return { handled: true, reply: errMsg, extractedChatId: chatId };
+    }
+  }
+
   const linkMatch = rawText.match(TIKTOK_URL_REGEX);
   if (linkMatch) {
     const videoUrl = linkMatch[1];
@@ -3692,6 +4039,103 @@ export async function processZaloWebhookEvent(
 
     await replyToChat(replyMsg);
     return { handled: true, reply: replyMsg, extractedChatId: chatId };
+  }
+
+  // 2B. TỰ ĐỘNG NHẬN DIỆN MÃ VẬN ĐƠN GỬI HÀNG MẪU & TÍNH MỐC SLA 2-3-5-7 NGÀY (/vandon <mã> HOẶC TỰ BẮT MÃ SPX/GHN/GHTK/VTP/J&T)
+  const waybillAutoMatch = rawText.match(WAYBILL_AUTO_REGEX);
+  if (
+    lowerClean.startsWith('/vandon') ||
+    lowerClean.startsWith('/mvd') ||
+    lowerClean.startsWith('/nhanhang') ||
+    waybillAutoMatch
+  ) {
+    const rawCode =
+      waybillAutoMatch?.[1] ||
+      waybillAutoMatch?.[2] ||
+      cleanText.replace(/^\/?(?:vandon|mvd|nhanhang)\s*/i, '').trim();
+
+    if (!rawCode) {
+      const warn =
+        '⚠️ Vui lòng nhập mã vận đơn gửi hàng mẫu (SPX / GHN / GHTK / ViettelPost / J&T). Ví dụ: /vandon SPXVN048291823';
+      await replyToChat(warn);
+      return { handled: true, reply: warn, extractedChatId: chatId };
+    }
+
+    const draftSlaDate = formatVnDatePlusDays(5);
+    const airSlaDate = formatVnDatePlusDays(7);
+    const shippedDate = formatVnDatePlusDays(0);
+
+    if (currentMapping) {
+      currentMapping.trackingCode = rawCode.toUpperCase();
+      currentMapping.sampleShippedAt = shippedDate;
+      currentMapping.deadlineDate = draftSlaDate;
+      if (currentMapping.dealStatus === 'CHỜ_NHẬN_MẪU') {
+        currentMapping.dealStatus = 'ĐANG_QUAY_NHÁP';
+      }
+      currentMapping.updatedAt = new Date().toISOString();
+      mappings.set(chatId, currentMapping);
+      saveMappings();
+    }
+
+    const waybillMsg = [
+      `📦 ĐÃ GHI NHẬN MÃ VẬN ĐƠN HÀNG MẪU & KÍCH HOẠT SLA 2-3-5-7 NGÀY`,
+      `----------------------------------------`,
+      `• Mã vận đơn: ${rawCode.toUpperCase()}`,
+      `• Mã Deal: ${currentMapping?.dealCode || 'Chưa liên kết (/link)'} (${currentMapping?.brandName || 'B2C'})`,
+      `• Đối tác KOC: ${currentMapping?.kocName || currentMapping?.kocHandle || senderName}`,
+      `• Ngày ghi nhận gửi/nhận mẫu: ${shippedDate}`,
+      `• Trạng thái mới: ${currentMapping?.dealStatus || 'ĐANG_QUAY_NHÁP'}`,
+      `----------------------------------------`,
+      `⏱️ LỊCH TRÌNH CAM KẾT SLA TỰ ĐỘNG (QUY TẮC 2-3-5-7):`,
+      `• Hạn nộp video nháp (Demo +5 ngày): ${draftSlaDate} (Gõ /nopnhap <link_drive>)`,
+      `• Hạn đăng bài lên sóng (Air +7 ngày): ${airSlaDate} (Dán link TikTok vào nhóm)`,
+      `• PIC theo dõi: ${currentMapping?.picName || 'Team Booking B2C'}`,
+    ].join('\n');
+
+    await replyToChat(waybillMsg);
+    return { handled: true, reply: waybillMsg, extractedChatId: chatId };
+  }
+
+  // 2C. TỰ ĐỘNG THU THẬP & ĐỐI SOÁT MÃ ỦY QUYỀN QUẢNG CÁO SPARK ADS (/ads <mã_spark_ads> HOẶC TỰ BẮT MÃ ADS TRONG TIN NHẮN)
+  const sparkAdsAutoMatch = rawText.match(SPARK_ADS_AUTO_REGEX);
+  if (
+    lowerClean.startsWith('/ads') ||
+    lowerClean.startsWith('/sparkads') ||
+    lowerClean.startsWith('/maads') ||
+    sparkAdsAutoMatch
+  ) {
+    const adsCode =
+      sparkAdsAutoMatch?.[1] ||
+      cleanText.replace(/^\/?(?:ads|sparkads|maads)\s*/i, '').trim();
+
+    if (!adsCode) {
+      const warn =
+        '⚠️ Vui lòng đính kèm mã ủy quyền quảng cáo Spark Ads của video TikTok. Ví dụ: /ads #7F9A2B8C1D4E5F';
+      await replyToChat(warn);
+      return { handled: true, reply: warn, extractedChatId: chatId };
+    }
+
+    if (currentMapping) {
+      currentMapping.sparkAdsCode = adsCode;
+      currentMapping.updatedAt = new Date().toISOString();
+      mappings.set(chatId, currentMapping);
+      saveMappings();
+    }
+
+    const adsMsg = [
+      `🔑 ĐÃ LƯU MÃ ỦY QUYỀN QUẢNG CÁO (SPARK ADS)`,
+      `----------------------------------------`,
+      `• Mã Spark Ads: ${adsCode}`,
+      `• Mã Deal: ${currentMapping?.dealCode || 'Chưa liên kết (/link)'} (${currentMapping?.brandName || 'B2C'})`,
+      `• KOC thực hiện: ${currentMapping?.kocName || currentMapping?.kocHandle || senderName}`,
+      `• Link bài đăng Air: ${currentMapping?.airedVideoUrl || 'Đang đối soát'}`,
+      `• Người gửi mã: ${senderName}`,
+      `----------------------------------------`,
+      `✅ Hệ thống đã đồng bộ mã Spark Ads vào hồ sơ nghiệm thu. Gõ /bbnt để kiểm tra bảng tính Thuế & điều kiện thanh toán.`,
+    ].join('\n');
+
+    await replyToChat(adsMsg);
+    return { handled: true, reply: adsMsg, extractedChatId: chatId };
   }
 
   // 3. LỆNH DUYỆT VIDEO NHÁP (/duyetnhap HOẶC /approve-draft)
@@ -4198,6 +4642,55 @@ export async function processZaloWebhookEvent(
     return { handled: true, reply: summaryMsg, extractedChatId: chatId };
   }
 
+  // 12B. LỆNH ĐỐI SOÁT 4 CỔNG NGHIỆM THU (BBNT) & BÓC TÁCH THUẾ / THANH TOÁN: /bbnt HOẶC /thanhtoan
+  if (
+    lowerClean === '/bbnt' ||
+    lowerClean === 'bbnt' ||
+    lowerClean.startsWith('/bbnt ') ||
+    lowerClean === '/thanhtoan' ||
+    lowerClean === 'thanhtoan' ||
+    lowerClean.startsWith('/thanhtoan ')
+  ) {
+    const queryArg = cleanText.replace(/^\/?(?:bbnt|thanhtoan)\s*/i, '').trim();
+    if (
+      effectiveRole === 'KOC_GROUP' &&
+      securityPolicy.isolateCrossDealLookupInKocGroup &&
+      queryArg &&
+      currentMapping?.dealCode &&
+      currentMapping.dealCode.toLowerCase() !== queryArg.toLowerCase()
+    ) {
+      const denyCross =
+        '⛔ BẢO MẬT NHÓM KOC: Nhóm này chỉ được phép đối soát BBNT & thanh toán của Deal gắn trực tiếp với nhóm.';
+      await replyToChat(denyCross);
+      return { handled: true, reply: denyCross, extractedChatId: chatId };
+    }
+    const settlementMsg = buildSettlementSummaryMessage(currentMapping, chatId, queryArg);
+    await replyToChat(settlementMsg);
+    return { handled: true, reply: settlementMsg, extractedChatId: chatId };
+  }
+
+  // 12C. LỆNH QUÉT & NHẮC HẠN SLA TỰ ĐỘNG HÀNG LOẠT: /nhacnho HOẶC /remind
+  if (
+    lowerClean === '/nhacnho' ||
+    lowerClean.startsWith('/nhacnho ') ||
+    lowerClean === '/remind' ||
+    lowerClean.startsWith('/remind ')
+  ) {
+    if (effectiveRole === 'KOC_GROUP' || effectiveRole === 'BRAND_PARTNER') {
+      const denyRemind =
+        '⛔ PHÂN QUYỀN BẢO MẬT: Lệnh phát thông báo nhắc hạn SLA hàng loạt tới các nhóm KOC chỉ dành cho Nhóm Vận Hành Nội Bộ và Ban Giám Đốc.';
+      await replyToChat(denyRemind);
+      return { handled: true, reply: denyRemind, extractedChatId: chatId };
+    }
+    const brandArg = cleanText.replace(/^\/?(?:nhacnho|remind)\s*/i, '').trim();
+    const { summaryText } = await runBulkSlaReminders({
+      actuallySend: shouldSend,
+      filterBrand: brandArg || undefined,
+    });
+    await replyToChat(summaryText);
+    return { handled: true, reply: summaryText, extractedChatId: chatId };
+  }
+
   // 13. LỆNH KIỂM TRA TRẠNG THÁI NHÓM: /status
   if (lowerClean === '/status' || lowerClean === 'status') {
     const statusMsg = currentMapping
@@ -4214,8 +4707,10 @@ export async function processZaloWebhookEvent(
           `• Cấp duyệt: ${currentMapping.leaderName || resolveLeaderForBrand(currentMapping.brandName)}`,
           `• Trạng thái thực thi: ${currentMapping.dealStatus}`,
           `• Hạn nộp SLA: ${currentMapping.deadlineDate || '—'}`,
+          currentMapping.trackingCode ? `• Mã vận đơn mẫu: ${currentMapping.trackingCode}` : '',
           currentMapping.draftVideoUrl ? `• Link bản nháp: ${currentMapping.draftVideoUrl}` : '',
           currentMapping.airedVideoUrl ? `• Link đã Air: ${currentMapping.airedVideoUrl}` : '',
+          currentMapping.sparkAdsCode ? `• Mã Spark Ads: ${currentMapping.sparkAdsCode}` : '',
         ]
           .filter(Boolean)
           .join('\n')
@@ -4236,12 +4731,15 @@ export async function processZaloWebhookEvent(
   const helpMsg = [
     `🤖 TRỢ LÝ VẬN HÀNH B2C — UPBASE ZALO BOT`,
     `----------------------------------------`,
-    `📌 CÁC LỆNH TRONG NHÓM KOC & NGHIỆM THU:`,
-    `• Gửi link TikTok kèm @Bot: Tự động quét nghiệm thu bài đăng (Air, Giỏ hàng, Thời gian nhắc SP, Ảnh KOC cầm SP, View/Like).`,
-    `• /brief : Xem nội dung Brief, góc quay và hashtag bắt buộc của Deal.`,
+    `📌 CÁC LỆNH TRONG NHÓM KOC & NGHIỆM THU TỰ ĐỘNG:`,
+    `• Gửi 1 hoặc nhiều link TikTok kèm @Bot: Tự động quét nghiệm thu bài đăng (Air, Giỏ hàng, Thời gian nhắc SP, Ảnh giao diện TikTok, View/Like).`,
+    `• /vandon <mã_vận_đơn> : Ghi nhận mã vận đơn hàng mẫu & tự động tính hạn SLA 5 ngày nháp / 7 ngày Air.`,
     `• /nopnhap <link_drive> : KOC nộp link video nháp chờ duyệt.`,
     `• /duyetnhap [ghi chú] : PIC / Brand xác nhận duyệt video nháp cho KOC đăng bài.`,
     `• /suanhap <nội dung> : PIC / Brand gửi yêu cầu chỉnh sửa video nháp.`,
+    `• /ads <mã_spark_ads> : KOC gửi mã ủy quyền quảng cáo Spark Ads để làm hồ sơ thanh toán.`,
+    `• /bbnt (hoặc /thanhtoan) : Kiểm tra 4 cổng điều kiện BBNT & bóc tách Thuế TNCN 10% / VAT 8% / Thực nhận Net.`,
+    `• /brief : Xem nội dung Brief, góc quay và hashtag bắt buộc của Deal.`,
     `• /status : Kiểm tra trạng thái tiến độ Deal của nhóm.`,
     `• /link <MÃ_DEAL> : Liên kết nhóm với mã Deal (hoặc /link BRAND <Tên_Brand> cho nhóm Nhãn hàng).`,
     ...(isBrandPartner
@@ -4261,6 +4759,8 @@ export async function processZaloWebhookEvent(
             `🔐 CÁC LỆNH NỘI BỘ & ĐIỀU HÀNH (ĐÃ MỞ KHÓA):`,
             `• /koc <@handle> : Tra cứu lịch sử hợp tác, GMV, ROI & STK của KOC.`,
             `• /pnl [tên_brand] : Xem ngân sách Gross/Net, thực chi & định mức 69 gian hàng B2C.`,
+            `• /bbnt [mã_deal/@handle] : Đối soát 4 cổng nghiệm thu BBNT & bảng tính thuế thanh toán.`,
+            `• /nhacnho [tên_brand] : Tự động rà soát & bắn tin nhắc hạn SLA hàng loạt tới các nhóm KOC đang trễ/chờ xử lý.`,
             `• /listing [tên_brand] : Xem danh sách đề xuất KOC theo Brand.`,
             `• /tiendo [tên_brand] : Xem báo cáo tiến độ gửi Nhãn hàng.`,
             `• /overbudget : Kiểm tra các gian hàng cảnh báo vượt trần ngân sách.`,

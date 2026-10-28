@@ -13,6 +13,8 @@ import {
   resetReplyConfigToDefault,
   hydrateZaloBotStateFromDb,
   buildDealBriefMessage,
+  buildSettlementSummaryMessage,
+  runBulkSlaReminders,
   sendZaloMessage,
   type ZaloGroupMapping,
   type ZaloGroupRole,
@@ -162,6 +164,19 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (action === 'BULK_SLA_REMINDER') {
+      const { summaryText, remindedCount } = await runBulkSlaReminders({
+        actuallySend: true,
+        filterBrand: body?.brandName ? String(body.brandName) : undefined,
+      });
+      return NextResponse.json({
+        ok: true,
+        remindedCount,
+        previewText: summaryText,
+        message: `Đã rà soát và phát thông báo nhắc hạn SLA tới ${remindedCount} nhóm KOC.`,
+      });
+    }
+
     // 2. Quản lý Nhóm chat Zalo & Thao tác nghiệp vụ
     const groupId = String(body?.groupId || '').trim();
     if (!groupId) {
@@ -236,6 +251,22 @@ export async function POST(req: NextRequest) {
           ? 'Đã gửi tin nhắc hạn SLA vào nhóm Zalo.'
           : 'Đã khởi tạo lệnh nhắc hạn SLA.',
         previewText: slaText,
+      });
+    }
+
+    if (action === 'SEND_BBNT_SUMMARY') {
+      if (!existing) {
+        return NextResponse.json({ ok: false, error: 'Không tìm thấy nhóm liên kết.' }, { status: 404 });
+      }
+      const bbntText = buildSettlementSummaryMessage(existing, groupId);
+      const sent = await sendZaloMessage(groupId, bbntText);
+      return NextResponse.json({
+        ok: true,
+        sentToZalo: sent,
+        message: sent
+          ? 'Đã gửi phiếu đối soát BBNT & Thuế vào nhóm Zalo.'
+          : 'Đã tạo phiếu đối soát BBNT & Thuế.',
+        previewText: bbntText,
       });
     }
 
@@ -328,6 +359,9 @@ export async function POST(req: NextRequest) {
       dealStatus: (body?.dealStatus || existing?.dealStatus || 'ĐANG_QUAY_NHÁP') as ZaloDealWorkflowStatus,
       draftVideoUrl: body?.draftVideoUrl ? String(body.draftVideoUrl).trim() : existing?.draftVideoUrl,
       airedVideoUrl: body?.airedVideoUrl ? String(body.airedVideoUrl).trim() : existing?.airedVideoUrl,
+      trackingCode: body?.trackingCode ? String(body.trackingCode).trim().toUpperCase() : existing?.trackingCode,
+      sampleShippedAt: body?.sampleShippedAt ? String(body.sampleShippedAt).trim() : existing?.sampleShippedAt,
+      sparkAdsCode: body?.sparkAdsCode ? String(body.sparkAdsCode).trim() : existing?.sparkAdsCode,
       linkedAt: existing?.linkedAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
