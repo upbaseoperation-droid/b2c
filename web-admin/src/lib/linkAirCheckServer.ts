@@ -896,19 +896,19 @@ const DEFAULT_VN_CART_BRIDGE_STATE: VnCartBridgeState = {
       videoId: '7700246764321803541',
       videoUrl: 'https://www.tiktok.com/@maiphuong_oplung/video/7700246764321803541',
       cartAnchorTitle:
-        'Ốp lưng dẻo viền đen chống sốc in hình Cờ Đỏ Sao Vàng Việt Nam lấp lánh bảo vệ camera cho điện thoại iPhone 11 12 13 14 15 16 Pro Max Plus',
-      cartAnchorUrl: 'https://shop.tiktok.com/view/product/1732702960880454236',
-      cartProductId: '1732702960880454236',
+        'Ốp lưng chính hãng chất liệu mờ từ tính, tương thích iPhone18 Pro 17, 16, 15, 14, 13, 12,  Pro Max, 17 Pro,  PLUS, bảo vệ camera, nắp sạc từ tính, viền PC mềm bảo vệ.',
+      cartAnchorUrl: 'https://shop.tiktok.com/vn/pdp/1737608932183541719?source=anchor',
+      cartProductId: '1737608932183541719',
       cartProducts: [
         {
-          productId: '1732702960880454236',
+          productId: '1737608932183541719',
           title:
-            'Ốp lưng dẻo viền đen chống sốc in hình Cờ Đỏ Sao Vàng Việt Nam lấp lánh bảo vệ camera cho điện thoại iPhone 11 12 13 14 15 16 Pro Max Plus',
-          productUrl: 'https://shop.tiktok.com/view/product/1732702960880454236',
-          source: 'TikTok Shop Anchor',
+            'Ốp lưng chính hãng chất liệu mờ từ tính, tương thích iPhone18 Pro 17, 16, 15, 14, 13, 12,  Pro Max, 17 Pro,  PLUS, bảo vệ camera, nắp sạc từ tính, viền PC mềm bảo vệ.',
+          productUrl: 'https://shop.tiktok.com/vn/pdp/1737608932183541719?source=anchor',
+          source: 'TikTok Shop Anchor (VN Bridge)',
         },
       ],
-      updatedAt: '2026-10-28T17:00:00.000Z',
+      updatedAt: '2026-10-28T18:10:00.000Z',
     },
   },
   pending: {},
@@ -1030,16 +1030,16 @@ async function resolveCartViaVietnamBridge(
     return;
   }
 
-  // 1. Check built-in default cache first (instant 0ms)
-  const builtin = DEFAULT_VN_CART_BRIDGE_STATE.items[inspected.videoId];
-  if (builtin && applyVnBridgeItemToInspected(inspected, builtin, 'vnBuiltin=hit')) {
-    return;
-  }
-
-  // 2. Check PostgreSQL / SharedRecord cache
+  // 1. Check PostgreSQL / SharedRecord cache first
   const state = await getVnCartBridgeState();
   const cached = state.items?.[inspected.videoId];
   if (cached && applyVnBridgeItemToInspected(inspected, cached, 'vnDbCache=hit')) {
+    return;
+  }
+
+  // 2. Fallback to built-in default cache
+  const builtin = DEFAULT_VN_CART_BRIDGE_STATE.items[inspected.videoId];
+  if (builtin && applyVnBridgeItemToInspected(inspected, builtin, 'vnBuiltin=hit')) {
     return;
   }
 
