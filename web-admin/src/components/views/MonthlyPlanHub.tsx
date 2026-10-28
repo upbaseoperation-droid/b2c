@@ -25,7 +25,7 @@ import {
   BrandAvatar,
   useFlipList
 } from '../ui';
-import { formatVndShort } from '../../lib/format';
+import { formatVndShort, getVietnamDateYmd } from '../../lib/format';
 import { pushSharedStateToDb } from '../../lib/sharedStateClient';
 import { KEY_VISUAL_CATEGORY_LABEL, uploadKeyVisualImageClient } from '../brands/brandUi';
 import { PlanOrderUploadModal } from './PlanOrderUploadModal';
@@ -82,7 +82,6 @@ import {
 
 type StrategyPreset = 'BALANCED' | 'GMV_MAX' | 'BRAND_PUSH' | 'COST_SAVER' | 'MEGA_SALE';
 import {
-  AVAILABLE_MONTHS,
   getPlanVersionSnapshots,
   getStorePlanWorkstreamSummary,
   buildPersonalWorkPackages,
@@ -216,7 +215,7 @@ function getB2cPlanBreakdown(plan: InputPlanBreakdownState | null, store?: Store
     const selfBudget = selfItems.reduce((s, i) => s + (i.totalBudget || 0), 0) || ref.selfCostNet || 0;
     const otherQty = otherItems.reduce((s, i) => s + (i.qty || 0), 0) || refOtherQty;
     const otherBudget = otherItems.reduce((s, i) => s + (i.totalBudget || 0), 0) || refOtherBudget;
-    const totalBudget = plan.totalTargetBudget ?? (ref.affCostNet + ref.selfCostNet + ref.liveCostNet + refOtherBudget);
+    const totalBudget = plan.totalTargetBudget || (ref.affCostNet + ref.selfCostNet + ref.liveCostNet + refOtherBudget);
     const allocatedBudget = affPaidBudget + selfBudget + otherBudget + (ref.liveCostNet || 0);
     const totalVideos = plan.totalTargetContents || (affPaidQty + focQty + selfQty + otherQty + (ref.liveSessions || 0));
 
@@ -376,8 +375,18 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     return filterScopedPlans(plans, currentUser, storePortfolios);
   }, [plans, currentUser, storePortfolios]);
 
-  // Bộ lọc tháng
-  const [selectedMonth, setSelectedMonth] = useState<string>('2026/10');
+  // Bộ lọc tháng: các kỳ có kế hoạch, mới nhất trước. Mặc định mở kỳ đang lập (muộn nhất là tháng sau).
+  const planMonths = useMemo(
+    () => Array.from(new Set(scopedPlans.map(p => p.month).filter(Boolean))).sort().reverse(),
+    [scopedPlans]
+  );
+  const defaultMonth = useMemo(() => {
+    const [y, m] = getVietnamDateYmd().split('-').map(Number);
+    const nextMonth = m === 12 ? `${y + 1}/01` : `${y}/${String(m + 1).padStart(2, '0')}`;
+    return planMonths.find(month => month <= nextMonth) || planMonths[0] || 'ALL';
+  }, [planMonths]);
+  const [pickedMonth, setSelectedMonth] = useState<string | null>(null);
+  const selectedMonth = pickedMonth ?? defaultMonth;
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedPic, setSelectedPic] = useState<string>('ALL');
@@ -2609,7 +2618,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
         {/* Bộ chọn tháng */}
         <div className="flex items-center gap-1 overflow-x-auto p-0.5 rounded-lg bg-sunken">
-          {AVAILABLE_MONTHS.map(m => {
+          {[{ value: 'ALL' }, ...planMonths.map(value => ({ value }))].map(m => {
             const isSelected = selectedMonth === m.value;
             const countInMonth = m.value === 'ALL'
               ? scopedPlans.length
@@ -2798,9 +2807,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       }}
                       aria-label="Lọc theo sàn"
                     >
-                      <option value="ALL">Tất cả Sàn (TikTok &amp; Shopee)</option>
-                      <option value="TikTok Shop">TikTok Shop</option>
-                      <option value="Shopee Mall">Shopee Mall</option>
+                      <option value="ALL">Tất cả sàn</option>
+                      <option value="TikTok Shop">TikTok</option>
+                      <option value="Shopee Mall">Shopee</option>
                     </Select>
 
                     <Select

@@ -723,7 +723,7 @@ export function getStorePlanWorkstreamSummary(plan: InputPlanBreakdownState | nu
   }
 
   // Fallback nếu plan chưa có items chi tiết nhưng có chỉ tiêu tổng
-  if (affSlices.length === 0 && ((plan.budgetAffiliate || 0) > 0 || (plan.targetAffiliateContents || 0) > 0)) {
+  if (items.length === 0 && affSlices.length === 0 && ((plan.budgetAffiliate || 0) > 0 || (plan.targetAffiliateContents || 0) > 0)) {
     const isShopee = (plan.storeName || '').toLowerCase().includes('shopee');
     if (isShopee) {
       const q = plan.targetAffiliateContents || plan.totalTargetContents || 0;
@@ -749,7 +749,7 @@ export function getStorePlanWorkstreamSummary(plan: InputPlanBreakdownState | nu
         tierOrFormatLabels: ['KL1-KL5'],
         rowIds: []
       });
-    } else if ((plan.targetAffiliateContents || 0) > 0) {
+    } else if (focSlices.length === 0 && (plan.targetAffiliateContents || 0) > 0) {
       const q = plan.targetAffiliateContents || 0;
       focSlices.push({
         staffName: 'Trần Thị Hảo',
@@ -1343,15 +1343,6 @@ export function enrichPlanWithVersions(rawPlan: InputPlanBreakdownState, idx: nu
 }
 
 export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = RAW_MONTHLY_PLANS.map(enrichPlanWithVersions);
-
-// Danh sách các chu kỳ tháng hỗ trợ
-export const AVAILABLE_MONTHS = [
-  { value: 'ALL', label: 'Tất Cả Các Tháng', badge: '140 Plans' },
-  { value: '2026/10', label: 'Tháng 10/2026 (Hiện tại)', badge: '69 Plans', isCurrent: true },
-  { value: '2026/11', label: 'Tháng 11/2026 (Sắp tới)', badge: '66 Plans' },
-  { value: '2026/09', label: 'Tháng 09/2026', badge: '3 Plans' },
-  { value: '2026/08', label: 'Tháng 08/2026', badge: '2 Plans' }
-];
 
 // =========================================================================
 // QUẢN LÝ TUẦN THEO CHU KỲ THÁNG (WEEK CALENDAR BY MONTH)

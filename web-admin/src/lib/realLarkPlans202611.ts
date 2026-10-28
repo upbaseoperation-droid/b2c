@@ -2,7 +2,7 @@
 // App Token: W6vRbbuOVar3qtsV18dlan1xgXb
 // Bảng 4.1 Plan order tổng: tblvgyOkneDKOVsB (67 gian hàng B2C phụ trách = true; rev 13773)
 // Bảng 4.1.1 Input plan: tblWvkHgK4fQF83t (468 dòng phân rã tuần W45-W49 trên 52 gian hàng B2C; rev 30579)
-// Cập nhật lúc: 2026-10-28T19:00:00.000Z
+// Cập nhật lúc: 2026-10-29T09:00:00.000Z (sửa số Net bị đọc sai dấu thập phân, tách phần việc 4.1.1 theo "Người phụ trách")
 
 import type { InputPlanBreakdownState, LarkbaseBookingPlanRecordItem } from './types';
 
@@ -34,13 +34,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -140,7 +140,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 94715999.9999999,
+    "budgetAdsTotal": 94716000,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -149,7 +149,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCiglOyG",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-BABETIKTOKE2EO",
@@ -179,7 +179,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-BABETIKTOKE2EO-411-FOC",
@@ -451,7 +451,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       {
         "staffName": "Trần Thị Hảo",
         "roleLabel": "Phụ trách FOC · 96 FOC",
-        "rowCount": 6,
+        "rowCount": 4,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -703,7 +703,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -805,7 +805,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 59471508.47,
+    "budgetAdsTotal": 59471508,
     "targetAffiliateContents": 96,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -814,7 +814,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCig8Cbt",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-BANIPHARSHOPEEE2ES",
@@ -843,7 +843,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-BANIPHARSHOPEEE2ES-411-SELF",
@@ -1144,8 +1144,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 2,
+                "budgetNet": 400000,
                 "reupQty": 0
               },
               "facebook": {
@@ -1193,8 +1193,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 3,
+                "budgetNet": 600000,
                 "reupQty": 0
               },
               "facebook": {
@@ -1242,8 +1242,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 4,
+                "budgetNet": 800000,
                 "reupQty": 0
               },
               "facebook": {
@@ -1291,8 +1291,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 3,
+                "budgetNet": 600000,
                 "reupQty": 0
               },
               "facebook": {
@@ -1340,8 +1340,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 3,
+                "budgetNet": 600000,
                 "reupQty": 0
               },
               "facebook": {
@@ -1367,13 +1367,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
-      "isGrowthLocked": true,
-      "growthLockLabel": "Đã chốt (Chốt)",
+      "isGrowthLocked": false,
+      "growthLockLabel": "Chưa chốt (Chờ chốt)",
       "videoAff": 15,
       "foc": 0,
-      "cast": 0,
+      "cast": 15,
       "affCostGross": 3564000,
       "affCostNet": 3000000,
       "selfVideos": 0,
@@ -1465,7 +1465,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 421631990.28,
+    "budgetAdsTotal": 421631990,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 30,
     "currentVersionCode": "v1.0",
@@ -1474,7 +1474,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigGJKj",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-BANIPHARTIKTOKE2ES",
@@ -1488,7 +1488,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Nguyễn Thị Quỳnh Nhi",
     "assignedMembers": [
       "Nguyễn Thị Quỳnh Nhi",
-      "Nguyễn Thị Quỳnh Nhi Nguyễn Ngọc Huyền"
+      "Nguyễn Ngọc Huyền"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -1504,7 +1504,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-BANIPHARTIKTOKE2ES-411-KL1",
@@ -1946,9 +1946,261 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Nguyễn Thị Quỳnh Nhi Nguyễn Ngọc Huyền",
+        "staffName": "Nguyễn Thị Quỳnh Nhi",
+        "roleLabel": "PIC chính · 0 Cast",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 2,
+              "videoAi": 0,
+              "videoRemix": 1,
+              "videoToLive": 5,
+              "nhacText": 0,
+              "budgetNet": 1900000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 2,
+              "videoAi": 0,
+              "videoRemix": 1,
+              "videoToLive": 10,
+              "nhacText": 1,
+              "budgetNet": 2050000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 3,
+              "videoAi": 0,
+              "videoRemix": 1,
+              "videoToLive": 5,
+              "nhacText": 1,
+              "budgetNet": 3150000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 4,
+              "videoAi": 0,
+              "videoRemix": 1,
+              "videoToLive": 3,
+              "nhacText": 1,
+              "budgetNet": 3150000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 5,
+              "videoAi": 0,
+              "videoRemix": 1,
+              "videoToLive": 2,
+              "nhacText": 1,
+              "budgetNet": 2750000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Ngọc Huyền",
         "roleLabel": "Phụ · 18 Cast",
-        "rowCount": 10,
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -1972,12 +2224,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 2,
+              "reviewVoice": 0,
               "videoAi": 0,
-              "videoRemix": 1,
-              "videoToLive": 5,
+              "videoRemix": 0,
+              "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 1900000
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -2038,12 +2290,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 2,
+              "reviewVoice": 0,
               "videoAi": 0,
-              "videoRemix": 1,
-              "videoToLive": 10,
-              "nhacText": 1,
-              "budgetNet": 2050000
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -2104,12 +2356,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 3,
+              "reviewVoice": 0,
               "videoAi": 0,
-              "videoRemix": 1,
-              "videoToLive": 5,
-              "nhacText": 1,
-              "budgetNet": 3150000
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -2170,12 +2422,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 4,
+              "reviewVoice": 0,
               "videoAi": 0,
-              "videoRemix": 1,
-              "videoToLive": 3,
-              "nhacText": 1,
-              "budgetNet": 3150000
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -2232,12 +2484,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 5,
+              "reviewVoice": 0,
               "videoAi": 0,
-              "videoRemix": 1,
-              "videoToLive": 2,
-              "nhacText": 1,
-              "budgetNet": 2750000
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -2277,13 +2529,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
-      "isGrowthLocked": true,
-      "growthLockLabel": "Đã chốt (Chốt)",
+      "isGrowthLocked": false,
+      "growthLockLabel": "Chưa chốt (Chờ chốt)",
       "videoAff": 18,
       "foc": 0,
-      "cast": 0,
+      "cast": 18,
       "affCostGross": 116721000,
       "affCostNet": 98250000,
       "selfVideos": 50,
@@ -2377,7 +2629,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 98250000,
     "budgetSelfChannel": 13000000,
-    "budgetAdsTotal": 512470580.049999,
+    "budgetAdsTotal": 512470580,
     "targetAffiliateContents": 18,
     "targetSelfChannelContents": 50,
     "currentVersionCode": "v1.0",
@@ -2386,7 +2638,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigwbNQ",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-BYEBYEBLEMISHSHOPEEE2ES",
@@ -2415,7 +2667,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [
       {
@@ -2746,8 +2998,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 10,
+                "budgetNet": 1000000,
                 "reupQty": 0
               },
               "facebook": {
@@ -2795,14 +3047,14 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 40,
+                "budgetNet": 4000000,
                 "reupQty": 0
               },
               "facebook": {
-                "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "affQty": 2,
+                "budgetNet": 15000000,
+                "reupQty": 3
               },
               "instagram": {
                 "affQty": 0,
@@ -2920,15 +3172,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 15,
       "foc": 0,
-      "cast": 0,
+      "cast": 15,
       "affCostGross": 21600000,
-      "affCostNet": 1818181818,
+      "affCostNet": 18181818,
       "selfVideos": 0,
       "selfCostGross": 0,
       "selfCostNet": 0,
@@ -3025,7 +3277,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCig8p3o",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-BYEBYEBLEMISHTIKTOKE2ES",
@@ -3038,7 +3290,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "pic": "Lê Thanh Hải",
     "primaryPic": "Lê Thanh Hải",
     "assignedMembers": [
-      "Lê Thanh Hải"
+      "Lê Thanh Hải",
+      "Nguyễn Ngọc Phương Anh",
+      "Nguyễn Quỳnh Trang"
     ],
     "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
@@ -3055,7 +3309,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-BYEBYEBLEMISHTIKTOKE2ES-411-KL1",
@@ -3454,7 +3708,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       {
         "staffName": "Lê Thanh Hải",
         "roleLabel": "PIC chính · 17 Cast",
-        "rowCount": 12,
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -3467,15 +3721,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 32
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 2,
+              "reviewVoice": 0,
               "videoAi": 0,
-              "videoRemix": 1,
+              "videoRemix": 0,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 1200000
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -3525,15 +3779,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 32
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 4,
+              "reviewVoice": 0,
               "videoAi": 0,
-              "videoRemix": 1,
+              "videoRemix": 0,
               "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 2200000
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -3579,7 +3833,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 32
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 3,
@@ -3637,7 +3891,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 32
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 3,
@@ -3691,7 +3945,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 32
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 2,
@@ -3735,22 +3989,526 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             }
           }
         ]
+      },
+      {
+        "staffName": "Nguyễn Ngọc Phương Anh",
+        "roleLabel": "Phụ trách FOC · 160 FOC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 32
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 32
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 32
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 32
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 32
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Quỳnh Trang",
+        "roleLabel": "Phụ trách Self",
+        "rowCount": 2,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 2,
+              "videoAi": 0,
+              "videoRemix": 1,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 1200000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 4,
+              "videoAi": 0,
+              "videoRemix": 1,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 2200000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 177,
       "foc": 160,
-      "cast": 0,
-      "affCostGross": 148800000.24,
-      "affCostNet": 1252525255,
+      "cast": 17,
+      "affCostGross": 148800000,
+      "affCostNet": 125252526,
       "selfVideos": 22,
       "selfCostGross": 10679996,
-      "selfCostNet": 8989895623,
+      "selfCostNet": 8989896,
       "liveSessions": 0,
       "liveCostGross": 0,
       "liveCostNet": 0,
@@ -3837,7 +4595,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 124000000,
     "budgetSelfChannel": 8200000,
-    "budgetAdsTotal": 927464999.999999,
+    "budgetAdsTotal": 927465000,
     "targetAffiliateContents": 177,
     "targetSelfChannelContents": 20,
     "currentVersionCode": "v1.0",
@@ -3846,7 +4604,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigBxGA",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-CINDYBLOOMTIKTOKE2EC",
@@ -3860,7 +4618,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Bùi Ngọc Ánh",
     "assignedMembers": [
       "Bùi Ngọc Ánh",
-      "Trần Phương Thảo Bùi Ngọc Ánh Nguyễn Thị Tuyết Trinh"
+      "Trần Phương Thảo",
+      "Nguyễn Thị Tuyết Trinh"
     ],
     "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
@@ -3877,7 +4636,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-CINDYBLOOMTIKTOKE2EC-411-KL1",
@@ -4304,9 +5063,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Trần Phương Thảo Bùi Ngọc Ánh Nguyễn Thị Tuyết Trinh",
-        "roleLabel": "Phụ · 17 Cast",
-        "rowCount": 15,
+        "staffName": "Bùi Ngọc Ánh",
+        "roleLabel": "PIC chính · 17 Cast",
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -4323,15 +5082,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 10
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 2,
+              "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 5,
+              "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 650000
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -4389,15 +5148,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 20
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 3,
+              "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 10,
+              "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 1275000
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -4451,15 +5210,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 60
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 4,
+              "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 7,
+              "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 750000
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -4505,7 +5264,259 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 60
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Trần Phương Thảo",
+        "roleLabel": "Phụ trách Self",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 2,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 5,
+              "nhacText": 0,
+              "budgetNet": 650000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 3,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 10,
+              "nhacText": 0,
+              "budgetNet": 1275000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 4,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 7,
+              "nhacText": 0,
+              "budgetNet": 750000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 6,
@@ -4554,7 +5565,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -4598,17 +5609,269 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             }
           }
         ]
+      },
+      {
+        "staffName": "Nguyễn Thị Tuyết Trinh",
+        "roleLabel": "Phụ trách FOC · 200 FOC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 10
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 20
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 60
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 60
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 217,
       "foc": 200,
-      "cast": 0,
+      "cast": 17,
       "affCostGross": 59400000,
       "affCostNet": 50000000,
       "selfVideos": 56,
@@ -4702,7 +5965,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 50000000,
     "budgetSelfChannel": 5600000,
-    "budgetAdsTotal": 674445961.97,
+    "budgetAdsTotal": 674445962,
     "targetAffiliateContents": 217,
     "targetSelfChannelContents": 56,
     "currentVersionCode": "v1.0",
@@ -4711,7 +5974,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigYZ27",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-DOCILEESHOPEEE2ES",
@@ -4740,7 +6003,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-DOCILEESHOPEEE2ES-411-SELF",
@@ -5096,8 +6359,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               },
               "facebook": {
                 "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "budgetNet": 1000000,
+                "reupQty": 1
               },
               "instagram": {
                 "affQty": 0,
@@ -5145,8 +6408,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               },
               "facebook": {
                 "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "budgetNet": 1000000,
+                "reupQty": 1
               },
               "instagram": {
                 "affQty": 0,
@@ -5194,8 +6457,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               },
               "facebook": {
                 "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "budgetNet": 1000000,
+                "reupQty": 1
               },
               "instagram": {
                 "affQty": 0,
@@ -5243,8 +6506,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               },
               "facebook": {
                 "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "budgetNet": 2000000,
+                "reupQty": 2
               },
               "instagram": {
                 "affQty": 0,
@@ -5264,15 +6527,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 5,
       "foc": 0,
-      "cast": 0,
+      "cast": 5,
       "affCostGross": 5400000,
-      "affCostNet": 4545454545,
+      "affCostNet": 4545455,
       "selfVideos": 20,
       "selfCostGross": 0,
       "selfCostNet": 0,
@@ -5371,7 +6634,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigPIQI",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-DOCILEETIKTOKE2ES",
@@ -5400,7 +6663,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-DOCILEETIKTOKE2ES-411-KL1",
@@ -6133,18 +7396,18 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 35,
       "foc": 0,
-      "cast": 0,
+      "cast": 35,
       "affCostGross": 75600000,
-      "affCostNet": 6363636364,
+      "affCostNet": 63636364,
       "selfVideos": 15,
       "selfCostGross": 3888000,
-      "selfCostNet": 3272727273,
+      "selfCostNet": 3272727,
       "liveSessions": 20,
       "liveCostGross": 10800000,
       "liveCostNet": 9090909,
@@ -6242,7 +7505,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigeFUC",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-DYNIKTIKTOKE2EC",
@@ -6271,7 +7534,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-DYNIKTIKTOKE2EC-411-KL3",
@@ -6959,18 +8222,18 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 72,
       "foc": 65,
-      "cast": 0,
+      "cast": 7,
       "affCostGross": 154440000,
       "affCostNet": 130000000,
       "selfVideos": 12,
       "selfCostGross": 9720000,
-      "selfCostNet": 8181818182,
+      "selfCostNet": 8181818,
       "liveSessions": 0,
       "liveCostGross": 0,
       "liveCostNet": 0,
@@ -7059,7 +8322,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 143000000,
     "budgetSelfChannel": 8750000,
-    "budgetAdsTotal": 105566326.58,
+    "budgetAdsTotal": 105566327,
     "targetAffiliateContents": 8,
     "targetSelfChannelContents": 11,
     "currentVersionCode": "v1.0",
@@ -7068,7 +8331,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigHsCL",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-EUPCSHOPEEE2EC",
@@ -7081,7 +8344,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "pic": "Dương Thị Hồng Nhung",
     "primaryPic": "Dương Thị Hồng Nhung",
     "assignedMembers": [
-      "Dương Thị Hồng Nhung"
+      "Dương Thị Hồng Nhung",
+      "Nguyễn Ngọc Huyền",
+      "Nguyễn Thị Hồng Ngát",
+      "Lê Phương Thảo"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -7097,7 +8363,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-EUPCSHOPEEE2EC-411-SELF",
@@ -7367,9 +8633,261 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Dương Thị Hồng Nhung",
-        "roleLabel": "PIC chính · 0 Cast",
-        "rowCount": 13,
+        "staffName": "Nguyễn Ngọc Huyền",
+        "roleLabel": "Phụ trách Self",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 2,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 2,
+                "budgetNet": 4000000,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 2,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 2,
+                "budgetNet": 4000000,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 6,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 1,
+                "budgetNet": 2000000,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Thị Hồng Ngát",
+        "roleLabel": "Phụ trách Self",
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -7429,11 +8947,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 2,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 3,
+              "nhacText": 1,
               "budgetNet": 0
             },
             "live": {
@@ -7478,11 +8996,263 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 4,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 3,
+              "nhacText": 1,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 2,
+                "budgetNet": 4000000,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 1,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 1,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 2,
+                "budgetNet": 4000000,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 1,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 1,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 1,
+                "budgetNet": 2000000,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Lê Phương Thảo",
+        "roleLabel": "Phụ trách Self",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 1,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 2,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 1,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 2,
               "budgetNet": 0
             },
             "live": {
@@ -7527,11 +9297,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 5,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 2,
+              "nhacText": 1,
               "budgetNet": 0
             },
             "live": {
@@ -7576,11 +9346,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 8,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 1,
+              "nhacText": 0,
               "budgetNet": 0
             },
             "live": {
@@ -7621,15 +9391,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 45,
       "foc": 0,
-      "cast": 0,
+      "cast": 45,
       "affCostGross": 37260000,
-      "affCostNet": 3136363636,
+      "affCostNet": 31363636,
       "selfVideos": 30,
       "selfCostGross": 0,
       "selfCostNet": 0,
@@ -7719,7 +9489,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 287227970.999999,
+    "budgetAdsTotal": 287227971,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 30,
     "currentVersionCode": "v1.0",
@@ -7728,7 +9498,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCiguMX1",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-EUPCTIKTOKE2EC",
@@ -7742,7 +9512,11 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Dương Thị Hồng Nhung",
     "assignedMembers": [
       "Dương Thị Hồng Nhung",
-      "Nguyễn Thị Hồng Ngát Nguyễn Ngọc Huyền Trần Thị Hảo Lê Phương Thảo"
+      "Nguyễn Ngọc Huyền",
+      "Trần Thị Hảo",
+      "Nguyễn Thị Hồng Ngát",
+      "Lê Phương Thảo",
+      "Nguyễn Ngọc Phương Anh"
     ],
     "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
@@ -7759,7 +9533,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-EUPCTIKTOKE2EC-411-KL1",
@@ -8266,42 +10040,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Nguyễn Thị Hồng Ngát Nguyễn Ngọc Huyền Trần Thị Hảo Lê Phương Thảo",
-        "roleLabel": "Phụ · 87 Cast",
-        "rowCount": 35,
+        "staffName": "Nguyễn Ngọc Huyền",
+        "roleLabel": "Phụ · 19 Cast",
+        "rowCount": 10,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
             "tiers": {
               "KL1": {
-                "qty": 8,
-                "budgetNet": 2400000
+                "qty": 1,
+                "budgetNet": 300000
               },
               "KL5": {
-                "qty": 3,
-                "budgetNet": 15000000
-              },
-              "KL3": {
                 "qty": 1,
-                "budgetNet": 1500000
-              },
-              "KL4": {
-                "qty": 1,
-                "budgetNet": 3000000
+                "budgetNet": 5000000
               }
             },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 53
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 2,
+              "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 3,
-              "budgetNet": 2700000
+              "nhacText": 1,
+              "budgetNet": 700000
             },
             "live": {
               "sessions": 0,
@@ -8340,42 +10106,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "week": "W46 [06.11-12.11]",
             "tiers": {
               "KL1": {
-                "qty": 11,
-                "budgetNet": 3300000
+                "qty": 2,
+                "budgetNet": 600000
               },
               "KL5": {
-                "qty": 4,
-                "budgetNet": 20000000
+                "qty": 1,
+                "budgetNet": 5000000
               },
               "KL6": {
-                "qty": 2,
-                "budgetNet": 20000000
+                "qty": 1,
+                "budgetNet": 10000000
               },
               "KL7": {
-                "qty": 2,
-                "budgetNet": 65000000
-              },
-              "KL3": {
-                "qty": 2,
-                "budgetNet": 3000000
-              },
-              "KL4": {
                 "qty": 1,
-                "budgetNet": 3000000
+                "budgetNet": 35000000
               }
             },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 58
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 6,
+              "reviewVoice": 1,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 5,
-              "budgetNet": 5900000
+              "nhacText": 2,
+              "budgetNet": 2100000
             },
             "live": {
               "sessions": 0,
@@ -8414,42 +10172,30 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "week": "W47 [13.11-19.11]",
             "tiers": {
               "KL1": {
-                "qty": 14,
-                "budgetNet": 4200000
+                "qty": 3,
+                "budgetNet": 900000
               },
               "KL5": {
-                "qty": 4,
-                "budgetNet": 20000000
+                "qty": 1,
+                "budgetNet": 5000000
               },
               "KL7": {
-                "qty": 2,
-                "budgetNet": 95000000
-              },
-              "KL3": {
-                "qty": 2,
-                "budgetNet": 3000000
-              },
-              "KL4": {
-                "qty": 2,
-                "budgetNet": 6000000
-              },
-              "KL6": {
                 "qty": 1,
-                "budgetNet": 10000000
+                "budgetNet": 35000000
               }
             },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 58
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 7,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 5,
-              "budgetNet": 6200000
+              "nhacText": 2,
+              "budgetNet": 2800000
             },
             "live": {
               "sessions": 0,
@@ -8488,42 +10234,30 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "week": "W48 [20.11-26.11]",
             "tiers": {
               "KL1": {
-                "qty": 10,
-                "budgetNet": 3000000
+                "qty": 2,
+                "budgetNet": 600000
               },
               "KL5": {
-                "qty": 4,
-                "budgetNet": 20000000
+                "qty": 1,
+                "budgetNet": 5000000
               },
               "KL6": {
                 "qty": 1,
                 "budgetNet": 10000000
-              },
-              "KL3": {
-                "qty": 2,
-                "budgetNet": 3000000
-              },
-              "KL4": {
-                "qty": 1,
-                "budgetNet": 3000000
-              },
-              "KL7": {
-                "qty": 1,
-                "budgetNet": 30000000
               }
             },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 53
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 6,
+              "reviewVoice": 2,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 5,
-              "budgetNet": 6000000
+              "nhacText": 2,
+              "budgetNet": 2800000
             },
             "live": {
               "sessions": 0,
@@ -8562,12 +10296,910 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "week": "W49 [27.11-03.12]",
             "tiers": {
               "KL1": {
-                "qty": 6,
-                "budgetNet": 1800000
+                "qty": 2,
+                "budgetNet": 600000
               },
               "KL5": {
                 "qty": 1,
                 "budgetNet": 5000000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 1,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 2,
+              "budgetNet": 2100000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Phụ trách FOC · 150 FOC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 35
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 40
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 40
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 35
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Thị Hồng Ngát",
+        "roleLabel": "Phụ · 32 Cast",
+        "rowCount": 10,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 900000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3000000
+              },
+              "KL5": {
+                "qty": 2,
+                "budgetNet": 10000000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 2,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 2,
+              "budgetNet": 2000000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {
+              "KL1": {
+                "qty": 4,
+                "budgetNet": 1200000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 5000000
+              },
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 30000000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 3,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 2,
+              "budgetNet": 2600000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {
+              "KL1": {
+                "qty": 4,
+                "budgetNet": 1200000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3000000
+              },
+              "KL5": {
+                "qty": 3,
+                "budgetNet": 15000000
+              },
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 60000000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 3,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 2,
+              "budgetNet": 2200000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 900000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 5000000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 3,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 1,
+              "budgetNet": 2000000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 900000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 1,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 1,
+              "budgetNet": 800000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Lê Phương Thảo",
+        "roleLabel": "Phụ · 36 Cast",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {
+              "KL1": {
+                "qty": 4,
+                "budgetNet": 1200000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {
+              "KL1": {
+                "qty": 5,
+                "budgetNet": 1500000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3000000
+              },
+              "KL5": {
+                "qty": 2,
+                "budgetNet": 10000000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 10000000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 2,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 1,
+              "budgetNet": 1200000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 4000000,
+                "reupQty": 2
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {
+              "KL1": {
+                "qty": 7,
+                "budgetNet": 2100000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3000000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 10000000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 2,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 1,
+              "budgetNet": 1200000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 10,
+                "budgetNet": 1500000,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 4000000,
+                "reupQty": 2
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {
+              "KL1": {
+                "qty": 5,
+                "budgetNet": 1500000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3000000
+              },
+              "KL5": {
+                "qty": 2,
+                "budgetNet": 10000000
+              },
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 30000000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 1,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 2,
+              "budgetNet": 1200000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 10,
+                "budgetNet": 1500000,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 2000000,
+                "reupQty": 1
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {
+              "KL1": {
+                "qty": 1,
+                "budgetNet": 300000
               },
               "KL4": {
                 "qty": 1,
@@ -8577,15 +11209,267 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 18
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 2,
+              "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
               "videoToLive": 0,
-              "nhacText": 4,
-              "budgetNet": 4100000
+              "nhacText": 1,
+              "budgetNet": 1200000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 10,
+                "budgetNet": 1500000,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Ngọc Phương Anh",
+        "roleLabel": "Phụ trách FOC · 90 FOC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 18
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 18
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 18
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 18
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 18
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -8625,13 +11509,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 377,
       "foc": 290,
-      "cast": 0,
+      "cast": 87,
       "affCostGross": 419601600,
       "affCostNet": 353200000,
       "selfVideos": 45,
@@ -8690,7 +11574,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "ctvCostGross": 0,
         "ctvGmv": 0,
         "brand2h": 0,
-        "totalCostGross": 164969996.76,
+        "totalCostGross": 164969997,
         "totalCostNet": 138863634
       },
       "gmvTargets": {
@@ -8725,7 +11609,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 353200000,
     "budgetSelfChannel": 24900000,
-    "budgetAdsTotal": 1508222221.66,
+    "budgetAdsTotal": 1508222222,
     "targetAffiliateContents": 327,
     "targetSelfChannelContents": 45,
     "currentVersionCode": "v1.0",
@@ -8734,7 +11618,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigxddU",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-EKSEPTIONSHOPEEE2EO",
@@ -8763,13 +11647,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -8834,7 +11718,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "ctvCostGross": 0,
         "ctvGmv": 0,
         "brand2h": 0,
-        "totalCostGross": 123667606.44,
+        "totalCostGross": 123667606,
         "totalCostNet": 104097312
       },
       "gmvTargets": {
@@ -8876,7 +11760,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigtM7h",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-EKSEPTIONTIKTOKE2EO",
@@ -8893,7 +11777,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
-    "totalTargetBudget": 9090909091,
+    "totalTargetBudget": 90909091,
     "totalTargetContents": 103,
     "targetGmv": 500000004,
     "deliveredContents": 0,
@@ -8905,21 +11789,21 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 103,
       "foc": 100,
-      "cast": 0,
+      "cast": 3,
       "affCostGross": 108000000,
-      "affCostNet": 9090909091,
+      "affCostNet": 90909091,
       "selfVideos": 0,
       "selfCostGross": 0,
       "selfCostNet": 0,
@@ -9011,7 +11895,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         ]
       }
     },
-    "budgetAffiliate": 9090909091,
+    "budgetAffiliate": 90909091,
     "budgetSelfChannel": 0,
     "budgetAdsTotal": 110473000,
     "targetAffiliateContents": 103,
@@ -9022,7 +11906,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCig62B9",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-FRESHTIKTOKE2EC",
@@ -9036,7 +11920,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Phạm Thị Thu Hằng",
     "assignedMembers": [
       "Phạm Thị Thu Hằng",
-      "Trần Thị Hảo Phạm Thị Thu Hằng"
+      "Trần Thị Hảo"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -9052,7 +11936,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-FRESHTIKTOKE2EC-411-KL2",
@@ -9443,9 +12327,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Trần Thị Hảo Phạm Thị Thu Hằng",
-        "roleLabel": "Phụ · 6 Cast",
-        "rowCount": 8,
+        "staffName": "Phạm Thị Thu Hằng",
+        "roleLabel": "PIC chính · 6 Cast",
+        "rowCount": 4,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -9453,7 +12337,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 150
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 2,
@@ -9511,7 +12395,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 150
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 5,
@@ -9573,7 +12457,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 200
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 4,
@@ -9627,7 +12511,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 150
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 4,
@@ -9720,11 +12604,263 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             }
           }
         ]
+      },
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Phụ trách FOC · 650 FOC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 150
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 150
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 200
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 150
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -9826,7 +12962,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 160000000,
     "budgetSelfChannel": 8000000,
-    "budgetAdsTotal": 556072761.86,
+    "budgetAdsTotal": 556072762,
     "targetAffiliateContents": 656,
     "targetSelfChannelContents": 58,
     "currentVersionCode": "v1.0",
@@ -9835,7 +12971,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigR2F4",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-HLATIKTOKE2EC",
@@ -9852,7 +12988,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
-    "totalTargetBudget": 4363637000,
+    "totalTargetBudget": 19090916,
     "totalTargetContents": 78,
     "targetGmv": 45500000,
     "deliveredContents": 0,
@@ -9864,24 +13000,24 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 70,
       "foc": 45,
-      "cast": 0,
-      "affCostGross": 19440007.56,
-      "affCostNet": 1636364273,
+      "cast": 25,
+      "affCostGross": 19440008,
+      "affCostNet": 16363643,
       "selfVideos": 8,
       "selfCostGross": 3240000,
-      "selfCostNet": 2727272727,
+      "selfCostNet": 2727273,
       "liveSessions": 20,
       "liveCostGross": 0,
       "liveCostNet": 0,
@@ -9967,9 +13103,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "b2cPics": []
       }
     },
-    "budgetAffiliate": 1636364273,
-    "budgetSelfChannel": 2727272727,
-    "budgetAdsTotal": 36402370.8399999,
+    "budgetAffiliate": 16363643,
+    "budgetSelfChannel": 2727273,
+    "budgetAdsTotal": 36402371,
     "targetAffiliateContents": 70,
     "targetSelfChannelContents": 8,
     "currentVersionCode": "v1.0",
@@ -9978,7 +13114,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigBGmC",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-MISSSAIGONTIKTOKE2EC",
@@ -9991,7 +13127,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "pic": "Lê Phương Thảo",
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
-      "Lê Phương Thảo"
+      "Lê Phương Thảo",
+      "Nguyễn Ngọc Phương Anh"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -10007,7 +13144,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-MISSSAIGONTIKTOKE2EC-411-KL3",
@@ -10404,7 +13541,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       {
         "staffName": "Lê Phương Thảo",
         "roleLabel": "PIC chính · 10 Cast",
-        "rowCount": 10,
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -10412,7 +13549,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 75
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -10474,7 +13611,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 75
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 1,
@@ -10532,7 +13669,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 75
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 2,
@@ -10590,7 +13727,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 75
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 1,
@@ -10639,7 +13776,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 79
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 1,
@@ -10683,17 +13820,269 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             }
           }
         ]
+      },
+      {
+        "staffName": "Nguyễn Ngọc Phương Anh",
+        "roleLabel": "Phụ trách FOC · 379 FOC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 75
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 75
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 75
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 75
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 79
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 254,
       "foc": 244,
-      "cast": 0,
+      "cast": 10,
       "affCostGross": 91476000,
       "affCostNet": 77000000,
       "selfVideos": 12,
@@ -10787,7 +14176,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 77500000,
     "budgetSelfChannel": 4500000,
-    "budgetAdsTotal": 356730000.22,
+    "budgetAdsTotal": 356730000,
     "targetAffiliateContents": 389,
     "targetSelfChannelContents": 12,
     "currentVersionCode": "v1.0",
@@ -10796,7 +14185,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigKOCB",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-MISSSAIGONSHOPEEE2EC",
@@ -10825,13 +14214,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -10896,7 +14285,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "ctvCostGross": 0,
         "ctvGmv": 0,
         "brand2h": 0,
-        "totalCostGross": 31890376.08,
+        "totalCostGross": 31890376,
         "totalCostNet": 26843751
       },
       "gmvTargets": {
@@ -10931,7 +14320,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 111659983.919999,
+    "budgetAdsTotal": 111659984,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 25,
     "currentVersionCode": "v1.0",
@@ -10940,7 +14329,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigJhb4",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-ZIAJASHOPEEE2ES",
@@ -10954,6 +14343,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Lương Thị Như Quỳnh",
     "assignedMembers": [
       "Lương Thị Như Quỳnh",
+      "Nguyễn Ngọc Linh",
       "Phan Diệu Ánh"
     ],
     "hasBookingLeader": false,
@@ -10970,7 +14360,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-ZIAJASHOPEEE2ES-411-SELF",
@@ -11240,9 +14630,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Phan Diệu Ánh",
+        "staffName": "Nguyễn Ngọc Linh",
         "roleLabel": "Phụ trách Self",
-        "rowCount": 10,
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -11490,19 +14880,271 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             }
           }
         ]
+      },
+      {
+        "staffName": "Phan Diệu Ánh",
+        "roleLabel": "Phụ · 0 Cast",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 35,
+                "budgetNet": 4000000,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 1,
+                "budgetNet": 8000000,
+                "reupQty": 2
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 15,
+                "budgetNet": 1000000,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 1,
+                "budgetNet": 2000000,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 20,
+                "budgetNet": 3000000,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 2000000,
+                "reupQty": 1
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 75,
       "foc": 0,
-      "cast": 0,
+      "cast": 75,
       "affCostGross": 21600000,
-      "affCostNet": 1818181818,
+      "affCostNet": 18181818,
       "selfVideos": 18,
       "selfCostGross": 0,
       "selfCostNet": 0,
@@ -11559,7 +15201,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "ctvCostGross": 0,
         "ctvGmv": 0,
         "brand2h": 0,
-        "totalCostGross": 121646499.84,
+        "totalCostGross": 121646500,
         "totalCostNet": 102396044
       },
       "gmvTargets": {
@@ -11592,7 +15234,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 576127317.6,
+    "budgetAdsTotal": 576127318,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 18,
     "currentVersionCode": "v1.0",
@@ -11601,7 +15243,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigPBFh",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-ZIAJATIKTOKE2ES",
@@ -11615,7 +15257,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Lương Thị Như Quỳnh",
     "assignedMembers": [
       "Lương Thị Như Quỳnh",
-      "Nguyễn Ngọc Linh Phan Diệu Ánh"
+      "Phan Diệu Ánh",
+      "Nguyễn Ngọc Linh"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -11631,7 +15274,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-ZIAJATIKTOKE2ES-411-KL2",
@@ -12049,9 +15692,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Nguyễn Ngọc Linh Phan Diệu Ánh",
+        "staffName": "Phan Diệu Ánh",
         "roleLabel": "Phụ · 12 Cast",
-        "rowCount": 10,
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -12075,12 +15718,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 3,
+              "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 1,
+              "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 1200000
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -12137,12 +15780,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 5,
+              "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 3,
-              "nhacText": 2,
-              "budgetNet": 2050000
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -12195,12 +15838,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 4,
+              "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 2,
-              "nhacText": 1,
-              "budgetNet": 1700000
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -12257,12 +15900,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "tapUp": 0
             },
             "self": {
-              "reviewVoice": 5,
+              "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 3,
-              "nhacText": 1,
-              "budgetNet": 2050000
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -12305,6 +15948,258 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "budgetNet": 500000
               }
             },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Ngọc Linh",
+        "roleLabel": "Phụ trách Self",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 3,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 1,
+              "nhacText": 0,
+              "budgetNet": 1200000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 5,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 3,
+              "nhacText": 2,
+              "budgetNet": 2050000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 4,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 2,
+              "nhacText": 1,
+              "budgetNet": 1700000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 5,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 3,
+              "nhacText": 1,
+              "budgetNet": 2050000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -12356,13 +16251,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 12,
       "foc": 0,
-      "cast": 0,
+      "cast": 12,
       "affCostGross": 77220000,
       "affCostNet": 65000000,
       "selfVideos": 32,
@@ -12456,7 +16351,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 65000000,
     "budgetSelfChannel": 7400000,
-    "budgetAdsTotal": 524465320.94,
+    "budgetAdsTotal": 524465321,
     "targetAffiliateContents": 12,
     "targetSelfChannelContents": 32,
     "currentVersionCode": "v1.0",
@@ -12465,7 +16360,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigZHcW",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-KARMARTSHOPEEE2EC",
@@ -12482,7 +16377,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
-    "totalTargetBudget": 2727272727,
+    "totalTargetBudget": 30000000,
     "totalTargetContents": 80,
     "targetGmv": 178386000,
     "deliveredContents": 0,
@@ -12494,21 +16389,21 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
-      "videoAff": 60,
+      "videoAff": 10,
       "foc": 0,
-      "cast": 0,
-      "affCostGross": 32400000,
-      "affCostNet": 2727272727,
+      "cast": 10,
+      "affCostGross": 35640000,
+      "affCostNet": 30000000,
       "selfVideos": 20,
       "selfCostGross": 0,
       "selfCostNet": 0,
@@ -12596,7 +16491,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "b2cPics": []
       }
     },
-    "budgetAffiliate": 2727272727,
+    "budgetAffiliate": 30000000,
     "budgetSelfChannel": 0,
     "budgetAdsTotal": 133380000,
     "targetAffiliateContents": 60,
@@ -12607,7 +16502,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigy6lN",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-KUTIESKINMAMATIKTOKE2ES",
@@ -12621,7 +16516,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Bùi Thu Hằng",
     "assignedMembers": [
       "Bùi Thu Hằng",
-      "Bùi Thu Hằng Lại Ngọc Huyền"
+      "Lại Ngọc Huyền"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -12637,7 +16532,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-KUTIESKINMAMATIKTOKE2ES-411-KL2",
@@ -13013,20 +16908,317 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Bùi Thu Hằng Lại Ngọc Huyền",
-        "roleLabel": "Phụ · 46 Cast",
-        "rowCount": 10,
+        "staffName": "Bùi Thu Hằng",
+        "roleLabel": "PIC chính · 36 Cast",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 1200000
+              },
+              "KL2": {
+                "qty": 4,
+                "budgetNet": 4400000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {
+              "KL1": {
+                "qty": 4,
+                "budgetNet": 1600000
+              },
+              "KL2": {
+                "qty": 4,
+                "budgetNet": 4400000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 1200000
+              },
+              "KL2": {
+                "qty": 5,
+                "budgetNet": 5500000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 17000000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 1200000
+              },
+              "KL2": {
+                "qty": 4,
+                "budgetNet": 4400000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {
+              "KL1": {
+                "qty": 3,
+                "budgetNet": 1200000
+              },
+              "KL2": {
+                "qty": 2,
+                "budgetNet": 2200000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Lại Ngọc Huyền",
+        "roleLabel": "Phụ · 10 Cast",
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
             "tiers": {
               "KL2": {
-                "qty": 5,
-                "budgetNet": 5500000
-              },
-              "KL1": {
-                "qty": 3,
-                "budgetNet": 1200000
+                "qty": 1,
+                "budgetNet": 1100000
               }
             },
             "foc": {
@@ -13079,12 +17271,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "week": "W46 [06.11-12.11]",
             "tiers": {
               "KL2": {
-                "qty": 6,
-                "budgetNet": 6600000
-              },
-              "KL1": {
-                "qty": 4,
-                "budgetNet": 1600000
+                "qty": 2,
+                "budgetNet": 2200000
               }
             },
             "foc": {
@@ -13137,16 +17325,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "week": "W47 [13.11-19.11]",
             "tiers": {
               "KL2": {
-                "qty": 7,
-                "budgetNet": 7700000
-              },
-              "KL1": {
-                "qty": 3,
-                "budgetNet": 1200000
-              },
-              "KL6": {
-                "qty": 1,
-                "budgetNet": 17000000
+                "qty": 2,
+                "budgetNet": 2200000
               }
             },
             "foc": {
@@ -13199,12 +17379,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "week": "W48 [20.11-26.11]",
             "tiers": {
               "KL2": {
-                "qty": 7,
-                "budgetNet": 7700000
-              },
-              "KL1": {
                 "qty": 3,
-                "budgetNet": 1200000
+                "budgetNet": 3300000
               }
             },
             "foc": {
@@ -13257,12 +17433,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "week": "W49 [27.11-03.12]",
             "tiers": {
               "KL2": {
-                "qty": 4,
-                "budgetNet": 4400000
-              },
-              "KL1": {
-                "qty": 3,
-                "budgetNet": 1200000
+                "qty": 2,
+                "budgetNet": 2200000
               }
             },
             "foc": {
@@ -13316,13 +17488,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 46,
       "foc": 0,
-      "cast": 0,
+      "cast": 46,
       "affCostGross": 65696400,
       "affCostNet": 55300000,
       "selfVideos": 60,
@@ -13381,7 +17553,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "ctvCostGross": 0,
         "ctvGmv": 0,
         "brand2h": 0,
-        "totalCostGross": 109446508.8,
+        "totalCostGross": 109446509,
         "totalCostNet": 92126691
       },
       "gmvTargets": {
@@ -13416,7 +17588,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 55300000,
     "budgetSelfChannel": 19000000,
-    "budgetAdsTotal": 909993042.86,
+    "budgetAdsTotal": 909993043,
     "targetAffiliateContents": 46,
     "targetSelfChannelContents": 60,
     "currentVersionCode": "v1.0",
@@ -13425,7 +17597,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigziNh",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-KUTIESKINMAMASHOPEEE2ES",
@@ -13454,7 +17626,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [
       {
@@ -13743,7 +17915,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "facebook": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 2
               },
               "instagram": {
                 "affQty": 0,
@@ -13791,8 +17963,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               },
               "facebook": {
                 "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "budgetNet": 6000000,
+                "reupQty": 5
               },
               "instagram": {
                 "affQty": 0,
@@ -13840,8 +18012,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               },
               "facebook": {
                 "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "budgetNet": 6000000,
+                "reupQty": 5
               },
               "instagram": {
                 "affQty": 0,
@@ -13889,8 +18061,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               },
               "facebook": {
                 "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "budgetNet": 6000000,
+                "reupQty": 5
               },
               "instagram": {
                 "affQty": 0,
@@ -13938,8 +18110,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               },
               "facebook": {
                 "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "budgetNet": 2000000,
+                "reupQty": 3
               },
               "instagram": {
                 "affQty": 0,
@@ -13959,15 +18131,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 20,
       "foc": 0,
-      "cast": 0,
+      "cast": 20,
       "affCostGross": 21600000,
-      "affCostNet": 1818181818,
+      "affCostNet": 18181818,
       "selfVideos": 30,
       "selfCostGross": 0,
       "selfCostNet": 0,
@@ -14024,7 +18196,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "ctvCostGross": 45019200,
         "ctvGmv": 580357143,
         "brand2h": 0,
-        "totalCostGross": 58687594.2,
+        "totalCostGross": 58687594,
         "totalCostNet": 49400332
       },
       "gmvTargets": {
@@ -14057,7 +18229,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 668264179.32,
+    "budgetAdsTotal": 668264179,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -14066,7 +18238,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigt5bq",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-LIPITTIKTOKE2EC",
@@ -14080,7 +18252,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Trần Hải Phượng",
     "assignedMembers": [
       "Trần Hải Phượng",
-      "Nguyễn Thị Tuyết Trinh Trần Hải Phượng"
+      "Nguyễn Thị Tuyết Trinh"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -14096,7 +18268,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-LIPITTIKTOKE2EC-411-KL2",
@@ -14551,9 +18723,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Nguyễn Thị Tuyết Trinh Trần Hải Phượng",
-        "roleLabel": "Phụ · 20 Cast",
-        "rowCount": 10,
+        "staffName": "Trần Hải Phượng",
+        "roleLabel": "PIC chính · 20 Cast",
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -14566,7 +18738,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 10
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 2,
@@ -14628,7 +18800,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 20
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 3,
@@ -14694,7 +18866,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 40
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 3,
@@ -14756,7 +18928,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 40
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 3,
@@ -14810,7 +18982,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 40
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 1,
@@ -14854,17 +19026,269 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             }
           }
         ]
+      },
+      {
+        "staffName": "Nguyễn Thị Tuyết Trinh",
+        "roleLabel": "Phụ trách FOC · 150 FOC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 10
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 20
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 40
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 40
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 40
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 140,
       "foc": 120,
-      "cast": 0,
+      "cast": 20,
       "affCostGross": 71280000,
       "affCostNet": 60000000,
       "selfVideos": 15,
@@ -14958,7 +19382,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 60000000,
     "budgetSelfChannel": 7500000,
-    "budgetAdsTotal": 232692308.53,
+    "budgetAdsTotal": 232692309,
     "targetAffiliateContents": 170,
     "targetSelfChannelContents": 15,
     "currentVersionCode": "v1.0",
@@ -14967,7 +19391,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigVfV5",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-MERACINETIKTOKE2ES",
@@ -14996,7 +19420,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-MERACINETIKTOKE2ES-411-KL3",
@@ -15615,15 +20039,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 5,
       "foc": 0,
-      "cast": 0,
+      "cast": 5,
       "affCostGross": 10800000,
-      "affCostNet": 9090909091,
+      "affCostNet": 9090909,
       "selfVideos": 30,
       "selfCostGross": 13068000,
       "selfCostNet": 11000000,
@@ -15713,7 +20137,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 10000000,
     "budgetSelfChannel": 11000000,
-    "budgetAdsTotal": 290399999.999999,
+    "budgetAdsTotal": 290400000,
     "targetAffiliateContents": 5,
     "targetSelfChannelContents": 30,
     "currentVersionCode": "v1.0",
@@ -15722,7 +20146,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigEgRK",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-MINETIKTOKE2EC",
@@ -15735,7 +20159,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "pic": "Lại Ngọc Huyền",
     "primaryPic": "Lại Ngọc Huyền",
     "assignedMembers": [
-      "Lại Ngọc Huyền"
+      "Lại Ngọc Huyền",
+      "Nguyễn Ngọc Phương Anh"
     ],
     "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
@@ -15752,7 +20177,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-MINETIKTOKE2EC-411-KL3",
@@ -16190,7 +20615,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       {
         "staffName": "Lại Ngọc Huyền",
         "roleLabel": "PIC chính · 30 Cast",
-        "rowCount": 10,
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -16203,7 +20628,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 40
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 2,
@@ -16269,7 +20694,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 40
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 2,
@@ -16331,7 +20756,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 40
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 1,
@@ -16385,7 +20810,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 40
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 1,
@@ -16447,7 +20872,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 40
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 1,
@@ -16491,22 +20916,274 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             }
           }
         ]
+      },
+      {
+        "staffName": "Nguyễn Ngọc Phương Anh",
+        "roleLabel": "Phụ trách FOC · 200 FOC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 40
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 40
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 40
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 40
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 40
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 231,
       "foc": 200,
-      "cast": 0,
+      "cast": 31,
       "affCostGross": 194400000,
-      "affCostNet": 1636363636,
+      "affCostNet": 163636364,
       "selfVideos": 45,
       "selfCostGross": 14310000,
-      "selfCostNet": 1204545455,
+      "selfCostNet": 12045455,
       "liveSessions": 30,
       "liveCostGross": 0,
       "liveCostNet": 0,
@@ -16595,7 +21272,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 102000000,
     "budgetSelfChannel": 13250000,
-    "budgetAdsTotal": 401567371.81,
+    "budgetAdsTotal": 401567372,
     "targetAffiliateContents": 230,
     "targetSelfChannelContents": 45,
     "currentVersionCode": "v1.0",
@@ -16604,7 +21281,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigeNvO",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-NABIZAMSHOPEEE2ES",
@@ -16633,7 +21310,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-NABIZAMSHOPEEE2ES-411-KL2",
@@ -17196,13 +21873,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 5,
       "foc": 0,
-      "cast": 0,
+      "cast": 5,
       "affCostGross": 5940000,
       "affCostNet": 5000000,
       "selfVideos": 30,
@@ -17303,7 +21980,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigHdiS",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-NABIZAMTIKTOKE2ES",
@@ -17317,7 +21994,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Nguyễn Thị Quỳnh Nhi",
     "assignedMembers": [
       "Nguyễn Thị Quỳnh Nhi",
-      "Nguyễn Thị Quỳnh Nhi Trần Thị Hảo"
+      "Trần Thị Hảo"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -17333,7 +22010,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-NABIZAMTIKTOKE2ES-411-FOC",
@@ -17621,9 +22298,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Nguyễn Thị Quỳnh Nhi Trần Thị Hảo",
-        "roleLabel": "Phụ trách FOC · 150 FOC",
-        "rowCount": 9,
+        "staffName": "Nguyễn Thị Quỳnh Nhi",
+        "roleLabel": "PIC chính · 0 Cast",
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -17631,7 +22308,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 35
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -17680,7 +22357,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 40
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -17729,7 +22406,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 40
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -17778,7 +22455,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 35
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -17871,11 +22548,263 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             }
           }
         ]
+      },
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Phụ trách FOC · 150 FOC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 35
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 40
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 40
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 35
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -17886,7 +22815,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "affCostNet": 0,
       "selfVideos": 70,
       "selfCostGross": 648000,
-      "selfCostNet": 5454545455,
+      "selfCostNet": 545455,
       "liveSessions": 0,
       "liveCostGross": 0,
       "liveCostNet": 0,
@@ -17940,7 +22869,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "ctvCostGross": 0,
         "ctvGmv": 0,
         "brand2h": 0,
-        "totalCostGross": 115339216.68,
+        "totalCostGross": 115339217,
         "totalCostNet": 97086883
       },
       "gmvTargets": {
@@ -17975,7 +22904,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 600000,
-    "budgetAdsTotal": 180659196.41,
+    "budgetAdsTotal": 180659196,
     "targetAffiliateContents": 150,
     "targetSelfChannelContents": 70,
     "currentVersionCode": "v1.0",
@@ -17984,7 +22913,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxEDCigF1VN",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-NUCOSTIKTOKE2ES",
@@ -18013,7 +22942,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-NUCOSTIKTOKE2ES-411-KL5",
@@ -18730,18 +23659,18 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 89,
       "foc": 80,
-      "cast": 0,
-      "affCostGross": 99599999.76,
-      "affCostNet": 8383838364,
+      "cast": 9,
+      "affCostGross": 99600000,
+      "affCostNet": 83838384,
       "selfVideos": 40,
       "selfCostGross": 15900005,
-      "selfCostNet": 1338384259,
+      "selfCostNet": 13383843,
       "liveSessions": 16,
       "liveCostGross": 0,
       "liveCostNet": 0,
@@ -18830,7 +23759,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 83000000,
     "budgetSelfChannel": 13250000,
-    "budgetAdsTotal": 181499996.37,
+    "budgetAdsTotal": 181499996,
     "targetAffiliateContents": 9,
     "targetSelfChannelContents": 40,
     "currentVersionCode": "v1.0",
@@ -18839,7 +23768,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoatFxX",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-REVISIONTIKTOKE2EO",
@@ -18852,7 +23781,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "pic": "Nguyễn Quỳnh Trang",
     "primaryPic": "Nguyễn Quỳnh Trang",
     "assignedMembers": [
-      "Nguyễn Quỳnh Trang"
+      "Nguyễn Quỳnh Trang",
+      "Nguyễn Ngọc Phương Anh"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -18868,7 +23798,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-REVISIONTIKTOKE2EO-411-FOC",
@@ -19138,8 +24068,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Nguyễn Quỳnh Trang",
-        "roleLabel": "PIC chính · 0 Cast",
+        "staffName": "Nguyễn Ngọc Phương Anh",
+        "roleLabel": "Phụ trách FOC · 360 FOC",
         "rowCount": 5,
         "weeklyBreakdown": [
           {
@@ -19392,15 +24322,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 362,
       "foc": 360,
-      "cast": 0,
+      "cast": 2,
       "affCostGross": 86400000,
-      "affCostNet": 7272727273,
+      "affCostNet": 72727273,
       "selfVideos": 0,
       "selfCostGross": 0,
       "selfCostNet": 0,
@@ -19499,7 +24429,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaGP0h",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-SCCSAIGONCOSMETICSSHOPEEE2EC",
@@ -19513,7 +24443,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Bùi Ngọc Ánh",
     "assignedMembers": [
       "Bùi Ngọc Ánh",
-      "Bùi Ngọc Ánh Trần Phương Thảo"
+      "Trần Phương Thảo"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -19529,7 +24459,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-SCCSAIGONCOSMETICSSHOPEEE2EC-411-SELF",
@@ -19799,7 +24729,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Bùi Ngọc Ánh Trần Phương Thảo",
+        "staffName": "Trần Phương Thảo",
         "roleLabel": "Phụ trách Self",
         "rowCount": 5,
         "weeklyBreakdown": [
@@ -20053,7 +24983,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -20161,7 +25091,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoagI2v",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-LOCCITANEVITNAMTIKTOKE2EC",
@@ -20191,7 +25121,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-LOCCITANEVITNAMTIKTOKE2EC-411-FOC",
@@ -20733,13 +25663,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 45,
       "foc": 0,
-      "cast": 0,
+      "cast": 45,
       "affCostGross": 0,
       "affCostNet": 0,
       "selfVideos": 30,
@@ -20798,7 +25728,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "ctvCostGross": 0,
         "ctvGmv": 0,
         "brand2h": 0,
-        "totalCostGross": 182439311.04,
+        "totalCostGross": 182439311,
         "totalCostNet": 153568444
       },
       "gmvTargets": {
@@ -20835,7 +25765,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 633845689.729999,
+    "budgetAdsTotal": 633845690,
     "targetAffiliateContents": 45,
     "targetSelfChannelContents": 30,
     "currentVersionCode": "v1.0",
@@ -20844,7 +25774,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoa1jP4",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-REVISIONSHOPEEE2EO",
@@ -20854,11 +25784,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "storeName": "Revision_Shopee_E2E-O",
     "month": "2026/11",
     "week": "Tháng 2026/11",
-    "pic": "Chuyên viên B2C",
-    "primaryPic": "Chuyên viên B2C",
-    "assignedMembers": [
-      "Chuyên viên B2C"
-    ],
+    "pic": "",
+    "primaryPic": "",
+    "assignedMembers": [],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "totalTargetBudget": 0,
@@ -20873,13 +25801,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -20975,7 +25903,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 24804218.52,
+    "budgetAdsTotal": 24804219,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -20984,7 +25912,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaQrmI",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-VENUSTIKTOKE2EC",
@@ -21014,7 +25942,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-VENUSTIKTOKE2EC-411-KL3",
@@ -21418,9 +26346,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Nguyễn Thị Tuyết Trinh",
-        "roleLabel": "Phụ · 15 Cast",
-        "rowCount": 10,
+        "staffName": "Bùi Ngọc Ánh",
+        "roleLabel": "PIC chính · 15 Cast",
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -21433,7 +26361,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 1,
@@ -21495,7 +26423,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 60
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 5,
@@ -21557,7 +26485,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 80
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 6,
@@ -21615,7 +26543,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 80
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 4,
@@ -21624,6 +26552,258 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "videoToLive": 0,
               "nhacText": 0,
               "budgetNet": 1760000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Thị Tuyết Trinh",
+        "roleLabel": "Phụ trách FOC · 350 FOC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 60
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 80
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 80
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -21712,13 +26892,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 365,
       "foc": 350,
-      "cast": 0,
+      "cast": 15,
       "affCostGross": 166320000,
       "affCostNet": 140000000,
       "selfVideos": 20,
@@ -21811,7 +26991,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 154000000,
     "budgetSelfChannel": 8800000,
-    "budgetAdsTotal": 350900008.47,
+    "budgetAdsTotal": 350900008,
     "targetAffiliateContents": 365,
     "targetSelfChannelContents": 20,
     "currentVersionCode": "v1.0",
@@ -21820,7 +27000,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoa7y9P",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-CATHYDOLLTIKTOKE2EC",
@@ -21834,7 +27014,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Phạm Thị Thu Hằng",
     "assignedMembers": [
       "Phạm Thị Thu Hằng",
-      "Trần Thị Hảo Phạm Thị Thu Hằng"
+      "Trần Thị Hảo"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -21850,7 +27030,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-CATHYDOLLTIKTOKE2EC-411-KL2",
@@ -22246,9 +27426,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Trần Thị Hảo Phạm Thị Thu Hằng",
-        "roleLabel": "Phụ · 7 Cast",
-        "rowCount": 8,
+        "staffName": "Phạm Thị Thu Hằng",
+        "roleLabel": "PIC chính · 7 Cast",
+        "rowCount": 4,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -22265,7 +27445,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -22327,7 +27507,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 3,
@@ -22381,7 +27561,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 3,
@@ -22435,7 +27615,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 3,
@@ -22528,11 +27708,263 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             }
           }
         ]
+      },
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Phụ trách FOC · 200 FOC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -22540,10 +27972,10 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "foc": 232,
       "cast": 0,
       "affCostGross": 43200000,
-      "affCostNet": 3636363636,
+      "affCostNet": 36363636,
       "selfVideos": 22,
       "selfCostGross": 12420000,
-      "selfCostNet": 1045454545,
+      "selfCostNet": 10454545,
       "liveSessions": 8,
       "liveCostGross": 0,
       "liveCostNet": 0,
@@ -22632,7 +28064,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 40000000,
     "budgetSelfChannel": 11150000,
-    "budgetAdsTotal": 259563453.71,
+    "budgetAdsTotal": 259563454,
     "targetAffiliateContents": 207,
     "targetSelfChannelContents": 22,
     "currentVersionCode": "v1.0",
@@ -22641,7 +28073,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaXgOR",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-CM24TIKTOKE2EC",
@@ -22655,7 +28087,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Vũ Hoài Lâm",
     "assignedMembers": [
       "Vũ Hoài Lâm",
-      "Vũ Hoài Lâm Nguyễn Ngọc Linh"
+      "Nguyễn Ngọc Linh",
+      "Nguyễn Ngọc Phương Anh"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -22671,7 +28104,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-CM24TIKTOKE2EC-411-KL7",
@@ -22983,9 +28416,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Vũ Hoài Lâm Nguyễn Ngọc Linh",
-        "roleLabel": "Phụ · 1 Cast",
-        "rowCount": 10,
+        "staffName": "Vũ Hoài Lâm",
+        "roleLabel": "PIC chính · 1 Cast",
+        "rowCount": 1,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -22993,7 +28426,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -23047,7 +28480,259 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Ngọc Linh",
+        "roleLabel": "Phụ trách Self",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 1,
@@ -23096,7 +28781,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 1,
@@ -23145,7 +28830,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 1,
@@ -23194,7 +28879,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -23238,17 +28923,269 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             }
           }
         ]
+      },
+      {
+        "staffName": "Nguyễn Ngọc Phương Anh",
+        "roleLabel": "Phụ trách FOC · 250 FOC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 151,
       "foc": 150,
-      "cast": 0,
+      "cast": 1,
       "affCostGross": 53460000,
       "affCostNet": 45000000,
       "selfVideos": 27,
@@ -23342,7 +29279,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 45000000,
     "budgetSelfChannel": 4560000,
-    "budgetAdsTotal": 187550001.21,
+    "budgetAdsTotal": 187550001,
     "targetAffiliateContents": 251,
     "targetSelfChannelContents": 27,
     "currentVersionCode": "v1.0",
@@ -23351,7 +29288,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoayA8W",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-BAEGAYULSHOPEEE2EO",
@@ -23361,11 +29298,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "storeName": "Baegayul_Shopee_E2E-O",
     "month": "2026/11",
     "week": "Tháng 2026/11",
-    "pic": "Chuyên viên B2C",
-    "primaryPic": "Chuyên viên B2C",
-    "assignedMembers": [
-      "Chuyên viên B2C"
-    ],
+    "pic": "",
+    "primaryPic": "",
+    "assignedMembers": [],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "totalTargetBudget": 0,
@@ -23380,13 +29315,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -23482,7 +29417,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 10800007.56,
+    "budgetAdsTotal": 10800008,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -23491,7 +29426,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaOCq5",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-CM24SHOPEEE2EC",
@@ -23520,7 +29455,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [
       {
@@ -23848,7 +29783,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "shopee": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 10
               },
               "threads": {
                 "affQty": 0,
@@ -23897,7 +29832,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "shopee": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 10
               },
               "threads": {
                 "affQty": 0,
@@ -23907,7 +29842,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "facebook": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 1
               },
               "instagram": {
                 "affQty": 0,
@@ -23946,7 +29881,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "shopee": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 5
               },
               "threads": {
                 "affQty": 0,
@@ -23956,7 +29891,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "facebook": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 1
               },
               "instagram": {
                 "affQty": 0,
@@ -23995,7 +29930,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "shopee": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 5
               },
               "threads": {
                 "affQty": 0,
@@ -24025,13 +29960,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 2,
       "foc": 0,
-      "cast": 0,
+      "cast": 2,
       "affCostGross": 0,
       "affCostNet": 0,
       "selfVideos": 0,
@@ -24123,7 +30058,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 116158407.48,
+    "budgetAdsTotal": 116158407,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -24132,7 +30067,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoagpq2",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-MINESHOPEEE2EC",
@@ -24161,7 +30096,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-MINESHOPEEE2EC-411-SELF",
@@ -24567,7 +30502,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "facebook": {
                 "affQty": 0,
                 "budgetNet": 0,
-                "reupQty": 0
+                "reupQty": 5
               },
               "instagram": {
                 "affQty": 0,
@@ -24685,13 +30620,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 5,
       "foc": 0,
-      "cast": 0,
+      "cast": 5,
       "affCostGross": 0,
       "affCostNet": 0,
       "selfVideos": 20,
@@ -24783,7 +30718,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 137231980.92,
+    "budgetAdsTotal": 137231981,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 20,
     "currentVersionCode": "v1.0",
@@ -24792,7 +30727,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoasYQC",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-NATURALCARESHOPEEE2EC",
@@ -24821,7 +30756,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [
       {
@@ -25326,15 +31261,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 112,
       "foc": 0,
-      "cast": 0,
+      "cast": 112,
       "affCostGross": 54000000,
-      "affCostNet": 4545454545,
+      "affCostNet": 45454545,
       "selfVideos": 30,
       "selfCostGross": 0,
       "selfCostNet": 0,
@@ -25391,7 +31326,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "ctvCostGross": 13685760,
         "ctvGmv": 50000000,
         "brand2h": 0,
-        "totalCostGross": 16988405.4,
+        "totalCostGross": 16988405,
         "totalCostNet": 14300005
       },
       "gmvTargets": {
@@ -25424,7 +31359,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 108800011.079999,
+    "budgetAdsTotal": 108800011,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -25433,7 +31368,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoak0R2",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-NATURALCARETIKTOKE2EC",
@@ -25447,7 +31382,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Hoàng Hải Long",
     "assignedMembers": [
       "Hoàng Hải Long",
-      "Hoàng Hải Long Trần Thị Hảo Hà Thị Thủy"
+      "Trần Thị Hảo",
+      "Hà Thị Thủy"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -25463,7 +31399,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-NATURALCARETIKTOKE2EC-411-KL2",
@@ -25906,9 +31842,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Hoàng Hải Long Trần Thị Hảo Hà Thị Thủy",
-        "roleLabel": "Phụ · 17 Cast",
-        "rowCount": 13,
+        "staffName": "Hoàng Hải Long",
+        "roleLabel": "PIC chính · 17 Cast",
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -25916,7 +31852,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 60
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -25978,7 +31914,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 60
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 2,
@@ -25995,12 +31931,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "multiPlatform": {
               "shopee": {
                 "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "budgetNet": 1500000,
+                "reupQty": 2
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 5,
+                "budgetNet": 750000,
                 "reupQty": 0
               },
               "facebook": {
@@ -26048,7 +31984,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 65
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 3,
@@ -26065,12 +32001,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "multiPlatform": {
               "shopee": {
                 "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "budgetNet": 1500000,
+                "reupQty": 2
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 10,
+                "budgetNet": 1500000,
                 "reupQty": 0
               },
               "facebook": {
@@ -26114,7 +32050,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 60
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 4,
@@ -26131,12 +32067,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "multiPlatform": {
               "shopee": {
                 "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "budgetNet": 1500000,
+                "reupQty": 2
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 6,
+                "budgetNet": 900000,
                 "reupQty": 0
               },
               "facebook": {
@@ -26189,6 +32125,510 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "multiPlatform": {
               "shopee": {
                 "affQty": 0,
+                "budgetNet": 1500000,
+                "reupQty": 2
+              },
+              "threads": {
+                "affQty": 5,
+                "budgetNet": 750000,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Phụ trách FOC · 245 FOC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 60
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 60
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 65
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 60
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Hà Thị Thủy",
+        "roleLabel": "Phụ · 0 Cast",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
                 "budgetNet": 0,
                 "reupQty": 0
               },
@@ -26220,18 +32660,18 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 278,
       "foc": 245,
-      "cast": 0,
-      "affCostGross": 337200019.199999,
+      "cast": 33,
+      "affCostGross": 337200019,
       "affCostNet": 283838400,
       "selfVideos": 23,
       "selfCostGross": 15120005,
-      "selfCostNet": 1272727694,
+      "selfCostNet": 12727277,
       "liveSessions": 0,
       "liveCostGross": 0,
       "liveCostNet": 0,
@@ -26318,7 +32758,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 151000000,
     "budgetSelfChannel": 8350000,
-    "budgetAdsTotal": 337310096.75,
+    "budgetAdsTotal": 337310097,
     "targetAffiliateContents": 262,
     "targetSelfChannelContents": 18,
     "currentVersionCode": "v1.0",
@@ -26327,7 +32767,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoach1j",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-BADLABSHOPEEE2ES",
@@ -26356,7 +32796,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [
       {
@@ -26687,8 +33127,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 10,
+                "budgetNet": 1500000,
                 "reupQty": 0
               },
               "facebook": {
@@ -26736,8 +33176,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 10,
+                "budgetNet": 1500000,
                 "reupQty": 0
               },
               "facebook": {
@@ -26785,8 +33225,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 20,
+                "budgetNet": 3000000,
                 "reupQty": 0
               },
               "facebook": {
@@ -26834,8 +33274,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "threads": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 10,
+                "budgetNet": 1500000,
                 "reupQty": 0
               },
               "facebook": {
@@ -26861,15 +33301,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
-      "isGrowthLocked": true,
-      "growthLockLabel": "Đã chốt (Chốt)",
+      "isGrowthLocked": false,
+      "growthLockLabel": "Chưa chốt (Chờ chốt)",
       "videoAff": 50,
       "foc": 0,
-      "cast": 0,
+      "cast": 50,
       "affCostGross": 8100000,
-      "affCostNet": 6818181818,
+      "affCostNet": 6818182,
       "selfVideos": 20,
       "selfCostGross": 0,
       "selfCostNet": 0,
@@ -26966,7 +33406,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaBSpA",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-BADLABTIKTOKE2ES",
@@ -26980,7 +33420,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Hoàng Hải Long",
     "assignedMembers": [
       "Hoàng Hải Long",
-      "Hoàng Hải Long Nguyễn Thị Tuyết Trinh"
+      "Nguyễn Thị Tuyết Trinh"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -26996,7 +33436,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-BADLABTIKTOKE2ES-411-KL4",
@@ -27377,9 +33817,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Hoàng Hải Long Nguyễn Thị Tuyết Trinh",
-        "roleLabel": "Phụ · 9 Cast",
-        "rowCount": 10,
+        "staffName": "Hoàng Hải Long",
+        "roleLabel": "PIC chính · 9 Cast",
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -27387,7 +33827,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 10
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -27441,7 +33881,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 20
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -27503,7 +33943,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 60
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -27565,7 +34005,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 60
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -27619,7 +34059,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -27663,17 +34103,269 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             }
           }
         ]
+      },
+      {
+        "staffName": "Nguyễn Thị Tuyết Trinh",
+        "roleLabel": "Phụ trách FOC · 200 FOC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 10
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 20
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 60
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 60
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 239,
       "foc": 200,
-      "cast": 0,
+      "cast": 39,
       "affCostGross": 219780000,
       "affCostNet": 185000000,
       "selfVideos": 5,
@@ -27763,7 +34455,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 185000000,
     "budgetSelfChannel": 3000000,
-    "budgetAdsTotal": 290399999.999999,
+    "budgetAdsTotal": 290400000,
     "targetAffiliateContents": 209,
     "targetSelfChannelContents": 5,
     "currentVersionCode": "v1.0",
@@ -27772,7 +34464,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoa1PpG",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-REJURANTIKTOKE2EO",
@@ -27785,7 +34477,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "pic": "Lê Thanh Hải",
     "primaryPic": "Lê Thanh Hải",
     "assignedMembers": [
-      "Lê Thanh Hải"
+      "Lê Thanh Hải",
+      "Nguyễn Ngọc Phương Anh"
     ],
     "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
@@ -27802,7 +34495,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-REJURANTIKTOKE2EO-411-KL6",
@@ -28098,7 +34791,264 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       {
         "staffName": "Lê Thanh Hải",
         "roleLabel": "PIC chính · 1 Cast",
-        "rowCount": 6,
+        "rowCount": 1,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 20000000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Ngọc Phương Anh",
+        "roleLabel": "Phụ trách FOC · 210 FOC",
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -28200,12 +35150,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
           },
           {
             "week": "W47 [13.11-19.11]",
-            "tiers": {
-              "KL6": {
-                "qty": 1,
-                "budgetNet": 20000000
-              }
-            },
+            "tiers": {},
             "foc": {
               "tapBrand": 0,
               "tap": 0,
@@ -28355,15 +35300,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 211,
       "foc": 210,
-      "cast": 0,
+      "cast": 1,
       "affCostGross": 19440000,
-      "affCostNet": 1636363636,
+      "affCostNet": 16363636,
       "selfVideos": 0,
       "selfCostGross": 0,
       "selfCostNet": 0,
@@ -28462,7 +35407,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaRHks",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-HERBALCARESHOPEEE2EC",
@@ -28491,7 +35436,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-HERBALCARESHOPEEE2EC-411-SELF",
@@ -29015,7 +35960,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -29122,7 +36067,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaqhxl",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-HERBALCARETIKTOKE2EC",
@@ -29151,7 +36096,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-HERBALCARETIKTOKE2EC-411-KL4",
@@ -29785,13 +36730,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 4,
       "foc": 0,
-      "cast": 0,
+      "cast": 4,
       "affCostGross": 62964000,
       "affCostNet": 53000000,
       "selfVideos": 30,
@@ -29883,7 +36828,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 53300000,
     "budgetSelfChannel": 6700000,
-    "budgetAdsTotal": 136184029.85,
+    "budgetAdsTotal": 136184030,
     "targetAffiliateContents": 4,
     "targetSelfChannelContents": 30,
     "currentVersionCode": "v1.0",
@@ -29892,7 +36837,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoadDko",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-PHCARETIKTOKE2ECH",
@@ -29906,7 +36851,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Hoàng Diệu Thuỳ",
     "assignedMembers": [
       "Hoàng Diệu Thuỳ",
-      "Nguyễn Thị Tuyết Trinh"
+      "Đinh Thị Bích Liên",
+      "Nguyễn Thị Tuyết Trinh",
+      "Trần Phương Thảo"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -29922,7 +36869,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-PHCARETIKTOKE2ECH-411-KL1",
@@ -30422,9 +37369,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Nguyễn Thị Tuyết Trinh",
+        "staffName": "Đinh Thị Bích Liên",
         "roleLabel": "Phụ · 25 Cast",
-        "rowCount": 18,
+        "rowCount": 8,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -30432,15 +37379,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 60
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 2,
+              "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 3,
+              "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 1400000
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -30506,15 +37453,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 60
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 4,
+              "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 3,
-              "nhacText": 2,
-              "budgetNet": 4200000
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -30533,8 +37480,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               },
               "facebook": {
                 "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "budgetNet": 5000000,
+                "reupQty": 1
               },
               "instagram": {
                 "affQty": 0,
@@ -30584,15 +37531,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 90
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 5,
+              "reviewVoice": 0,
               "videoAi": 0,
-              "videoRemix": 2,
-              "videoToLive": 3,
-              "nhacText": 2,
-              "budgetNet": 4600000
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -30611,8 +37558,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               },
               "facebook": {
                 "affQty": 0,
-                "budgetNet": 0,
-                "reupQty": 0
+                "budgetNet": 10000000,
+                "reupQty": 2
               },
               "instagram": {
                 "affQty": 0,
@@ -30658,7 +37605,511 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 2318000,
+                "reupQty": 2
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Thị Tuyết Trinh",
+        "roleLabel": "Phụ trách FOC · 400 FOC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 60
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 60
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
               "tapUp": 90
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 90
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 100
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Trần Phương Thảo",
+        "roleLabel": "Phụ trách Self",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 2,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 3,
+              "nhacText": 0,
+              "budgetNet": 1400000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 4,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 3,
+              "nhacText": 2,
+              "budgetNet": 4200000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 5,
+              "videoAi": 0,
+              "videoRemix": 2,
+              "videoToLive": 3,
+              "nhacText": 2,
+              "budgetNet": 4600000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 5,
@@ -30707,7 +38158,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 100
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 0,
@@ -30755,18 +38206,18 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 430,
       "foc": 400,
-      "cast": 0,
+      "cast": 30,
       "affCostGross": 216000000,
-      "affCostNet": 1818181818,
+      "affCostNet": 181818182,
       "selfVideos": 40,
       "selfCostGross": 32400000,
-      "selfCostNet": 2727272727,
+      "selfCostNet": 27272727,
       "liveSessions": 2,
       "liveCostGross": 145800000,
       "liveCostNet": 122727273,
@@ -30820,7 +38271,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "ctvCostGross": 0,
         "ctvGmv": 0,
         "brand2h": 0,
-        "totalCostGross": 154296304.92,
+        "totalCostGross": 154296305,
         "totalCostNet": 129879045
       },
       "gmvTargets": {
@@ -30854,7 +38305,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 164500000,
     "budgetSelfChannel": 16000000,
-    "budgetAdsTotal": 481358975.35,
+    "budgetAdsTotal": 481358975,
     "targetAffiliateContents": 425,
     "targetSelfChannelContents": 40,
     "currentVersionCode": "v1.0",
@@ -30863,7 +38314,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoawZpF",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-VENUSSHOPEEE2EC",
@@ -30892,13 +38343,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -30911,7 +38362,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostGross": 0,
       "selfCostNet": 0,
       "liveSessions": 80,
-      "liveCostGross": 21839999.76,
+      "liveCostGross": 21840000,
       "liveCostNet": 18383838,
       "tiers": {
         "KL1": 0,
@@ -30997,7 +38448,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 232200008.64,
+    "budgetAdsTotal": 232200009,
     "targetAffiliateContents": 90,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -31006,7 +38457,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoajoTQ",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-THEVIGOTIKTOKE2EO",
@@ -31016,11 +38467,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "storeName": "The Vigo_TikTok_E2E-O",
     "month": "2026/11",
     "week": "Tháng 2026/11",
-    "pic": "Chuyên viên B2C",
-    "primaryPic": "Chuyên viên B2C",
-    "assignedMembers": [
-      "Chuyên viên B2C"
-    ],
+    "pic": "",
+    "primaryPic": "",
+    "assignedMembers": [],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "totalTargetBudget": 0,
@@ -31035,13 +38484,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -31144,7 +38593,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaTpp2",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-TMCLEANSHOPEEE2EC",
@@ -31161,7 +38610,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
-    "totalTargetBudget": 4090909091,
+    "totalTargetBudget": 4090909,
     "totalTargetContents": 27,
     "targetGmv": 8850000,
     "deliveredContents": 0,
@@ -31173,21 +38622,21 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 2,
       "foc": 0,
-      "cast": 0,
+      "cast": 2,
       "affCostGross": 4860000,
-      "affCostNet": 4090909091,
+      "affCostNet": 4090909,
       "selfVideos": 25,
       "selfCostGross": 0,
       "selfCostNet": 0,
@@ -31275,9 +38724,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "b2cPics": []
       }
     },
-    "budgetAffiliate": 4090909091,
+    "budgetAffiliate": 4090909,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 91655254.0799999,
+    "budgetAdsTotal": 91655254,
     "targetAffiliateContents": 2,
     "targetSelfChannelContents": 25,
     "currentVersionCode": "v1.0",
@@ -31286,7 +38735,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoayzJa",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-TMCLEANTIKTOKE2EC",
@@ -31315,7 +38764,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-TMCLEANTIKTOKE2EC-411-KL1",
@@ -32040,18 +39489,18 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 16,
       "foc": 0,
-      "cast": 0,
+      "cast": 16,
       "affCostGross": 95040000,
       "affCostNet": 80000000,
       "selfVideos": 35,
       "selfCostGross": 14256005,
-      "selfCostNet": 1200000421,
+      "selfCostNet": 12000004,
       "liveSessions": 3,
       "liveCostGross": 7128000,
       "liveCostNet": 6000000,
@@ -32105,7 +39554,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "ctvCostGross": 0,
         "ctvGmv": 0,
         "brand2h": 0,
-        "totalCostGross": 19084318.2,
+        "totalCostGross": 19084318,
         "totalCostNet": 16064241
       },
       "gmvTargets": {
@@ -32138,7 +39587,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 80000000,
     "budgetSelfChannel": 12000000,
-    "budgetAdsTotal": 354076720.69,
+    "budgetAdsTotal": 354076721,
     "targetAffiliateContents": 16,
     "targetSelfChannelContents": 35,
     "currentVersionCode": "v1.0",
@@ -32147,7 +39596,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxESIoaHhIe",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-CATHYDOLLSHOPEEE2EC",
@@ -32164,7 +39613,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
-    "totalTargetBudget": 1363636364,
+    "totalTargetBudget": 13636364,
     "totalTargetContents": 105,
     "targetGmv": 55000000,
     "deliveredContents": 0,
@@ -32176,21 +39625,21 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 75,
       "foc": 0,
-      "cast": 0,
+      "cast": 75,
       "affCostGross": 16200000,
-      "affCostNet": 1363636364,
+      "affCostNet": 13636364,
       "selfVideos": 30,
       "selfCostGross": 0,
       "selfCostNet": 0,
@@ -32278,7 +39727,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "b2cPics": []
       }
     },
-    "budgetAffiliate": 1363636364,
+    "budgetAffiliate": 13636364,
     "budgetSelfChannel": 0,
     "budgetAdsTotal": 89100000,
     "targetAffiliateContents": 75,
@@ -32289,7 +39738,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tc9sg",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-HDTSHOPEEE2EC",
@@ -32302,7 +39751,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "pic": "Hà Thị Thủy",
     "primaryPic": "Hà Thị Thủy",
     "assignedMembers": [
-      "Hà Thị Thủy"
+      "Hà Thị Thủy",
+      "Trần Phương Thảo"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -32318,7 +39768,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-HDTSHOPEEE2EC-411-SELF",
@@ -32590,7 +40040,259 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       {
         "staffName": "Hà Thị Thủy",
         "roleLabel": "PIC chính · 0 Cast",
-        "rowCount": 14,
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 1,
+                "budgetNet": 5000000,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 1,
+                "budgetNet": 5000000,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 1,
+                "budgetNet": 10000000,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Trần Phương Thảo",
+        "roleLabel": "Phụ trách Self",
+        "rowCount": 10,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -32722,8 +40424,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "facebook": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 1,
+                "budgetNet": 5000000,
                 "reupQty": 0
               },
               "instagram": {
@@ -32771,8 +40473,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "reupQty": 0
               },
               "facebook": {
-                "affQty": 0,
-                "budgetNet": 0,
+                "affQty": 1,
+                "budgetNet": 5000000,
                 "reupQty": 0
               },
               "instagram": {
@@ -32842,15 +40544,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 31,
       "foc": 25,
-      "cast": 0,
+      "cast": 6,
       "affCostGross": 32400000,
-      "affCostNet": 2727272727,
+      "affCostNet": 27272727,
       "selfVideos": 20,
       "selfCostGross": 0,
       "selfCostNet": 0,
@@ -32940,7 +40642,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 94446609.12,
+    "budgetAdsTotal": 94446609,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 40,
     "currentVersionCode": "v1.0",
@@ -32949,7 +40651,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tTkaF",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-HDTTIKTOKE2EC",
@@ -32963,7 +40665,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Hà Thị Thủy",
     "assignedMembers": [
       "Hà Thị Thủy",
-      "Hà Thị Thủy Trần Phương Thảo Trần Thị Hảo"
+      "Trần Thị Hảo",
+      "Trần Phương Thảo"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -32979,7 +40682,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-HDTTIKTOKE2EC-411-KL3",
@@ -33477,9 +41180,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Hà Thị Thủy Trần Phương Thảo Trần Thị Hảo",
-        "roleLabel": "Phụ · 25 Cast",
-        "rowCount": 15,
+        "staffName": "Hà Thị Thủy",
+        "roleLabel": "PIC chính · 14 Cast",
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -33492,7 +41195,571 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 800000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 800000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3500000
+              },
+              "KL5": {
+                "qty": 1,
+                "budgetNet": 7000000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 800000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 2000000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3500000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 10000000
+              },
+              "KL7": {
+                "qty": 1,
+                "budgetNet": 0
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {
+              "KL2": {
+                "qty": 1,
+                "budgetNet": 800000
+              },
+              "KL3": {
+                "qty": 1,
+                "budgetNet": 1500000
+              },
+              "KL4": {
+                "qty": 1,
+                "budgetNet": 3500000
+              },
+              "KL7": {
+                "qty": 0,
+                "budgetNet": 30000000
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Phụ trách FOC · 200 FOC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
               "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Trần Phương Thảo",
+        "roleLabel": "Phụ · 11 Cast",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 2,
@@ -33545,16 +41812,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "KL4": {
                 "qty": 1,
                 "budgetNet": 3500000
-              },
-              "KL2": {
-                "qty": 1,
-                "budgetNet": 800000
               }
             },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 3,
@@ -33605,26 +41868,22 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "budgetNet": 250000
               },
               "KL2": {
-                "qty": 2,
-                "budgetNet": 1600000
+                "qty": 1,
+                "budgetNet": 800000
               },
               "KL3": {
-                "qty": 2,
-                "budgetNet": 3000000
+                "qty": 1,
+                "budgetNet": 1500000
               },
               "KL5": {
-                "qty": 2,
-                "budgetNet": 13000000
-              },
-              "KL4": {
                 "qty": 1,
-                "budgetNet": 3500000
+                "budgetNet": 6000000
               }
             },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 4,
@@ -33671,30 +41930,18 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "week": "W48 [20.11-26.11]",
             "tiers": {
               "KL3": {
-                "qty": 2,
-                "budgetNet": 3500000
+                "qty": 1,
+                "budgetNet": 1500000
               },
               "KL6": {
-                "qty": 2,
-                "budgetNet": 22000000
-              },
-              "KL2": {
                 "qty": 1,
-                "budgetNet": 800000
-              },
-              "KL4": {
-                "qty": 1,
-                "budgetNet": 3500000
-              },
-              "KL7": {
-                "qty": 1,
-                "budgetNet": 0
+                "budgetNet": 12000000
               }
             },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 6,
@@ -33741,20 +41988,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "week": "W49 [27.11-03.12]",
             "tiers": {
               "KL3": {
-                "qty": 3,
-                "budgetNet": 5000000
+                "qty": 2,
+                "budgetNet": 3500000
               },
               "KL4": {
-                "qty": 2,
-                "budgetNet": 7000000
-              },
-              "KL2": {
                 "qty": 1,
-                "budgetNet": 800000
-              },
-              "KL7": {
-                "qty": 0,
-                "budgetNet": 30000000
+                "budgetNet": 3500000
               }
             },
             "foc": {
@@ -33808,18 +42047,18 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
-      "videoAff": 230,
+      "videoAff": 225,
       "foc": 200,
-      "cast": 0,
-      "affCostGross": 142560000,
-      "affCostNet": 120000000,
+      "cast": 25,
+      "affCostGross": 118800000,
+      "affCostNet": 100000000,
       "selfVideos": 40,
       "selfCostGross": 11831400,
-      "selfCostNet": 9959090909,
+      "selfCostNet": 9959091,
       "liveSessions": 3,
       "liveCostGross": 0,
       "liveCostNet": 0,
@@ -33906,7 +42145,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 100000000,
     "budgetSelfChannel": 10000000,
-    "budgetAdsTotal": 427116345.15,
+    "budgetAdsTotal": 427116345,
     "targetAffiliateContents": 225,
     "targetSelfChannelContents": 40,
     "currentVersionCode": "v1.0",
@@ -33915,7 +42154,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0t95DR",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-DULUXSHOPEEE2EC",
@@ -33944,16 +42183,16 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
-      "isGrowthLocked": true,
-      "growthLockLabel": "Đã chốt (Chốt)",
+      "isGrowthLocked": false,
+      "growthLockLabel": "Chưa chốt (Chờ chốt)",
       "videoAff": 0,
       "foc": 0,
       "cast": 0,
@@ -34049,7 +42288,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 30092029.1999999,
+    "budgetAdsTotal": 30092029,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 20,
     "currentVersionCode": "v1.0",
@@ -34058,7 +42297,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tWp0I",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-DULUXTIKTOKE2EC",
@@ -34075,7 +42314,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
-    "totalTargetBudget": 9090909091,
+    "totalTargetBudget": 9090909,
     "totalTargetContents": 33,
     "targetGmv": 36135000,
     "deliveredContents": 0,
@@ -34087,21 +42326,21 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
-      "isGrowthLocked": true,
-      "growthLockLabel": "Đã chốt (Chốt)",
+      "isGrowthLocked": false,
+      "growthLockLabel": "Chưa chốt (Chờ chốt)",
       "videoAff": 33,
       "foc": 0,
-      "cast": 0,
+      "cast": 33,
       "affCostGross": 10800000,
-      "affCostNet": 9090909091,
+      "affCostNet": 9090909,
       "selfVideos": 0,
       "selfCostGross": 0,
       "selfCostNet": 0,
@@ -34190,9 +42429,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "b2cPics": []
       }
     },
-    "budgetAffiliate": 9090909091,
+    "budgetAffiliate": 9090909,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 30743428.3199999,
+    "budgetAdsTotal": 30743428,
     "targetAffiliateContents": 33,
     "targetSelfChannelContents": 0,
     "currentVersionCode": "v1.0",
@@ -34201,7 +42440,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tNPio",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-ORGALIFESHOPEEE2EC",
@@ -34231,7 +42470,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-ORGALIFESHOPEEE2EC-411-SELF",
@@ -34755,7 +42994,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -34820,7 +43059,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "ctvCostGross": 0,
         "ctvGmv": 0,
         "brand2h": 0,
-        "totalCostGross": 11904000.84,
+        "totalCostGross": 11904001,
         "totalCostNet": 10020203
       },
       "gmvTargets": {
@@ -34854,7 +43093,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 38486950.2,
+    "budgetAdsTotal": 38486950,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 5,
     "currentVersionCode": "v1.0",
@@ -34863,7 +43102,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tJtDS",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-ORGALIFETIKTOKE2EC",
@@ -34877,7 +43116,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Nguyễn Thị Quỳnh Nhi",
     "assignedMembers": [
       "Nguyễn Thị Quỳnh Nhi",
-      "Phạm Huyền Thương Nguyễn Thị Quỳnh Nhi"
+      "Phạm Huyền Thương",
+      "Nguyễn Ngọc Phương Anh"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -34893,7 +43133,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-ORGALIFETIKTOKE2EC-411-KL6",
@@ -35316,9 +43556,279 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Phạm Huyền Thương Nguyễn Thị Quỳnh Nhi",
-        "roleLabel": "Phụ · 12 Cast",
-        "rowCount": 12,
+        "staffName": "Nguyễn Thị Quỳnh Nhi",
+        "roleLabel": "PIC chính · 2 Cast",
+        "rowCount": 2,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {
+              "KL5": {
+                "qty": 0,
+                "budgetNet": 12500000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 0
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {
+              "KL5": {
+                "qty": 0,
+                "budgetNet": 12500000
+              },
+              "KL6": {
+                "qty": 1,
+                "budgetNet": 0
+              }
+            },
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Phạm Huyền Thương",
+        "roleLabel": "Phụ · 10 Cast",
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -35331,7 +43841,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 100
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 1,
@@ -35384,20 +43894,12 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
               "KL3": {
                 "qty": 2,
                 "budgetNet": 4000000
-              },
-              "KL5": {
-                "qty": 0,
-                "budgetNet": 12500000
-              },
-              "KL6": {
-                "qty": 1,
-                "budgetNet": 0
               }
             },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 100
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 3,
@@ -35448,18 +43950,14 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
                 "budgetNet": 9300000
               },
               "KL6": {
-                "qty": 2,
+                "qty": 1,
                 "budgetNet": 10700000
-              },
-              "KL5": {
-                "qty": 0,
-                "budgetNet": 12500000
               }
             },
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 100
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 2,
@@ -35513,7 +44011,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 100
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 3,
@@ -35562,7 +44060,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 100
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 1,
@@ -35606,22 +44104,274 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             }
           }
         ]
+      },
+      {
+        "staffName": "Nguyễn Ngọc Phương Anh",
+        "roleLabel": "Phụ trách FOC · 500 FOC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 100
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 100
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 100
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 100
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 100
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 650,
       "foc": 638,
-      "cast": 0,
+      "cast": 12,
       "affCostGross": 91476000,
       "affCostNet": 77000000,
       "selfVideos": 10,
       "selfCostGross": 7560000,
-      "selfCostNet": 6363636364,
+      "selfCostNet": 6363636,
       "liveSessions": 14,
       "liveCostGross": 10800000,
       "liveCostNet": 9090909,
@@ -35675,7 +44425,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "ctvCostGross": 0,
         "ctvGmv": 0,
         "brand2h": 0,
-        "totalCostGross": 39467173.32,
+        "totalCostGross": 39467173,
         "totalCostNet": 33221526
       },
       "gmvTargets": {
@@ -35709,7 +44459,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 77000000,
     "budgetSelfChannel": 5833333,
-    "budgetAdsTotal": 134822201.469999,
+    "budgetAdsTotal": 134822201,
     "targetAffiliateContents": 512,
     "targetSelfChannelContents": 10,
     "currentVersionCode": "v1.0",
@@ -35718,7 +44468,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tCqJF",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-FEELCLEANSSHOPEEE2ES",
@@ -35747,7 +44497,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-FEELCLEANSSHOPEEE2ES-411-SELF",
@@ -36271,13 +45021,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 20,
       "foc": 0,
-      "cast": 0,
+      "cast": 20,
       "affCostGross": 0,
       "affCostNet": 0,
       "selfVideos": 20,
@@ -36378,7 +45128,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tZscI",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-FEELCLEANSTIKTOKE2ES",
@@ -36407,7 +45157,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-FEELCLEANSTIKTOKE2ES-411-KL1",
@@ -37097,20 +45847,20 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 17,
       "foc": 0,
-      "cast": 0,
-      "affCostGross": 66600000.36,
-      "affCostNet": 5606060636,
+      "cast": 17,
+      "affCostGross": 66600000,
+      "affCostNet": 56060606,
       "selfVideos": 28,
       "selfCostGross": 10800002,
-      "selfCostNet": 9090910774,
+      "selfCostNet": 9090911,
       "liveSessions": 3,
-      "liveCostGross": 18000000.36,
+      "liveCostGross": 18000000,
       "liveCostNet": 15151515,
       "tiers": {
         "KL1": 0,
@@ -37195,7 +45945,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 55500000,
     "budgetSelfChannel": 9000000,
-    "budgetAdsTotal": 99095379.68,
+    "budgetAdsTotal": 99095380,
     "targetAffiliateContents": 17,
     "targetSelfChannelContents": 28,
     "currentVersionCode": "v1.0",
@@ -37204,7 +45954,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tU1wI",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-CLUBCLIOSHOPEEE2EO",
@@ -37217,7 +45967,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "pic": "Nguyễn Thị Ngọc Tâm",
     "primaryPic": "Nguyễn Thị Ngọc Tâm",
     "assignedMembers": [
-      "Nguyễn Thị Ngọc Tâm"
+      "Nguyễn Thị Ngọc Tâm",
+      "Lương Nguyễn Trang Nhung"
     ],
     "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
@@ -37234,7 +45985,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-CLUBCLIOSHOPEEE2EO-411-SELF",
@@ -37504,8 +46255,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Nguyễn Thị Ngọc Tâm",
-        "roleLabel": "PIC chính · 0 Cast",
+        "staffName": "Lương Nguyễn Trang Nhung",
+        "roleLabel": "Phụ trách Self",
         "rowCount": 5,
         "weeklyBreakdown": [
           {
@@ -37758,13 +46509,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 50,
       "foc": 0,
-      "cast": 0,
+      "cast": 50,
       "affCostGross": 0,
       "affCostNet": 0,
       "selfVideos": 25,
@@ -37867,7 +46618,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tGOM4",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-CLUBCLIOTIKTOKE2EO",
@@ -37881,6 +46632,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Nguyễn Thị Ngọc Tâm",
     "assignedMembers": [
       "Nguyễn Thị Ngọc Tâm",
+      "Lương Nguyễn Trang Nhung",
       "Trần Thị Hảo"
     ],
     "hasBookingLeader": true,
@@ -37898,7 +46650,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-CLUBCLIOTIKTOKE2EO-411-KL3",
@@ -38311,9 +47063,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Trần Thị Hảo",
+        "staffName": "Lương Nguyễn Trang Nhung",
         "roleLabel": "Phụ · 11 Cast",
-        "rowCount": 9,
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -38326,7 +47078,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 25
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 2,
@@ -38388,7 +47140,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 25
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 2,
@@ -38450,7 +47202,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 25
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 2,
@@ -38508,7 +47260,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 25
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 2,
@@ -38610,17 +47362,269 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             }
           }
         ]
+      },
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Phụ trách FOC · 100 FOC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 25
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 25
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 25
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 25
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 11,
       "foc": 0,
-      "cast": 0,
+      "cast": 11,
       "affCostGross": 57024000,
       "affCostNet": 48000000,
       "selfVideos": 10,
@@ -38714,7 +47718,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 48000000,
     "budgetSelfChannel": 5000000,
-    "budgetAdsTotal": 184889658.91,
+    "budgetAdsTotal": 184889659,
     "targetAffiliateContents": 111,
     "targetSelfChannelContents": 10,
     "currentVersionCode": "v1.0",
@@ -38723,7 +47727,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0taLAF",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-CHULALASHOPEEE2EC",
@@ -38736,7 +47740,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "pic": "Lương Nguyễn Trang Nhung",
     "primaryPic": "Lương Nguyễn Trang Nhung",
     "assignedMembers": [
-      "Lương Nguyễn Trang Nhung"
+      "Lương Nguyễn Trang Nhung",
+      "Nguyễn Ngọc Huyền"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -38752,7 +47757,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-CHULALASHOPEEE2EC-411-SELF",
@@ -39022,8 +48027,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Lương Nguyễn Trang Nhung",
-        "roleLabel": "PIC chính · 0 Cast",
+        "staffName": "Nguyễn Ngọc Huyền",
+        "roleLabel": "Phụ trách Self",
         "rowCount": 4,
         "weeklyBreakdown": [
           {
@@ -39276,7 +48281,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -39374,7 +48379,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 53281460.88,
+    "budgetAdsTotal": 53281461,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 15,
     "currentVersionCode": "v1.0",
@@ -39383,7 +48388,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tEtwy",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-CHULALATIKTOKE2EC",
@@ -39397,7 +48402,8 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Lương Nguyễn Trang Nhung",
     "assignedMembers": [
       "Lương Nguyễn Trang Nhung",
-      "Nguyễn Ngọc Huyền Nguyễn Thị Tuyết Trinh"
+      "Nguyễn Ngọc Huyền",
+      "Nguyễn Thị Tuyết Trinh"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -39413,7 +48419,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-CHULALATIKTOKE2EC-411-KL2",
@@ -39884,9 +48890,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Nguyễn Ngọc Huyền Nguyễn Thị Tuyết Trinh",
-        "roleLabel": "Phụ · 47 Cast",
-        "rowCount": 15,
+        "staffName": "Lương Nguyễn Trang Nhung",
+        "roleLabel": "PIC chính · 47 Cast",
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -39899,15 +48905,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 10
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 1,
+              "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 3,
+              "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 1000000
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -39969,15 +48975,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 20
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 2,
+              "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 3,
+              "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 2000000
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -40035,15 +49041,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 60
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 3,
+              "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 3,
+              "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 3000000
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -40097,15 +49103,15 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 60
+              "tapUp": 0
             },
             "self": {
-              "reviewVoice": 3,
+              "reviewVoice": 0,
               "videoAi": 0,
               "videoRemix": 0,
-              "videoToLive": 3,
+              "videoToLive": 0,
               "nhacText": 0,
-              "budgetNet": 3000000
+              "budgetNet": 0
             },
             "live": {
               "sessions": 0,
@@ -40159,7 +49165,259 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Ngọc Huyền",
+        "roleLabel": "Phụ trách Self",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 1,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 3,
+              "nhacText": 0,
+              "budgetNet": 1000000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 2,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 3,
+              "nhacText": 0,
+              "budgetNet": 2000000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 3,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 3,
+              "nhacText": 0,
+              "budgetNet": 3000000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 3,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 3,
+              "nhacText": 0,
+              "budgetNet": 3000000
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 1,
@@ -40203,22 +49461,274 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             }
           }
         ]
+      },
+      {
+        "staffName": "Nguyễn Thị Tuyết Trinh",
+        "roleLabel": "Phụ trách FOC · 200 FOC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 10
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 20
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 60
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 60
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 247,
       "foc": 200,
-      "cast": 0,
+      "cast": 47,
       "affCostGross": 122040000,
-      "affCostNet": 1027272727,
+      "affCostNet": 102727273,
       "selfVideos": 25,
       "selfCostGross": 10800000,
-      "selfCostNet": 9090909091,
+      "selfCostNet": 9090909,
       "liveSessions": 3,
       "liveCostGross": 15120000,
       "liveCostNet": 12727273,
@@ -40305,7 +49815,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 113000000,
     "budgetSelfChannel": 10000000,
-    "budgetAdsTotal": 152217934.66,
+    "budgetAdsTotal": 152217935,
     "targetAffiliateContents": 247,
     "targetSelfChannelContents": 25,
     "currentVersionCode": "v1.0",
@@ -40314,7 +49824,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tM73R",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-ROYALCANINTIKTOKE2ES",
@@ -40324,11 +49834,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "storeName": "Royal Canin_TikTok_E2E-S",
     "month": "2026/11",
     "week": "Tháng 2026/11",
-    "pic": "Chuyên viên B2C",
-    "primaryPic": "Chuyên viên B2C",
-    "assignedMembers": [
-      "Chuyên viên B2C"
-    ],
+    "pic": "",
+    "primaryPic": "",
+    "assignedMembers": [],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "totalTargetBudget": 0,
@@ -40343,13 +49851,13 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Chờ chuyên viên phân rã 4.1.1",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": false,
       "growthLockLabel": "Chưa chốt",
@@ -40448,7 +49956,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tLzWI",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-BELLATIKTOKE2ES",
@@ -40462,7 +49970,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
       "Lê Phương Thảo",
-      "Lê Phương Thảo Trần Thị Hảo"
+      "Trần Thị Hảo"
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
@@ -40478,7 +49986,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-BELLATIKTOKE2ES-411-KL1",
@@ -40929,9 +50437,9 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "staffWeeklySlices": [
       {
-        "staffName": "Lê Phương Thảo Trần Thị Hảo",
-        "roleLabel": "Phụ · 20 Cast",
-        "rowCount": 9,
+        "staffName": "Lê Phương Thảo",
+        "roleLabel": "PIC chính · 20 Cast",
+        "rowCount": 5,
         "weeklyBreakdown": [
           {
             "week": "W45 [30.10-05.11]",
@@ -40939,7 +50447,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 1,
@@ -41009,7 +50517,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 2,
@@ -41075,7 +50583,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 4,
@@ -41141,7 +50649,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             "foc": {
               "tapBrand": 0,
               "tap": 0,
-              "tapUp": 50
+              "tapUp": 0
             },
             "self": {
               "reviewVoice": 2,
@@ -41247,22 +50755,274 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
             }
           }
         ]
+      },
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Phụ trách FOC · 200 FOC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 50
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
       "videoAff": 220,
       "foc": 200,
-      "cast": 0,
-      "affCostGross": 84000000.24,
-      "affCostNet": 7070707091,
+      "cast": 20,
+      "affCostGross": 84000000,
+      "affCostNet": 70707071,
       "selfVideos": 15,
       "selfCostGross": 12000000,
-      "selfCostNet": 101010101,
+      "selfCostNet": 10101010,
       "liveSessions": 0,
       "liveCostGross": 0,
       "liveCostNet": 0,
@@ -41349,7 +51109,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 70000000,
     "budgetSelfChannel": 10000000,
-    "budgetAdsTotal": 151424910.34,
+    "budgetAdsTotal": 151424910,
     "targetAffiliateContents": 220,
     "targetSelfChannelContents": 15,
     "currentVersionCode": "v1.0",
@@ -41358,7 +51118,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tjPXt",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "PO-2026-11-ORGALIFEMALLSHOPEEE2EC",
@@ -41388,7 +51148,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "status": "DRAFT",
     "statusLabel": "Đã nhập 4.1.1 (Chờ rà soát)",
     "createdAt": "2026-10-24T09:00:00.000Z",
-    "updatedAt": "2026-10-28T19:00:00.000Z",
+    "updatedAt": "2026-10-29T09:00:00.000Z",
     "items": [
       {
         "id": "PO-2026-11-ORGALIFEMALLSHOPEEE2EC-411-SELF",
@@ -41912,7 +51672,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/11",
-      "importedAt": "2026-10-28T19:00:00.000Z",
+      "importedAt": "2026-10-29T09:00:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -41925,7 +51685,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostGross": 0,
       "selfCostNet": 0,
       "liveSessions": 31,
-      "liveCostGross": 23759999.999892,
+      "liveCostGross": 23760000,
       "liveCostNet": 20000000,
       "tiers": {
         "KL1": 0,
@@ -41977,7 +51737,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "ctvCostGross": 0,
         "ctvGmv": 0,
         "brand2h": 0,
-        "totalCostGross": 14271298.2,
+        "totalCostGross": 14271298,
         "totalCostNet": 12012877
       },
       "gmvTargets": {
@@ -42011,7 +51771,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
-    "budgetAdsTotal": 38576735.9999999,
+    "budgetAdsTotal": 38576736,
     "targetAffiliateContents": 0,
     "targetSelfChannelContents": 11,
     "currentVersionCode": "v1.0",
@@ -42020,7 +51780,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvxF7J0tH4PV",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-28T19:00:00.000Z"
+    "larkSyncedAt": "2026-10-29T09:00:00.000Z"
   }
 ];
 
@@ -42047,7 +51807,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 94715999.9999999,
+    "budgetAdsTotal": 94716000,
     "targetGmv": 97110000,
     "totalTargetVideos": 0,
     "affiliatePaidVideos": 0,
@@ -42072,7 +51832,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCiglOyG). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCig8Cbt",
@@ -42094,9 +51854,9 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxEDCig8Cbt",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 0,
-    "budgetNet": 0,
-    "budgetAdsTotal": 59471508.47,
+    "budgetGross": 32400000,
+    "budgetNet": 27272727,
+    "budgetAdsTotal": 59471508,
     "targetGmv": 305000001,
     "totalTargetVideos": 110,
     "affiliatePaidVideos": 0,
@@ -42121,7 +51881,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCig8Cbt) & Bảng 4.1.1 (6 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigGJKj",
@@ -42145,10 +51905,10 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 3564000,
     "budgetNet": 3000000,
-    "budgetAdsTotal": 421631990.28,
+    "budgetAdsTotal": 421631990,
     "targetGmv": 333860287,
     "totalTargetVideos": 15,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 15,
     "affiliatePaidBudgetNet": 3000000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -42170,7 +51930,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigGJKj) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigwbNQ",
@@ -42194,10 +51954,10 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 132165000,
     "budgetNet": 111250000,
-    "budgetAdsTotal": 512470580.049999,
+    "budgetAdsTotal": 512470580,
     "targetGmv": 1000000010,
     "totalTargetVideos": 68,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 18,
     "affiliatePaidBudgetNet": 98250000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -42219,7 +51979,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigwbNQ) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCig8p3o",
@@ -42241,13 +52001,13 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxEDCig8p3o",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 21600000,
-    "budgetNet": 1818181818,
+    "budgetGross": 27000000,
+    "budgetNet": 22727273,
     "budgetAdsTotal": 137160000,
     "targetGmv": 36613300,
     "totalTargetVideos": 15,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 1818181818,
+    "affiliatePaidVideos": 15,
+    "affiliatePaidBudgetNet": 18181818,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -42268,7 +52028,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCig8p3o) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigBxGA",
@@ -42290,13 +52050,13 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxEDCigBxGA",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 159479996.24,
-    "budgetNet": 10242420878,
-    "budgetAdsTotal": 927464999.999999,
+    "budgetGross": 159479996,
+    "budgetNet": 134242422,
+    "budgetAdsTotal": 927465000,
     "targetGmv": 2268288451,
     "totalTargetVideos": 199,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 1252525255,
+    "affiliatePaidVideos": 17,
+    "affiliatePaidBudgetNet": 125252526,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -42309,7 +52069,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 160,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 22,
-    "selfChannelBudgetNet": 8989895623,
+    "selfChannelBudgetNet": 8989896,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 0,
@@ -42317,7 +52077,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigBxGA) & Bảng 4.1.1 (12 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigYZ27",
@@ -42341,10 +52101,10 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 66052800,
     "budgetNet": 55600000,
-    "budgetAdsTotal": 674445961.97,
+    "budgetAdsTotal": 674445962,
     "targetGmv": 2270941176,
     "totalTargetVideos": 273,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 17,
     "affiliatePaidBudgetNet": 50000000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -42366,7 +52126,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigYZ27) & Bảng 4.1.1 (15 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigPIQI",
@@ -42389,12 +52149,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 5400000,
-    "budgetNet": 4545454545,
+    "budgetNet": 4545455,
     "budgetAdsTotal": 75600000,
     "targetGmv": 32000000,
     "totalTargetVideos": 25,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 4545454545,
+    "affiliatePaidVideos": 5,
+    "affiliatePaidBudgetNet": 4545455,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -42415,7 +52175,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigPIQI) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigeFUC",
@@ -42437,13 +52197,13 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxEDCigeFUC",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 79488000,
-    "budgetNet": 9636363637,
+    "budgetGross": 90288000,
+    "budgetNet": 76000000,
     "budgetAdsTotal": 248050000,
     "targetGmv": 927710848,
     "totalTargetVideos": 50,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 6363636364,
+    "affiliatePaidVideos": 35,
+    "affiliatePaidBudgetNet": 63636364,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -42456,7 +52216,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 0,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 15,
-    "selfChannelBudgetNet": 3272727273,
+    "selfChannelBudgetNet": 3272727,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 20,
@@ -42464,7 +52224,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigeFUC) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigHsCL",
@@ -42487,11 +52247,11 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 164160000,
-    "budgetNet": 8311818182,
-    "budgetAdsTotal": 105566326.58,
+    "budgetNet": 138181818,
+    "budgetAdsTotal": 105566327,
     "targetGmv": 232493197,
     "totalTargetVideos": 84,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 7,
     "affiliatePaidBudgetNet": 130000000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -42505,7 +52265,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 65,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 12,
-    "selfChannelBudgetNet": 8181818182,
+    "selfChannelBudgetNet": 8181818,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 0,
@@ -42513,7 +52273,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigHsCL) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCiguMX1",
@@ -42536,12 +52296,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 37260000,
-    "budgetNet": 3136363636,
-    "budgetAdsTotal": 287227970.999999,
+    "budgetNet": 31363636,
+    "budgetAdsTotal": 287227971,
     "targetGmv": 208250000,
     "totalTargetVideos": 75,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 3136363636,
+    "affiliatePaidVideos": 45,
+    "affiliatePaidBudgetNet": 31363636,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -42562,7 +52322,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCiguMX1) & Bảng 4.1.1 (13 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigxddU",
@@ -42584,12 +52344,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxEDCigxddU",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 457498800,
-    "budgetNet": 385100000,
-    "budgetAdsTotal": 1508222221.66,
+    "budgetGross": 711298800,
+    "budgetNet": 598736364,
+    "budgetAdsTotal": 1508222222,
     "targetGmv": 4190000001,
     "totalTargetVideos": 422,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 87,
     "affiliatePaidBudgetNet": 353200000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -42611,7 +52371,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigxddU) & Bảng 4.1.1 (35 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigtM7h",
@@ -42660,7 +52420,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigtM7h). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCig62B9",
@@ -42682,13 +52442,13 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxEDCig62B9",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 108000000,
-    "budgetNet": 9090909091,
+    "budgetGross": 140400000,
+    "budgetNet": 118181818,
     "budgetAdsTotal": 110473000,
     "targetGmv": 500000004,
     "totalTargetVideos": 103,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 9090909091,
+    "affiliatePaidVideos": 3,
+    "affiliatePaidBudgetNet": 90909091,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -42709,7 +52469,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCig62B9). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigR2F4",
@@ -42733,7 +52493,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 211464000,
     "budgetNet": 178000000,
-    "budgetAdsTotal": 556072761.86,
+    "budgetAdsTotal": 556072762,
     "targetGmv": 1829000000,
     "totalTargetVideos": 714,
     "affiliatePaidVideos": 0,
@@ -42758,7 +52518,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigR2F4) & Bảng 4.1.1 (8 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigBGmC",
@@ -42780,13 +52540,13 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxEDCigBGmC",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 22680007.56,
-    "budgetNet": 4363637000,
-    "budgetAdsTotal": 36402370.8399999,
+    "budgetGross": 22680008,
+    "budgetNet": 19090916,
+    "budgetAdsTotal": 36402371,
     "targetGmv": 45500000,
     "totalTargetVideos": 78,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 1636364273,
+    "affiliatePaidVideos": 25,
+    "affiliatePaidBudgetNet": 16363643,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -42799,7 +52559,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 45,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 8,
-    "selfChannelBudgetNet": 2727272727,
+    "selfChannelBudgetNet": 2727273,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 20,
@@ -42807,7 +52567,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigBGmC). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigKOCB",
@@ -42831,10 +52591,10 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 96822000,
     "budgetNet": 81500000,
-    "budgetAdsTotal": 356730000.22,
+    "budgetAdsTotal": 356730000,
     "targetGmv": 752000000,
     "totalTargetVideos": 266,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 10,
     "affiliatePaidBudgetNet": 77000000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -42856,7 +52616,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigKOCB) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigJhb4",
@@ -42880,7 +52640,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 111659983.919999,
+    "budgetAdsTotal": 111659984,
     "targetGmv": 272300000,
     "totalTargetVideos": 25,
     "affiliatePaidVideos": 0,
@@ -42905,7 +52665,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigJhb4). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigPBFh",
@@ -42928,12 +52688,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 21600000,
-    "budgetNet": 1818181818,
-    "budgetAdsTotal": 576127317.6,
+    "budgetNet": 18181818,
+    "budgetAdsTotal": 576127318,
     "targetGmv": 174114053,
     "totalTargetVideos": 93,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 1818181818,
+    "affiliatePaidVideos": 75,
+    "affiliatePaidBudgetNet": 18181818,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -42954,7 +52714,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigPBFh) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigZHcW",
@@ -42976,12 +52736,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxEDCigZHcW",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 86011200,
-    "budgetNet": 72400000,
-    "budgetAdsTotal": 524465320.94,
+    "budgetGross": 91843200,
+    "budgetNet": 77309091,
+    "budgetAdsTotal": 524465321,
     "targetGmv": 607515893,
     "totalTargetVideos": 44,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 12,
     "affiliatePaidBudgetNet": 65000000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -43003,7 +52763,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigZHcW) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigy6lN",
@@ -43025,13 +52785,13 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxEDCigy6lN",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 32400000,
-    "budgetNet": 2727272727,
+    "budgetGross": 35640000,
+    "budgetNet": 30000000,
     "budgetAdsTotal": 133380000,
     "targetGmv": 178386000,
     "totalTargetVideos": 80,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 2727272727,
+    "affiliatePaidVideos": 10,
+    "affiliatePaidBudgetNet": 30000000,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -43052,7 +52812,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigy6lN). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigziNh",
@@ -43076,10 +52836,10 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 88268400,
     "budgetNet": 74300000,
-    "budgetAdsTotal": 909993042.86,
+    "budgetAdsTotal": 909993043,
     "targetGmv": 1850008500,
     "totalTargetVideos": 106,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 46,
     "affiliatePaidBudgetNet": 55300000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -43101,7 +52861,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigziNh) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigt5bq",
@@ -43124,12 +52884,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 21600000,
-    "budgetNet": 1818181818,
-    "budgetAdsTotal": 668264179.32,
+    "budgetNet": 18181818,
+    "budgetAdsTotal": 668264179,
     "targetGmv": 100208335,
     "totalTargetVideos": 50,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 1818181818,
+    "affiliatePaidVideos": 20,
+    "affiliatePaidBudgetNet": 18181818,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -43150,7 +52910,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigt5bq) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigVfV5",
@@ -43174,10 +52934,10 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 80190000,
     "budgetNet": 67500000,
-    "budgetAdsTotal": 232692308.53,
+    "budgetAdsTotal": 232692309,
     "targetGmv": 1065720000,
     "totalTargetVideos": 155,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 20,
     "affiliatePaidBudgetNet": 60000000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -43199,7 +52959,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigVfV5) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigEgRK",
@@ -43222,12 +52982,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 23868000,
-    "budgetNet": 9101909091,
-    "budgetAdsTotal": 290399999.999999,
+    "budgetNet": 20090909,
+    "budgetAdsTotal": 290400000,
     "targetGmv": 1119300000,
     "totalTargetVideos": 35,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 9090909091,
+    "affiliatePaidVideos": 5,
+    "affiliatePaidBudgetNet": 9090909,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -43248,7 +53008,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigEgRK) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigeNvO",
@@ -43271,12 +53031,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 208710000,
-    "budgetNet": 2840909091,
-    "budgetAdsTotal": 401567371.81,
+    "budgetNet": 175681819,
+    "budgetAdsTotal": 401567372,
     "targetGmv": 1081813334,
     "totalTargetVideos": 276,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 1636363636,
+    "affiliatePaidVideos": 31,
+    "affiliatePaidBudgetNet": 163636364,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -43289,7 +53049,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 200,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 45,
-    "selfChannelBudgetNet": 1204545455,
+    "selfChannelBudgetNet": 12045455,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 30,
@@ -43297,7 +53057,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigeNvO) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigHdiS",
@@ -43324,7 +53084,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "budgetAdsTotal": 183600000,
     "targetGmv": 40625000,
     "totalTargetVideos": 35,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 5,
     "affiliatePaidBudgetNet": 5000000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -43346,7 +53106,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigHdiS) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxEDCigF1VN",
@@ -43369,8 +53129,8 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 648000,
-    "budgetNet": 5454545455,
-    "budgetAdsTotal": 180659196.41,
+    "budgetNet": 545455,
+    "budgetAdsTotal": 180659196,
     "targetGmv": 111363600,
     "totalTargetVideos": 220,
     "affiliatePaidVideos": 0,
@@ -43387,7 +53147,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 150,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 70,
-    "selfChannelBudgetNet": 5454545455,
+    "selfChannelBudgetNet": 545455,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 0,
@@ -43395,7 +53155,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigF1VN) & Bảng 4.1.1 (9 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoatFxX",
@@ -43417,13 +53177,13 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxESIoatFxX",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 115500004.76,
-    "budgetNet": 9722222623,
-    "budgetAdsTotal": 181499996.37,
+    "budgetGross": 115500005,
+    "budgetNet": 97222227,
+    "budgetAdsTotal": 181499996,
     "targetGmv": 420720001,
     "totalTargetVideos": 129,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 8383838364,
+    "affiliatePaidVideos": 9,
+    "affiliatePaidBudgetNet": 83838384,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -43436,7 +53196,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 80,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 40,
-    "selfChannelBudgetNet": 1338384259,
+    "selfChannelBudgetNet": 13383843,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 16,
@@ -43444,7 +53204,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoatFxX) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaGP0h",
@@ -43466,13 +53226,13 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxESIoaGP0h",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 86400000,
-    "budgetNet": 7272727273,
+    "budgetGross": 97200000,
+    "budgetNet": 81818182,
     "budgetAdsTotal": 72600000,
     "targetGmv": 383076915,
     "totalTargetVideos": 362,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 7272727273,
+    "affiliatePaidVideos": 2,
+    "affiliatePaidBudgetNet": 72727273,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -43493,7 +53253,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaGP0h) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoagI2v",
@@ -43515,8 +53275,8 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxESIoagI2v",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 0,
-    "budgetNet": 0,
+    "budgetGross": 6480000,
+    "budgetNet": 5454545,
     "budgetAdsTotal": 351000000,
     "targetGmv": 263892600,
     "totalTargetVideos": 32,
@@ -43542,7 +53302,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoagI2v) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoa1jP4",
@@ -43566,10 +53326,10 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 633845689.729999,
+    "budgetAdsTotal": 633845690,
     "targetGmv": 1681034483,
     "totalTargetVideos": 75,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 45,
     "affiliatePaidBudgetNet": 0,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -43591,7 +53351,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoa1jP4) & Bảng 4.1.1 (3 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaQrmI",
@@ -43608,14 +53368,14 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "brandName": "Revision",
     "platform": "Shopee",
     "isB2cManaged": true,
-    "b2cPic": "Chuyên viên B2C",
+    "b2cPic": "",
     "approvalStatus": "APPROVED",
     "larkApprovalInstanceId": "LARK-41-recvxESIoaQrmI",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 24804218.52,
+    "budgetAdsTotal": 24804219,
     "targetGmv": 50784352,
     "totalTargetVideos": 0,
     "affiliatePaidVideos": 0,
@@ -43640,7 +53400,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaQrmI). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoa7y9P",
@@ -43662,12 +53422,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxESIoa7y9P",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 175824000,
-    "budgetNet": 148000000,
-    "budgetAdsTotal": 350900008.47,
+    "budgetGross": 223344000,
+    "budgetNet": 188000000,
+    "budgetAdsTotal": 350900008,
     "targetGmv": 1619999998,
     "totalTargetVideos": 385,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 15,
     "affiliatePaidBudgetNet": 140000000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -43689,7 +53449,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoa7y9P) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaXgOR",
@@ -43712,12 +53472,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 55620000,
-    "budgetNet": 4681818181,
-    "budgetAdsTotal": 259563453.71,
+    "budgetNet": 46818181,
+    "budgetAdsTotal": 259563454,
     "targetGmv": 494399997,
     "totalTargetVideos": 254,
     "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 3636363636,
+    "affiliatePaidBudgetNet": 36363636,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -43730,7 +53490,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 232,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 22,
-    "selfChannelBudgetNet": 1045454545,
+    "selfChannelBudgetNet": 10454545,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 8,
@@ -43738,7 +53498,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaXgOR) & Bảng 4.1.1 (8 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoayA8W",
@@ -43762,10 +53522,10 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 58877280,
     "budgetNet": 49560000,
-    "budgetAdsTotal": 187550001.21,
+    "budgetAdsTotal": 187550001,
     "targetGmv": 570000000,
     "totalTargetVideos": 178,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 1,
     "affiliatePaidBudgetNet": 45000000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -43787,7 +53547,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoayA8W) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaOCq5",
@@ -43804,14 +53564,14 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "brandName": "Baegayul",
     "platform": "Shopee",
     "isB2cManaged": true,
-    "b2cPic": "Chuyên viên B2C",
+    "b2cPic": "",
     "approvalStatus": "APPROVED",
     "larkApprovalInstanceId": "LARK-41-recvxESIoaOCq5",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 10800007.56,
+    "budgetAdsTotal": 10800008,
     "targetGmv": 4800000,
     "totalTargetVideos": 0,
     "affiliatePaidVideos": 0,
@@ -43836,7 +53596,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaOCq5). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoagpq2",
@@ -43860,10 +53620,10 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 116158407.48,
+    "budgetAdsTotal": 116158407,
     "targetGmv": 7724280,
     "totalTargetVideos": 2,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 2,
     "affiliatePaidBudgetNet": 0,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -43885,7 +53645,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoagpq2) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoasYQC",
@@ -43909,10 +53669,10 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 137231980.92,
+    "budgetAdsTotal": 137231981,
     "targetGmv": 24830499,
     "totalTargetVideos": 25,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 5,
     "affiliatePaidBudgetNet": 0,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -43934,7 +53694,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoasYQC) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoak0R2",
@@ -43957,12 +53717,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 54000000,
-    "budgetNet": 4545454545,
-    "budgetAdsTotal": 108800011.079999,
+    "budgetNet": 45454545,
+    "budgetAdsTotal": 108800011,
     "targetGmv": 30000004,
     "totalTargetVideos": 142,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 4545454545,
+    "affiliatePaidVideos": 112,
+    "affiliatePaidBudgetNet": 45454545,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -43983,7 +53743,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoak0R2) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoach1j",
@@ -44005,12 +53765,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxESIoach1j",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 352320024.199999,
-    "budgetNet": 1556566094,
-    "budgetAdsTotal": 337310096.75,
+    "budgetGross": 352320024,
+    "budgetNet": 296565677,
+    "budgetAdsTotal": 337310097,
     "targetGmv": 1028925068,
     "totalTargetVideos": 301,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 33,
     "affiliatePaidBudgetNet": 283838400,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -44024,7 +53784,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 245,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 23,
-    "selfChannelBudgetNet": 1272727694,
+    "selfChannelBudgetNet": 12727277,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 0,
@@ -44032,7 +53792,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoach1j) & Bảng 4.1.1 (13 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaBSpA",
@@ -44055,12 +53815,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 8100000,
-    "budgetNet": 6818181818,
+    "budgetNet": 6818182,
     "budgetAdsTotal": 56160000,
     "targetGmv": 4000000,
     "totalTargetVideos": 70,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 6818181818,
+    "affiliatePaidVideos": 50,
+    "affiliatePaidBudgetNet": 6818182,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -44081,7 +53841,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaBSpA) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoa1PpG",
@@ -44105,10 +53865,10 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 223344000,
     "budgetNet": 188000000,
-    "budgetAdsTotal": 290399999.999999,
+    "budgetAdsTotal": 290400000,
     "targetGmv": 599400000,
     "totalTargetVideos": 244,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 39,
     "affiliatePaidBudgetNet": 185000000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -44130,7 +53890,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoa1PpG) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaRHks",
@@ -44152,13 +53912,13 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxESIoaRHks",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 19440000,
-    "budgetNet": 1636363636,
+    "budgetGross": 41040000,
+    "budgetNet": 34545454,
     "budgetAdsTotal": 181500000,
     "targetGmv": 284842008,
     "totalTargetVideos": 211,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 1636363636,
+    "affiliatePaidVideos": 1,
+    "affiliatePaidBudgetNet": 16363636,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -44179,7 +53939,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaRHks) & Bảng 4.1.1 (6 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaqhxl",
@@ -44228,7 +53988,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaqhxl) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoadDko",
@@ -44252,10 +54012,10 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 70210800,
     "budgetNet": 59100000,
-    "budgetAdsTotal": 136184029.85,
+    "budgetAdsTotal": 136184030,
     "targetGmv": 301514000,
     "totalTargetVideos": 34,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 4,
     "affiliatePaidBudgetNet": 53000000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -44277,7 +54037,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoadDko) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoawZpF",
@@ -44299,13 +54059,13 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxESIoawZpF",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 248400000,
-    "budgetNet": 4545454545,
-    "budgetAdsTotal": 481358975.35,
+    "budgetGross": 394200000,
+    "budgetNet": 331818182,
+    "budgetAdsTotal": 481358975,
     "targetGmv": 2747975999,
     "totalTargetVideos": 470,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 1818181818,
+    "affiliatePaidVideos": 30,
+    "affiliatePaidBudgetNet": 181818182,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -44318,7 +54078,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 400,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 40,
-    "selfChannelBudgetNet": 2727272727,
+    "selfChannelBudgetNet": 27272727,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 2,
@@ -44326,7 +54086,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoawZpF) & Bảng 4.1.1 (18 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoajoTQ",
@@ -44348,9 +54108,9 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxESIoajoTQ",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 0,
-    "budgetNet": 0,
-    "budgetAdsTotal": 232200008.64,
+    "budgetGross": 21840000,
+    "budgetNet": 18383838,
+    "budgetAdsTotal": 232200009,
     "targetGmv": 58765000,
     "totalTargetVideos": 90,
     "affiliatePaidVideos": 0,
@@ -44375,7 +54135,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoajoTQ). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaTpp2",
@@ -44392,7 +54152,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "brandName": "The Vigo",
     "platform": "TikTok Shop",
     "isB2cManaged": true,
-    "b2cPic": "Chuyên viên B2C",
+    "b2cPic": "",
     "approvalStatus": "APPROVED",
     "larkApprovalInstanceId": "LARK-41-recvxESIoaTpp2",
     "approvedBy": "Đặng Thị Yến Nhi",
@@ -44424,7 +54184,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaTpp2). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoayzJa",
@@ -44447,12 +54207,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 4860000,
-    "budgetNet": 4090909091,
-    "budgetAdsTotal": 91655254.0799999,
+    "budgetNet": 4090909,
+    "budgetAdsTotal": 91655254,
     "targetGmv": 8850000,
     "totalTargetVideos": 27,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 4090909091,
+    "affiliatePaidVideos": 2,
+    "affiliatePaidBudgetNet": 4090909,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -44473,7 +54233,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoayzJa). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxESIoaHhIe",
@@ -44495,12 +54255,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxESIoaHhIe",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 109296005,
-    "budgetNet": 1280000421,
-    "budgetAdsTotal": 354076720.69,
+    "budgetGross": 116424005,
+    "budgetNet": 98000004,
+    "budgetAdsTotal": 354076721,
     "targetGmv": 746341465,
     "totalTargetVideos": 51,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 16,
     "affiliatePaidBudgetNet": 80000000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -44514,7 +54274,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 0,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 35,
-    "selfChannelBudgetNet": 1200000421,
+    "selfChannelBudgetNet": 12000004,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 3,
@@ -44522,7 +54282,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaHhIe) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tc9sg",
@@ -44545,12 +54305,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 16200000,
-    "budgetNet": 1363636364,
+    "budgetNet": 13636364,
     "budgetAdsTotal": 89100000,
     "targetGmv": 55000000,
     "totalTargetVideos": 105,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 1363636364,
+    "affiliatePaidVideos": 75,
+    "affiliatePaidBudgetNet": 13636364,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -44571,7 +54331,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tc9sg). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tTkaF",
@@ -44593,13 +54353,13 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxF7J0tTkaF",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 32400000,
-    "budgetNet": 2727272727,
-    "budgetAdsTotal": 94446609.12,
+    "budgetGross": 37800000,
+    "budgetNet": 31818182,
+    "budgetAdsTotal": 94446609,
     "targetGmv": 34344918,
     "totalTargetVideos": 51,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 2727272727,
+    "affiliatePaidVideos": 6,
+    "affiliatePaidBudgetNet": 27272727,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -44620,7 +54380,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tTkaF) & Bảng 4.1.1 (14 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0t95DR",
@@ -44642,13 +54402,13 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxF7J0t95DR",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 154391400,
-    "budgetNet": 10079090909,
-    "budgetAdsTotal": 427116345.15,
+    "budgetGross": 130631400,
+    "budgetNet": 109959091,
+    "budgetAdsTotal": 427116345,
     "targetGmv": 693280000,
     "totalTargetVideos": 270,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 120000000,
+    "affiliatePaidVideos": 25,
+    "affiliatePaidBudgetNet": 100000000,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -44661,7 +54421,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 200,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 40,
-    "selfChannelBudgetNet": 9959090909,
+    "selfChannelBudgetNet": 9959091,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 3,
@@ -44669,7 +54429,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0t95DR) & Bảng 4.1.1 (15 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tWp0I",
@@ -44691,9 +54451,9 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxF7J0tWp0I",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 0,
-    "budgetNet": 0,
-    "budgetAdsTotal": 30092029.1999999,
+    "budgetGross": 14040000,
+    "budgetNet": 11818182,
+    "budgetAdsTotal": 30092029,
     "targetGmv": 1994306,
     "totalTargetVideos": 20,
     "affiliatePaidVideos": 0,
@@ -44718,7 +54478,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tWp0I). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tNPio",
@@ -44741,12 +54501,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 10800000,
-    "budgetNet": 9090909091,
-    "budgetAdsTotal": 30743428.3199999,
+    "budgetNet": 9090909,
+    "budgetAdsTotal": 30743428,
     "targetGmv": 36135000,
     "totalTargetVideos": 33,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 9090909091,
+    "affiliatePaidVideos": 33,
+    "affiliatePaidBudgetNet": 9090909,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -44767,7 +54527,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tNPio). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tJtDS",
@@ -44789,9 +54549,9 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxF7J0tJtDS",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 0,
-    "budgetNet": 0,
-    "budgetAdsTotal": 38486950.2,
+    "budgetGross": 5400000,
+    "budgetNet": 4545455,
+    "budgetAdsTotal": 38486950,
     "targetGmv": 33375402,
     "totalTargetVideos": 5,
     "affiliatePaidVideos": 0,
@@ -44816,7 +54576,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tJtDS) & Bảng 4.1.1 (3 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tCqJF",
@@ -44838,12 +54598,12 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxF7J0tCqJF",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 99036000,
-    "budgetNet": 6440636364,
-    "budgetAdsTotal": 134822201.469999,
+    "budgetGross": 109836000,
+    "budgetNet": 92454545,
+    "budgetAdsTotal": 134822201,
     "targetGmv": 310780866,
     "totalTargetVideos": 660,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 12,
     "affiliatePaidBudgetNet": 77000000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -44857,7 +54617,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 638,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 10,
-    "selfChannelBudgetNet": 6363636364,
+    "selfChannelBudgetNet": 6363636,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 14,
@@ -44865,7 +54625,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tCqJF) & Bảng 4.1.1 (12 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tZscI",
@@ -44892,7 +54652,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "budgetAdsTotal": 35640000,
     "targetGmv": 10000000,
     "totalTargetVideos": 40,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 20,
     "affiliatePaidBudgetNet": 0,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -44914,7 +54674,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tZscI) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tU1wI",
@@ -44936,13 +54696,13 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxF7J0tU1wI",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 77400002.36,
-    "budgetNet": 14696971410,
-    "budgetAdsTotal": 99095379.68,
+    "budgetGross": 95400002,
+    "budgetNet": 80303032,
+    "budgetAdsTotal": 99095380,
     "targetGmv": 276959997,
     "totalTargetVideos": 45,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 5606060636,
+    "affiliatePaidVideos": 17,
+    "affiliatePaidBudgetNet": 56060606,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -44955,7 +54715,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 0,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 28,
-    "selfChannelBudgetNet": 9090910774,
+    "selfChannelBudgetNet": 9090911,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 3,
@@ -44963,7 +54723,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tU1wI) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tGOM4",
@@ -44990,7 +54750,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "budgetAdsTotal": 611280000,
     "targetGmv": 536332391,
     "totalTargetVideos": 75,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 50,
     "affiliatePaidBudgetNet": 0,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -45012,7 +54772,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tGOM4) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0taLAF",
@@ -45036,10 +54796,10 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 62964000,
     "budgetNet": 53000000,
-    "budgetAdsTotal": 184889658.91,
+    "budgetAdsTotal": 184889659,
     "targetGmv": 606000000,
     "totalTargetVideos": 21,
-    "affiliatePaidVideos": 0,
+    "affiliatePaidVideos": 11,
     "affiliatePaidBudgetNet": 48000000,
     "kocTierBreakdown": {
       "kl1": 0,
@@ -45061,7 +54821,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0taLAF) & Bảng 4.1.1 (9 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tEtwy",
@@ -45085,7 +54845,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "approvedAt": "2026-10-28T09:00:00.000Z",
     "budgetGross": 0,
     "budgetNet": 0,
-    "budgetAdsTotal": 53281460.88,
+    "budgetAdsTotal": 53281461,
     "targetGmv": 4599992,
     "totalTargetVideos": 15,
     "affiliatePaidVideos": 0,
@@ -45110,7 +54870,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tEtwy) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tM73R",
@@ -45132,13 +54892,13 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxF7J0tM73R",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 132840000,
-    "budgetNet": 10118181818,
-    "budgetAdsTotal": 152217934.66,
+    "budgetGross": 147960000,
+    "budgetNet": 124545455,
+    "budgetAdsTotal": 152217935,
     "targetGmv": 279030813,
     "totalTargetVideos": 272,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 1027272727,
+    "affiliatePaidVideos": 47,
+    "affiliatePaidBudgetNet": 102727273,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -45151,7 +54911,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 200,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 25,
-    "selfChannelBudgetNet": 9090909091,
+    "selfChannelBudgetNet": 9090909,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 3,
@@ -45159,7 +54919,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tM73R) & Bảng 4.1.1 (15 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tLzWI",
@@ -45176,8 +54936,8 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "brandName": "Royal Canin",
     "platform": "TikTok Shop",
     "isB2cManaged": true,
-    "b2cPic": "Chuyên viên B2C",
-    "approvalStatus": "PENDING",
+    "b2cPic": "",
+    "approvalStatus": "APPROVED",
     "larkApprovalInstanceId": "LARK-41-recvxF7J0tLzWI",
     "approvedBy": "Chưa phê duyệt",
     "approvedAt": "2026-10-28T09:00:00.000Z",
@@ -45208,7 +54968,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tLzWI). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tjPXt",
@@ -45230,13 +54990,13 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxF7J0tjPXt",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 96000000.24,
-    "budgetNet": 7171717192,
-    "budgetAdsTotal": 151424910.34,
+    "budgetGross": 96000000,
+    "budgetNet": 80808081,
+    "budgetAdsTotal": 151424910,
     "targetGmv": 255179020,
     "totalTargetVideos": 235,
-    "affiliatePaidVideos": 0,
-    "affiliatePaidBudgetNet": 7070707091,
+    "affiliatePaidVideos": 20,
+    "affiliatePaidBudgetNet": 70707071,
     "kocTierBreakdown": {
       "kl1": 0,
       "kl2": 0,
@@ -45249,7 +55009,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 200,
     "focPic": "Phụ trách FOC",
     "selfChannelVideos": 15,
-    "selfChannelBudgetNet": 101010101,
+    "selfChannelBudgetNet": 10101010,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 0,
@@ -45257,7 +55017,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tjPXt) & Bảng 4.1.1 (9 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   },
   {
     "id": "LARK-202611-recvxF7J0tH4PV",
@@ -45279,9 +55039,9 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvxF7J0tH4PV",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-10-28T09:00:00.000Z",
-    "budgetGross": 0,
-    "budgetNet": 0,
-    "budgetAdsTotal": 38576735.9999999,
+    "budgetGross": 23760000,
+    "budgetNet": 20000000,
+    "budgetAdsTotal": 38576736,
     "targetGmv": 23574169,
     "totalTargetVideos": 0,
     "affiliatePaidVideos": 0,
@@ -45306,6 +55066,6 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxF7J0tH4PV) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-28T19:00:00.000Z"
+    "syncedAt": "2026-10-29T09:00:00.000Z"
   }
 ];

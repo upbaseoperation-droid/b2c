@@ -2070,8 +2070,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <span className="sm:hidden">1. Chỉ tiêu</span>
-            <span className="hidden sm:inline">1. Chỉ tiêu tháng</span>
+            <span className="2xl:hidden">1. Chỉ tiêu</span>
+            <span className="hidden 2xl:inline">1. Chỉ tiêu tháng</span>
             <span className="hidden 2xl:inline text-2xs font-normal text-slate-500">
               · {isLayer1Locked ? 'Đã chốt' : 'Đang điền'}
             </span>
@@ -2087,8 +2087,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <span className="sm:hidden">2. Phân bổ</span>
-            <span className="hidden sm:inline">2. Phân bổ kênh &amp; KOC</span>
+            <span className="2xl:hidden">2. Phân bổ</span>
+            <span className="hidden 2xl:inline">2. Phân bổ kênh &amp; KOC</span>
           </button>
           <button
             type="button"
@@ -2099,8 +2099,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <span className="sm:hidden">3. Lịch tuần</span>
-            <span className="hidden sm:inline">3. Phân rã tuần</span>
+            <span className="2xl:hidden">3. Lịch tuần</span>
+            <span className="hidden 2xl:inline">3. Phân rã tuần</span>
           </button>
           <button
             type="button"
@@ -2111,8 +2111,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <span className="sm:hidden">4. Tổng hợp</span>
-            <span className="hidden sm:inline">4. Biểu mẫu tổng hợp</span>
+            <span className="2xl:hidden">4. Tổng hợp</span>
+            <span className="hidden 2xl:inline">4. Biểu mẫu tổng hợp</span>
           </button>
           <button
             type="button"
@@ -2124,8 +2124,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             }`}
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span className="sm:hidden">5. Brand</span>
-            <span className="hidden sm:inline">5. Bản duyệt Brand</span>
+            <span className="2xl:hidden">5. Brand</span>
+            <span className="hidden 2xl:inline">5. Bản duyệt Brand</span>
           </button>
         </div>
 

@@ -41,6 +41,7 @@ import {
   type WeeklyDistributionMode,
 } from '../../lib/planBreakdownRules';
 import { PullHangingJobsModal } from './PullHangingJobsModal';
+import { Button, ConfirmDialog } from '../ui';
 
 interface PlanWeeklyBreakdownProps {
   plan: InputPlanBreakdownState;
@@ -239,6 +240,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
   onNotify,
 }) => {
   const [grossMode, setGrossMode] = useState(false);
+  const [hideEmptyRows, setHideEmptyRows] = useState(readOnly);
   const [activeTab, setActiveTab] = useState<WorkstreamTab>('ALL');
   const [selectedStaffSlice, setSelectedStaffSlice] = useState<string>('ALL_STORE');
   const [pullModalOpen, setPullModalOpen] = useState(false);
@@ -309,13 +311,20 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     }
   };
 
-  const handleDistributeFromRef41 = () => {
+  const [confirmDistributeOpen, setConfirmDistributeOpen] = useState(false);
+  const applyDistributeFromRef41 = () => {
+    setConfirmDistributeOpen(false);
     if (effectiveReadOnly || !plan.reference41) return;
     const { weeklyBreakdown, items } = distributeReference41ToWeeks(plan, 'EVEN');
     onChange({ weeklyBreakdown, items });
     if (onNotify) {
-      onNotify('Đã tự động phân bổ bảng tuần khớp 100% với số chuẩn Bảng 4.1.');
+      onNotify('Đã chia đều số 4.1 vào các tuần');
     }
+  };
+  // Bảng tuần đã có số thì hỏi lại trước khi ghi đè
+  const handleDistributeFromRef41 = () => {
+    if (hasBreakdownData(storeRows)) setConfirmDistributeOpen(true);
+    else applyDistributeFromRef41();
   };
 
   const setCell = (wi: number, def: RowDef, sub: 0 | 1, value: number) => {
@@ -704,7 +713,9 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
         id: 'FOC_SAMPLE' as WorkstreamTab,
         code: '02',
         title: '2. Mẫu FOC (0đ)',
-        picText: rolePics?.focPics?.length ? rolePics.focPics.join(', ') : focRefQty > 0 ? 'Trần Thị Hảo' : '—',
+        picText: rolePics?.focPics?.length
+          ? rolePics.focPics.join(', ')
+          : staffSlices.filter(s => (s.roleLabel || '').includes('FOC')).map(s => s.staffName).join(', ') || '—',
         refQty: focRefQty,
         plannedQty: totals.focQty,
         unitLabel: 'mẫu',
@@ -760,6 +771,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     totals,
     storeTotals,
     rolePics,
+    staffSlices,
     plan.primaryPic,
     plan.pic,
     kl4PlusPlanned,
@@ -877,21 +889,13 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={() => setPullModalOpen(true)}
-              className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-2xs font-semibold text-amber-900 hover:bg-amber-100 transition cursor-pointer"
-            >
-              Kéo Job còn treo từ tháng cũ
-            </button>
+            <Button size="sm" variant="ghost" onClick={() => setPullModalOpen(true)}>
+              Kéo job tháng trước
+            </Button>
             {!effectiveReadOnly && hasRef && (
-              <button
-                type="button"
-                onClick={handleDistributeFromRef41}
-                className="rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-2xs font-semibold text-emerald-800 hover:bg-emerald-100 transition cursor-pointer"
-              >
-                Khớp theo 4.1
-              </button>
+              <Button size="sm" variant="secondary" onClick={handleDistributeFromRef41}>
+                Chia tuần theo 4.1
+              </Button>
             )}
             {activeTab !== 'ALL' && (
               <button
@@ -1244,6 +1248,10 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               </div>
             )}
             <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-2xs font-medium text-slate-700">
+              <input type="checkbox" checked={hideEmptyRows} onChange={e => setHideEmptyRows(e.target.checked)} />
+              Ẩn dòng trống
+            </label>
+            <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-2xs font-medium text-slate-700">
               <input type="checkbox" checked={grossMode} onChange={e => setGrossMode(e.target.checked)} />
               Nhập theo Gross
             </label>
@@ -1362,7 +1370,12 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                 </thead>
                 <tbody>
                   {visibleSections.map(section => {
-                    const defs = ROWS.filter(r => r.section === section);
+                    const defs = ROWS.filter(r => {
+                      if (r.section !== section) return false;
+                      if (!hideEmptyRows) return true;
+                      const t = totalCell(r);
+                      return t.qty > 0 || t.budget > 0 || (getRowRef41Qty(r) || 0) > 0;
+                    });
                     const sub = subtotal(section);
                     const refKeys = subtotalRefs[section] || {};
                     const qtyRef = refKeys.qtyKey ? cmp(refKeys.qtyKey) : undefined;
@@ -1891,6 +1904,16 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
           />
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmDistributeOpen}
+        title="Chia lại tuần theo 4.1"
+        message="Số đang có trong bảng tuần sẽ bị thay bằng số 4.1 chia đều cho các tuần."
+        confirmLabel="Chia lại"
+        tone="danger"
+        onConfirm={applyDistributeFromRef41}
+        onCancel={() => setConfirmDistributeOpen(false)}
+      />
 
       <PullHangingJobsModal
         open={pullModalOpen}
