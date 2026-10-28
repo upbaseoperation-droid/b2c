@@ -18,11 +18,17 @@ export interface AppsScriptModuleItem {
   isBuiltIn?: boolean;
 }
 
+export interface StoreAppsScriptMatrixConfig {
+  applyAppsScript: boolean;
+  enabledModuleIds: string[];
+}
+
 export interface StoredAppsScriptOAuthConfig {
   clientId?: string;
   clientSecret?: string;
   refreshToken?: string;
   modules?: AppsScriptModuleItem[];
+  storeMatrix?: Record<string, StoreAppsScriptMatrixConfig>;
   customScriptCode?: string;
   useCustomRawCode?: boolean;
   updatedAt?: string;
@@ -181,12 +187,41 @@ const DEFAULT_APPS_SCRIPT_MODULES: AppsScriptModuleItem[] = [
 }`,
   },
   {
+    id: 'LOCK_CLOSED_MONTH_ROWS',
+    name: 'Tự động khóa sổ các dòng KOC thuộc Tháng cũ sau nghiệm thu',
+    triggerType: 'onEdit',
+    targetColumns: 'Cột Tháng (YYYY/MM) → Toàn bộ dòng tháng cũ',
+    purpose:
+      'Chặn tự ý sửa dữ liệu các dòng KOC thuộc những tháng đã qua (nhỏ hơn tháng hiện tại YYYY/MM). Nếu ai đó sửa nhầm vào dòng của tháng cũ đã chốt sổ, hệ thống tự động khôi phục giá trị cũ (oldValue) và hiển thị thông báo.',
+    enabled: true,
+    isBuiltIn: true,
+    codeBody: `function runModule_LOCK_CLOSED_MONTH_ROWS(ctx) {
+  var monthColIdx = ctx.findCol(['tháng', 'thang', 'đợt', 'dot', 'tháng booking']);
+  if (monthColIdx === -1) return;
+  var rawMonth = String(ctx.sheet.getRange(ctx.row, monthColIdx).getDisplayValue() || '').trim();
+  var match = rawMonth.match(/(20\\d{2})[\\/-](\\d{1,2})/);
+  if (!match) return;
+  var rowYearMonth = match[1] + '/' + ('0' + match[2]).slice(-2);
+  var nowYearMonth = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyy/MM');
+  if (rowYearMonth < nowYearMonth) {
+    if (typeof ctx.e.oldValue !== 'undefined') {
+      ctx.e.range.setValue(ctx.e.oldValue);
+    }
+    SpreadsheetApp.getActiveSpreadsheet().toast(
+      'Dòng KOC thuộc tháng cũ (' + rowYearMonth + ') đã chốt sổ nghiệm thu — không thể chỉnh sửa.',
+      'Đã khóa sổ tháng cũ',
+      6
+    );
+  }
+}`,
+  },
+  {
     id: 'UPBASE_SHEET_MENU',
     name: 'Thanh Menu tiện ích "UpBase B2C" trên Google Sheet',
     triggerType: 'onOpen',
     targetColumns: 'Thanh công cụ Google Sheet',
     purpose:
-      'Tạo menu "UpBase B2C" trên thanh công cụ Google Sheet để Brand và PIC bấm nhanh: Xem tổng hợp số KOC & ngân sách đã duyệt (Yes), hoặc Bỏ lọc / Hiện toàn bộ dòng.',
+      'Tạo menu "UpBase B2C" trên thanh công cụ Google Sheet để Brand và Quản lý bấm nhanh: Xem tổng hợp số KOC & ngân sách đã duyệt (Yes), hoặc Khóa bảo vệ (Sheet Protection) toàn bộ dòng của các tháng cũ.',
     enabled: true,
     isBuiltIn: true,
     codeBody: `function onOpen() {
@@ -194,8 +229,49 @@ const DEFAULT_APPS_SCRIPT_MODULES: AppsScriptModuleItem[] = [
     SpreadsheetApp.getUi()
       .createMenu('UpBase B2C')
       .addItem('Xem tổng hợp KOC đã duyệt (Yes)', 'upbaseShowApprovalSummary')
+      .addSeparator()
+      .addItem('Khóa bảo vệ các dòng Tháng cũ (Chốt sổ)', 'upbaseProtectClosedMonthRows')
       .addToUi();
   } catch (err) {}
+}
+
+function upbaseProtectClosedMonthRows() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow <= 3) {
+    SpreadsheetApp.getUi().alert('Bảng hiện chưa có dữ liệu KOC.');
+    return;
+  }
+  var data = sheet.getRange(1, 1, lastRow, lastCol).getDisplayValues();
+  var headerRowIdx = data[2] && data[2].some(Boolean) ? 2 : 0;
+  var headers = data[headerRowIdx].map(function (h) {
+    return String(h || '').trim().toLowerCase();
+  });
+  var monthIdx = headers.indexOf('tháng');
+  if (monthIdx === -1) monthIdx = headers.indexOf('thang');
+  if (monthIdx === -1) {
+    SpreadsheetApp.getUi().alert('Không tìm thấy cột "Tháng" trên bảng này.');
+    return;
+  }
+  var nowYearMonth = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyy/MM');
+  var lockedCount = 0;
+  for (var r = headerRowIdx + 1; r < data.length; r++) {
+    var rawMonth = String(data[r][monthIdx] || '').trim();
+    var m = rawMonth.match(/(20\\d{2})[\\/-](\\d{1,2})/);
+    if (!m) continue;
+    var ym = m[1] + '/' + ('0' + m[2]).slice(-2);
+    if (ym < nowYearMonth) {
+      var rowNum = r + 1;
+      var range = sheet.getRange(rowNum, 1, 1, lastCol);
+      var protection = range.protect().setDescription('UpBase Lock Month ' + ym + ' Row ' + rowNum);
+      protection.setWarningOnly(true);
+      lockedCount++;
+    }
+  }
+  SpreadsheetApp.getUi().alert(
+    'Đã thiết lập khóa bảo vệ cho ' + lockedCount + ' dòng KOC thuộc các tháng trước (' + nowYearMonth + ').'
+  );
 }
 
 function upbaseShowApprovalSummary() {
@@ -385,6 +461,7 @@ async function loadOAuthConfig(): Promise<{
   clientSecret: string;
   refreshToken: string;
   modules: AppsScriptModuleItem[];
+  storeMatrix: Record<string, StoreAppsScriptMatrixConfig>;
   scriptCode: string;
   configured: boolean;
   source: 'env' | 'db' | 'none';
@@ -409,6 +486,10 @@ async function loadOAuthConfig(): Promise<{
   const clientSecret = (memoryOAuthConfig.clientSecret || envClientSecret || '').trim();
   const refreshToken = (memoryOAuthConfig.refreshToken || envRefreshToken || '').trim();
   const modules = mergeModulesWithDefaults(memoryOAuthConfig.modules);
+  const storeMatrix =
+    memoryOAuthConfig.storeMatrix && typeof memoryOAuthConfig.storeMatrix === 'object'
+      ? memoryOAuthConfig.storeMatrix
+      : {};
   const scriptCode =
     memoryOAuthConfig.useCustomRawCode && memoryOAuthConfig.customScriptCode?.trim()
       ? memoryOAuthConfig.customScriptCode.trim()
@@ -419,6 +500,7 @@ async function loadOAuthConfig(): Promise<{
     clientSecret,
     refreshToken,
     modules,
+    storeMatrix,
     scriptCode,
     configured: Boolean(clientId && clientSecret && refreshToken),
     source:
@@ -601,6 +683,7 @@ export async function GET() {
     hasRefreshToken: Boolean(cfg.refreshToken),
     modules: cfg.modules,
     defaultModules: DEFAULT_APPS_SCRIPT_MODULES,
+    storeMatrix: cfg.storeMatrix,
     scriptCode: cfg.scriptCode,
     installedMap,
   });
@@ -613,6 +696,7 @@ export async function PUT(request: NextRequest) {
       clientSecret?: string;
       refreshToken?: string;
       modules?: AppsScriptModuleItem[];
+      storeMatrix?: Record<string, StoreAppsScriptMatrixConfig>;
       customScriptCode?: string;
       useCustomRawCode?: boolean;
       verifyToken?: boolean;
@@ -628,6 +712,10 @@ export async function PUT(request: NextRequest) {
     const nextModules = Array.isArray(body.modules)
       ? body.modules
       : current.modules;
+    const nextStoreMatrix =
+      body.storeMatrix && typeof body.storeMatrix === 'object'
+        ? body.storeMatrix
+        : current.storeMatrix;
     const nextScriptCode = buildCombinedAppsScriptCode(nextModules);
 
     if (body.verifyToken !== false && (body.clientId || body.clientSecret || body.refreshToken)) {
@@ -653,6 +741,7 @@ export async function PUT(request: NextRequest) {
       clientSecret: nextClientSecret,
       refreshToken: nextRefreshToken,
       modules: nextModules,
+      storeMatrix: nextStoreMatrix,
       customScriptCode: nextScriptCode,
       useCustomRawCode: Boolean(body.useCustomRawCode),
       updatedAt: new Date().toISOString(),
@@ -678,6 +767,7 @@ export async function PUT(request: NextRequest) {
           : nextClientId,
       hasRefreshToken: Boolean(nextRefreshToken),
       modules: nextModules,
+      storeMatrix: nextStoreMatrix,
       scriptCode: nextScriptCode,
     });
   } catch (err) {
@@ -694,17 +784,31 @@ export async function PUT(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json().catch(() => ({}))) as {
-      targets?: Array<{ storeName?: string; sheetUrl: string }>;
+      targets?: Array<{
+        storeId?: string;
+        storeName?: string;
+        sheetUrl: string;
+        applyAppsScript?: boolean;
+        moduleIds?: string[];
+      }>;
       sheetUrl?: string;
       storeName?: string;
+      storeId?: string;
       modules?: AppsScriptModuleItem[];
+      storeMatrix?: Record<string, StoreAppsScriptMatrixConfig>;
       scriptCode?: string;
     };
 
     const rawTargets = Array.isArray(body.targets)
       ? body.targets
       : body.sheetUrl
-        ? [{ storeName: body.storeName || 'Gian hàng', sheetUrl: body.sheetUrl }]
+        ? [
+            {
+              storeId: body.storeId,
+              storeName: body.storeName || 'Gian hàng',
+              sheetUrl: body.sheetUrl,
+            },
+          ]
         : [];
 
     if (rawTargets.length === 0) {
@@ -733,11 +837,11 @@ export async function POST(request: NextRequest) {
       refreshToken: cfg.refreshToken,
     });
 
-    const activeModules = Array.isArray(body.modules) ? body.modules : cfg.modules;
-    const scriptCodeToPush =
-      (body.scriptCode || '').trim() ||
-      buildCombinedAppsScriptCode(activeModules);
-    const enabledModuleIds = activeModules.filter((m) => m.enabled).map((m) => m.id);
+    const catalogModules = Array.isArray(body.modules) ? body.modules : cfg.modules;
+    const matrixMap =
+      body.storeMatrix && typeof body.storeMatrix === 'object'
+        ? body.storeMatrix
+        : cfg.storeMatrix;
 
     const installedMap = await loadInstalledMap();
     const results: Array<{
@@ -747,10 +851,14 @@ export async function POST(request: NextRequest) {
       ok: boolean;
       scriptId?: string;
       mode?: 'CREATED' | 'UPDATED';
+      enabledCount?: number;
       error?: string;
     }> = [];
 
-    const seenSpreadsheetIds = new Map<string, { scriptId: string; mode: 'CREATED' | 'UPDATED' }>();
+    const seenSpreadsheetSignatures = new Map<
+      string,
+      { scriptId: string; mode: 'CREATED' | 'UPDATED'; enabledCount: number }
+    >();
 
     for (const item of rawTargets) {
       const storeLabel = item.storeName || 'Gian hàng';
@@ -767,7 +875,33 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const cachedInBatch = seenSpreadsheetIds.get(spreadsheetId);
+      const matrixEntry = item.storeId ? matrixMap[item.storeId] : undefined;
+      const shouldApply =
+        item.applyAppsScript !== undefined
+          ? item.applyAppsScript
+          : matrixEntry
+            ? matrixEntry.applyAppsScript
+            : true;
+
+      const resolvedModuleIds: string[] = !shouldApply
+        ? []
+        : Array.isArray(item.moduleIds)
+          ? item.moduleIds
+          : matrixEntry && Array.isArray(matrixEntry.enabledModuleIds)
+            ? matrixEntry.enabledModuleIds
+            : catalogModules.filter((m) => m.enabled).map((m) => m.id);
+
+      const tailoredModules = catalogModules.map((m) => ({
+        ...m,
+        enabled: shouldApply && resolvedModuleIds.includes(m.id),
+      }));
+
+      const tailoredCode = !shouldApply
+        ? '// Đã tắt Tiện ích Tự động hóa Apps Script cho gian hàng này từ UpBase Web Admin.\nfunction onEdit(e) {}\n'
+        : buildCombinedAppsScriptCode(tailoredModules);
+
+      const cacheKey = `${spreadsheetId}::${resolvedModuleIds.slice().sort().join(',')}`;
+      const cachedInBatch = seenSpreadsheetSignatures.get(cacheKey);
       if (cachedInBatch) {
         results.push({
           storeName: storeLabel,
@@ -776,6 +910,7 @@ export async function POST(request: NextRequest) {
           ok: true,
           scriptId: cachedInBatch.scriptId,
           mode: cachedInBatch.mode,
+          enabledCount: cachedInBatch.enabledCount,
         });
         continue;
       }
@@ -786,17 +921,21 @@ export async function POST(request: NextRequest) {
           accessToken,
           spreadsheetId,
           existingScriptId: existingMeta?.scriptId,
-          scriptCode: scriptCodeToPush,
+          scriptCode: tailoredCode,
           projectTitle: `UpBase_Sheet_Automation_${storeLabel.slice(0, 32)}`,
         });
 
-        seenSpreadsheetIds.set(spreadsheetId, deployed);
+        seenSpreadsheetSignatures.set(cacheKey, {
+          ...deployed,
+          enabledCount: resolvedModuleIds.length,
+        });
+
         installedMap[spreadsheetId] = {
           spreadsheetId,
           scriptId: deployed.scriptId,
           storeName: storeLabel,
           sheetUrl: url,
-          enabledModuleIds,
+          enabledModuleIds: resolvedModuleIds,
           installedAt: new Date().toISOString(),
         };
 
@@ -807,6 +946,7 @@ export async function POST(request: NextRequest) {
           ok: true,
           scriptId: deployed.scriptId,
           mode: deployed.mode,
+          enabledCount: resolvedModuleIds.length,
         });
       } catch (err) {
         results.push({

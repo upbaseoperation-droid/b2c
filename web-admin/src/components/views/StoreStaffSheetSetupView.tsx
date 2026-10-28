@@ -67,6 +67,11 @@ export interface AppsScriptModuleItem {
   codeBody: string;
 }
 
+export interface StoreAppsScriptMatrixConfig {
+  applyAppsScript: boolean;
+  enabledModuleIds: string[];
+}
+
 function combineAppsScriptModulesClient(modules: AppsScriptModuleItem[]): string {
   const activeModules = modules.filter(m => m && m.enabled);
   const onEditModules = activeModules.filter(m => m.triggerType === 'onEdit');
@@ -259,7 +264,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
   const [saJsonInput, setSaJsonInput] = useState('');
   const [savingSa, setSavingSa] = useState(false);
 
-  // Quản lý Danh mục Tiện ích Tự động hóa Google Sheet (Apps Script) & Cài đặt lên Sheet Brand
+  // Quản lý Danh mục Tiện ích Tự động hóa Google Sheet (Apps Script) & Ma trận áp dụng theo Gian hàng
   const [appsScriptConfigured, setAppsScriptConfigured] = useState(false);
   const [appsScriptClientIdMasked, setAppsScriptClientIdMasked] = useState<string | null>(null);
   const [oauthClientIdInput, setOauthClientIdInput] = useState('');
@@ -267,6 +272,18 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
   const [oauthRefreshTokenInput, setOauthRefreshTokenInput] = useState('');
   const [appsScriptModules, setAppsScriptModules] = useState<AppsScriptModuleItem[]>([]);
   const [defaultAppsScriptModules, setDefaultAppsScriptModules] = useState<AppsScriptModuleItem[]>([]);
+  const [storeAppsScriptMatrix, setStoreAppsScriptMatrix] = useState<
+    Record<string, StoreAppsScriptMatrixConfig>
+  >({});
+  const [storeMatrixDirty, setStoreMatrixDirty] = useState(false);
+  const [permissionSubView, setPermissionSubView] = useState<
+    'ALL' | 'STAFF_FIELDS' | 'APPSCRIPT_MATRIX'
+  >('ALL');
+  const [matrixSearch, setMatrixSearch] = useState('');
+  const [matrixBrandFilter, setMatrixBrandFilter] = useState('ALL');
+  const [matrixApplyFilter, setMatrixApplyFilter] = useState<
+    'ALL' | 'HAS_SHEET' | 'APPLY_ONLY' | 'DISABLED_ONLY'
+  >('ALL');
   const [editingModuleDraft, setEditingModuleDraft] = useState<AppsScriptModuleItem | null>(null);
   const [isAddingNewModule, setIsAddingNewModule] = useState(false);
   const [showRawCodePreview, setShowRawCodePreview] = useState(false);
@@ -391,6 +408,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
           clientIdMasked?: string | null;
           modules?: AppsScriptModuleItem[];
           defaultModules?: AppsScriptModuleItem[];
+          storeMatrix?: Record<string, StoreAppsScriptMatrixConfig>;
           scriptCode?: string;
           installedMap?: Record<
             string,
@@ -408,6 +426,20 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
           setAppsScriptClientIdMasked(d.clientIdMasked || null);
           if (Array.isArray(d.modules)) setAppsScriptModules(d.modules);
           if (Array.isArray(d.defaultModules)) setDefaultAppsScriptModules(d.defaultModules);
+          if (d.storeMatrix && typeof d.storeMatrix === 'object' && Object.keys(d.storeMatrix).length > 0) {
+            setStoreAppsScriptMatrix(d.storeMatrix);
+          } else if (typeof window !== 'undefined') {
+            try {
+              const cachedMatrix = window.localStorage.getItem('upbase_store_appscript_matrix_v1');
+              if (cachedMatrix) {
+                setStoreAppsScriptMatrix(
+                  JSON.parse(cachedMatrix) as Record<string, StoreAppsScriptMatrixConfig>
+                );
+              }
+            } catch {
+              /* ignore */
+            }
+          }
           if (d.scriptCode) setAppsScriptCodeDraft(d.scriptCode);
           if (d.installedMap && typeof d.installedMap === 'object') {
             setAppsScriptInstalledMap(d.installedMap);
@@ -1046,13 +1078,152 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
     const cloned = defaultAppsScriptModules.map(m => ({ ...m }));
     setAppsScriptModules(cloned);
     setAppsScriptCodeDraft(combineAppsScriptModulesClient(cloned));
-    onNotify?.('Đã khôi phục 6 tác vụ Apps Script mặc định.', 'info');
+    onNotify?.(`Đã khôi phục ${cloned.length} tác vụ Apps Script mặc định.`, 'info');
+  };
+
+  const defaultEnabledModuleIds = useMemo(
+    () => appsScriptModules.filter(m => m.enabled).map(m => m.id),
+    [appsScriptModules]
+  );
+
+  const getStoreMatrixConfig = useCallback(
+    (storeId: string): StoreAppsScriptMatrixConfig => {
+      const existing = storeAppsScriptMatrix[storeId];
+      if (existing) {
+        return {
+          applyAppsScript: existing.applyAppsScript,
+          enabledModuleIds: Array.isArray(existing.enabledModuleIds)
+            ? existing.enabledModuleIds
+            : defaultEnabledModuleIds,
+        };
+      }
+      return {
+        applyAppsScript: true,
+        enabledModuleIds: defaultEnabledModuleIds,
+      };
+    },
+    [storeAppsScriptMatrix, defaultEnabledModuleIds]
+  );
+
+  const filteredMatrixStores = useMemo(() => {
+    const q = matrixSearch.trim().toLowerCase();
+    return Object.values(drafts)
+      .filter(
+        d =>
+          matrixBrandFilter === 'ALL' ||
+          d.brandName.toLowerCase() === matrixBrandFilter.toLowerCase()
+      )
+      .filter(d => {
+        if (matrixApplyFilter === 'HAS_SHEET') return Boolean(d.bookingSheetUrl.trim());
+        const cfg = getStoreMatrixConfig(d.storeId);
+        if (matrixApplyFilter === 'APPLY_ONLY') return cfg.applyAppsScript;
+        if (matrixApplyFilter === 'DISABLED_ONLY') return !cfg.applyAppsScript;
+        return true;
+      })
+      .filter(
+        d =>
+          !q ||
+          `${d.storeName} ${d.brandName} ${d.platform} ${d.pic}`.toLowerCase().includes(q)
+      )
+      .sort((a, b) => a.storeName.localeCompare(b.storeName, 'vi'));
+  }, [drafts, matrixSearch, matrixBrandFilter, matrixApplyFilter, getStoreMatrixConfig]);
+
+  const handleToggleStoreApplyAppsScript = (storeId: string) => {
+    setStoreAppsScriptMatrix(prev => {
+      const cur = prev[storeId] || {
+        applyAppsScript: true,
+        enabledModuleIds: defaultEnabledModuleIds,
+      };
+      return {
+        ...prev,
+        [storeId]: {
+          ...cur,
+          applyAppsScript: !cur.applyAppsScript,
+        },
+      };
+    });
+    setStoreMatrixDirty(true);
+  };
+
+  const handleToggleStoreModuleInMatrix = (storeId: string, moduleId: string) => {
+    setStoreAppsScriptMatrix(prev => {
+      const cur = prev[storeId] || {
+        applyAppsScript: true,
+        enabledModuleIds: defaultEnabledModuleIds,
+      };
+      const exists = cur.enabledModuleIds.includes(moduleId);
+      const nextIds = exists
+        ? cur.enabledModuleIds.filter(id => id !== moduleId)
+        : [...cur.enabledModuleIds, moduleId];
+      return {
+        ...prev,
+        [storeId]: {
+          applyAppsScript: cur.applyAppsScript,
+          enabledModuleIds: nextIds,
+        },
+      };
+    });
+    setStoreMatrixDirty(true);
+  };
+
+  const handleBatchSetFilteredStoresAppsScript = (apply: boolean) => {
+    if (filteredMatrixStores.length === 0) return;
+    setStoreAppsScriptMatrix(prev => {
+      const next = { ...prev };
+      for (const st of filteredMatrixStores) {
+        const cur = next[st.storeId] || {
+          applyAppsScript: true,
+          enabledModuleIds: defaultEnabledModuleIds,
+        };
+        next[st.storeId] = {
+          ...cur,
+          applyAppsScript: apply,
+        };
+      }
+      return next;
+    });
+    setStoreMatrixDirty(true);
+  };
+
+  const handleBatchToggleModuleColumnForFilteredStores = (
+    moduleId: string,
+    enable: boolean
+  ) => {
+    if (filteredMatrixStores.length === 0) return;
+    setStoreAppsScriptMatrix(prev => {
+      const next = { ...prev };
+      for (const st of filteredMatrixStores) {
+        const cur = next[st.storeId] || {
+          applyAppsScript: true,
+          enabledModuleIds: defaultEnabledModuleIds,
+        };
+        const set = new Set(cur.enabledModuleIds);
+        if (enable) set.add(moduleId);
+        else set.delete(moduleId);
+        next[st.storeId] = {
+          ...cur,
+          enabledModuleIds: Array.from(set),
+        };
+      }
+      return next;
+    });
+    setStoreMatrixDirty(true);
   };
 
   const handleSaveAppsScriptOAuthConfig = async (customModules?: AppsScriptModuleItem[]) => {
     setSavingAppsScriptOAuth(true);
     const modulesToSave = customModules ?? appsScriptModules;
     try {
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem(
+            'upbase_store_appscript_matrix_v1',
+            JSON.stringify(storeAppsScriptMatrix)
+          );
+        } catch {
+          /* ignore */
+        }
+      }
       const res = await fetch('/api/booking-list/setup-appscript', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -1061,6 +1232,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
           ...(oauthClientSecretInput.trim() ? { clientSecret: oauthClientSecretInput.trim() } : {}),
           ...(oauthRefreshTokenInput.trim() ? { refreshToken: oauthRefreshTokenInput.trim() } : {}),
           modules: modulesToSave,
+          storeMatrix: storeAppsScriptMatrix,
           ...(appsScriptCodeDraft.trim() ? { customScriptCode: appsScriptCodeDraft.trim() } : {}),
           verifyToken: Boolean(
             oauthClientIdInput.trim() || oauthClientSecretInput.trim() || oauthRefreshTokenInput.trim()
@@ -1072,6 +1244,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
         configured?: boolean;
         clientIdMasked?: string | null;
         modules?: AppsScriptModuleItem[];
+        storeMatrix?: Record<string, StoreAppsScriptMatrixConfig>;
         scriptCode?: string;
         error?: string;
       } | null;
@@ -1081,12 +1254,16 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
       setAppsScriptConfigured(Boolean(data.configured));
       if (data.clientIdMasked) setAppsScriptClientIdMasked(data.clientIdMasked);
       if (Array.isArray(data.modules)) setAppsScriptModules(data.modules);
+      if (data.storeMatrix && typeof data.storeMatrix === 'object') {
+        setStoreAppsScriptMatrix(data.storeMatrix);
+      }
       if (data.scriptCode) setAppsScriptCodeDraft(data.scriptCode);
+      setStoreMatrixDirty(false);
       setOauthClientIdInput('');
       setOauthClientSecretInput('');
       setOauthRefreshTokenInput('');
       onNotify?.(
-        'Đã lưu Danh mục Tiện ích Apps Script và cấu hình kết nối OAuth2 thành công.',
+        'Đã lưu Danh mục Tiện ích, Ma trận áp dụng Apps Script và cấu hình OAuth2 thành công.',
         'success'
       );
     } catch (err) {
@@ -1100,7 +1277,13 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
   };
 
   const handleDeployAppsScriptToTargets = async (
-    targets: Array<{ storeName: string; sheetUrl: string }>
+    targets: Array<{
+      storeId?: string;
+      storeName: string;
+      sheetUrl: string;
+      applyAppsScript?: boolean;
+      moduleIds?: string[];
+    }>
   ) => {
     const validTargets = targets.filter((t) => Boolean(t.sheetUrl?.trim()));
     if (validTargets.length === 0) {
@@ -1118,12 +1301,23 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
     setPushingAppsScriptBusy(true);
     setAppsScriptBatchResults([]);
     try {
+      const enrichedTargets = validTargets.map(t => {
+        if (!t.storeId) return t;
+        const cfg = getStoreMatrixConfig(t.storeId);
+        return {
+          ...t,
+          applyAppsScript: t.applyAppsScript ?? cfg.applyAppsScript,
+          moduleIds: t.moduleIds ?? cfg.enabledModuleIds,
+        };
+      });
+
       const res = await fetch('/api/booking-list/setup-appscript', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          targets: validTargets,
+          targets: enrichedTargets,
           modules: appsScriptModules,
+          storeMatrix: storeAppsScriptMatrix,
           scriptCode: appsScriptCodeDraft,
         }),
       });
@@ -1138,6 +1332,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
           ok: boolean;
           scriptId?: string;
           mode?: 'CREATED' | 'UPDATED';
+          enabledCount?: number;
           error?: string;
         }>;
         installedMap?: Record<
@@ -1172,7 +1367,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
       }
 
       onNotify?.(
-        `Đã cài đặt / cập nhật thành công ${appsScriptModules.filter(m => m.enabled).length} tác vụ Apps Script lên ${data.successCount}/${validTargets.length} gian hàng${
+        `Đã cài đặt / cập nhật Apps Script theo Ma trận cho ${data.successCount}/${enrichedTargets.length} gian hàng${
           data.failCount ? ` (${data.failCount} lỗi)` : ''
         }.`,
         data.failCount ? 'warning' : 'success'
@@ -1313,6 +1508,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
           const hasSheet = Boolean(row.bookingSheetUrl.trim());
           const sheetId = extractSpreadsheetIdFromUrl(row.bookingSheetUrl);
           const scriptMeta = sheetId ? appsScriptInstalledMap[sheetId] : undefined;
+          const matrixCfg = getStoreMatrixConfig(row.storeId);
           const isDirty = dirtyIds.has(row.storeId);
           return (
             <div className="flex flex-col items-end gap-1.5">
@@ -1322,17 +1518,27 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                 ) : (
                   <Status tone="neutral">Chưa gắn Sheet</Status>
                 )}
-                {scriptMeta && <Status tone="info">Đã gắn Apps Script</Status>}
+                {!matrixCfg.applyAppsScript ? (
+                  <Status tone="neutral">Không dùng Script</Status>
+                ) : scriptMeta ? (
+                  <Status tone="info">
+                    Đã cài Script ({scriptMeta.enabledModuleIds?.length ?? matrixCfg.enabledModuleIds.length})
+                  </Status>
+                ) : null}
               </div>
               <div className="flex flex-wrap items-center justify-end gap-1">
-                {hasSheet && (
+                {hasSheet && matrixCfg.applyAppsScript && (
                   <Button
                     size="sm"
                     variant="ghost"
                     disabled={pushingAppsScriptBusy}
                     onClick={() =>
                       void handleDeployAppsScriptToTargets([
-                        { storeName: row.storeName, sheetUrl: row.bookingSheetUrl },
+                        {
+                          storeId: row.storeId,
+                          storeName: row.storeName,
+                          sheetUrl: row.bookingSheetUrl,
+                        },
                       ])
                     }
                   >
@@ -1801,7 +2007,7 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
           { key: 'TABLE', label: 'Bảng Link Google Sheet 69 Gian hàng', count: filteredRows.length },
           {
             key: 'FIELD_PERMISSIONS',
-            label: 'Phân quyền Sửa Trường (Cột) cho Nhân sự',
+            label: 'Phân quyền Sửa Trường & Ma trận Apps Script',
             count: fieldPolicyDraft.editableFieldsByRole.SUPPORT.length,
           },
           { key: 'BULK_PASTE', label: 'Dán hàng loạt Link Sheet từ Excel' },
@@ -1942,6 +2148,45 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
 
       {activeTab === 'FIELD_PERMISSIONS' && (
         <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface px-3.5 py-2.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Button
+                size="sm"
+                variant={permissionSubView === 'ALL' ? 'primary' : 'secondary'}
+                onClick={() => setPermissionSubView('ALL')}
+              >
+                Hiện cả 2 bảng ma trận
+              </Button>
+              <Button
+                size="sm"
+                variant={permissionSubView === 'STAFF_FIELDS' ? 'primary' : 'secondary'}
+                onClick={() => setPermissionSubView('STAFF_FIELDS')}
+              >
+                1. Phân quyền Sửa Trường cho Nhân sự (47 Cột)
+              </Button>
+              <Button
+                size="sm"
+                variant={permissionSubView === 'APPSCRIPT_MATRIX' ? 'primary' : 'secondary'}
+                onClick={() => setPermissionSubView('APPSCRIPT_MATRIX')}
+              >
+                2. Ma trận Áp dụng Apps Script theo Gian hàng ({
+                  Object.values(drafts).filter(d => getStoreMatrixConfig(d.storeId).applyAppsScript).length
+                }/{stats.total})
+              </Button>
+            </div>
+            <div className="flex items-center gap-2 text-2xs text-ink-3">
+              <span>
+                Gian hàng áp dụng Script:{' '}
+                <strong className="text-ink">
+                  {Object.values(drafts).filter(d => getStoreMatrixConfig(d.storeId).applyAppsScript).length}
+                </strong>
+                /{stats.total}
+              </span>
+            </div>
+          </div>
+
+          {permissionSubView !== 'APPSCRIPT_MATRIX' && (
+          <>
           <Panel
             title="Quy tắc bảo vệ dòng & khóa trường trên Bảng Listing / Google Sheet"
             actions={
@@ -2303,6 +2548,305 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
               </Button>
             </div>
           </Panel>
+          </>
+          )}
+
+          {permissionSubView !== 'STAFF_FIELDS' && (
+            <Panel
+              title="Ma trận Áp dụng Tiện ích Apps Script theo từng Gian hàng / File Sheet của Brand"
+              flush
+              actions={
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {storeMatrixDirty && <Status tone="warning">Có thay đổi chưa lưu</Status>}
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Save}
+                    disabled={savingAppsScriptOAuth}
+                    onClick={() => void handleSaveAppsScriptOAuthConfig()}
+                  >
+                    {savingAppsScriptOAuth ? 'Đang lưu…' : 'Lưu Ma trận Apps Script'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={RefreshCw}
+                    disabled={
+                      pushingAppsScriptBusy ||
+                      filteredMatrixStores.filter(
+                        d =>
+                          Boolean(d.bookingSheetUrl.trim()) &&
+                          getStoreMatrixConfig(d.storeId).applyAppsScript
+                      ).length === 0
+                    }
+                    onClick={() =>
+                      void handleDeployAppsScriptToTargets(
+                        filteredMatrixStores
+                          .filter(
+                            d =>
+                              Boolean(d.bookingSheetUrl.trim()) &&
+                              getStoreMatrixConfig(d.storeId).applyAppsScript
+                          )
+                          .map(d => ({
+                            storeId: d.storeId,
+                            storeName: d.storeName,
+                            sheetUrl: d.bookingSheetUrl,
+                          }))
+                      )
+                    }
+                  >
+                    {pushingAppsScriptBusy
+                      ? 'Đang cài đặt theo Ma trận…'
+                      : `Cài đặt lên Sheet theo Ma trận (${
+                          filteredMatrixStores.filter(
+                            d =>
+                              Boolean(d.bookingSheetUrl.trim()) &&
+                              getStoreMatrixConfig(d.storeId).applyAppsScript
+                          ).length
+                        } gian hàng)`}
+                  </Button>
+                </div>
+              }
+            >
+              <div className="p-3.5 sm:p-4 border-b border-line space-y-3">
+                <FilterBar
+                  search={{
+                    value: matrixSearch,
+                    onChange: setMatrixSearch,
+                    placeholder: 'Tìm tên gian hàng, thương hiệu, PIC...',
+                  }}
+                  resultCount={filteredMatrixStores.length}
+                  filters={
+                    <>
+                      <Select
+                        value={matrixBrandFilter}
+                        onChange={e => setMatrixBrandFilter(e.target.value)}
+                        className="w-[185px]"
+                      >
+                        <option value="ALL">Tất cả Brand ({brandOptions.length})</option>
+                        {brandOptions.map(b => (
+                          <option key={b} value={b}>
+                            {b}
+                          </option>
+                        ))}
+                      </Select>
+                      <Select
+                        value={matrixApplyFilter}
+                        onChange={e =>
+                          setMatrixApplyFilter(
+                            e.target.value as 'ALL' | 'HAS_SHEET' | 'APPLY_ONLY' | 'DISABLED_ONLY'
+                          )
+                        }
+                        className="w-[215px]"
+                      >
+                        <option value="ALL">Mọi gian hàng ({stats.total})</option>
+                        <option value="HAS_SHEET">Chỉ gian hàng đã gắn Link Sheet</option>
+                        <option value="APPLY_ONLY">Gian hàng Có áp dụng Apps Script</option>
+                        <option value="DISABLED_ONLY">Gian hàng Không dùng Apps Script</option>
+                      </Select>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => handleBatchSetFilteredStoresAppsScript(true)}
+                      >
+                        Bật Script cho {filteredMatrixStores.length} gian đang lọc
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleBatchSetFilteredStoresAppsScript(false)}
+                      >
+                        Tắt Script các gian đang lọc
+                      </Button>
+                    </>
+                  }
+                />
+
+                {/* Thanh bật / tắt nhanh từng cột Tác vụ Apps Script trên các gian hàng đang lọc */}
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+                  {appsScriptModules.map((mod, idx) => {
+                    const activeCount = filteredMatrixStores.filter(st => {
+                      const cfg = getStoreMatrixConfig(st.storeId);
+                      return cfg.applyAppsScript && cfg.enabledModuleIds.includes(mod.id);
+                    }).length;
+                    return (
+                      <div
+                        key={mod.id}
+                        className="rounded-md border border-line bg-sunken/70 p-2 space-y-1.5 text-2xs flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="font-semibold text-ink line-clamp-2" title={mod.name}>
+                            {idx + 1}. {mod.name}
+                          </div>
+                          <div className="text-ink-3 truncate" title={mod.targetColumns}>
+                            {mod.targetColumns}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-1 pt-1 border-t border-line">
+                          <span className="font-medium text-ink-2">
+                            {activeCount}/{filteredMatrixStores.length} gian
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleBatchToggleModuleColumnForFilteredStores(mod.id, true)
+                              }
+                              className="rounded border border-line bg-surface px-1.5 py-0.5 hover:bg-accent-soft hover:text-accent"
+                            >
+                              Bật hết
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleBatchToggleModuleColumnForFilteredStores(mod.id, false)
+                              }
+                              className="rounded border border-line bg-surface px-1.5 py-0.5 hover:bg-sunken text-ink-3"
+                            >
+                              Tắt
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <DataTable
+                rowKey={r => r.storeId}
+                rows={filteredMatrixStores}
+                stickyLast
+                columns={[
+                  {
+                    key: 'store',
+                    header: 'Brand & Gian hàng',
+                    width: 225,
+                    render: row => {
+                      const hasSheet = Boolean(row.bookingSheetUrl.trim());
+                      const sheetId = extractSpreadsheetIdFromUrl(row.bookingSheetUrl);
+                      const scriptMeta = sheetId ? appsScriptInstalledMap[sheetId] : undefined;
+                      return (
+                        <div className="space-y-1">
+                          <div className="font-semibold text-ink">{row.storeName}</div>
+                          <div className="flex flex-wrap items-center gap-1 text-2xs text-ink-3">
+                            <span className="font-medium text-ink-2">{row.brandName}</span>
+                            <span>·</span>
+                            <ChannelTag channel={row.platform} />
+                            {hasSheet ? (
+                              <Status tone="positive">Có Sheet</Status>
+                            ) : (
+                              <Status tone="neutral">Chưa gắn Sheet</Status>
+                            )}
+                            {scriptMeta && <Status tone="info">Đã cài</Status>}
+                          </div>
+                        </div>
+                      );
+                    },
+                  },
+                  {
+                    key: 'applyAppsScript',
+                    header: 'Áp dụng Apps Script?',
+                    width: 165,
+                    align: 'center',
+                    render: row => {
+                      const cfg = getStoreMatrixConfig(row.storeId);
+                      return (
+                        <label className="inline-flex items-center justify-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={cfg.applyAppsScript}
+                            onChange={() => handleToggleStoreApplyAppsScript(row.storeId)}
+                            className="h-4 w-4 rounded border-line-strong text-primary focus:ring-0"
+                          />
+                          {cfg.applyAppsScript ? (
+                            <Status tone="positive">Có áp dụng</Status>
+                          ) : (
+                            <Status tone="neutral">Không dùng</Status>
+                          )}
+                        </label>
+                      );
+                    },
+                  },
+                  ...appsScriptModules.map((mod, idx): Column<StoreStaffSheetDraft> => ({
+                    key: `mod_${mod.id}`,
+                    header: `${idx + 1}. ${
+                      mod.name.length > 28 ? `${mod.name.slice(0, 28)}…` : mod.name
+                    }`,
+                    width: 155,
+                    align: 'center',
+                    render: row => {
+                      const cfg = getStoreMatrixConfig(row.storeId);
+                      const checked =
+                        cfg.applyAppsScript && cfg.enabledModuleIds.includes(mod.id);
+                      return (
+                        <label
+                          className={`inline-flex items-center justify-center gap-1.5 select-none ${
+                            cfg.applyAppsScript
+                              ? 'cursor-pointer'
+                              : 'opacity-40 cursor-not-allowed'
+                          }`}
+                          title={`${mod.name}: ${mod.purpose}`}
+                        >
+                          <input
+                            type="checkbox"
+                            disabled={!cfg.applyAppsScript}
+                            checked={checked}
+                            onChange={() =>
+                              handleToggleStoreModuleInMatrix(row.storeId, mod.id)
+                            }
+                            className="h-4 w-4 rounded border-line-strong text-primary focus:ring-0"
+                          />
+                          <span
+                            className={`text-2xs font-medium ${
+                              checked ? 'text-ink' : 'text-ink-3'
+                            }`}
+                          >
+                            {checked ? 'Bật' : 'Tắt'}
+                          </span>
+                        </label>
+                      );
+                    },
+                  })),
+                  {
+                    key: 'matrixAction',
+                    header: 'Thao tác Sheet',
+                    width: 170,
+                    align: 'right',
+                    render: row => {
+                      const hasSheet = Boolean(row.bookingSheetUrl.trim());
+                      const cfg = getStoreMatrixConfig(row.storeId);
+                      if (!hasSheet) {
+                        return <span className="text-2xs text-ink-3">Chưa có Link Sheet</span>;
+                      }
+                      return (
+                        <Button
+                          size="sm"
+                          variant={cfg.applyAppsScript ? 'secondary' : 'ghost'}
+                          disabled={pushingAppsScriptBusy}
+                          onClick={() =>
+                            void handleDeployAppsScriptToTargets([
+                              {
+                                storeId: row.storeId,
+                                storeName: row.storeName,
+                                sheetUrl: row.bookingSheetUrl,
+                                applyAppsScript: cfg.applyAppsScript,
+                                moduleIds: cfg.enabledModuleIds,
+                              },
+                            ])
+                          }
+                        >
+                          {cfg.applyAppsScript
+                            ? `Cài (${cfg.enabledModuleIds.length} script)`
+                            : 'Tắt Script trên Sheet'}
+                        </Button>
+                      );
+                    },
+                  },
+                ]}
+              />
+            </Panel>
+          )}
         </div>
       )}
 
@@ -2407,7 +2951,17 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                   icon={RotateCcw}
                   onClick={handleResetDefaultModules}
                 >
-                  Khôi phục 6 Script mặc định
+                  Khôi phục 7 Script mặc định
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setPermissionSubView('APPSCRIPT_MATRIX');
+                    setActiveTab('FIELD_PERMISSIONS');
+                  }}
+                >
+                  Mở Ma trận theo Gian hàng
                 </Button>
                 <Button
                   size="sm"
@@ -2442,14 +2996,28 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                   onClick={() =>
                     void handleDeployAppsScriptToTargets(
                       Object.values(drafts)
-                        .filter(d => Boolean(d.bookingSheetUrl.trim()))
-                        .map(d => ({ storeName: d.storeName, sheetUrl: d.bookingSheetUrl }))
+                        .filter(
+                          d =>
+                            Boolean(d.bookingSheetUrl.trim()) &&
+                            getStoreMatrixConfig(d.storeId).applyAppsScript
+                        )
+                        .map(d => ({
+                          storeId: d.storeId,
+                          storeName: d.storeName,
+                          sheetUrl: d.bookingSheetUrl,
+                        }))
                     )
                   }
                 >
                   {pushingAppsScriptBusy
                     ? 'Đang cài đặt Script…'
-                    : `Cài đặt / Cập nhật Script cho tất cả (${stats.withSheet} gian hàng có Sheet)`}
+                    : `Cài đặt / Cập nhật Script theo Ma trận (${
+                        Object.values(drafts).filter(
+                          d =>
+                            Boolean(d.bookingSheetUrl.trim()) &&
+                            getStoreMatrixConfig(d.storeId).applyAppsScript
+                        ).length
+                      } gian hàng)`}
                 </Button>
               </div>
             }
