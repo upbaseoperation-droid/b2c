@@ -8,6 +8,7 @@ import {
   removeUserPermission,
   getSecurityPolicy,
   setSecurityPolicy,
+  hydrateZaloBotStateFromDb,
   buildDealBriefMessage,
   sendZaloMessage,
   type ZaloGroupMapping,
@@ -21,6 +22,7 @@ import {
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  await hydrateZaloBotStateFromDb({ forceFresh: true });
   return NextResponse.json({
     ok: true,
     mappings: getAllMappings(),

@@ -23,7 +23,7 @@ const pgInflightReads = new Map<string, Promise<SharedRecord<unknown>>>();
 export async function readRecord<T>(
   key: string,
   fallback: T,
-  options?: { clone?: boolean }
+  options?: { clone?: boolean; skipCache?: boolean }
 ): Promise<SharedRecord<T>> {
   const shouldClone = options?.clone !== false;
   if (local()) {
@@ -31,7 +31,7 @@ export async function readRecord<T>(
     try {
       const st = await stat(filePath);
       const cached = localRecordCache.get(filePath);
-      if (cached && cached.mtimeMs === st.mtimeMs && cached.size === st.size) {
+      if (!options?.skipCache && cached && cached.mtimeMs === st.mtimeMs && cached.size === st.size) {
         return (shouldClone ? structuredClone(cached.record) : cached.record) as SharedRecord<T>;
       }
       const parsed = JSON.parse(await readFile(filePath, 'utf8')) as SharedRecord<T>;
@@ -47,7 +47,7 @@ export async function readRecord<T>(
   }
   const now = Date.now();
   const cachedPg = pgRecordCache.get(key);
-  if (cachedPg && now < cachedPg.expiresAt) {
+  if (!options?.skipCache && cachedPg && now < cachedPg.expiresAt) {
     return (shouldClone ? structuredClone(cachedPg.record) : cachedPg.record) as SharedRecord<T>;
   }
   let inflight = pgInflightReads.get(key);
@@ -79,7 +79,7 @@ export async function readRecord<T>(
 export async function readRecordsBatch<T>(
   keys: string[],
   fallback: T,
-  options?: { clone?: boolean }
+  options?: { clone?: boolean; skipCache?: boolean }
 ): Promise<Map<string, SharedRecord<T>>> {
   const shouldClone = options?.clone !== false;
   const result = new Map<string, SharedRecord<T>>();
@@ -112,7 +112,7 @@ export async function readRecordsBatch<T>(
   const missingKeys: string[] = [];
   for (const key of uniqueKeys) {
     const cachedPg = pgRecordCache.get(key);
-    if (cachedPg && now < cachedPg.expiresAt) {
+    if (!options?.skipCache && cachedPg && now < cachedPg.expiresAt) {
       result.set(
         key,
         (shouldClone ? structuredClone(cachedPg.record) : cachedPg.record) as SharedRecord<T>

@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     console.error('[ZaloBot Status Error]:', err);
   }
 
-  await hydrateZaloBotStateFromDb();
+  await hydrateZaloBotStateFromDb({ forceFresh: true });
   const mappings = getAllMappings();
   const userPermissions = getAllUserPermissions();
   const discoveredSenders = getAllDiscoveredSenders();
