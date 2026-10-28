@@ -2706,7 +2706,7 @@ export async function processZaloWebhookEvent(
         sentToZalo: shouldSend,
       });
 
-      if (shouldSend && replyConfig.sendHoldingPhotoOnAirCheck) {
+      if (shouldSend && replyConfig.sendHoldingPhotoOnAirCheck && checkResult.status === 'LIVE') {
         let photoCaption = renderReplyTemplate('AIR_CHECK_PHOTO_CAPTION', {
           kocHandle: checkResult.author?.handle || 'koc',
           holdingSec: captureSec,

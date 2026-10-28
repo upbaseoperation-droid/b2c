@@ -504,6 +504,20 @@ const PRODUCT_CATEGORY_PHRASES = [
   'bàn chải',
   'máy rửa mặt',
   'máy sấy',
+  'ốp lưng',
+  'miếng dán',
+  'cường lực',
+  'tai nghe',
+  'sạc dự phòng',
+  'củ sạc',
+  'cáp sạc',
+  'quạt cầm tay',
+  'quạt mini',
+  'máy uốn tóc',
+  'kẹp tóc',
+  'túi xách',
+  'bông tẩy trang',
+  'khăn mặt',
 ];
 
 const GENERIC_TITLE_STOPWORDS = new Set([
@@ -824,11 +838,28 @@ export function detectProductMentionMoments(params: {
     }
   }
 
-  // 3. Cụm danh mục sản phẩm (VD: "kem chống nắng", "sữa rửa mặt", "dung dịch vệ sinh"...) có xuất hiện trong tên sản phẩm hoặc bài đăng
+  // 3. Cụm danh mục sản phẩm (VD: "kem chống nắng", "sữa rửa mặt", "ốp lưng"...) có xuất hiện trong tên sản phẩm hoặc bài đăng
   const foldedAllTitles = foldForMatch(allProductTitles);
   for (const phrase of PRODUCT_CATEGORY_PHRASES) {
     if (!foldedAllTitles || foldedAllTitles.includes(foldForMatch(phrase))) {
       addCandidate(phrase, 2);
+    }
+  }
+
+  // Tự động trích xuất cụm danh từ đầu (2 từ đầu / 3 từ đầu) của tên sản phẩm giỏ hàng (VD: "Ốp lưng", "Đèn Pin", "Kem dưỡng")
+  const primaryTitleSource = (cartAnchorTitle || productName || cartProducts[0]?.title || '').trim();
+  if (primaryTitleSource) {
+    const cleanHead = primaryTitleSource
+      .replace(/^\[[^\]]*\]\s*/, '')
+      .replace(/^\([^)]*\)\s*/, '')
+      .trim();
+    const headWords = cleanHead.split(/\s+/).filter(Boolean);
+    if (headWords.length >= 2) {
+      const twoWordHead = `${headWords[0]} ${headWords[1]}`;
+      const foldedTwo = foldForMatch(twoWordHead);
+      if (foldedTwo.length >= 5 && !GENERIC_TITLE_STOPWORDS.has(foldedTwo)) {
+        addCandidate(twoWordHead, 2);
+      }
     }
   }
 
