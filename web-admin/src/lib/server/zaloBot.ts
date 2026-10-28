@@ -2,22 +2,428 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { checkSingleLinkServerless } from '../linkAirCheckServer';
 import type { LinkAirResult } from '../linkAirCheck';
+import { REAL_B2C_69_STORES } from '../realB2cPlanData';
+
+export type ZaloGroupRole = 'KOC_GROUP' | 'INTERNAL_OPS' | 'BOD_EXECUTIVE';
+
+export type ZaloDealWorkflowStatus =
+  | 'CHỜ_NHẬN_MẪU'
+  | 'ĐANG_QUAY_NHÁP'
+  | 'ĐÃ_NỘP_NHÁP'
+  | 'ĐÃ_DUYỆT_NHÁP'
+  | 'ĐÃ_NGHIỆM_THU_AIR'
+  | 'CẦN_CHỈNH_SỬA';
+
+export type ZaloStaffRole = 'CEO' | 'LEAD_B2C' | 'LEADER' | 'PIC' | 'KOC';
 
 export interface ZaloGroupMapping {
   groupId: string;
+  groupName?: string;
+  groupRole: ZaloGroupRole;
   dealCode?: string;
+  kocHandle?: string;
   kocName?: string;
   brandName?: string;
+  storeName?: string;
+  picName?: string;
+  leaderName?: string;
+  productName?: string;
+  pillarName?: string;
+  briefSummary?: string;
+  requiredHashtags?: string[];
+  expectedProductUrl?: string;
+  deadlineDate?: string;
+  bookingFeeNet?: number;
+  dealStatus: ZaloDealWorkflowStatus;
+  draftVideoUrl?: string;
+  draftReviewNote?: string;
+  airedVideoUrl?: string;
   linkedAt: string;
+  updatedAt?: string;
+}
+
+export interface ZaloUserPermission {
+  zaloUserId: string;
+  displayName: string;
+  staffName: string;
+  staffEmail: string;
+  role: ZaloStaffRole;
+  roleLabel: string;
+  assignedBrands: string[];
+  updatedAt: string;
+}
+
+export interface ZaloAirCheckHistoryItem {
+  id: string;
+  checkedAt: string;
+  chatId: string;
+  dealCode?: string;
+  brandName?: string;
+  kocHandle: string;
+  videoUrl: string;
+  verdict: 'PASS' | 'REVIEW' | 'FAIL';
+  status: string;
+  hasProductLink: boolean;
+  productTitle?: string;
+  views: number | null;
+  likes: number | null;
+  hashtags: string[];
+  sentToZalo: boolean;
+}
+
+interface QuickKocDirectoryEntry {
+  handle: string;
+  stageName: string;
+  realName: string;
+  salaryGrade: string;
+  tierLabel: string;
+  followers: number;
+  rateCardNet: number;
+  gmvBestCase: number;
+  historicalRoi: number;
+  totalPastDeals: number;
+  brandName: string;
+  bookingPic: string;
+  bankName: string;
+  maskedBankAccount: string;
+  maskedCccd: string;
+  taxAccountType: string;
 }
 
 const MAPPINGS_FILE_PATH = path.join(process.cwd(), 'src/data/zalo_group_mappings.json');
-const inMemoryMappings = new Map<string, ZaloGroupMapping>();
-const recentDebugEvents: Array<{ time: string; body: any; extractedChatId?: string; replySent?: boolean; error?: string }> = [];
+const AIR_HISTORY_FILE_PATH = path.join(process.cwd(), 'src/data/zalo_air_history.json');
+const PERMISSIONS_FILE_PATH = path.join(process.cwd(), 'src/data/zalo_user_permissions.json');
 
-export function recordDebugEvent(event: { time: string; body: any; extractedChatId?: string; replySent?: boolean; error?: string }) {
+const inMemoryMappings = new Map<string, ZaloGroupMapping>();
+const inMemoryAirHistory: ZaloAirCheckHistoryItem[] = [];
+const inMemoryPermissions = new Map<string, ZaloUserPermission>();
+const recentDebugEvents: Array<{
+  time: string;
+  body: any;
+  extractedChatId?: string;
+  replySent?: boolean;
+  error?: string;
+}> = [];
+
+// 8 gian hàng trọng điểm có Leader Nguyễn Thị Ngọc Tâm phụ trách (theo Cột 55 File 4.1.1)
+const LEADER_NGOC_TAM_BRANDS = new Set([
+  'clubclio',
+  'cindy bloom',
+  'mine',
+  'eupc',
+  "l'occitane",
+  'loccitane',
+  'bye bye blemish',
+  'rejuran',
+]);
+
+function maskSensitiveLast4(raw?: string | null): string {
+  const cleaned = String(raw || '').trim();
+  if (!cleaned) return 'Chưa xác nhận';
+  if (cleaned.length <= 4) return `****${cleaned}`;
+  return `****${cleaned.slice(-4)}`;
+}
+
+function formatVnd(amount: number | null | undefined): string {
+  const safe = Math.round(Number(amount || 0));
+  return `${new Intl.NumberFormat('vi-VN').format(safe)}đ`;
+}
+
+function resolveLeaderForBrand(brandName?: string): string {
+  const normalized = String(brandName || '').trim().toLowerCase();
+  if (!normalized) return 'Đặng Thị Yến Nhi (Trình trực tiếp Lead B2C)';
+  for (const key of LEADER_NGOC_TAM_BRANDS) {
+    if (normalized.includes(key)) {
+      return 'Nguyễn Thị Ngọc Tâm (Leader 8 gian hàng trọng điểm)';
+    }
+  }
+  return 'Đặng Thị Yến Nhi (Trình trực tiếp Giám Đốc B2C)';
+}
+
+// Danh mục KOC tiêu biểu đã chuẩn hóa & che mờ dữ liệu nhạy cảm theo RULE Data Masking
+const QUICK_KOC_CATALOG: QuickKocDirectoryEntry[] = [
+  {
+    handle: 'po.trann77',
+    stageName: 'po.trann77',
+    realName: 'CÔNG TY TNHH METAVERSE ENTERTAINMENT',
+    salaryGrade: 'KL7',
+    tierLabel: 'Tier 1 (Celeb/Mega)',
+    followers: 650000,
+    rateCardNet: 45000000,
+    gmvBestCase: 968229155,
+    historicalRoi: 0.31,
+    totalPastDeals: 74,
+    brandName: 'ClubClio',
+    bookingPic: 'Lê Thị Thùy Thương',
+    bankName: 'ACB',
+    maskedBankAccount: maskSensitiveLast4('19930588'),
+    maskedCccd: maskSensitiveLast4('0317507208'),
+    taxAccountType: '(VAT 8%) Tài khoản doanh nghiệp',
+  },
+  {
+    handle: 'chutieuhan10012001',
+    stageName: 'Chu Thị Phương Thảo',
+    realName: 'Chu Thị Phương Thảo',
+    salaryGrade: 'KL6',
+    tierLabel: 'Tier 2 (Macro)',
+    followers: 280000,
+    rateCardNet: 35000000,
+    gmvBestCase: 1632174163,
+    historicalRoi: 1.48,
+    totalPastDeals: 40,
+    brandName: 'EUPC',
+    bookingPic: 'Hà Thị Thủy',
+    bankName: 'MB Bank',
+    maskedBankAccount: maskSensitiveLast4('0990167106666'),
+    maskedCccd: maskSensitiveLast4('020301008746'),
+    taxAccountType: '(Thuế TNCN 10%) Tài khoản cá nhân',
+  },
+  {
+    handle: 'hathuuu1610',
+    stageName: 'hathuuu1610 (Trần Khắc Anh)',
+    realName: 'Trần Khắc Anh',
+    salaryGrade: 'KL6',
+    tierLabel: 'Tier 2 (Macro)',
+    followers: 477574,
+    rateCardNet: 12000000,
+    gmvBestCase: 892407765,
+    historicalRoi: 2.35,
+    totalPastDeals: 33,
+    brandName: 'Chulala',
+    bookingPic: 'Lương Nguyễn Trang Nhung',
+    bankName: 'Vietcombank',
+    maskedBankAccount: maskSensitiveLast4('1057331492'),
+    maskedCccd: maskSensitiveLast4('027093012645'),
+    taxAccountType: '(Thuế TNCN 10%) Tài khoản cá nhân',
+  },
+  {
+    handle: 'rinabeauty859',
+    stageName: 'Rinabeauty859',
+    realName: 'CÔNG TY TNHH RINABEAUTY',
+    salaryGrade: 'KL6',
+    tierLabel: 'Tier 2 (Macro)',
+    followers: 280000,
+    rateCardNet: 4000000,
+    gmvBestCase: 927271355,
+    historicalRoi: 0.94,
+    totalPastDeals: 33,
+    brandName: 'Mine',
+    bookingPic: 'Nguyễn Thị Hồng Ngát',
+    bankName: 'Vietinbank',
+    maskedBankAccount: maskSensitiveLast4('114003049552'),
+    maskedCccd: maskSensitiveLast4('026303000125'),
+    taxAccountType: '(VAT 8%) Tài khoản doanh nghiệp',
+  },
+  {
+    handle: 'soanhtran98',
+    stageName: 'Trần Minh Sơn Anh',
+    realName: 'Trần Minh Sơn Anh',
+    salaryGrade: 'KL5',
+    tierLabel: 'Tier 3 (Micro)',
+    followers: 140000,
+    rateCardNet: 5000000,
+    gmvBestCase: 550248045,
+    historicalRoi: 0.77,
+    totalPastDeals: 19,
+    brandName: 'Cindy Bloom',
+    bookingPic: 'Nguyễn Ngọc Huyền',
+    bankName: 'MB Bank',
+    maskedBankAccount: maskSensitiveLast4('9861998899999'),
+    maskedCccd: maskSensitiveLast4('001098024983'),
+    taxAccountType: '(Thuế TNCN 10%) Tài khoản cá nhân',
+  },
+  {
+    handle: 'cin0ntp',
+    stageName: 'Phan Trần Thanh Ngân',
+    realName: 'Phan Trần Thanh Ngân',
+    salaryGrade: 'KL1',
+    tierLabel: 'Tier 4 (Affiliate/Nano)',
+    followers: 32000,
+    rateCardNet: 500000,
+    gmvBestCase: 551238929,
+    historicalRoi: 225,
+    totalPastDeals: 19,
+    brandName: 'pHCare',
+    bookingPic: 'Đinh Thị Bích Liên',
+    bankName: 'Techcombank',
+    maskedBankAccount: maskSensitiveLast4('19036480207012'),
+    maskedCccd: maskSensitiveLast4('079301010903'),
+    taxAccountType: '(Thuế TNCN 10%) Tài khoản cá nhân',
+  },
+  {
+    handle: 'phamsontrang',
+    stageName: 'Phạm Sơn Trang',
+    realName: 'Phạm Sơn Trang',
+    salaryGrade: 'KL5',
+    tierLabel: 'Tier 3 (Micro)',
+    followers: 140000,
+    rateCardNet: 10000000,
+    gmvBestCase: 258821693,
+    historicalRoi: 0.6,
+    totalPastDeals: 50,
+    brandName: 'Cathy Doll',
+    bookingPic: 'Phạm Thị Thu Hằng',
+    bankName: 'Vietcombank',
+    maskedBankAccount: maskSensitiveLast4('1040799683'),
+    maskedCccd: maskSensitiveLast4('001305039606'),
+    taxAccountType: '(Thuế TNCN 10%) Tài khoản cá nhân',
+  },
+];
+
+// Index O(1) tra cứu KOC theo handle
+const KOC_BY_HANDLE_INDEX = new Map<string, QuickKocDirectoryEntry>(
+  QUICK_KOC_CATALOG.map((k) => [k.handle.toLowerCase(), k])
+);
+
+const DEFAULT_GROUP_MAPPINGS: ZaloGroupMapping[] = [
+  {
+    groupId: 'zalo_grp_clubclio_potrann',
+    groupName: '[ClubClio x KOC po.trann77] Booking T10',
+    groupRole: 'KOC_GROUP',
+    dealCode: 'BO261047523',
+    kocHandle: 'po.trann77',
+    kocName: 'po.trann77 (Metaverse Ent)',
+    brandName: 'ClubClio',
+    storeName: 'ClubClio_TikTok_Flagship',
+    picName: 'Lê Thị Thùy Thương',
+    leaderName: 'Nguyễn Thị Ngọc Tâm (Leader 8 gian hàng trọng điểm)',
+    productName: 'Phấn nước Clio Kill Cover Mesh Glow Cushion SPF50+',
+    pillarName: 'Review trực tiếp (PIL-01)',
+    briefSummary: 'Quay cận cảnh chất kem che khuyết điểm dưới ánh sáng tự nhiên, test độ bám nền sau 6 tiếng và gắn giỏ hàng sản phẩm chính hãng.',
+    requiredHashtags: ['ClubClio', 'ClioCushion', 'BeautyReview'],
+    deadlineDate: '30/10/2026',
+    bookingFeeNet: 45000000,
+    dealStatus: 'ĐÃ_DUYỆT_NHÁP',
+    draftVideoUrl: 'https://drive.google.com/file/d/1po6HlavFvxALxuK/view',
+    linkedAt: '2026-10-25T09:30:00.000Z',
+  },
+  {
+    groupId: 'zalo_grp_eupc_chutieuhan',
+    groupName: '[EUPC x KOC Chu Tiểu Hân] Chiến dịch Kem dưỡng',
+    groupRole: 'KOC_GROUP',
+    dealCode: 'BO261067161',
+    kocHandle: 'chutieuhan10012001',
+    kocName: 'Chu Thị Phương Thảo',
+    brandName: 'EUPC',
+    storeName: 'EUPC_TikTok_Official',
+    picName: 'Hà Thị Thủy',
+    leaderName: 'Nguyễn Thị Ngọc Tâm (Leader 8 gian hàng trọng điểm)',
+    productName: 'Kem dưỡng phục hồi da EUPC B5 Cica 50ml',
+    pillarName: 'Nỗi đau - Giải pháp (PIL-02)',
+    briefSummary: 'So sánh tình trạng da khô kích ứng trước và sau 7 ngày dùng kem dưỡng EUPC B5, chỉ tay vào giỏ hàng góc trái ở 5 giây cuối.',
+    requiredHashtags: ['EUPC', 'KemDuongB5', 'Skincare'],
+    deadlineDate: '29/10/2026',
+    bookingFeeNet: 35000000,
+    dealStatus: 'ĐÃ_NỘP_NHÁP',
+    draftVideoUrl: 'https://drive.google.com/file/d/10DHpfDD8_oVAgyY/view',
+    linkedAt: '2026-10-26T14:15:00.000Z',
+  },
+  {
+    groupId: 'zalo_grp_mine_rinabeauty',
+    groupName: '[Mine x KOC Rinabeauty859] Booking T10',
+    groupRole: 'KOC_GROUP',
+    dealCode: 'BO261044922',
+    kocHandle: 'rinabeauty859',
+    kocName: 'Rinabeauty859',
+    brandName: 'Mine',
+    storeName: 'Mine_TikTok_Store',
+    picName: 'Nguyễn Thị Hồng Ngát',
+    leaderName: 'Nguyễn Thị Ngọc Tâm (Leader 8 gian hàng trọng điểm)',
+    productName: 'Tinh chất dưỡng sáng da Mine Niacinamide 10%',
+    pillarName: 'Review trực tiếp (PIL-01)',
+    briefSummary: 'Trải nghiệm kết cấu serum thấm nhanh không bết dính, nêu rõ ưu đãi voucher độc quyền trong giỏ hàng.',
+    requiredHashtags: ['MineVietnam', 'SerumMine', 'ReviewLamDep'],
+    deadlineDate: '31/10/2026',
+    bookingFeeNet: 4000000,
+    dealStatus: 'ĐANG_QUAY_NHÁP',
+    linkedAt: '2026-10-27T10:00:00.000Z',
+  },
+  {
+    groupId: 'zalo_grp_b2c_internal_ops',
+    groupName: '[Nội Bộ B2C] Điều Phối Booking & Nghiệm Thu SLA',
+    groupRole: 'INTERNAL_OPS',
+    dealCode: 'ALL-B2C-OPS',
+    brandName: 'Toàn bộ 69 gian hàng B2C',
+    picName: 'Nguyễn Thị Ngọc Tâm',
+    leaderName: 'Đặng Thị Yến Nhi',
+    dealStatus: 'ĐÃ_NGHIỆM_THU_AIR',
+    linkedAt: '2026-10-20T08:00:00.000Z',
+  },
+  {
+    groupId: 'zalo_grp_bod_executive',
+    groupName: '[Ban Giám Đốc & Lead B2C] Kiểm Soát Ngân Sách PnL',
+    groupRole: 'BOD_EXECUTIVE',
+    dealCode: 'BOD-PNL-CONTROL',
+    brandName: '69 Gian hàng B2C',
+    picName: 'Đặng Thị Yến Nhi',
+    leaderName: 'Đỗ Văn Giang (CEO)',
+    dealStatus: 'ĐÃ_NGHIỆM_THU_AIR',
+    linkedAt: '2026-10-15T08:00:00.000Z',
+  },
+];
+
+const DEFAULT_USER_PERMISSIONS: ZaloUserPermission[] = [
+  {
+    zaloUserId: 'zalo_ceo_do_van_giang',
+    displayName: 'Đỗ Văn Giang (CEO)',
+    staffName: 'Đỗ Văn Giang',
+    staffEmail: 'giangdv@upbase.vn',
+    role: 'CEO',
+    roleLabel: 'Tổng Giám Đốc (CEO)',
+    assignedBrands: ['Toàn bộ 69 gian hàng B2C'],
+    updatedAt: '2026-10-28T08:00:00.000Z',
+  },
+  {
+    zaloUserId: 'zalo_lead_yen_nhi',
+    displayName: 'Đặng Thị Yến Nhi',
+    staffName: 'Đặng Thị Yến Nhi',
+    staffEmail: 'yennhi@upbase.vn',
+    role: 'LEAD_B2C',
+    roleLabel: 'Giám Đốc Marketing B2C (Lead B2C)',
+    assignedBrands: ['Toàn bộ 69 gian hàng B2C'],
+    updatedAt: '2026-10-28T08:00:00.000Z',
+  },
+  {
+    zaloUserId: 'zalo_leader_ngoc_tam',
+    displayName: 'Nguyễn Thị Ngọc Tâm',
+    staffName: 'Nguyễn Thị Ngọc Tâm',
+    staffEmail: 'tamntn@upbase.vn',
+    role: 'LEADER',
+    roleLabel: 'Trưởng Nhóm Booking (8 gian hàng trọng điểm)',
+    assignedBrands: ['ClubClio', 'Cindy Bloom', 'Mine', 'EUPC', "L'Occitane", 'Bye Bye Blemish', 'Rejuran'],
+    updatedAt: '2026-10-28T08:00:00.000Z',
+  },
+  {
+    zaloUserId: 'zalo_pic_ha_thuy',
+    displayName: 'Hà Thị Thủy (PIC)',
+    staffName: 'Hà Thị Thủy',
+    staffEmail: 'thuyht@upbase.vn',
+    role: 'PIC',
+    roleLabel: 'Chuyên viên Booking (PIC)',
+    assignedBrands: ['EUPC', 'HDT', 'ClubClio'],
+    updatedAt: '2026-10-28T08:00:00.000Z',
+  },
+  {
+    zaloUserId: 'zalo_pic_trang_nhung',
+    displayName: 'Lương Nguyễn Trang Nhung (PIC)',
+    staffName: 'Lương Nguyễn Trang Nhung',
+    staffEmail: 'nhunglnt@upbase.vn',
+    role: 'PIC',
+    roleLabel: 'Chuyên viên Booking (PIC)',
+    assignedBrands: ['Chulala', 'Cindy Bloom', 'Rejuran'],
+    updatedAt: '2026-10-28T08:00:00.000Z',
+  },
+];
+
+export function recordDebugEvent(event: {
+  time: string;
+  body: any;
+  extractedChatId?: string;
+  replySent?: boolean;
+  error?: string;
+}) {
   recentDebugEvents.unshift(event);
-  if (recentDebugEvents.length > 20) {
+  if (recentDebugEvents.length > 30) {
     recentDebugEvents.pop();
   }
 }
@@ -26,9 +432,110 @@ export function getDebugEvents() {
   return recentDebugEvents;
 }
 
+function loadMappings(): Map<string, ZaloGroupMapping> {
+  if (inMemoryMappings.size > 0) return inMemoryMappings;
+  try {
+    if (fs.existsSync(MAPPINGS_FILE_PATH)) {
+      const data = JSON.parse(fs.readFileSync(MAPPINGS_FILE_PATH, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) {
+        for (const item of data) {
+          if (item?.groupId) {
+            inMemoryMappings.set(item.groupId, {
+              ...item,
+              groupRole: item.groupRole || 'KOC_GROUP',
+              dealStatus: item.dealStatus || 'ĐANG_QUAY_NHÁP',
+            });
+          }
+        }
+        return inMemoryMappings;
+      }
+    }
+  } catch {
+    // Zero-Crash fallback
+  }
+  for (const seed of DEFAULT_GROUP_MAPPINGS) {
+    inMemoryMappings.set(seed.groupId, seed);
+  }
+  return inMemoryMappings;
+}
+
+function saveMappings(): void {
+  try {
+    const dir = path.dirname(MAPPINGS_FILE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const arr = Array.from(inMemoryMappings.values());
+    fs.writeFileSync(MAPPINGS_FILE_PATH, JSON.stringify(arr, null, 2), 'utf-8');
+  } catch {
+    // Non-fatal on serverless read-only fs
+  }
+}
+
+function loadPermissions(): Map<string, ZaloUserPermission> {
+  if (inMemoryPermissions.size > 0) return inMemoryPermissions;
+  try {
+    if (fs.existsSync(PERMISSIONS_FILE_PATH)) {
+      const data = JSON.parse(fs.readFileSync(PERMISSIONS_FILE_PATH, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) {
+        for (const item of data) {
+          if (item?.zaloUserId) inMemoryPermissions.set(item.zaloUserId, item);
+        }
+        return inMemoryPermissions;
+      }
+    }
+  } catch {
+    // Zero-Crash fallback
+  }
+  for (const seed of DEFAULT_USER_PERMISSIONS) {
+    inMemoryPermissions.set(seed.zaloUserId, seed);
+  }
+  return inMemoryPermissions;
+}
+
+function savePermissions(): void {
+  try {
+    const dir = path.dirname(PERMISSIONS_FILE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const arr = Array.from(inMemoryPermissions.values());
+    fs.writeFileSync(PERMISSIONS_FILE_PATH, JSON.stringify(arr, null, 2), 'utf-8');
+  } catch {
+    // Ignore read-only errors
+  }
+}
+
+function loadAirHistory(): ZaloAirCheckHistoryItem[] {
+  if (inMemoryAirHistory.length > 0) return inMemoryAirHistory;
+  try {
+    if (fs.existsSync(AIR_HISTORY_FILE_PATH)) {
+      const data = JSON.parse(fs.readFileSync(AIR_HISTORY_FILE_PATH, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) {
+        inMemoryAirHistory.push(...data);
+        return inMemoryAirHistory;
+      }
+    }
+  } catch {
+    // Fallback
+  }
+  return inMemoryAirHistory;
+}
+
+function saveAirHistory(): void {
+  try {
+    const dir = path.dirname(AIR_HISTORY_FILE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(AIR_HISTORY_FILE_PATH, JSON.stringify(inMemoryAirHistory.slice(0, 50), null, 2), 'utf-8');
+  } catch {
+    // Non-fatal
+  }
+}
+
 export function getAllMappings(): ZaloGroupMapping[] {
-  const map = loadMappings();
-  return Array.from(map.values());
+  return Array.from(loadMappings().values());
 }
 
 export function setGroupMapping(mapping: ZaloGroupMapping): void {
@@ -44,34 +551,32 @@ export function removeGroupMapping(groupId: string): boolean {
   return deleted;
 }
 
-function loadMappings(): Map<string, ZaloGroupMapping> {
-  if (inMemoryMappings.size > 0) return inMemoryMappings;
-  try {
-    if (fs.existsSync(MAPPINGS_FILE_PATH)) {
-      const data = JSON.parse(fs.readFileSync(MAPPINGS_FILE_PATH, 'utf-8'));
-      if (Array.isArray(data)) {
-        for (const item of data) {
-          if (item?.groupId) inMemoryMappings.set(item.groupId, item);
-        }
-      }
-    }
-  } catch {
-    // Zero-Crash fallback to in-memory cache
-  }
-  return inMemoryMappings;
+export function getAllUserPermissions(): ZaloUserPermission[] {
+  return Array.from(loadPermissions().values());
 }
 
-function saveMappings(): void {
-  try {
-    const dir = path.dirname(MAPPINGS_FILE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    const arr = Array.from(inMemoryMappings.values());
-    fs.writeFileSync(MAPPINGS_FILE_PATH, JSON.stringify(arr, null, 2), 'utf-8');
-  } catch {
-    // Non-fatal if filesystem is read-only
-  }
+export function setUserPermission(perm: ZaloUserPermission): void {
+  const map = loadPermissions();
+  map.set(perm.zaloUserId, perm);
+  savePermissions();
+}
+
+export function removeUserPermission(zaloUserId: string): boolean {
+  const map = loadPermissions();
+  const deleted = map.delete(zaloUserId);
+  if (deleted) savePermissions();
+  return deleted;
+}
+
+export function getAirCheckHistory(): ZaloAirCheckHistoryItem[] {
+  return loadAirHistory();
+}
+
+export function recordAirCheckHistory(item: ZaloAirCheckHistoryItem): void {
+  const list = loadAirHistory();
+  list.unshift(item);
+  if (list.length > 50) list.pop();
+  saveAirHistory();
 }
 
 export function getZaloBotToken(): string {
@@ -121,154 +626,780 @@ export async function sendZaloMessage(chatId: string, text: string): Promise<boo
 }
 
 const TIKTOK_URL_REGEX = /(https?:\/\/(?:vt\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s]+)/i;
+const DRAFT_URL_REGEX = /(https?:\/\/(?:drive\.google\.com|docs\.google\.com|www\.capcut\.com|capcut\.com)\/[^\s]+)/i;
 
 /**
- * Xử lý sự kiện Webhook từ Zalo Bot
+ * Dựng nội dung Brief chuẩn cho nhóm KOC
  */
-export async function processZaloWebhookEvent(body: any): Promise<{ handled: boolean; reply?: string }> {
-  // Trích xuất linh hoạt các định dạng dữ liệu Zalo Bot có thể gửi
+export function buildDealBriefMessage(mapping: ZaloGroupMapping): string {
+  return [
+    `📋 BRIEF CHIẾN DỊCH BOOKING KOC - UPBASE B2C`,
+    `----------------------------------------`,
+    `• Mã Deal: ${mapping.dealCode || 'Chưa gán'}`,
+    `• Thương hiệu: ${mapping.brandName || '—'} (${mapping.storeName || 'Gian hàng chính hãng'})`,
+    `• KOC thực hiện: ${mapping.kocName || mapping.kocHandle || '—'}`,
+    `• Sản phẩm trọng tâm: ${mapping.productName || 'Theo danh mục sản phẩm chiến dịch'}`,
+    `• Trụ cột nội dung: ${mapping.pillarName || 'Review trực tiếp trải nghiệm thực tế'}`,
+    `• Yêu cầu kịch bản & góc quay:`,
+    `  ${mapping.briefSummary || 'Quay cận cảnh sản phẩm trong 3 giây đầu, nêu bật công dụng chính và kêu gọi bấm vào giỏ hàng góc trái màn hình.'}`,
+    `• Hashtag bắt buộc: ${
+      mapping.requiredHashtags && mapping.requiredHashtags.length > 0
+        ? mapping.requiredHashtags.map((h) => `#${h.replace(/^#/, '')}`).join(' ')
+        : '#UpbaseB2C #ReviewChinhHang'
+    }`,
+    `• Hạn nộp video nháp (SLA): ${mapping.deadlineDate || 'Trong vòng 5 ngày sau khi nhận mẫu'}`,
+    `• Chuyên viên phụ trách (PIC): ${mapping.picName || 'Team Booking B2C'}`,
+    `----------------------------------------`,
+    `👉 Cách nộp bài ngay trong nhóm:`,
+    `1. Nộp link video nháp (Google Drive): Gõ /nopnhap <link_drive>`,
+    `2. Nộp link TikTok đã đăng (Air): Dán trực tiếp link TikTok kèm tag @Bot để hệ thống tự động quét nghiệm thu.`,
+  ].join('\n');
+}
+
+/**
+ * Dựng báo cáo PnL & Ngân sách từ 69 gian hàng B2C thực tế
+ */
+export function buildPnlReportMessage(query: string): string {
+  const b2cStores = REAL_B2C_69_STORES.filter((s) => s.isB2cManaged !== false);
+  const q = query.trim().toLowerCase();
+
+  if (!q || q === 'all' || q === 'tatca' || q === 'tất cả') {
+    let totalGross = 0;
+    let totalNet = 0;
+    let totalSpentNet = 0;
+    let totalPaidTarget = 0;
+    let totalFocTarget = 0;
+    let totalAired = 0;
+    let overbudgetCount = 0;
+
+    for (const s of b2cStores) {
+      const storeNet = Math.round(Number(s.budgetNet || 0));
+      const storeSpent = Math.round(Number(s.actualSpentNet || 0));
+      totalGross += Math.round(Number(s.budgetGross || 0));
+      totalNet += storeNet;
+      totalSpentNet += storeSpent;
+      totalPaidTarget += Math.round(Number(s.targetPaidVideos || 0));
+      totalFocTarget += Math.round(Number(s.targetFocVideos || 0));
+      totalAired += Math.round(Number(s.actualAiredVideos || 0));
+      if (
+        s.financialRiskStatus === 'OVERBUDGET' ||
+        s.financialRiskStatus === 'UNBUDGETED' ||
+        (storeNet === 0 && storeSpent > 0) ||
+        (storeNet > 0 && storeSpent > storeNet)
+      ) {
+        overbudgetCount += 1;
+      }
+    }
+
+    const burnRatePct = totalNet === 0 ? 0 : Number(((totalSpentNet / totalNet) * 100).toFixed(1));
+
+    return [
+      `📊 TỔNG HỢP NGÂN SÁCH & PNL PHÒNG B2C (${b2cStores.length} GIAN HÀNG)`,
+      `----------------------------------------`,
+      `• Giám đốc quản lý trần PnL: Đặng Thị Yến Nhi`,
+      `• Tổng hạn mức Gross: ${formatVnd(totalGross)}`,
+      `• Tổng hạn mức Net (Kế toán kiểm soát): ${formatVnd(totalNet)}`,
+      `• Thực chi Net lũy kế: ${formatVnd(totalSpentNet)} (${burnRatePct}%)`,
+      `• Hạn mức Net còn lại: ${formatVnd(Math.max(0, totalNet - totalSpentNet))}`,
+      `• Tiến độ Video: Đã Air ${totalAired} video (Chỉ tiêu: ${totalPaidTarget} Paid / ${totalFocTarget} FOC)`,
+      `• Cảnh báo vượt trần / Chi 0đ: ${overbudgetCount} gian hàng`,
+      `----------------------------------------`,
+      `👉 Gõ /pnl <tên_brand> (ví dụ: /pnl clubclio, /pnl eupc, /pnl mine) để xem chi tiết từng thương hiệu.`,
+      `👉 Gõ /overbudget để xem danh sách gian hàng cảnh báo đỏ.`,
+    ].join('\n');
+  }
+
+  const matched = b2cStores.filter(
+    (s) =>
+      s.brandName.toLowerCase().includes(q) ||
+      s.storeName.toLowerCase().includes(q)
+  );
+
+  if (matched.length === 0) {
+    return `⚠️ Không tìm thấy gian hàng B2C nào khớp với từ khóa "${query}". Hãy thử: /pnl clubclio, /pnl eupc, /pnl mine, /pnl cindy bloom, /pnl rejuran.`;
+  }
+
+  const lines: string[] = [
+    `📊 CHI TIẾT NGÂN SÁCH & ĐỊNH MỨC BRAND: ${matched[0].brandName.toUpperCase()} (${matched.length} gian hàng)`,
+    `• Cấp phê duyệt: ${resolveLeaderForBrand(matched[0].brandName)}`,
+    `----------------------------------------`,
+  ];
+
+  for (const s of matched.slice(0, 5)) {
+    const netLimit = Math.round(Number(s.budgetNet || 0));
+    const grossLimit = Math.round(Number(s.budgetGross || 0));
+    const spentNet = Math.round(Number(s.actualSpentNet || 0));
+    const usagePct = netLimit === 0 ? 0 : Number(((spentNet / netLimit) * 100).toFixed(1));
+    const isAlert =
+      (netLimit === 0 && spentNet > 0) ||
+      (netLimit > 0 && spentNet > netLimit) ||
+      s.financialRiskStatus === 'OVERBUDGET' ||
+      s.financialRiskStatus === 'UNBUDGETED';
+
+    lines.push(
+      `🏪 ${s.storeName} (${s.platform})`,
+      `  - Hạn mức Gross: ${formatVnd(grossLimit)} | Hạn mức Net: ${formatVnd(netLimit)}`,
+      `  - Thực chi Net: ${formatVnd(spentNet)} (${usagePct}%) ${isAlert ? '🚨 [CẢNH BÁO VƯỢT TRẦN]' : '✅ [TRONG HẠN MỨC]'}`,
+      `  - Định mức: ${s.targetPaidVideos || 0} Video trả phí | ${s.targetFocVideos || 0} Mẫu FOC | ${s.targetAffiliateContents || 0} Affiliate | ${s.targetSelfChannelContents || 0} Kênh Brand | ${s.targetLiveSessions || 0} Phiên Live`,
+      `  - Đã lên sóng (Air): ${s.actualAiredVideos || 0} video | PIC: ${s.primaryPic || 'Chưa phân công'}`
+    );
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Dựng danh sách cảnh báo tài chính Overbudget / Unbudgeted Spend
+ */
+export function buildOverbudgetAlertMessage(): string {
+  const b2cStores = REAL_B2C_69_STORES.filter((s) => s.isB2cManaged !== false);
+  const risked = b2cStores.filter((s) => {
+    const net = Math.round(Number(s.budgetNet || 0));
+    const spent = Math.round(Number(s.actualSpentNet || 0));
+    return (
+      (net === 0 && spent > 0) ||
+      (net > 0 && spent > net) ||
+      s.financialRiskStatus === 'OVERBUDGET' ||
+      s.financialRiskStatus === 'UNBUDGETED'
+    );
+  });
+
+  if (risked.length === 0) {
+    return [
+      `🚨 KIỂM SOÁT CẢNH BÁO TÀI CHÍNH B2C`,
+      `----------------------------------------`,
+      `• Toàn bộ 69 gian hàng B2C hiện đang trong hạn mức ngân sách Net cho phép.`,
+      `• Quy tắc cảnh báo tự động: Báo động đỏ ngay khi phát sinh thực chi Net > Hạn mức Net hoặc phát sinh chi phí khi hạn mức = 0đ.`,
+    ].join('\n');
+  }
+
+  const lines = [
+    `🚨 CẢNH BÁO TÀI CHÍNH B2C (${risked.length} GIAN HÀNG CẦN RÀ SOÁT)`,
+    `----------------------------------------`,
+  ];
+
+  for (const s of risked.slice(0, 8)) {
+    const net = Math.round(Number(s.budgetNet || 0));
+    const spent = Math.round(Number(s.actualSpentNet || 0));
+    const statusLabel =
+      net === 0 && spent > 0
+        ? 'Chi không hạn mức (Hạn mức 0đ)'
+        : spent > net
+          ? `Vượt trần ${formatVnd(spent - net)}`
+          : s.financialRiskNotes || 'Cần kiểm tra hạn mức';
+    lines.push(
+      `• ${s.storeName}: Thực chi ${formatVnd(spent)} / Trần Net ${formatVnd(net)} -> ⚠️ ${statusLabel} (PIC: ${s.primaryPic || '—'})`
+    );
+  }
+
+  lines.push(
+    `----------------------------------------`,
+    `👉 Yêu cầu PIC giải trình hoặc trình Giám đốc Marketing (Đặng Thị Yến Nhi) phê duyệt bổ sung hạn mức.`
+  );
+  return lines.join('\n');
+}
+
+/**
+ * Tra cứu hồ sơ KOC kèm Data Masking
+ */
+export function buildKocLookupMessage(query: string, groupRole: ZaloGroupRole): string {
+  const cleanHandle = query.replace(/^@/, '').trim().toLowerCase();
+  if (!cleanHandle) {
+    return `⚠️ Vui lòng nhập ID kênh TikTok hoặc tên KOC. Ví dụ: /koc @po.trann77 hoặc /koc @chutieuhan10012001`;
+  }
+
+  let found = KOC_BY_HANDLE_INDEX.get(cleanHandle);
+  if (!found) {
+    for (const item of QUICK_KOC_CATALOG) {
+      if (
+        item.handle.toLowerCase().includes(cleanHandle) ||
+        item.stageName.toLowerCase().includes(cleanHandle) ||
+        item.realName.toLowerCase().includes(cleanHandle)
+      ) {
+        found = item;
+        break;
+      }
+    }
+  }
+
+  if (!found) {
+    return `🔍 Chưa tìm thấy KOC "${query}" trong nhóm Flagship. Gợi ý tra cứu nhanh: @po.trann77, @chutieuhan10012001, @hathuuu1610, @rinabeauty859, @soanhtran98, @cin0ntp, @phamsontrang.`;
+  }
+
+  // Nếu đang ở trong nhóm KOC_GROUP, ẩn thông tin rate card nội bộ và ROI nhạy cảm
+  if (groupRole === 'KOC_GROUP') {
+    return [
+      `👤 HỒ SƠ ĐỐI TÁC KOC: @${found.handle}`,
+      `----------------------------------------`,
+      `• Tên hiển thị: ${found.stageName}`,
+      `• Phân hạng: ${found.salaryGrade} - ${found.tierLabel}`,
+      `• Lượt theo dõi: ${found.followers.toLocaleString('vi-VN')} followers`,
+      `• Số chiến dịch đã đồng hành tại Upbase: ${found.totalPastDeals} deals`,
+      `• PIC hỗ trợ chính: ${found.bookingPic}`,
+      `• Thông tin thanh toán (Đã che mờ bảo mật): ${found.bankName} (${found.maskedBankAccount}) | CCCD/MST: ${found.maskedCccd}`,
+    ].join('\n');
+  }
+
+  return [
+    `👤 HỒ SƠ KOC NỘI BỘ: @${found.handle}`,
+    `----------------------------------------`,
+    `• Pháp nhân / Họ tên: ${found.realName}`,
+    `• Phân hạng: ${found.salaryGrade} (${found.tierLabel}) | Followers: ${found.followers.toLocaleString('vi-VN')}`,
+    `• Giá Booking tham chiếu (Net): ${formatVnd(found.rateCardNet)}`,
+    `• GMV cao nhất từng đạt: ${formatVnd(found.gmvBestCase)} | ROI lịch sử: ${found.historicalRoi}`,
+    `• Lịch sử hợp tác: ${found.totalPastDeals} deals (Brand gần nhất: ${found.brandName})`,
+    `• PIC phụ trách: ${found.bookingPic}`,
+    `• Thuế & Thanh toán (Che mờ bảo mật): ${found.taxAccountType}`,
+    `  Ngân hàng: ${found.bankName} - STK: ${found.maskedBankAccount} - CCCD/MST: ${found.maskedCccd}`,
+  ].join('\n');
+}
+
+/**
+ * Báo cáo SLA & Tiến độ các nhóm Deal đang chạy
+ */
+export function buildSlaStatusMessage(): string {
+  const all = getAllMappings().filter((m) => m.groupRole === 'KOC_GROUP');
+  if (all.length === 0) {
+    return '📋 Hiện chưa có nhóm KOC nào đang theo dõi SLA.';
+  }
+
+  const lines = [
+    `⏱️ BÁO CÁO TIẾN ĐỘ & SLA BOOKING KOC (${all.length} NHÓM ĐANG CHẠY)`,
+    `----------------------------------------`,
+  ];
+
+  for (const m of all) {
+    lines.push(
+      `• [${m.dealCode || 'Chưa gán'}] ${m.brandName || '—'} x @${m.kocHandle || m.kocName || '—'}`,
+      `  Trạng thái: ${m.dealStatus} | Hạn SLA: ${m.deadlineDate || '—'} | PIC: ${m.picName || '—'}`
+    );
+  }
+
+  lines.push(
+    `----------------------------------------`,
+    `👉 Gõ /nopnhap <link> khi KOC nộp video nháp, hoặc /duyetnhap để chốt duyệt.`
+  );
+  return lines.join('\n');
+}
+
+/**
+ * Báo cáo tổng hợp cuối ngày (Daily Digest)
+ */
+export function buildDailyDigestMessage(): string {
+  const b2cStores = REAL_B2C_69_STORES.filter((s) => s.isB2cManaged !== false);
+  const mappings = getAllMappings();
+  const airHistory = getAirCheckHistory();
+
+  let totalNet = 0;
+  let totalSpent = 0;
+  let totalAired = 0;
+  for (const s of b2cStores) {
+    totalNet += Math.round(Number(s.budgetNet || 0));
+    totalSpent += Math.round(Number(s.actualSpentNet || 0));
+    totalAired += Math.round(Number(s.actualAiredVideos || 0));
+  }
+  const pct = totalNet === 0 ? 0 : Number(((totalSpent / totalNet) * 100).toFixed(1));
+  const passCount = airHistory.filter((a) => a.verdict === 'PASS').length;
+
+  return [
+    `📑 BÁO CÁO TỔNG HỢP VẬN HÀNH B2C CUỐI NGÀY`,
+    `• Ngày báo cáo: ${new Date().toLocaleDateString('vi-VN')} (UTC+7)`,
+    `----------------------------------------`,
+    `1. TÌNH HÌNH NGÂN SÁCH (69 GIAN HÀNG B2C):`,
+    `   • Tổng hạn mức Net: ${formatVnd(totalNet)}`,
+    `   • Thực chi Net lũy kế: ${formatVnd(totalSpent)} (${pct}%)`,
+    `   • Số video đã lên sóng (Air): ${totalAired} video`,
+    `2. TIẾN ĐỘ NHÓM CHAT ZALO BOT:`,
+    `   • Số nhóm đang kết nối: ${mappings.length} nhóm`,
+    `   • Đã nộp nháp chờ duyệt: ${mappings.filter((m) => m.dealStatus === 'ĐÃ_NỘP_NHÁP').length} deal`,
+    `   • Đã duyệt nháp chờ lên bài: ${mappings.filter((m) => m.dealStatus === 'ĐÃ_DUYỆT_NHÁP').length} deal`,
+    `   • Lượt quét nghiệm thu tự động qua Bot: ${airHistory.length} lượt (${passCount} ĐẠT)`,
+    `----------------------------------------`,
+    `• Phê duyệt cấp cao: Đỗ Văn Giang (CEO) | Đặng Thị Yến Nhi (Lead B2C) | Nguyễn Thị Ngọc Tâm (Leader 8 gian hàng trọng điểm).`,
+  ].join('\n');
+}
+
+/**
+ * Xử lý sự kiện Webhook từ Zalo Bot hoặc từ trình giả lập lệnh trên Web
+ */
+export async function processZaloWebhookEvent(
+  body: any,
+  options?: { skipSendToZalo?: boolean; overrideGroupRole?: ZaloGroupRole }
+): Promise<{ handled: boolean; reply?: string; extractedChatId?: string }> {
   const message = body?.result?.message || body?.message || body;
   const chatId = String(
     message?.chat?.id ||
-    body?.result?.message?.chat?.id ||
-    body?.recipient?.id ||
-    body?.chat_id ||
-    message?.chat_id ||
-    body?.result?.chat?.id ||
-    body?.sender?.id ||
-    ''
+      body?.result?.message?.chat?.id ||
+      body?.recipient?.id ||
+      body?.chat_id ||
+      message?.chat_id ||
+      body?.result?.chat?.id ||
+      body?.sender?.id ||
+      ''
   ).trim();
 
   const rawText = String(message?.text || body?.text || '').trim();
+  const senderName = String(
+    message?.from?.display_name ||
+      body?.result?.message?.from?.display_name ||
+      body?.sender?.display_name ||
+      'Thành viên nhóm'
+  ).trim();
 
   if (!chatId) {
     recordDebugEvent({ time: new Date().toISOString(), body, error: 'Không tìm thấy chatId' });
     return { handled: false };
   }
 
-  // Bỏ các mention (@Bot name) để lấy câu lệnh thực tế
+  const shouldSend = !options?.skipSendToZalo;
+  const replyToChat = async (text: string) => {
+    if (shouldSend) {
+      await sendZaloMessage(chatId, text);
+    }
+    recordDebugEvent({ time: new Date().toISOString(), body, extractedChatId: chatId, replySent: shouldSend });
+  };
+
+  // Bỏ các mention (@Bot...) ở đầu câu để lấy câu lệnh chuẩn
   const cleanText = rawText.replace(/@[^\s]+/g, '').trim();
   const lowerClean = cleanText.toLowerCase();
 
   const mappings = loadMappings();
   const currentMapping = mappings.get(chatId);
+  const effectiveRole: ZaloGroupRole =
+    options?.overrideGroupRole || currentMapping?.groupRole || 'KOC_GROUP';
 
-  // 1. TỰ ĐỘNG BẮT LINK TIKTOK ĐỂ NGHIỆM THU (AIR CHECK)
+  // 1. TỰ ĐỘNG BẮT LINK TIKTOK ĐỂ NGHIỆM THU (AIR CHECK) HOẶC LỆNH /air, /check
   const linkMatch = rawText.match(TIKTOK_URL_REGEX);
   if (linkMatch) {
     const videoUrl = linkMatch[1];
-    await sendZaloMessage(chatId, `⏳ Đang quét dữ liệu video nghiệm thu: ${videoUrl}\nVui lòng chờ trong giây lát...`);
+    if (shouldSend) {
+      await sendZaloMessage(
+        chatId,
+        `⏳ Đang quét dữ liệu nghiệm thu video TikTok: ${videoUrl}\nVui lòng chờ trong giây lát...`
+      );
+    }
 
     try {
-      const checkResult: LinkAirResult = await checkSingleLinkServerless(videoUrl);
-      
+      const checkResult: LinkAirResult = await checkSingleLinkServerless(videoUrl, {
+        requiredHashtags: currentMapping?.requiredHashtags,
+        expectedProductUrl: currentMapping?.expectedProductUrl,
+      });
+
       const isPass = checkResult.verdict === 'PASS';
       const isReview = checkResult.verdict === 'REVIEW';
-      const statusIcon = isPass ? '✅ ĐẠT (PASS)' : isReview ? '⚠️ CẦN RÀ SOÁT (REVIEW)' : '❌ KHÔNG ĐẠT (FAIL)';
+      const statusIcon = isPass
+        ? '✅ ĐẠT (PASS)'
+        : isReview
+          ? '⚠️ CẦN RÀ SOÁT (REVIEW)'
+          : '❌ KHÔNG ĐẠT (FAIL)';
 
       const cartText = checkResult.hasProductLink
-        ? `Đã gắn giỏ hàng (${checkResult.cartProducts?.map((p) => p.title).join(', ') || checkResult.productTitle || 'Đã phát hiện link sản phẩm'})`
+        ? `Đã gắn giỏ hàng (${
+            checkResult.cartProducts?.map((p) => p.title).join(', ') ||
+            checkResult.productTitle ||
+            'Đã phát hiện link sản phẩm'
+          })`
         : 'Chưa phát hiện giỏ hàng';
+
+      // Cập nhật trạng thái Deal nếu nhóm đã liên kết và kết quả PASS
+      if (currentMapping && isPass) {
+        currentMapping.dealStatus = 'ĐÃ_NGHIỆM_THU_AIR';
+        currentMapping.airedVideoUrl = videoUrl;
+        currentMapping.updatedAt = new Date().toISOString();
+        mappings.set(chatId, currentMapping);
+        saveMappings();
+      }
+
+      // Lưu vào lịch sử nghiệm thu trên Web Manager
+      recordAirCheckHistory({
+        id: `AIR-${Date.now()}`,
+        checkedAt: new Date().toISOString(),
+        chatId,
+        dealCode: currentMapping?.dealCode,
+        brandName: currentMapping?.brandName,
+        kocHandle: checkResult.author?.handle || currentMapping?.kocHandle || 'unknown',
+        videoUrl,
+        verdict: checkResult.verdict,
+        status: checkResult.status,
+        hasProductLink: Boolean(checkResult.hasProductLink),
+        productTitle:
+          checkResult.cartProducts?.[0]?.title || checkResult.productTitle || undefined,
+        views: checkResult.metrics?.views ?? null,
+        likes: checkResult.metrics?.likes ?? null,
+        hashtags: checkResult.hashtags || [],
+        sentToZalo: shouldSend,
+      });
 
       const resultMsg = [
         `📊 KẾT QUẢ NGHIỆM THU VIDEO TIKTOK`,
         `----------------------------------------`,
         `• Đánh giá: ${statusIcon}`,
-        `• Tác giả: @${checkResult.author?.handle || 'Chưa rõ'}`,
+        `• Tác giả kênh: @${checkResult.author?.handle || 'Chưa rõ'}`,
         `• Tình trạng: ${checkResult.status === 'LIVE' ? 'Đang công khai (Live/Air)' : checkResult.status}`,
         `• Giỏ hàng: ${cartText}`,
         `• Lượt xem: ${checkResult.metrics?.views ? checkResult.metrics.views.toLocaleString('vi-VN') : '—'}`,
         `• Lượt thích: ${checkResult.metrics?.likes ? checkResult.metrics.likes.toLocaleString('vi-VN') : '—'}`,
-        `• Hashtags: ${checkResult.hashtags && checkResult.hashtags.length > 0 ? checkResult.hashtags.map((h) => `#${h}`).join(' ') : '—'}`,
+        `• Hashtags: ${
+          checkResult.hashtags && checkResult.hashtags.length > 0
+            ? checkResult.hashtags.map((h) => `#${h}`).join(' ')
+            : '—'
+        }`,
         `----------------------------------------`,
-        currentMapping ? `Đã đồng bộ kết quả vào hồ sơ: ${currentMapping.dealCode}` : `Mẹo: Gõ /link <MÃ_DEAL> để lưu kết quả vào Deal trên web-admin.`,
+        currentMapping
+          ? `✅ Đã đồng bộ kết quả vào Deal [${currentMapping.dealCode}] (${currentMapping.brandName || 'B2C'}) — Trạng thái: ${currentMapping.dealStatus}`
+          : `💡 Mẹo: Gõ /link <MÃ_DEAL> để tự động lưu kết quả nghiệm thu vào hồ sơ Deal trên web-admin.`,
       ].join('\n');
 
-      await sendZaloMessage(chatId, resultMsg);
-      recordDebugEvent({ time: new Date().toISOString(), body, extractedChatId: chatId, replySent: true });
-      return { handled: true, reply: resultMsg };
+      await replyToChat(resultMsg);
+      return { handled: true, reply: resultMsg, extractedChatId: chatId };
     } catch (err: any) {
-      const errMsg = `❌ Không thể quét dữ liệu video: ${err?.message || 'Lỗi không xác định'}. Vui lòng kiểm tra lại link.`;
-      await sendZaloMessage(chatId, errMsg);
-      recordDebugEvent({ time: new Date().toISOString(), body, extractedChatId: chatId, error: errMsg });
-      return { handled: true, reply: errMsg };
+      const errMsg = `❌ Không thể quét dữ liệu video: ${err?.message || 'Lỗi kết nối'}. Vui lòng kiểm tra lại đường dẫn TikTok.`;
+      await replyToChat(errMsg);
+      return { handled: true, reply: errMsg, extractedChatId: chatId };
     }
   }
 
-  // 2. LỆNH TRỢ GIÚP /start hoặc /help
+  // 2. LỆNH NỘP VIDEO NHÁP (/nopnhap, /draft HOẶC GỬI LINK GOOGLE DRIVE / CAPCUT)
+  const draftMatch = rawText.match(DRAFT_URL_REGEX);
   if (
-    lowerClean === '/start' ||
-    lowerClean === 'start' ||
-    lowerClean === '/help' ||
-    lowerClean === 'help' ||
-    lowerClean.includes('hướng dẫn')
+    lowerClean.startsWith('/nopnhap') ||
+    lowerClean.startsWith('/draft') ||
+    draftMatch
   ) {
-    const helpMsg = [
-      '🤖 [Upbase B2C] Trợ Lý Vận Hành Zalo Bot',
-      '----------------------------------------',
-      'Các câu lệnh hỗ trợ:',
-      '• /link <MÃ_DEAL>: Liên kết nhóm chat với mã Deal KOC.',
-      '• /status: Kiểm tra thông tin liên kết của nhóm hiện tại.',
-      '• Gửi link video TikTok kèm tag bot: Tự động quét kiểm tra nghiệm thu bài đăng (Air).',
-      '----------------------------------------',
-      currentMapping
-        ? `Nhóm này đang liên kết với Deal: ${currentMapping.dealCode}`
-        : 'Nhóm này chưa liên kết với Deal nào. Hãy gõ: /link <MÃ_DEAL>',
+    const draftUrl =
+      draftMatch?.[1] ||
+      cleanText.replace(/^\/?(?:nopnhap|draft)\s*/i, '').trim();
+
+    if (!draftUrl) {
+      const msg = '⚠️ Vui lòng đính kèm đường dẫn Google Drive hoặc CapCut của video nháp. Ví dụ: /nopnhap https://drive.google.com/...';
+      await replyToChat(msg);
+      return { handled: true, reply: msg, extractedChatId: chatId };
+    }
+
+    if (currentMapping) {
+      currentMapping.dealStatus = 'ĐÃ_NỘP_NHÁP';
+      currentMapping.draftVideoUrl = draftUrl;
+      currentMapping.updatedAt = new Date().toISOString();
+      mappings.set(chatId, currentMapping);
+      saveMappings();
+    }
+
+    const replyMsg = [
+      `📥 ĐÃ TIẾP NHẬN VIDEO DEMO / NHÁP`,
+      `----------------------------------------`,
+      `• Người nộp: ${senderName}`,
+      `• Mã Deal: ${currentMapping?.dealCode || 'Chưa liên kết (/link)'}`,
+      `• Thương hiệu: ${currentMapping?.brandName || '—'}`,
+      `• Link bản nháp: ${draftUrl}`,
+      `• Trạng thái mới: ĐÃ_NỘP_NHÁP (Chờ PIC/Brand duyệt)`,
+      `----------------------------------------`,
+      `🔔 Nhắc PIC phụ trách (${currentMapping?.picName || 'Team Booking'}): Sau khi kiểm tra nội dung, hãy gõ:`,
+      `• /duyetnhap [ghi chú] -> Để phê duyệt cho KOC đăng bài.`,
+      `• /suanhap <nội dung cần sửa> -> Để yêu cầu KOC chỉnh sửa.`,
     ].join('\n');
 
-    await sendZaloMessage(chatId, helpMsg);
-    recordDebugEvent({ time: new Date().toISOString(), body, extractedChatId: chatId, replySent: true });
-    return { handled: true, reply: helpMsg };
+    await replyToChat(replyMsg);
+    return { handled: true, reply: replyMsg, extractedChatId: chatId };
   }
 
-  // 3. LỆNH LIÊN KẾT NHÓM: /link <DEAL_CODE>
-  if (lowerClean.startsWith('/link') || lowerClean.startsWith('link ')) {
-    const dealCode = cleanText.replace(/^\/?link\s*/i, '').trim();
-    if (!dealCode) {
-      const msg = '⚠️ Vui lòng nhập mã deal cần liên kết. Ví dụ: /link DEAL-108 hoặc /link @quynhanh_beauty';
-      await sendZaloMessage(chatId, msg);
-      return { handled: true, reply: msg };
+  // 3. LỆNH DUYỆT VIDEO NHÁP (/duyetnhap HOẶC /approve-draft)
+  if (lowerClean.startsWith('/duyetnhap') || lowerClean.startsWith('/approve-draft')) {
+    const note = cleanText.replace(/^\/?(?:duyetnhap|approve-draft)\s*/i, '').trim();
+    if (currentMapping) {
+      currentMapping.dealStatus = 'ĐÃ_DUYỆT_NHÁP';
+      currentMapping.draftReviewNote = note || 'Đạt yêu cầu kịch bản và hình ảnh.';
+      currentMapping.updatedAt = new Date().toISOString();
+      mappings.set(chatId, currentMapping);
+      saveMappings();
     }
 
-    const mapping: ZaloGroupMapping = {
+    const msg = [
+      `✅ PHÊ DUYỆT VIDEO NHÁP THÀNH CÔNG`,
+      `----------------------------------------`,
+      `• Mã Deal: ${currentMapping?.dealCode || '—'} (${currentMapping?.brandName || '—'})`,
+      `• KOC: ${currentMapping?.kocName || currentMapping?.kocHandle || '—'}`,
+      `• Người duyệt: ${senderName}`,
+      `• Ghi chú duyệt: ${note || 'Nội dung đạt yêu cầu theo Brief. KOC tiến hành đăng video lên kênh và gắn giỏ hàng đúng quy định.'}`,
+      `• Trạng thái Deal: ĐÃ_DUYỆT_NHÁP`,
+      `----------------------------------------`,
+      `👉 Khi đăng video lên TikTok xong, KOC chỉ cần gửi link TikTok vào nhóm này để Bot nghiệm thu tự động!`,
+    ].join('\n');
+
+    await replyToChat(msg);
+    return { handled: true, reply: msg, extractedChatId: chatId };
+  }
+
+  // 4. LỆNH YÊU CẦU SỬA VIDEO NHÁP (/suanhap HOẶC /reject-draft)
+  if (lowerClean.startsWith('/suanhap') || lowerClean.startsWith('/reject-draft')) {
+    const feedback = cleanText.replace(/^\/?(?:suanhap|reject-draft)\s*/i, '').trim();
+    if (!feedback) {
+      const warn = '⚠️ Vui lòng nhập nội dung cần KOC chỉnh sửa. Ví dụ: /suanhap Cần quay rõ cảnh thoa kem ở 3 giây đầu và bổ sung hashtag #ClubClio';
+      await replyToChat(warn);
+      return { handled: true, reply: warn, extractedChatId: chatId };
+    }
+
+    if (currentMapping) {
+      currentMapping.dealStatus = 'CẦN_CHỈNH_SỬA';
+      currentMapping.draftReviewNote = feedback;
+      currentMapping.updatedAt = new Date().toISOString();
+      mappings.set(chatId, currentMapping);
+      saveMappings();
+    }
+
+    const msg = [
+      `🛠️ YÊU CẦU CHỈNH SỬA VIDEO NHÁP`,
+      `----------------------------------------`,
+      `• Mã Deal: ${currentMapping?.dealCode || '—'} (${currentMapping?.brandName || '—'})`,
+      `• Người yêu cầu: ${senderName}`,
+      `• Nội dung cần điều chỉnh: ${feedback}`,
+      `• Trạng thái Deal: CẦN_CHỈNH_SỬA`,
+      `----------------------------------------`,
+      `👉 Sau khi chỉnh sửa xong, KOC gửi lại link Google Drive mới kèm lệnh /nopnhap nhé!`,
+    ].join('\n');
+
+    await replyToChat(msg);
+    return { handled: true, reply: msg, extractedChatId: chatId };
+  }
+
+  // 5. LỆNH XEM BRIEF CHIẾN DỊCH (/brief)
+  if (lowerClean === '/brief' || lowerClean === 'brief' || lowerClean.startsWith('/brief ')) {
+    const targetDeal = cleanText.replace(/^\/?brief\s*/i, '').trim();
+    let mappingToUse = currentMapping;
+
+    if (targetDeal) {
+      for (const m of mappings.values()) {
+        if (
+          m.dealCode?.toLowerCase() === targetDeal.toLowerCase() ||
+          m.kocHandle?.toLowerCase() === targetDeal.replace(/^@/, '').toLowerCase() ||
+          m.brandName?.toLowerCase().includes(targetDeal.toLowerCase())
+        ) {
+          mappingToUse = m;
+          break;
+        }
+      }
+    }
+
+    if (!mappingToUse) {
+      const noBrief =
+        '⚠️ Nhóm này chưa được liên kết với Deal nào. Hãy gõ /link <MÃ_DEAL> (ví dụ: /link BO261067161) trước khi gọi /brief.';
+      await replyToChat(noBrief);
+      return { handled: true, reply: noBrief, extractedChatId: chatId };
+    }
+
+    const briefMsg = buildDealBriefMessage(mappingToUse);
+    await replyToChat(briefMsg);
+    return { handled: true, reply: briefMsg, extractedChatId: chatId };
+  }
+
+  // 6. LỆNH TRA CỨU HỒ SƠ KOC (/koc <@handle>)
+  if (lowerClean.startsWith('/koc') || lowerClean.startsWith('koc ')) {
+    const query = cleanText.replace(/^\/?koc\s*/i, '').trim();
+    const kocMsg = buildKocLookupMessage(query || currentMapping?.kocHandle || '', effectiveRole);
+    await replyToChat(kocMsg);
+    return { handled: true, reply: kocMsg, extractedChatId: chatId };
+  }
+
+  // 7. LỆNH TRA CỨU NGÂN SÁCH & PNL (/pnl [brand]) — PHÂN QUYỀN CHẶN TRONG NHÓM KOC
+  if (lowerClean === '/pnl' || lowerClean === 'pnl' || lowerClean.startsWith('/pnl ')) {
+    if (effectiveRole === 'KOC_GROUP') {
+      const deniedMsg =
+        '⛔ PHÂN QUYỀN BẢO MẬT: Lệnh tra cứu ngân sách & PnL nội bộ bị khóa trong nhóm làm việc với KOC. Vui lòng sử dụng trong Nhóm Vận Hành Nội Bộ hoặc Nhóm Điều Hành BOD.';
+      await replyToChat(deniedMsg);
+      return { handled: true, reply: deniedMsg, extractedChatId: chatId };
+    }
+
+    const brandQuery = cleanText.replace(/^\/?pnl\s*/i, '').trim();
+    const pnlMsg = buildPnlReportMessage(brandQuery);
+    await replyToChat(pnlMsg);
+    return { handled: true, reply: pnlMsg, extractedChatId: chatId };
+  }
+
+  // 8. LỆNH CẢNH BÁO VƯỢT TRẦN NGÂN SÁCH (/overbudget) — CHẶN TRONG NHÓM KOC
+  if (lowerClean === '/overbudget' || lowerClean === 'overbudget' || lowerClean === '/canhbao') {
+    if (effectiveRole === 'KOC_GROUP') {
+      const deniedMsg =
+        '⛔ PHÂN QUYỀN BẢO MẬT: Không được phép truy xuất dữ liệu cảnh báo ngân sách nội bộ trong nhóm KOC.';
+      await replyToChat(deniedMsg);
+      return { handled: true, reply: deniedMsg, extractedChatId: chatId };
+    }
+
+    const alertMsg = buildOverbudgetAlertMessage();
+    await replyToChat(alertMsg);
+    return { handled: true, reply: alertMsg, extractedChatId: chatId };
+  }
+
+  // 9. LỆNH KIỂM TRA TIẾN ĐỘ SLA (/sla)
+  if (lowerClean === '/sla' || lowerClean === 'sla') {
+    const slaMsg = buildSlaStatusMessage();
+    await replyToChat(slaMsg);
+    return { handled: true, reply: slaMsg, extractedChatId: chatId };
+  }
+
+  // 10. LỆNH BÁO CÁO TỔNG HỢP CUỐI NGÀY (/digest)
+  if (lowerClean === '/digest' || lowerClean === 'digest' || lowerClean === '/baocao') {
+    if (effectiveRole === 'KOC_GROUP') {
+      const deniedMsg =
+        '⛔ PHÂN QUYỀN BẢO MẬT: Báo cáo điều hành tổng hợp chỉ dành cho Nhóm Nội Bộ và Ban Giám Đốc.';
+      await replyToChat(deniedMsg);
+      return { handled: true, reply: deniedMsg, extractedChatId: chatId };
+    }
+
+    const digestMsg = buildDailyDigestMessage();
+    await replyToChat(digestMsg);
+    return { handled: true, reply: digestMsg, extractedChatId: chatId };
+  }
+
+  // 11. LỆNH LIÊN KẾT NHÓM: /link <DEAL_CODE | @HANDLE | BRAND>
+  if (lowerClean.startsWith('/link') || lowerClean.startsWith('link ')) {
+    const rawParam = cleanText.replace(/^\/?link\s*/i, '').trim();
+    if (!rawParam) {
+      const msg =
+        '⚠️ Vui lòng nhập mã Deal hoặc @handle KOC cần liên kết.\nVí dụ:\n• /link BO261067161\n• /link @po.trann77\n• /link INTERNAL (để đặt làm nhóm vận hành nội bộ)';
+      await replyToChat(msg);
+      return { handled: true, reply: msg, extractedChatId: chatId };
+    }
+
+    const upperParam = rawParam.toUpperCase();
+    let groupRole: ZaloGroupRole = 'KOC_GROUP';
+    if (upperParam === 'INTERNAL' || upperParam === 'NOIBO') {
+      groupRole = 'INTERNAL_OPS';
+    } else if (upperParam === 'BOD' || upperParam === 'CEO') {
+      groupRole = 'BOD_EXECUTIVE';
+    }
+
+    // Tự động tra cứu thông tin từ danh bạ KOC hoặc Gian hàng nếu khớp
+    const cleanHandle = rawParam.replace(/^@/, '').toLowerCase();
+    const matchedKoc =
+      KOC_BY_HANDLE_INDEX.get(cleanHandle) ||
+      QUICK_KOC_CATALOG.find(
+        (k) =>
+          k.brandName.toLowerCase() === cleanHandle ||
+          k.stageName.toLowerCase().includes(cleanHandle)
+      );
+
+    const matchedStore = REAL_B2C_69_STORES.find(
+      (s) =>
+        s.brandName.toLowerCase() === cleanHandle ||
+        s.storeName.toLowerCase().includes(cleanHandle)
+    );
+
+    const brandName = matchedKoc?.brandName || matchedStore?.brandName || currentMapping?.brandName || 'ClubClio';
+    const leaderName = resolveLeaderForBrand(brandName);
+
+    const newMapping: ZaloGroupMapping = {
       groupId: chatId,
-      dealCode,
+      groupName:
+        groupRole === 'INTERNAL_OPS'
+          ? `[Nội bộ B2C] Nhóm Điều Phối (${chatId.slice(0, 8)})`
+          : groupRole === 'BOD_EXECUTIVE'
+            ? `[Ban Giám Đốc] Nhóm Kiểm Soát PnL (${chatId.slice(0, 8)})`
+            : `[${brandName} x ${matchedKoc?.stageName || rawParam}]`,
+      groupRole,
+      dealCode: rawParam,
+      kocHandle: matchedKoc?.handle || (rawParam.startsWith('@') ? rawParam.slice(1) : undefined),
+      kocName: matchedKoc?.stageName || currentMapping?.kocName || 'KOC Đối tác',
+      brandName,
+      storeName: matchedStore?.storeName || `${brandName}_TikTok_Flagship`,
+      picName: matchedKoc?.bookingPic || matchedStore?.primaryPic || 'Hà Thị Thủy',
+      leaderName,
+      productName: currentMapping?.productName || `Sản phẩm chiến dịch ${brandName}`,
+      pillarName: 'Review trực tiếp (PIL-01)',
+      requiredHashtags: [brandName.replace(/\s+/g, ''), 'UpbaseB2C', 'BeautyReview'],
+      deadlineDate: '31/10/2026',
+      bookingFeeNet: matchedKoc?.rateCardNet || 5000000,
+      dealStatus: 'ĐANG_QUAY_NHÁP',
       linkedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
-    mappings.set(chatId, mapping);
+
+    mappings.set(chatId, newMapping);
     saveMappings();
 
-    const successMsg = `✅ Đã liên kết nhóm chat này với mã: [${dealCode}] thành công!\nTừ bây giờ, hệ thống sẽ tự động đối soát nghiệm thu và gửi thông báo vào nhóm này.`;
-    await sendZaloMessage(chatId, successMsg);
-    recordDebugEvent({ time: new Date().toISOString(), body, extractedChatId: chatId, replySent: true });
-    return { handled: true, reply: successMsg };
+    const successMsg = [
+      `✅ ĐÃ LIÊN KẾT NHÓM ZALO THÀNH CÔNG`,
+      `----------------------------------------`,
+      `• Chat/Group ID: ${chatId}`,
+      `• Phân quyền nhóm: ${
+        groupRole === 'KOC_GROUP'
+          ? 'Nhóm làm việc KOC (Khóa dữ liệu PnL nội bộ)'
+          : groupRole === 'INTERNAL_OPS'
+            ? 'Nhóm Vận hành nội bộ (Mở tra cứu KOC/SLA/PnL)'
+            : 'Nhóm Điều hành BOD (Toàn quyền)'
+      }`,
+      `• Mã liên kết: [${newMapping.dealCode}]`,
+      `• Thương hiệu: ${newMapping.brandName} (${newMapping.storeName})`,
+      `• KOC: ${newMapping.kocName} ${newMapping.kocHandle ? `(@${newMapping.kocHandle})` : ''}`,
+      `• PIC phụ trách: ${newMapping.picName}`,
+      `• Cấp phê duyệt: ${newMapping.leaderName}`,
+      `----------------------------------------`,
+      `👉 Gõ /brief để xem yêu cầu kịch bản, hoặc gửi link TikTok vào nhóm để nghiệm thu tự động.`,
+    ].join('\n');
+
+    await replyToChat(successMsg);
+    return { handled: true, reply: successMsg, extractedChatId: chatId };
   }
 
-  // 4. LỆNH KIỂM TRA TRẠNG THÁI: /status
+  // 12. LỆNH KIỂM TRA TRẠNG THÁI NHÓM: /status
   if (lowerClean === '/status' || lowerClean === 'status') {
     const statusMsg = currentMapping
-      ? `📋 THÔNG TIN LIÊN KẾT NHÓM:\n• Chat/Group ID: ${chatId}\n• Mã Deal: ${currentMapping.dealCode}\n• Thời gian kết nối: ${new Date(currentMapping.linkedAt).toLocaleString('vi-VN')}`
-      : `📋 THÔNG TIN NHÓM:\n• Chat/Group ID: ${chatId}\n• Trạng thái: Chưa liên kết Deal.\n👉 Gõ /link <MÃ_DEAL> để liên kết.`;
+      ? [
+          `📋 HỒ SƠ LIÊN KẾT NHÓM HIỆN TẠI`,
+          `----------------------------------------`,
+          `• Tên nhóm: ${currentMapping.groupName || currentMapping.groupId}`,
+          `• Mã Chat ID: ${currentMapping.groupId}`,
+          `• Cấp độ phân quyền: ${currentMapping.groupRole}`,
+          `• Mã Deal: ${currentMapping.dealCode || '—'}`,
+          `• Thương hiệu: ${currentMapping.brandName || '—'} (${currentMapping.storeName || '—'})`,
+          `• KOC: ${currentMapping.kocName || '—'} ${currentMapping.kocHandle ? `(@${currentMapping.kocHandle})` : ''}`,
+          `• PIC phụ trách: ${currentMapping.picName || '—'}`,
+          `• Cấp duyệt: ${currentMapping.leaderName || resolveLeaderForBrand(currentMapping.brandName)}`,
+          `• Trạng thái thực thi: ${currentMapping.dealStatus}`,
+          `• Hạn nộp SLA: ${currentMapping.deadlineDate || '—'}`,
+          currentMapping.draftVideoUrl ? `• Link bản nháp: ${currentMapping.draftVideoUrl}` : '',
+          currentMapping.airedVideoUrl ? `• Link đã Air: ${currentMapping.airedVideoUrl}` : '',
+        ]
+          .filter(Boolean)
+          .join('\n')
+      : [
+          `📋 THÔNG TIN NHÓM HIỆN TẠI`,
+          `• Mã Chat ID: ${chatId}`,
+          `• Trạng thái: Chưa liên kết Deal cụ thể.`,
+          `👉 Gõ /link <MÃ_DEAL> (ví dụ: /link BO261067161) để liên kết với KOC, hoặc /link INTERNAL nếu là nhóm nội bộ.`,
+        ].join('\n');
 
-    await sendZaloMessage(chatId, statusMsg);
-    recordDebugEvent({ time: new Date().toISOString(), body, extractedChatId: chatId, replySent: true });
-    return { handled: true, reply: statusMsg };
+    await replyToChat(statusMsg);
+    return { handled: true, reply: statusMsg, extractedChatId: chatId };
   }
 
-  // 5. CÂU HỎI THƯỜNG / CHÀO HỎI (KHI CÓ GỌI TÊN BOT)
-  if (rawText.includes('@') || lowerClean.length > 0) {
-    const greetingMsg = [
-      '👋 Chào anh/chị! Em là Upbase B2C Bot.',
-      'Em có thể hỗ trợ:',
-      '1. Nghiệm thu video TikTok: Hãy gửi kèm link video vào đây.',
-      '2. Liên kết nhóm với Deal: Gõ /link <MÃ_DEAL>',
-      '3. Xem hướng dẫn chi tiết: Gõ /help',
-    ].join('\n');
-    await sendZaloMessage(chatId, greetingMsg);
-    recordDebugEvent({ time: new Date().toISOString(), body, extractedChatId: chatId, replySent: true });
-    return { handled: true, reply: greetingMsg };
-  }
+  // 13. LỆNH TRỢ GIÚP /start, /help HOẶC CHÀO HỎI
+  const isInternalOrBod = effectiveRole === 'INTERNAL_OPS' || effectiveRole === 'BOD_EXECUTIVE';
+  const helpMsg = [
+    `🤖 TRỢ LÝ VẬN HÀNH B2C — UPBASE ZALO BOT`,
+    `----------------------------------------`,
+    `📌 CÁC LỆNH TRONG NHÓM KOC & NGHIỆM THU:`,
+    `• Gửi link TikTok kèm @Bot: Tự động quét nghiệm thu bài đăng (Air, Giỏ hàng, Hashtag, View/Like).`,
+    `• /brief : Xem nội dung Brief, góc quay và hashtag bắt buộc của Deal.`,
+    `• /nopnhap <link_drive> : KOC nộp link video nháp chờ duyệt.`,
+    `• /duyetnhap [ghi chú] : PIC xác nhận duyệt video nháp cho KOC đăng bài.`,
+    `• /suanhap <nội dung> : PIC gửi yêu cầu chỉnh sửa video nháp.`,
+    `• /status : Kiểm tra trạng thái tiến độ Deal của nhóm.`,
+    `• /link <MÃ_DEAL> : Liên kết nhóm với mã Deal (hoặc /link INTERNAL cho nhóm nội bộ).`,
+    ...(isInternalOrBod
+      ? [
+          `----------------------------------------`,
+          `🔐 CÁC LỆNH NỘI BỘ & ĐIỀU HÀNH (ĐÃ MỞ KHÓA):`,
+          `• /koc <@handle> : Tra cứu lịch sử hợp tác, GMV, ROI & STK của KOC.`,
+          `• /pnl [tên_brand] : Xem ngân sách Gross/Net, thực chi & định mức 69 gian hàng B2C.`,
+          `• /overbudget : Kiểm tra các gian hàng cảnh báo vượt trần ngân sách.`,
+          `• /sla : Rà soát tiến độ nộp bài của các nhóm KOC.`,
+          `• /digest : Xuất báo cáo điều hành tổng hợp cuối ngày.`,
+        ]
+      : [
+          `----------------------------------------`,
+          `🔒 Ghi chú: Nhóm đang ở chế độ làm việc với KOC (ẩn các lệnh ngân sách PnL nội bộ).`,
+        ]),
+  ].join('\n');
 
-  recordDebugEvent({ time: new Date().toISOString(), body, extractedChatId: chatId, replySent: false });
-  return { handled: false };
+  await replyToChat(helpMsg);
+  return { handled: true, reply: helpMsg, extractedChatId: chatId };
 }

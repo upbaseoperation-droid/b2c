@@ -3,6 +3,8 @@ import {
   getZaloBotToken,
   getZaloBotSecretToken,
   getAllMappings,
+  getAllUserPermissions,
+  getAirCheckHistory,
   getDebugEvents,
 } from '@/lib/server/zaloBot';
 
@@ -45,6 +47,8 @@ export async function GET(req: NextRequest) {
   }
 
   const mappings = getAllMappings();
+  const userPermissions = getAllUserPermissions();
+  const airHistory = getAirCheckHistory();
   const recentEvents = getDebugEvents();
 
   return NextResponse.json({
@@ -61,8 +65,12 @@ export async function GET(req: NextRequest) {
       updated_at: Date.now(),
     },
     inviteUrl: 'https://bot.zaloplatforms.com/groups/invite/bot.qxQiPkja',
-    secretTokenMasked: secretToken ? `${secretToken.slice(0, 4)}****${secretToken.slice(-4)}` : 'Chưa thiết lập',
+    secretTokenMasked: secretToken
+      ? `${secretToken.slice(0, 4)}****${secretToken.slice(-4)}`
+      : 'Chưa thiết lập',
     mappings,
+    userPermissions,
+    airHistory,
     recentEvents,
   });
 }

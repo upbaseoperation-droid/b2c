@@ -102,7 +102,8 @@ Sau khi rà soát và ẩn 10 màn hình thừa / trùng lặp, hệ thống đ�
 14. **Phân quyền & Nhân sự (`partner-access` / `CentralizedRbacHubView`):** Quản trị tài khoản Lark SSO, phân quyền 14 vai trò và Data Scoping Engine.
 15. **Quản lý Cloudflare R2 (`cloudflare-admin` / `CloudflareAdminView`):** Quản lý bucket tệp đính kèm và tài liệu hợp đồng.
 16. **Bộ công cụ tiện ích (`work-toolkit` / `WorkToolkitHubView`):** Kho 12 công cụ tác nghiệp nhanh cho quản lý và chuyên viên nội bộ (Quy đổi Gross ↔ Net & bậc KL, bảng thuế/hoa hồng hàng loạt, tính ROAS/CIR hòa vốn, chia định mức KPI tuần, tính điểm tải P3 theo 33 đầu việc SOW, tính lịch SLA ngược từ ngày Air, bóc tách hàng loạt link TikTok/Shopee đối chiếu danh bạ KOC, tạo mã QR VietQR chuẩn Bảng 3.2, tạo link UTM, kiểm tra từ hạn chế TikTok Shop, tính thời lượng đọc kịch bản, soạn Brief/Hashtag và đối soát 2 danh sách mã).
-17. **Chân trang:** Bộ công cụ tiện ích (`work-toolkit`), Sổ tay & Hỏi đáp (`knowledge-qa`), Cấu hình API (`api-settings`).
+17. **Quản lý Bot Zalo (`zalo-bot` / `ZaloBotManagerView`):** Quản trị tập trung Bot Zalo doanh nghiệp (`Bot tttttttupbase`), liên kết nhóm chat 3 bên / nội bộ / BOD với mã Deal (`BO...`), phân quyền 3 lớp và 4 cấp nhân sự (`CEO`, `LEAD_B2C`, `LEADER`, `PIC`), nghiệm thu tự động link video TikTok qua `checkSingleLinkServerless`, gửi Brief kịch bản, duyệt bài nháp, nhắc hạn SLA và giả lập/gửi lệnh Bot trực tiếp (`/pnl`, `/overbudget`, `/digest`, `/sla`, `/koc`, `/brief`, `/nopnhap`, `/duyetnhap`, `/suanhap`).
+18. **Chân trang:** Bộ công cụ tiện ích (`work-toolkit`), Sổ tay & Hỏi đáp (`knowledge-qa`), Quản lý Bot Zalo (`zalo-bot`), Cấu hình API (`api-settings`).
 
 ---
 
