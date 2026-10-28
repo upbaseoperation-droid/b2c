@@ -2,6 +2,7 @@
 // Cấu hình: GOOGLE_SERVICE_ACCOUNT_EMAIL và GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY (khóa riêng, xuống dòng viết \n)
 // hoặc khai báo trực tiếp qua giao diện (lưu vào bản ghi máy chủ google-sheets-config-v1).
 import { createSign } from 'node:crypto';
+import { STAFF_LISTING_COLUMNS } from '../staffBrandListingSheet';
 import { readRecord, upsertRecord } from './sharedRecords';
 
 export class GoogleSheetsError extends Error {
@@ -652,13 +653,6 @@ export async function appendNewRows(opts: {
   }
 
   if (!dryRun) {
-    if (updateRequests.length > 0) {
-      await sheetsFetch(`${spreadsheetId}/values:batchUpdate`, {
-        method: 'POST',
-        body: JSON.stringify({ valueInputOption: 'USER_ENTERED', data: updateRequests }),
-      });
-    }
-
     const aligned = fresh.map(r =>
       header.map(h => {
         const cleanH = normHeaderToken(h);
@@ -668,39 +662,47 @@ export async function appendNewRows(opts: {
     );
 
     const payload: (string | number)[][] = hasHeader ? aligned : [header, ...aligned];
-    if (payload.length > 0) {
-      const writeStartRow = hasHeader ? Math.max(headerRowIdx + 2, lastValidDataRowNum + 1) : 1;
-      const writeEndRow = writeStartRow + payload.length - 1;
-      const currentRowCount = targetSheetProp?.gridProperties?.rowCount ?? 1000;
-      const currentColCount = targetSheetProp?.gridProperties?.columnCount ?? 60;
-      const dimRequests: Record<string, unknown>[] = [];
-      if (targetSheetProp?.sheetId !== undefined) {
-        if (writeEndRow > currentRowCount) {
-          dimRequests.push({
-            appendDimension: {
-              sheetId: targetSheetProp.sheetId,
-              dimension: 'ROWS',
-              length: Math.max(50, writeEndRow - currentRowCount + 20),
-            },
-          });
-        }
-        if (header.length > currentColCount) {
-          dimRequests.push({
-            appendDimension: {
-              sheetId: targetSheetProp.sheetId,
-              dimension: 'COLUMNS',
-              length: header.length - currentColCount + 5,
-            },
-          });
-        }
-        if (dimRequests.length > 0) {
-          await sheetsFetch(`${spreadsheetId}:batchUpdate`, {
-            method: 'POST',
-            body: JSON.stringify({ requests: dimRequests }),
-          }).catch(() => {});
-        }
-      }
+    const writeStartRow = hasHeader ? Math.max(headerRowIdx + 2, lastValidDataRowNum + 1) : 1;
+    const writeEndRow = payload.length > 0 ? writeStartRow + payload.length - 1 : Math.max(1, lastValidDataRowNum);
+    const currentRowCount = targetSheetProp?.gridProperties?.rowCount ?? 1000;
+    const currentColCount = targetSheetProp?.gridProperties?.columnCount ?? 26;
 
+    if (targetSheetProp?.sheetId !== undefined) {
+      const dimRequests: Record<string, unknown>[] = [];
+      if (writeEndRow > currentRowCount) {
+        dimRequests.push({
+          appendDimension: {
+            sheetId: targetSheetProp.sheetId,
+            dimension: 'ROWS',
+            length: Math.max(50, writeEndRow - currentRowCount + 20),
+          },
+        });
+      }
+      if (header.length > currentColCount) {
+        dimRequests.push({
+          appendDimension: {
+            sheetId: targetSheetProp.sheetId,
+            dimension: 'COLUMNS',
+            length: header.length - currentColCount + 5,
+          },
+        });
+      }
+      if (dimRequests.length > 0) {
+        await sheetsFetch(`${spreadsheetId}:batchUpdate`, {
+          method: 'POST',
+          body: JSON.stringify({ requests: dimRequests }),
+        }).catch(() => {});
+      }
+    }
+
+    if (updateRequests.length > 0) {
+      await sheetsFetch(`${spreadsheetId}/values:batchUpdate`, {
+        method: 'POST',
+        body: JSON.stringify({ valueInputOption: 'USER_ENTERED', data: updateRequests }),
+      });
+    }
+
+    if (payload.length > 0) {
       await sheetsFetch(`${spreadsheetId}/values:batchUpdate`, {
         method: 'POST',
         body: JSON.stringify({
@@ -1064,7 +1066,44 @@ export async function configureSpreadsheetTemplate(opts: {
           break;
         }
       }
-      const header = (values[headerRowIdx] || []).map(h => String(h).trim());
+      let header = (values[headerRowIdx] || []).map(h => String(h).trim()).filter(Boolean);
+
+      // Nếu Tab trên Google Sheet đang trống (chưa có hàng tiêu đề), tự động khởi tạo chuẩn 57 cột Template (A -> BE + Row ID)
+      if (header.length === 0) {
+        header = [
+          ...STAFF_LISTING_COLUMNS.filter(c => c.index <= 57).map(c => c.header),
+          ROW_ID_COLUMN_HEADER,
+        ];
+        const currentColCount = targetSheet.properties?.gridProperties?.columnCount ?? 26;
+        if (header.length > currentColCount) {
+          await sheetsFetch(`${spreadsheetId}:batchUpdate`, {
+            method: 'POST',
+            body: JSON.stringify({
+              requests: [
+                {
+                  appendDimension: {
+                    sheetId,
+                    dimension: 'COLUMNS',
+                    length: header.length - currentColCount + 5,
+                  },
+                },
+              ],
+            }),
+          }).catch(() => {});
+        }
+        await sheetsFetch(`${spreadsheetId}/values:batchUpdate`, {
+          method: 'POST',
+          body: JSON.stringify({
+            valueInputOption: 'USER_ENTERED',
+            data: [
+              {
+                range: `${quoteTab(sheetTitle)}!A1:${colLetter(header.length - 1)}1`,
+                values: [header],
+              },
+            ],
+          }),
+        }).catch(() => {});
+      }
 
       const findColIdx = (...candidates: string[]) => {
         for (const c of candidates) {
