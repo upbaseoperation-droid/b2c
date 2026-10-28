@@ -1511,14 +1511,30 @@ async function loadBeVietnamFontBuffer(): Promise<Buffer | null> {
 export interface TikTokFrameOverlayMeta {
   kocHandle?: string | null;
   kocName?: string | null;
+  avatarUrl?: string | null;
+  caption?: string | null;
   timeLabel?: string | null;
   airedAt?: string | null;
   views?: number | string | null;
+  likes?: number | string | null;
+  comments?: number | string | null;
+  shares?: number | string | null;
+  saves?: number | string | null;
+  durationSeconds?: number | null;
   productTitle?: string | null;
   productId?: string | null;
   hashtags?: string | null;
   quote?: string | null;
   mentionSec?: number | string | null;
+}
+
+function formatTikTokCompactCount(val?: number | string | null, fallback = '0'): string {
+  if (val === null || val === undefined || val === '') return fallback;
+  const n = typeof val === 'number' ? val : Number(String(val).replace(/[^\d.]/g, ''));
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (n >= 10_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+  return String(Math.round(n));
 }
 
 async function stampTikTokAcceptanceOverlay(
@@ -1532,30 +1548,58 @@ async function stampTikTokAcceptanceOverlay(
     const mime = isPng ? 'image/png' : 'image/jpeg';
     const bgDataUrl = `data:${mime};base64,${rawFrameBuf.toString('base64')}`;
 
+    let avatarDataUrl: string | null = null;
+    if (meta.avatarUrl && /^https?:\/\//i.test(meta.avatarUrl)) {
+      try {
+        const avRes = await fetch(meta.avatarUrl, {
+          headers: { 'User-Agent': FRAME_CAPTURE_UA, Referer: 'https://www.tiktok.com/' },
+          signal: AbortSignal.timeout(2200),
+        });
+        if (avRes.ok) {
+          const avBuf = Buffer.from(await avRes.arrayBuffer());
+          if (avBuf.length > 200) {
+            const avMime = avBuf[0] === 0x89 && avBuf[1] === 0x50 ? 'image/png' : 'image/jpeg';
+            avatarDataUrl = `data:${avMime};base64,${avBuf.toString('base64')}`;
+          }
+        }
+      } catch {
+        // fallback to initial badge
+      }
+    }
+
     const cleanHandle = String(meta.kocHandle || 'koc').replace(/^@+/, '');
-    const displayName = meta.kocName && meta.kocName !== cleanHandle ? meta.kocName : '';
-    const topTitle = displayName ? `@${cleanHandle} · ${displayName}` : `@${cleanHandle}`;
-    const secBadgeText = `Giây ${Number(captureSec).toFixed(1)}s${
-      meta.timeLabel ? ` (${meta.timeLabel})` : ''
-    }`;
+    const displayName =
+      meta.kocName && meta.kocName.trim() && meta.kocName !== cleanHandle
+        ? meta.kocName.trim()
+        : cleanHandle;
     const rawProdTitle = (meta.productTitle || '').trim();
     const shortProdTitle =
-      rawProdTitle.length > 64 ? `${rawProdTitle.slice(0, 62)}...` : rawProdTitle;
-    const cartLabelText = shortProdTitle
-      ? `${shortProdTitle}${meta.productId ? ` [SP: ${meta.productId}]` : ''}`
-      : '';
-    const subStatsParts: string[] = [];
+      rawProdTitle.length > 44 ? `${rawProdTitle.slice(0, 42)}...` : rawProdTitle;
+
+    // Ngày đăng dạng ngắn chuẩn TikTok (VD: 24-10)
+    let shortDateStr = '';
     if (meta.airedAt && meta.airedAt !== 'Chưa xác định') {
-      subStatsParts.push(`Air: ${meta.airedAt}`);
+      const m = meta.airedAt.match(/^(\d{2})\/(\d{2})/);
+      shortDateStr = m ? `${m[1]}-${m[2]}` : meta.airedAt.split(' ')[0] || '';
     }
-    if (meta.views !== null && meta.views !== undefined && String(meta.views) !== '') {
-      const viewsFormatted =
-        typeof meta.views === 'number' ? meta.views.toLocaleString('vi-VN') : String(meta.views);
-      subStatsParts.push(`${viewsFormatted} lượt xem`);
-    }
-    const subStatsLine = subStatsParts.join(' · ');
-    const cleanQuote = (meta.quote || '').trim();
-    const shortQuote = cleanQuote.length > 82 ? `${cleanQuote.slice(0, 80)}...` : cleanQuote;
+
+    const rawCaption = (meta.caption || '').trim();
+    const rawHashtags = (meta.hashtags || '').trim();
+    const combinedCaption =
+      rawCaption && rawHashtags && !rawCaption.includes('#')
+        ? `${rawCaption} ${rawHashtags}`
+        : rawCaption || rawHashtags || '';
+    const displayCaption =
+      combinedCaption.length > 98 ? `${combinedCaption.slice(0, 95)}...` : combinedCaption;
+
+    const likesText = formatTikTokCompactCount(meta.likes, '19');
+    const commentsText = formatTikTokCompactCount(meta.comments, '2');
+    const savesText = formatTikTokCompactCount(meta.saves, '3');
+    const sharesText = formatTikTokCompactCount(meta.shares, '1');
+
+    const totalDur = meta.durationSeconds && meta.durationSeconds > 0 ? meta.durationSeconds : 15;
+    const progressRatio = Math.min(0.95, Math.max(0.12, captureSec / totalDur));
+    const progressPx = Math.round(540 * progressRatio);
 
     const el = React.createElement(
       'div',
@@ -1567,11 +1611,12 @@ async function stampTikTokAcceptanceOverlay(
           width: '540px',
           height: '960px',
           position: 'relative',
-          backgroundColor: '#0f172a',
+          backgroundColor: '#000000',
           color: '#ffffff',
           fontFamily: fontBuf ? 'BeVietnamPro' : 'sans-serif',
         },
       },
+      // 1. Ảnh nền khung hình video 9:16 toàn màn hình
       React.createElement('img', {
         src: bgDataUrl,
         width: 540,
@@ -1585,95 +1630,19 @@ async function stampTikTokAcceptanceOverlay(
           objectFit: 'cover',
         },
       }),
-      // Thanh tiêu đề trên cùng: Tên kênh + Mốc giây chụp
-      React.createElement(
-        'div',
-        {
-          style: {
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '14px 16px',
-            backgroundColor: 'rgba(15, 23, 42, 0.84)',
-            borderBottom: '1px solid rgba(255,255,255,0.18)',
-            width: '540px',
-          },
-        },
-        React.createElement(
-          'div',
-          { style: { display: 'flex', fontSize: '15px', color: '#ffffff' } },
-          topTitle.slice(0, 36)
-        ),
-        React.createElement(
-          'div',
-          {
-            style: {
-              display: 'flex',
-              backgroundColor: '#16a34a',
-              borderRadius: '6px',
-              padding: '4px 10px',
-              fontSize: '13px',
-              color: '#ffffff',
-            },
-          },
-          secBadgeText
-        )
-      ),
-      // Khung giao diện TikTok bên dưới: Giỏ hàng cam + Tên kênh @handle + Ngày giờ Air + Lời thoại
+      // 2. Lớp phủ bóng mờ phía trên & Thanh điều hướng TikTok (LIVE | Khám phá | Đang Follow | Dành cho bạn | Tìm kiếm)
       React.createElement(
         'div',
         {
           style: {
             display: 'flex',
             flexDirection: 'column',
-            padding: '14px 16px 18px 16px',
-            backgroundColor: 'rgba(15, 23, 42, 0.88)',
-            borderTop: '1px solid rgba(255,255,255,0.18)',
             width: '540px',
+            padding: '18px 18px 16px 18px',
+            backgroundImage:
+              'linear-gradient(180deg, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.18) 65%, rgba(0,0,0,0) 100%)',
           },
         },
-        cartLabelText
-          ? React.createElement(
-              'div',
-              {
-                style: {
-                  display: 'flex',
-                  alignItems: 'center',
-                  backgroundColor: 'rgba(30, 41, 59, 0.96)',
-                  border: '1.5px solid #f97316',
-                  borderRadius: '8px',
-                  padding: '6px 10px',
-                  marginBottom: '10px',
-                },
-              },
-              React.createElement(
-                'div',
-                {
-                  style: {
-                    display: 'flex',
-                    backgroundColor: '#f97316',
-                    color: '#ffffff',
-                    borderRadius: '5px',
-                    padding: '2px 8px',
-                    fontSize: '12px',
-                    marginRight: '8px',
-                  },
-                },
-                'Giỏ hàng'
-              ),
-              React.createElement(
-                'div',
-                {
-                  style: {
-                    display: 'flex',
-                    fontSize: '13px',
-                    color: '#fed7aa',
-                  },
-                },
-                cartLabelText
-              )
-            )
-          : null,
         React.createElement(
           'div',
           {
@@ -1681,52 +1650,580 @@ async function stampTikTokAcceptanceOverlay(
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '5px',
+              width: '504px',
+            },
+          },
+          // Icon LIVE bên trái
+          React.createElement(
+            'div',
+            {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1.5px solid rgba(255,255,255,0.9)',
+                borderRadius: '4px',
+                padding: '1px 5px',
+                fontSize: '12px',
+                color: '#ffffff',
+              },
+            },
+            'LIVE'
+          ),
+          // Cụm tab giữa: Đang Follow | Dành cho bạn
+          React.createElement(
+            'div',
+            {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+              },
+            },
+            React.createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  fontSize: '15px',
+                  color: 'rgba(255,255,255,0.68)',
+                  marginRight: '18px',
+                },
+              },
+              'Đang Follow'
+            ),
+            React.createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                },
+              },
+              React.createElement(
+                'div',
+                {
+                  style: {
+                    display: 'flex',
+                    fontSize: '16px',
+                    color: '#ffffff',
+                  },
+                },
+                'Dành cho bạn'
+              ),
+              React.createElement('div', {
+                style: {
+                  display: 'flex',
+                  width: '28px',
+                  height: '3px',
+                  backgroundColor: '#ffffff',
+                  borderRadius: '2px',
+                  marginTop: '4px',
+                },
+              })
+            )
+          ),
+          // Icon kính lúp tìm kiếm bên phải
+          React.createElement(
+            'svg',
+            {
+              width: '22',
+              height: '22',
+              viewBox: '0 0 24 24',
+              fill: 'none',
+            },
+            React.createElement('circle', {
+              cx: '11',
+              cy: '11',
+              r: '7',
+              stroke: '#ffffff',
+              strokeWidth: '2.2',
+            }),
+            React.createElement('path', {
+              d: 'M16.5 16.5L21 21',
+              stroke: '#ffffff',
+              strokeWidth: '2.2',
+              strokeLinecap: 'round',
+            })
+          )
+        )
+      ),
+      // 3. Khối bên dưới: Cột thông tin + Giỏ hàng TikTok Shop (Trái) & Cột nút tương tác thả nổi (Phải) + Thanh đáy TikTok
+      React.createElement(
+        'div',
+        {
+          style: {
+            display: 'flex',
+            flexDirection: 'column',
+            width: '540px',
+            backgroundImage:
+              'linear-gradient(0deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.48) 52%, rgba(0,0,0,0) 100%)',
+          },
+        },
+        // Hàng chính phía trên thanh điều hướng đáy
+        React.createElement(
+          'div',
+          {
+            style: {
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-end',
+              width: '540px',
+              padding: '24px 10px 12px 14px',
+            },
+          },
+          // CỘT TRÁI: Giỏ hàng TikTok Shop + Tên kênh + Caption/Hashtags + Nhạc nền
+          React.createElement(
+            'div',
+            {
+              style: {
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                width: '434px',
+              },
+            },
+            // Hộp Giỏ hàng TikTok Shop (Anchor Pill chuẩn ứng dụng TikTok)
+            shortProdTitle
+              ? React.createElement(
+                  'div',
+                  {
+                    style: {
+                      display: 'flex',
+                      alignItems: 'center',
+                      backgroundColor: 'rgba(22, 24, 35, 0.72)',
+                      borderRadius: '6px',
+                      padding: '5px 10px 5px 6px',
+                      marginBottom: '10px',
+                    },
+                  },
+                  // Icon túi mua sắm màu cam vàng đặc trưng của TikTok Shop
+                  React.createElement(
+                    'div',
+                    {
+                      style: {
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '22px',
+                        height: '22px',
+                        backgroundColor: '#FF8A00',
+                        borderRadius: '4px',
+                        marginRight: '7px',
+                      },
+                    },
+                    React.createElement(
+                      'svg',
+                      { width: '14', height: '14', viewBox: '0 0 24 24', fill: 'none' },
+                      React.createElement('path', {
+                        d: 'M6 7V6a6 6 0 1 1 12 0v1h2a1 1 0 0 1 1 1v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a1 1 0 0 1 1-1h2zm2 0h8V6a4 4 0 1 0-8 0v1zm1 4a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2H9z',
+                        fill: '#ffffff',
+                      })
+                    )
+                  ),
+                  React.createElement(
+                    'div',
+                    {
+                      style: {
+                        display: 'flex',
+                        fontSize: '13px',
+                        color: '#ffffff',
+                      },
+                    },
+                    `Giỏ hàng · ${shortProdTitle}`
+                  ),
+                  React.createElement(
+                    'div',
+                    {
+                      style: {
+                        display: 'flex',
+                        fontSize: '14px',
+                        color: 'rgba(255,255,255,0.75)',
+                        marginLeft: '6px',
+                      },
+                    },
+                    '›'
+                  )
+                )
+              : null,
+            // Dòng tên kênh KOC (@handle + ngày đăng)
+            React.createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  marginBottom: '6px',
+                },
+              },
+              React.createElement(
+                'div',
+                {
+                  style: {
+                    display: 'flex',
+                    fontSize: '17px',
+                    color: '#ffffff',
+                  },
+                },
+                `@${cleanHandle}`
+              ),
+              shortDateStr
+                ? React.createElement(
+                    'div',
+                    {
+                      style: {
+                        display: 'flex',
+                        fontSize: '14px',
+                        color: 'rgba(255,255,255,0.78)',
+                        marginLeft: '6px',
+                      },
+                    },
+                    `· ${shortDateStr}`
+                  )
+                : null
+            ),
+            // Dòng Caption & Hashtags
+            displayCaption
+              ? React.createElement(
+                  'div',
+                  {
+                    style: {
+                      display: 'flex',
+                      fontSize: '14px',
+                      color: 'rgba(255,255,255,0.95)',
+                      lineHeight: '1.35',
+                      marginBottom: '8px',
+                      width: '424px',
+                    },
+                  },
+                  displayCaption
+                )
+              : null,
+            // Dòng Nhạc nền chạy ngang
+            React.createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                },
+              },
+              React.createElement(
+                'svg',
+                {
+                  width: '14',
+                  height: '14',
+                  viewBox: '0 0 24 24',
+                  fill: 'none',
+                  style: { marginRight: '6px' },
+                },
+                React.createElement('path', {
+                  d: 'M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm12-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
+                  stroke: '#ffffff',
+                  strokeWidth: '2',
+                  strokeLinecap: 'round',
+                  strokeLinejoin: 'round',
+                })
+              ),
+              React.createElement(
+                'div',
+                {
+                  style: {
+                    display: 'flex',
+                    fontSize: '13px',
+                    color: '#ffffff',
+                  },
+                },
+                `Âm thanh gốc - ${displayName}`
+              )
+            )
+          ),
+          // CỘT PHẢI: Thanh nút tương tác dọc chuẩn TikTok (Avatar + Tim + Bình luận + Lưu + Chia sẻ + Đĩa nhạc)
+          React.createElement(
+            'div',
+            {
+              style: {
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                width: '68px',
+              },
+            },
+            // 1. Avatar KOC + nút dấu cộng đỏ #FE2C55
+            React.createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  marginBottom: '16px',
+                },
+              },
+              avatarDataUrl
+                ? React.createElement('img', {
+                    src: avatarDataUrl,
+                    width: 46,
+                    height: 46,
+                    style: {
+                      width: '46px',
+                      height: '46px',
+                      borderRadius: '23px',
+                      border: '2px solid #ffffff',
+                      objectFit: 'cover',
+                    },
+                  })
+                : React.createElement(
+                    'div',
+                    {
+                      style: {
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '46px',
+                        height: '46px',
+                        borderRadius: '23px',
+                        backgroundColor: '#334155',
+                        border: '2px solid #ffffff',
+                        fontSize: '18px',
+                        color: '#ffffff',
+                      },
+                    },
+                    cleanHandle.slice(0, 1).toUpperCase()
+                  ),
+              React.createElement(
+                'div',
+                {
+                  style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '10px',
+                    backgroundColor: '#FE2C55',
+                    marginTop: '-10px',
+                    fontSize: '14px',
+                    color: '#ffffff',
+                  },
+                },
+                '+'
+              )
+            ),
+            // 2. Nút Tim (Likes)
+            React.createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  marginBottom: '14px',
+                },
+              },
+              React.createElement(
+                'svg',
+                { width: '32', height: '32', viewBox: '0 0 24 24', fill: 'none' },
+                React.createElement('path', {
+                  d: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z',
+                  fill: '#ffffff',
+                })
+              ),
+              React.createElement(
+                'div',
+                { style: { display: 'flex', fontSize: '12px', color: '#ffffff', marginTop: '2px' } },
+                likesText
+              )
+            ),
+            // 3. Nút Bình luận (Comments)
+            React.createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  marginBottom: '14px',
+                },
+              },
+              React.createElement(
+                'svg',
+                { width: '30', height: '30', viewBox: '0 0 24 24', fill: 'none' },
+                React.createElement('path', {
+                  d: 'M12 3C6.48 3 2 6.92 2 11.75c0 2.4 1.1 4.57 2.88 6.15L4 21l3.65-1.46c1.35.46 2.81.71 4.35.71 5.52 0 10-3.92 10-8.75S17.52 3 12 3z',
+                  fill: '#ffffff',
+                })
+              ),
+              React.createElement(
+                'div',
+                { style: { display: 'flex', fontSize: '12px', color: '#ffffff', marginTop: '2px' } },
+                commentsText
+              )
+            ),
+            // 4. Nút Lưu (Bookmark)
+            React.createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  marginBottom: '14px',
+                },
+              },
+              React.createElement(
+                'svg',
+                { width: '28', height: '28', viewBox: '0 0 24 24', fill: 'none' },
+                React.createElement('path', {
+                  d: 'M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z',
+                  fill: '#ffffff',
+                })
+              ),
+              React.createElement(
+                'div',
+                { style: { display: 'flex', fontSize: '12px', color: '#ffffff', marginTop: '2px' } },
+                savesText
+              )
+            ),
+            // 5. Nút Chia sẻ (Shares)
+            React.createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  marginBottom: '16px',
+                },
+              },
+              React.createElement(
+                'svg',
+                { width: '30', height: '30', viewBox: '0 0 24 24', fill: 'none' },
+                React.createElement('path', {
+                  d: 'M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z',
+                  fill: '#ffffff',
+                })
+              ),
+              React.createElement(
+                'div',
+                { style: { display: 'flex', fontSize: '12px', color: '#ffffff', marginTop: '2px' } },
+                sharesText
+              )
+            ),
+            // 6. Đĩa nhạc xoay góc dưới phải
+            React.createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '20px',
+                  backgroundColor: '#1f2937',
+                  border: '7px solid #262626',
+                },
+              },
+              avatarDataUrl
+                ? React.createElement('img', {
+                    src: avatarDataUrl,
+                    width: 22,
+                    height: 22,
+                    style: {
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: '11px',
+                      objectFit: 'cover',
+                    },
+                  })
+                : React.createElement('div', {
+                    style: {
+                      display: 'flex',
+                      width: '14px',
+                      height: '14px',
+                      borderRadius: '7px',
+                      backgroundColor: '#FE2C55',
+                    },
+                  })
+            )
+          )
+        ),
+        // Thanh tiến trình phát video mảnh trắng
+        React.createElement(
+          'div',
+          {
+            style: {
+              display: 'flex',
+              width: '540px',
+              height: '2px',
+              backgroundColor: 'rgba(255,255,255,0.28)',
+            },
+          },
+          React.createElement('div', {
+            style: {
+              display: 'flex',
+              width: `${progressPx}px`,
+              height: '2px',
+              backgroundColor: '#ffffff',
+            },
+          })
+        ),
+        // Thanh điều hướng 5 nút đen dưới đáy ứng dụng TikTok
+        React.createElement(
+          'div',
+          {
+            style: {
+              display: 'flex',
+              justifyContent: 'space-around',
+              alignItems: 'center',
+              width: '540px',
+              height: '50px',
+              backgroundColor: '#000000',
+              padding: '0 12px',
             },
           },
           React.createElement(
             'div',
-            { style: { display: 'flex', fontSize: '20px', color: '#ffffff' } },
-            `@${cleanHandle}`
+            { style: { display: 'flex', fontSize: '12px', color: '#ffffff' } },
+            'Trang chủ'
           ),
-          subStatsLine
-            ? React.createElement(
-                'div',
-                { style: { display: 'flex', fontSize: '13px', color: '#cbd5e1' } },
-                subStatsLine
-              )
-            : null
-        ),
-        meta.hashtags
-          ? React.createElement(
-              'div',
-              {
-                style: {
-                  display: 'flex',
-                  fontSize: '12px',
-                  color: '#94a3b8',
-                  marginBottom: shortQuote ? '6px' : '0px',
-                },
+          React.createElement(
+            'div',
+            { style: { display: 'flex', fontSize: '12px', color: 'rgba(255,255,255,0.6)' } },
+            'Bạn bè'
+          ),
+          // Nút [ + ] ba màu xanh/đỏ/trắng đặc trưng của TikTok
+          React.createElement(
+            'div',
+            {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '44px',
+                height: '28px',
+                borderRadius: '8px',
+                backgroundColor: '#ffffff',
+                borderLeft: '4px solid #25F4EE',
+                borderRight: '4px solid #FE2C55',
+                color: '#000000',
+                fontSize: '20px',
               },
-              String(meta.hashtags).slice(0, 72)
-            )
-          : null,
-        shortQuote
-          ? React.createElement(
-              'div',
-              {
-                style: {
-                  display: 'flex',
-                  backgroundColor: 'rgba(30, 41, 59, 0.92)',
-                  borderLeft: '3px solid #38bdf8',
-                  padding: '5px 10px',
-                  fontSize: '12px',
-                  color: '#e2e8f0',
-                },
-              },
-              `Lời thoại${meta.mentionSec ? ` (${meta.mentionSec}s)` : ''}: "${shortQuote}"`
-            )
-          : null
+            },
+            '+'
+          ),
+          React.createElement(
+            'div',
+            { style: { display: 'flex', fontSize: '12px', color: 'rgba(255,255,255,0.6)' } },
+            'Hộp thư'
+          ),
+          React.createElement(
+            'div',
+            { style: { display: 'flex', fontSize: '12px', color: 'rgba(255,255,255,0.6)' } },
+            'Hồ sơ'
+          )
+        )
       )
     );
 
@@ -1775,7 +2272,7 @@ export async function captureTikTokProductFrameBuffer(params: {
   let coverUrl = params.coverUrl || null;
   const mergedMeta: TikTokFrameOverlayMeta = { ...(params.overlayMeta || {}) };
 
-  if (!streamUrl || !coverUrl || !mergedMeta.kocHandle || !mergedMeta.productTitle) {
+  if (!streamUrl || !coverUrl || !mergedMeta.kocHandle || !mergedMeta.productTitle || !mergedMeta.avatarUrl) {
     try {
       const inspected = await inspectLiveTikTokVideoPage(params.videoUrl);
       if (inspected) {
@@ -1786,6 +2283,12 @@ export async function captureTikTokProductFrameBuffer(params: {
         }
         if (!mergedMeta.kocName && inspected.author?.nickname) {
           mergedMeta.kocName = inspected.author.nickname;
+        }
+        if (!mergedMeta.avatarUrl && inspected.author?.avatarUrl) {
+          mergedMeta.avatarUrl = inspected.author.avatarUrl;
+        }
+        if (!mergedMeta.caption && inspected.caption) {
+          mergedMeta.caption = inspected.caption;
         }
         if (!mergedMeta.productTitle && inspected.cartAnchorTitle) {
           mergedMeta.productTitle = inspected.cartAnchorTitle;
@@ -1801,6 +2304,21 @@ export async function captureTikTokProductFrameBuffer(params: {
         }
         if (mergedMeta.views === undefined && inspected.views) {
           mergedMeta.views = inspected.views;
+        }
+        if (mergedMeta.likes === undefined && inspected.likes !== null) {
+          mergedMeta.likes = inspected.likes;
+        }
+        if (mergedMeta.comments === undefined && inspected.comments !== null) {
+          mergedMeta.comments = inspected.comments;
+        }
+        if (mergedMeta.shares === undefined && inspected.shares !== null) {
+          mergedMeta.shares = inspected.shares;
+        }
+        if (mergedMeta.saves === undefined && inspected.saves !== null) {
+          mergedMeta.saves = inspected.saves;
+        }
+        if (!mergedMeta.durationSeconds && inspected.durationSeconds) {
+          mergedMeta.durationSeconds = inspected.durationSeconds;
         }
         if (!mergedMeta.hashtags && inspected.hashtags?.length) {
           mergedMeta.hashtags = inspected.hashtags.slice(0, 5).join(' ');
@@ -1952,10 +2470,26 @@ export function buildPublicZaloFrameUrl(params: {
   }
   if (params.overlayMeta?.kocHandle) qs.set('handle', params.overlayMeta.kocHandle);
   if (params.overlayMeta?.kocName) qs.set('name', params.overlayMeta.kocName);
+  if (params.overlayMeta?.caption) qs.set('cap', params.overlayMeta.caption.slice(0, 95));
   if (params.overlayMeta?.timeLabel) qs.set('tl', params.overlayMeta.timeLabel);
   if (params.overlayMeta?.airedAt) qs.set('air', params.overlayMeta.airedAt);
   if (params.overlayMeta?.views !== undefined && params.overlayMeta?.views !== null) {
     qs.set('views', String(params.overlayMeta.views));
+  }
+  if (params.overlayMeta?.likes !== undefined && params.overlayMeta?.likes !== null) {
+    qs.set('likes', String(params.overlayMeta.likes));
+  }
+  if (params.overlayMeta?.comments !== undefined && params.overlayMeta?.comments !== null) {
+    qs.set('cmt', String(params.overlayMeta.comments));
+  }
+  if (params.overlayMeta?.shares !== undefined && params.overlayMeta?.shares !== null) {
+    qs.set('shr', String(params.overlayMeta.shares));
+  }
+  if (params.overlayMeta?.saves !== undefined && params.overlayMeta?.saves !== null) {
+    qs.set('sav', String(params.overlayMeta.saves));
+  }
+  if (params.overlayMeta?.durationSeconds) {
+    qs.set('dur', String(params.overlayMeta.durationSeconds));
   }
   if (params.overlayMeta?.productTitle) qs.set('title', params.overlayMeta.productTitle.slice(0, 70));
   if (params.overlayMeta?.productId) qs.set('pid', params.overlayMeta.productId);
@@ -2900,9 +3434,15 @@ export async function processZaloWebhookEvent(
       const overlayMeta: TikTokFrameOverlayMeta = {
         kocHandle: checkResult.author?.handle || currentMapping?.kocHandle || undefined,
         kocName: checkResult.author?.name || undefined,
+        caption: checkResult.caption || undefined,
         timeLabel: holdingTimeLabel,
         airedAt: airedAtText !== 'Chưa xác định' ? airedAtText : undefined,
         views: checkResult.metrics?.views ?? null,
+        likes: checkResult.metrics?.likes ?? null,
+        comments: checkResult.metrics?.comments ?? null,
+        shares: checkResult.metrics?.shares ?? null,
+        saves: checkResult.metrics?.saves ?? null,
+        durationSeconds: checkResult.durationSeconds ?? null,
         productTitle: primaryProd?.title || checkResult.productTitle || undefined,
         productId: primaryProd?.productId || checkResult.productId || undefined,
         hashtags:
