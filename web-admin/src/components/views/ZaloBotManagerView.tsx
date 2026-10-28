@@ -129,6 +129,13 @@ interface ZaloAirCheckHistoryItem {
   status: string;
   hasProductLink: boolean;
   productTitle?: string;
+  productUrl?: string;
+  productId?: string;
+  cartProducts?: Array<{
+    productId: string;
+    title: string;
+    productUrl: string;
+  }>;
   views: number | null;
   likes: number | null;
   hashtags: string[];
@@ -219,6 +226,7 @@ const QUICK_COMMANDS: Array<{ cmd: string; label: string; role: ZaloGroupRole }>
   { cmd: '/koc @po.trann77', label: 'Tra cứu KOC @po.trann77', role: 'INTERNAL_OPS' },
   { cmd: '/koc @chutieuhan10012001', label: 'Tra cứu KOC @chutieuhan10012001', role: 'INTERNAL_OPS' },
   { cmd: '/brief', label: 'Xem Brief nhóm hiện tại', role: 'KOC_GROUP' },
+  { cmd: '/tomtat', label: 'Tóm tắt hội thoại & tiến độ nhóm', role: 'KOC_GROUP' },
   { cmd: '/sla', label: 'Báo cáo tiến độ SLA', role: 'INTERNAL_OPS' },
   { cmd: '/digest', label: 'Báo cáo tổng hợp cuối ngày', role: 'BOD_EXECUTIVE' },
   { cmd: '/status', label: 'Kiểm tra trạng thái nhóm', role: 'KOC_GROUP' },
@@ -938,17 +946,38 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
     },
     {
       key: 'cart',
-      header: 'Giỏ hàng & Hashtag',
-      render: (row) => (
-        <div className="text-xs space-y-0.5">
-          <div className={row.hasProductLink ? 'text-positive font-medium' : 'text-critical'}>
-            {row.hasProductLink ? 'Đã gắn giỏ hàng' : 'Thiếu giỏ hàng'}
+      header: 'Giỏ hàng & Link sản phẩm',
+      render: (row) => {
+        const primaryUrl = row.productUrl || row.cartProducts?.[0]?.productUrl;
+        const primaryTitle = row.productTitle || row.cartProducts?.[0]?.title;
+        const primaryId = row.productId || row.cartProducts?.[0]?.productId;
+        return (
+          <div className="text-xs space-y-0.5 max-w-xs">
+            <div className={row.hasProductLink ? 'text-positive font-medium' : 'text-critical'}>
+              {row.hasProductLink
+                ? primaryTitle
+                  ? `Đã gắn: ${primaryTitle}`
+                  : 'Đã gắn giỏ hàng'
+                : 'Thiếu giỏ hàng'}
+            </div>
+            {primaryUrl && (
+              <a
+                href={primaryUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-2xs text-accent hover:underline font-mono truncate max-w-full"
+              >
+                Link SP {primaryId ? `(${primaryId})` : ''} <ExternalLink className="w-3 h-3 shrink-0" />
+              </a>
+            )}
+            <div className="text-2xs font-mono text-ink-3 truncate">
+              {row.hashtags?.length
+                ? row.hashtags.map((h) => `#${h.replace(/^#+/, '')}`).join(' ')
+                : 'Không có hashtag'}
+            </div>
           </div>
-          <div className="text-2xs font-mono text-ink-3 truncate max-w-xs">
-            {row.hashtags?.length ? row.hashtags.map((h) => `#${h}`).join(' ') : 'Không có hashtag'}
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'metrics',

@@ -58,6 +58,7 @@ export interface ZaloGroupMapping {
   lastSenderName?: string;
   lastActiveAt?: string;
   messageCount?: number;
+  chatHistory?: Array<{ time: string; senderName: string; text: string }>;
   linkedAt: string;
   updatedAt?: string;
 }
@@ -95,6 +96,13 @@ export interface ZaloAirCheckHistoryItem {
   status: string;
   hasProductLink: boolean;
   productTitle?: string;
+  productUrl?: string;
+  productId?: string;
+  cartProducts?: Array<{
+    productId: string;
+    title: string;
+    productUrl: string;
+  }>;
   views: number | null;
   likes: number | null;
   hashtags: string[];
@@ -1142,6 +1150,99 @@ export function buildDailyDigestMessage(): string {
 /**
  * Xử lý sự kiện Webhook từ Zalo Bot hoặc từ trình giả lập lệnh trên Web
  */
+/**
+ * Tóm tắt nội dung hội thoại nhóm Zalo & tiến độ thực thi Deal (/tomtat, /summary)
+ */
+export function buildGroupSummaryMessage(
+  mapping: ZaloGroupMapping | undefined,
+  chatId: string,
+  pastedConversation?: string
+): string {
+  const lines: string[] = [
+    `📝 BẢN TÓM TẮT HỘI THOẠI & TIẾN ĐỘ NHÓM ZALO`,
+    `----------------------------------------`,
+    `• Nhóm: ${mapping?.groupName || chatId}`,
+    `• Mã Deal: ${mapping?.dealCode || 'Chưa liên kết (/link)'} | Brand: ${mapping?.brandName || '—'}`,
+    `• KOC: ${mapping?.kocName || '—'} ${mapping?.kocHandle ? `(@${mapping.kocHandle})` : ''}`,
+    `• PIC phụ trách: ${mapping?.picName || '—'} | Cấp duyệt: ${mapping?.leaderName || resolveLeaderForBrand(mapping?.brandName)}`,
+    `• Trạng thái hiện tại: ${mapping?.dealStatus || 'ĐANG_QUAY_NHÁP'} (Hạn SLA: ${mapping?.deadlineDate || '—'})`,
+  ];
+
+  // Nếu người dùng dán một đoạn hội thoại dài kèm lệnh /tomtat <nội dung>
+  const cleanPasted = String(pastedConversation || '').trim();
+  if (cleanPasted.length > 10) {
+    const rawLines = cleanPasted
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const detectedLinks = cleanPasted.match(/https?:\/\/[^\s]+/gi) || [];
+    const feedbackLines = rawLines.filter((l) =>
+      /(sửa|chỉnh|bổ sung|lưu ý|góp ý|duyệt|chốt|hạn|deadline|giỏ hàng|hashtag|quay|cảnh)/i.test(l)
+    );
+
+    lines.push(
+      `----------------------------------------`,
+      `📌 TÓM TẮT ĐOẠN HỘI THOẠI VỪA DÁN (${rawLines.length} dòng):`
+    );
+    if (feedbackLines.length > 0) {
+      lines.push(`• Các ý chính / Yêu cầu đã trao đổi:`);
+      for (const item of feedbackLines.slice(0, 6)) {
+        lines.push(`  - ${item.slice(0, 140)}`);
+      }
+    } else {
+      for (const item of rawLines.slice(0, 5)) {
+        lines.push(`  - ${item.slice(0, 140)}`);
+      }
+    }
+    if (detectedLinks.length > 0) {
+      lines.push(`• Đường link xuất hiện trong hội thoại: ${detectedLinks.join(', ')}`);
+    }
+  }
+
+  // Các mốc thực thi đã ghi nhận trong nhóm
+  lines.push(`----------------------------------------`, `🔎 CÁC MỐC QUAN TRỌNG ĐÃ GHI NHẬN:`);
+  lines.push(
+    `• Sản phẩm & Góc kịch bản: ${mapping?.productName || 'Chưa cập nhật'} (${mapping?.pillarName || 'Review trực tiếp'})`
+  );
+  lines.push(
+    `• Bản nháp (Demo): ${mapping?.draftVideoUrl ? `Đã nộp (${mapping.draftVideoUrl})` : 'Chưa nộp link nháp'}`
+  );
+  lines.push(
+    `• Phản hồi duyệt nháp: ${mapping?.draftReviewNote || 'Chưa có ghi chú chỉnh sửa'}`
+  );
+  lines.push(
+    `• Video lên sóng (Air): ${mapping?.airedVideoUrl ? `Đã nghiệm thu (${mapping.airedVideoUrl})` : 'Chưa đăng bài Air'}`
+  );
+
+  // Lịch sử tin nhắn đã gửi qua Bot trong nhóm
+  const history = mapping?.chatHistory || [];
+  if (history.length > 0) {
+    lines.push(`----------------------------------------`, `💬 NHẬT KÝ TRAO ĐỔI GẦN NHẤT VỚI BOT (${history.length} tin):`);
+    for (const h of history.slice(-6)) {
+      const timeStr = new Date(h.time).toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      lines.push(`• [${timeStr}] ${h.senderName}: ${h.text}`);
+    }
+  }
+
+  // Đề xuất hành động tiếp theo theo trạng thái
+  let nextAction = 'KOC quay video nháp theo Brief và gửi link bằng lệnh /nopnhap <link_drive>.';
+  if (mapping?.dealStatus === 'ĐÃ_NỘP_NHÁP') {
+    nextAction = `PIC (${mapping.picName || 'Booking'}) kiểm tra bản nháp và gõ /duyetnhap hoặc /suanhap <nội dung>.`;
+  } else if (mapping?.dealStatus === 'CẦN_CHỈNH_SỬA') {
+    nextAction = `KOC chỉnh sửa video theo ghi chú "${mapping.draftReviewNote || ''}" và nộp lại link mới.`;
+  } else if (mapping?.dealStatus === 'ĐÃ_DUYỆT_NHÁP') {
+    nextAction = 'KOC đăng video công khai lên TikTok gắn giỏ hàng, sau đó dán link TikTok vào nhóm để Bot nghiệm thu.';
+  } else if (mapping?.dealStatus === 'ĐÃ_NGHIỆM_THU_AIR') {
+    nextAction = 'Đã hoàn tất nghiệm thu Air. Kế toán và Pháp chế đối soát BBNT để giải ngân.';
+  }
+
+  lines.push(`----------------------------------------`, `👉 VIỆC CẦN LÀM TIẾP THEO: ${nextAction}`);
+  return lines.join('\n');
+}
+
 export async function processZaloWebhookEvent(
   body: any,
   options?: { skipSendToZalo?: boolean; overrideGroupRole?: ZaloGroupRole }
@@ -1199,6 +1300,11 @@ export async function processZaloWebhookEvent(
   // TỰ ĐỘNG GHI NHẬN CHAT ID NHÓM VÀ NGƯỜI GỬI NGAY KHI NHẬN TIN NHẮN ĐỂ PHỤC VỤ PHÂN QUYỀN TRÊN WEB
   if (!isSimulatedFromWeb) {
     const nowIso = new Date().toISOString();
+    const newEntry = {
+      time: nowIso,
+      senderName: senderName || 'Thành viên',
+      text: cleanText.slice(0, 140) || rawText.slice(0, 140),
+    };
     if (!currentMapping) {
       currentMapping = {
         groupId: chatId,
@@ -1211,6 +1317,7 @@ export async function processZaloWebhookEvent(
         lastSenderName: senderName,
         lastActiveAt: nowIso,
         messageCount: 1,
+        chatHistory: [newEntry],
         dealStatus: 'ĐANG_QUAY_NHÁP',
         linkedAt: nowIso,
         updatedAt: nowIso,
@@ -1218,6 +1325,7 @@ export async function processZaloWebhookEvent(
       mappings.set(chatId, currentMapping);
       saveMappings();
     } else {
+      const nextHistory = [...(currentMapping.chatHistory || []), newEntry].slice(-25);
       currentMapping = {
         ...currentMapping,
         lastMessageText: rawText.slice(0, 120),
@@ -1225,6 +1333,7 @@ export async function processZaloWebhookEvent(
         lastSenderName: senderName || currentMapping.lastSenderName,
         lastActiveAt: nowIso,
         messageCount: (currentMapping.messageCount || 0) + 1,
+        chatHistory: nextHistory,
         updatedAt: nowIso,
       };
       mappings.set(chatId, currentMapping);
@@ -1307,13 +1416,50 @@ export async function processZaloWebhookEvent(
           ? '⚠️ CẦN RÀ SOÁT (REVIEW)'
           : '❌ KHÔNG ĐẠT (FAIL)';
 
+      const normalizedCartProducts =
+        checkResult.cartProducts && checkResult.cartProducts.length > 0
+          ? checkResult.cartProducts.map((p) => ({
+              productId: p.productId || '',
+              title: p.title || p.anchorKeyword || 'Sản phẩm TikTok Shop',
+              productUrl:
+                p.productUrl ||
+                (p.productId
+                  ? `https://shop.tiktok.com/view/product/${p.productId}?region=VN&locale=vi-VN`
+                  : ''),
+            }))
+          : checkResult.productUrl || checkResult.productId || checkResult.productTitle
+            ? [
+                {
+                  productId: checkResult.productId || '',
+                  title: checkResult.productTitle || 'Sản phẩm TikTok Shop',
+                  productUrl:
+                    checkResult.productUrl ||
+                    (checkResult.productId
+                      ? `https://shop.tiktok.com/view/product/${checkResult.productId}?region=VN&locale=vi-VN`
+                      : ''),
+                },
+              ]
+            : [];
+
+      const primaryProd = normalizedCartProducts[0];
       const cartText = checkResult.hasProductLink
-        ? `Đã gắn giỏ hàng (${
-            checkResult.cartProducts?.map((p) => p.title).join(', ') ||
-            checkResult.productTitle ||
-            'Đã phát hiện link sản phẩm'
-          })`
+        ? normalizedCartProducts.length > 0
+          ? `Đã gắn giỏ hàng (${normalizedCartProducts
+              .map((p) => (p.productId ? `${p.title} [Mã SP: ${p.productId}]` : p.title))
+              .join(' | ')})`
+          : 'Đã gắn giỏ hàng (Đã bật cờ giỏ hàng trên video)'
         : 'Chưa phát hiện giỏ hàng';
+
+      const productLinkLines: string[] =
+        normalizedCartProducts.length > 0
+          ? normalizedCartProducts
+              .filter((p) => Boolean(p.productUrl))
+              .map((p, idx) =>
+                normalizedCartProducts.length === 1
+                  ? `• Link sản phẩm: ${p.productUrl}`
+                  : `• Link SP #${idx + 1} (${p.productId || p.title.slice(0, 24)}): ${p.productUrl}`
+              )
+          : [];
 
       // Cập nhật trạng thái Deal nếu nhóm đã liên kết và kết quả PASS
       if (currentMapping && isPass) {
@@ -1336,8 +1482,10 @@ export async function processZaloWebhookEvent(
         verdict: checkResult.verdict,
         status: checkResult.status,
         hasProductLink: Boolean(checkResult.hasProductLink),
-        productTitle:
-          checkResult.cartProducts?.[0]?.title || checkResult.productTitle || undefined,
+        productTitle: primaryProd?.title || checkResult.productTitle || undefined,
+        productUrl: primaryProd?.productUrl || checkResult.productUrl || undefined,
+        productId: primaryProd?.productId || checkResult.productId || undefined,
+        cartProducts: normalizedCartProducts.length > 0 ? normalizedCartProducts : undefined,
         views: checkResult.metrics?.views ?? null,
         likes: checkResult.metrics?.likes ?? null,
         hashtags: checkResult.hashtags || [],
@@ -1351,11 +1499,12 @@ export async function processZaloWebhookEvent(
         `• Tác giả kênh: @${checkResult.author?.handle || 'Chưa rõ'}`,
         `• Tình trạng: ${checkResult.status === 'LIVE' ? 'Đang công khai (Live/Air)' : checkResult.status}`,
         `• Giỏ hàng: ${cartText}`,
+        ...productLinkLines,
         `• Lượt xem: ${checkResult.metrics?.views ? checkResult.metrics.views.toLocaleString('vi-VN') : '—'}`,
         `• Lượt thích: ${checkResult.metrics?.likes ? checkResult.metrics.likes.toLocaleString('vi-VN') : '—'}`,
         `• Hashtags: ${
           checkResult.hashtags && checkResult.hashtags.length > 0
-            ? checkResult.hashtags.map((h) => `#${h}`).join(' ')
+            ? checkResult.hashtags.map((h) => `#${h.replace(/^#+/, '')}`).join(' ')
             : '—'
         }`,
         `----------------------------------------`,
@@ -1725,7 +1874,28 @@ export async function processZaloWebhookEvent(
     return { handled: true, reply: successMsg, extractedChatId: chatId };
   }
 
-  // 12. LỆNH KIỂM TRA TRẠNG THÁI NHÓM: /status
+  // 12. LỆNH TÓM TẮT HỘI THOẠI & TIẾN ĐỘ NHÓM: /tomtat HOẶC /summary
+  if (
+    lowerClean === '/tomtat' ||
+    lowerClean === 'tomtat' ||
+    lowerClean.startsWith('/tomtat ') ||
+    lowerClean === '/summary' ||
+    lowerClean.startsWith('/summary ')
+  ) {
+    const pasted = cleanText.replace(/^\/?(?:tomtat|summary)\s*/i, '').trim();
+    if (pasted && currentMapping) {
+      currentMapping.draftReviewNote = pasted.slice(0, 220);
+      currentMapping.updatedAt = new Date().toISOString();
+      mappings.set(chatId, currentMapping);
+      saveMappings();
+      void syncZaloBotStateToDb({ upsertGroup: currentMapping });
+    }
+    const summaryMsg = buildGroupSummaryMessage(currentMapping, chatId, pasted);
+    await replyToChat(summaryMsg);
+    return { handled: true, reply: summaryMsg, extractedChatId: chatId };
+  }
+
+  // 13. LỆNH KIỂM TRA TRẠNG THÁI NHÓM: /status
   if (lowerClean === '/status' || lowerClean === 'status') {
     const statusMsg = currentMapping
       ? [
