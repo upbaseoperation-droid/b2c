@@ -1414,7 +1414,7 @@ export function appendKocsToStaffBrandSheet(params: {
 }
 
 /**
- * Đồng bộ ngược thông tin liên hệ (Email, Zalo, SĐT, Địa chỉ nhận mẫu) từ Danh bạ KOC sang các dòng tương ứng trên toàn bộ Sheet Listing
+ * Đồng bộ ngược thông tin liên hệ + chỉ số KOC (Follower, View, GMV, Tỷ trọng kênh/giới tính/độ tuổi, Email, Zalo, SĐT, Địa chỉ nhận mẫu) từ Danh bạ KOC sang các dòng tương ứng trên toàn bộ Sheet Listing
  */
 export function syncKocContactToStaffSheets(updatedKoc: KocItem): void {
   if (typeof window === 'undefined') return;
@@ -1437,8 +1437,87 @@ export function syncKocContactToStaffSheets(updatedKoc: KocItem): void {
           (cleanHandle && rowHandle === cleanHandle);
         if (!isMatch) return r;
         changed = true;
-        return {
+        const nuVal =
+          updatedKoc.femaleRatio !== undefined ? Number(updatedKoc.femaleRatio) : r.nuPct;
+        const namVal =
+          updatedKoc.maleRatio !== undefined
+            ? Number(updatedKoc.maleRatio)
+            : updatedKoc.femaleRatio !== undefined
+              ? Math.max(0, Number((100 - nuVal).toFixed(2)))
+              : r.namPct;
+        const topCat =
+          updatedKoc.tiktokTopCategories && updatedKoc.tiktokTopCategories.length > 0
+            ? updatedKoc.tiktokTopCategories.slice(0, 3).join(', ')
+            : updatedKoc.niche || updatedKoc.kocCategory || r.tiTrongNganhHang;
+
+        return recalculateStaffListingRow({
           ...r,
+          tenKenh: updatedKoc.stageName || r.tenKenh,
+          tepKenh: updatedKoc.tepKenh || updatedKoc.creatorCategory || r.tepKenh,
+          follower:
+            updatedKoc.followers !== undefined && updatedKoc.followers > 0
+              ? Number(updatedKoc.followers)
+              : r.follower,
+          giaNetVideo:
+            updatedKoc.rateCardVideo !== undefined && updatedKoc.rateCardVideo > 0 && !r.giaNetVideo
+              ? Number(updatedKoc.rateCardVideo)
+              : r.giaNetVideo,
+          doanhSo:
+            updatedKoc.recentRevenue !== undefined && updatedKoc.recentRevenue > 0
+              ? Number(updatedKoc.recentRevenue)
+              : r.doanhSo,
+          doanhSoUocTinh30d:
+            updatedKoc.recentRevenue !== undefined && updatedKoc.recentRevenue > 0
+              ? Number(updatedKoc.recentRevenue)
+              : r.doanhSoUocTinh30d,
+          soMonBanRa:
+            updatedKoc.itemsSold !== undefined && updatedKoc.itemsSold > 0
+              ? Number(updatedKoc.itemsSold)
+              : r.soMonBanRa,
+          gpm:
+            updatedKoc.gpm !== undefined && updatedKoc.gpm > 0
+              ? Number(updatedKoc.gpm)
+              : r.gpm,
+          aov:
+            updatedKoc.aov !== undefined && updatedKoc.aov > 0
+              ? Number(updatedKoc.aov)
+              : r.aov,
+          viewTrungBinh:
+            updatedKoc.avgViews !== undefined && updatedKoc.avgViews > 0
+              ? Number(updatedKoc.avgViews)
+              : r.viewTrungBinh,
+          viewTrungVi:
+            updatedKoc.medianViews !== undefined && updatedKoc.medianViews > 0
+              ? Number(updatedKoc.medianViews)
+              : r.viewTrungVi,
+          ctrPct:
+            updatedKoc.tiktokAvgCtr !== undefined && updatedKoc.tiktokAvgCtr > 0
+              ? Number(updatedKoc.tiktokAvgCtr)
+              : r.ctrPct,
+          crPct:
+            updatedKoc.tiktokAvgCvr !== undefined && updatedKoc.tiktokAvgCvr > 0
+              ? Number(updatedKoc.tiktokAvgCvr)
+              : r.crPct,
+          tyLeTuongTacPct:
+            updatedKoc.engagementRate !== undefined && updatedKoc.engagementRate > 0
+              ? Number(updatedKoc.engagementRate)
+              : r.tyLeTuongTacPct,
+          gmvTuVideoPct:
+            updatedKoc.gmvShareVideo !== undefined
+              ? Number(updatedKoc.gmvShareVideo)
+              : r.gmvTuVideoPct,
+          gmvTuLivePct:
+            updatedKoc.gmvShareLive !== undefined
+              ? Number(updatedKoc.gmvShareLive)
+              : r.gmvTuLivePct,
+          namPct: namVal,
+          nuPct: nuVal,
+          tuoi18_24Pct:
+            updatedKoc.age18_24 !== undefined ? Number(updatedKoc.age18_24) : r.tuoi18_24Pct,
+          tuoi25_34Pct:
+            updatedKoc.age25_34 !== undefined ? Number(updatedKoc.age25_34) : r.tuoi25_34Pct,
+          tiTrongNganhHang: topCat,
+          location: updatedKoc.location || r.location,
           email: updatedKoc.email !== undefined ? updatedKoc.email : r.email,
           zalo: updatedKoc.zalo || updatedKoc.phone || r.zalo,
           nguoiNhanHang:
@@ -1454,7 +1533,7 @@ export function syncKocContactToStaffSheets(updatedKoc: KocItem): void {
           soTaiKhoan: updatedKoc.bankAccount || r.soTaiKhoan,
           nganHang: updatedKoc.bankName || r.nganHang,
           soCccd: updatedKoc.cccd || updatedKoc.taxCode || r.soCccd,
-        };
+        });
       });
     }
 
@@ -1469,11 +1548,31 @@ export function syncKocContactToStaffSheets(updatedKoc: KocItem): void {
 export const KOC_MASTER_CONTACT_SYNCED_EVENT = 'upbase:koc-master-contact-synced';
 
 /**
- * Đồng bộ Email / Zalo từ dòng Sheet Listing ngược về Danh bạ KOC (`upbase_saved_kocs_v1` & `/api/kocs`)
+ * Đồng bộ Email / Zalo & các chỉ số KOC từ dòng Sheet Listing ngược về Danh bạ KOC (`upbase_saved_kocs_v1` & `/api/kocs`)
  */
 export function syncSheetRowContactToKocMaster(params: {
   kocId?: string;
   idKenh?: string;
+  stageName?: string;
+  tepKenh?: string;
+  followers?: number;
+  rateCardVideo?: number;
+  recentRevenue?: number;
+  itemsSold?: number;
+  gpm?: number;
+  aov?: number;
+  avgViews?: number;
+  medianViews?: number;
+  tiktokAvgCtr?: number;
+  tiktokAvgCvr?: number;
+  engagementRate?: number;
+  gmvShareVideo?: number;
+  gmvShareLive?: number;
+  maleRatio?: number;
+  femaleRatio?: number;
+  age18_24?: number;
+  age25_34?: number;
+  location?: string;
   email?: string;
   zalo?: string;
   phone?: string;
@@ -1511,6 +1610,50 @@ export function syncSheetRowContactToKocMaster(params: {
 
     const updatedKoc: KocItem = {
       ...baseKoc,
+      ...(params.stageName !== undefined && params.stageName.trim()
+        ? { stageName: params.stageName.trim() }
+        : {}),
+      ...(params.tepKenh !== undefined && params.tepKenh.trim()
+        ? { tepKenh: params.tepKenh.trim() as KocItem['tepKenh'] }
+        : {}),
+      ...(params.followers !== undefined ? { followers: Number(params.followers) || 0 } : {}),
+      ...(params.rateCardVideo !== undefined
+        ? { rateCardVideo: Number(params.rateCardVideo) || 0 }
+        : {}),
+      ...(params.recentRevenue !== undefined
+        ? { recentRevenue: Number(params.recentRevenue) || 0 }
+        : {}),
+      ...(params.itemsSold !== undefined ? { itemsSold: Number(params.itemsSold) || 0 } : {}),
+      ...(params.gpm !== undefined ? { gpm: Number(params.gpm) || 0 } : {}),
+      ...(params.aov !== undefined ? { aov: Number(params.aov) || 0 } : {}),
+      ...(params.avgViews !== undefined ? { avgViews: Number(params.avgViews) || 0 } : {}),
+      ...(params.medianViews !== undefined
+        ? { medianViews: Number(params.medianViews) || 0 }
+        : {}),
+      ...(params.tiktokAvgCtr !== undefined
+        ? { tiktokAvgCtr: Number(params.tiktokAvgCtr) || 0 }
+        : {}),
+      ...(params.tiktokAvgCvr !== undefined
+        ? { tiktokAvgCvr: Number(params.tiktokAvgCvr) || 0 }
+        : {}),
+      ...(params.engagementRate !== undefined
+        ? { engagementRate: Number(params.engagementRate) || 0 }
+        : {}),
+      ...(params.gmvShareVideo !== undefined
+        ? { gmvShareVideo: Number(params.gmvShareVideo) || 0 }
+        : {}),
+      ...(params.gmvShareLive !== undefined
+        ? { gmvShareLive: Number(params.gmvShareLive) || 0 }
+        : {}),
+      ...(params.maleRatio !== undefined ? { maleRatio: Number(params.maleRatio) || 0 } : {}),
+      ...(params.femaleRatio !== undefined
+        ? { femaleRatio: Number(params.femaleRatio) || 0 }
+        : {}),
+      ...(params.age18_24 !== undefined ? { age18_24: Number(params.age18_24) || 0 } : {}),
+      ...(params.age25_34 !== undefined ? { age25_34: Number(params.age25_34) || 0 } : {}),
+      ...(params.location !== undefined && params.location.trim()
+        ? { location: params.location.trim() }
+        : {}),
       ...(params.email !== undefined ? { email: params.email.trim() } : {}),
       ...(params.zalo !== undefined ? { zalo: params.zalo.trim() } : {}),
       ...(params.phone !== undefined ? { phone: params.phone.trim() } : {}),

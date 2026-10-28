@@ -990,7 +990,27 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         return;
       }
     }
-    const contactKeys: StaffListingColumnKey[] = [
+    const syncMasterKeys: StaffListingColumnKey[] = [
+      'tenKenh',
+      'tepKenh',
+      'follower',
+      'giaNetVideo',
+      'doanhSo',
+      'soMonBanRa',
+      'gpm',
+      'aov',
+      'viewTrungBinh',
+      'viewTrungVi',
+      'ctrPct',
+      'crPct',
+      'tyLeTuongTacPct',
+      'gmvTuVideoPct',
+      'gmvTuLivePct',
+      'namPct',
+      'nuPct',
+      'tuoi18_24Pct',
+      'tuoi25_34Pct',
+      'location',
       'email',
       'zalo',
       'nguoiNhanHang',
@@ -1000,13 +1020,38 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       'nganHang',
       'soCccd',
     ];
-    if (contactKeys.includes(key)) {
+    if (syncMasterKeys.includes(key)) {
       const targetRow = rows.find((r) => r.id === rowId);
       if (targetRow) {
         const strVal = String(value);
+        const numVal = Number(value) || 0;
         syncSheetRowContactToKocMaster({
           kocId: targetRow.kocId,
           idKenh: targetRow.idKenh,
+          ...(key === 'tenKenh' ? { stageName: strVal } : {}),
+          ...(key === 'tepKenh' ? { tepKenh: strVal } : {}),
+          ...(key === 'follower' ? { followers: numVal } : {}),
+          ...(key === 'giaNetVideo' ? { rateCardVideo: numVal } : {}),
+          ...(key === 'doanhSo' ? { recentRevenue: numVal } : {}),
+          ...(key === 'soMonBanRa' ? { itemsSold: numVal } : {}),
+          ...(key === 'gpm' ? { gpm: numVal } : {}),
+          ...(key === 'aov' ? { aov: numVal } : {}),
+          ...(key === 'viewTrungBinh' ? { avgViews: numVal } : {}),
+          ...(key === 'viewTrungVi' ? { medianViews: numVal } : {}),
+          ...(key === 'ctrPct' ? { tiktokAvgCtr: numVal } : {}),
+          ...(key === 'crPct' ? { tiktokAvgCvr: numVal } : {}),
+          ...(key === 'tyLeTuongTacPct' ? { engagementRate: numVal } : {}),
+          ...(key === 'gmvTuVideoPct' ? { gmvShareVideo: numVal } : {}),
+          ...(key === 'gmvTuLivePct' ? { gmvShareLive: numVal } : {}),
+          ...(key === 'namPct'
+            ? { maleRatio: numVal, femaleRatio: Math.max(0, Number((100 - numVal).toFixed(2))) }
+            : {}),
+          ...(key === 'nuPct'
+            ? { femaleRatio: numVal, maleRatio: Math.max(0, Number((100 - numVal).toFixed(2))) }
+            : {}),
+          ...(key === 'tuoi18_24Pct' ? { age18_24: numVal } : {}),
+          ...(key === 'tuoi25_34Pct' ? { age25_34: numVal } : {}),
+          ...(key === 'location' ? { location: strVal } : {}),
           ...(key === 'email' ? { email: strVal } : {}),
           ...(key === 'zalo' ? { zalo: strVal, phone: strVal } : {}),
           ...(key === 'nguoiNhanHang' ? { shippingRecipientName: strVal } : {}),
