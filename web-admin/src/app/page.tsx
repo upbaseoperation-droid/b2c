@@ -64,7 +64,6 @@ const KocListingBatchHubView = dynamic(() => import('../components/views/KocList
 const ApprovedBookingListView = dynamic(() => import('../components/views/ApprovedBookingListView').then(m => m.ApprovedBookingListView), { loading: ViewLoading });
 const AirBookingReportHubView = dynamic(() => import('../components/views/AirBookingReportHubView').then(m => m.AirBookingReportHubView), { loading: ViewLoading });
 const KocMasterDataView = dynamic(() => import('../components/views/KocMasterDataView').then(m => m.KocMasterDataView), { loading: ViewLoading });
-const CtvManagementView = dynamic(() => import('../components/views/CtvManagementView').then(m => m.CtvManagementView), { loading: ViewLoading });
 const ContractManagementView = dynamic(() => import('../components/views/ContractManagementView').then(m => m.ContractManagementView), { loading: ViewLoading });
 const WeeklyAdsReportHubView = dynamic(() => import('../components/views/WeeklyAdsReportHubView').then(m => m.WeeklyAdsReportHubView), { loading: ViewLoading });
 const ApiKeySetupView = dynamic(() => import('../components/views/ApiKeySetupView').then(m => m.ApiKeySetupView), { loading: ViewLoading });
@@ -107,7 +106,7 @@ import {
   INITIAL_KOC_LISTINGS,
   INITIAL_CAMPAIGNS
 } from '../lib/mockData';
-import { INITIAL_CONTRIBUTORS, INITIAL_SELF_CHANNEL_TASKS } from '../lib/selfChannelData';
+import { useCtvDirectory } from '../lib/useCtvDirectory';
 import { INITIAL_THIRD_PARTY_ACCOUNTS, convertPartnerAccountToUserProfile } from '../lib/thirdPartyAccessData';
 import { INITIAL_MONTHLY_PLANS } from '../lib/monthlyPlanData';
 import { 
@@ -117,7 +116,6 @@ import {
   SlaTask, 
   KocItem, 
   Contributor,
-  SelfChannelVideoTask,
   CampaignItem, 
   StaffDetailedPlanItem, 
   MonthlyStaffAllocation,
@@ -401,7 +399,6 @@ export default function App() {
     const timerWave2 = window.setTimeout(() => {
       void import('../components/views/ContentView');
       void import('../components/views/SelfChannelCtvHubView');
-      void import('../components/views/CtvManagementView');
       void import('../components/views/SampleTrackerView');
       void import('../components/views/PushProductsView');
       void import('../components/views/PerformanceP3View');
@@ -751,8 +748,8 @@ export default function App() {
       window.removeEventListener('upbase:koc-master-contact-synced', handleMasterContactSynced);
     };
   }, [syncCustomKocsIntoState, persistKocsToDatabase]);
-  const [contributors, setContributors] = useState<Contributor[]>(INITIAL_CONTRIBUTORS);
-  const [selfChannelTasks, setSelfChannelTasks] = useState<SelfChannelVideoTask[]>(INITIAL_SELF_CHANNEL_TASKS);
+  const ctvDirectory = useCtvDirectory(Boolean(currentUser), showToast);
+  const contributors = ctvDirectory.contributors;
   const [deals, setDeals] = useState<BookingDealItem[]>(INITIAL_DEALS);
   const [tasks, setTasks] = useState<SlaTask[]>(() => {
     if (typeof window === 'undefined') return INITIAL_TASKS;
@@ -1466,19 +1463,17 @@ export default function App() {
     showToast(`Đã cập nhật và lưu CSDL hồ sơ của ${updatedKoc.stageName}`);
   };
 
+  // Danh bạ CTV lưu trên máy chủ: báo thành công chỉ khi máy chủ nhận (lỗi quyền / mạng hook tự báo và tải lại)
   const handleContributorCreated = (newCtv: Contributor) => {
-    setContributors(prev => [newCtv, ...prev]);
-    showToast(`Đã thêm CTV / VJ ${newCtv.name} vào danh bạ`);
+    void ctvDirectory.upsert(newCtv).then(ok => ok && showToast(`Đã thêm CTV / VJ ${newCtv.name} vào danh bạ`));
   };
 
   const handleContributorUpdated = (updatedCtv: Contributor) => {
-    setContributors(prev => prev.map(c => c.id === updatedCtv.id ? updatedCtv : c));
-    showToast(`Đã cập nhật hồ sơ CTV / VJ ${updatedCtv.name}`);
+    void ctvDirectory.upsert(updatedCtv).then(ok => ok && showToast(`Đã cập nhật hồ sơ CTV / VJ ${updatedCtv.name}`));
   };
 
   const handleContributorDeleted = (ctvId: string) => {
-    setContributors(prev => prev.filter(c => c.id !== ctvId));
-    showToast('Đã xóa CTV / VJ khỏi danh sách');
+    void ctvDirectory.remove(ctvId).then(ok => ok && showToast('Đã xóa CTV / VJ khỏi danh sách'));
   };
 
   const handleTaskActionClick = (task: SlaTask) => {
@@ -1822,8 +1817,11 @@ export default function App() {
               }}
               onNavigateToCtvProfile={(ctvId) => {
                 setSelectedCtvContext(ctvId || null);
-                setActiveTab('ctv-master');
+                setActiveTab('self-channel-hub');
               }}
+              ctvAccess={ctvDirectory.access}
+              partnershipStaff={ctvDirectory.partnershipStaff}
+              onSavePartnershipStaff={ctvDirectory.savePartnershipStaff}
               onNavigateToKocPortal={(kocId) => {
                 setSelectedKocContext(kocId);
                 setActiveTab('koc-hub');
@@ -1852,31 +1850,10 @@ export default function App() {
               currentUser={currentUser}
               brands={scopedBrands}
               contributors={contributors}
-              tasks={selfChannelTasks}
-              onTasksChange={setSelfChannelTasks}
               onContributorCreated={handleContributorCreated}
               onContributorUpdated={handleContributorUpdated}
-              onOpenCtvProfile={(ctvId) => {
-                setSelectedCtvContext(ctvId || null);
-                setActiveTab('ctv-master');
-              }}
-              onOpenInputPlan={() => setActiveTab('input-plan')}
-              onNotify={showToast}
-              onOpenPushProducts={() => setActiveTab('push-products')}
-              onNavigateToBrand={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('campaigns') : undefined}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="ctv-master" currentTab={activeTab}>
-            <CtvManagementView
-              contributors={contributors}
-              tasks={selfChannelTasks}
-              currentUser={currentUser}
-              selectedCtvId={selectedCtvContext}
-              onContributorCreated={handleContributorCreated}
-              onContributorUpdated={handleContributorUpdated}
-              onOpenSelfChannelHub={() => setActiveTab('self-channel-hub')}
-              onNavigateBackToMaster={() => setActiveTab('master-data')}
+              ctvAccess={ctvDirectory.access}
+              focusCtvId={selectedCtvContext}
               onNotify={showToast}
             />
           </KeepAliveTab>
@@ -2278,8 +2255,9 @@ export default function App() {
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="zalo-bot" currentTab={activeTab}>
-            <ZaloBotManagerView
+            <ApiKeySetupView
               currentUser={currentUser}
+              initialTab="zalo-bot"
               onNotify={showToast}
             />
           </KeepAliveTab>

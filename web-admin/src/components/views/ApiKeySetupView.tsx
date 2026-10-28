@@ -66,14 +66,25 @@ import {
 } from '../../lib/apiKeyConfig';
 import { getVietnamDateYmd } from '../../lib/format';
 import { UserProfile } from '../../lib/types';
+import { USERS } from '../../lib/mockData';
 import { CloudflareR2SetupPanel } from '../brands/CloudflareR2SetupPanel';
+import { ZaloBotManagerView } from './ZaloBotManagerView';
+import { GoogleSheetsSetupPanel } from './integrations/GoogleSheetsSetupPanel';
 
 interface ApiKeySetupViewProps {
   currentUser?: UserProfile;
+  initialTab?: SetupMainTab;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
-type SetupMainTab = 'providers' | 'storage' | 'routing' | 'metrics' | 'playground';
+export type SetupMainTab =
+  | 'providers'
+  | 'zalo-bot'
+  | 'google-sheets'
+  | 'storage'
+  | 'routing'
+  | 'metrics'
+  | 'playground';
 
 const PURPOSE_ICONS: Record<OperationalApiPurposeId, React.ComponentType<{ className?: string }>> = {
   LEGAL_OCR: ShieldCheck,
@@ -100,8 +111,14 @@ const DEPT_SCOPE_LABELS: Record<SavedNamedApiKey['departmentScope'], string> = {
   ACCOUNTING_LEGAL: 'Bộ phận Hợp đồng & Kế toán',
 };
 
-export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) => {
-  const [activeTab, setActiveTab] = useState<SetupMainTab>('providers');
+export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ currentUser, initialTab, onNotify }) => {
+  const [activeTab, setActiveTab] = useState<SetupMainTab>(initialTab || 'providers');
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const [config, setConfig] = useState<ApiWorkspaceConfigState>(() => loadApiWorkspaceConfig());
 
   // State ẩn/hiện khóa API cho 3 nhà cung cấp chính
@@ -524,133 +541,13 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-150">
       {/* ===================================================================== */}
-      {/* 1. BANNER TỔNG QUAN & TRẠNG THÁI 3 NHÀ CUNG CẤP (GOOGLE / CHATGPT / CLAUDE) */}
-      {/* ===================================================================== */}
-      <div className="bg-surface border border-line rounded-xl p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-accent-soft border border-line text-accent flex items-center justify-center shrink-0">
-              <KeyRound className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-ink">Quản lý Khóa API & Phân Luồng Nghiệp Vụ</h2>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleTestAllProviders}
-              disabled={isTestingAll}
-              className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-surface hover:bg-sunken text-ink border border-line-strong transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-accent ${isTestingAll ? 'animate-spin' : ''}`} />
-              <span>Kiểm tra kết nối</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsConfirmResetOpen(true)}
-              className="px-3 py-2 rounded-lg text-xs font-medium bg-surface hover:bg-sunken text-ink-2 border border-line transition flex items-center gap-1.5 cursor-pointer"
-              title="Khôi phục bảng phân bổ về mặc định"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-ink-3" />
-              <span>Mặc định</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                saveApiWorkspaceConfig(config);
-                onNotify?.('Đã lưu toàn bộ cấu hình khóa API và bảng phân bổ nghiệp vụ!', 'success');
-              }}
-              className="px-4 py-2 rounded-lg text-xs font-semibold bg-positive hover:bg-positive text-white transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>Lưu cấu hình</span>
-            </button>
-          </div>
-        </div>
-
-        {/* 3 Thẻ Tóm tắt Nhà Cung Cấp + 1 Thẻ Tổng Mục Đích */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-line">
-          {(['GOOGLE', 'OPENAI', 'CLAUDE'] as const).map(pid => {
-            const prov = config.providers[pid];
-            const meta = PROVIDER_META[pid];
-            const hasKey = Boolean(prov.apiKey.trim());
-            const assignedCount = providerPurposeCounts[pid].length;
-
-            return (
-              <div
-                key={pid}
-                onClick={() => setActiveTab('providers')}
-                className="p-3.5 rounded-xl bg-surface-subtle border border-line hover:border-line-strong transition cursor-pointer space-y-2"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-2xs font-semibold text-ink-2">
-                    {prov.shortName}
-                  </span>
-                  <Status
-                    tone={
-                      prov.lastTestStatus === 'CONNECTED'
-                        ? 'positive'
-                        : prov.lastTestStatus === 'ERROR'
-                          ? 'critical'
-                          : hasKey
-                            ? 'info'
-                            : 'neutral'
-                    }
-                  >
-                    {prov.lastTestStatus === 'CONNECTED'
-                      ? `Đã thông (${prov.lastTestLatencyMs}ms)`
-                      : hasKey
-                        ? 'Đã nhập khóa'
-                        : 'Chưa nhập khóa'}
-                  </Status>
-                </div>
-
-                <div className="flex items-baseline justify-between">
-                  <div className="text-xs font-mono font-semibold text-ink truncate">
-                    {prov.defaultModel}
-                  </div>
-                  <div className="text-2xs text-ink-3 shrink-0">
-                    Gán cho <strong className="text-ink">{assignedCount} mục đích</strong>
-                  </div>
-                </div>
-
-                <div className="text-2xs text-ink-3 font-mono truncate">
-                  {hasKey ? maskApiKey(prov.apiKey) : 'Chưa nhập khóa'}
-                </div>
-              </div>
-            );
-          })}
-
-          <div
-            onClick={() => setActiveTab('routing')}
-            className="p-3.5 rounded-xl bg-surface-subtle border border-line hover:border-line-strong transition cursor-pointer space-y-2"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-2xs font-semibold text-accent">
-                Phân luồng nghiệp vụ
-              </span>
-              <span className="text-2xs font-semibold text-positive">{purposeList.length}/{purposeList.length} nghiệp vụ</span>
-            </div>
-            <div className="text-xs font-semibold text-ink">
-              Tự động chuyển dự phòng
-            </div>
-            <div className="text-2xs text-ink-3 leading-snug">
-              Google: {providerPurposeCounts.GOOGLE.length} · ChatGPT: {providerPurposeCounts.OPENAI.length} · Claude: {providerPurposeCounts.CLAUDE.length} · Nội bộ: {providerPurposeCounts.INTERNAL.length}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ===================================================================== */}
-      {/* 2. THANH CHUYỂN TAB (5 MỤC)                                           */}
+      {/* 1. THANH CHUYỂN TAB TỔNG HỢP CÁC KÊNH TÍCH HỢP & KẾT NỐI             */}
       {/* ===================================================================== */}
       <Tabs
         items={[
           { key: 'providers', label: 'Khóa API & Nhà Cung Cấp', count: 3 },
+          { key: 'zalo-bot', label: 'Trợ lý Zalo Bot & Webhook' },
+          { key: 'google-sheets', label: 'Google Sheets & Apps Script' },
           { key: 'storage', label: 'Kho Lưu Trữ Cloudflare R2' },
           { key: 'routing', label: 'Phân Bổ Nghiệp Vụ', count: purposeList.length },
           { key: 'metrics', label: 'Đo Lường & Chi Phí', count: usageLogs.length },
@@ -660,9 +557,157 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
         onChange={k => setActiveTab(k as SetupMainTab)}
       />
 
+      {/* ===================================================================== */}
+      {/* TAB: TRỢ LÝ ZALO BOT & WEBHOOK NHÓM CHAT                              */}
+      {/* ===================================================================== */}
+      {activeTab === 'zalo-bot' && (
+        <div className="animate-in fade-in duration-150">
+          <ZaloBotManagerView
+            currentUser={currentUser || USERS[0]}
+            onNotify={onNotify}
+          />
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* TAB: GOOGLE SHEETS & APPS SCRIPT AUTOMATION                           */}
+      {/* ===================================================================== */}
+      {activeTab === 'google-sheets' && (
+        <div className="animate-in fade-in duration-150">
+          <GoogleSheetsSetupPanel onNotify={onNotify} />
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* TAB: KHO LƯU TRỮ CLOUDFLARE R2                                         */}
+      {/* ===================================================================== */}
       {activeTab === 'storage' && (
         <div className="animate-in fade-in duration-150">
           <CloudflareR2SetupPanel onNotify={onNotify} />
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* BANNER TỔNG QUAN & TRẠNG THÁI CHO CÁC TAB KHÓA API & ĐIỀU PHỐI MÔ HÌNH */}
+      {/* ===================================================================== */}
+      {(['providers', 'routing', 'metrics', 'playground'] as SetupMainTab[]).includes(activeTab) && (
+        <div className="bg-surface border border-line rounded-xl p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-accent-soft border border-line text-accent flex items-center justify-center shrink-0">
+                <KeyRound className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-ink">Quản lý Khóa API & Phân Luồng Nghiệp Vụ</h2>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleTestAllProviders}
+                disabled={isTestingAll}
+                className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-surface hover:bg-sunken text-ink border border-line-strong transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-accent ${isTestingAll ? 'animate-spin' : ''}`} />
+                <span>Kiểm tra kết nối</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsConfirmResetOpen(true)}
+                className="px-3 py-2 rounded-lg text-xs font-medium bg-surface hover:bg-sunken text-ink-2 border border-line transition flex items-center gap-1.5 cursor-pointer"
+                title="Khôi phục bảng phân bổ về mặc định"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-ink-3" />
+                <span>Mặc định</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  saveApiWorkspaceConfig(config);
+                  onNotify?.('Đã lưu toàn bộ cấu hình khóa API và bảng phân bổ nghiệp vụ!', 'success');
+                }}
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-positive hover:bg-positive text-white transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>Lưu cấu hình</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 3 Thẻ Tóm tắt Nhà Cung Cấp + 1 Thẻ Tổng Mục Đích */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-line">
+            {(['GOOGLE', 'OPENAI', 'CLAUDE'] as const).map(pid => {
+              const prov = config.providers[pid];
+              const meta = PROVIDER_META[pid];
+              const hasKey = Boolean(prov.apiKey.trim());
+              const assignedCount = providerPurposeCounts[pid].length;
+
+              return (
+                <div
+                  key={pid}
+                  onClick={() => setActiveTab('providers')}
+                  className="p-3.5 rounded-xl bg-surface-subtle border border-line hover:border-line-strong transition cursor-pointer space-y-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-2xs font-semibold text-ink-2">
+                      {prov.shortName}
+                    </span>
+                    <Status
+                      tone={
+                        prov.lastTestStatus === 'CONNECTED'
+                          ? 'positive'
+                          : prov.lastTestStatus === 'ERROR'
+                            ? 'critical'
+                            : hasKey
+                              ? 'info'
+                              : 'neutral'
+                      }
+                    >
+                      {prov.lastTestStatus === 'CONNECTED'
+                        ? `Đã thông (${prov.lastTestLatencyMs}ms)`
+                        : hasKey
+                          ? 'Đã nhập khóa'
+                          : 'Chưa nhập khóa'}
+                    </Status>
+                  </div>
+
+                  <div className="flex items-baseline justify-between">
+                    <div className="text-xs font-mono font-semibold text-ink truncate">
+                      {prov.defaultModel}
+                    </div>
+                    <div className="text-2xs text-ink-3 shrink-0">
+                      Gán cho <strong className="text-ink">{assignedCount} mục đích</strong>
+                    </div>
+                  </div>
+
+                  <div className="text-2xs text-ink-3 font-mono truncate">
+                    {hasKey ? maskApiKey(prov.apiKey) : 'Chưa nhập khóa'}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div
+              onClick={() => setActiveTab('routing')}
+              className="p-3.5 rounded-xl bg-surface-subtle border border-line hover:border-line-strong transition cursor-pointer space-y-2"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-2xs font-semibold text-accent">
+                  Phân luồng nghiệp vụ
+                </span>
+                <span className="text-2xs font-semibold text-positive">{purposeList.length}/{purposeList.length} nghiệp vụ</span>
+              </div>
+              <div className="text-xs font-semibold text-ink">
+                Tự động chuyển dự phòng
+              </div>
+              <div className="text-2xs text-ink-3 leading-snug">
+                Google: {providerPurposeCounts.GOOGLE.length} · ChatGPT: {providerPurposeCounts.OPENAI.length} · Claude: {providerPurposeCounts.CLAUDE.length} · Nội bộ: {providerPurposeCounts.INTERNAL.length}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
