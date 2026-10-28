@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Copy, Download, FileText, MessageSquare, Plus, RefreshCw, Search, Send } from 'lucide-react';
+import { CheckCircle2, Copy, Download, ExternalLink, FileSpreadsheet, FileText, MessageSquare, Plus, RefreshCw, Search, Send, Users } from 'lucide-react';
 import type { BookingDealItem, InputPlanBreakdownState, KocItem, KocListingItem, ListingBatchCycle, StorePortfolioItem } from '../../lib/types';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
+import { StoreStaffSheetSetupModal } from './StoreStaffSheetSetupModal';
 import { Button, Field, Input, Modal, Select, Status, Textarea } from '../ui';
 import { KL_TIERS, klBaseCost, type KlCode } from '../../lib/klTiers';
 import { useListingBoard } from '../../lib/useListingBoard';
@@ -23,6 +24,7 @@ import {
   KOC_REJECTION_REASONS_CATALOG,
   LARK_31_COLUMNS,
   buildBrandPriceChangeMessage,
+  buildStandalonePlanForStore,
   buildZaloGroupDealConfirmMessage,
   canMove,
   checkKocDuplicateAndPriceWarning,
@@ -36,6 +38,7 @@ import {
   getItemSlaBadge,
   isPlanListable,
   isPlanOfficiallyApproved,
+  isStandaloneListingPlan,
   itemFee,
   itemGrade,
   moveItem,
@@ -58,6 +61,8 @@ interface PlanListingBoardProps {
   initialStoreName?: string;
   initialMonth?: string;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+  onOpenSheetSetupScreen?: () => void;
+  isAdmin?: boolean;
 }
 
 const fmt = (v: number) => Math.round(v).toLocaleString('vi-VN');
@@ -82,6 +87,8 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
   initialMonth,
   onNotify,
   onCreateDeal,
+  onOpenSheetSetupScreen,
+  isAdmin = false,
 }) => {
   const notify = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => onNotify?.(msg, type);
 
@@ -91,6 +98,17 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
   );
   const [month, setMonth] = useState(initialMonth || '');
   const [search, setSearch] = useState('');
+  const [storePicFilter, setStorePicFilter] = useState('');
+  const [setupModalOpen, setSetupModalOpen] = useState(false);
+  const [storeOverrides, setStoreOverrides] = useState<Record<string, Partial<StorePortfolioItem>>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.localStorage.getItem('upbase_store_overrides_v1');
+      return raw ? (JSON.parse(raw) as Record<string, Partial<StorePortfolioItem>>) : {};
+    } catch {
+      return {};
+    }
+  });
   const [selectedId, setSelectedId] = useState<string | null>(initialPlanId || null);
   const [tierFilter, setTierFilter] = useState<QuotaKey | null>(null);
   const [batchFilter, setBatchFilter] = useState<ListingBatchCycle | null>(null);
@@ -132,15 +150,68 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
   }, []);
 
   const listable = useMemo(() => plans.filter(isPlanListable), [plans]);
-  const months = useMemo(() => Array.from(new Set(listable.map(p => p.month))).sort().reverse(), [listable]);
-  const activeMonth = month || initialMonth || months[0] || '';
+  const months = useMemo(
+    () => Array.from(new Set(['2026/12', '2026/11', '2026/10', '2026/09', ...listable.map(p => p.month).filter(Boolean)])).sort().reverse(),
+    [listable]
+  );
+  const activeMonth = month || initialMonth || months[0] || '2026/10';
+
+  const effectiveStores = useMemo(
+    () => stores.map(s => (storeOverrides[s.id] ? { ...s, ...storeOverrides[s.id] } : s)),
+    [stores, storeOverrides]
+  );
+
+  // Hợp nhất kế hoạch 4.1.1 đã có trong kỳ và các gian hàng B2C chưa lập 4.1.1 (Listing tự do độc lập)
+  const allMonthPlans = useMemo(() => {
+    const storeByName = new Map(effectiveStores.map(s => [s.storeName.trim().toLowerCase(), s]));
+    const storeById = new Map(effectiveStores.map(s => [s.id.toLowerCase(), s]));
+    const inMonth = listable
+      .filter(p => p.month === activeMonth)
+      .map(p => {
+        const matchedSt =
+          (p.storeId ? storeById.get(p.storeId.toLowerCase()) : undefined) ||
+          (p.storeName ? storeByName.get(p.storeName.trim().toLowerCase()) : undefined);
+        const overriddenPic = matchedSt?.primaryPic || matchedSt?.b2cOwnerName;
+        return overriddenPic ? { ...p, pic: overriddenPic } : p;
+      });
+    const coveredStores = new Set<string>();
+    for (const p of inMonth) {
+      if (p.storeId) coveredStores.add(p.storeId.toLowerCase());
+      if (p.storeName) coveredStores.add(p.storeName.trim().toLowerCase());
+    }
+    const standalonePlans: InputPlanBreakdownState[] = [];
+    for (const st of effectiveStores) {
+      if (st.isB2cManaged === false || !st.storeName) continue;
+      const hasPlan =
+        (st.id && coveredStores.has(st.id.toLowerCase())) ||
+        coveredStores.has(st.storeName.trim().toLowerCase());
+      if (!hasPlan) {
+        standalonePlans.push(buildStandalonePlanForStore(st, activeMonth));
+      }
+    }
+    return [...inMonth, ...standalonePlans];
+  }, [listable, activeMonth, effectiveStores]);
+
+  const storePicOptions = useMemo(
+    () =>
+      Array.from(new Set(allMonthPlans.map(p => (p.pic || '').trim()).filter(Boolean))).sort((a, b) =>
+        a.localeCompare(b, 'vi')
+      ),
+    [allMonthPlans]
+  );
+
   const visiblePlans = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return listable
-      .filter(p => p.month === activeMonth)
+    return allMonthPlans
+      .filter(p => !storePicFilter || (p.pic || '').trim().toLowerCase() === storePicFilter.toLowerCase())
       .filter(p => !q || `${p.storeName || ''} ${p.brandName} ${p.pic || ''}`.toLowerCase().includes(q))
-      .sort((a, b) => (a.storeName || a.title).localeCompare(b.storeName || b.title));
-  }, [listable, activeMonth, search]);
+      .sort((a, b) => {
+        const aStandalone = isStandaloneListingPlan(a) ? 1 : 0;
+        const bStandalone = isStandaloneListingPlan(b) ? 1 : 0;
+        if (aStandalone !== bStandalone) return aStandalone - bStandalone;
+        return (a.storeName || a.title).localeCompare(b.storeName || b.title);
+      });
+  }, [allMonthPlans, search, storePicFilter]);
 
   // Tự động chọn kế hoạch đầu tiên hoặc theo context khi dữ liệu sẵn sàng
   useEffect(() => {
@@ -154,7 +225,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
     }
   }, [visiblePlans, selectedId, initialPlanId, initialStoreName]);
 
-  const plan = useMemo(() => listable.find(p => p.id === selectedId) || null, [listable, selectedId]);
+  const plan = useMemo(() => allMonthPlans.find(p => p.id === selectedId) || null, [allMonthPlans, selectedId]);
   const { items, status, update, saveNow, reload } = useListingBoard(plan?.id ?? null, msg => notify(msg, 'warning'));
 
   interface PullSessionReport {
@@ -165,9 +236,11 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
     considering: number;
     unchanged: number;
     reapproved: number;
+    imported?: number;
     approvedHandles: string[];
     rejectedDetails: { handle: string; reason?: string }[];
     consideringHandles: string[];
+    importedHandles?: string[];
     notOnSheet: string[];
     slotTaken: string[];
     duplicateConflicts: string[];
@@ -175,15 +248,104 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
   const [pullReport, setPullReport] = useState<PullSessionReport | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
 
-  // --- đẩy danh sách KOC trực tiếp từ Bảng Điều phối Listing lên Google Sheet của Brand ---
+  // --- đẩy danh sách KOC trực tiếp từ Bảng Điều phối Listing lên Google Sheet của Brand (2 bước: đối soát dryRun -> xác nhận đẩy) ---
   const [pushOpen, setPushOpen] = useState(false);
-  const [pushForm, setPushForm] = useState({ sheetUrl: '', dot: 1, tab: '' });
+  const [pushForm, setPushForm] = useState({ sheetUrl: '', dot: 1, tab: '', scope: 'ALL' as 'ALL' | 'SELECTED' });
+  const [selectedPushItemIds, setSelectedPushItemIds] = useState<string[]>([]);
+  const [pushPreviewReport, setPushPreviewReport] = useState<{
+    added: number;
+    updated: number;
+    skipped: number;
+    totalInSheet: number;
+    diffs: {
+      key: string;
+      kocName: string;
+      action: 'ADD' | 'UPDATE' | 'SKIP';
+      sheetRowNum?: number;
+      brandDecisionOnSheet?: string;
+      fieldChanges: { column: string; sheetValue: string; appValue: string }[];
+    }[];
+  } | null>(null);
   const [pushing, setPushing] = useState(false);
   const [sheetCfg, setSheetCfg] = useState<{ configured: boolean; serviceAccountEmail: string | null } | null>(null);
+  const [sheetTabs, setSheetTabs] = useState<string[]>([]);
+  const [loadingTabs, setLoadingTabs] = useState(false);
+  const [saConfigOpen, setSaConfigOpen] = useState(false);
+  const [saForm, setSaForm] = useState({ jsonText: '', email: '', privateKey: '' });
+  const [savingSa, setSavingSa] = useState(false);
+
+  const loadTabsFromSheetUrl = async (targetUrl: string, currentTab: string, onSelectTab?: (t: string) => void) => {
+    const trimmed = targetUrl.trim();
+    if (!trimmed) return;
+    setLoadingTabs(true);
+    try {
+      const res = await fetch(`/api/booking-list/push-sheet?sheetUrl=${encodeURIComponent(trimmed)}`, { cache: 'no-store' });
+      const body = await res.json().catch(() => null);
+      if (body && typeof body.configured === 'boolean') {
+        setSheetCfg({ configured: Boolean(body.configured), serviceAccountEmail: body.serviceAccountEmail ?? null });
+      }
+      if (res.ok && Array.isArray(body?.tabs)) {
+        setSheetTabs(body.tabs);
+        if (body.tabs.length > 0 && (!currentTab || !body.tabs.includes(currentTab))) {
+          onSelectTab?.(body.tabs[0]);
+        }
+      } else if (body?.error) {
+        notify(body.error, 'warning');
+      }
+    } catch {
+      /* giữ nguyên nếu không đọc được danh sách tab */
+    } finally {
+      setLoadingTabs(false);
+    }
+  };
+
+  const handleSaveServiceAccount = async () => {
+    setSavingSa(true);
+    try {
+      const res = await fetch('/api/booking-list/push-sheet', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceAccountJson: saForm.jsonText.trim() || undefined,
+          serviceAccountEmail: saForm.email.trim() || undefined,
+          privateKey: saForm.privateKey.trim() || undefined,
+        }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        notify(body?.error || 'Không lưu được cấu hình Google Service Account.', 'error');
+        return;
+      }
+      setSheetCfg({ configured: Boolean(body.configured), serviceAccountEmail: body.serviceAccountEmail ?? null });
+      setSaConfigOpen(false);
+      setSaForm({ jsonText: '', email: '', privateKey: '' });
+      notify(`Đã kết nối Google Service Account: ${body.serviceAccountEmail}`, 'success');
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Lỗi lưu cấu hình Service Account.', 'error');
+    } finally {
+      setSavingSa(false);
+    }
+  };
+
+  const planStore = useMemo(
+    () =>
+      plan
+        ? effectiveStores.find(
+            s => (plan.storeId && s.id === plan.storeId) || (plan.storeName && s.storeName === plan.storeName)
+          )
+        : undefined,
+    [plan, effectiveStores]
+  );
 
   const openPush = async () => {
     if (!plan) return;
-    setPushForm({ sheetUrl: resolveBrandBookingSheetUrl(plan), dot: 1, tab: defaultBookingTabName(plan, 1) });
+    const defaultUrl = resolveBrandBookingSheetUrl(plan, plan.storeName, planStore);
+    const defaultTab = defaultBookingTabName(plan, 1, planStore);
+    const batchItems = items.filter(i => (i.batchCycle || 'BATCH_10') === 'BATCH_10');
+    setPushForm({ sheetUrl: defaultUrl, dot: 1, tab: defaultTab, scope: 'ALL' });
+    setSelectedPushItemIds(batchItems.map(i => i.id));
+    setPushPreviewReport(null);
+    setSheetTabs([]);
     setPushOpen(true);
     fetch('/api/booking-list/push-sheet', { cache: 'no-store' })
       .then(r => r.json())
@@ -200,12 +362,62 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
     }
   };
 
-  const pushToSheetFromListing = async () => {
-    if (!plan) return;
-    // Chỉ đẩy KOC thuộc đợt đã chọn (Đợt 1 = list ngày 10, Đợt 2 = ngày 20, Đợt 3 = ngày 30)
+  const getItemsToPushForModal = () => {
     const batchOfDot = (['BATCH_10', 'BATCH_20', 'BATCH_30'] as const)[Math.min(2, Math.max(0, pushForm.dot - 1))];
     const inBatch = items.filter(i => (i.batchCycle || 'BATCH_10') === batchOfDot);
-    const rows = buildBookingListRowsFromListingItems(plan, inBatch, planSlots, kocs);
+    if (pushForm.scope === 'SELECTED') {
+      const selSet = new Set(selectedPushItemIds);
+      return inBatch.filter(i => selSet.has(i.id));
+    }
+    return inBatch;
+  };
+
+  const previewPushToSheet = async () => {
+    if (!plan) return;
+    const targetItems = getItemsToPushForModal();
+    const rows = buildBookingListRowsFromListingItems(plan, targetItems, planSlots, kocs);
+    if (rows.length === 0) {
+      notify('Chưa có KOC nào trong phạm vi đã chọn để đối soát với Google Sheet.', 'warning');
+      return;
+    }
+    setPushing(true);
+    setPushPreviewReport(null);
+    try {
+      const res = await fetch('/api/booking-list/push-sheet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: plan.id,
+          sheetUrl: pushForm.sheetUrl.trim(),
+          tab: pushForm.tab.trim(),
+          columns: [...BOOKING_LIST_COLUMNS],
+          rows,
+          dryRun: true,
+        }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        notify(body?.error || `Lỗi ${res.status}`, 'error');
+        return;
+      }
+      setPushPreviewReport({
+        added: body.added || 0,
+        updated: body.updated || 0,
+        skipped: body.skipped || 0,
+        totalInSheet: body.totalInSheet || 0,
+        diffs: Array.isArray(body.diffs) ? body.diffs : [],
+      });
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Không đối soát được với Google Sheet.', 'error');
+    } finally {
+      setPushing(false);
+    }
+  };
+
+  const pushToSheetFromListing = async () => {
+    if (!plan) return;
+    const targetItems = getItemsToPushForModal();
+    const rows = buildBookingListRowsFromListingItems(plan, targetItems, planSlots, kocs);
     if (rows.length === 0) {
       notify(`Đợt ${pushForm.dot} chưa có KOC nào để đẩy lên Google Sheet.`, 'warning');
       return;
@@ -221,6 +433,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
           tab: pushForm.tab.trim(),
           columns: [...BOOKING_LIST_COLUMNS],
           rows,
+          dryRun: false,
         }),
       });
       const body = await res.json().catch(() => null);
@@ -230,6 +443,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
       }
       await reload();
       setPushOpen(false);
+      setPushPreviewReport(null);
       notify(
         `Đã đẩy ${body.added} dòng mới lên Google Sheet${body.updated ? `, cập nhật ${body.updated} dòng` : ''}${body.skipped ? `, bỏ qua ${body.skipped} dòng đã có` : ''}.`,
         'success'
@@ -248,8 +462,15 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
 
   const openPull = async () => {
     if (!plan) return;
-    setPullForm({ sheetUrl: resolveBrandBookingSheetUrl(plan), dot: 1, tab: defaultBookingTabName(plan, 1) });
+    const defaultUrl = resolveBrandBookingSheetUrl(plan, plan.storeName, planStore);
+    const defaultTab = defaultBookingTabName(plan, 1, planStore);
+    setPullForm({ sheetUrl: defaultUrl, dot: 1, tab: defaultTab });
+    setSheetTabs([]);
     setPullOpen(true);
+    fetch('/api/booking-list/push-sheet', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(b => setSheetCfg({ configured: Boolean(b.configured), serviceAccountEmail: b.serviceAccountEmail ?? null }))
+      .catch(() => setSheetCfg({ configured: false, serviceAccountEmail: null }));
     try {
       const res = await fetch(`/api/content-plan?planId=${encodeURIComponent(plan.id)}`, { cache: 'no-store' });
       const body = await res.json();
@@ -309,9 +530,11 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
         considering: body.considering || 0,
         unchanged: body.unchanged || 0,
         reapproved: body.reapproved || 0,
+        imported: body.imported || 0,
         approvedHandles: body.approvedHandles || [],
         rejectedDetails: body.rejectedDetails || [],
         consideringHandles: body.consideringHandles || [],
+        importedHandles: body.importedHandles || [],
         notOnSheet: body.notOnSheet || [],
         slotTaken: body.slotTaken || [],
         duplicateConflicts: body.duplicateConflicts || [],
@@ -324,6 +547,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
         `cân nhắc ${body.considering}`,
         `không đổi ${body.unchanged}`,
       ];
+      if (body.imported) parts.unshift(`nhập mới ${body.imported} KOC từ Sheet`);
       if (body.reapproved) parts.push(`duyệt lại sau khi từ chối ${body.reapproved}`);
       const warnings: string[] = [];
       if (body.rejectedHandles?.length) warnings.push('KOC bị từ chối đã được bỏ gán khỏi content để chọn lại');
@@ -548,10 +772,6 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
 
   // --- gợi ý KOC (chấm điểm theo lịch sử deal, lấp chỗ thiếu theo KL) đưa thẳng vào bảng này ---
   const [suggestOpen, setSuggestOpen] = useState(false);
-  const planStore = useMemo(
-    () => (plan ? stores.find(s => (plan.storeId && s.id === plan.storeId) || (plan.storeName && s.storeName === plan.storeName)) : undefined),
-    [plan, stores]
-  );
   const addSuggested = (newListings: Partial<KocListingItem>[], _store: StorePortfolioItem, batchCycle: ListingBatchCycle) => {
     if (!plan) return;
     const seen = new Set(items.filter(i => i.overallStatus !== 'DROPPED').map(i => (i.kocHandle || '').replace(/^@/, '').toLowerCase()));
@@ -706,6 +926,25 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
+            <span className="text-2xs font-semibold text-ink-3">Nhân viên</span>
+            <Select
+              value={storePicFilter}
+              onChange={e => {
+                setStorePicFilter(e.target.value);
+                setSelectedId(null);
+              }}
+              className="w-[175px]"
+            >
+              <option value="">Tất cả PIC ({allMonthPlans.length})</option>
+              {storePicOptions.map(picName => (
+                <option key={picName} value={picName}>
+                  {picName}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-1.5">
             <span className="text-2xs font-semibold text-ink-3">Gian hàng</span>
             <Select
               value={selectedId || ''}
@@ -715,12 +954,17 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
               }}
               className="min-w-[260px] max-w-[400px]"
             >
-              {visiblePlans.length === 0 && <option value="">Không có kế hoạch trong kỳ</option>}
+              {visiblePlans.length === 0 && <option value="">Không có gian hàng trong kỳ</option>}
               {visiblePlans.map(p => {
                 const required = p.items.filter(i => i.category === 'KOC_TIER').reduce((s, i) => s + (i.qty || 0), 0);
+                const suffix = isStandaloneListingPlan(p)
+                  ? 'Listing tự do'
+                  : required > 0
+                  ? `${fmt(required)} KOC`
+                  : 'Chưa chia KL';
                 return (
                   <option key={p.id} value={p.id}>
-                    {p.storeName || p.title} ({p.pic || 'Chưa giao'} · {fmt(required)} KOC)
+                    {p.storeName || p.title} ({p.pic || 'Chưa giao'} · {suffix})
                   </option>
                 );
               })}
@@ -732,6 +976,31 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
               <span>PIC: <strong className="text-ink">{plan.pic || 'Chưa giao'}</strong></span>
               {plan.bookingLeader && (
                 <span>· Trưởng nhóm: <strong className="text-ink">{plan.bookingLeader}</strong></span>
+              )}
+              {(() => {
+                const sheetUrl = resolveBrandBookingSheetUrl(plan, plan.storeName, planStore);
+                return sheetUrl ? (
+                  <a
+                    href={sheetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded border border-line bg-sunken px-2 py-0.5 text-2xs font-medium text-accent hover:underline"
+                  >
+                    <FileSpreadsheet className="h-3 w-3" />
+                    Mở Sheet
+                  </a>
+                ) : null;
+              })()}
+              {planStore?.storeUrl && (
+                <a
+                  href={planStore.storeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 rounded border border-line bg-sunken px-2 py-0.5 text-2xs font-medium text-ink-2 hover:text-accent"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Link Sàn
+                </a>
               )}
               {statusLabel[status] && (
                 <span className="font-medium text-accent">· {statusLabel[status]}</span>
@@ -752,10 +1021,20 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
                 Xem phiên vừa lấy
               </Button>
             )}
+            {isAdmin && (
+              <Button
+                size="md"
+                variant="secondary"
+                icon={Users}
+                onClick={() => (onOpenSheetSetupScreen ? onOpenSheetSetupScreen() : setSetupModalOpen(true))}
+              >
+                Gán PIC & Link Sheet
+              </Button>
+            )}
             <Button size="md" variant="secondary" icon={Send} onClick={() => void openPush()} disabled={items.length === 0}>
               Đẩy lên Google Sheet
             </Button>
-            <Button size="md" variant="secondary" icon={RefreshCw} onClick={() => void openPull()} disabled={items.length === 0}>
+            <Button size="md" variant="secondary" icon={RefreshCw} onClick={() => void openPull()}>
               Lấy kết quả Brand
             </Button>
             <Button size="md" variant="secondary" icon={Download} onClick={() => void exportLark31()} disabled={items.length === 0}>
@@ -779,7 +1058,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
 
       {plansState === 'ready' && visiblePlans.length === 0 && (
         <div className="rounded-lg border border-dashed border-line p-12 text-center text-xs text-ink-3">
-          Chưa có kế hoạch nào được duyệt trong kỳ {activeMonth}.
+          Chưa có gian hàng nào trong kỳ {activeMonth}.
         </div>
       )}
 
@@ -787,11 +1066,15 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
       {plan && progress && (
         <section className="space-y-4">
 
-            {!isPlanOfficiallyApproved(plan) && (
+            {isStandaloneListingPlan(plan) ? (
+              <div className="rounded-lg border border-line bg-sunken px-3.5 py-2 text-xs text-ink-2">
+                Chế độ <strong>Listing & Kết nối Google Sheet độc lập</strong> (chưa lập Plan 4.1.1 kỳ {plan.month}) — Chuyên viên có thể thêm KOC, đẩy danh sách lên Google Sheet của Brand hoặc kéo danh sách KOC từ Google Sheet về ngay lập tức.
+              </div>
+            ) : !isPlanOfficiallyApproved(plan) ? (
               <div className="rounded-lg border border-warning/40 bg-warning-soft px-3.5 py-2 text-xs text-warning">
                 Kế hoạch 4.1.1 đang ở trạng thái <strong>{plan.status || 'DRAFT'}</strong> — Hệ thống mở khóa cho phép chuyên viên lập sớm Danh sách KOC Đợt 1 (ngày 10–20/T-1) và đẩy Google Sheet xin Brand duyệt trước.
               </div>
-            )}
+            ) : null}
 
             {(() => {
               // Cảnh báo (không chặn): KOC đã chốt vượt chỉ tiêu / ngân sách của bậc — ví dụ khi bản 4.1 mới về thấp hơn plan nháp
@@ -915,7 +1198,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
                   {progress.tiers.length === 0 && (
                     <tr>
                       <td colSpan={8} className="px-3 py-6 text-center text-ink-3">
-                        Kế hoạch này chưa có chỉ tiêu theo bậc KL. Cần chuyên viên phân rã tuần trước.
+                        Chưa có KOC nào được thêm. Bấm <strong>Thêm KOC</strong>, <strong>Gợi ý KOC</strong> hoặc <strong>Lấy kết quả Brand</strong> từ Google Sheet để bắt đầu.
                       </td>
                     </tr>
                   )}
@@ -1448,49 +1731,87 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
         </div>
       </Modal>
 
-      {/* Đẩy danh sách KOC trực tiếp từ Bảng điều phối lên Google Sheet */}
+      {/* Đẩy danh sách KOC trực tiếp từ Bảng điều phối lên Google Sheet (2 bước: So sánh dữ liệu 2 bên -> Xác nhận Đẩy) */}
       <Modal
         open={pushOpen}
         onClose={() => setPushOpen(false)}
-        title="Đẩy danh sách KOC lên Google Sheet của Brand"
-        size="md"
+        title="Đẩy danh sách KOC lên Google Sheet & Báo cáo Đối soát 2 bên"
+        size="xl"
         footer={
           <>
             <Button variant="ghost" onClick={() => setPushOpen(false)}>
               Đóng
             </Button>
+            {isAdmin && (
+              <Button variant="secondary" onClick={() => setSaConfigOpen(true)}>
+                Cấu hình Service Account
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              icon={RefreshCw}
+              disabled={pushing || !sheetCfg?.configured || !pushForm.sheetUrl.trim() || !pushForm.tab.trim()}
+              onClick={() => void previewPushToSheet()}
+            >
+              {pushing ? 'Đang so sánh…' : '1. So sánh dữ liệu 2 bên'}
+            </Button>
             <Button
               variant="primary"
               icon={Send}
-              disabled={pushing || !sheetCfg?.configured || !pushForm.sheetUrl.trim() || !pushForm.tab.trim()}
+              disabled={pushing || !pushPreviewReport || !sheetCfg?.configured || !pushForm.sheetUrl.trim() || !pushForm.tab.trim()}
               onClick={() => void pushToSheetFromListing()}
             >
-              {pushing ? 'Đang đẩy…' : 'Đẩy lên Google Sheet'}
+              {pushing
+                ? 'Đang đẩy…'
+                : `2. Xác nhận Đẩy lên Google Sheet (${
+                    pushPreviewReport ? pushPreviewReport.added + pushPreviewReport.updated : getItemsToPushForModal().length
+                  } dòng)`}
             </Button>
           </>
         }
       >
-        <div className="space-y-3">
+        <div className="space-y-3 text-xs">
           {sheetCfg && !sheetCfg.configured && (
             <div className="rounded-md bg-warning-soft px-3 py-2 text-xs text-warning">
-              Chưa cấu hình tài khoản dịch vụ Google. Vui lòng dùng nút Xuất file 3.1 hoặc nhờ quản trị khai báo biến môi trường Google Service Account.
+              Chưa cấu hình tài khoản dịch vụ Google. Bấm nút <strong>Cấu hình Service Account</strong> bên dưới để dán khóa JSON hoặc khai báo biến môi trường.
             </div>
           )}
           {sheetCfg?.configured && (
             <div className="rounded-md bg-sunken px-3 py-2 text-xs text-ink-2">
-              Sheet của Brand cần chia sẻ quyền chỉnh sửa cho <strong>{sheetCfg.serviceAccountEmail}</strong>. Hệ thống so khớp theo cặp (ID kênh + Mã Brief).
+              Sheet của Brand cần chia sẻ quyền chỉnh sửa cho <strong>{sheetCfg.serviceAccountEmail}</strong>. Hệ thống đối soát dữ liệu 2 bên theo cột <strong>ID kênh</strong> và giữ nguyên các cột quyết định của Brand.
             </div>
           )}
           <Field label="Link Google Sheet của Brand">
-            <Input value={pushForm.sheetUrl} onChange={e => setPushForm({ ...pushForm, sheetUrl: e.target.value })} placeholder="https://docs.google.com/spreadsheets/d/..." />
+            <div className="flex items-center gap-2">
+              <Input
+                value={pushForm.sheetUrl}
+                onChange={e => {
+                  setPushForm({ ...pushForm, sheetUrl: e.target.value });
+                  setPushPreviewReport(null);
+                }}
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={loadingTabs || !pushForm.sheetUrl.trim()}
+                onClick={() => void loadTabsFromSheetUrl(pushForm.sheetUrl, pushForm.tab)}
+              >
+                {loadingTabs ? 'Đang tải…' : 'Tải Tab'}
+              </Button>
+            </div>
           </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Đợt">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Field label="Đợt đề xuất">
               <Select
                 value={String(pushForm.dot)}
                 onChange={e => {
                   const dot = parseInt(e.target.value, 10) || 1;
+                  const batchCode = (['BATCH_10', 'BATCH_20', 'BATCH_30'] as const)[Math.min(2, Math.max(0, dot - 1))];
+                  const nextBatchItems = items.filter(i => (i.batchCycle || 'BATCH_10') === batchCode);
                   setPushForm({ ...pushForm, dot, tab: plan ? defaultBookingTabName(plan, dot) : pushForm.tab });
+                  setSelectedPushItemIds(nextBatchItems.map(i => i.id));
+                  setPushPreviewReport(null);
                 }}
               >
                 <option value="1">Đợt 1</option>
@@ -1498,9 +1819,166 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
                 <option value="3">Đợt 3</option>
               </Select>
             </Field>
-            <Field label="Tên tab">
-              <Input value={pushForm.tab} onChange={e => setPushForm({ ...pushForm, tab: e.target.value })} />
+            <Field label="Tên tab (gõ mới hoặc chọn)">
+              <Input
+                value={pushForm.tab}
+                onChange={e => {
+                  setPushForm({ ...pushForm, tab: e.target.value });
+                  setPushPreviewReport(null);
+                }}
+              />
             </Field>
+            <Field label="Phạm vi đẩy dữ liệu">
+              <Select
+                value={pushForm.scope}
+                onChange={e => {
+                  setPushForm({ ...pushForm, scope: e.target.value as 'ALL' | 'SELECTED' });
+                  setPushPreviewReport(null);
+                }}
+              >
+                <option value="ALL">Đẩy cả bảng đợt hiện tại</option>
+                <option value="SELECTED">Chỉ đẩy các dòng chọn ({selectedPushItemIds.length})</option>
+              </Select>
+            </Field>
+          </div>
+          {sheetTabs.length > 0 && (
+            <Field label="Chọn nhanh từ các Tab hiện có trên Sheet">
+              <Select
+                value={sheetTabs.includes(pushForm.tab) ? pushForm.tab : ''}
+                onChange={e => {
+                  if (e.target.value) {
+                    setPushForm({ ...pushForm, tab: e.target.value });
+                    setPushPreviewReport(null);
+                  }
+                }}
+              >
+                <option value="">-- Giữ tên tab đang nhập ({pushForm.tab}) --</option>
+                {sheetTabs.map(t => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
+
+          {pushForm.scope === 'SELECTED' && (
+            <div className="border border-line rounded-md p-2.5 bg-sunken/50 space-y-1.5">
+              <div className="flex items-center justify-between text-2xs font-semibold text-ink">
+                <span>Chọn các dòng KOC cần đẩy lên Google Sheet ({selectedPushItemIds.length} dòng):</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const batchCode = (['BATCH_10', 'BATCH_20', 'BATCH_30'] as const)[Math.min(2, Math.max(0, pushForm.dot - 1))];
+                      setSelectedPushItemIds(items.filter(i => (i.batchCycle || 'BATCH_10') === batchCode).map(i => i.id));
+                      setPushPreviewReport(null);
+                    }}
+                    className="text-accent hover:underline"
+                  >
+                    Chọn tất cả
+                  </button>
+                  <span>·</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPushItemIds([]);
+                      setPushPreviewReport(null);
+                    }}
+                    className="text-ink-3 hover:underline"
+                  >
+                    Bỏ chọn
+                  </button>
+                </div>
+              </div>
+              <div className="max-h-36 overflow-y-auto divide-y divide-line bg-surface rounded border border-line">
+                {items
+                  .filter(i => (i.batchCycle || 'BATCH_10') === (['BATCH_10', 'BATCH_20', 'BATCH_30'] as const)[Math.min(2, Math.max(0, pushForm.dot - 1))])
+                  .map(it => {
+                    const checked = selectedPushItemIds.includes(it.id);
+                    return (
+                      <label key={it.id} className="flex items-center justify-between px-2.5 py-1.5 text-xs cursor-pointer hover:bg-sunken/50">
+                        <span className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setSelectedPushItemIds(prev => (checked ? prev.filter(id => id !== it.id) : [...prev, it.id]));
+                              setPushPreviewReport(null);
+                            }}
+                            className="rounded border-line"
+                          />
+                          <span className="font-medium text-ink">{it.kocName}</span>
+                          <span className="text-ink-3">{it.kocHandle}</span>
+                        </span>
+                        <span className="font-mono text-2xs text-ink-2">{fmt(itemFee(it))}đ</span>
+                      </label>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* Báo cáo Đối soát 2 bên trước khi Đẩy */}
+          <div className="border border-line rounded-lg overflow-hidden">
+            <div className="px-3 py-2 bg-sunken border-b border-line flex flex-wrap items-center justify-between gap-2">
+              <span className="font-semibold text-ink">Báo cáo Review Đối soát Dữ liệu 2 bên (App ↔ Google Sheet)</span>
+              {pushPreviewReport && (
+                <div className="flex items-center gap-2 text-2xs">
+                  <Status tone="positive">+{pushPreviewReport.added} thêm mới</Status>
+                  <Status tone="warning">{pushPreviewReport.updated} cập nhật ô</Status>
+                  <Status tone="neutral">{pushPreviewReport.skipped} giữ nguyên</Status>
+                </div>
+              )}
+            </div>
+            {!pushPreviewReport ? (
+              <div className="p-4 text-center text-ink-3">
+                {pushing
+                  ? 'Đang đọc Google Sheet và đối chiếu dữ liệu 2 bên...'
+                  : 'Bấm "1. So sánh dữ liệu 2 bên" để kiểm tra báo cáo thay đổi trước khi xác nhận đẩy lên Google Sheet.'}
+              </div>
+            ) : (
+              <div className="max-h-60 overflow-y-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="sticky top-0 bg-sunken border-b border-line text-2xs font-semibold text-ink-2">
+                    <tr>
+                      <th className="py-1.5 px-2.5">KOC</th>
+                      <th className="py-1.5 px-2.5">Hành động</th>
+                      <th className="py-1.5 px-2.5">Chi tiết thay đổi (Sheet hiện tại → App đẩy lên)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {pushPreviewReport.diffs.map((d, idx) => (
+                      <tr key={`${d.key}-${idx}`}>
+                        <td className="py-1.5 px-2.5 font-medium text-ink">@{d.key}</td>
+                        <td className="py-1.5 px-2.5">
+                          {d.action === 'ADD' && <Status tone="positive">+ Thêm mới</Status>}
+                          {d.action === 'UPDATE' && <Status tone="warning">Cập nhật dòng #{d.sheetRowNum}</Status>}
+                          {d.action === 'SKIP' && <Status tone="neutral">Giữ nguyên dòng #{d.sheetRowNum}</Status>}
+                        </td>
+                        <td className="py-1.5 px-2.5 text-2xs">
+                          {d.action === 'ADD' ? (
+                            <span className="text-emerald-700">Ghi dòng mới vào cuối Sheet</span>
+                          ) : d.fieldChanges.length === 0 ? (
+                            <span className="text-ink-3">Không có thay đổi</span>
+                          ) : (
+                            <div className="space-y-0.5">
+                              {d.fieldChanges.map((fc, fIdx) => (
+                                <div key={fIdx}>
+                                  <strong>{fc.column}:</strong>{' '}
+                                  <span className="line-through text-ink-3">{fc.sheetValue || '(Trống)'}</span> →{' '}
+                                  <span className="font-semibold text-accent">{fc.appValue || '(Trống)'}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </Modal>
@@ -1721,13 +2199,18 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
       <Modal
         open={pullOpen}
         onClose={() => setPullOpen(false)}
-        title="Lấy kết quả Brand duyệt"
+        title="Lấy kết quả Brand duyệt & Đồng bộ KOC từ Google Sheet"
         size="md"
         footer={
           <>
             <Button variant="ghost" onClick={() => setPullOpen(false)}>
               Đóng
             </Button>
+            {isAdmin && (
+              <Button variant="secondary" onClick={() => setSaConfigOpen(true)}>
+                Cấu hình Service Account
+              </Button>
+            )}
             <Button variant="primary" icon={RefreshCw} disabled={pulling || !pullForm.sheetUrl.trim() || !pullForm.tab.trim()} onClick={() => void previewPull()}>
               {pulling ? 'Đang đọc…' : 'Xem trước kết quả'}
             </Button>
@@ -1735,8 +2218,32 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
         }
       >
         <div className="space-y-3">
+          {sheetCfg && !sheetCfg.configured && (
+            <div className="rounded-md bg-warning-soft px-3 py-2 text-xs text-warning">
+              Chưa cấu hình tài khoản dịch vụ Google. Bấm nút <strong>Cấu hình Service Account</strong> bên dưới để kết nối.
+            </div>
+          )}
+          {sheetCfg?.configured && (
+            <div className="rounded-md bg-sunken px-3 py-2 text-xs text-ink-2">
+              Đang kết nối bằng <strong>{sheetCfg.serviceAccountEmail}</strong>. Hệ thống tự động cập nhật trạng thái Brand duyệt và nhập mới các KOC chưa có trên bảng.
+            </div>
+          )}
           <Field label="Link Google Sheet của Brand">
-            <Input value={pullForm.sheetUrl} onChange={e => setPullForm({ ...pullForm, sheetUrl: e.target.value })} placeholder="https://docs.google.com/spreadsheets/d/..." />
+            <div className="flex items-center gap-2">
+              <Input
+                value={pullForm.sheetUrl}
+                onChange={e => setPullForm({ ...pullForm, sheetUrl: e.target.value })}
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={loadingTabs || !pullForm.sheetUrl.trim()}
+                onClick={() => void loadTabsFromSheetUrl(pullForm.sheetUrl, pullForm.tab, t => setPullForm(f => ({ ...f, tab: t })))}
+              >
+                {loadingTabs ? 'Đang tải…' : 'Tải Tab'}
+              </Button>
+            </div>
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Đợt">
@@ -1756,8 +2263,80 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
               <Input value={pullForm.tab} onChange={e => setPullForm({ ...pullForm, tab: e.target.value })} />
             </Field>
           </div>
+          {sheetTabs.length > 0 && (
+            <Field label="Chọn nhanh từ các Tab hiện có trên Sheet">
+              <Select value={sheetTabs.includes(pullForm.tab) ? pullForm.tab : ''} onChange={e => e.target.value && setPullForm({ ...pullForm, tab: e.target.value })}>
+                <option value="">-- Chọn tab từ file Google Sheet --</option>
+                {sheetTabs.map(t => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
         </div>
       </Modal>
+
+      <Modal
+        open={saConfigOpen}
+        onClose={() => setSaConfigOpen(false)}
+        title="Cấu hình kết nối Google Sheets (Service Account)"
+        size="lg"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setSaConfigOpen(false)}>
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              disabled={savingSa || (!saForm.jsonText.trim() && (!saForm.email.trim() || !saForm.privateKey.trim()))}
+              onClick={() => void handleSaveServiceAccount()}
+            >
+              {savingSa ? 'Đang lưu…' : 'Lưu cấu hình Service Account'}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div className="rounded-md bg-sunken px-3 py-2 text-xs text-ink-2">
+            Dán toàn bộ nội dung file JSON của Google Service Account (hoặc nhập riêng Email & Private Key). Sau khi lưu, hãy chia sẻ quyền Editor trên file Google Sheet của Brand cho email Service Account này.
+          </div>
+          <Field label="Cách 1: Dán toàn bộ nội dung file JSON Service Account">
+            <Textarea
+              rows={5}
+              value={saForm.jsonText}
+              onChange={e => setSaForm({ ...saForm, jsonText: e.target.value })}
+              placeholder='{"type": "service_account", "client_email": "...@...iam.gserviceaccount.com", "private_key": "-----BEGIN PRIVATE KEY-----\n..."}'
+            />
+          </Field>
+          <div className="grid grid-cols-1 gap-3">
+            <Field label="Cách 2: Nhập riêng GOOGLE_SERVICE_ACCOUNT_EMAIL">
+              <Input
+                value={saForm.email}
+                onChange={e => setSaForm({ ...saForm, email: e.target.value })}
+                placeholder="upbase-sheets@...iam.gserviceaccount.com"
+              />
+            </Field>
+            <Field label="Nhập riêng GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY">
+              <Textarea
+                rows={3}
+                value={saForm.privateKey}
+                onChange={e => setSaForm({ ...saForm, privateKey: e.target.value })}
+                placeholder="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+              />
+            </Field>
+          </div>
+        </div>
+      </Modal>
+
+      <StoreStaffSheetSetupModal
+        open={setupModalOpen}
+        onClose={() => setSetupModalOpen(false)}
+        stores={effectiveStores}
+        onSaved={updated => setStoreOverrides(prev => ({ ...prev, ...updated }))}
+        onNotify={onNotify}
+      />
     </div>
   );
 };

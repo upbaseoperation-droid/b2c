@@ -29,6 +29,7 @@ import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
 import { getVietnamDateYmd } from '../../lib/format';
 import { Avatar, Button, Modal, PageActions, Status, ChannelTag, Tabs } from '../ui';
 import { B2C_28_STAFF_WORKLOAD_ROSTER } from './TaskDelegationView';
+import { StoreStaffSheetSetupView } from './StoreStaffSheetSetupView';
 import {
   computeUnifiedB2cStaffWorkloads,
   loadSavedManagerExceptions,
@@ -80,7 +81,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   tasks,
   onNotify,
 }) => {
-  const [activeSection, setActiveSection] = useState<'STORES' | 'BRANDS' | 'ASSIGNMENT_HISTORY'>('STORES');
+  const isAdmin = !currentUser?.role || currentUser.role === 'ADMIN' || currentUser.role === 'MANAGER';
+  const [activeSection, setActiveSection] = useState<'STORES' | 'SHEET_LINKS' | 'BRANDS' | 'ASSIGNMENT_HISTORY'>('STORES');
   const [selectedLeaderTeam, setSelectedLeaderTeam] = useState<'ALL' | 'TEAM_1' | 'TEAM_2'>('ALL');
 
   // Lịch sử bàn giao PIC
@@ -534,9 +536,25 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             count: b2cPlanStores.length,
           },
           { key: 'BRANDS', label: 'Phân công theo Brand', count: brands.length },
+          ...(isAdmin
+            ? [{ key: 'SHEET_LINKS' as const, label: 'Thiết lập Link Google & Nhân sự', count: b2cPlanStores.length }]
+            : []),
           { key: 'ASSIGNMENT_HISTORY', label: 'Lịch sử bàn giao', count: assignmentHistory.length },
         ]}
       />
+
+      {isAdmin && activeSection === 'SHEET_LINKS' && (
+        <StoreStaffSheetSetupView
+          stores={storePortfolios}
+          onNotify={(msg) => notify(msg)}
+          onSaved={(updatedByStoreId) => {
+            for (const [id, patch] of Object.entries(updatedByStoreId)) {
+              const found = storePortfolios.find((s) => s.id === id);
+              if (found) onUpdateStore({ ...found, ...patch });
+            }
+          }}
+        />
+      )}
 
       {/* ========================================================================= */}
       {/* 1. PHÂN CÔNG GIAN HÀNG (TRỰC TIẾP HỆ SỐ + LEADER + PIC)                   */}

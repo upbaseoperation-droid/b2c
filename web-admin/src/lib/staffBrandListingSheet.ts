@@ -60,6 +60,7 @@ export interface StaffListingSheetRow {
 
   // Các trường Chốt Book & Nghiệm thu Video (Hệ thống tự động mapping theo kênh KOC sau khi nghiệm thu)
   chuyenListDuyetBook?: boolean;
+  brandReviewedAt?: string;     // ISO timestamp hệ thống ghi nhận lúc Brand chọn Yes / No / Cân nhắc
   maBooking?: string;           // #49 (AX) Mã Booking (BO...)
   giaChotCuoi?: number;         // #50 (AY) Chi phí thanh toán Booking chốt cuối
   ngayAirChot?: string;         // #51 (AZ) P.Ngày air chốt
@@ -73,11 +74,13 @@ export interface StaffListingSheetRow {
   donHangNghiemThu?: number;    // #59 (BH) 🌸 Số đơn hàng 30 ngày
   roiNghiemThu?: number;        // #60 (BI) 🌸 ROI 30 ngày
   trangThaiThanhToan?: string;  // #61 (BJ) Trạng thái phiếu thanh toán
+  ngayBrandDuyet?: string;      // #62 (BK) Thời gian Brand duyệt (DD/MM/YYYY HH:mm)
+  slaBrandDuyet?: string;       // #63 (BL) SLA Brand duyệt (Từ lúc Listing -> Brand duyệt, chuẩn 48h)
 }
 
 export type StaffListingColumnKey = keyof Omit<
   StaffListingSheetRow,
-  'id' | 'kocId' | 'createdAt' | 'chuyenListDuyetBook'
+  'id' | 'kocId' | 'createdAt' | 'chuyenListDuyetBook' | 'brandReviewedAt'
 >;
 
 export interface StaffListingColumnMeta {
@@ -93,7 +96,7 @@ export interface StaffListingColumnMeta {
 }
 
 export const STAFF_LISTING_COLUMNS: StaffListingColumnMeta[] = [
-  { index: 1, excelCol: 'B', key: 'ngayDien', header: 'ngay_dien', group: 'Listing điền', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 105 },
+  { index: 1, excelCol: 'B', key: 'ngayDien', header: 'ngay_dien', group: 'Listing điền', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 138 },
   { index: 2, excelCol: 'C', key: 'dot', header: 'Đợt (Bổ sung thêm)', group: 'Listing điền', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: false, width: 100 },
   { index: 3, excelCol: 'D', key: 'thang', header: 'Tháng', group: 'Listing điền', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 95 },
   { index: 4, excelCol: 'E', key: 'nhanSuDien', header: 'nhan_su_dien', group: 'Listing điền', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 145 },
@@ -112,7 +115,7 @@ export const STAFF_LISTING_COLUMNS: StaffListingColumnMeta[] = [
   { index: 17, excelCol: 'R', key: 'deXuatUpBase', header: 'Đề xuất từ UpBase', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 135 },
   { index: 18, excelCol: 'S', key: 'leaderNote', header: 'Growth/ account/leader note (Bổ sung thêm)', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: false, width: 190 },
   { index: 19, excelCol: 'T', key: 'contentNote', header: 'Content note', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 240 },
-  { index: 20, excelCol: 'U', key: 'brandChon', header: 'Brand chọn', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 120 },
+  { index: 20, excelCol: 'U', key: 'brandChon', header: 'Brand chọn', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 150 },
   { index: 21, excelCol: 'V', key: 'lyDoTuChoi', header: 'Lý do từ chối - brand note', group: 'Đề xuất & Phê duyệt', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 190 },
   { index: 22, excelCol: 'W', key: 'thanhQuaHopTac', header: 'Thành quả hợp tác', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 230 },
   { index: 23, excelCol: 'X', key: 'gmvDaHopTac', header: 'GMV đã hợp tác (Bổ sung thêm) - Kéo từ GMV max của ID kênh', group: 'Chỉ số & Lịch sử bán hàng', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 150 },
@@ -155,6 +158,8 @@ export const STAFF_LISTING_COLUMNS: StaffListingColumnMeta[] = [
   { index: 59, excelCol: 'BH', key: 'donHangNghiemThu', header: '🌸 Số đơn hàng 30 ngày', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 115 },
   { index: 60, excelCol: 'BI', key: 'roiNghiemThu', header: '🌸 ROI 30 ngày', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'FORMULA', inLarkBase: false, inBrandWorkingFile: false, width: 100 },
   { index: 61, excelCol: 'BJ', key: 'trangThaiThanhToan', header: 'Trạng thái phiếu thanh toán', group: 'Chốt Book & Nghiệm thu (File 3.2)', fillMode: 'AUTO_SYSTEM', inLarkBase: false, inBrandWorkingFile: false, width: 155 },
+  { index: 62, excelCol: 'BK', key: 'ngayBrandDuyet', header: 'Thời gian Brand duyệt', group: 'Đề xuất & Phê duyệt', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 145 },
+  { index: 63, excelCol: 'BL', key: 'slaBrandDuyet', header: 'SLA Brand duyệt (48h)', group: 'Đề xuất & Phê duyệt', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 160 },
 ];
 
 // Danh mục chuẩn từ Sheet 9 ("Định nghĩa") của file template list KOL_KOC.xlsx
@@ -244,14 +249,432 @@ export interface BrandGoogleSheetLinkMap {
   [brandOrStoreKey: string]: string;
 }
 
+export type StaffSheetRoleTier = 'SUPPORT' | 'PRIMARY_PIC' | 'LEADER' | 'ADMIN';
+
+export interface StaffSheetFieldEditPolicy {
+  /** Phạm vi dòng mà Nhân viên hỗ trợ (Booking Support) được phép sửa */
+  supportRowScope: 'OWN_ROWS_ONLY' | 'ALL_STORE_ROWS';
+  /** Khi Brand chọn = Yes (đã duyệt), khóa các trường đề xuất/báo giá ban đầu đối với Nhân viên hỗ trợ & PIC */
+  lockProposalAfterBrandApproved: boolean;
+  /** Cho phép Nhân viên hỗ trợ bấm đẩy dữ liệu lên Google Sheet hay chỉ PIC Chính / Leader / Admin */
+  allowSupportPushToSheet: boolean;
+  /** Danh sách các trường (key cột) được phép sửa theo từng cấp nhân sự */
+  editableFieldsByRole: {
+    SUPPORT: StaffListingColumnKey[];
+    PRIMARY_PIC: StaffListingColumnKey[];
+    LEADER: StaffListingColumnKey[];
+  };
+  updatedAt?: string;
+}
+
+export interface StaffSheetConfigurableFieldGroup {
+  id: string;
+  title: string;
+  badge: string;
+  fields: StaffListingColumnKey[];
+}
+
+/** Các cột do hệ thống tự động sinh hoặc chạy công thức cố định (không mở sửa tay) */
+export const STAFF_SHEET_READONLY_SYSTEM_COLUMNS: StaffListingColumnKey[] = [
+  'ngayDien',
+  'thang',
+  'nhanSuDien',
+  'store',
+  'linkKenh',
+  'tepBooking',
+  'phiBookingKemThue',
+  'gmvTuTheSanPhamPct',
+  'nuPct',
+  'tuoiTren35Pct',
+  'maBooking',
+  'trangThaiSlaAir',
+  'roiNghiemThu',
+  'trangThaiThanhToan',
+  'ngayBrandDuyet',
+  'slaBrandDuyet',
+];
+
+/** Các trường đề xuất ban đầu sẽ tự khóa đối với Support/PIC sau khi Brand chọn = Yes (nếu bật quy tắc khóa) */
+export const STAFF_SHEET_INITIAL_PROPOSAL_COLUMNS: StaffListingColumnKey[] = [
+  'dot',
+  'contentTag',
+  'idKenh',
+  'tepKenh',
+  'sanPham',
+  'tenKenh',
+  'giaNetVideo',
+  'deXuatUpBase',
+];
+
+export const STAFF_SHEET_CONFIGURABLE_FIELD_GROUPS: StaffSheetConfigurableFieldGroup[] = [
+  {
+    id: 'PROPOSAL_QUOTE',
+    title: '1. Đề xuất KOC, Sản phẩm & Báo giá Listing',
+    badge: 'Giai đoạn đề xuất',
+    fields: [
+      'dot',
+      'contentTag',
+      'idKenh',
+      'tepKenh',
+      'sanPham',
+      'tenKenh',
+      'giaNetVideo',
+      'trangThai',
+      'deXuatUpBase',
+      'contentNote',
+      'ngayAirPlan',
+    ],
+  },
+  {
+    id: 'APPROVAL_DECISION',
+    title: '2. Sơ duyệt Nội bộ & Kết quả Phê duyệt từ Brand',
+    badge: 'Sơ duyệt & Brand',
+    fields: ['leaderNote', 'brandChon', 'lyDoTuChoi'],
+  },
+  {
+    id: 'CONTACT_LOGISTICS',
+    title: '3. Thông tin Liên hệ, Gửi mẫu (FOC) & Ngân hàng KOC',
+    badge: 'Hậu cần & Thanh toán',
+    fields: [
+      'email',
+      'zalo',
+      'nguoiNhanHang',
+      'sdtNhanHang',
+      'diaChiNhanHang',
+      'tenTaiKhoanNganHang',
+      'soTaiKhoan',
+      'nganHang',
+      'soCccd',
+    ],
+  },
+  {
+    id: 'AIR_ACCEPTANCE',
+    title: '4. Đi Air Video & Nghiệm thu 30 ngày (File 3.2)',
+    badge: 'Đi Air & Nghiệm thu',
+    fields: [
+      'giaChotCuoi',
+      'ngayAirChot',
+      'linkAirNghiemThu',
+      'ngayAirReal',
+      'tuanReal',
+      'maSparkAds',
+      'viewsNghiemThu',
+      'gmvNghiemThu',
+      'donHangNghiemThu',
+    ],
+  },
+  {
+    id: 'CHANNEL_METRICS',
+    title: '5. Chỉ số Kênh & Lịch sử Bán hàng (Mặc định lấy từ Danh bạ KOC)',
+    badge: 'Chỉ số kênh',
+    fields: [
+      'follower',
+      'thanhQuaHopTac',
+      'gmvDaHopTac',
+      'doanhSo',
+      'soMonBanRa',
+      'gpm',
+      'aov',
+      'viewTrungBinh',
+      'gmvTuVideoPct',
+      'gmvTuLivePct',
+      'namPct',
+      'tuoi18_24Pct',
+      'tuoi25_34Pct',
+      'tuoiOtherPct',
+      'location',
+    ],
+  },
+];
+
+export const DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY: StaffSheetFieldEditPolicy = {
+  supportRowScope: 'OWN_ROWS_ONLY',
+  lockProposalAfterBrandApproved: true,
+  allowSupportPushToSheet: false,
+  editableFieldsByRole: {
+    SUPPORT: [
+      // Nhóm 1: Đề xuất & Báo giá
+      'dot',
+      'contentTag',
+      'idKenh',
+      'tepKenh',
+      'sanPham',
+      'tenKenh',
+      'giaNetVideo',
+      'trangThai',
+      'deXuatUpBase',
+      'contentNote',
+      'ngayAirPlan',
+      // Nhóm 3: Liên hệ & Nhận mẫu
+      'email',
+      'zalo',
+      'nguoiNhanHang',
+      'sdtNhanHang',
+      'diaChiNhanHang',
+      'tenTaiKhoanNganHang',
+      'soTaiKhoan',
+      'nganHang',
+      'soCccd',
+      // Nhóm 4: Điền link air thực tế & Spark Ads
+      'linkAirNghiemThu',
+      'ngayAirReal',
+      'tuanReal',
+      'maSparkAds',
+    ],
+    PRIMARY_PIC: [
+      // Nhóm 1: Đề xuất & Báo giá
+      'dot',
+      'contentTag',
+      'idKenh',
+      'tepKenh',
+      'sanPham',
+      'tenKenh',
+      'giaNetVideo',
+      'trangThai',
+      'deXuatUpBase',
+      'contentNote',
+      'ngayAirPlan',
+      // Nhóm 2: Kết quả Brand & Ghi chú
+      'leaderNote',
+      'brandChon',
+      'lyDoTuChoi',
+      // Nhóm 3: Liên hệ & Nhận mẫu
+      'email',
+      'zalo',
+      'nguoiNhanHang',
+      'sdtNhanHang',
+      'diaChiNhanHang',
+      'tenTaiKhoanNganHang',
+      'soTaiKhoan',
+      'nganHang',
+      'soCccd',
+      // Nhóm 4: Đi Air & Nghiệm thu
+      'giaChotCuoi',
+      'ngayAirChot',
+      'linkAirNghiemThu',
+      'ngayAirReal',
+      'tuanReal',
+      'maSparkAds',
+      'viewsNghiemThu',
+      'gmvNghiemThu',
+      'donHangNghiemThu',
+      // Bổ sung chỉnh chỉ số cơ bản khi cần
+      'follower',
+      'thanhQuaHopTac',
+    ],
+    LEADER: [
+      // Toàn bộ các trường cấu hình Nhóm 1 -> Nhóm 5
+      'dot',
+      'contentTag',
+      'idKenh',
+      'tepKenh',
+      'sanPham',
+      'tenKenh',
+      'giaNetVideo',
+      'trangThai',
+      'deXuatUpBase',
+      'contentNote',
+      'ngayAirPlan',
+      'leaderNote',
+      'brandChon',
+      'lyDoTuChoi',
+      'email',
+      'zalo',
+      'nguoiNhanHang',
+      'sdtNhanHang',
+      'diaChiNhanHang',
+      'tenTaiKhoanNganHang',
+      'soTaiKhoan',
+      'nganHang',
+      'soCccd',
+      'giaChotCuoi',
+      'ngayAirChot',
+      'linkAirNghiemThu',
+      'ngayAirReal',
+      'tuanReal',
+      'maSparkAds',
+      'viewsNghiemThu',
+      'gmvNghiemThu',
+      'donHangNghiemThu',
+      'follower',
+      'thanhQuaHopTac',
+      'gmvDaHopTac',
+      'doanhSo',
+      'soMonBanRa',
+      'gpm',
+      'aov',
+      'viewTrungBinh',
+      'gmvTuVideoPct',
+      'gmvTuLivePct',
+      'namPct',
+      'tuoi18_24Pct',
+      'tuoi25_34Pct',
+      'tuoiOtherPct',
+      'location',
+    ],
+  },
+};
+
 export interface StaffBrandSheetCollection {
   /** key = `${monthKey}__${brandOrStoreKey}` */
   sheets: Record<string, StaffListingSheetRow[]>;
   googleSheetUrls: BrandGoogleSheetLinkMap;
+  fieldEditPolicy?: StaffSheetFieldEditPolicy;
 }
 
 const STORAGE_KEY = 'upbase_b2c_staff_brand_listing_sheets_v1';
 export const STAFF_SHEET_UPDATED_EVENT = 'upbase-staff-brand-sheet-updated';
+
+export function normalizeStaffSheetFieldEditPolicy(
+  raw?: Partial<StaffSheetFieldEditPolicy> | null
+): StaffSheetFieldEditPolicy {
+  if (!raw || typeof raw !== 'object') {
+    return {
+      ...DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY,
+      editableFieldsByRole: {
+        SUPPORT: [...DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY.editableFieldsByRole.SUPPORT],
+        PRIMARY_PIC: [...DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY.editableFieldsByRole.PRIMARY_PIC],
+        LEADER: [...DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY.editableFieldsByRole.LEADER],
+      },
+    };
+  }
+  const byRole = raw.editableFieldsByRole;
+  return {
+    supportRowScope:
+      raw.supportRowScope === 'ALL_STORE_ROWS' ? 'ALL_STORE_ROWS' : 'OWN_ROWS_ONLY',
+    lockProposalAfterBrandApproved:
+      typeof raw.lockProposalAfterBrandApproved === 'boolean'
+        ? raw.lockProposalAfterBrandApproved
+        : DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY.lockProposalAfterBrandApproved,
+    allowSupportPushToSheet:
+      typeof raw.allowSupportPushToSheet === 'boolean'
+        ? raw.allowSupportPushToSheet
+        : DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY.allowSupportPushToSheet,
+    editableFieldsByRole: {
+      SUPPORT: Array.isArray(byRole?.SUPPORT)
+        ? [...byRole.SUPPORT]
+        : [...DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY.editableFieldsByRole.SUPPORT],
+      PRIMARY_PIC: Array.isArray(byRole?.PRIMARY_PIC)
+        ? [...byRole.PRIMARY_PIC]
+        : [...DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY.editableFieldsByRole.PRIMARY_PIC],
+      LEADER: Array.isArray(byRole?.LEADER)
+        ? [...byRole.LEADER]
+        : [...DEFAULT_STAFF_SHEET_FIELD_EDIT_POLICY.editableFieldsByRole.LEADER],
+    },
+    updatedAt: raw.updatedAt,
+  };
+}
+
+export function getStaffSheetFieldEditPolicy(
+  collection?: StaffBrandSheetCollection | null
+): StaffSheetFieldEditPolicy {
+  if (collection?.fieldEditPolicy) {
+    return normalizeStaffSheetFieldEditPolicy(collection.fieldEditPolicy);
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as StaffBrandSheetCollection;
+        if (parsed?.fieldEditPolicy) {
+          return normalizeStaffSheetFieldEditPolicy(parsed.fieldEditPolicy);
+        }
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }
+  return normalizeStaffSheetFieldEditPolicy(null);
+}
+
+export function saveStaffSheetFieldEditPolicy(
+  nextPolicy: StaffSheetFieldEditPolicy
+): StaffSheetFieldEditPolicy {
+  const normalized = normalizeStaffSheetFieldEditPolicy({
+    ...nextPolicy,
+    updatedAt: new Date().toISOString(),
+  });
+  if (typeof window === 'undefined') return normalized;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const parsed: StaffBrandSheetCollection = raw
+      ? (JSON.parse(raw) as StaffBrandSheetCollection)
+      : { sheets: {}, googleSheetUrls: {} };
+    const updatedCollection: StaffBrandSheetCollection = {
+      sheets: parsed.sheets || {},
+      googleSheetUrls: parsed.googleSheetUrls || {},
+      fieldEditPolicy: normalized,
+    };
+    saveStaffSheetCollection(updatedCollection, true);
+  } catch {
+    // ignore storage errors
+  }
+  return normalized;
+}
+
+/**
+ * Kiểm tra nhân sự có được phép sửa một ô (cột) cụ thể trên dòng hay không
+ */
+export function canStaffEditSheetField(params: {
+  policy: StaffSheetFieldEditPolicy;
+  roleTier: StaffSheetRoleTier;
+  colKey: StaffListingColumnKey;
+  isOwnRow: boolean;
+  isBrandApproved: boolean;
+}): { allowed: boolean; reason?: string } {
+  const { policy, roleTier, colKey, isOwnRow, isBrandApproved } = params;
+
+  // Các cột công thức hoặc tự động cố định của hệ thống
+  if (STAFF_SHEET_READONLY_SYSTEM_COLUMNS.includes(colKey)) {
+    return { allowed: false, reason: 'Cột công thức / hệ thống tự động tính' };
+  }
+
+  // Admin / Manager có toàn quyền sửa mọi trường cấu hình
+  if (roleTier === 'ADMIN') {
+    return { allowed: true };
+  }
+
+  // Kiểm tra phạm vi dòng đối với Nhân viên hỗ trợ
+  if (
+    roleTier === 'SUPPORT' &&
+    policy.supportRowScope === 'OWN_ROWS_ONLY' &&
+    !isOwnRow
+  ) {
+    return {
+      allowed: false,
+      reason: 'Nhân viên hỗ trợ chỉ sửa các dòng do mình thêm vào bảng',
+    };
+  }
+
+  // Kiểm tra quy tắc khóa trường đề xuất ban đầu sau khi Brand đã duyệt (Brand chọn = Yes)
+  if (
+    isBrandApproved &&
+    policy.lockProposalAfterBrandApproved &&
+    (roleTier === 'SUPPORT' || roleTier === 'PRIMARY_PIC') &&
+    STAFF_SHEET_INITIAL_PROPOSAL_COLUMNS.includes(colKey)
+  ) {
+    return {
+      allowed: false,
+      reason: 'Đã khóa trường đề xuất & báo giá ban đầu vì Brand đã duyệt (Yes)',
+    };
+  }
+
+  const allowedList = policy.editableFieldsByRole[roleTier] || [];
+  if (!allowedList.includes(colKey)) {
+    const roleLabel =
+      roleTier === 'SUPPORT'
+        ? 'Nhân viên hỗ trợ'
+        : roleTier === 'PRIMARY_PIC'
+          ? 'PIC Chính'
+          : 'Leader';
+    return {
+      allowed: false,
+      reason: `Quản trị viên chưa mở quyền sửa cột này cho cấp ${roleLabel}`,
+    };
+  }
+
+  return { allowed: true };
+}
 
 /**
  * Công thức Tệp Booking (Cột M) chuẩn theo Sheet "Template hệ thống":
@@ -297,6 +720,156 @@ export function formatShortVnDate(date: Date = new Date()): string {
   return `${d}/${m}/${y}`;
 }
 
+/**
+ * Định dạng Ngày & Giờ chuẩn Việt Nam (UTC+7): DD/MM/YYYY HH:mm
+ */
+export function formatVnDateTime(date: Date = new Date()): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(date);
+    const get = (t: string) => parts.find((p) => p.type === t)?.value || '00';
+    return `${get('day')}/${get('month')}/${get('year')} ${get('hour')}:${get('minute')}`;
+  } catch {
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${d}/${m}/${y} ${hh}:${mm}`;
+  }
+}
+
+export const SLA_BRAND_REVIEW_HOURS = 48;
+
+/**
+ * Đọc mốc thời gian từ chuỗi DD/MM/YYYY HH:mm (giờ VN UTC+7) hoặc ISO fallback sang milliseconds
+ */
+export function parseVnDateTimeToMs(
+  vnDateOrTime?: string,
+  isoFallback?: string
+): number | null {
+  const raw = String(vnDateOrTime || '').trim();
+  const match = raw.match(
+    /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/
+  );
+  if (match) {
+    const day = Number(match[1]);
+    const month = Number(match[2]);
+    const year = Number(match[3]);
+    const hasTime = match[4] !== undefined && match[5] !== undefined;
+    if (hasTime) {
+      const hour = Number(match[4]);
+      const minute = Number(match[5]);
+      const second = Number(match[6] || 0);
+      // Quy đổi từ UTC+7 sang UTC epoch ms
+      return Date.UTC(year, month - 1, day, hour - 7, minute, second);
+    }
+    if (isoFallback) {
+      const parsedIso = Date.parse(isoFallback);
+      if (Number.isFinite(parsedIso)) return parsedIso;
+    }
+    // Mặc định 09:00 sáng giờ VN nếu dữ liệu cũ chỉ có DD/MM/YYYY
+    return Date.UTC(year, month - 1, day, 9 - 7, 0, 0);
+  }
+  if (isoFallback) {
+    const parsedIso = Date.parse(isoFallback);
+    if (Number.isFinite(parsedIso)) return parsedIso;
+  }
+  return null;
+}
+
+function formatDurationHoursText(hours: number): string {
+  const safeHours = Math.max(0, hours);
+  if (safeHours < 1) {
+    const mins = Math.max(1, Math.round(safeHours * 60));
+    return `${mins} phút`;
+  }
+  if (safeHours < 24) {
+    return `${safeHours.toFixed(1)}h`;
+  }
+  const days = (safeHours / 24).toFixed(1);
+  return `${days} ngày (${Math.round(safeHours)}h)`;
+}
+
+export interface ListingBrandSlaInfo {
+  label: string;
+  elapsedHours: number | null;
+  status: 'ON_TIME' | 'OVERDUE' | 'WAITING' | 'WAITING_OVERDUE';
+}
+
+/**
+ * Đo lường SLA từ thời điểm Listing KOC lên (ngayDien / createdAt) đến thời điểm Brand duyệt (ngayBrandDuyet / brandReviewedAt)
+ * Chuẩn SLA phản hồi duyệt Listing của Brand: 48 giờ (2 ngày)
+ */
+export function computeListingToBrandSla(params: {
+  ngayDien?: string;
+  createdAt?: string;
+  brandChon?: string;
+  ngayBrandDuyet?: string;
+  brandReviewedAt?: string;
+}): ListingBrandSlaInfo {
+  const { ngayDien, createdAt, brandChon, ngayBrandDuyet, brandReviewedAt } = params;
+  const startMs = parseVnDateTimeToMs(ngayDien, createdAt);
+  const cleanDecision = (brandChon || '').trim();
+  const isReviewed =
+    cleanDecision === 'Yes' || cleanDecision === 'No' || cleanDecision === 'Cân nhắc';
+
+  if (isReviewed) {
+    const endMs = parseVnDateTimeToMs(ngayBrandDuyet, brandReviewedAt);
+    if (!startMs || !endMs) {
+      return {
+        label: 'Đã duyệt',
+        elapsedHours: null,
+        status: 'ON_TIME',
+      };
+    }
+    const diffHours = Math.max(0.05, (endMs - startMs) / 3_600_000);
+    const durText = formatDurationHoursText(diffHours);
+    if (diffHours <= SLA_BRAND_REVIEW_HOURS) {
+      return {
+        label: `Đúng hạn (${durText})`,
+        elapsedHours: diffHours,
+        status: 'ON_TIME',
+      };
+    }
+    return {
+      label: `Trễ SLA (${durText})`,
+      elapsedHours: diffHours,
+      status: 'OVERDUE',
+    };
+  }
+
+  if (!startMs) {
+    return {
+      label: 'Chờ Brand duyệt',
+      elapsedHours: null,
+      status: 'WAITING',
+    };
+  }
+
+  const waitHours = Math.max(0.05, (Date.now() - startMs) / 3_600_000);
+  const durText = formatDurationHoursText(waitHours);
+  if (waitHours <= SLA_BRAND_REVIEW_HOURS) {
+    return {
+      label: `Đang chờ (${durText})`,
+      elapsedHours: waitHours,
+      status: 'WAITING',
+    };
+  }
+  return {
+    label: `Quá hạn chờ (${durText})`,
+    elapsedHours: waitHours,
+    status: 'WAITING_OVERDUE',
+  };
+}
+
 export function makeSheetKey(monthKey: string, storeOrBrand: string): string {
   return `${(monthKey || '2026/10').trim()}__${(storeOrBrand || '').trim()}`;
 }
@@ -317,6 +890,8 @@ export function buildStaffListingRowFromKoc(params: {
   trangThai?: string;
   contentNote?: string;
   ngayAirPlan?: string;
+  listedAtDate?: Date;
+  brandReviewedAtDate?: Date;
 }): StaffListingSheetRow {
   const {
     koc,
@@ -331,6 +906,8 @@ export function buildStaffListingRowFromKoc(params: {
     trangThai = 'Nhận sản phẩm',
     contentNote = '',
     ngayAirPlan = '',
+    listedAtDate,
+    brandReviewedAtDate,
   } = params;
 
   const cleanId = normalizeTikTokId(koc.channelId || koc.tiktokChannel || '');
@@ -386,11 +963,37 @@ export function buildStaffListingRowFromKoc(params: {
   const ageOther = 0;
   const ageOver35 = Math.max(0, Number((100 - age18_24 - age25_34 - ageOther).toFixed(2)));
 
+  const listedDate = listedAtDate || new Date();
+  const createdAtIso = listedDate.toISOString();
+  const ngayDienFormatted = formatVnDateTime(listedDate);
+
+  const initialBrandChon =
+    koc.brandApprovalStatus === 'ĐÃ_DUYỆT'
+      ? 'Yes'
+      : koc.brandApprovalStatus === 'TỪ_CHỐI'
+        ? 'No'
+        : 'Chờ duyệt';
+
+  const isInitiallyReviewed = initialBrandChon === 'Yes' || initialBrandChon === 'No';
+  const reviewDate = isInitiallyReviewed
+    ? brandReviewedAtDate || new Date(listedDate.getTime() + 18 * 3_600_000)
+    : undefined;
+  const brandReviewedAtIso = reviewDate ? reviewDate.toISOString() : undefined;
+  const ngayBrandDuyetFormatted = reviewDate ? formatVnDateTime(reviewDate) : '';
+
+  const slaInfo = computeListingToBrandSla({
+    ngayDien: ngayDienFormatted,
+    createdAt: createdAtIso,
+    brandChon: initialBrandChon,
+    ngayBrandDuyet: ngayBrandDuyetFormatted,
+    brandReviewedAt: brandReviewedAtIso,
+  });
+
   return {
     id: `sheet-row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     kocId: koc.id,
-    createdAt: new Date().toISOString(),
-    ngayDien: formatShortVnDate(),
+    createdAt: createdAtIso,
+    ngayDien: ngayDienFormatted,
     dot,
     thang: monthKey,
     nhanSuDien: staffName,
@@ -409,12 +1012,7 @@ export function buildStaffListingRowFromKoc(params: {
     deXuatUpBase,
     leaderNote: koc.accountComment || '',
     contentNote: contentNote || koc.contentNote || '',
-    brandChon:
-      koc.brandApprovalStatus === 'ĐÃ_DUYỆT'
-        ? 'Yes'
-        : koc.brandApprovalStatus === 'TỪ_CHỐI'
-          ? 'No'
-          : 'Chờ duyệt',
+    brandChon: initialBrandChon,
     lyDoTuChoi: koc.brandRejectReason || '',
     thanhQuaHopTac: thanhQuaText,
     gmvDaHopTac: maxDealGmv,
@@ -443,15 +1041,18 @@ export function buildStaffListingRowFromKoc(params: {
     soTaiKhoan: koc.bankAccount || '',
     nganHang: koc.bankName || '',
     soCccd: koc.cccd || '',
+    brandReviewedAt: brandReviewedAtIso,
+    ngayBrandDuyet: ngayBrandDuyetFormatted,
+    slaBrandDuyet: slaInfo.label,
   };
 }
 
 /**
- * Tự động tính toán lại các cột công thức khi nhân viên sửa dòng
+ * Tự động tính toán lại các cột công thức, ghi nhận thời gian Brand duyệt và đo lường SLA khi nhân viên sửa dòng
  */
 export function recalculateStaffListingRow(
   row: StaffListingSheetRow,
-  options?: { preserveIdKenhInput?: boolean }
+  options?: { preserveIdKenhInput?: boolean; forceRefreshBrandTimestamp?: boolean }
 ): StaffListingSheetRow {
   const cleanId = normalizeTikTokId(row.idKenh);
   const linkKenh = cleanId ? buildTikTokChannelUrl(cleanId) : row.linkKenh;
@@ -471,8 +1072,47 @@ export function recalculateStaffListingRow(
   const aOther = Math.min(100 - a18 - a25, Math.max(0, Number(row.tuoiOtherPct) || 0));
   const a35 = Number(Math.max(0, 100 - a18 - a25 - aOther).toFixed(2));
 
+  // Đảm bảo ngayDien luôn có cả Ngày & Giờ (DD/MM/YYYY HH:mm)
+  let ngayDien = (row.ngayDien || '').trim();
+  if (!ngayDien) {
+    ngayDien = row.createdAt ? formatVnDateTime(new Date(row.createdAt)) : formatVnDateTime();
+  } else if (/^\d{1,2}[/-]\d{1,2}[/-]\d{4}$/.test(ngayDien) && row.createdAt) {
+    const parsedCreated = new Date(row.createdAt);
+    if (!Number.isNaN(parsedCreated.getTime())) {
+      ngayDien = formatVnDateTime(parsedCreated);
+    }
+  }
+
+  // Ghi nhận tự động Ngày Giờ Brand duyệt khi Brand chọn = Yes / No / Cân nhắc
+  const cleanBrand = (row.brandChon || '').trim();
+  const isReviewed =
+    cleanBrand === 'Yes' || cleanBrand === 'No' || cleanBrand === 'Cân nhắc';
+
+  let ngayBrandDuyet = (row.ngayBrandDuyet || '').trim();
+  let brandReviewedAt = row.brandReviewedAt;
+
+  if (isReviewed) {
+    if (!ngayBrandDuyet || options?.forceRefreshBrandTimestamp) {
+      const now = new Date();
+      ngayBrandDuyet = formatVnDateTime(now);
+      brandReviewedAt = now.toISOString();
+    }
+  } else {
+    ngayBrandDuyet = '';
+    brandReviewedAt = undefined;
+  }
+
+  const slaInfo = computeListingToBrandSla({
+    ngayDien,
+    createdAt: row.createdAt,
+    brandChon: cleanBrand,
+    ngayBrandDuyet,
+    brandReviewedAt,
+  });
+
   return {
     ...row,
+    ngayDien,
     idKenh: options?.preserveIdKenhInput ? row.idKenh : cleanId,
     linkKenh,
     giaNetVideo: netFee,
@@ -487,6 +1127,9 @@ export function recalculateStaffListingRow(
     tuoi25_34Pct: a25,
     tuoiTren35Pct: a35,
     tuoiOtherPct: aOther,
+    brandReviewedAt,
+    ngayBrandDuyet,
+    slaBrandDuyet: slaInfo.label,
   };
 }
 
@@ -523,8 +1166,11 @@ export function buildInitialStaffSheetCollection(
       .slice(sIdx * 3, sIdx * 3 + 5);
 
     const sampleKocs = matchingKocs.length > 0 ? matchingKocs : kocs.slice(0, 4);
-    sheets[key] = sampleKocs.map((koc, idx) =>
-      buildStaffListingRowFromKoc({
+    sheets[key] = sampleKocs.map((koc, idx) => {
+      // Mốc thời gian Listing thực tế theo từng dòng mẫu (cách hiện tại 12h - 36h)
+      const listedAtDate = new Date(Date.now() - (32 - idx * 6) * 3_600_000);
+      const brandReviewedAtDate = new Date(listedAtDate.getTime() + (8 + idx * 5) * 3_600_000);
+      return buildStaffListingRowFromKoc({
         koc,
         monthKey: targetMonth,
         storeName: store.storeName,
@@ -537,8 +1183,10 @@ export function buildInitialStaffSheetCollection(
         trangThai: idx % 2 === 0 ? 'Nhận sản phẩm' : 'Trải nghiệm sản phẩm',
         contentNote: 'Hình ảnh phù hợp với thương hiệu, tệp người xem nữ đúng độ tuổi mục tiêu',
         ngayAirPlan: `2026-10-${15 + idx * 2}`,
-      })
-    );
+        listedAtDate,
+        brandReviewedAtDate,
+      });
+    });
   });
 
   return {
@@ -561,9 +1209,18 @@ export function loadStaffSheetCollection(
     if (raw) {
       const parsed = JSON.parse(raw) as StaffBrandSheetCollection;
       if (parsed && typeof parsed.sheets === 'object') {
+        const normalizedSheets: Record<string, StaffListingSheetRow[]> = {};
+        for (const [k, sheetRows] of Object.entries(parsed.sheets || {})) {
+          normalizedSheets[k] = Array.isArray(sheetRows)
+            ? sheetRows.map((r) => recalculateStaffListingRow(r))
+            : [];
+        }
         return {
-          sheets: parsed.sheets || {},
+          sheets: normalizedSheets,
           googleSheetUrls: parsed.googleSheetUrls || {},
+          ...(parsed.fieldEditPolicy
+            ? { fieldEditPolicy: normalizeStaffSheetFieldEditPolicy(parsed.fieldEditPolicy) }
+            : {}),
         };
       }
     }

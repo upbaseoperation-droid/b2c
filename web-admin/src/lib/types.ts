@@ -2433,6 +2433,8 @@ export interface StorePortfolioItem {
   storeName: string;
   platform: 'TikTok Shop' | 'Shopee Mall' | 'Lazada';
   storeUrl?: string;
+  bookingSheetUrl?: string; // Link Google Sheet Listing / Booking riêng của gian hàng
+  defaultSheetTab?: string; // Tên tab Google Sheet mặc định của gian hàng
   serviceModel: ServiceModel;
   difficultyTier: StoreDifficultyTier;
   difficultyMultiplier: number; // 0.80, 1.00, 1.25, 1.50 (Bảng 2. Hệ số gian hàng)

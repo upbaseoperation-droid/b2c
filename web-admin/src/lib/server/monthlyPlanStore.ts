@@ -27,6 +27,8 @@ import {
 import { isPersonInField } from '../staffIdentity';
 import type { BrandDetail } from '../types';
 import { INITIAL_MONTHLY_PLANS } from '../monthlyPlanData';
+import { INITIAL_STORE_PORTFOLIOS } from '../mockData';
+import { buildStandalonePlanForStore, matchStoreByStandaloneSlug, parseStandalonePlanId } from '../listingBoardRules';
 import { REAL_MONTHLY_PLANS_OCT_2026 } from '../realLarkPlans202610';
 import { REAL_MONTHLY_PLANS_NOV_2026 } from '../realLarkPlans202611';
 import { checkBreakdownForSubmit } from '../planBreakdownRules';
@@ -308,6 +310,18 @@ function checkPlanAccessWithCatalog(
 }
 
 async function getStoredPlanByIdFast(id: string): Promise<StoredMonthlyPlan | null> {
+  const standalone = parseStandalonePlanId(id);
+  if (standalone) {
+    const { data: catalog } = await readMasterCatalog().catch(() => ({ data: { stores: INITIAL_STORE_PORTFOLIOS, brands: [] } }));
+    const storeList = catalog.stores?.length ? catalog.stores : INITIAL_STORE_PORTFOLIOS;
+    const store = matchStoreByStandaloneSlug(storeList, standalone.storeSlug);
+    if (store) {
+      return {
+        plan: buildStandalonePlanForStore(store, standalone.month),
+        revision: 1,
+      };
+    }
+  }
   if (!isPostgresMonthlyPlanEnabled()) {
     ensureMemoryPlansSeeded();
     const mem = memoryPlansById.get(id);

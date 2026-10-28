@@ -11,6 +11,7 @@ import {
   ListingItemStatus,
   AirVideoStage,
   UserRole,
+  UserProfile,
   SalaryGrade,
   InputPlanBreakdownState,
   StorePortfolioItem,
@@ -24,12 +25,15 @@ import { StaffBrandListingSheetWorkspace } from '../shortlist/StaffBrandListingS
 import { PlanListingBoard } from './PlanListingBoard';
 import { PlanDealBoard } from './PlanDealBoard';
 import { PlanSelfChannelBoard } from './PlanSelfChannelBoard';
+import { StoreStaffSheetSetupView, type StoreSheetSetupTabKey } from './StoreStaffSheetSetupView';
+import { ApprovedBookingListView } from './ApprovedBookingListView';
 import type { ContractDocument } from '../../lib/planDealLink';
 import {
   appendKocsToStaffBrandSheet,
   loadStaffSheetCollection,
   makeSheetKey,
   normalizeTikTokId,
+  recalculateStaffListingRow,
   saveStaffSheetCollection,
 } from '@/lib/staffBrandListingSheet';
 import { transferBrandApprovedRowsToBookingList } from '@/lib/approvedBookingList';
@@ -68,6 +72,9 @@ interface KocListingBatchHubViewProps {
   listings: KocListingItem[];
   onUpdateListings: (updated: KocListingItem[]) => void;
   onGenerateDeal?: (item: KocListingItem) => void;
+  onCreateOrUpdateDeals?: (newOrUpdatedDeals: BookingDealItem[]) => void;
+  onOpenContractForDeal?: (deal: BookingDealItem, document?: 'HDNT' | 'SOW' | 'BBNT') => void;
+  currentUser?: UserProfile | null;
   currentRole?: UserRole;
   currentUserName?: string;
   monthlyPlans?: InputPlanBreakdownState[];
@@ -100,6 +107,9 @@ export function KocListingBatchHubView({
   listings,
   onUpdateListings,
   onGenerateDeal,
+  onCreateOrUpdateDeals,
+  onOpenContractForDeal,
+  currentUser,
   currentRole,
   currentUserName = 'Quản trị viên',
   monthlyPlans = INITIAL_MONTHLY_PLANS,
@@ -112,8 +122,19 @@ export function KocListingBatchHubView({
   onNotify,
 }: KocListingBatchHubViewProps) {
   // Navigation sub-tabs
+  const isAdmin = !currentRole || currentRole === 'ADMIN' || currentRole === 'MANAGER';
   const [dealFocus, setDealFocus] = useState<{ planId: string; listingItemId: string; nonce: number } | null>(null);
-  const [activeSubTab, setActiveSubTab] = useState<'PLAN_BOARD' | 'DEAL_BOARD' | 'SELF_CHANNEL_BOARD' | 'STAFF_BRAND_SHEET' | 'LISTING_APPROVAL' | 'AIR_TRACKER'>('PLAN_BOARD');
+  const [activeSubTab, setActiveSubTab] = useState<
+    | 'PLAN_BOARD'
+    | 'DEAL_BOARD'
+    | 'APPROVED_DEAL_BOARD'
+    | 'SELF_CHANNEL_BOARD'
+    | 'STAFF_BRAND_SHEET'
+    | 'SHEET_STAFF_SETUP'
+    | 'LISTING_APPROVAL'
+    | 'AIR_TRACKER'
+  >('STAFF_BRAND_SHEET');
+  const [sheetSetupInitialTab, setSheetSetupInitialTab] = useState<StoreSheetSetupTabKey>('TABLE');
 
   // Filters
   const defaultInitialStore = useMemo(() => {
@@ -180,7 +201,7 @@ export function KocListingBatchHubView({
         setSelectedGrade('ALL');
       }
       if (activePlanContext.openStaffSheet) {
-        setActiveSubTab('STAFF_BRAND_SHEET');
+        setActiveSubTab('PLAN_BOARD');
       } else {
         // Danh sách đề xuất cũ (dữ liệu mẫu, không lưu) đã bỏ: mở bảng Listing thật theo kế hoạch
         setActiveSubTab('PLAN_BOARD');
@@ -554,11 +575,16 @@ export function KocListingBatchHubView({
     const cleanHandle = normalizeTikTokId(targetItem.kocHandle || '').toLowerCase();
     const matchedRows = sheetRows
       .filter((r) => normalizeTikTokId(r.idKenh).toLowerCase() === cleanHandle)
-      .map((r) => ({
-        ...r,
-        brandChon: brandChonVal,
-        ...(feedback ? { lyDoTuChoi: feedback } : {}),
-      }));
+      .map((r) =>
+        recalculateStaffListingRow(
+          {
+            ...r,
+            brandChon: brandChonVal,
+            ...(feedback ? { lyDoTuChoi: feedback } : {}),
+          },
+          { forceRefreshBrandTimestamp: true }
+        )
+      );
 
     if (matchedRows.length > 0) {
       const updatedMap = new Map(matchedRows.map((r) => [r.id, r]));
@@ -1001,51 +1027,80 @@ export function KocListingBatchHubView({
 
   return (
     <div className="space-y-4">
-      {/* Gợi ý KOC / Thêm KOC nằm trong bảng "Điều phối theo kế hoạch" (lưu máy chủ); bộ nút cũ chỉ còn cho Sheet cá nhân */}
-      {activeSubTab === 'STAFF_BRAND_SHEET' && (
-        <PageActions>
-          <ActionMenu
-            items={[
-              { label: 'Báo cáo đề xuất cơ cấu KOC', icon: FileText, onSelect: () => setIsKocReportOpen(true) },
-              {
-                label: 'Thêm KOC nháp',
-                icon: Plus,
-                onSelect: () => {
-                  const gradeToUse = selectedGrade !== 'ALL' ? selectedGrade : 'KL4';
-                  const rowMatch = klTrackingRows.find((r) => r.code === gradeToUse);
-                  handleOpenManualAddForGrade(
-                    gradeToUse,
-                    rowMatch?.benchmarkUnitCost || 4500000,
-                    rowMatch?.defaultTier || 'MICRO'
-                  );
-                },
-              },
-            ]}
-          />
-          <Button
-            size="sm"
-            variant="primary"
-            icon={Filter}
-            onClick={() => {
-              setShortlistTargetGrade(selectedGrade !== 'ALL' ? selectedGrade : undefined);
-              setShowShortlistModal(true);
-            }}
-          >
-            Đề xuất KOC
-          </Button>
-        </PageActions>
-      )}
-
       <Tabs
-        value={activeSubTab}
+        value={
+          activeSubTab === 'APPROVED_DEAL_BOARD'
+            ? 'APPROVED_DEAL_BOARD'
+            : isAdmin && activeSubTab === 'SHEET_STAFF_SETUP'
+              ? 'SHEET_STAFF_SETUP'
+              : 'STAFF_BRAND_SHEET'
+        }
         onChange={setActiveSubTab}
         items={[
-          { key: 'PLAN_BOARD', label: 'Điều phối theo kế hoạch' },
-          { key: 'DEAL_BOARD', label: 'Deal & nghiệm thu' },
-          { key: 'SELF_CHANNEL_BOARD', label: 'Video kênh Brand & nghiệm thu' },
-          { key: 'STAFF_BRAND_SHEET', label: 'Sheet Listing Cá Nhân (Theo Brand)' },
+          { key: 'STAFF_BRAND_SHEET', label: '1. Bảng Listing KOC (Google Sheet)' },
+          { key: 'APPROVED_DEAL_BOARD', label: '2. Bảng Deal & Nghiệm thu (Đã duyệt)' },
+          ...(isAdmin
+            ? [
+                {
+                  key: 'SHEET_STAFF_SETUP' as const,
+                  label: '3. Thiết lập Google Sheet & Phân quyền Sửa Trường',
+                },
+              ]
+            : []),
         ]}
       />
+
+      {(activeSubTab === 'STAFF_BRAND_SHEET' || (!isAdmin && activeSubTab === 'SHEET_STAFF_SETUP')) && (
+        <StaffBrandListingSheetWorkspace
+          kocs={kocs}
+          stores={stores}
+          deals={deals}
+          currentUser={currentUser}
+          currentUserName={currentUserName}
+          currentRole={currentRole}
+          selectedMonth={selectedMonth === 'ALL' ? '2026/10' : selectedMonth}
+          onChangeMonth={setSelectedMonth}
+          selectedStore={selectedStore === 'ALL' ? defaultInitialStore : selectedStore}
+          onChangeStore={setSelectedStore}
+          onCreateOrUpdateDeals={onCreateOrUpdateDeals}
+          onOpenDealBoard={(ctx) => {
+            if (ctx.storeName) setSelectedStore(ctx.storeName);
+            if (ctx.monthKey) setSelectedMonth(ctx.monthKey);
+            setActiveSubTab('APPROVED_DEAL_BOARD');
+          }}
+          onOpenShortlistFilterModal={() => setShowShortlistModal(true)}
+          onOpenSheetSetupScreen={
+            isAdmin
+              ? (tab?: StoreSheetSetupTabKey) => {
+                  setSheetSetupInitialTab(tab || 'TABLE');
+                  setActiveSubTab('SHEET_STAFF_SETUP');
+                }
+              : undefined
+          }
+          onNotify={onNotify}
+        />
+      )}
+
+      {activeSubTab === 'APPROVED_DEAL_BOARD' && (
+        <ApprovedBookingListView
+          kocs={kocs}
+          stores={stores}
+          deals={deals}
+          currentUserName={currentUserName}
+          initialStoreName={selectedStore === 'ALL' ? defaultInitialStore : selectedStore}
+          initialMonthKey={selectedMonth === 'ALL' ? '2026/10' : selectedMonth}
+          onCreateOrUpdateDeals={onCreateOrUpdateDeals}
+          onOpenContractForDeal={onOpenContractForDeal}
+          onNavigateTab={(targetTab, ctx) => {
+            if (ctx?.storeName) setSelectedStore(ctx.storeName);
+            if (ctx?.monthKey) setSelectedMonth(ctx.monthKey);
+            if (targetTab === 'koc-listing') {
+              setActiveSubTab('STAFF_BRAND_SHEET');
+            }
+          }}
+          onNotify={onNotify}
+        />
+      )}
 
       {activeSubTab === 'PLAN_BOARD' && (
         <PlanListingBoard
@@ -1054,44 +1109,43 @@ export function KocListingBatchHubView({
           deals={deals}
           currentUserName={currentUserName}
           initialPlanId={activePlanContext?.planId}
-          initialStoreName={activePlanContext?.storeName}
+          initialStoreName={selectedStore !== 'ALL' ? selectedStore : activePlanContext?.storeName}
           initialMonth={activePlanContext?.monthKey}
           onNotify={onNotify}
+          isAdmin={isAdmin}
+          onOpenSheetSetupScreen={
+            isAdmin
+              ? () => {
+                  setSheetSetupInitialTab('TABLE');
+                  setActiveSubTab('SHEET_STAFF_SETUP');
+                }
+              : undefined
+          }
           onCreateDeal={(planId, listingItemId) => {
             setDealFocus({ planId, listingItemId, nonce: Date.now() });
             setActiveSubTab('DEAL_BOARD');
           }}
         />
       )}
-      {activeSubTab === 'DEAL_BOARD' && <PlanDealBoard kocs={kocs} currentUserName={currentUserName} onNotify={onNotify} onOpenContract={onOpenContractForPlanDeal} focus={dealFocus} />}
-      {activeSubTab === 'SELF_CHANNEL_BOARD' && (
-        <PlanSelfChannelBoard currentUserName={currentUserName} onNotify={onNotify} />
-      )}
-
-      {activeSubTab === 'STAFF_BRAND_SHEET' && (
-        <StaffBrandListingSheetWorkspace
-          kocs={kocs}
+      {isAdmin && activeSubTab === 'SHEET_STAFF_SETUP' && (
+        <StoreStaffSheetSetupView
           stores={stores}
-          deals={deals}
-          currentUserName={currentUserName}
-          currentRole={currentRole}
-          selectedMonth={selectedMonth}
-          onChangeMonth={setSelectedMonth}
-          selectedStore={selectedStore}
-          onChangeStore={setSelectedStore}
-          onSyncRowsToSystemListings={(newItems, storeObj) => {
-            handleAddShortlistToListings(newItems, storeObj);
-            setActiveSubTab('LISTING_APPROVAL');
-          }}
-          onOpenShortlistFilterModal={() => {
-            setShortlistTargetGrade(selectedGrade !== 'ALL' ? selectedGrade : undefined);
-            setShowShortlistModal(true);
-          }}
+          initialTab={sheetSetupInitialTab}
           onNotify={onNotify}
+          onSelectStoreForListing={(storeName) => {
+            setSelectedStore(storeName);
+            setActiveSubTab('STAFF_BRAND_SHEET');
+          }}
         />
       )}
+      {activeSubTab === 'DEAL_BOARD' && <PlanDealBoard kocs={kocs} currentUserName={currentUserName} onNotify={onNotify} onOpenContract={onOpenContractForPlanDeal} focus={dealFocus} />}
 
-      {activeSubTab !== 'STAFF_BRAND_SHEET' && activeSubTab !== 'PLAN_BOARD' && activeSubTab !== 'DEAL_BOARD' && activeSubTab !== 'SELF_CHANNEL_BOARD' && (
+      {activeSubTab !== 'STAFF_BRAND_SHEET' &&
+        activeSubTab !== 'APPROVED_DEAL_BOARD' &&
+        activeSubTab !== 'PLAN_BOARD' &&
+        activeSubTab !== 'SHEET_STAFF_SETUP' &&
+        activeSubTab !== 'DEAL_BOARD' &&
+        activeSubTab !== 'SELF_CHANNEL_BOARD' && (
         <>
       <StatRow size="sm">
         <Stat

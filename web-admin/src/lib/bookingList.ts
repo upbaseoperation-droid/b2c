@@ -1,5 +1,5 @@
 // Danh sách KOC dự kiến book gửi Brand duyệt: dựng từ các content đã gán KOC trong kế hoạch content hoặc từ bảng điều phối Listing.
-import type { InputPlanBreakdownState, KocItem, KocListingItem } from './types';
+import type { InputPlanBreakdownState, KocItem, KocListingItem, StorePortfolioItem } from './types';
 import { formatBriefCode, slotKocHandles, type ContentSlot } from './contentPlanRules';
 import { brandKey } from './brands/types';
 import { findRealBrandFileLinks, REAL_BRAND_FILE_CATALOG } from './brands/brandFilesCatalog';
@@ -175,8 +175,33 @@ export function buildBookingListRowsFromListingItems(
   });
 }
 
-/** Link Google Sheet booking của Brand theo danh mục file Brand (bảng 3.5). */
-export function resolveBrandBookingSheetUrl(planOrBrand: InputPlanBreakdownState | string, storeName?: string): string {
+function readStoreOverrideByPlan(planOrBrand: InputPlanBreakdownState | string, storeName?: string): Partial<StorePortfolioItem> | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem('upbase_store_overrides_v1');
+    if (!raw) return null;
+    const overrides = JSON.parse(raw) as Record<string, Partial<StorePortfolioItem>>;
+    if (typeof planOrBrand !== 'string' && planOrBrand.storeId && overrides[planOrBrand.storeId]) {
+      return overrides[planOrBrand.storeId];
+    }
+    const targetStore = (typeof planOrBrand === 'string' ? storeName || '' : planOrBrand.storeName || '').trim().toLowerCase();
+    if (!targetStore) return null;
+    return Object.values(overrides).find(o => (o?.storeName || '').trim().toLowerCase() === targetStore) || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Link Google Sheet booking của Gian hàng / Brand (ưu tiên cấu hình riêng trên Gian hàng -> Store Overrides -> Bảng 3.5). */
+export function resolveBrandBookingSheetUrl(
+  planOrBrand: InputPlanBreakdownState | string,
+  storeName?: string,
+  storeObj?: StorePortfolioItem | null
+): string {
+  if (storeObj?.bookingSheetUrl?.trim()) return storeObj.bookingSheetUrl.trim();
+  const override = readStoreOverrideByPlan(planOrBrand, storeName);
+  if (override?.bookingSheetUrl?.trim()) return override.bookingSheetUrl.trim();
+
   const brandStr = typeof planOrBrand === 'string' ? planOrBrand : planOrBrand.brandName || '';
   const storeStr = typeof planOrBrand === 'string' ? storeName || '' : planOrBrand.storeName || '';
   const store = storeStr.trim().toLowerCase();
@@ -186,7 +211,16 @@ export function resolveBrandBookingSheetUrl(planOrBrand: InputPlanBreakdownState
   return byBrand?.bookingSheetUrl || '';
 }
 
-export const defaultBookingTabName = (planOrMonth: InputPlanBreakdownState | string, dot = 1) => {
+export const defaultBookingTabName = (
+  planOrMonth: InputPlanBreakdownState | string,
+  dot = 1,
+  storeObj?: StorePortfolioItem | null
+) => {
+  if (storeObj?.defaultSheetTab?.trim()) return storeObj.defaultSheetTab.trim();
+  if (typeof planOrMonth !== 'string') {
+    const override = readStoreOverrideByPlan(planOrMonth);
+    if (override?.defaultSheetTab?.trim()) return override.defaultSheetTab.trim();
+  }
   const monthStr = typeof planOrMonth === 'string' ? planOrMonth : planOrMonth.month || '';
   return `Listing ${monthStr.replace('/', '-')} Đợt ${dot}`;
 };

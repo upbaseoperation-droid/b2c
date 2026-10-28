@@ -1,6 +1,6 @@
 // Logic bảng điều phối listing: đối chiếu số lượng và ngân sách đã list với kế hoạch đã duyệt (bảng 4.1.1),
 // chuyển trạng thái, và xuất đúng cột bảng 3.1 Listing KOCs của Lark.
-import type { InputPlanBreakdownState, KocItem, KocListingItem, ListingBatchCycle, SalaryGrade } from './types';
+import type { InputPlanBreakdownState, KocItem, KocListingItem, ListingBatchCycle, SalaryGrade, StorePortfolioItem } from './types';
 import { KL_TIERS, klBaseCost, klFromFee, klLabel, klTier, type KlCode } from './klTiers';
 
 export const LISTABLE_STATUSES = ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'LOCKED', 'IN_EXECUTION', 'COMPLETED'];
@@ -1152,4 +1152,84 @@ export function checkKocDuplicateAndPriceWarning(
     priceHikeWarning: priceWarningText,
   };
 }
+
+// ---------------------------------------------------------------------------------------------
+// Listing tự do theo Gian hàng / Brand & Kỳ tháng (Độc lập với việc lập / duyệt Plan 4.1.1)
+// ---------------------------------------------------------------------------------------------
+
+export const STANDALONE_PLAN_PREFIX = 'adhoc-plan-';
+
+const slugifyStoreKey = (v: string) =>
+  v
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+
+export function makeStandalonePlanId(storeIdOrName: string, month: string): string {
+  const ym = (month || '2026/10').replace(/[^0-9]/g, '').slice(0, 6) || '202610';
+  return `${STANDALONE_PLAN_PREFIX}${ym}-${slugifyStoreKey(storeIdOrName || 'store')}`;
+}
+
+export function isStandaloneListingPlan(planOrId: InputPlanBreakdownState | string | null | undefined): boolean {
+  if (!planOrId) return false;
+  const id = typeof planOrId === 'string' ? planOrId : planOrId.id;
+  return Boolean(id && id.startsWith(STANDALONE_PLAN_PREFIX));
+}
+
+export function parseStandalonePlanId(planId: string): { month: string; storeSlug: string } | null {
+  if (!planId || !planId.startsWith(STANDALONE_PLAN_PREFIX)) return null;
+  const rest = planId.slice(STANDALONE_PLAN_PREFIX.length);
+  const m = rest.match(/^(\d{4})(\d{2})-(.+)$/);
+  if (!m) return null;
+  return {
+    month: `${m[1]}/${m[2]}`,
+    storeSlug: m[3],
+  };
+}
+
+export function matchStoreByStandaloneSlug(stores: StorePortfolioItem[], storeSlug: string): StorePortfolioItem | undefined {
+  const target = slugifyStoreKey(storeSlug);
+  return stores.find(
+    s =>
+      slugifyStoreKey(s.id || '') === target ||
+      slugifyStoreKey(s.storeName || '') === target
+  );
+}
+
+/**
+ * Khởi tạo hồ sơ kế hoạch ảo (Standalone Listing Plan) cho gian hàng chưa lập Plan 4.1.1 trong kỳ,
+ * giúp chuyên viên lập Listing KOC, đẩy/kéo Google Sheet và tạo Deal ngay mà không bị chặn.
+ */
+export function buildStandalonePlanForStore(store: StorePortfolioItem, month: string): InputPlanBreakdownState {
+  const normalizedMonth = (month || '2026/10').trim();
+  const id = makeStandalonePlanId(store.id || store.storeName, normalizedMonth);
+  const nowIso = new Date().toISOString();
+  return {
+    id,
+    title: `${store.storeName} (${normalizedMonth})`,
+    brandName: store.brandName || store.storeName,
+    parentBrand: store.brandName || store.storeName,
+    storeId: store.id,
+    storeName: store.storeName,
+    month: normalizedMonth,
+    week: 'Cả tháng',
+    cancellationRate: 0,
+    pic: store.b2cOwnerName || '',
+    bookingLeader: store.bookingLeader || '',
+    hasBookingLeader: Boolean(store.hasBookingLeader || store.bookingLeader),
+    status: 'DRAFT',
+    currentVersionCode: 'v1.0',
+    isVersionLocked: false,
+    totalTargetBudget: 0,
+    budgetAdsTotal: 0,
+    targetGmv: 0,
+    totalTargetContents: 0,
+    items: [],
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+}
+
 

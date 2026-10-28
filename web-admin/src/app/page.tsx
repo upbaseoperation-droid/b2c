@@ -837,7 +837,7 @@ export default function App() {
             const fromApi = byId.get(s.id);
             const merged = fromApi ? { ...s, ...fromApi } : s;
             const localOverride = storeOverrides[s.id];
-            return localOverride ? { ...merged, ...localOverride } : merged;
+            return localOverride ? { ...merged, ...withoutAssignment(localOverride) } : merged;
           });
         });
       }
@@ -1696,6 +1696,17 @@ export default function App() {
               listings={kocListings}
               onUpdateListings={setKocListings}
               onGenerateDeal={handleGenerateDealFromListing}
+              onCreateOrUpdateDeals={(newOrUpdatedDeals) => {
+                setDeals((prev) => {
+                  const byCode = new Map(newOrUpdatedDeals.map((d) => [d.dealCode, d]));
+                  const existingCodes = new Set(prev.map((d) => d.dealCode));
+                  const updatedExisting = prev.map((d) => byCode.get(d.dealCode) || d);
+                  const brandNew = newOrUpdatedDeals.filter((d) => !existingCodes.has(d.dealCode));
+                  return [...brandNew, ...updatedExisting];
+                });
+              }}
+              onOpenContractForDeal={openContractForDeal}
+              currentUser={currentUser}
               currentRole={currentUser.role}
               currentUserName={currentUser.name}
               monthlyPlans={scopedMonthlyPlans}

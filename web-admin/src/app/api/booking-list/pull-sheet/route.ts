@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { assertPlanIdAccess } from '@/lib/server/monthlyPlanStore';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
-import { GoogleSheetsError, isGoogleSheetsConfigured, parseSpreadsheetId, readTab } from '@/lib/server/googleSheets';
-import { applyBrandDecision, columnOf, parseBrandDecision, type BrandDecision } from '@/lib/listingBoardRules';
+import { ensureServiceAccountLoaded, GoogleSheetsError, parseSpreadsheetId, readTab } from '@/lib/server/googleSheets';
+import { applyBrandDecision, columnOf, createListingItem, moveItem, parseBrandDecision, type BrandDecision } from '@/lib/listingBoardRules';
+import { klFromFee, KL_TIERS, type KlCode } from '@/lib/klTiers';
+import { INITIAL_KOCS } from '@/lib/mockData';
 import { addKocToSlot, removeKocFromSlot, slotKocHandles, type ContentPlanData } from '@/lib/contentPlanRules';
 import { EMPTY_DEAL_BOARD, sanitizeDealBoard, syncDealSummaryFields, type DealBoardData, type ScriptStatus } from '@/lib/dealBoardRules';
-import type { KocListingItem } from '@/lib/types';
+import type { KocListingItem, ListingBatchCycle } from '@/lib/types';
 import { getPlanActor, handlePlanError, unauthorized } from '../../monthly-plans/_shared';
 
 export const dynamic = 'force-dynamic';
@@ -55,6 +57,12 @@ const parseScriptStageDecision = (v: string | undefined): ScriptStatus | null =>
 };
 
 interface SheetDecision {
+  handle: string;
+  kocName?: string;
+  followers?: number | null;
+  grade?: KlCode | 'TAP UpAffiliate' | null;
+  pic?: string;
+  batchCycle?: ListingBatchCycle;
   decision: BrandDecision;
   reason: string;
   note: string;
@@ -69,8 +77,27 @@ interface SheetDecision {
   airLink?: string;
 }
 
+const parseGradeCell = (v: string | undefined): KlCode | 'TAP UpAffiliate' | null => {
+  if (!v) return null;
+  const t = v.trim().toUpperCase();
+  if (!t) return null;
+  if (/FOC|FREECAST|TAP|0Đ|0D/.test(t)) return 'TAP UpAffiliate';
+  const found = KL_TIERS.find(tier => t.includes(tier.code));
+  return found ? found.code : null;
+};
+
+const parseBatchCell = (v: string | undefined): ListingBatchCycle | undefined => {
+  if (!v) return undefined;
+  const t = v.trim().toLowerCase();
+  if (t.includes('3') || t.includes('30') || t.includes('w4') || t.includes('w5')) return 'BATCH_30';
+  if (t.includes('2') || t.includes('20') || t.includes('w3')) return 'BATCH_20';
+  if (t.includes('1') || t.includes('10') || t.includes('w1') || t.includes('w2')) return 'BATCH_10';
+  return undefined;
+};
+
 // POST /api/booking-list/pull-sheet — đọc cột "Brand duyệt" và các cột Giai đoạn 2 (Kịch bản / Video Demo / Giá / Sản phẩm) trên Google Sheet.
 // Đối chiếu theo cặp (ID kênh + Mã Brief) nếu có Mã Brief, hoặc theo ID kênh, giúp 1 KOC làm nhiều video trên cùng Sheet không bị xung đột.
+// Đồng thời tự động nhập mới các dòng KOC có trên Google Sheet nhưng chưa có trên Bảng điều phối.
 export async function POST(request: NextRequest) {
   const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
@@ -87,29 +114,34 @@ export async function POST(request: NextRequest) {
     if (!planId || !spreadsheetId || !tab) {
       return NextResponse.json({ error: 'Thiếu mã kế hoạch, tên tab hoặc link Google Sheet không hợp lệ.', code: 'INVALID' }, { status: 400 });
     }
-    if (!isGoogleSheetsConfigured()) {
+    const sa = await ensureServiceAccountLoaded();
+    if (!sa.configured) {
       return NextResponse.json({ error: 'Chưa cấu hình tài khoản dịch vụ Google.', code: 'NOT_CONFIGURED' }, { status: 503 });
     }
-    await assertPlanIdAccess(planId, actor, 'write');
+    const plan = await assertPlanIdAccess(planId, actor, 'write');
 
     const { header, rows } = await readTab({ spreadsheetId, tab });
-    const col = (name: string) => header.find(h => normHeader(h) === normHeader(name));
-    const keyCol = col('ID kênh');
-    const decisionCol = col('Brand duyệt');
-    const reasonCol = col('Lý do Brand từ chối');
-    const noteCol = col('Ghi chú Brand');
-    const briefCol = col('Mã Brief');
-    const feeCol = col('Giá net video');
-    const productCol = col('Sản phẩm');
+    const col = (...names: string[]) => header.find(h => names.some(n => normHeader(h) === normHeader(n)));
+    const keyCol = col('ID kênh', 'ID Kênh TikTok', 'TikTok ID', 'Handle', 'Kênh KOC');
+    const decisionCol = col('Brand duyệt', 'Brand chọn', 'Kết quả Brand', 'Duyệt');
+    const reasonCol = col('Lý do Brand từ chối', 'Lý do từ chối', 'Phản hồi Brand');
+    const noteCol = col('Ghi chú Brand', 'Ghi chú', 'Content Note', 'Leader Note');
+    const briefCol = col('Mã Brief', 'Brief');
+    const feeCol = col('Giá net video', 'Giá Net', 'Chi phí chốt cuối', 'Giá booking', 'Ratecard');
+    const productCol = col('Sản phẩm', 'Tên sản phẩm');
+    const nameCol = col('Tên kênh', 'Tên kênh KOC', 'Tên KOC', 'KOC');
+    const followerCol = col('Follower', 'Followers', 'Lượng follower');
+    const gradeCol = col('Bậc KL', 'Tệp booking', 'Khung lương', 'Tier');
+    const picCol = col('PIC', 'Nhân sự điền', 'Nhân sự phụ trách');
+    const dotCol = col('Đợt', 'Đợt Listing', 'Tuần');
     const scriptLinkCol = col('Link kịch bản');
     const brandScriptCol = col('Brand duyệt kịch bản');
     const demoLinkCol = col('Link video demo');
     const brandDemoCol = col('Brand duyệt demo');
     const brandDemoNoteCol = col('Ghi chú sửa demo');
-    const airLinkCol = col('Link Air');
+    const airLinkCol = col('Link Air', 'Link nghiệm thu');
 
     if (!keyCol) return NextResponse.json({ error: 'Tab chưa có cột "ID kênh".', code: 'INVALID' }, { status: 400 });
-    if (!decisionCol) return NextResponse.json({ error: 'Tab chưa có cột "Brand duyệt".', code: 'INVALID' }, { status: 400 });
 
     // Gom theo (ID kênh + Mã Brief) và theo ID kênh
     const decisionsByComposite = new Map<string, SheetDecision>();
@@ -120,12 +152,18 @@ export async function POST(request: NextRequest) {
       if (!handle) continue;
       const briefCode = briefCol ? (r[briefCol] || '').trim().toUpperCase() : '';
       const compKey = briefCode ? `${handle}::${briefCode}` : handle;
-      const decision = parseBrandDecision(r[decisionCol]);
+      const decision = decisionCol ? parseBrandDecision(r[decisionCol]) : 'NONE';
       const set = seenDecisions.get(compKey) || new Set<BrandDecision>();
       if (decision !== 'NONE') set.add(decision);
       seenDecisions.set(compKey, set);
 
       const entry: SheetDecision = {
+        handle,
+        kocName: nameCol ? (r[nameCol] || '').trim() || undefined : undefined,
+        followers: followerCol ? parseFeeCell(r[followerCol]) : null,
+        grade: gradeCol ? parseGradeCell(r[gradeCol]) : null,
+        pic: picCol ? (r[picCol] || '').trim() || undefined : undefined,
+        batchCycle: dotCol ? parseBatchCell(r[dotCol]) : undefined,
         decision,
         reason: reasonCol ? r[reasonCol] || '' : '',
         note: noteCol ? r[noteCol] || '' : '',
@@ -157,10 +195,12 @@ export async function POST(request: NextRequest) {
       considering: 0,
       unchanged: 0,
       reapproved: 0,
+      imported: 0,
       stage2UpdatedJobs: 0,
       approvedHandles: [] as string[],
       consideringHandles: [] as string[],
       rejectedDetails: [] as { handle: string; reason?: string }[],
+      importedHandles: [] as string[],
       notOnSheet: [] as string[],
       rejectedHandles: [] as string[],
       restoredHandles: [] as string[],
@@ -171,28 +211,44 @@ export async function POST(request: NextRequest) {
     // Đọc trước danh sách slot để biết slotId ứng với briefCode
     const contentSnap = await readRecord<ContentPlanData>(contentKey(planId), { slots: [] });
     const briefCodeBySlotId = new Map<string, string>();
+    const slotIdByBriefCode = new Map<string, string>();
     for (const s of contentSnap.data.slots || []) {
-      if (s.id && s.briefCode) briefCodeBySlotId.set(s.id, s.briefCode.trim().toUpperCase());
+      if (s.id && s.briefCode) {
+        const bc = s.briefCode.trim().toUpperCase();
+        briefCodeBySlotId.set(s.id, bc);
+        slotIdByBriefCode.set(bc, s.id);
+      }
     }
+    const masterKocByHandle = new Map(
+      INITIAL_KOCS.map(k => [normHandle(k.channelId || ''), k])
+    );
 
     // 1. Bảng điều phối listing
     for (let attempt = 0; attempt < 3; attempt++) {
       const rec = await readRecord<{ items: KocListingItem[] }>(listingKey(planId), { items: [] });
-      const c = { approved: 0, rejected: 0, considering: 0, unchanged: 0, reapproved: 0 };
+      const c = { approved: 0, rejected: 0, considering: 0, unchanged: 0, reapproved: 0, imported: 0 };
       const notOnSheet: string[] = [];
       const rejectedHandles: string[] = [];
       const restoredHandles: string[] = [];
       const approvedHandles: string[] = [];
       const consideringHandles: string[] = [];
+      const importedHandles: string[] = [];
       const rejectedDetails: { handle: string; reason?: string }[] = [];
+      const matchedSheetKeys = new Set<string>();
+      const matchedHandles = new Set<string>();
+
       const items = rec.data.items.map(item => {
         const handle = normHandle(item.kocHandle || '');
         const bCode = item.planSlotId ? briefCodeBySlotId.get(item.planSlotId) || '' : '';
-        const d = (bCode ? decisionsByComposite.get(`${handle}::${bCode}`) : undefined) || decisions.get(handle);
+        const compKey = bCode ? `${handle}::${bCode}` : handle;
+        const d = (bCode ? decisionsByComposite.get(compKey) : undefined) || decisions.get(handle);
         if (!d) {
           if (item.overallStatus === 'SUBMITTED') notOnSheet.push(handle);
           return item;
         }
+        matchedHandles.add(handle);
+        matchedSheetKeys.add(compKey);
+        if (d.briefCode) matchedSheetKeys.add(`${handle}::${d.briefCode}`);
         const r = applyBrandDecision(item, d.decision, { reason: d.reason, note: d.note, actor: actor.name });
         let updatedItem = r.item;
         if (r.changed && d.decision !== 'NONE') {
@@ -231,13 +287,70 @@ export async function POST(request: NextRequest) {
         }
         return updatedItem;
       });
+
+      // Nhập tự động các dòng KOC có trên Google Sheet nhưng chưa có trong bảng điều phối Listing
+      for (const [compKey, d] of decisionsByComposite.entries()) {
+        if (matchedSheetKeys.has(compKey) || (!d.briefCode && matchedHandles.has(d.handle))) {
+          continue;
+        }
+        matchedSheetKeys.add(compKey);
+        matchedHandles.add(d.handle);
+        const matchedKoc = masterKocByHandle.get(d.handle);
+        const feeVal = typeof d.fee === 'number' && d.fee >= 0 ? d.fee : matchedKoc?.rateCardVideo;
+        const resolvedGrade: KlCode | 'TAP UpAffiliate' =
+          d.grade ||
+          (feeVal === 0 ? 'TAP UpAffiliate' : typeof feeVal === 'number' ? klFromFee(feeVal) : (matchedKoc?.salaryGrade as KlCode) || 'KL1');
+        let newItem = createListingItem({
+          plan,
+          grade: resolvedGrade,
+          handle: d.handle,
+          koc: matchedKoc,
+          fee: feeVal,
+          followers: typeof d.followers === 'number' ? d.followers : matchedKoc?.followers,
+          kocName: d.kocName || matchedKoc?.stageName || d.handle,
+          actorId: actor.id,
+          actorName: actor.name,
+          batchCycle: d.batchCycle || 'BATCH_10',
+        });
+        if (d.pic) newItem.assignedStaffName = d.pic.slice(0, 120);
+        if (d.productName) newItem.pillarName = d.productName.slice(0, 120);
+        if (d.briefCode && slotIdByBriefCode.has(d.briefCode)) {
+          newItem.planSlotId = slotIdByBriefCode.get(d.briefCode);
+        }
+        newItem = moveItem(newItem, 'WAIT_BRAND', actor.name).item || newItem;
+        if (d.decision !== 'NONE') {
+          newItem = applyBrandDecision(newItem, d.decision, { reason: d.reason, note: d.note, actor: actor.name }).item;
+        }
+        items.push(newItem);
+        c.imported += 1;
+        importedHandles.push(d.handle);
+        if (d.decision === 'APPROVED') {
+          c.approved += 1;
+          approvedHandles.push(d.handle);
+        } else if (d.decision === 'REJECTED') {
+          c.rejected += 1;
+          rejectedHandles.push(d.handle);
+          rejectedDetails.push({ handle: d.handle, reason: d.reason || undefined });
+        } else if (d.decision === 'CONSIDER') {
+          c.considering += 1;
+          consideringHandles.push(d.handle);
+        }
+        changes.push({
+          handle: d.handle,
+          briefCode: d.briefCode,
+          field: 'Nhập mới từ Sheet',
+          app: 'Chưa có trên bảng',
+          sheet: `${d.kocName || `@${d.handle}`} · ${d.decision !== 'NONE' ? d.decision : 'Chờ Brand duyệt'}${typeof feeVal === 'number' ? ` · ${feeText(feeVal)}` : ''}`,
+        });
+      }
+
       if (dryRun) {
-        Object.assign(summary, c, { notOnSheet, rejectedHandles, restoredHandles, approvedHandles, consideringHandles, rejectedDetails });
+        Object.assign(summary, c, { notOnSheet, rejectedHandles, restoredHandles, approvedHandles, consideringHandles, importedHandles, rejectedDetails });
         break;
       }
       try {
         await updateRecord<{ items: KocListingItem[] }>(listingKey(planId), { items: [] }, rec.revision, () => ({ items }));
-        Object.assign(summary, c, { notOnSheet, rejectedHandles, restoredHandles, approvedHandles, consideringHandles, rejectedDetails });
+        Object.assign(summary, c, { notOnSheet, rejectedHandles, restoredHandles, approvedHandles, consideringHandles, importedHandles, rejectedDetails });
         break;
       } catch (err) {
         if (!(err instanceof RecordError && err.status === 409)) throw err;
@@ -393,6 +506,8 @@ export async function POST(request: NextRequest) {
       ...summary,
       changes,
       conflicts: changes.filter(c => c.conflict).length,
+      sheetRows: rows,
+      decisions: Array.from(decisionsByComposite.values()),
     });
   } catch (err) {
     if (err instanceof GoogleSheetsError) return NextResponse.json({ error: err.message, code: err.code }, { status: err.status });

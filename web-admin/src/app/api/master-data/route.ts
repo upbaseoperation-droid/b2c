@@ -99,9 +99,14 @@ const ASSIGNMENT_FIELDS = [
   'b2cOwnerName', 'primaryPic', 'assignedStaff', 'assignedPic', 'b2cOwners', 'assignedMembers',
   'bookingLeader', 'hasBookingLeader', 'backupOwnerName', 'backupOwnerId', 'isBackupActive', 'backupReason', 'backupFrom', 'backupTo',
   'previousPic', 'handoverEffectiveDate', 'assignmentNotes', 'staffCodes', 'contentPic', 'accountOwnerName',
+  'storeUrl', 'bookingSheetUrl', 'defaultSheetTab',
 ] as const;
-/** Leader của gian chỉ đổi người cùng làm và dự phòng; Booking chính / Leader do Giám đốc đặt. */
-const LEADER_FIELDS = new Set<string>(['b2cOwners', 'assignedMembers', 'backupOwnerName', 'backupOwnerId', 'isBackupActive', 'backupReason', 'backupFrom', 'backupTo', 'assignmentNotes', 'staffCodes']);
+/** Leader của gian chỉ đổi người cùng làm, dự phòng và link Sheet/Gian hàng; Booking chính / Leader do Giám đốc đặt. */
+const LEADER_FIELDS = new Set<string>([
+  'b2cOwners', 'assignedMembers', 'backupOwnerName', 'backupOwnerId', 'isBackupActive', 'backupReason', 'backupFrom', 'backupTo', 'assignmentNotes', 'staffCodes',
+  'storeUrl', 'bookingSheetUrl', 'defaultSheetTab',
+]);
+const PIC_LINK_FIELDS = new Set<string>(['storeUrl', 'bookingSheetUrl', 'defaultSheetTab']);
 
 // PATCH /api/master-data — lưu phân công một gian (bàn giao, người cùng làm, dự phòng) lên máy chủ, ghi nhật ký phân công
 export async function PATCH(req: NextRequest) {
@@ -130,7 +135,11 @@ export async function PATCH(req: NextRequest) {
             const before = JSON.stringify((store as unknown as Record<string, unknown>)[f] ?? null);
             const after = JSON.stringify(body.assignment![f] ?? null);
             if (before === after) continue;
-            if (!global && !(positions.has('LEADER') && LEADER_FIELDS.has(f))) {
+            if (
+              !global &&
+              !(positions.has('LEADER') && LEADER_FIELDS.has(f)) &&
+              !(positions.has('BOOKING_MAIN') && PIC_LINK_FIELDS.has(f))
+            ) {
               throw new RecordError(`Bạn không được đổi "${f}" của gian ${store.storeName}. Giám đốc đặt Booking chính và Leader; Leader gian đặt người cùng làm và dự phòng.`, 403);
             }
             patch[f] = body.assignment![f];
