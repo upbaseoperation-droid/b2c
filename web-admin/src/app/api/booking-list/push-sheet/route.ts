@@ -15,6 +15,7 @@ import {
   type SheetSortMode,
 } from '@/lib/server/googleSheets';
 import { createListingItem, moveItem } from '@/lib/listingBoardRules';
+import { getRealLarkListingsForBoardKey } from '@/lib/realLarkListings2026';
 import type { KocListingItem } from '@/lib/types';
 import { getPlanActor, handlePlanError, unauthorized } from '../../monthly-plans/_shared';
 
@@ -236,16 +237,22 @@ export async function POST(request: NextRequest) {
     // Đưa KOC vừa gửi vào bảng điều phối listing (Chờ Brand duyệt) — chỉ thực hiện khi ghi thật (!dryRun)
     let listed = 0;
     if (!dryRun && plan && pushObjects.length > 0) {
+      const boardKey = listingKey(planId);
+      const fallbackItems = getRealLarkListingsForBoardKey(boardKey);
       for (let attempt = 0; attempt < 3; attempt++) {
-        const rec = await readRecord<{ items: KocListingItem[] }>(listingKey(planId), { items: [] });
+        const rec = await readRecord<{ items: KocListingItem[] }>(boardKey, { items: fallbackItems });
+        const curItems =
+          rec.revision > 0 || (Array.isArray(rec.data.items) && rec.data.items.length > 0)
+            ? rec.data.items
+            : fallbackItems;
         const existingByKey = new Map<string, number>();
-        rec.data.items.forEach((i, idx) => {
+        curItems.forEach((i, idx) => {
           if (i.overallStatus === 'DROPPED') return;
           const h = (i.kocHandle || '').replace(/^@/, '').toLowerCase();
           existingByKey.set(h, idx);
           if (i.planSlotId) existingByKey.set(`${h}::${i.planSlotId.toLowerCase()}`, idx);
         });
-        const nextItems = [...rec.data.items];
+        const nextItems = [...curItems];
         let changedCount = 0;
         for (const r of pushObjects) {
           const h: string = (r.handle || '').replace(/^@/, '').toLowerCase();
@@ -279,7 +286,7 @@ export async function POST(request: NextRequest) {
         }
         if (changedCount === 0) break;
         try {
-          await updateRecord<{ items: KocListingItem[] }>(listingKey(planId), { items: [] }, rec.revision, () => ({ items: nextItems }));
+          await updateRecord<{ items: KocListingItem[] }>(boardKey, { items: fallbackItems }, rec.revision, () => ({ items: nextItems }));
           listed = changedCount;
           break;
         } catch (err) {

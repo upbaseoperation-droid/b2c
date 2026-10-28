@@ -798,6 +798,35 @@ function mergeDealsAndKocsIntoApprovedList(
   });
 }
 
+function buildRealBrandApprovedListFromSheets(
+  kocs: KocItem[],
+  stores: StorePortfolioItem[],
+  deals: BookingDealItem[],
+  defaultStaffName = 'Chuyên viên Booking'
+): ApprovedBookingListItem[] {
+  const sheetCollection = loadStaffSheetCollection(kocs, stores, deals, defaultStaffName);
+  const storeMap = new Map(stores.map((s) => [s.storeName, s]));
+  const items: ApprovedBookingListItem[] = [];
+  Object.entries(sheetCollection.sheets).forEach(([sheetKey, rows]) => {
+    if (!Array.isArray(rows)) return;
+    rows
+      .filter((r) => r && r.brandChon === 'Yes')
+      .forEach((row) => {
+        const storeObj = storeMap.get(row.store);
+        const created = buildApprovedBookingItemFromSheetRow({
+          row,
+          sheetKey,
+          store: storeObj,
+        });
+        items.push({
+          ...created,
+          id: row.id ? `ABL-${row.id}` : created.id,
+        });
+      });
+  });
+  return items;
+}
+
 export function loadApprovedBookingList(
   kocs: KocItem[] = [],
   stores: StorePortfolioItem[] = [],
@@ -805,17 +834,72 @@ export function loadApprovedBookingList(
   defaultStaffName?: string
 ): ApprovedBookingListItem[] {
   if (typeof window === 'undefined') {
+    const realApproved = buildRealBrandApprovedListFromSheets(
+      kocs,
+      stores,
+      deals,
+      defaultStaffName
+    );
     return mergeDealsAndKocsIntoApprovedList(
-      buildInitialApprovedBookingList(kocs, stores, deals, defaultStaffName),
+      realApproved.length > 0
+        ? realApproved
+        : buildInitialApprovedBookingList(kocs, stores, deals, defaultStaffName),
       kocs,
       deals
     );
   }
+  const realApproved = buildRealBrandApprovedListFromSheets(
+    kocs,
+    stores,
+    deals,
+    defaultStaffName
+  );
   try {
     const raw = window.localStorage.getItem(APPROVED_BOOKING_LIST_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as ApprovedBookingListItem[];
       if (Array.isArray(parsed) && parsed.length > 0) {
+        const hasRealRows = parsed.some(
+          (i) => i.sourceSheetRowId && i.sourceSheetRowId.startsWith('SSR-')
+        );
+        // Nếu localStorage chỉ có vài dòng mẫu cũ chưa có dữ liệu Lark Base 3.1 thực tế -> nạp dữ liệu thực tế
+        if (!hasRealRows && realApproved.length > 0) {
+          const mergedReal = mergeDealsAndKocsIntoApprovedList(realApproved, kocs, deals);
+          try {
+            window.localStorage.setItem(
+              APPROVED_BOOKING_LIST_STORAGE_KEY,
+              JSON.stringify(mergedReal)
+            );
+          } catch {
+            // ignore quota
+          }
+          return mergedReal;
+        }
+        // Bổ sung các dòng Brand duyệt Yes mới từ Lark Base 3.1 chưa có trong danh sách
+        if (realApproved.length > 0) {
+          const existingRowIds = new Set(
+            parsed.map((i) => i.sourceSheetRowId || i.id).filter(Boolean)
+          );
+          const missingReal = realApproved.filter(
+            (r) => r.sourceSheetRowId && !existingRowIds.has(r.sourceSheetRowId)
+          );
+          if (missingReal.length > 0) {
+            const combined = mergeDealsAndKocsIntoApprovedList(
+              [...parsed, ...missingReal],
+              kocs,
+              deals
+            );
+            try {
+              window.localStorage.setItem(
+                APPROVED_BOOKING_LIST_STORAGE_KEY,
+                JSON.stringify(combined)
+              );
+            } catch {
+              // ignore quota
+            }
+            return combined;
+          }
+        }
         return mergeDealsAndKocsIntoApprovedList(parsed, kocs, deals);
       }
     }
@@ -823,7 +907,9 @@ export function loadApprovedBookingList(
     // ignore storage errors
   }
   const initial = mergeDealsAndKocsIntoApprovedList(
-    buildInitialApprovedBookingList(kocs, stores, deals, defaultStaffName),
+    realApproved.length > 0
+      ? realApproved
+      : buildInitialApprovedBookingList(kocs, stores, deals, defaultStaffName),
     kocs,
     deals
   );

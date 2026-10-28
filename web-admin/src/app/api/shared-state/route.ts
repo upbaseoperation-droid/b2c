@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requestActor } from '@/lib/server/requestActor';
 import { USERS } from '@/lib/mockData';
 import { readRecord, upsertRecord, RecordError } from '@/lib/server/sharedRecords';
+import { ensureLarkListingsSyncedToDb } from '@/lib/server/larkListingDbSync';
 import prisma from '@/lib/prisma';
 
 export const runtime = 'nodejs';
@@ -117,6 +118,13 @@ export async function GET(req: NextRequest) {
         .filter(k => ALLOWED_SHARED_STATE_KEYS.has(k));
     } else {
       targetKeys = Array.from(ALLOWED_SHARED_STATE_KEYS);
+    }
+
+    if (
+      targetKeys.includes('staff-brand-listing-sheets-v1') ||
+      targetKeys.includes('approved-booking-list-v2')
+    ) {
+      await ensureLarkListingsSyncedToDb();
     }
 
     const records: Record<string, { revision: number; data: unknown }> = {};

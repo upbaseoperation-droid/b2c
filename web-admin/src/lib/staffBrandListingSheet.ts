@@ -1,4 +1,5 @@
 import type { BookingDealItem, KocItem, StorePortfolioItem, KocListingItem } from './types';
+import { REAL_LARK_LISTINGS_BY_BOARD_KEY } from './realLarkListings2026';
 
 export type FillMode = 'AUTO_SYSTEM' | 'FORMULA' | 'MANUAL_STAFF';
 
@@ -1107,16 +1108,44 @@ export function buildStaffListingRowFromKoc(params: {
   };
 }
 
+export function buildKocLookupMap(kocs?: KocItem[]): Map<string, KocItem> {
+  const map = new Map<string, KocItem>();
+  if (!Array.isArray(kocs)) return map;
+  for (const k of kocs) {
+    if (!k) continue;
+    const h = normalizeTikTokId(k.channelId || k.tiktokChannel || '').toLowerCase();
+    if (h) map.set(h, k);
+    if (k.id) map.set(k.id.toLowerCase(), k);
+  }
+  return map;
+}
+
 /**
- * Chuyển đổi một bản ghi KocListingItem (từ Lark Base 3.1 / PlanListingBoard) sang StaffListingSheetRow
+ * Chuyển đổi một bản ghi KocListingItem (từ Lark Base 3.1 / PlanListingBoard) sang StaffListingSheetRow,
+ * đồng thời tự động tra cứu chỉ số từ Danh bạ KOC Master (O(1)) nếu có.
  */
 export function buildStaffListingRowFromListingItem(
   item: KocListingItem,
-  defaultStaffName?: string
+  defaultStaffName?: string,
+  kocsOrMap?: Map<string, KocItem> | KocItem[]
 ): StaffListingSheetRow {
   const cleanId = normalizeTikTokId(item.kocHandle || '');
-  const linkKenh = cleanId ? buildTikTokChannelUrl(cleanId) : '';
-  const netFee = Math.max(0, Number(item.finalFee ?? item.proposedFee ?? 0));
+  const cleanLower = cleanId.toLowerCase();
+  let matchedKoc: KocItem | undefined;
+  if (kocsOrMap instanceof Map) {
+    matchedKoc =
+      (cleanLower ? kocsOrMap.get(cleanLower) : undefined) ||
+      (item.kocId ? kocsOrMap.get(item.kocId.toLowerCase()) : undefined);
+  } else if (Array.isArray(kocsOrMap) && kocsOrMap.length > 0) {
+    matchedKoc = kocsOrMap.find((k) => {
+      if (!k) return false;
+      const h = normalizeTikTokId(k.channelId || k.tiktokChannel || '').toLowerCase();
+      return (cleanLower && h === cleanLower) || (item.kocId && k.id === item.kocId);
+    });
+  }
+
+  const linkKenh = matchedKoc?.channelLink?.trim() || (cleanId ? buildTikTokChannelUrl(cleanId) : '');
+  const netFee = Math.max(0, Number(item.finalFee ?? item.proposedFee ?? matchedKoc?.rateCardVideo ?? 0));
   const grossFee = computeGrossFeeWithTax(netFee);
   const tepBooking = item.salaryGrade || computeTepBookingFromNetFee(netFee);
 
@@ -1145,24 +1174,72 @@ export function buildStaffListingRowFromListingItem(
           ? 'Đợt 3'
           : 'Đợt 1';
 
+  const rawNiche = (item.niche || '').trim();
+  const rawPillar = (item.pillarName || '').trim();
+  const isNicheTepKenh = rawNiche ? TEP_KENH_OPTIONS.includes(rawNiche) : false;
+  const sanPham =
+    (!isNicheTepKenh && rawNiche) ||
+    (rawPillar && rawPillar !== 'Trải nghiệm sản phẩm' ? rawPillar : '') ||
+    rawPillar ||
+    '';
+  const tepKenh =
+    (isNicheTepKenh ? rawNiche : '') ||
+    matchedKoc?.tepKenh ||
+    matchedKoc?.creatorCategory ||
+    'Beauty';
+
+  const followerVal = Number(item.followersCount || matchedKoc?.followers || 0);
+  const avgViewsVal = Number(matchedKoc?.avgViews || 0);
+  const medianViewsVal = Number(matchedKoc?.medianViews || avgViewsVal);
+  const aovVal = Number(matchedKoc?.aov || 0);
+  const gpmVal = Number(matchedKoc?.gpm || 0);
+  const itemsSoldVal = Number(matchedKoc?.itemsSold || 0);
+  const recentRevenueVal = Number(matchedKoc?.recentRevenue || 0);
+  const maxDealGmv = Number(matchedKoc?.gmvBestCase || matchedKoc?.totalPastGmv || 0);
+  const ctrVal = Number(matchedKoc?.tiktokAvgCtr ?? 4.5);
+  const crVal = Number(matchedKoc?.tiktokAvgCvr ?? 2.8);
+  const engRateVal = Number(matchedKoc?.engagementRate ?? 3.5);
+  const videoShare = Number(matchedKoc?.gmvShareVideo ?? 80);
+  const liveShare = Number(matchedKoc?.gmvShareLive ?? 14);
+  const cardShare = Math.max(0, Number((100 - videoShare - liveShare).toFixed(2)));
+  const nuPct = Number(matchedKoc?.femaleRatio ?? 78);
+  const namPct = Number(
+    matchedKoc?.maleRatio ?? Math.max(0, Number((100 - nuPct).toFixed(2)))
+  );
+  const age18_24 = Number(matchedKoc?.age18_24 ?? 35);
+  const age25_34 = Number(matchedKoc?.age25_34 ?? 45);
+  const ageOver35 = Math.max(0, Number((100 - age18_24 - age25_34).toFixed(2)));
+  const topCategoriesText =
+    matchedKoc?.tiktokTopCategories && matchedKoc.tiktokTopCategories.length > 0
+      ? matchedKoc.tiktokTopCategories.slice(0, 3).join(', ')
+      : matchedKoc?.niche || matchedKoc?.kocCategory || 'Beauty & Chăm sóc cá nhân';
+
+  let thanhQuaText = '';
+  if (matchedKoc?.totalPastDeals && matchedKoc.totalPastDeals > 0) {
+    thanhQuaText = `Đã hợp tác ${matchedKoc.totalPastDeals} job tại UpBase`;
+    if (maxDealGmv > 0) {
+      thanhQuaText += ` · GMV cao nhất: ${Math.round(maxDealGmv / 1_000_000)}M₫`;
+    }
+  }
+
   return recalculateStaffListingRow({
     id: `SSR-${item.id.replace(/^LI-/, '')}`,
-    kocId: item.kocId,
+    kocId: matchedKoc?.id || item.kocId,
     createdAt: item.createdAt || new Date().toISOString(),
-    ngayDien: item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : '',
+    ngayDien: item.createdAt ? formatVnDateTime(new Date(item.createdAt)) : '',
     thang: item.monthKey || '2026/10',
     nhanSuDien: item.assignedStaffName || defaultStaffName || 'Chưa phân công',
     dot,
     store: item.storeName,
-    sanPham: item.pillarName || '',
+    sanPham,
     idKenh: cleanId,
-    tenKenh: item.kocName || cleanId,
+    tenKenh: matchedKoc?.stageName || item.kocName || cleanId,
     linkKenh,
-    follower: Number(item.followersCount || 0),
-    tepKenh: item.niche || '',
+    follower: followerVal,
+    tepKenh,
     contentTag: item.videoFormat || 'Review trực tiếp',
     tepBooking,
-    giaDaHopTacTruocDo: netFee,
+    giaDaHopTacTruocDo: Number(matchedKoc?.minRate || netFee),
     loaiGia: 'Booking video',
     giaNetVideo: netFee,
     phiBookingKemThue: grossFee,
@@ -1170,43 +1247,53 @@ export function buildStaffListingRowFromListingItem(
     deXuatUpBase: 'Recommend',
     contentNote: item.staffComment || '',
     brandChon,
-    lyDoTuChoi: item.brandFeedback || '',
-    thanhQuaHopTac: '',
+    lyDoTuChoi: item.brandFeedback || item.brandFeedbackNote || '',
+    thanhQuaHopTac: thanhQuaText,
+    thanhQuaBrandNgoai: matchedKoc?.workedBrands?.length
+      ? `Đã hợp tác: ${matchedKoc.workedBrands.slice(0, 3).join(', ')}`
+      : '',
     leaderNote: '',
-    gmvDaHopTac: 0,
-    doanhSo: 0,
-    soMonBanRa: 0,
-    gpm: 0,
-    aov: 0,
-    viewTrungBinh: 0,
-    gmvTuVideoPct: 80,
-    gmvTuLivePct: 14,
-    gmvTuTheSanPhamPct: 6,
-    namPct: 22,
-    nuPct: 78,
-    tuoi18_24Pct: 35,
-    tuoi25_34Pct: 45,
-    tuoiTren35Pct: 20,
-    tuoiOtherPct: 20,
-    location: 'Việt Nam',
-    ngayAirPlan: '',
+    gmvDaHopTac: maxDealGmv,
+    doanhSo: recentRevenueVal,
+    doanhSoUocTinh30d: recentRevenueVal || maxDealGmv,
+    soMonBanRa: itemsSoldVal,
+    gpm: gpmVal,
+    aov: aovVal,
+    viewTrungBinh: avgViewsVal,
+    gmvTuVideoPct: videoShare,
+    gmvTuLivePct: liveShare,
+    gmvTuTheSanPhamPct: cardShare,
+    tiTrongNganhHang: topCategoriesText,
+    namPct,
+    nuPct,
+    tuoi18_24Pct: age18_24,
+    tuoi25_34Pct: age25_34,
+    tuoiTren35Pct: ageOver35,
+    tuoiOtherPct: ageOver35,
+    location: matchedKoc?.location || 'Việt Nam',
+    ngayAirPlan: item.expectedAirDate || '',
     gmvTarget: 0,
-    viewTrungVi: 0,
-    ctrPct: 4.5,
-    crPct: 2.8,
-    viewTarget: 0,
-    tyLeTuongTacPct: 0,
-    email: '',
-    zalo: '',
-    nguoiNhanHang: item.kocName || cleanId,
-    sdtNhanHang: '',
-    diaChiNhanHang: '',
-    tenTaiKhoanNganHang: item.kocName || '',
-    soTaiKhoan: '',
-    nganHang: '',
-    soCccd: '',
+    viewTrungVi: medianViewsVal,
+    ctrPct: ctrVal,
+    crPct: crVal,
+    viewTarget: avgViewsVal,
+    tyLeTuongTacPct: engRateVal,
+    email: matchedKoc?.email || '',
+    zalo: matchedKoc?.zalo || matchedKoc?.phone || '',
+    nguoiNhanHang:
+      matchedKoc?.shippingRecipientName ||
+      matchedKoc?.realName ||
+      matchedKoc?.stageName ||
+      item.kocName ||
+      cleanId,
+    sdtNhanHang: matchedKoc?.shippingPhone || matchedKoc?.phone || '',
+    diaChiNhanHang: matchedKoc?.shippingAddress || matchedKoc?.permanentAddress || '',
+    tenTaiKhoanNganHang: matchedKoc?.companyName || matchedKoc?.realName || item.kocName || '',
+    soTaiKhoan: matchedKoc?.bankAccount || '',
+    nganHang: matchedKoc?.bankName || '',
+    soCccd: matchedKoc?.cccd || matchedKoc?.taxCode || '',
     brandReviewedAt: item.brandApprovedAt,
-    ngayBrandDuyet: item.brandApprovedAt ? new Date(item.brandApprovedAt).toLocaleDateString('vi-VN') : '',
+    ngayBrandDuyet: item.brandApprovedAt ? formatVnDateTime(new Date(item.brandApprovedAt)) : '',
   });
 }
 
@@ -1316,8 +1403,36 @@ export function recalculateStaffListingRow(
   };
 }
 
+let cachedRealLarkSheetsMap: Record<string, StaffListingSheetRow[]> | null = null;
+let cachedRealLarkKocCount = -1;
+
+function getOrBuildRealLarkSheetsMap(
+  kocs: KocItem[],
+  defaultStaffName = 'Chuyên viên Listing'
+): Record<string, StaffListingSheetRow[]> {
+  const safeKocs = Array.isArray(kocs) ? kocs : [];
+  if (cachedRealLarkSheetsMap && cachedRealLarkKocCount === safeKocs.length) {
+    return cachedRealLarkSheetsMap;
+  }
+  const kocMap = buildKocLookupMap(safeKocs);
+  const map: Record<string, StaffListingSheetRow[]> = {};
+  for (const items of Object.values(REAL_LARK_LISTINGS_BY_BOARD_KEY)) {
+    if (!Array.isArray(items)) continue;
+    for (const item of items) {
+      if (!item || !item.storeName) continue;
+      const sheetKey = makeSheetKey(item.monthKey || '2026/10', item.storeName);
+      const row = buildStaffListingRowFromListingItem(item, defaultStaffName, kocMap);
+      (map[sheetKey] ||= []).push(row);
+    }
+  }
+  cachedRealLarkSheetsMap = map;
+  cachedRealLarkKocCount = safeKocs.length;
+  return map;
+}
+
 /**
- * Khởi tạo dữ liệu mẫu ban đầu từ Danh bạ KOC cho các Gian hàng để nhân viên vào có sẵn dữ liệu tham khảo
+ * Khởi tạo dữ liệu Sheet Listing từ 2.561 bản ghi Lark Base 3.1 thực tế (59 kế hoạch gian hàng kỳ 2026/10 & 2026/11)
+ * kết hợp tra cứu chỉ số từ Danh bạ KOC Master.
  */
 export function buildInitialStaffSheetCollection(
   kocs: KocItem[],
@@ -1326,55 +1441,11 @@ export function buildInitialStaffSheetCollection(
   defaultStaffName = 'Chuyên viên Listing'
 ): StaffBrandSheetCollection {
   const safeKocs = Array.isArray(kocs) ? kocs : [];
-  const safeStores = Array.isArray(stores) ? stores : [];
-  const safeDeals = Array.isArray(deals) ? deals : [];
+  const realSheets = getOrBuildRealLarkSheetsMap(safeKocs, defaultStaffName);
   const sheets: Record<string, StaffListingSheetRow[]> = {};
-  const targetMonth = '2026/10';
-  const allB2c = safeStores.filter((s) => s && s.isB2cManaged !== false);
-  const topSlice = allB2c.slice(0, 5);
-  const kutieskinStores = allB2c.filter(
-    (s) =>
-      (s.brandName || '').toLowerCase().includes('kutieskin') &&
-      !topSlice.some((t) => t.id === s.id)
-  );
-  const topStores = [...topSlice, ...kutieskinStores];
-
-  topStores.forEach((store, sIdx) => {
-    const key = makeSheetKey(targetMonth, store.storeName);
-    const matchingKocs = safeKocs
-      .filter(
-        (k) =>
-          (k?.brandName &&
-            store.brandName &&
-            k.brandName.toLowerCase().includes(store.brandName.toLowerCase())) ||
-          sIdx === 0
-      )
-      .slice(sIdx * 3, sIdx * 3 + 5);
-
-    const sampleKocs = matchingKocs.length > 0 ? matchingKocs : safeKocs.slice(0, 4);
-    sheets[key] = sampleKocs.map((koc, idx) => {
-      // Mốc thời gian Listing thực tế theo từng dòng mẫu (cách hiện tại 12h - 36h)
-      const listedAtDate = new Date(Date.now() - (32 - idx * 6) * 3_600_000);
-      const brandReviewedAtDate = new Date(listedAtDate.getTime() + (8 + idx * 5) * 3_600_000);
-      return buildStaffListingRowFromKoc({
-        koc,
-        monthKey: targetMonth,
-        storeName: store.storeName,
-        staffName: store.assignedPic || koc.bookingPic || defaultStaffName,
-        deals: safeDeals,
-        dot: idx < 2 ? 'Đợt 1' : 'Đợt 2',
-        sanPham: store.mainProducts?.[0] || `Sản phẩm chủ lực ${store.brandName}`,
-        contentTag: CONTENT_TAG_OPTIONS[idx % 4],
-        deXuatUpBase: idx === 0 ? 'Must Have' : 'Recommend',
-        trangThai: idx % 2 === 0 ? 'Nhận sản phẩm' : 'Trải nghiệm sản phẩm',
-        contentNote: 'Hình ảnh phù hợp với thương hiệu, tệp người xem nữ đúng độ tuổi mục tiêu',
-        ngayAirPlan: `2026-10-${15 + idx * 2}`,
-        listedAtDate,
-        brandReviewedAtDate,
-      });
-    });
-  });
-
+  for (const [k, rows] of Object.entries(realSheets)) {
+    sheets[k] = [...rows];
+  }
   return {
     sheets,
     googleSheetUrls: {},
@@ -1390,12 +1461,14 @@ export function loadStaffSheetCollection(
   if (typeof window === 'undefined') {
     return buildInitialStaffSheetCollection(kocs, stores, deals, defaultStaffName);
   }
+  const realSheets = getOrBuildRealLarkSheetsMap(kocs, defaultStaffName);
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as StaffBrandSheetCollection;
       if (parsed && parsed.sheets && typeof parsed.sheets === 'object' && !Array.isArray(parsed.sheets)) {
         const normalizedSheets: Record<string, StaffListingSheetRow[]> = {};
+        let needsSaveHydrated = false;
         for (const [k, sheetRows] of Object.entries(parsed.sheets || {})) {
           normalizedSheets[k] = Array.isArray(sheetRows)
             ? sheetRows
@@ -1403,7 +1476,77 @@ export function loadStaffSheetCollection(
                 .map((r) => recalculateStaffListingRow(r))
             : [];
         }
-        return {
+
+        // Bổ sung / làm giàu 59 Sheet thực tế từ Lark Base 3.1 nếu localStorage đang trống hoặc chỉ có dòng mẫu cũ
+        for (const [sheetKey, realRows] of Object.entries(realSheets)) {
+          const existing = normalizedSheets[sheetKey] || [];
+          if (existing.length === 0) {
+            normalizedSheets[sheetKey] = [...realRows];
+            needsSaveHydrated = true;
+            continue;
+          }
+          const hasAnyRealRow = existing.some((r) => r.id.startsWith('SSR-'));
+          if (!hasAnyRealRow && existing.length <= 5) {
+            // Thay thế 4-5 dòng mẫu giả lập cũ bằng dữ liệu Lark Base 3.1 thực tế
+            normalizedSheets[sheetKey] = [...realRows];
+            needsSaveHydrated = true;
+            continue;
+          }
+          // Làm giàu chỉ số KOC Master cho các dòng SSR- đã lưu trước đó và bổ sung dòng SSR- còn thiếu
+          const realById = new Map(realRows.map((r) => [r.id, r]));
+          const existingIds = new Set<string>();
+          let sheetUpdated = false;
+          const merged = existing.map((r) => {
+            existingIds.add(r.id);
+            const enriched = realById.get(r.id);
+            if (!enriched) return r;
+            if (
+              (r.follower === 0 && enriched.follower > 0) ||
+              (r.doanhSo === 0 && enriched.doanhSo > 0) ||
+              (r.viewTrungBinh === 0 && enriched.viewTrungBinh > 0) ||
+              (!r.sanPham && enriched.sanPham) ||
+              (r.tepKenh === enriched.sanPham && enriched.tepKenh !== enriched.sanPham)
+            ) {
+              sheetUpdated = true;
+              return recalculateStaffListingRow({
+                ...enriched,
+                dot: r.dot || enriched.dot,
+                sanPham:
+                  r.sanPham && r.sanPham !== 'Trải nghiệm sản phẩm'
+                    ? r.sanPham
+                    : enriched.sanPham || r.sanPham,
+                tepKenh:
+                  r.tepKenh && TEP_KENH_OPTIONS.includes(r.tepKenh)
+                    ? r.tepKenh
+                    : enriched.tepKenh,
+                giaNetVideo: r.giaNetVideo ?? enriched.giaNetVideo,
+                brandChon: r.brandChon || enriched.brandChon,
+                lyDoTuChoi: r.lyDoTuChoi || enriched.lyDoTuChoi,
+                contentNote: r.contentNote || enriched.contentNote,
+                leaderNote: r.leaderNote || enriched.leaderNote,
+                trangThai: r.trangThai || enriched.trangThai,
+                deXuatUpBase: r.deXuatUpBase || enriched.deXuatUpBase,
+                ngayAirPlan: r.ngayAirPlan || enriched.ngayAirPlan,
+                maBooking: r.maBooking || enriched.maBooking,
+                ngayBrandDuyet: r.ngayBrandDuyet || enriched.ngayBrandDuyet,
+                brandReviewedAt: r.brandReviewedAt || enriched.brandReviewedAt,
+              });
+            }
+            return r;
+          });
+          for (const rr of realRows) {
+            if (!existingIds.has(rr.id)) {
+              merged.push(rr);
+              sheetUpdated = true;
+            }
+          }
+          if (sheetUpdated) {
+            normalizedSheets[sheetKey] = merged;
+            needsSaveHydrated = true;
+          }
+        }
+
+        const resultCollection: StaffBrandSheetCollection = {
           sheets: normalizedSheets,
           googleSheetUrls:
             parsed.googleSheetUrls && typeof parsed.googleSheetUrls === 'object'
@@ -1413,13 +1556,25 @@ export function loadStaffSheetCollection(
             ? { fieldEditPolicy: normalizeStaffSheetFieldEditPolicy(parsed.fieldEditPolicy) }
             : {}),
         };
+        if (needsSaveHydrated) {
+          try {
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(resultCollection));
+          } catch {
+            // ignore quota errors
+          }
+        }
+        return resultCollection;
       }
     }
   } catch {
     // ignore storage errors
   }
   const initial = buildInitialStaffSheetCollection(kocs, stores, deals, defaultStaffName);
-  saveStaffSheetCollection(initial, false);
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
+  } catch {
+    // ignore quota errors
+  }
   return initial;
 }
 

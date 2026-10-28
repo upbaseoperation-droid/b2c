@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
+import { ensureLarkListingsSyncedToDb } from '@/lib/server/larkListingDbSync';
 import { assertListingSheetAccess, assertStoreBookingAccess } from '@/lib/server/monthlyPlanStore';
 import { isStaffGlobalAdminOrManager } from '@/lib/rbacScope';
 import type { StaffBrandSheetCollection, StaffSheetChanges } from '@/lib/staffBrandListingSheet';
@@ -50,6 +51,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Chỉ Giám đốc / Admin được đổi quyền sửa cột của Sheet nhân sự.' }, { status: 403 });
     }
 
+    await ensureLarkListingsSyncedToDb();
     for (let attempt = 0; attempt < 3; attempt++) {
       const rec = await readRecord<StaffBrandSheetCollection>(RECORD_KEY, EMPTY);
       try {

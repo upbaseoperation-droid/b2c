@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Check,
   ChevronLeft,
@@ -193,7 +194,9 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
       ? { label: 'Chờ ký SOW', tone: 'warning' as const }
       : { label: 'Chờ tạo deal', tone: 'warning' as const };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <Presence show={isOpen} exit="drawer">
       <div className="fixed inset-0 z-50 flex justify-end bg-ink/40">
         <div
@@ -1058,6 +1061,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
           </div>
         </div>
       </div>
-    </Presence>
+    </Presence>,
+    document.body
   );
 };

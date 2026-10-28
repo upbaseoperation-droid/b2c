@@ -10,6 +10,7 @@ import { UPBASE_FULL_KOC_MASTER } from '@/lib/kocMasterDataset';
 import { parseVnDateTimeToMs } from '@/lib/staffBrandListingSheet';
 import { addKocToSlot, removeKocFromSlot, slotKocHandles, type ContentPlanData } from '@/lib/contentPlanRules';
 import { EMPTY_DEAL_BOARD, sanitizeDealBoard, syncDealSummaryFields, type DealBoardData, type ScriptStatus } from '@/lib/dealBoardRules';
+import { getRealLarkListingsForBoardKey } from '@/lib/realLarkListings2026';
 import type { KocItem, KocListingItem, ListingBatchCycle } from '@/lib/types';
 import { getPlanActor, handlePlanError, unauthorized } from '../../monthly-plans/_shared';
 
@@ -286,8 +287,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Bảng điều phối listing
+    const boardKey = listingKey(planId);
+    const fallbackListingItems = getRealLarkListingsForBoardKey(boardKey);
     for (let attempt = 0; attempt < 3; attempt++) {
-      const rec = await readRecord<{ items: KocListingItem[] }>(listingKey(planId), { items: [] });
+      const rec = await readRecord<{ items: KocListingItem[] }>(boardKey, { items: fallbackListingItems });
+      const baseItems =
+        rec.revision > 0 || (Array.isArray(rec.data.items) && rec.data.items.length > 0)
+          ? rec.data.items
+          : fallbackListingItems;
       const c = { approved: 0, rejected: 0, considering: 0, unchanged: 0, reapproved: 0, imported: 0 };
       const notOnSheet: string[] = [];
       const rejectedHandles: string[] = [];
@@ -299,7 +306,7 @@ export async function POST(request: NextRequest) {
       const matchedSheetKeys = new Set<string>();
       const matchedHandles = new Set<string>();
 
-      const items = rec.data.items.map(item => {
+      const items = baseItems.map(item => {
         const handle = normHandle(item.kocHandle || '');
         const bCode = item.planSlotId ? briefCodeBySlotId.get(item.planSlotId) || '' : '';
         const compKey = bCode ? `${handle}::${bCode}` : handle;
@@ -433,7 +440,7 @@ export async function POST(request: NextRequest) {
         break;
       }
       try {
-        await updateRecord<{ items: KocListingItem[] }>(listingKey(planId), { items: [] }, rec.revision, () => ({ items }));
+        await updateRecord<{ items: KocListingItem[] }>(boardKey, { items: fallbackListingItems }, rec.revision, () => ({ items }));
         Object.assign(summary, c, { notOnSheet, rejectedHandles, restoredHandles, approvedHandles, consideringHandles, importedHandles, rejectedDetails });
         break;
       } catch (err) {
@@ -443,7 +450,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Kế hoạch content: hỗ trợ 1 Brief - N KOC (removeKocFromSlot / addKocToSlot) và đồng bộ Sản phẩm/Giá nếu Brand sửa trên Sheet
     if (!dryRun && (summary.rejectedHandles.length > 0 || summary.restoredHandles.length > 0 || decisionsByComposite.size > 0)) {
-      const latestListingRec = await readRecord<{ items: KocListingItem[] }>(listingKey(planId), { items: [] });
+      const latestListingRec = await readRecord<{ items: KocListingItem[] }>(boardKey, { items: fallbackListingItems });
       const confirmedHandles = new Set(
         (latestListingRec.data.items || [])
           .filter(it => columnOf(it) === 'CONFIRMED')

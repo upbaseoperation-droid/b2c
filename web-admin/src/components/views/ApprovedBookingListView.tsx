@@ -1988,19 +1988,47 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                   aria-label="Chọn Gian hàng"
                   className="w-auto min-w-[200px] max-w-[260px]"
                 >
-                  <option value="ALL">Tất cả gian hàng ({items.length})</option>
-                  {b2cStores.map((st) => {
-                    const count = items.filter(
-                      (i) =>
-                        i.storeName === st.storeName &&
-                        (selectedMonth === 'ALL' || i.thangPlan === selectedMonth)
-                    ).length;
-                    return (
-                      <option key={st.id} value={st.storeName}>
-                        {st.brandName} — {st.storeName} ({count})
-                      </option>
-                    );
-                  })}
+                  <option value="ALL">
+                    Tất cả gian hàng (
+                    {
+                      items.filter(
+                        (i) => selectedMonth === 'ALL' || i.thangPlan === selectedMonth
+                      ).length
+                    }
+                    )
+                  </option>
+                  {[...b2cStores]
+                    .sort((a, b) => {
+                      const ca = items.filter(
+                        (i) =>
+                          i.storeName === a.storeName &&
+                          (selectedMonth === 'ALL' || i.thangPlan === selectedMonth)
+                      ).length;
+                      const cb = items.filter(
+                        (i) =>
+                          i.storeName === b.storeName &&
+                          (selectedMonth === 'ALL' || i.thangPlan === selectedMonth)
+                      ).length;
+                      if (ca > 0 && cb === 0) return -1;
+                      if (ca === 0 && cb > 0) return 1;
+                      if (ca !== cb) return cb - ca;
+                      return (a.brandName || a.storeName).localeCompare(
+                        b.brandName || b.storeName,
+                        'vi'
+                      );
+                    })
+                    .map((st) => {
+                      const count = items.filter(
+                        (i) =>
+                          i.storeName === st.storeName &&
+                          (selectedMonth === 'ALL' || i.thangPlan === selectedMonth)
+                      ).length;
+                      return (
+                        <option key={st.id} value={st.storeName}>
+                          {st.brandName} — {st.storeName} ({count})
+                        </option>
+                      );
+                    })}
                 </Select>
 
                 <Segmented

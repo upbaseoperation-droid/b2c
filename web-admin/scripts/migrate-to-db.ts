@@ -16,7 +16,10 @@ import { DEFAULT_MASTER_CATALOG } from '../src/lib/masterCatalog';
 import { defaultPolicy } from '../src/lib/server/accessPolicy';
 import { getFallbackProfiles } from '../src/lib/brands/store';
 import { REAL_B2C_69_STORES } from '../src/lib/realB2cPlanData';
-import { USERS, INITIAL_KOCS, INITIAL_DEALS } from '../src/lib/mockData';
+import { USERS, INITIAL_KOCS, INITIAL_DEALS, INITIAL_STORE_PORTFOLIOS } from '../src/lib/mockData';
+import { REAL_LARK_LISTINGS_BY_BOARD_KEY, REAL_LARK_LISTINGS_SYNC_VERSION } from '../src/lib/realLarkListings2026';
+import { loadStaffSheetCollection } from '../src/lib/staffBrandListingSheet';
+import { loadApprovedBookingList } from '../src/lib/approvedBookingList';
 
 const prisma = new PrismaClient();
 
@@ -380,6 +383,56 @@ async function main() {
     ON CONFLICT (key) DO UPDATE SET data = ${JSON.stringify({ totalKocs: INITIAL_KOCS.length, totalDeals: INITIAL_DEALS.length, updatedAt: new Date().toISOString() })}::jsonb, revision = "AppSharedRecord".revision + 1
   `;
   console.log(`✅ Đã đồng bộ metadata KOC (${INITIAL_KOCS.length} KOC & ${INITIAL_DEALS.length} Deal lịch sử hợp tác) vào PostgreSQL.`);
+
+  // =========================================================================
+  // 7. LARK BASE 3.1 LISTING KOC, STAFF SHEETS & APPROVED BOOKING LIST
+  // =========================================================================
+  console.log('\n--- 7. Đồng bộ Bảng 3.1 Listing KOC (59 Kế hoạch / 2.561 KOC) vào AppSharedRecord PostgreSQL ---');
+  let boardCount = 0;
+  let listingItemCount = 0;
+  for (const [boardKey, items] of Object.entries(REAL_LARK_LISTINGS_BY_BOARD_KEY)) {
+    const serialized = JSON.stringify({ items });
+    await prisma.$executeRaw`
+      INSERT INTO "AppSharedRecord" (key, revision, data)
+      VALUES (${boardKey}, 1, ${serialized}::jsonb)
+      ON CONFLICT (key) DO UPDATE SET data = ${serialized}::jsonb, revision = "AppSharedRecord".revision + 1
+    `;
+    boardCount++;
+    listingItemCount += items.length;
+  }
+  console.log(`✅ Đã đồng bộ ${boardCount} bảng Listing (${listingItemCount} KOC) vào AppSharedRecord.`);
+
+  const staffSheets = loadStaffSheetCollection(INITIAL_KOCS, INITIAL_STORE_PORTFOLIOS, INITIAL_DEALS);
+  const serializedSheets = JSON.stringify(staffSheets);
+  await prisma.$executeRaw`
+    INSERT INTO "AppSharedRecord" (key, revision, data)
+    VALUES ('staff-brand-listing-sheets-v1', 1, ${serializedSheets}::jsonb)
+    ON CONFLICT (key) DO UPDATE SET data = ${serializedSheets}::jsonb, revision = "AppSharedRecord".revision + 1
+  `;
+  console.log(`✅ Đã đồng bộ ${Object.keys(staffSheets.sheets).length} Sheet Listing Brand vào AppSharedRecord.`);
+
+  const approvedBookings = loadApprovedBookingList(INITIAL_KOCS, INITIAL_STORE_PORTFOLIOS, INITIAL_DEALS);
+  const serializedApproved = JSON.stringify(approvedBookings);
+  await prisma.$executeRaw`
+    INSERT INTO "AppSharedRecord" (key, revision, data)
+    VALUES ('approved-booking-list-v2', 1, ${serializedApproved}::jsonb)
+    ON CONFLICT (key) DO UPDATE SET data = ${serializedApproved}::jsonb, revision = "AppSharedRecord".revision + 1
+  `;
+  console.log(`✅ Đã đồng bộ ${approvedBookings.length} bản ghi Quản lý Deal & Booking vào AppSharedRecord.`);
+
+  const syncMeta = JSON.stringify({
+    version: REAL_LARK_LISTINGS_SYNC_VERSION,
+    syncedAt: new Date().toISOString(),
+    totalBoards: boardCount,
+    totalListingItems: listingItemCount,
+    totalStaffSheets: Object.keys(staffSheets.sheets).length,
+    totalApprovedBookings: approvedBookings.length,
+  });
+  await prisma.$executeRaw`
+    INSERT INTO "AppSharedRecord" (key, revision, data)
+    VALUES ('lark-31-listing-sync-meta', 1, ${syncMeta}::jsonb)
+    ON CONFLICT (key) DO UPDATE SET data = ${syncMeta}::jsonb, revision = "AppSharedRecord".revision + 1
+  `;
 
   console.log('\n=============================================');
   console.log('🎉 CHUYỂN ĐỔI SANG SUPABASE POSTGRESQL HOÀN TẤT!');

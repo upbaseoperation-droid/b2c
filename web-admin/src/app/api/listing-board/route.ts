@@ -7,6 +7,8 @@ import { columnOf, itemFee } from '@/lib/listingBoardRules';
 import { guardListingSave } from '@/lib/listingBoardGuard';
 import { DealGuardError } from '@/lib/dealBoardGuard';
 import { EMPTY_DEAL_BOARD, type DealBoardData } from '@/lib/dealBoardRules';
+import { getRealLarkListingsForBoardKey } from '@/lib/realLarkListings2026';
+import { ensureLarkListingsSyncedToDb } from '@/lib/server/larkListingDbSync';
 import type { KocListingItem } from '@/lib/types';
 import { getPlanActor, handlePlanError, unauthorized } from '../monthly-plans/_shared';
 
@@ -20,6 +22,29 @@ interface ListingBoardData {
 
 const keyOf = listingBoardKey;
 
+function resolveBoardItems(
+  boardKey: string,
+  rec?: { data: ListingBoardData; revision: number },
+  planMeta?: { month?: string; storeName?: string; storeId?: string }
+): KocListingItem[] {
+  const larkItems = getRealLarkListingsForBoardKey(boardKey, planMeta);
+  const dbItems = Array.isArray(rec?.data?.items) ? rec!.data.items : [];
+  if (dbItems.length > 0) {
+    if (larkItems.length === 0) return dbItems;
+    const byId = new Map<string, KocListingItem>();
+    for (const item of dbItems) {
+      if (item && item.id) byId.set(item.id, item);
+    }
+    for (const larkItem of larkItems) {
+      if (larkItem && larkItem.id && !byId.has(larkItem.id)) {
+        byId.set(larkItem.id, larkItem);
+      }
+    }
+    return Array.from(byId.values());
+  }
+  return larkItems;
+}
+
 // GET /api/listing-board?planId=... hoặc ?storeName=...&month=... hoặc ?summary=true
 export async function GET(request: NextRequest) {
   const actor = await getPlanActor(request);
@@ -29,12 +54,26 @@ export async function GET(request: NextRequest) {
   if (request.nextUrl.searchParams.get('all') === 'true') {
     try {
       const storedList = await listMonthlyPlans(actor);
+      await ensureLarkListingsSyncedToDb({
+        extraPlanIds: storedList.map((r) => ({
+          id: r.plan.id,
+          month: r.plan.month,
+          storeName: r.plan.storeName || r.plan.title,
+          storeId: r.plan.storeId,
+        })),
+      });
       const planKeys = storedList.map((r) => keyOf(r.plan.id));
       const records = await readRecordsBatch<ListingBoardData>(planKeys, { items: [] });
       const allItems: KocListingItem[] = [];
-      for (const rec of records.values()) {
-        if (rec.data?.items && Array.isArray(rec.data.items)) {
-          allItems.push(...rec.data.items);
+      for (const r of storedList) {
+        const pKey = keyOf(r.plan.id);
+        const items = resolveBoardItems(pKey, records.get(pKey), {
+          month: r.plan.month,
+          storeName: r.plan.storeName || r.plan.title,
+          storeId: r.plan.storeId,
+        });
+        if (items.length > 0) {
+          allItems.push(...items);
         }
       }
       return NextResponse.json({ items: allItems, count: allItems.length });
@@ -47,8 +86,17 @@ export async function GET(request: NextRequest) {
   if (request.nextUrl.searchParams.get('summary') === 'true') {
     try {
       const storedList = await listMonthlyPlans(actor);
+      await ensureLarkListingsSyncedToDb({
+        extraPlanIds: storedList.map((r) => ({
+          id: r.plan.id,
+          month: r.plan.month,
+          storeName: r.plan.storeName || r.plan.title,
+          storeId: r.plan.storeId,
+        })),
+      });
       const planKeys = storedList.map((r) => ({
         planId: r.plan.id,
+        storeId: r.plan.storeId,
         storeName: r.plan.storeName || r.plan.title,
         month: r.plan.month,
         key: keyOf(r.plan.id),
@@ -59,8 +107,12 @@ export async function GET(request: NextRequest) {
       );
       const summary: Record<string, { storeName: string; month: string; count: number; planId: string }> = {};
       for (const p of planKeys) {
-        const rec = records.get(p.key);
-        const count = rec?.data?.items?.length || 0;
+        const items = resolveBoardItems(p.key, records.get(p.key), {
+          month: p.month,
+          storeName: p.storeName,
+          storeId: p.storeId,
+        });
+        const count = items.length;
         if (count > 0) {
           summary[`${p.month}__${p.storeName}`] = {
             storeName: p.storeName,
@@ -106,16 +158,41 @@ export async function GET(request: NextRequest) {
     try {
       const ctx = await resolvePlanContext(planId, actor);
       assertCanViewBooking(ctx);
+      await ensureLarkListingsSyncedToDb({
+        extraPlanIds: [
+          {
+            id: ctx.plan.id,
+            month: ctx.plan.month,
+            storeName: ctx.plan.storeName || ctx.plan.title,
+            storeId: ctx.plan.storeId,
+          },
+        ],
+      });
       const norm = (v?: string) => (v || '').replace(/^@/, '').trim().toLowerCase();
-      const mine = await readRecord<ListingBoardData>(keyOf(planId), { items: [] });
-      const myHandles = new Set((mine.data.items || []).filter(i => i.overallStatus !== 'DROPPED').map(i => norm(i.kocHandle)).filter(Boolean));
+      const boardKey = keyOf(planId);
+      const planMeta = {
+        month: ctx.plan.month,
+        storeName: ctx.plan.storeName || ctx.plan.title,
+        storeId: ctx.plan.storeId,
+      };
+      const mine = await readRecord<ListingBoardData>(boardKey, {
+        items: getRealLarkListingsForBoardKey(boardKey, planMeta),
+      });
+      const myItems = resolveBoardItems(boardKey, mine, planMeta);
+      const myHandles = new Set(myItems.filter(i => i.overallStatus !== 'DROPPED').map(i => norm(i.kocHandle)).filter(Boolean));
       // Quét mọi gian cùng nhãn, cùng tháng — kể cả gian người dùng không được xem — vì đó chính là trùng cần cảnh báo.
       // Chỉ trả về tên gian, người phụ trách và trạng thái.
       const siblings = (await listPlansOfBrandMonth(ctx.plan.brandName, ctx.plan.month)).filter(p => p.id !== planId);
       const records = await readRecordsBatch<ListingBoardData>(siblings.map(p => keyOf(p.id)), { items: [] });
       const duplicates: { handle: string; storeName: string; pic: string; status: string }[] = [];
       for (const p of siblings) {
-        for (const it of records.get(keyOf(p.id))?.data.items || []) {
+        const sKey = keyOf(p.id);
+        const sItems = resolveBoardItems(sKey, records.get(sKey), {
+          month: p.month,
+          storeName: p.storeName || p.title,
+          storeId: p.storeId,
+        });
+        for (const it of sItems) {
           if (it.overallStatus === 'DROPPED' || !myHandles.has(norm(it.kocHandle))) continue;
           duplicates.push({ handle: norm(it.kocHandle), storeName: p.storeName || p.title, pic: it.assignedStaffName || '', status: columnOf(it) });
         }
@@ -126,9 +203,21 @@ export async function GET(request: NextRequest) {
     }
   }
   try {
-    assertCanViewBooking(await resolvePlanContext(planId, actor));
-    const rec = await readRecord<ListingBoardData>(keyOf(planId), { items: [] });
-    const items = rec.data.items || [];
+    const ctx = await resolvePlanContext(planId, actor);
+    assertCanViewBooking(ctx);
+    const planMeta = {
+      month: ctx.plan.month,
+      storeName: ctx.plan.storeName || ctx.plan.title,
+      storeId: ctx.plan.storeId,
+    };
+    await ensureLarkListingsSyncedToDb({
+      extraPlanIds: [{ id: ctx.plan.id, ...planMeta }],
+    });
+    const boardKey = keyOf(planId);
+    const rec = await readRecord<ListingBoardData>(boardKey, {
+      items: getRealLarkListingsForBoardKey(boardKey, planMeta),
+    });
+    const items = resolveBoardItems(boardKey, rec, planMeta);
     return NextResponse.json({ items, data: { items }, revision: rec.revision });
   } catch (err) {
     if (err instanceof RecordError) return NextResponse.json({ error: err.message }, { status: err.status });
@@ -152,14 +241,22 @@ export async function PUT(request: NextRequest) {
     const ctx = await resolvePlanContext(body.planId, actor);
     assertCanViewBooking(ctx);
     const planId = body.planId;
-    const existingRec = await readRecord<ListingBoardData>(keyOf(planId), { items: [] });
+    const planMeta = {
+      month: ctx.plan.month,
+      storeName: ctx.plan.storeName || ctx.plan.title,
+      storeId: ctx.plan.storeId,
+    };
+    const boardKey = keyOf(planId);
+    const fallbackItems = getRealLarkListingsForBoardKey(boardKey, planMeta);
+    const existingRec = await readRecord<ListingBoardData>(boardKey, { items: fallbackItems });
+    const prevItems = resolveBoardItems(boardKey, existingRec, planMeta);
     const prevById = new Map<string, KocListingItem>(
-      (existingRec.data.items || []).map(it => [it.id, it])
+      prevItems.map(it => [it.id, it])
     );
     const dealBoard = await readRecord<DealBoardData>(dealBoardKey(planId), EMPTY_DEAL_BOARD);
     const itemsWithDeal = new Set((dealBoard.data.deals || []).map(d => d.listingItemId).filter(Boolean));
     // Quyền theo người phụ trách KOC, căn cứ Brand duyệt, KOC đã có Deal
-    const guarded = guardListingSave(existingRec.data.items || [], body.items, {
+    const guarded = guardListingSave(prevItems, body.items, {
       actor,
       global: ctx.global,
       positions: ctx.positions,
@@ -192,7 +289,7 @@ export async function PUT(request: NextRequest) {
       }
       return i;
     });
-    const saved = await updateRecord<ListingBoardData>(keyOf(planId), { items: [] }, body.revision, () => ({ items }));
+    const saved = await updateRecord<ListingBoardData>(boardKey, { items: fallbackItems }, body.revision, () => ({ items }));
     return NextResponse.json({ items: saved.data.items, data: { items: saved.data.items }, revision: saved.revision });
   } catch (err) {
     if (err instanceof DealGuardError) return NextResponse.json({ error: err.message, code: 'FORBIDDEN_CHANGE' }, { status: err.status });

@@ -40,6 +40,7 @@ import { transferBrandApprovedRowsToBookingList } from '@/lib/approvedBookingLis
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
 import { INITIAL_MONTHLY_PLANS } from '@/lib/monthlyPlanData';
 import { INITIAL_STORE_PORTFOLIOS, INITIAL_KOCS, INITIAL_DEALS } from '@/lib/mockData';
+import { REAL_LARK_LISTINGS_BY_BOARD_KEY } from '@/lib/realLarkListings2026';
 import {
   Filter,
   Plus,
@@ -121,7 +122,21 @@ export function KocListingBatchHubView({
   onOpenContractForPlanDeal,
   onNotify,
 }: KocListingBatchHubViewProps) {
-  const listings = useMemo(() => (Array.isArray(rawListings) ? rawListings : []), [rawListings]);
+  const listings = useMemo(() => {
+    const base = Array.isArray(rawListings) ? rawListings : [];
+    const seenIds = new Set<string>(base.map((i) => i.id));
+    const merged: KocListingItem[] = [...base];
+    for (const items of Object.values(REAL_LARK_LISTINGS_BY_BOARD_KEY)) {
+      if (!Array.isArray(items)) continue;
+      for (const item of items) {
+        if (item && item.id && !seenIds.has(item.id)) {
+          seenIds.add(item.id);
+          merged.push(item);
+        }
+      }
+    }
+    return merged;
+  }, [rawListings]);
   const monthlyPlans = useMemo(
     () => (Array.isArray(rawMonthlyPlans) ? rawMonthlyPlans : INITIAL_MONTHLY_PLANS),
     [rawMonthlyPlans]
@@ -150,13 +165,31 @@ export function KocListingBatchHubView({
 
   // Filters
   const defaultInitialStore = useMemo(() => {
-    return stores.find((s) => s.isB2cManaged !== false && s.storeName)?.storeName || '4PM_Shopee_E2E-S';
-  }, [stores]);
+    const firstWithListings = stores.find(
+      (s) =>
+        s.isB2cManaged !== false &&
+        s.storeName &&
+        listings.some((l) => l.monthKey === '2026/10' && l.storeName === s.storeName)
+    )?.storeName;
+    return (
+      firstWithListings ||
+      stores.find((s) => s.isB2cManaged !== false && s.storeName)?.storeName ||
+      'BaBe_TikTok_E2E-O'
+    );
+  }, [stores, listings]);
   const [selectedMonth, setSelectedMonth] = useState<string>('2026/10');
   const [selectedCycle, setSelectedCycle] = useState<ListingBatchCycle | 'ALL'>('ALL');
   const [selectedStore, setSelectedStore] = useState<string>(() => {
+    const firstWithListings = stores.find(
+      (s) =>
+        s.isB2cManaged !== false &&
+        s.storeName &&
+        Object.values(REAL_LARK_LISTINGS_BY_BOARD_KEY).some(
+          (arr) => arr[0]?.monthKey === '2026/10' && arr[0]?.storeName === s.storeName
+        )
+    )?.storeName;
     const validFirst = stores.find((s) => s.isB2cManaged !== false && s.storeName)?.storeName;
-    return validFirst || '4PM_Shopee_E2E-S';
+    return firstWithListings || validFirst || 'BaBe_TikTok_E2E-O';
   });
   const [selectedGrade, setSelectedGrade] = useState<SalaryGrade | 'ALL'>('ALL');
   const [selectedOverallStatus, setSelectedOverallStatus] = useState<ListingItemStatus | 'ALL'>('ALL');

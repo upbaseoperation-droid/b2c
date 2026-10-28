@@ -446,7 +446,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       .then((data) => {
         if (cancelled || !data?.items || !Array.isArray(data.items) || data.items.length === 0) return;
         const mappedRows = data.items.map((item: KocListingItem) =>
-          buildStaffListingRowFromListingItem(item, currentUserName)
+          buildStaffListingRowFromListingItem(item, currentUserName, kocs)
         );
         setCollection((prev) => {
           if (prev?.sheets?.[activeSheetKey] && prev.sheets[activeSheetKey].length > 0) return prev;
@@ -489,6 +489,72 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       return nextCollection;
     });
   };
+
+  const getStoreMonthCount = React.useCallback(
+    (month: string, storeName: string): number => {
+      const key = makeSheetKey(month, storeName);
+      const localLen = Array.isArray(collection?.sheets?.[key]) ? collection.sheets[key].length : 0;
+      const srvLen = serverSummary[key] || 0;
+      return Math.max(localLen, srvLen);
+    },
+    [collection?.sheets, serverSummary]
+  );
+
+  // Thống kê tổng KOC và số gian hàng có dữ liệu theo từng tháng để hiển thị ngay trên ô chọn Tháng
+  const monthSummaryStats = useMemo(() => {
+    const map: Record<string, { totalKocs: number; storeCount: number }> = {};
+    for (const m of MONTH_OPTIONS) {
+      let totalKocs = 0;
+      let storeCount = 0;
+      for (const st of b2cStores) {
+        const c = getStoreMonthCount(m, st.storeName);
+        if (c > 0) {
+          totalKocs += c;
+          storeCount += 1;
+        }
+      }
+      map[m] = { totalKocs, storeCount };
+    }
+    return map;
+  }, [b2cStores, getStoreMonthCount]);
+
+  // Sắp xếp danh sách gian hàng trong dropdown: ưu tiên các gian hàng đã có KOC Listing trong tháng đang chọn lên đầu
+  const sortedB2cStoresForActiveMonth = useMemo(() => {
+    return [...b2cStores].sort((a, b) => {
+      const ca = getStoreMonthCount(activeMonth, a.storeName);
+      const cb = getStoreMonthCount(activeMonth, b.storeName);
+      if (ca > 0 && cb === 0) return -1;
+      if (ca === 0 && cb > 0) return 1;
+      if (ca !== cb) return cb - ca;
+      return (a.brandName || a.storeName).localeCompare(b.brandName || b.storeName, 'vi');
+    });
+  }, [b2cStores, activeMonth, getStoreMonthCount]);
+
+  // Khi vào màn hình lần đầu, nếu gian hàng mặc định có 0 KOC trong tháng đang chọn thì tự động chọn gian hàng đầu tiên có dữ liệu KOC
+  const didInitialAutoSelectRef = useRef(false);
+  useEffect(() => {
+    if (didInitialAutoSelectRef.current) return;
+    if (!activeStoreName || b2cStores.length === 0) return;
+    const currentCount = getStoreMonthCount(activeMonth, activeStoreName);
+    if (currentCount > 0) {
+      didInitialAutoSelectRef.current = true;
+      return;
+    }
+    const firstWithData = sortedB2cStoresForActiveMonth.find(
+      (st) => getStoreMonthCount(activeMonth, st.storeName) > 0
+    );
+    if (firstWithData && firstWithData.storeName !== activeStoreName) {
+      didInitialAutoSelectRef.current = true;
+      onChangeStore(firstWithData.storeName);
+    }
+  }, [
+    activeMonth,
+    activeStoreName,
+    b2cStores.length,
+    getStoreMonthCount,
+    sortedB2cStoresForActiveMonth,
+    onChangeStore,
+  ]);
 
   // Các Sheet Brand đang có dữ liệu trong tháng đang chọn
   const activeMonthBrandSheets = useMemo(() => {
@@ -2893,27 +2959,44 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
             <select
               value={activeMonth}
-              onChange={(e) => onChangeMonth(e.target.value)}
+              onChange={(e) => {
+                const nextMonth = e.target.value;
+                onChangeMonth(nextMonth);
+                // Nếu gian hàng hiện tại có 0 KOC ở tháng mới chuyển sang, tự động chọn gian hàng đầu tiên có dữ liệu ở tháng mới
+                if (getStoreMonthCount(nextMonth, activeStoreName) === 0) {
+                  const firstStoreInNextMonth = [...b2cStores]
+                    .sort((a, b) => getStoreMonthCount(nextMonth, b.storeName) - getStoreMonthCount(nextMonth, a.storeName))
+                    .find((st) => getStoreMonthCount(nextMonth, st.storeName) > 0);
+                  if (firstStoreInNextMonth) {
+                    onChangeStore(firstStoreInNextMonth.storeName);
+                  }
+                }
+              }}
               aria-label="Chọn tháng"
               className="h-7 px-2 text-xs font-semibold rounded-md border border-line-strong bg-surface text-ink shrink-0 focus:outline-none focus:border-ink"
             >
-              {MONTH_OPTIONS.map((m) => (
-                <option key={m} value={m}>
-                  Tháng {m}
-                </option>
-              ))}
+              {MONTH_OPTIONS.map((m) => {
+                const st = monthSummaryStats[m];
+                const suffix =
+                  st && st.totalKocs > 0
+                    ? ` (${formatNumber(st.totalKocs)} KOC · ${st.storeCount} gian)`
+                    : '';
+                return (
+                  <option key={m} value={m}>
+                    Tháng {m}{suffix}
+                  </option>
+                );
+              })}
             </select>
 
             <select
               value={activeStoreName}
               onChange={(e) => onChangeStore(e.target.value)}
               aria-label="Chọn Brand / Gian hàng"
-              className="h-7 px-2 text-xs font-semibold rounded-md border border-line-strong bg-surface text-ink max-w-[230px] truncate shrink-0 focus:outline-none focus:border-ink"
+              className="h-7 px-2 text-xs font-semibold rounded-md border border-line-strong bg-surface text-ink max-w-[260px] truncate shrink-0 focus:outline-none focus:border-ink"
             >
-              {b2cStores.map((st) => {
-                const c = (
-                  collection.sheets[makeSheetKey(activeMonth, st.storeName)] || []
-                ).length;
+              {sortedB2cStoresForActiveMonth.map((st) => {
+                const c = getStoreMonthCount(activeMonth, st.storeName);
                 return (
                   <option key={st.id} value={st.storeName}>
                     {st.brandName} — {st.storeName} ({c} KOC)
@@ -3828,7 +3911,16 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       <div className="font-medium text-ink">
                         Sheet &ldquo;{activeStoreName}&rdquo; ({activeMonth}) chưa có KOC nào
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+                        {storeOldMonthGroups.length > 0 && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => onChangeMonth(storeOldMonthGroups[0].month)}
+                          >
+                            Xem Tháng {storeOldMonthGroups[0].month} ({storeOldMonthGroups[0].rows.length} KOC)
+                          </Button>
+                        )}
                         <Button
                           variant="primary"
                           size="sm"
