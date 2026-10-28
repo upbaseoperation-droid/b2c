@@ -3285,7 +3285,7 @@ const COMMENT_INTENT_PATTERNS: Array<{
     category: 'whereToBuy',
     intentType: 'BUYING_INTENT',
     intentLabel: 'Hỏi chỗ mua / Xin link giỏ hàng',
-    regex: /\b(mua\s*ở\s*đâu|mua\s*o\s*dau|xin\s*link|cho\s*xin\s*link|link\s*mua|giỏ\s*hàng|gio\s*hang|ghim\s*giỏ|ghim\s*gio|đặt\s*hàng|dat\s*hang|chốt\s*đơn|chot\s*don|where\s*to\s*buy|shop\s*ơi|shop\s*oi)\b/i,
+    regex: /\b(mua\s*ở\s*đâu|mua\s*o\s*dau|xin\s*link|cho\s*xin\s*link|link\s*mua|giỏ\s*hàng|gio\s*hang|ghim\s*giỏ|ghim\s*gio|đặt\s*hàng|dat\s*hang|chốt\s*đơn|chot\s*don|where\s*to\s*buy)\b/i,
   },
   {
     category: 'price',
@@ -3297,7 +3297,7 @@ const COMMENT_INTENT_PATTERNS: Array<{
     category: 'stock',
     intentType: 'BUYING_INTENT',
     intentLabel: 'Hỏi tồn kho / Phân loại / Dung tích',
-    regex: /\b(còn\s*hàng\s*không|con\s*hang\s*khong|còn\s*không\s*shop|hết\s*hàng|het\s*hang|còn\s*size|con\s*size|màu\s*nào|mau\s*nao|bản\s*nào|loại\s*nào|loai\s*nao|bao\s*nhiêu\s*ml|fullsize|mini)\b/i,
+    regex: /\b(còn\s*hàng|con\s*hang|còn\s*không\s*shop|con\s*khong\s*shop|hết\s*hàng|het\s*hang|còn\s*size|con\s*size|màu\s*nào|mau\s*nao|tone\s*\d+|bản\s*nào|loại\s*nào|loai\s*nao|bao\s*nhiêu\s*ml|fullsize|mini)\b/i,
   },
   {
     category: 'shipping',

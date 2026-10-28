@@ -17,6 +17,10 @@ import {
   type KocVideoWeeklyHistoryStoreData,
   type WeeklyVideoInputRow,
 } from '@/lib/kocVideoWeeklyHistory';
+import {
+  injectExtensionCapturedVideoToCache,
+  type TikTokCartProductItem,
+} from '@/lib/tiktokOpenSourceEngines';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -358,6 +362,17 @@ interface ExtensionSyncPayload {
     engagementRate: number;
     isSponsored?: boolean;
     isPinned?: boolean;
+    hasCartAnchor?: boolean;
+    cartAnchorTitle?: string;
+    cartAnchorUrl?: string;
+    cartProductId?: string;
+    cartSellerId?: string;
+    cartProducts?: TikTokCartProductItem[];
+    transcriptText?: string;
+    subtitleUrl?: string;
+    playableUrl?: string;
+    onScreenStickers?: string[];
+    durationSeconds?: number;
   }>;
   // Deal proposal fields
   storeName?: string;
@@ -378,6 +393,20 @@ interface ExtensionSyncPayload {
   comments?: number;
   shares?: number;
   hasYellowCart?: boolean;
+  cartAnchorTitle?: string;
+  cartAnchorUrl?: string;
+  cartProductId?: string;
+  cartSellerId?: string;
+  cartProducts?: TikTokCartProductItem[];
+  transcriptText?: string;
+  subtitleUrl?: string;
+  playableUrl?: string;
+  onScreenStickers?: string[];
+  durationSeconds?: number;
+  kocScore?: number;
+  postsWeekly?: number;
+  shopSharePct?: number;
+  goldenHours?: string[];
   dealCode?: string;
 }
 
@@ -541,6 +570,32 @@ export async function POST(req: NextRequest) {
       const brandName = String(body.brandName || storeName.split('_')[0] || 'ClubClio').trim();
       const picName = String(body.picName || actor?.name || 'Trần Hữu Chiến').trim();
 
+      // Đẩy toàn bộ dữ liệu Giỏ hàng (cartProducts), Phụ đề (transcriptText) và MP4 (playableUrl) từ trình duyệt vào bộ nhớ đệm Server
+      injectExtensionCapturedVideoToCache({
+        videoId,
+        handle,
+        nickname: body.displayName || handle,
+        avatarUrl: body.avatarUrl,
+        caption: body.caption,
+        hashtags: body.hashtags,
+        publishedAt: body.publishedAt || vnDate,
+        views,
+        likes,
+        comments,
+        shares,
+        durationSeconds: body.durationSeconds,
+        hasCartAnchor: Boolean(body.hasYellowCart || (body.cartProducts && body.cartProducts.length > 0)),
+        cartAnchorTitle: body.cartAnchorTitle || body.cartProducts?.[0]?.title,
+        cartAnchorUrl: body.cartAnchorUrl || body.cartProducts?.[0]?.productUrl,
+        cartProductId: body.cartProductId || body.cartProducts?.[0]?.productId,
+        cartSellerId: body.cartSellerId || body.cartProducts?.[0]?.sellerId,
+        cartProducts: body.cartProducts,
+        transcriptText: body.transcriptText,
+        subtitleUrl: body.subtitleUrl,
+        playableUrl: body.playableUrl,
+        onScreenStickers: body.onScreenStickers,
+      });
+
       const updatedHistory = await upsertRecord<KocVideoWeeklyHistoryStoreData>(
         KOC_VIDEO_HISTORY_RECORD_KEY,
         buildInitialWeeklyHistoryStore(),
@@ -552,7 +607,11 @@ export async function POST(req: NextRequest) {
             kocStageName: body.displayName || handle,
             brandName,
             storeName,
-            productName: body.note || 'Sản phẩm chiến dịch B2C',
+            productName:
+              body.cartProducts?.[0]?.title ||
+              body.cartAnchorTitle ||
+              body.note ||
+              'Sản phẩm chiến dịch B2C',
             dealCode: body.dealCode || `BO2610-${videoId.slice(-5)}`,
             pic: picName,
             klGrade: getSalaryGradeFromRate(costNet),
@@ -565,11 +624,16 @@ export async function POST(req: NextRequest) {
         }
       );
 
+      const cartSummary =
+        body.cartProducts && body.cartProducts.length > 0
+          ? ` · Đã lưu ${body.cartProducts.length} SP trong giỏ (${body.cartProducts[0].title.slice(0, 38)})`
+          : '';
+
       return NextResponse.json(
         {
           success: true,
           action: 'VERIFY_AIR_LINK',
-          message: `Đã nghiệm thu bài đăng #${videoId} của @${handle} (${new Intl.NumberFormat('vi-VN').format(views)} lượt xem) về hệ thống Upbase B2C.`,
+          message: `Đã nghiệm thu bài đăng #${videoId} của @${handle} (${new Intl.NumberFormat('vi-VN').format(views)} lượt xem${cartSummary}) về hệ thống Upbase B2C.`,
           videoId,
           totalRegisteredVideos: Object.keys(updatedHistory.data.registeredVideosById || {}).length,
         },
@@ -583,6 +647,37 @@ export async function POST(req: NextRequest) {
     const medianViews = Math.max(0, Math.round(Number(body.medianViews || avgViews)));
     const rateNet = Math.max(0, Math.round(Number(body.rateCardNet || 0)));
     const existingMaster = masterKocByHandle?.get(handle);
+
+    if (Array.isArray(body.recentVideos)) {
+      for (const rv of body.recentVideos.slice(0, 30)) {
+        if (rv.videoId) {
+          injectExtensionCapturedVideoToCache({
+            videoId: String(rv.videoId),
+            handle,
+            nickname: body.displayName || handle,
+            avatarUrl: body.avatarUrl,
+            caption: rv.caption,
+            hashtags: rv.hashtags,
+            publishedAt: rv.publishedAt || vnDate,
+            views: rv.views,
+            likes: rv.likes,
+            comments: rv.comments,
+            shares: rv.shares,
+            durationSeconds: rv.durationSeconds,
+            hasCartAnchor: Boolean(rv.hasCartAnchor || rv.isSponsored || (rv.cartProducts && rv.cartProducts.length > 0)),
+            cartAnchorTitle: rv.cartAnchorTitle || rv.cartProducts?.[0]?.title,
+            cartAnchorUrl: rv.cartAnchorUrl || rv.cartProducts?.[0]?.productUrl,
+            cartProductId: rv.cartProductId || rv.cartProducts?.[0]?.productId,
+            cartSellerId: rv.cartSellerId || rv.cartProducts?.[0]?.sellerId,
+            cartProducts: rv.cartProducts,
+            transcriptText: rv.transcriptText,
+            subtitleUrl: rv.subtitleUrl,
+            playableUrl: rv.playableUrl,
+            onScreenStickers: rv.onScreenStickers,
+          });
+        }
+      }
+    }
 
     const mappedVideos: TikTokVideoItem[] = Array.isArray(body.recentVideos)
       ? body.recentVideos.slice(0, 30).map((v) => ({
