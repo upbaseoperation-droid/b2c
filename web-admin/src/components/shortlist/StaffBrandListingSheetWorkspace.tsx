@@ -54,6 +54,7 @@ import {
   TRANG_THAI_OPTIONS,
   buildStaffListingRowFromKoc,
   canStaffEditSheetField,
+  computeGrossFeeWithTax,
   computeListingToBrandSla,
   computeTepBookingFromNetFee,
   downloadStaffSheetCsv,
@@ -75,11 +76,9 @@ import {
 import {
   APPROVED_BOOKING_LIST_UPDATED_EVENT,
   buildBookingDealFromApprovedItem,
-  computeGrossFeeWithTax,
   generateBookingOrderCode,
   generateDealAppendixCode,
   generateMasterContractCode,
-  loadApprovedBookingList,
   recalculateApprovedBookingItem,
   saveApprovedBookingList,
   syncApprovedItemsBackToStaffBrandSheets,
@@ -1946,7 +1945,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
     const defaultAirYmd = `${activeMonth.replace('/', '-')}-20`;
     const drafts: CreateDealDraftRow[] = approvedRows.map((r, idx) => {
-      const hasExistingBo = Boolean(r.maBooking && r.maBooking.trim());
+      const existingBo = (r.maBooking || '').trim();
+      const hasExistingBo = Boolean(existingBo);
       const shouldSelect = prefSet
         ? prefSet.has(r.id)
         : !hasExistingBo || approvedRows.every((x) => Boolean(x.maBooking));
@@ -1954,7 +1954,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         rowId: r.id,
         selected: shouldSelect,
         maBooking: hasExistingBo
-          ? r.maBooking.trim()
+          ? existingBo
           : generateBookingOrderCode(activeMonth, 201 + idx),
         isExistingBo: hasExistingBo,
         idKenh: normalizeTikTokId(r.idKenh),
@@ -2053,8 +2053,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         contractAppendixCode:
           item.contractAppendixCode || generateDealAppendixCode(boCode, 1),
         contractAppendixStatus:
-          item.contractAppendixStatus === 'NHAP' || !item.contractAppendixStatus
-            ? 'DA_KY_PHU_LUC'
+          item.contractAppendixStatus === 'CHƯA_LẬP' || !item.contractAppendixStatus
+            ? 'CHỜ_KÝ'
             : item.contractAppendixStatus,
       });
       createdDealCodes.push(boCode);
