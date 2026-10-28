@@ -245,6 +245,23 @@ function parseLink(raw: string): ParsedLink | null {
         isShortLink: false,
       };
     }
+    const mobileOrShareMatch =
+      path.match(/^\/(?:v|video|photo|share\/video)\/(\d{15,22})/) ||
+      path.match(/^\/@\/(?:video|photo)\/(\d{15,22})/);
+    const queryItemId = url.searchParams.get('item_id') || url.searchParams.get('share_item_id');
+    const fallbackVideoId =
+      mobileOrShareMatch?.[1] ||
+      (queryItemId && /^\d{15,22}$/.test(queryItemId) ? queryItemId : null);
+    if (fallbackVideoId) {
+      return {
+        platform: 'tiktok',
+        url: `https://www.tiktok.com/@tiktok/video/${fallbackVideoId}`,
+        contentId: fallbackVideoId,
+        contentType: path.includes('/photo/') ? 'photo' : 'video',
+        handle: null,
+        isShortLink: false,
+      };
+    }
     const handleOnly = path.match(/^\/@([^/]+)\/?$/);
     return {
       platform: 'tiktok',
@@ -379,6 +396,25 @@ function parseLink(raw: string): ParsedLink | null {
     };
   }
 
+  // YouTube Shorts / video: youtube.com/shorts/<id>, youtube.com/watch?v=<id>, youtu.be/<id>
+  if (hostMatches(host, 'youtube.com') || host === 'youtu.be') {
+    const id =
+      (host === 'youtu.be' ? path.match(/^\/([\w-]{11})/)?.[1] : null) ||
+      path.match(/^\/(?:shorts|live|embed)\/([\w-]{11})/)?.[1] ||
+      (path === '/watch' ? url.searchParams.get('v') : null) ||
+      null;
+    const handleOnly = path.match(/^\/@([^/]+)\/?$/);
+    const validId = id && /^[\w-]{11}$/.test(id) ? id : null;
+    return {
+      platform: 'youtube',
+      url: validId ? `https://www.youtube.com/shorts/${validId}` : url.toString(),
+      contentId: validId,
+      contentType: validId ? 'video' : null,
+      handle: handleOnly ? decodeURIComponent(handleOnly[1]).toLowerCase() : null,
+      isShortLink: false,
+    };
+  }
+
   if (/(^|\.)shopee\.[a-z.]+$/.test(host)) {
     const m = path.match(/\/share-video\/([\w-]+)/);
     if (m) {
@@ -410,10 +446,16 @@ async function resolveRedirectUrl(url: string, userAgent = BROWSER_UA): Promise<
       method: 'GET',
       redirect: 'follow',
       headers: { 'User-Agent': userAgent },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(7000),
       cache: 'no-store',
     });
-    return res.url || url;
+    const finalUrl = res.url || url;
+    try {
+      await res.body?.cancel();
+    } catch {
+      // ignore stream cancel error
+    }
+    return finalUrl;
   } catch {
     return url;
   }
@@ -453,7 +495,7 @@ export function buildLinkAirChecks(
       key: 'link_format',
       label: 'Định dạng link',
       status: 'FAIL',
-      detail: 'Không nhận ra nền tảng. Hỗ trợ TikTok, Shopee Video, Facebook, Instagram.',
+      detail: 'Không nhận ra nền tảng. Hỗ trợ TikTok, Shopee Video, Facebook, Instagram, YouTube.',
     });
     return checks;
   }
@@ -756,6 +798,75 @@ function verdictOf(checks: LinkAirCheckItem[]): LinkAirVerdict {
   return 'PASS';
 }
 
+/**
+ * YouTube: đọc oEmbed công khai (kênh đăng, tiêu đề). oEmbed không có ngày đăng / lượt xem,
+ * nên các mục đó để đối chiếu tay thay vì đoán.
+ */
+async function checkYoutubeVideo(
+  inputUrl: string,
+  canonicalUrl: string,
+  contentId: string | null,
+  expect: LinkAirExpectation,
+  started: number,
+  fetchedAt: string
+): Promise<LinkAirResult> {
+  let status: LinkAirStatus = 'ERROR';
+  let statusDetail: string | null = null;
+  let title = '';
+  let authorName: string | null = null;
+  let profileUrl: string | null = null;
+  let thumbnail: string | null = null;
+  try {
+    const res = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(canonicalUrl)}`, {
+      headers: { 'User-Agent': BROWSER_UA },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (res.ok) {
+      const json = (await res.json().catch(() => null)) as { title?: string; author_name?: string; author_url?: string; thumbnail_url?: string } | null;
+      thumbnail = json?.thumbnail_url || null;
+      status = 'LIVE';
+      title = json?.title || '';
+      authorName = json?.author_name || null;
+      profileUrl = json?.author_url || null;
+    } else if (res.status === 401 || res.status === 403 || res.status === 404) {
+      status = 'UNAVAILABLE';
+      statusDetail = 'Video đã bị xoá, để riêng tư hoặc không cho nhúng.';
+    } else {
+      statusDetail = `YouTube trả lỗi HTTP ${res.status}.`;
+    }
+  } catch (err) {
+    statusDetail = err instanceof Error ? err.message : 'Không kết nối được YouTube.';
+  }
+  const handleFromUrl = profileUrl?.match(/youtube\.com\/@([^/?#]+)/i)?.[1];
+  const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
+    inputUrl,
+    platform: 'youtube',
+    contentType: 'video',
+    contentId,
+    canonicalUrl,
+    status,
+    statusDetail,
+    author: { handle: handleFromUrl ? decodeURIComponent(handleFromUrl).toLowerCase() : null, name: authorName, profileUrl, followers: null },
+    publishedAt: null,
+    caption: title,
+    hashtags: extractHashtags(title),
+    mentions: extractMentions(title),
+    durationSeconds: null,
+    metrics: { views: null, likes: null, comments: null, shares: null, saves: null },
+    hasProductLink: null,
+    productTitle: null,
+    coverUrl: thumbnail,
+    limitations: ['YouTube oEmbed không có ngày đăng và lượt xem: đối chiếu tay khi cần.'],
+    source: 'youtube-oembed',
+    fetchedAt,
+    fromCache: false,
+    durationMs: Date.now() - started,
+  };
+  const checks = buildLinkAirChecks(base, expect);
+  return { ...base, checks, verdict: verdictOf(checks) };
+}
+
 export async function checkSingleLinkServerless(
   inputUrl: string,
   expect: LinkAirExpectation = {}
@@ -835,6 +946,10 @@ export async function checkSingleLinkServerless(
     };
     const checks = buildLinkAirChecks(base, expect);
     return { ...base, checks, verdict: verdictOf(checks) };
+  }
+
+  if (parsed.platform === 'youtube') {
+    return checkYoutubeVideo(inputUrl, parsed.url, parsed.contentId, expect, started, fetchedAt);
   }
 
   if (parsed.platform === 'tiktok') {

@@ -8,6 +8,7 @@ import {
 } from '@/lib/server/zaloBot';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1', 'hkg1'];
 
 /**
  * GET /api/integrations/zalo-bot/webhook
@@ -68,12 +69,16 @@ export async function POST(req: NextRequest) {
       req.headers.get('x-bot-api-secret-token') ||
       req.headers.get('X-Bot-Api-Secret-Token');
 
-    if (configuredSecret && incomingSecret && incomingSecret !== configuredSecret) {
-      console.warn('[ZaloBot] Secret token mismatch:', { incomingSecret, configuredSecret });
+    // Đã đặt ZALO_BOT_SECRET_TOKEN: bắt buộc header khớp (thiếu header cũng từ chối), vì webhook ghi được dữ liệu việc của CTV.
+    // Chưa đặt: giữ cách cũ (chỉ chặn khi header có mà sai) để không làm gián đoạn bot đang chạy.
+    const strictSecret = Boolean(process.env.ZALO_BOT_SECRET_TOKEN?.trim());
+    const secretRejected = strictSecret ? incomingSecret !== configuredSecret : Boolean(incomingSecret && incomingSecret !== configuredSecret);
+    if (secretRejected) {
+      console.warn('[ZaloBot] Từ chối webhook: secret token thiếu hoặc không khớp.');
       recordDebugEvent({
         time: new Date().toISOString(),
         body: null,
-        error: `Secret token mismatch: incoming=${incomingSecret}`,
+        error: incomingSecret ? 'Secret token không khớp.' : 'Thiếu secret token.',
       });
       return NextResponse.json({ error: 'UNAUTHORIZED_SECRET_TOKEN' }, { status: 403 });
     }

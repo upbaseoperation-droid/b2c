@@ -3,9 +3,10 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { checkSingleLinkServerless } from '../linkAirCheckServer';
 import type { LinkAirResult } from '../linkAirCheck';
-import { inspectLiveTikTokVideoPage } from '../tiktokOpenSourceEngines';
+import { getSharedCrawlerStore, inspectLiveTikTokVideoPage } from '../tiktokOpenSourceEngines';
 import { REAL_B2C_69_STORES } from '../realB2cPlanData';
 import { readRecord, upsertRecord } from './sharedRecords';
+import { handleCtvZaloMessage } from './zaloCtvCommands';
 
 export type ZaloGroupRole = 'KOC_GROUP' | 'BRAND_PARTNER' | 'INTERNAL_OPS' | 'BOD_EXECUTIVE';
 
@@ -1029,7 +1030,23 @@ async function performDbHydration(skipCache = false): Promise<void> {
           inMemorySecurityPolicy = { ...DEFAULT_SECURITY_POLICY, ...rec.data.securityPolicy };
         }
         if (rec.data.replyConfig) {
-          inMemoryReplyConfig = { ...DEFAULT_REPLY_CONFIG, ...rec.data.replyConfig };
+          const mergedTemplates = DEFAULT_REPLY_CONFIG.autoReplyTemplates.map((defTpl) => {
+            const custom = Array.isArray(rec.data.replyConfig?.autoReplyTemplates)
+              ? rec.data.replyConfig.autoReplyTemplates.find((t) => t?.key === defTpl.key)
+              : null;
+            if (!custom || typeof custom.content !== 'string' || !custom.content.trim()) {
+              return defTpl;
+            }
+            if (defTpl.key === 'AIR_CHECK_RESULT' && !custom.content.includes('{productLinks}')) {
+              return defTpl;
+            }
+            return { ...defTpl, content: custom.content };
+          });
+          inMemoryReplyConfig = {
+            ...DEFAULT_REPLY_CONFIG,
+            ...rec.data.replyConfig,
+            autoReplyTemplates: mergedTemplates,
+          };
         }
       }
       lastDbHydratedAt = Date.now();
@@ -1375,6 +1392,15 @@ function extractSingleFrameWithFfmpeg(streamUrl: string, sec: number): Promise<B
   if (isFfmpegUnavailable) return Promise.resolve(null);
   return new Promise((resolve) => {
     const safeSec = Math.max(0.5, Math.min(180, Number(sec) || 2.5));
+    const storeCookie =
+      getSharedCrawlerStore().wafSessionCookie &&
+      getSharedCrawlerStore().wafSessionCookie!.expiresAt > Date.now()
+        ? getSharedCrawlerStore().wafSessionCookie!.cookie
+        : undefined;
+    const headerLines = ['Referer: https://www.tiktok.com/'];
+    if (storeCookie) {
+      headerLines.push(`Cookie: ${storeCookie}`);
+    }
     const args = [
       '-hide_banner',
       '-loglevel',
@@ -1384,7 +1410,7 @@ function extractSingleFrameWithFfmpeg(streamUrl: string, sec: number): Promise<B
       '-user_agent',
       FRAME_CAPTURE_UA,
       '-headers',
-      'Referer: https://www.tiktok.com/\r\n',
+      `${headerLines.join('\r\n')}\r\n`,
       '-i',
       streamUrl,
       '-frames:v',
@@ -1534,7 +1560,36 @@ export async function captureTikTokProductFrameBuffer(params: {
 
   // 1. Thử trích xuất chính xác khung hình tại giây captureSec bằng ffmpeg
   if (streamUrl) {
-    const ffmpegBuf = await extractSingleFrameWithFfmpeg(streamUrl, params.captureSec);
+    let ffmpegBuf = await extractSingleFrameWithFfmpeg(streamUrl, params.captureSec);
+    // Nếu luồng SSR của TikTok yêu cầu cookie riêng làm ffmpeg bị 403, tự động thử luồng MP4 không khóa cookie từ TikWM
+    if ((!ffmpegBuf || ffmpegBuf.length <= 400) && !isFfmpegUnavailable) {
+      try {
+        const tikwmRetry = await fetch(
+          `https://www.tikwm.com/api/?url=${encodeURIComponent(params.videoUrl)}&hd=1`,
+          {
+            headers: {
+              'User-Agent': FRAME_CAPTURE_UA,
+              Accept: 'application/json',
+            },
+            signal: AbortSignal.timeout(4500),
+            cache: 'no-store',
+          }
+        );
+        if (tikwmRetry.ok) {
+          const retryJson = await tikwmRetry.json();
+          const retryStream = retryJson?.data?.play || retryJson?.data?.wmplay;
+          if (
+            typeof retryStream === 'string' &&
+            retryStream.startsWith('http') &&
+            retryStream !== streamUrl
+          ) {
+            ffmpegBuf = await extractSingleFrameWithFfmpeg(retryStream, params.captureSec);
+          }
+        }
+      } catch {
+        // ignore retry error
+      }
+    }
     if (ffmpegBuf && ffmpegBuf.length > 400) {
       if (params.frameId) {
         storeCapturedFrameBuffer(params.frameId, ffmpegBuf);
@@ -2357,6 +2412,17 @@ export async function processZaloWebhookEvent(
     return { handled: true, reply: blockedMsg, extractedChatId: chatId };
   }
 
+  // CTV Self-channel (nhận diện theo Zalo ID trên hồ sơ danh bạ CTV): nộp kịch bản / nháp / link đăng vào việc của mình.
+  // Người gửi không phải CTV hoặc tin không phải lệnh CTV thì xử lý tiếp như cũ.
+  const ctvReply = await handleCtvZaloMessage({ senderId, senderName, text: cleanText }).catch(err => {
+    console.error('[ZaloBot] Lỗi xử lý lệnh CTV:', err);
+    return '⚠️ Bot chưa ghi nhận được, vui lòng thử lại hoặc nộp trên Cổng CTV.';
+  });
+  if (ctvReply) {
+    await replyToChat(ctvReply);
+    return { handled: true, reply: ctvReply, extractedChatId: chatId };
+  }
+
   if (
     securityPolicy.requireGroupWhitelist &&
     !isSimulatedFromWeb &&
@@ -2385,7 +2451,11 @@ export async function processZaloWebhookEvent(
     const videoUrl = linkMatch[1];
     const cacheKey = `${videoUrl}|${(currentMapping?.requiredHashtags || []).join(',')}|${currentMapping?.expectedProductUrl || ''}`;
     const cachedAir = inMemoryAirCheckCache.get(cacheKey);
-    const hasFreshCache = Boolean(cachedAir && cachedAir.expiresAt > Date.now());
+    const hasFreshCache = Boolean(
+      cachedAir &&
+        cachedAir.expiresAt > Date.now() &&
+        (!cachedAir.result.hasProductLink || Boolean(cachedAir.result.productUrl))
+    );
 
     // Bắn thông báo "Đang quét..." song song với luồng cào dữ liệu (nếu chưa có trong RAM cache) để tiết kiệm 400-600ms
     const notifyPendingPromise =
@@ -2496,7 +2566,7 @@ export async function processZaloWebhookEvent(
       });
 
       // Cập nhật trạng thái Deal nếu nhóm đã liên kết và kết quả PASS
-      if (currentMapping && isPass) {
+      if (currentMapping?.dealCode && isPass) {
         currentMapping.dealStatus = 'ĐÃ_NGHIỆM_THU_AIR';
         currentMapping.airedVideoUrl = videoUrl;
         currentMapping.updatedAt = new Date().toISOString();
@@ -2541,12 +2611,14 @@ export async function processZaloWebhookEvent(
         holdingQuote ? ` — "${holdingQuote.slice(0, 75)}"` : ''
       }`;
 
-      const syncFooterText = currentMapping
+      const syncFooterText = currentMapping?.dealCode
         ? `✅ Đã đồng bộ kết quả vào Deal [${currentMapping.dealCode}] (${currentMapping.brandName || 'B2C'}) — Trạng thái: ${currentMapping.dealStatus}`
         : `💡 Mẹo: Gõ /link <MÃ_DEAL> để tự động lưu kết quả nghiệm thu vào hồ sơ Deal trên web-admin.`;
 
-      const resultMsg = renderReplyTemplate('AIR_CHECK_RESULT', {
+      let resultMsg = renderReplyTemplate('AIR_CHECK_RESULT', {
+        verdictIcon: statusIcon,
         statusIcon,
+        verdictLabel: checkResult.verdict,
         kocHandle: checkResult.author?.handle || 'Chưa rõ',
         airedAt: `${airedAtText}${airedAtText.includes(':') ? ' (Giờ VN)' : ''}`,
         statusText: checkResult.status === 'LIVE' ? 'Đang công khai (Live/Air)' : checkResult.status,
@@ -2556,12 +2628,26 @@ export async function processZaloWebhookEvent(
         holdingLine: holdingLineText,
         views: checkResult.metrics?.views ? checkResult.metrics.views.toLocaleString('vi-VN') : '—',
         likes: checkResult.metrics?.likes ? checkResult.metrics.likes.toLocaleString('vi-VN') : '—',
+        comments: checkResult.metrics?.comments ? checkResult.metrics.comments.toLocaleString('vi-VN') : '—',
+        shares: checkResult.metrics?.shares ? checkResult.metrics.shares.toLocaleString('vi-VN') : '—',
         hashtags:
           checkResult.hashtags && checkResult.hashtags.length > 0
             ? checkResult.hashtags.map((h) => `#${h.replace(/^#+/, '')}`).join(' ')
             : '—',
+        dealSyncNote: syncFooterText,
         syncFooter: syncFooterText,
       });
+
+      if (productLinkLines.length > 0 && primaryProd?.productUrl && !resultMsg.includes(primaryProd.productUrl)) {
+        const lines = resultMsg.split('\n');
+        const cartIdx = lines.findIndex((l) => l.includes('Giỏ hàng:'));
+        if (cartIdx >= 0) {
+          lines.splice(cartIdx + 1, 0, ...productLinkLines);
+          resultMsg = lines.join('\n');
+        } else {
+          resultMsg = `${resultMsg}\n${productLinkLines.join('\n')}`;
+        }
+      }
 
       // GỬI KẾT QUẢ VĂN BẢN NGAY LẬP TỨC (không chờ cắt frame / tải ảnh để phản hồi nhanh gấp 3-5 lần)
       await notifyPendingPromise;
@@ -2621,15 +2707,20 @@ export async function processZaloWebhookEvent(
       });
 
       if (shouldSend && replyConfig.sendHoldingPhotoOnAirCheck) {
-        const photoCaption = renderReplyTemplate('AIR_CHECK_PHOTO_CAPTION', {
+        let photoCaption = renderReplyTemplate('AIR_CHECK_PHOTO_CAPTION', {
           kocHandle: checkResult.author?.handle || 'koc',
+          holdingSec: captureSec,
           captureSec,
           holdingTimeLabel,
           airedAt: airedAtText,
+          mentionSec: firstMentionSec !== null ? String(firstMentionSec) : '—',
           firstMentionSec: firstMentionSec !== null ? `Giây ${firstMentionSec}s` : '—',
           productTitle: primaryProd?.title || 'Sản phẩm chiến dịch',
-          holdingQuote: holdingQuote ? `"${holdingQuote.slice(0, 90)}"` : '—',
+          holdingQuote: holdingQuote ? holdingQuote.slice(0, 90) : '—',
         });
+        if (primaryProd?.productUrl && !photoCaption.includes(primaryProd.productUrl)) {
+          photoCaption = `${photoCaption}\n🔗 Link SP: ${primaryProd.productUrl}`;
+        }
 
         await sendZaloPhoto(
           chatId,

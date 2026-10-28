@@ -289,10 +289,11 @@ export async function fetchTikTokHtmlWithWafBypass(
           : {}),
       };
 
-      const r1Headers: Record<string, string> = { ...baseHeaders };
-      if (cachedWafCookie) {
-        r1Headers.Cookie = cachedWafCookie;
-      }
+      const vnRegionCookie = 'store-country-code=vn; store-country-code-src=uid; tt-target-idc=alisg';
+      const r1Headers: Record<string, string> = {
+        ...baseHeaders,
+        Cookie: mergeCookieStrings(vnRegionCookie, cachedWafCookie),
+      };
 
       const r1 = await fetch(url, {
         method: 'GET',
@@ -1240,10 +1241,31 @@ export function parseTikTokItemStructToDetail(itemStruct: Record<string, any> | 
     preferredSub?.Url ||
     (Array.isArray(preferredSub?.urlList) ? preferredSub.urlList[0] : undefined);
 
-  // Bóc tách đường dẫn tải video gốc Không Logo (No-Watermark MP4) từ playAddr / downloadAddr theo kỹ thuật Ông Chú MMO
+  // Bóc tách đường dẫn tải video gốc Không Logo (No-Watermark MP4) từ bitrateInfo (ưu tiên H.264) và playAddr / downloadAddr
+  const h264BitrateUrls: string[] = [];
+  if (Array.isArray(itemStruct.video?.bitrateInfo)) {
+    for (const b of itemStruct.video.bitrateInfo as Array<{
+      CodecType?: string;
+      PlayAddr?: { UrlList?: unknown[]; url_list?: unknown[] };
+    }>) {
+      const isHevc = /bytevc|hevc|h265/i.test(String(b?.CodecType || ''));
+      if (isHevc) continue;
+      const list = Array.isArray(b?.PlayAddr?.UrlList)
+        ? b.PlayAddr.UrlList
+        : Array.isArray(b?.PlayAddr?.url_list)
+          ? b.PlayAddr.url_list
+          : [];
+      for (const u of list) {
+        if (typeof u === 'string' && u.startsWith('http')) {
+          h264BitrateUrls.push(u);
+        }
+      }
+    }
+  }
   const playAddrObj = itemStruct.video?.playAddr || itemStruct.video?.play_addr || itemStruct.video?.downloadAddr;
-  const playUrlCandidates: string[] =
-    typeof playAddrObj === 'string'
+  const playUrlCandidates: string[] = [
+    ...h264BitrateUrls,
+    ...(typeof playAddrObj === 'string'
       ? [playAddrObj]
       : Array.isArray(playAddrObj?.url_list)
       ? playAddrObj.url_list
@@ -1251,9 +1273,14 @@ export function parseTikTokItemStructToDetail(itemStruct: Record<string, any> | 
       ? playAddrObj.urlList
       : typeof playAddrObj?.url === 'string'
       ? [playAddrObj.url]
-      : [];
+      : []),
+  ];
   const playableUrl = playUrlCandidates.find(
-    (u) => typeof u === 'string' && /^https:\/\/[\w.-]+\.(?:tiktokcdn|tiktokcdn-us|tiktokv|muscdn|byteoversea|byteicdn)\.com\//i.test(u)
+    (u) =>
+      typeof u === 'string' &&
+      /^https:\/\/[\w.-]+\.(?:tiktok|tiktokcdn|tiktokcdn-us|tiktokcdn-eu|tiktokv|muscdn|byteoversea|byteicdn|ibytedtos)\.com\//i.test(
+        u
+      )
   );
   const rawCoverCandidate =
     itemStruct.video?.zoomCover?.['720'] ||
@@ -1581,24 +1608,142 @@ export async function inspectLiveTikTokVideoPage(
 
   const taskPromise = (async (): Promise<RealTikTokVideoAndAuthorDetail | null> => {
     const fetched = await fetchTikTokHtmlWithWafBypass(videoUrl);
-    if (!fetched) return null;
+    let result: RealTikTokVideoAndAuthorDetail | null = null;
+    let itemStruct: Record<string, any> | undefined;
+
+    if (fetched?.html) {
+      try {
+        const scriptMatch = fetched.html.match(
+          /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
+        );
+        if (scriptMatch?.[1]) {
+          const json = JSON.parse(scriptMatch[1]);
+          const defaultScope = json?.__DEFAULT_SCOPE__ || {};
+          const videoDetailScope =
+            defaultScope?.['webapp.video-detail'] ||
+            defaultScope?.['webapp.reflow.video.detail'];
+          itemStruct = videoDetailScope?.itemInfo?.itemStruct;
+          if (itemStruct) {
+            result = parseTikTokItemStructToDetail(itemStruct);
+          }
+        }
+      } catch {
+        // Fallback below
+      }
+    }
+
+    // Nhánh dự phòng Zero-Downtime: Nếu SSR Desktop bị tường lửa khu vực chặn itemStruct, thử Mobile UA rồi TikWM
+    if (!result) {
+      try {
+        const mobileTry = await fetchTikTokHtmlWithWafBypass(videoUrl, 5500, {
+          useMobileUa: true,
+        });
+        if (mobileTry?.html) {
+          const mobMatch = mobileTry.html.match(
+            /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
+          );
+          if (mobMatch?.[1]) {
+            const mobJson = JSON.parse(mobMatch[1]);
+            const mobScope = mobJson?.__DEFAULT_SCOPE__ || {};
+            itemStruct =
+              (mobScope?.['webapp.video-detail'] || mobScope?.['webapp.reflow.video.detail'])
+                ?.itemInfo?.itemStruct;
+            if (itemStruct) {
+              result = parseTikTokItemStructToDetail(itemStruct);
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!result) {
+      try {
+        const tikwmRes = await fetch(
+          `https://www.tikwm.com/api/?url=${encodeURIComponent(videoUrl)}&hd=1`,
+          {
+            headers: {
+              'User-Agent': DEFAULT_BROWSER_UA,
+              Accept: 'application/json',
+            },
+            signal: AbortSignal.timeout(5000),
+            cache: 'no-store',
+          }
+        );
+        if (tikwmRes.ok) {
+          const tikwmJson = await tikwmRes.json();
+          const d = tikwmJson?.data;
+          if (d && (d.id || d.aweme_id)) {
+            const vid = String(d.id || d.aweme_id).trim();
+            const handle = String(d.author?.unique_id || 'tiktok').toLowerCase();
+            const createTimeSec =
+              Number(d.create_time || 0) || extractUnixSecFromTikTokVideoId(vid);
+            const publishedAt =
+              createTimeSec > 1000000000
+                ? getVietnamDateYmd(new Date(createTimeSec * 1000))
+                : getVietnamDateYmd();
+            const caption = String(d.title || '').trim();
+            const hashtags = Array.from(
+              new Set((caption.match(/#[\p{L}\p{N}_]+/gu) || []).map((h) => h.toLowerCase()))
+            );
+            const views = Number(d.play_count || 0);
+            const likes = Number(d.digg_count || 0);
+            const comments = Number(d.comment_count || 0);
+            const shares = Number(d.share_count || 0);
+            const saves = Number(d.collect_count || d.download_count || 0);
+            const hasCommerce = Boolean(d.commerce_info?.adv_promotable || d.Anchors?.length);
+            result = {
+              videoId: vid,
+              videoUrl: `https://www.tiktok.com/@${handle}/video/${vid}`,
+              caption,
+              hashtags,
+              publishedAt,
+              createTimeSec,
+              durationSeconds: Number(d.duration || 25),
+              musicTitle: String(d.music_info?.title || `Nhạc nền - @${handle}`),
+              views,
+              likes,
+              comments,
+              shares,
+              saves,
+              engagementRate:
+                views > 0 ? Number((((likes + comments + shares) / views) * 100).toFixed(2)) : 0,
+              hasCartAnchor: hasCommerce,
+              playableUrl:
+                typeof d.play === 'string' && d.play.startsWith('http')
+                  ? d.play
+                  : typeof d.wmplay === 'string' && d.wmplay.startsWith('http')
+                    ? d.wmplay
+                    : undefined,
+              coverUrl:
+                typeof d.origin_cover === 'string' && d.origin_cover.startsWith('http')
+                  ? d.origin_cover
+                  : typeof d.cover === 'string' && d.cover.startsWith('http')
+                    ? d.cover
+                    : undefined,
+              author: {
+                handle,
+                nickname: String(d.author?.nickname || handle),
+                bio: '',
+                avatarUrl: d.author?.avatar,
+                isVerified: false,
+                followers: 0,
+                following: 0,
+                totalLikes: 0,
+                videoCount: 0,
+              },
+            };
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!result) return null;
 
     try {
-      const scriptMatch = fetched.html.match(
-        /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
-      );
-      if (!scriptMatch || !scriptMatch[1]) return null;
-
-      const json = JSON.parse(scriptMatch[1]);
-      const defaultScope = json?.__DEFAULT_SCOPE__ || {};
-      const videoDetailScope =
-        defaultScope?.['webapp.video-detail'] ||
-        defaultScope?.['webapp.reflow.video.detail'];
-      const itemStruct = videoDetailScope?.itemInfo?.itemStruct;
-
-      const result = parseTikTokItemStructToDetail(itemStruct);
-      if (!result) return null;
-
       // Nếu phát hiện video có giỏ hàng (hoặc bị CapCut type 54 đè trên bản Desktop) nhưng chưa lấy được chi tiết sản phẩm,
       // tự động gọi nhánh Mobile iOS 17 Safari (kỹ thuật Ông Chú MMO __tpt_mobile=1) để lấy trọn vẹn anchors type 33/35/38
       if (
@@ -1668,7 +1813,7 @@ export async function inspectLiveTikTokVideoPage(
       setBoundedCache(store.videoDetailCache, normalizedKey, result, VIDEO_CACHE_TTL_MS, 2500);
       return result;
     } catch {
-      return null;
+      return result;
     }
   })();
 

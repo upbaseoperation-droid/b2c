@@ -6,6 +6,7 @@ import { checkSingleLinkServerless } from '../../../../lib/linkAirCheckServer';
 import { resolveExpectedCartInputUrls } from '../../../../lib/tiktokOpenSourceEngines';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1', 'hkg1'];
 
 interface RequestPayload {
   links?: string[] | string;
@@ -71,9 +72,10 @@ export async function POST(req: NextRequest) {
           (data.results as LinkAirResult[]).map(async (r) => {
             if (
               r.platform === 'tiktok' &&
-              r.hasProductLink === true &&
-              (!r.cartProducts || r.cartProducts.length === 0) &&
-              !r.productUrl
+              ((r.hasProductLink === true &&
+                (!r.cartProducts || r.cartProducts.length === 0) &&
+                !r.productUrl) ||
+                r.airedAtVn === undefined)
             ) {
               return await checkSingleLinkServerless(r.inputUrl, defaultExpect);
             }

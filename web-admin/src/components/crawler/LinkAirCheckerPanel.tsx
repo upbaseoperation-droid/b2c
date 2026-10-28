@@ -238,8 +238,15 @@ export function LinkAirCheckerPanel({
     },
     {
       key: 'air',
-      header: 'Ngày air',
-      render: (r) => (r.publishedAt ? formatDate(r.publishedAt) : <span className="text-ink-3">—</span>),
+      header: 'Ngày giờ air',
+      render: (r) =>
+        r.airedAtVn ? (
+          <span className="font-code text-xs text-ink">{r.airedAtVn}</span>
+        ) : r.publishedAt ? (
+          formatDate(r.publishedAt)
+        ) : (
+          <span className="text-ink-3">—</span>
+        ),
     },
     { key: 'views', header: 'View', align: 'right', render: (r) => num(r.metrics.views) },
     { key: 'likes', header: 'Like', align: 'right', render: (r) => num(r.metrics.likes) },
@@ -259,6 +266,12 @@ export function LinkAirCheckerPanel({
               {cartMatchCheck && (
                 <span className="text-2xs text-critical font-semibold block">
                   ✕ Thiếu link giỏ mẫu
+                </span>
+              )}
+              {r.firstProductAppearanceSec !== null && r.firstProductAppearanceSec !== undefined && (
+                <span className="text-2xs text-ink-2 block">
+                  Nhắc SP: <strong className="text-ink font-semibold">giây {r.firstProductAppearanceSec}s</strong>
+                  {r.firstProductMentionTerm ? ` (${r.firstProductMentionTerm})` : ''}
                 </span>
               )}
             </div>

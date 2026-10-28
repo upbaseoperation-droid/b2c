@@ -6,6 +6,7 @@ import {
 } from '@/lib/server/zaloBot';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1', 'hkg1'];
 
 export async function POST(req: NextRequest) {
   try {
