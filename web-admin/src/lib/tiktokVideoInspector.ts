@@ -1053,7 +1053,8 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
           }
 
           const anchorInfo = extractTikTokShopAnchorInfo(itemStruct);
-          const { hasCartAnchor, diagnosis } = anchorInfo;
+          let hasCartAnchor = anchorInfo.hasCartAnchor;
+          const { diagnosis } = anchorInfo;
           let {
             cartAnchorTitle,
             cartAnchorUrl,
@@ -1064,15 +1065,81 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
 
           const authorHandleClean = String(author.uniqueId || urlHandle || oembedAuthorHandle || '').toLowerCase().replace(/^@+/, '');
           const authorSecUid = typeof author.secUid === 'string' && author.secUid.trim() ? author.secUid.trim() : undefined;
+          const targetId = itemId || urlVideoId || '';
+          const sharedStore = getSharedCrawlerStore();
 
-          // Nếu có cờ giỏ hàng (isECVideo / commerceInfo) nhưng chưa bóc được sản phẩm chi tiết từ trang HTML công khai
+          // 0. Ưu tiên hợp nhất dữ liệu từ Cache đã đồng bộ trực tiếp bởi Chrome Extension (nếu có)
+          const cachedExtDetail =
+            (targetId ? sharedStore.videoDetailCache.get(targetId)?.data : undefined) ||
+            (authorHandleClean && targetId
+              ? sharedStore.videoDetailCache.get(`${authorHandleClean}_${targetId}`)?.data
+              : undefined);
+
+          if (cachedExtDetail) {
+            if (cachedExtDetail.cartProducts && cachedExtDetail.cartProducts.length > 0 && cartProducts.length === 0) {
+              hasCartAnchor = true;
+              cartProducts = cachedExtDetail.cartProducts;
+              cartAnchorTitle = cachedExtDetail.cartAnchorTitle || cartAnchorTitle;
+              cartAnchorUrl = cachedExtDetail.cartAnchorUrl || cartAnchorUrl;
+              cartProductId = cachedExtDetail.cartProductId || cartProductId;
+              cartSellerId = cachedExtDetail.cartSellerId || cartSellerId;
+            }
+            if (!transcriptText && cachedExtDetail.transcriptText) {
+              transcriptText = cachedExtDetail.transcriptText;
+              const extSegs = parseWebVttToSegments(cachedExtDetail.transcriptText);
+              if (extSegs.length > 0) subtitleSegments = extSegs;
+              subtitleSource = 'TIKTOK_AUTO_CAPTIONS_VTT';
+            }
+          }
+
+          // 1. Cơ chế Mobile iOS 17 User-Agent Fallback (mở khóa anchors 33/35 bị CapCut 54 che trên Desktop)
+          const hasCapCutMask =
+            Array.isArray(itemStruct.AnchorTypes) &&
+            itemStruct.AnchorTypes.map((t: unknown) => String(t)).includes('54');
+
+          if ((hasCartAnchor || hasCapCutMask) && cartProducts.length === 0) {
+            try {
+              const mobileFetched = await fetchTikTokHtmlWithWafBypass(resolvedUrl, 5500, {
+                useMobileUa: true,
+              });
+              if (mobileFetched?.html) {
+                const mobileScript = mobileFetched.html.match(
+                  /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
+                );
+                if (mobileScript?.[1]) {
+                  const mobileJson = JSON.parse(mobileScript[1]);
+                  const mobileScope = mobileJson?.__DEFAULT_SCOPE__ || {};
+                  const mobileItemStruct =
+                    mobileScope?.['webapp.video-detail']?.itemInfo?.itemStruct ||
+                    mobileScope?.['webapp.reflow.video.detail']?.itemInfo?.itemStruct;
+                  if (mobileItemStruct) {
+                    const mobileAnchor = extractTikTokShopAnchorInfo(mobileItemStruct);
+                    if (mobileAnchor.cartProducts.length > 0) {
+                      hasCartAnchor = true;
+                      cartProducts = mobileAnchor.cartProducts;
+                      cartAnchorTitle = mobileAnchor.cartAnchorTitle || cartAnchorTitle;
+                      cartAnchorUrl = mobileAnchor.cartAnchorUrl || cartAnchorUrl;
+                      cartProductId = mobileAnchor.cartProductId || cartProductId;
+                      cartSellerId = mobileAnchor.cartSellerId || cartSellerId;
+                      if (diagnosis) {
+                        diagnosis.code = 'ACTIVE_CART';
+                        diagnosis.reason = `Đã mở khóa ${cartProducts.length} sản phẩm trong giỏ qua luồng Mobile iOS User-Agent.`;
+                      }
+                    }
+                  }
+                }
+              }
+            } catch {
+              // Bỏ qua nếu Mobile UA fallback timeout
+            }
+          }
+
+          // 2. Nếu có cờ giỏ hàng (isECVideo / commerceInfo) nhưng chưa bóc được sản phẩm chi tiết từ trang HTML công khai
           if (hasCartAnchor && cartProducts.length === 0 && authorHandleClean) {
             try {
-              const sharedStore = getSharedCrawlerStore();
               const secUidToUse = authorSecUid || sharedStore.profileCache.get(authorHandleClean)?.data?.secUid;
               if (secUidToUse) {
                 const creatorVideos = await fetchTikTokCreatorVideoListBySecUid(authorHandleClean, secUidToUse, 50);
-                const targetId = itemId || urlVideoId;
                 const matchedFeedItem = creatorVideos.find((v) => v.videoId === targetId);
                 if (matchedFeedItem && matchedFeedItem.cartProducts && matchedFeedItem.cartProducts.length > 0) {
                   cartProducts = matchedFeedItem.cartProducts;
@@ -1198,6 +1265,49 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
 
   const finalVideoId = oembedVideoId || urlVideoId;
   const decodedDate = decodeTikTokVideoIdTimestamp(finalVideoId);
+  const sharedStore = getSharedCrawlerStore();
+  const cachedFallback =
+    (finalVideoId ? sharedStore.videoDetailCache.get(finalVideoId)?.data : undefined) ||
+    (urlHandle && finalVideoId
+      ? sharedStore.videoDetailCache.get(`${urlHandle}_${finalVideoId}`)?.data
+      : undefined);
+
+  if (cachedFallback) {
+    const extSegs = cachedFallback.transcriptText
+      ? parseWebVttToSegments(cachedFallback.transcriptText)
+      : undefined;
+    return {
+      resolvedUrl,
+      videoId: finalVideoId || cachedFallback.videoId,
+      authorHandle: cachedFallback.author?.handle || oembedAuthorHandle || urlHandle,
+      authorNickname: cachedFallback.author?.nickname || oembedAuthorName,
+      authorAvatarUrl: cachedFallback.author?.avatarUrl,
+      caption: cachedFallback.caption || oembedCaption,
+      coverUrl: oembedCoverUrl,
+      publishedDateObj:
+        (cachedFallback.publishedAt ? new Date(cachedFallback.publishedAt) : null) ||
+        decodedDate ||
+        undefined,
+      timestampSource: decodedDate ? 'SNOWFLAKE_VIDEO_ID' : undefined,
+      durationSeconds: cachedFallback.durationSeconds || undefined,
+      viewsCount: cachedFallback.views,
+      likesCount: cachedFallback.likes,
+      commentsCount: cachedFallback.comments,
+      sharesCount: cachedFallback.shares,
+      savesCount: cachedFallback.saves,
+      transcriptText: cachedFallback.transcriptText,
+      subtitleSegments: extSegs && extSegs.length > 0 ? extSegs : undefined,
+      subtitleSource: cachedFallback.transcriptText ? 'TIKTOK_AUTO_CAPTIONS_VTT' : undefined,
+      onScreenStickers: cachedFallback.onScreenStickers,
+      hasCartAnchor: cachedFallback.hasCartAnchor,
+      cartAnchorTitle: cachedFallback.cartAnchorTitle,
+      cartAnchorUrl: cachedFallback.cartAnchorUrl,
+      cartProductId: cachedFallback.cartProductId,
+      cartSellerId: cachedFallback.cartSellerId,
+      cartProducts: cachedFallback.cartProducts,
+      isLiveSuccess: true,
+    };
+  }
 
   return {
     resolvedUrl,

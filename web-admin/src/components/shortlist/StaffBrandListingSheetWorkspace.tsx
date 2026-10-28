@@ -434,6 +434,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   }, [collection.sheets, activeMonth, activeStoreName, b2cStores]);
 
   // Mặc định mở bộ cột GĐ 1: Bản gửi Brand + hiển thị luôn Thời gian Listing, Thời gian Brand duyệt & SLA Brand duyệt
+  // (Ẩn cột Link kênh trên bảng Web vì đã tích hợp nút mở nhanh TikTok ngay tại cột ID kênh; khi đẩy/copy Google Sheet vẫn xuất đủ 57 cột A -> BE)
   const [activeColumnPreset, setActiveColumnPreset] = useState<
     'BRAND_WORKING_FILE' | 'ACCEPTANCE_FILE_32' | 'ALL_48' | 'LARK_BASE'
   >('BRAND_WORKING_FILE');
@@ -441,7 +442,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     Array.from(
       new Set<StaffListingColumnKey>([
         'ngayDien',
-        ...STAFF_LISTING_COLUMNS.filter((c) => c.inBrandWorkingFile).map((c) => c.key),
+        ...STAFF_LISTING_COLUMNS.filter((c) => c.inBrandWorkingFile && c.key !== 'linkKenh').map(
+          (c) => c.key
+        ),
         'ngayBrandDuyet',
         'slaBrandDuyet',
       ])
@@ -451,18 +454,67 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
   const visibleColumns = useMemo(() => {
     const set = new Set(visibleColumnKeys);
-    const base = STAFF_LISTING_COLUMNS.filter(
-      (c) => set.has(c.key) && c.key !== 'ngayBrandDuyet' && c.key !== 'slaBrandDuyet'
+    const allSelected = STAFF_LISTING_COLUMNS.filter((c) => set.has(c.key));
+
+    // Trong góc nhìn "1. Listing & Trình Brand", đưa các cột quyết định (ID kênh, Tên kênh, Sản phẩm, Tệp Booking, Giá net, Đề xuất UpBase, Brand chọn, Lý do, SLA) lên đầu
+    // để người dùng nhìn thấy ngay trạng thái duyệt mà không cần cuộn ngang; đồng thời giữ ID kênh ở vị trí đầu tiên để khớp tuyệt đối với sticky left-[72px].
+    const priorityOrder: StaffListingColumnKey[] =
+      activeColumnPreset === 'BRAND_WORKING_FILE'
+        ? [
+            'idKenh',
+            'tenKenh',
+            'sanPham',
+            'tepKenh',
+            'contentTag',
+            'tepBooking',
+            'giaNetVideo',
+            'phiBookingKemThue',
+            'deXuatUpBase',
+            'brandChon',
+            'lyDoTuChoi',
+            'slaBrandDuyet',
+            'ngayBrandDuyet',
+            'ngayDien',
+            'nhanSuDien',
+            'dot',
+          ]
+        : ['idKenh'];
+
+    const priorityRank = new Map<StaffListingColumnKey, number>();
+    priorityOrder.forEach((k, idx) => priorityRank.set(k, idx));
+
+    const prioritized: StaffListingColumnMeta[] = [];
+    const remaining: StaffListingColumnMeta[] = [];
+
+    for (const col of allSelected) {
+      if (priorityRank.has(col.key)) {
+        prioritized.push(col);
+      } else {
+        remaining.push(col);
+      }
+    }
+
+    prioritized.sort(
+      (a, b) => (priorityRank.get(a.key) ?? 999) - (priorityRank.get(b.key) ?? 999)
     );
-    const slaCols = STAFF_LISTING_COLUMNS.filter(
-      (c) => (c.key === 'ngayBrandDuyet' || c.key === 'slaBrandDuyet') && set.has(c.key)
+
+    const combined = [...prioritized, ...remaining];
+    if (activeColumnPreset === 'BRAND_WORKING_FILE') {
+      return combined;
+    }
+
+    // Với các chế độ khác, giữ nguyên vị trí SLA ngay sau Lý do từ chối / Brand chọn
+    const base = combined.filter(
+      (c) => c.key !== 'ngayBrandDuyet' && c.key !== 'slaBrandDuyet'
+    );
+    const slaCols = combined.filter(
+      (c) => c.key === 'ngayBrandDuyet' || c.key === 'slaBrandDuyet'
     );
     if (slaCols.length === 0) return base;
     const insertIdx = base.findIndex(
       (c) => c.key === 'lyDoTuChoi' || c.key === 'brandChon'
     );
     if (insertIdx === -1) return [...base, ...slaCols];
-    // Nếu có cả brandChon và lyDoTuChoi thì đặt ngay sau lyDoTuChoi
     const afterLyDo = base.findIndex((c) => c.key === 'lyDoTuChoi');
     const targetPos = afterLyDo !== -1 ? afterLyDo + 1 : insertIdx + 1;
     return [
@@ -470,7 +522,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       ...slaCols,
       ...base.slice(targetPos),
     ];
-  }, [visibleColumnKeys]);
+  }, [visibleColumnKeys, activeColumnPreset]);
 
   const toggleColumnKey = (key: StaffListingColumnKey) => {
     setVisibleColumnKeys((prev) =>
@@ -489,7 +541,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         Array.from(
           new Set<StaffListingColumnKey>([
             'ngayDien',
-            ...STAFF_LISTING_COLUMNS.filter((c) => c.inBrandWorkingFile).map((c) => c.key),
+            ...STAFF_LISTING_COLUMNS.filter(
+              (c) => c.inBrandWorkingFile && c.key !== 'linkKenh'
+            ).map((c) => c.key),
             'ngayBrandDuyet',
             'slaBrandDuyet',
           ])
@@ -1287,6 +1341,65 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     updateActiveSheetRows((prev) => prev.filter((r) => !delSet.has(r.id)));
     setSelectedRowIds([]);
     onNotify?.(`Đã xóa ${delSet.size} dòng khỏi Sheet.`, 'info');
+  };
+
+  // Cập nhật hàng loạt (Bulk Update) cho các dòng đã chọn: Đợt, Đề xuất UpBase, hoặc Brand chọn
+  const handleBulkUpdateSelectedRows = (
+    field: 'dot' | 'deXuatUpBase' | 'brandChon',
+    value: string
+  ) => {
+    if (!value || selectedRowIds.length === 0) return;
+    const selectedSet = new Set(selectedRowIds);
+    const approvedRowsToSync: StaffListingSheetRow[] = [];
+    let updatedCount = 0;
+
+    updateActiveSheetRows((prev) =>
+      prev.map((r) => {
+        if (!selectedSet.has(r.id)) return r;
+        const check = canEditCell(r, field);
+        if (!check.allowed) return r;
+        updatedCount++;
+        const brandDecisionChanged = field === 'brandChon' && value !== r.brandChon;
+        const updated = recalculateStaffListingRow(
+          { ...r, [field]: value },
+          { forceRefreshBrandTimestamp: brandDecisionChanged }
+        );
+        if (field === 'brandChon' && value === 'Yes') {
+          approvedRowsToSync.push(updated);
+        }
+        return updated;
+      })
+    );
+
+    if (approvedRowsToSync.length > 0) {
+      const rowsForTransfer = [...approvedRowsToSync];
+      setTimeout(() => {
+        transferBrandApprovedRowsToBookingList({
+          rowsToTransfer: rowsForTransfer,
+          sheetKey: activeSheetKey,
+          store: activeStoreObj,
+          allKocs: kocs,
+          allStores: stores,
+          allDeals: deals,
+        });
+        setCollection(loadStaffSheetCollection(kocs, stores, deals, currentUserName));
+      }, 0);
+    }
+
+    const fieldLabel =
+      field === 'dot'
+        ? 'Đợt'
+        : field === 'deXuatUpBase'
+          ? 'Đề xuất UpBase'
+          : 'Brand chọn';
+    if (updatedCount > 0) {
+      onNotify?.(
+        `Đã cập nhật "${fieldLabel}: ${value}" cho ${updatedCount} dòng KOC.`,
+        'success'
+      );
+    } else {
+      onNotify?.('Không có dòng nào đủ quyền chỉnh sửa.', 'warning');
+    }
   };
 
   // Copy TSV vào Clipboard (để dán thẳng vào Google Sheet / Excel)
@@ -2584,7 +2697,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
         {/* Thanh 1: Ngữ cảnh Tháng / Gian hàng + Phân quyền PIC & Support + Link Google Sheet + 4 Chỉ số tóm tắt */}
         <div className="px-3 py-2 border-b border-line bg-sunken/40 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
             <select
               value={activeMonth}
               onChange={(e) => onChangeMonth(e.target.value)}
@@ -2618,17 +2731,37 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
             <span className="h-4 w-px bg-line mx-0.5 shrink-0" />
 
-            {/* Cụm hiển thị gọn lấy trực tiếp từ Phân quyền theo gian: Nút bấm xem danh sách PIC gian hàng + Quyền + Link Google Sheet */}
+            {/* Cụm hiển thị gọn: Nút bấm xem danh sách PIC gian hàng & Quyền + Link Google Sheet */}
             <div className="flex flex-wrap items-center gap-1.5 text-2xs">
               <div ref={picPopoverRef} className="relative">
                 <button
                   type="button"
                   onClick={() => setIsPicPopoverOpen((v) => !v)}
                   aria-expanded={isPicPopoverOpen}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface border border-line-strong text-ink font-medium hover:bg-sunken transition-colors"
+                  className="h-8 inline-flex items-center gap-1.5 px-2.5 rounded-md bg-surface border border-line-strong text-ink font-medium hover:bg-sunken transition-colors"
                 >
                   <Users className="w-3.5 h-3.5 text-accent shrink-0" />
-                  <span>PIC gian hàng ({storePicTotalCount})</span>
+                  <span>PIC ({storePicTotalCount})</span>
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      isPrimaryPic || isAdminOrManager || isStoreLeader
+                        ? 'bg-emerald-500'
+                        : isSupportStaff
+                          ? 'bg-accent'
+                          : 'bg-ink-3'
+                    }`}
+                    title={
+                      isPrimaryPic
+                        ? 'Quyền PIC Chính'
+                        : isSupportStaff
+                          ? 'Quyền Hỗ trợ'
+                          : isStoreLeader
+                            ? 'Quyền Leader'
+                            : isAdminOrManager
+                              ? 'Quyền Quản trị viên'
+                              : 'Quyền xem & đề xuất'
+                    }
+                  />
                   <ChevronDown
                     className={`w-3.5 h-3.5 text-ink-3 shrink-0 transition-transform ${
                       isPicPopoverOpen ? 'rotate-180' : ''
@@ -2640,9 +2773,27 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   <div className="absolute left-0 top-full mt-1.5 z-40 w-80 rounded-lg border border-line-strong bg-surface shadow-lg p-3 space-y-3 text-xs">
                     <div className="flex items-center justify-between gap-2 pb-2 border-b border-line">
                       <span className="font-semibold text-ink truncate">
-                        Nhân sự phụ trách gian hàng
+                        Nhân sự &amp; Quyền gian hàng
                       </span>
-                      <Status tone="neutral">{storePicTotalCount} nhân sự</Status>
+                      <Status
+                        tone={
+                          isPrimaryPic || isAdminOrManager || isStoreLeader
+                            ? 'positive'
+                            : isSupportStaff
+                              ? 'info'
+                              : 'neutral'
+                        }
+                      >
+                        {isPrimaryPic
+                          ? 'Quyền: PIC Chính'
+                          : isSupportStaff
+                            ? 'Quyền: Hỗ trợ'
+                            : isStoreLeader
+                              ? 'Quyền: Leader'
+                              : isAdminOrManager
+                                ? 'Quản trị viên'
+                                : 'Xem & đề xuất'}
+                      </Status>
                     </div>
 
                     <div className="space-y-1.5">
@@ -2728,6 +2879,22 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       </div>
                     )}
 
+                    {isAdminOrManager && onOpenSheetSetupScreen && (
+                      <div className="pt-2 border-t border-line">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsPicPopoverOpen(false);
+                            onOpenSheetSetupScreen('FIELD_PERMISSIONS');
+                          }}
+                          className="w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md bg-sunken border border-line text-ink font-medium hover:bg-line/50"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-accent" />
+                          <span>Cấu hình phân quyền sửa trường</span>
+                        </button>
+                      </div>
+                    )}
+
                     {filterNhanSu !== 'ALL' && (
                       <div className="pt-1 border-t border-line flex items-center justify-between gap-2">
                         <span className="text-2xs text-ink-2 truncate">
@@ -2749,45 +2916,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 )}
               </div>
 
-              <Status
-                tone={
-                  isPrimaryPic || isAdminOrManager || isStoreLeader
-                    ? 'positive'
-                    : isSupportStaff
-                    ? 'info'
-                    : 'neutral'
-                }
-              >
-                {isPrimaryPic
-                  ? `Quyền: PIC Chính (${fieldEditPolicy.editableFieldsByRole.PRIMARY_PIC.length}/47 trường)`
-                  : isSupportStaff
-                  ? `Quyền: Hỗ trợ (${fieldEditPolicy.editableFieldsByRole.SUPPORT.length}/47 trường)`
-                  : isStoreLeader
-                  ? `Quyền: Leader (${fieldEditPolicy.editableFieldsByRole.LEADER.length}/47 trường)`
-                  : isAdminOrManager
-                  ? 'Quyền: Quản trị viên (Toàn quyền)'
-                  : 'Quyền xem & đề xuất'}
-              </Status>
-
-              {isAdminOrManager && onOpenSheetSetupScreen && (
-                <button
-                  type="button"
-                  onClick={() => onOpenSheetSetupScreen('FIELD_PERMISSIONS')}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-line text-ink-2 font-medium hover:bg-sunken hover:text-ink"
-                  title="Mở màn hình cấu hình quyền sửa từng trường (cột) cho Nhân viên hỗ trợ, PIC Chính và Leader"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-accent" />
-                  <span>Phân quyền sửa trường</span>
-                </button>
-              )}
-
               {currentGoogleSheetUrl ? (
-                <>
+                <div className="inline-flex items-center rounded-md border border-line-strong bg-surface overflow-hidden h-8">
                   <a
                     href={currentGoogleSheetUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-line text-accent font-medium hover:bg-sunken"
+                    className="inline-flex items-center gap-1.5 px-2.5 h-full text-accent font-medium hover:bg-sunken transition-colors"
                     title={currentGoogleSheetUrl}
                   >
                     <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
@@ -2797,13 +2932,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   <button
                     type="button"
                     onClick={handleOpenSheetTemplateModal}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-line text-ink-2 font-medium hover:bg-sunken hover:text-ink"
+                    className="inline-flex items-center gap-1 px-2 h-full border-l border-line text-ink-2 font-medium hover:bg-sunken hover:text-ink transition-colors"
                     title="Ẩn các tháng cũ, ẩn/hiện cột Template và Sort theo Sản phẩm / Nhân sự trên Google Sheet"
                   >
                     <Settings className="w-3.5 h-3.5 shrink-0 text-accent" />
-                    <span>Setup &amp; Sort File Sheet</span>
+                    <span>Setup Sheet</span>
                   </button>
-                </>
+                </div>
               ) : (
                 <button
                   type="button"
@@ -2815,74 +2950,98 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       setIsGoogleSheetModalOpen(true);
                     }
                   }}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-line text-warning font-medium hover:bg-sunken"
+                  className="h-8 inline-flex items-center gap-1 px-2.5 rounded-md bg-surface border border-line-strong text-warning font-medium hover:bg-sunken"
                 >
                   <Link2 className="w-3.5 h-3.5 shrink-0" />
-                  <span>Chưa gắn Link Sheet</span>
+                  <span>Gắn Link Sheet</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* Cụm chỉ số tóm tắt gọn trên 1 dòng + Đo lường SLA Brand duyệt */}
-          <div className="flex flex-wrap items-center gap-3 px-2.5 py-1 rounded-md bg-surface border border-line text-xs shrink-0">
-            <div className="flex items-center gap-1">
-              <span className="text-ink-3">KOC:</span>
-              <strong className="text-ink tabular-nums">{sheetStats.totalCount}</strong>
-            </div>
-            <span className="h-3 w-px bg-line" />
-            <div className="flex items-center gap-1">
-              <span className="text-ink-3">Brand duyệt:</span>
-              <strong className="text-positive tabular-nums">
-                {sheetStats.brandApprovedCount}/{sheetStats.totalCount}
-              </strong>
-            </div>
-            <span className="h-3 w-px bg-line" />
-            <div
-              className="flex items-center gap-1"
-              title="Đo lường SLA từ thời điểm Listing KOC mới lên đến khi Brand phản hồi (Cam kết chuẩn: ≤ 48h)"
-            >
-              <Clock className="w-3.5 h-3.5 text-accent shrink-0" />
-              <span className="text-ink-3">SLA Brand (48h):</span>
-              {sheetStats.reviewedCount > 0 ? (
-                <strong
-                  className={`tabular-nums ${
-                    sheetStats.onTimeCount === sheetStats.reviewedCount
-                      ? 'text-positive'
-                      : 'text-warning'
-                  }`}
-                >
-                  {sheetStats.onTimeCount}/{sheetStats.reviewedCount} đúng hạn (TB {sheetStats.avgReviewHours}h)
+          {/* Cụm phải Thanh 1: Chỉ số tóm tắt gọn + Đồng bộ Google Sheet */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-2.5 px-2.5 h-8 rounded-md bg-surface border border-line text-xs">
+              <div className="flex items-center gap-1">
+                <span className="text-ink-3">KOC:</span>
+                <strong className="text-ink tabular-nums">
+                  {formatNumber(sheetStats.totalCount)}
                 </strong>
-              ) : (
-                <strong className="text-ink-2 tabular-nums">Chưa có phản hồi</strong>
-              )}
-              {sheetStats.overdueWaitCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 rounded bg-rose-50 border border-rose-200 text-rose-700 font-semibold text-2xs">
-                  {sheetStats.overdueWaitCount} quá hạn chờ
-                </span>
-              )}
+              </div>
+              <span className="h-3 w-px bg-line" />
+              <div className="flex items-center gap-1">
+                <span className="text-ink-3">Brand duyệt:</span>
+                <strong className="text-positive tabular-nums">
+                  {formatNumber(sheetStats.brandApprovedCount)}/{formatNumber(sheetStats.totalCount)}
+                </strong>
+              </div>
+              <span className="h-3 w-px bg-line" />
+              <div
+                className="flex items-center gap-1"
+                title="Đo lường SLA từ thời điểm Listing KOC mới lên đến khi Brand phản hồi (Cam kết chuẩn: ≤ 48h)"
+              >
+                <Clock className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span className="text-ink-3">SLA:</span>
+                {sheetStats.reviewedCount > 0 ? (
+                  <strong
+                    className={`tabular-nums ${
+                      sheetStats.onTimeCount === sheetStats.reviewedCount
+                        ? 'text-positive'
+                        : 'text-warning'
+                    }`}
+                  >
+                    {sheetStats.onTimeCount}/{sheetStats.reviewedCount} ({sheetStats.avgReviewHours}h)
+                  </strong>
+                ) : (
+                  <strong className="text-ink-2 tabular-nums">Chờ duyệt</strong>
+                )}
+                {sheetStats.overdueWaitCount > 0 && (
+                  <span className="ml-0.5 px-1.5 py-0.2 rounded bg-rose-50 border border-rose-200 text-rose-700 font-semibold text-2xs">
+                    {sheetStats.overdueWaitCount} trễ
+                  </span>
+                )}
+              </div>
+              <span className="h-3 w-px bg-line" />
+              <div className="flex items-center gap-1">
+                <span className="text-ink-3">Net:</span>
+                <strong className="text-ink tabular-nums">
+                  {formatVndShort(sheetStats.totalNet)}
+                </strong>
+              </div>
+              <span className="h-3 w-px bg-line" />
+              <div className="flex items-center gap-1">
+                <span className="text-ink-3">Gross:</span>
+                <strong className="text-accent tabular-nums">
+                  {formatVndShort(sheetStats.totalGross)}
+                </strong>
+              </div>
             </div>
-            <span className="h-3 w-px bg-line" />
-            <div className="flex items-center gap-1">
-              <span className="text-ink-3">Net:</span>
-              <strong className="text-ink tabular-nums">
-                {formatVndShort(sheetStats.totalNet)}
-              </strong>
-            </div>
-            <span className="h-3 w-px bg-line" />
-            <div className="flex items-center gap-1">
-              <span className="text-ink-3">Gross:</span>
-              <strong className="text-accent tabular-nums">
-                {formatVndShort(sheetStats.totalGross)}
-              </strong>
-            </div>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={RefreshCw}
+              onClick={handleOpenPullSheetModal}
+            >
+              Kéo từ Sheet
+            </Button>
+
+            <Button
+              variant="primary"
+              size="sm"
+              icon={Upload}
+              onClick={handleOpenPushSheetModal}
+            >
+              {selectedRowIds.length > 0
+                ? `Đẩy ${selectedRowIds.length} dòng lên Sheet`
+                : `Đẩy lên Sheet (${displayedRows.length})`}
+            </Button>
           </div>
         </div>
 
-        {/* Thanh 2: Bộ lọc + Chuyển nhanh Giai đoạn cột + 3 Nút thao tác chính (1 nút primary duy nhất) */}
-        <div className="px-3 py-2 border-b border-line bg-surface flex flex-wrap items-center justify-between gap-2">
-          {/* Bên trái: Tìm kiếm, Lọc, Chuyển nhanh Giai đoạn cột */}
+        {/* Thanh 2: Bộ lọc gọn + Chuyển nhanh Giai đoạn cột + Tác vụ thêm KOC / Tạo Deal */}
+        <div className="px-3 py-1.5 border-b border-line bg-surface flex flex-wrap items-center justify-between gap-2">
+          {/* Bên trái: Tìm kiếm, Lọc, Sắp xếp */}
           <div className="flex flex-wrap items-center gap-1.5">
             <div className="relative w-44 sm:w-52">
               <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -2891,16 +3050,16 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 value={rowSearchQuery}
                 onChange={(e) => setRowSearchQuery(e.target.value)}
                 placeholder="Tìm ID kênh, tên KOC, SP..."
-                className="w-full h-8 pl-7 pr-2 text-xs rounded-md border border-line-strong bg-surface text-ink focus:outline-none focus:border-ink"
+                className="w-full h-7 pl-7 pr-2 text-xs rounded-md border border-line bg-surface text-ink focus:outline-none focus:border-ink"
               />
             </div>
 
             <select
               value={filterDot}
               onChange={(e) => setFilterDot(e.target.value)}
-              className="h-8 px-2 text-xs rounded-md border border-line-strong bg-surface text-ink"
+              className="h-7 px-2 text-xs rounded-md border border-line bg-surface text-ink"
             >
-              <option value="ALL">Tất cả đợt</option>
+              <option value="ALL">Đợt: Tất cả</option>
               {DOT_LISTING_OPTIONS.map((d) => (
                 <option key={d} value={d}>
                   {d}
@@ -2911,9 +3070,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             <select
               value={filterBrandChon}
               onChange={(e) => setFilterBrandChon(e.target.value)}
-              className="h-8 px-2 text-xs rounded-md border border-line-strong bg-surface text-ink"
+              className="h-7 px-2 text-xs rounded-md border border-line bg-surface text-ink"
             >
-              <option value="ALL">Brand chọn: Tất cả</option>
+              <option value="ALL">Brand: Tất cả</option>
               {BRAND_CHON_OPTIONS.map((b) => (
                 <option key={b} value={b}>
                   Brand: {b}
@@ -2924,11 +3083,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             <select
               value={filterNhanSu}
               onChange={(e) => setFilterNhanSu(e.target.value)}
-              className="h-8 px-2 text-xs rounded-md border border-line-strong bg-surface text-ink"
+              className="h-7 px-2 text-xs rounded-md border border-line bg-surface text-ink max-w-[165px]"
               aria-label="Lọc theo nhân sự điền"
             >
-              <option value="ALL">Nhân sự: Toàn nhóm</option>
-              <option value="MINE">Dòng của tôi ({currentUserName})</option>
+              <option value="ALL">NV: Toàn nhóm</option>
+              <option value="MINE">Của tôi ({currentUserName})</option>
               {staffInSheetOptions.map((stName) => (
                 <option key={stName} value={stName}>
                   NV: {stName}
@@ -2948,64 +3107,52 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                     | 'BRAND_DECISION'
                 )
               }
-              className="h-8 px-2 text-xs rounded-md border border-line-strong bg-surface text-ink"
+              className="h-7 px-2 text-xs rounded-md border border-line bg-surface text-ink"
               aria-label="Sắp xếp bảng theo Sản phẩm hoặc Nhân sự"
             >
-              <option value="DEFAULT">Sắp xếp: Thứ tự gốc</option>
-              <option value="PRODUCT">Sort theo: Sản phẩm (A → Z)</option>
-              <option value="STAFF">Sort theo: Nhân sự điền (A → Z)</option>
-              <option value="BATCH">Sort theo: Đợt Listing</option>
-              <option value="BRAND_DECISION">Sort theo: Brand chọn (Yes)</option>
+              <option value="DEFAULT">Sắp xếp: Mặc định</option>
+              <option value="PRODUCT">Sort: Sản phẩm (A→Z)</option>
+              <option value="STAFF">Sort: Nhân sự (A→Z)</option>
+              <option value="BATCH">Sort: Đợt Listing</option>
+              <option value="BRAND_DECISION">Sort: Brand chọn (Yes)</option>
             </select>
 
             {storeOldMonthGroups.length > 0 && (
-              <div className="inline-flex items-center gap-1 px-2 h-8 rounded-md bg-sunken border border-line text-2xs">
-                <span className="font-semibold text-ink-2 whitespace-nowrap">
-                  Cột Tháng (B):
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowOldMonthsInTable((v) => !v)}
-                  className={`px-1.5 py-0.5 rounded font-medium transition-colors ${
-                    showOldMonthsInTable
-                      ? 'bg-surface text-ink border border-line-strong'
-                      : 'text-ink-3 hover:text-ink'
-                  }`}
-                  title="Hiện hoặc ẩn hoàn toàn các nhóm dòng tháng cũ của gian hàng này trên bảng"
-                >
-                  {showOldMonthsInTable
-                    ? `Thu gọn ${storeOldMonthGroups.length} tháng cũ`
-                    : `Đang ẩn ${storeOldMonthGroups.length} tháng cũ`}
-                </button>
-                {showOldMonthsInTable && expandedOldMonths.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setExpandedOldMonths([])}
-                    className="px-1.5 py-0.5 rounded bg-accent-soft text-accent font-semibold hover:underline"
-                  >
-                    Thu gọn lại hết
-                  </button>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowOldMonthsInTable((v) => !v)}
+                className={`h-7 px-2 rounded-md border text-2xs font-medium transition-colors ${
+                  showOldMonthsInTable
+                    ? 'bg-accent-soft text-accent border-accent/30'
+                    : 'bg-sunken text-ink-2 border-line hover:text-ink'
+                }`}
+                title="Hiện hoặc ẩn các nhóm dòng tháng cũ của gian hàng này ngay đầu bảng"
+              >
+                {showOldMonthsInTable
+                  ? `Tháng cũ (${storeOldMonthGroups.length}): Đang hiện`
+                  : `Tháng cũ (${storeOldMonthGroups.length}): Đang ẩn`}
+              </button>
             )}
+          </div>
 
-            {/* Bộ chuyển nhanh 3 giai đoạn cột trên Google Sheet */}
+          {/* Bên phải: Chế độ cột + Nút Cột + Chọn KOC + Tạo Deal + Menu */}
+          <div className="flex flex-wrap items-center gap-1.5">
             <div className="inline-flex items-center p-0.5 rounded-md bg-sunken border border-line text-2xs">
               <button
                 type="button"
                 onClick={() => applyColumnPreset('BRAND_WORKING_FILE')}
-                className={`px-2 py-1 rounded transition-colors ${
+                className={`px-2 py-0.5 rounded transition-colors ${
                   activeColumnPreset === 'BRAND_WORKING_FILE'
                     ? 'bg-surface text-ink font-semibold shadow-2xs'
                     : 'text-ink-2 hover:text-ink'
                 }`}
               >
-                1. Listing &amp; Trình Brand
+                1. Trình Brand (15 cột)
               </button>
               <button
                 type="button"
                 onClick={() => applyColumnPreset('ACCEPTANCE_FILE_32')}
-                className={`px-2 py-1 rounded transition-colors ${
+                className={`px-2 py-0.5 rounded transition-colors ${
                   activeColumnPreset === 'ACCEPTANCE_FILE_32'
                     ? 'bg-surface text-ink font-semibold shadow-2xs'
                     : 'text-ink-2 hover:text-ink'
@@ -3016,7 +3163,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               <button
                 type="button"
                 onClick={() => applyColumnPreset('ALL_48')}
-                className={`px-2 py-1 rounded transition-colors ${
+                className={`px-2 py-0.5 rounded transition-colors ${
                   activeColumnPreset === 'ALL_48'
                     ? 'bg-surface text-ink font-semibold shadow-2xs'
                     : 'text-ink-2 hover:text-ink'
@@ -3025,20 +3172,22 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 Đầy đủ ({STAFF_LISTING_COLUMNS.length} cột)
               </button>
             </div>
-          </div>
 
-          {/* Bên phải: Chỉ giữ 3 nút nghiệp vụ cốt lõi + 1 menu Thao tác khác */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {selectedRowIds.length > 0 && (
-              <Button
-                variant="danger"
-                size="sm"
-                icon={Trash2}
-                onClick={handleDeleteSelectedRows}
-              >
-                Xóa ({selectedRowIds.length})
-              </Button>
-            )}
+            <button
+              type="button"
+              onClick={() => setIsColumnPickerOpen((v) => !v)}
+              className={`h-7 inline-flex items-center gap-1 px-2 rounded-md border text-2xs font-medium transition-colors ${
+                isColumnPickerOpen
+                  ? 'bg-ink text-surface border-ink'
+                  : 'bg-surface text-ink-2 border-line hover:bg-sunken hover:text-ink'
+              }`}
+              title="Bật/tắt hiển thị từng cột trên bảng"
+            >
+              <Columns className="w-3.5 h-3.5 shrink-0" />
+              <span>
+                Cột ({visibleColumns.length}/{STAFF_LISTING_COLUMNS.length})
+              </span>
+            </button>
 
             <Button
               variant="secondary"
@@ -3052,10 +3201,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             <Button
               variant="secondary"
               size="sm"
-              icon={RefreshCw}
-              onClick={handleOpenPullSheetModal}
+              icon={Plus}
+              onClick={handleAddBlankRow}
             >
-              Kéo từ Sheet
+              Thêm dòng
             </Button>
 
             {sheetStats.brandApprovedCount > 0 && (
@@ -3066,24 +3215,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 onClick={() => handleOpenCreateDealsModal()}
               >
                 {sheetStats.readyToCreateDealsCount > 0
-                  ? `Tạo Deal chuyển Bảng Deal (${sheetStats.readyToCreateDealsCount} mới)`
-                  : `Tạo / Đồng bộ Deal (${sheetStats.brandApprovedCount})`}
+                  ? `Tạo Deal (${sheetStats.readyToCreateDealsCount} mới)`
+                  : `Đồng bộ Deal (${sheetStats.brandApprovedCount})`}
               </Button>
             )}
 
-            <Button
-              variant="primary"
-              size="sm"
-              icon={Upload}
-              onClick={handleOpenPushSheetModal}
-            >
-              {selectedRowIds.length > 0
-                ? `Đẩy ${selectedRowIds.length} dòng chọn lên Sheet`
-                : `Đẩy lên Google Sheet (${displayedRows.length})`}
-            </Button>
-
             <ActionMenu
-              label="Thao tác khác"
+              label="Khác"
               items={[
                 {
                   label: `Tạo các Deal từ KOC Brand đã duyệt (${sheetStats.brandApprovedCount} KOC)`,
@@ -3104,11 +3242,6 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                     ]
                   : []),
                 {
-                  label: 'Thêm dòng trống tự nhập',
-                  icon: Plus,
-                  onSelect: handleAddBlankRow,
-                },
-                {
                   label: `Gửi mail mời KOC (${
                     selectedRowIds.length > 0 ? selectedRowIds.length : displayedRows.length
                   })`,
@@ -3127,11 +3260,6 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   icon: Download,
                   onSelect: () =>
                     downloadStaffSheetCsv(rows, visibleColumns, activeStoreName, activeMonth),
-                },
-                {
-                  label: `Tùy chỉnh ẩn/hiện cột (${visibleColumns.length}/${STAFF_LISTING_COLUMNS.length})`,
-                  icon: Columns,
-                  onSelect: () => setIsColumnPickerOpen((v) => !v),
                 },
                 {
                   label: `Chọn nhanh dòng Brand duyệt (${sheetStats.brandApprovedCount})`,
@@ -3158,19 +3286,124 @@ export const StaffBrandListingSheetWorkspace: React.FC<
           </div>
         </div>
 
+        {/* Thanh thao tác hàng loạt theo ngữ cảnh (Contextual Bulk Action Bar) khi tích chọn dòng */}
+        {selectedRowIds.length > 0 && (
+          <div className="px-3 py-1.5 bg-accent-soft/60 border-b border-accent/25 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 font-semibold text-accent">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                <span>Đã chọn {selectedRowIds.length} KOC</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedRowIds([])}
+                className="text-2xs font-medium text-ink-2 hover:text-ink underline"
+              >
+                Bỏ chọn
+              </button>
+              <span className="h-3.5 w-px bg-line-strong mx-0.5" />
+              <span className="text-2xs font-medium text-ink-2">Đổi hàng loạt:</span>
+
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleBulkUpdateSelectedRows('dot', e.target.value);
+                    e.target.value = '';
+                  }
+                }}
+                className="h-7 px-2 text-2xs font-medium rounded border border-line-strong bg-surface text-ink"
+              >
+                <option value="">+ Gán Đợt...</option>
+                {DOT_LISTING_OPTIONS.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleBulkUpdateSelectedRows('deXuatUpBase', e.target.value);
+                    e.target.value = '';
+                  }
+                }}
+                className="h-7 px-2 text-2xs font-medium rounded border border-line-strong bg-surface text-ink"
+              >
+                <option value="">+ Đề xuất UpBase...</option>
+                {DE_XUAT_UPBASE_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleBulkUpdateSelectedRows('brandChon', e.target.value);
+                    e.target.value = '';
+                  }
+                }}
+                className="h-7 px-2 text-2xs font-semibold rounded border border-line-strong bg-surface text-ink"
+              >
+                <option value="">+ Brand chọn (Yes/No)...</option>
+                {BRAND_CHON_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    Brand: {opt}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Mail}
+                onClick={() => handleOpenOutreachForSelection('COMPOSE')}
+              >
+                Gửi mail ({selectedRowIds.length})
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Upload}
+                onClick={handleOpenPushSheetModal}
+              >
+                Đẩy {selectedRowIds.length} dòng lên Sheet
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                icon={Trash2}
+                onClick={handleDeleteSelectedRows}
+              >
+                Xóa ({selectedRowIds.length})
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Khung bật/tắt cột tùy ý (chỉ hiện khi bấm nút Cột) */}
         {isColumnPickerOpen && (
           <div className="p-3 bg-sunken border-b border-line space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
               <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-ink">
                 <span>Cấu hình cột hiển thị:</span>
-                <span className="px-1.5 py-0.5 rounded text-2xs border bg-emerald-50 text-emerald-700 border-emerald-200">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs border bg-emerald-50 text-emerald-700 border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   Tự động: Lấy từ Danh bạ
                 </span>
-                <span className="px-1.5 py-0.5 rounded text-2xs border bg-accent-soft text-accent border-accent/25">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs border bg-accent-soft text-accent border-accent/25">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent" />
                   Công thức: Tự tính
                 </span>
-                <span className="px-1.5 py-0.5 rounded text-2xs border bg-amber-50 text-amber-800 border-amber-200">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs border bg-amber-50 text-amber-800 border-amber-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                   NV điền: Nhập/chọn
                 </span>
               </div>
@@ -3178,23 +3411,16 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => applyColumnPreset('ALL_48')}
-                >
-                  Tất cả ({STAFF_LISTING_COLUMNS.length} cột)
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
                   onClick={() => applyColumnPreset('BRAND_WORKING_FILE')}
                 >
-                  Bản gửi Brand (32 cột)
+                  1. Trình Brand (15 cột trọng tâm)
                 </Button>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => applyColumnPreset('ACCEPTANCE_FILE_32')}
                 >
-                  Chốt Book &amp; Nghiệm thu (AX–BJ)
+                  2. Đi Air &amp; Nghiệm thu
                 </Button>
                 <Button
                   variant="secondary"
@@ -3202,6 +3428,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   onClick={() => applyColumnPreset('LARK_BASE')}
                 >
                   Lark Base (46 cột)
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => applyColumnPreset('ALL_48')}
+                >
+                  Tất cả ({STAFF_LISTING_COLUMNS.length} cột A–BE)
                 </Button>
               </div>
             </div>
@@ -3246,11 +3479,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         )}
 
         {/* Tầng 3: Bảng dữ liệu Sheet Listing */}
-        <div className="overflow-x-auto max-h-[74vh]">
+        <div className="overflow-x-auto max-h-[75vh]">
           <table className="w-full border-collapse text-xs">
             <thead className="sticky top-0 z-20 bg-sunken border-b border-line">
               <tr>
-                <th className="sticky left-0 z-30 bg-sunken px-2 py-1.5 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center">
+                <th className="sticky left-0 z-30 bg-sunken px-1.5 py-2 border-r border-line w-[36px] min-w-[36px] max-w-[36px] text-center">
                   <input
                     type="checkbox"
                     checked={
@@ -3261,7 +3494,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                     className="rounded border-line"
                   />
                 </th>
-                <th className="sticky left-[38px] z-30 bg-sunken px-1.5 py-1.5 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center font-mono text-2xs text-ink-3">
+                <th className="sticky left-[36px] z-30 bg-sunken px-1 py-2 border-r border-line w-[36px] min-w-[36px] max-w-[36px] text-center font-mono text-2xs text-ink-3">
                   STT
                 </th>
                 {visibleColumns.map((col) => {
@@ -3270,42 +3503,50 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   const displayHeader = getDisplayHeader(col);
                   const isSystemReadOnly = STAFF_SHEET_READONLY_SYSTEM_COLUMNS.includes(col.key);
                   const colEditableByRole = isColumnAllowedForCurrentUser(col.key);
+                  const dotColorClass =
+                    col.fillMode === 'AUTO_SYSTEM'
+                      ? 'bg-emerald-500'
+                      : col.fillMode === 'FORMULA'
+                        ? 'bg-accent'
+                        : 'bg-amber-500';
                   return (
                     <th
                       key={col.key}
                       style={
                         isStickyId
-                          ? { width: col.width, minWidth: col.width, maxWidth: col.width }
+                          ? { width: 210, minWidth: 210, maxWidth: 210 }
                           : { minWidth: col.width }
                       }
                       title={
                         isSystemReadOnly
                           ? `Cột ${col.excelCol} (${badge.label}): ${col.header} — Hệ thống tự động tính`
                           : colEditableByRole
-                            ? `Cột ${col.excelCol}: ${col.header} — Được phép chỉnh sửa`
-                            : `Cột ${col.excelCol}: ${col.header} — Khóa sửa theo cấu hình phân quyền của Quản trị viên`
+                            ? `Cột ${col.excelCol} (${badge.label}): ${col.header} — Được phép chỉnh sửa`
+                            : `Cột ${col.excelCol} (${badge.label}): ${col.header} — Khóa sửa theo phân quyền`
                       }
-                      className={`px-2 py-1.5 border-r border-line text-left align-top ${
+                      className={`px-2 py-2 border-r border-line text-left align-middle ${
                         isStickyId
-                          ? 'sticky left-[76px] z-30 bg-sunken shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]'
+                          ? 'sticky left-[72px] z-30 bg-sunken shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]'
                           : ''
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-1 mb-0.5 text-2xs">
-                        <span className="font-mono text-ink-3">
-                          {col.excelCol}
-                        </span>
-                        <span className="inline-flex items-center gap-1 text-ink-3 font-normal">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1 min-w-0 truncate">
+                          <span className="font-mono text-2xs text-ink-3 shrink-0">
+                            {col.excelCol}
+                          </span>
+                          <span className="font-semibold text-ink truncate">
+                            {displayHeader}
+                          </span>
+                        </div>
+                        <span className="inline-flex items-center gap-1 shrink-0">
                           {!isSystemReadOnly && !colEditableByRole && (
                             <Lock className="w-3 h-3 text-ink-3 shrink-0" />
                           )}
-                          <span>
-                            {!isSystemReadOnly && !colEditableByRole ? 'Chỉ xem' : badge.label}
-                          </span>
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${dotColorClass}`}
+                          />
                         </span>
-                      </div>
-                      <div className="font-semibold text-ink leading-tight truncate">
-                        {displayHeader}
                       </div>
                     </th>
                   );
@@ -3487,6 +3728,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   const stickyCellBg = isSelected
                     ? 'bg-accent-soft'
                     : 'bg-surface group-hover:bg-sunken';
+                  const flatInputClass =
+                    'w-full h-7 px-1.5 rounded border border-transparent bg-transparent hover:border-line hover:bg-surface focus:border-ink focus:bg-surface text-xs text-ink focus:outline-none disabled:hover:border-transparent disabled:hover:bg-transparent disabled:text-ink-3 transition-colors';
+                  const flatSelectClass =
+                    'w-full h-7 px-1.5 rounded border border-transparent bg-transparent hover:border-line hover:bg-surface focus:border-ink focus:bg-surface text-xs text-ink focus:outline-none disabled:hover:border-transparent disabled:hover:bg-transparent disabled:text-ink-3 transition-colors cursor-pointer';
                   return (
                     <tr
                       key={row.id}
@@ -3495,7 +3740,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       } transition-colors`}
                     >
                       <td
-                        className={`sticky left-0 z-10 ${stickyCellBg} px-2 py-1.5 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center`}
+                        className={`sticky left-0 z-10 ${stickyCellBg} px-1.5 py-1 border-r border-line w-[36px] min-w-[36px] max-w-[36px] text-center`}
                       >
                         <input
                           type="checkbox"
@@ -3505,16 +3750,16 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         />
                       </td>
                       <td
-                        className={`sticky left-[38px] z-10 ${stickyCellBg} px-1.5 py-1.5 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center font-mono text-2xs text-ink-3 tabular-nums`}
+                        className={`sticky left-[36px] z-10 ${stickyCellBg} px-1 py-1 border-r border-line w-[36px] min-w-[36px] max-w-[36px] text-center font-mono text-2xs text-ink-3 tabular-nums`}
                       >
                         {rIdx + 1}
                       </td>
 
                       {visibleColumns.map((col) => {
                         const isStickyId = col.key === 'idKenh';
-                        const cellBaseClass = `px-2 py-1.5 border-r border-line align-middle ${
+                        const cellBaseClass = `px-1.5 py-1 border-r border-line align-middle ${
                           isStickyId
-                            ? `sticky left-[76px] z-10 ${stickyCellBg} shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]`
+                            ? `sticky left-[72px] z-10 ${stickyCellBg} shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]`
                             : ''
                         }`;
                         const cellCheck = canEditCell(row, col.key);
@@ -3526,13 +3771,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           return (
                             <td
                               key={col.key}
-                              className={`${cellBaseClass} bg-sunken/30`}
+                              className={`${cellBaseClass} bg-sunken/25`}
                               title={`Ghi nhận thời điểm Listing KOC lên bảng: ${String(
                                 row.ngayDien || '—'
                               )}`}
                             >
                               <div className="inline-flex items-center gap-1 font-mono text-2xs text-ink-2 whitespace-nowrap tabular-nums">
-                                <Clock className="w-3 h-3 text-ink-3 shrink-0" />
                                 <span>{String(row.ngayDien || '—')}</span>
                               </div>
                             </td>
@@ -3541,7 +3785,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
                         if (col.key === 'thang' || col.key === 'store') {
                           return (
-                            <td key={col.key} className={`${cellBaseClass} bg-sunken/30`}>
+                            <td key={col.key} className={`${cellBaseClass} bg-sunken/25`}>
                               <span className="truncate block text-xs text-ink-2">
                                 {String(row[col.key] ?? '—')}
                               </span>
@@ -3553,7 +3797,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         if (col.key === 'nhanSuDien') {
                           return (
                             <td key={col.key} className={cellBaseClass}>
-                              <div className="flex items-center justify-between gap-1">
+                              <div className="flex items-center justify-between gap-1 px-1">
                                 <span className="truncate font-medium text-ink">
                                   {row.nhanSuDien || currentUserName}
                                 </span>
@@ -3579,7 +3823,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                 onChange={(e) =>
                                   handleCellChange(row.id, 'dot', e.target.value)
                                 }
-                                className="w-full h-7 px-1.5 rounded border border-line bg-surface text-xs text-ink disabled:bg-sunken disabled:text-ink-3"
+                                className={flatSelectClass}
                               >
                                 {DOT_LISTING_OPTIONS.map((d) => (
                                   <option key={d} value={d}>
@@ -3600,7 +3844,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                 onChange={(e) =>
                                   handleCellChange(row.id, 'contentTag', e.target.value)
                                 }
-                                className="w-full h-7 px-1.5 rounded border border-line bg-surface text-xs text-ink disabled:bg-sunken disabled:text-ink-3"
+                                className={flatSelectClass}
                               >
                                 {CONTENT_TAG_OPTIONS.map((tag) => (
                                   <option key={tag} value={tag}>
@@ -3621,7 +3865,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                 onChange={(e) =>
                                   handleCellChange(row.id, 'tepKenh', e.target.value)
                                 }
-                                className="w-full h-7 px-1.5 rounded border border-line bg-surface text-xs text-ink disabled:bg-sunken disabled:text-ink-3"
+                                className={flatSelectClass}
                               >
                                 {!TEP_KENH_OPTIONS.includes(row.tepKenh) && row.tepKenh && (
                                   <option value={row.tepKenh}>{row.tepKenh}</option>
@@ -3645,7 +3889,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                 onChange={(e) =>
                                   handleCellChange(row.id, 'trangThai', e.target.value)
                                 }
-                                className="w-full h-7 px-1.5 rounded border border-line bg-surface text-xs text-ink disabled:bg-sunken disabled:text-ink-3"
+                                className={flatSelectClass}
                               >
                                 {TRANG_THAI_OPTIONS.map((st) => (
                                   <option key={st} value={st}>
@@ -3666,7 +3910,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                 onChange={(e) =>
                                   handleCellChange(row.id, 'deXuatUpBase', e.target.value)
                                 }
-                                className={`w-full h-7 px-1.5 rounded border text-xs font-medium disabled:opacity-60 ${
+                                className={`w-full h-7 px-1.5 rounded border text-xs font-medium disabled:opacity-60 cursor-pointer ${
                                   row.deXuatUpBase === 'Must Have'
                                     ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                                     : row.deXuatUpBase === 'Recommend'
@@ -3692,16 +3936,23 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                             ngayBrandDuyet: row.ngayBrandDuyet,
                             brandReviewedAt: row.brandReviewedAt,
                           });
+                          const slaTooltip = row.ngayBrandDuyet
+                            ? `Listing: ${row.ngayDien || '—'} → Brand duyệt: ${row.ngayBrandDuyet} | SLA: ${row.slaBrandDuyet || rowSla.label}`
+                            : `Listing lúc: ${row.ngayDien || '—'} | ${rowSla.label}`;
                           return (
-                            <td key={col.key} className={cellBaseClass} title={cellTitle}>
-                              <div className="space-y-1">
+                            <td
+                              key={col.key}
+                              className={cellBaseClass}
+                              title={cellTitle || slaTooltip}
+                            >
+                              <div className="flex items-center gap-1">
                                 <select
                                   disabled={!cellEditable}
                                   value={row.brandChon}
                                   onChange={(e) =>
                                     handleCellChange(row.id, 'brandChon', e.target.value)
                                   }
-                                  className={`w-full h-7 px-1.5 rounded border text-xs font-semibold disabled:opacity-60 ${
+                                  className={`w-full h-7 px-1.5 rounded border text-xs font-semibold disabled:opacity-60 cursor-pointer ${
                                     row.brandChon === 'Yes'
                                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                       : row.brandChon === 'No'
@@ -3717,30 +3968,17 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                     </option>
                                   ))}
                                 </select>
-                                {row.ngayBrandDuyet ? (
-                                  <div
-                                    className="flex items-center justify-between gap-1 text-2xs text-ink-2 font-mono tabular-nums"
-                                    title={`Listing: ${row.ngayDien || '—'} → Brand duyệt: ${row.ngayBrandDuyet} | SLA: ${row.slaBrandDuyet || rowSla.label}`}
-                                  >
-                                    <span className="truncate">Duyệt: {row.ngayBrandDuyet}</span>
-                                  </div>
-                                ) : (
-                                  <div
-                                    className="flex items-center justify-between gap-1 text-2xs text-ink-3 font-mono tabular-nums"
-                                    title={`Listing lúc: ${row.ngayDien || '—'} | ${rowSla.label}`}
-                                  >
-                                    <span className="truncate">Listing: {row.ngayDien || '—'}</span>
-                                  </div>
-                                )}
                                 {row.chuyenListDuyetBook && (
-                                  <div className="flex items-center justify-between gap-1 text-2xs font-medium text-emerald-700 bg-emerald-50/80 border border-emerald-200 rounded px-1.5 py-0.5">
-                                    <span>Đã chốt</span>
-                                    {row.maBooking && (
-                                      <span className="font-mono font-semibold">
-                                        {row.maBooking}
-                                      </span>
-                                    )}
-                                  </div>
+                                  <span
+                                    className="px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-2xs font-semibold text-emerald-700 shrink-0"
+                                    title={
+                                      row.maBooking
+                                        ? `Đã tạo Deal: ${row.maBooking}`
+                                        : 'Đã chốt chuyển sang Bảng Deal'
+                                    }
+                                  >
+                                    {row.maBooking || 'BO'}
+                                  </span>
                                 )}
                               </div>
                             </td>
@@ -3751,7 +3989,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           return (
                             <td
                               key={col.key}
-                              className={`${cellBaseClass} bg-sunken/30`}
+                              className={`${cellBaseClass} bg-sunken/25`}
                               title={
                                 row.ngayBrandDuyet
                                   ? `Listing lúc: ${row.ngayDien || '—'} | Brand phản hồi lúc: ${row.ngayBrandDuyet}`
@@ -3760,11 +3998,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                             >
                               {row.ngayBrandDuyet ? (
                                 <div className="inline-flex items-center gap-1 font-mono text-2xs font-medium text-ink whitespace-nowrap tabular-nums">
-                                  <Clock className="w-3 h-3 text-accent shrink-0" />
                                   <span>{row.ngayBrandDuyet}</span>
                                 </div>
                               ) : (
-                                <span className="text-2xs text-ink-3">Chờ Brand duyệt</span>
+                                <span className="text-2xs text-ink-3">—</span>
                               )}
                             </td>
                           );
@@ -3782,7 +4019,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           return (
                             <td
                               key={col.key}
-                              className={`${cellBaseClass} bg-sunken/30`}
+                              className={`${cellBaseClass} bg-sunken/25`}
                               title={`Thời điểm Listing: ${row.ngayDien || '—'} → Thời điểm Brand duyệt: ${
                                 row.ngayBrandDuyet || 'Chưa duyệt'
                               } (Chuẩn SLA: ≤ 48h)`}
@@ -3806,13 +4043,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
                         if (col.key === 'maBooking') {
                           return (
-                            <td key={col.key} className={`${cellBaseClass} bg-sunken/30`}>
+                            <td key={col.key} className={`${cellBaseClass} bg-sunken/25`}>
                               {row.maBooking ? (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-xs font-semibold text-emerald-800">
                                   {row.maBooking}
                                 </span>
                               ) : (
-                                <span className="text-2xs text-ink-3">Chưa tạo BO</span>
+                                <span className="text-2xs text-ink-3">—</span>
                               )}
                             </td>
                           );
@@ -3830,17 +4067,17 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                     handleCellChange(row.id, 'linkAirNghiemThu', e.target.value)
                                   }
                                   placeholder="Dán link video Air..."
-                                  className="w-full h-7 px-2 rounded border border-line bg-surface text-xs text-ink focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3"
+                                  className={flatInputClass}
                                 />
                                 {row.linkAirNghiemThu && (
                                   <a
                                     href={row.linkAirNghiemThu}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="h-7 w-7 rounded border border-line bg-surface text-accent hover:bg-sunken inline-flex items-center justify-center shrink-0"
+                                    className="h-6 w-6 rounded border border-line bg-surface text-accent hover:bg-sunken inline-flex items-center justify-center shrink-0"
                                     title="Mở video nghiệm thu"
                                   >
-                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    <ExternalLink className="w-3 h-3" />
                                   </a>
                                 )}
                               </div>
@@ -3851,7 +4088,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         if (col.key === 'trangThaiSlaAir') {
                           const slaVal = row.trangThaiSlaAir || 'Chưa lên sóng';
                           return (
-                            <td key={col.key} className={`${cellBaseClass} bg-sunken/30`}>
+                            <td key={col.key} className={`${cellBaseClass} bg-sunken/25`}>
                               <span
                                 className={`inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-semibold border ${
                                   slaVal.startsWith('Trễ')
@@ -3870,7 +4107,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         if (col.key === 'trangThaiThanhToan') {
                           const payVal = row.trangThaiThanhToan || 'Chờ nghiệm thu';
                           return (
-                            <td key={col.key} className={`${cellBaseClass} bg-sunken/30`}>
+                            <td key={col.key} className={`${cellBaseClass} bg-sunken/25`}>
                               <span
                                 className={`inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-semibold border ${
                                   payVal === 'Đã thanh toán'
@@ -3892,7 +4129,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           return (
                             <td
                               key={col.key}
-                              className={`${cellBaseClass} font-mono text-xs font-semibold text-right tabular-nums bg-sunken/30`}
+                              className={`${cellBaseClass} font-mono text-xs font-semibold text-right tabular-nums bg-sunken/25`}
                             >
                               {numVal <= 0 ? '—' : `${numVal.toFixed(2)}x`}
                             </td>
@@ -3919,7 +4156,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                     parseThousandNumberInput(e.target.value)
                                   )
                                 }
-                                className="w-full h-7 px-2 rounded border border-line bg-surface text-right font-mono text-xs text-ink tabular-nums focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3"
+                                className={`${flatInputClass} text-right font-mono tabular-nums`}
                               />
                             </td>
                           );
@@ -3928,7 +4165,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         if (col.key === 'linkKenh') {
                           return (
                             <td key={col.key} className={cellBaseClass}>
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 px-1">
                                 <a
                                   href={row.linkKenh}
                                   target="_blank"
@@ -3957,7 +4194,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           return (
                             <td
                               key={col.key}
-                              className={`${cellBaseClass} font-mono font-semibold text-ink tabular-nums text-right bg-sunken/40`}
+                              className={`${cellBaseClass} font-mono font-semibold text-ink tabular-nums text-right bg-sunken/35`}
                             >
                               {formatVnd(row.phiBookingKemThue)}
                             </td>
@@ -3994,7 +4231,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                     parseThousandNumberInput(e.target.value)
                                   )
                                 }
-                                className="w-full h-7 px-2 rounded border border-line bg-surface text-right font-mono text-xs text-ink tabular-nums focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3"
+                                className={`${flatInputClass} text-right font-mono tabular-nums`}
                               />
                             </td>
                           );
@@ -4020,7 +4257,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                               key={col.key}
                               title={cellTitle}
                               className={`${cellBaseClass} ${
-                                isFormulaCol ? 'bg-sunken/40' : ''
+                                isFormulaCol ? 'bg-sunken/35' : ''
                               }`}
                             >
                               <div className="flex items-center justify-end gap-0.5">
@@ -4037,10 +4274,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                       Number(e.target.value) || 0
                                     )
                                   }
-                                  className={`w-16 h-7 px-1.5 rounded border text-right font-mono text-xs tabular-nums ${
+                                  className={`w-16 h-7 px-1 rounded border text-right font-mono text-xs tabular-nums ${
                                     isFormulaCol
                                       ? 'border-transparent bg-transparent text-ink-2 font-semibold'
-                                      : 'border-line bg-surface text-ink disabled:bg-sunken disabled:text-ink-3'
+                                      : 'border-transparent bg-transparent hover:border-line hover:bg-surface focus:border-ink focus:bg-surface text-ink disabled:text-ink-3'
                                   }`}
                                 />
                                 <span className="text-2xs text-ink-3">%</span>
@@ -4052,14 +4289,17 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         if (col.key === 'idKenh') {
                           const cleanH = normalizeTikTokId(row.idKenh).toLowerCase();
                           const isSent = cleanH && sentEmailHandleSet.has(cleanH);
+                          const tiktokUrl =
+                            row.linkKenh ||
+                            (cleanH ? `https://www.tiktok.com/@${cleanH}` : '');
                           return (
                             <td
                               key={col.key}
-                              style={{ width: col.width, minWidth: col.width, maxWidth: col.width }}
+                              style={{ width: 210, minWidth: 210, maxWidth: 210 }}
                               className={cellBaseClass}
                               title={cellTitle}
                             >
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-0.5">
                                 <input
                                   type="text"
                                   disabled={!cellEditable}
@@ -4072,14 +4312,25 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                     if (cleanH || row.kocId) setQuickViewRow(row);
                                   }}
                                   placeholder={col.header}
-                                  className="w-full min-w-0 h-7 px-2 rounded border border-line bg-surface text-xs text-ink font-semibold focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3"
+                                  className={`${flatInputClass} min-w-0 font-semibold`}
                                 />
+                                {tiktokUrl && (
+                                  <a
+                                    href={tiktokUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title={`Mở kênh TikTok @${cleanH}`}
+                                    className="h-6 w-6 rounded text-ink-3 hover:text-accent hover:bg-surface inline-flex items-center justify-center shrink-0 transition-colors"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                  </a>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => setQuickViewRow(row)}
                                   disabled={!cleanH && !row.kocId}
-                                  title={`Xem nhanh thông tin KOC, hiệu suất kênh & lịch sử hợp tác (@${cleanH || 'KOC'})`}
-                                  className="h-7 w-7 rounded border border-line bg-surface text-accent hover:bg-sunken inline-flex items-center justify-center shrink-0 disabled:opacity-40"
+                                  title={`Xem nhanh hồ sơ KOC, hiệu suất kênh & lịch sử hợp tác (@${cleanH || 'KOC'})`}
+                                  className="h-6 w-6 rounded text-accent hover:bg-surface inline-flex items-center justify-center shrink-0 disabled:opacity-35 transition-colors"
                                 >
                                   <Eye className="w-3.5 h-3.5" />
                                 </button>
@@ -4091,15 +4342,15 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                       ? `Đã gửi thư mời hợp tác (${row.email || 'Xem lại / Gửi tiếp'})`
                                       : `Soạn & gửi mail mời hợp tác cho @${cleanH || 'KOC'}`
                                   }
-                                  className={`h-7 px-1.5 rounded border inline-flex items-center gap-1 shrink-0 transition-colors ${
+                                  className={`relative h-6 w-6 rounded inline-flex items-center justify-center shrink-0 transition-colors ${
                                     isSent
-                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                      : 'bg-surface text-ink-2 border-line hover:bg-sunken hover:text-ink'
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                      : 'text-ink-3 hover:text-ink hover:bg-surface'
                                   }`}
                                 >
                                   <Mail className="w-3.5 h-3.5" />
                                   {isSent && (
-                                    <span className="text-2xs font-semibold">Đã gửi</span>
+                                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500" />
                                   )}
                                 </button>
                               </div>
@@ -4111,31 +4362,19 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           const cleanH = normalizeTikTokId(row.idKenh).toLowerCase();
                           return (
                             <td key={col.key} className={cellBaseClass} title={cellTitle}>
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="text"
-                                  disabled={!cellEditable}
-                                  value={String(row.tenKenh ?? '')}
-                                  onChange={(e) =>
-                                    handleCellChange(row.id, 'tenKenh', e.target.value)
-                                  }
-                                  onDoubleClick={() => {
-                                    if (cleanH || row.kocId) setQuickViewRow(row);
-                                  }}
-                                  placeholder={col.header}
-                                  className="w-full min-w-0 h-7 px-2 rounded border border-line bg-surface text-xs text-ink focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3"
-                                />
-                                {(cleanH || row.kocId) && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setQuickViewRow(row)}
-                                    title="Mở hồ sơ, hiệu suất & lịch sử KOC"
-                                    className="h-7 px-1.5 rounded border border-line bg-surface text-2xs font-medium text-accent hover:bg-sunken shrink-0"
-                                  >
-                                    Hồ sơ
-                                  </button>
-                                )}
-                              </div>
+                              <input
+                                type="text"
+                                disabled={!cellEditable}
+                                value={String(row.tenKenh ?? '')}
+                                onChange={(e) =>
+                                  handleCellChange(row.id, 'tenKenh', e.target.value)
+                                }
+                                onDoubleClick={() => {
+                                  if (cleanH || row.kocId) setQuickViewRow(row);
+                                }}
+                                placeholder={col.header}
+                                className={flatInputClass}
+                              />
                             </td>
                           );
                         }
@@ -4152,13 +4391,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                     handleCellChange(row.id, 'email', e.target.value)
                                   }
                                   placeholder="email@gmail.com"
-                                  className="w-full h-7 px-2 rounded border border-line bg-surface text-xs text-ink focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3"
+                                  className={flatInputClass}
                                 />
                                 <button
                                   type="button"
                                   onClick={() => handleOpenOutreachForSingleRow(row)}
                                   title="Mở hộp thoại gửi mail mời hợp tác"
-                                  className="h-7 w-7 rounded border border-line bg-surface text-ink-2 hover:text-ink hover:bg-sunken inline-flex items-center justify-center shrink-0"
+                                  className="h-6 w-6 rounded text-ink-3 hover:text-ink hover:bg-surface inline-flex items-center justify-center shrink-0"
                                 >
                                   <Mail className="w-3.5 h-3.5" />
                                 </button>
@@ -4196,7 +4435,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                 handleCellChange(row.id, col.key, e.target.value)
                               }
                               placeholder={col.header}
-                              className="w-full h-7 px-2 rounded border border-line bg-surface text-xs text-ink focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3"
+                              className={flatInputClass}
                             />
                           </td>
                         );

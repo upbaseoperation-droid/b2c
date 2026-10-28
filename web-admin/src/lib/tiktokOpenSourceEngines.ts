@@ -19,6 +19,9 @@ function getServerCrypto(): typeof CryptoType {
 const DEFAULT_BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
+const MOBILE_IOS_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
+
 const VIDEO_CACHE_TTL_MS = 30 * 60 * 1000; // 30 phút
 const SEARCH_CACHE_TTL_MS = 20 * 60 * 1000; // 20 phút
 const COMMENT_CACHE_TTL_MS = 15 * 60 * 1000; // 15 phút
@@ -260,7 +263,8 @@ function mergeCookieStrings(...cookieParts: Array<string | undefined>): string {
  */
 export async function fetchTikTokHtmlWithWafBypass(
   url: string,
-  timeoutMs = 6500
+  timeoutMs = 6500,
+  options?: { useMobileUa?: boolean }
 ): Promise<{ html: string; finalUrl: string; cookies?: string; wafBypassed?: boolean } | null> {
   const store = getSharedCrawlerStore();
   return store.tiktokLimiter.run(async () => {
@@ -271,11 +275,21 @@ export async function fetchTikTokHtmlWithWafBypass(
           ? store.wafSessionCookie.cookie
           : undefined;
 
-      const r1Headers: Record<string, string> = {
-        'User-Agent': DEFAULT_BROWSER_UA,
+      const activeUa = options?.useMobileUa ? MOBILE_IOS_UA : DEFAULT_BROWSER_UA;
+      const baseHeaders: Record<string, string> = {
+        'User-Agent': activeUa,
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
+        Referer: 'https://www.tiktok.com/',
+        ...(options?.useMobileUa
+          ? {
+              'Sec-CH-UA-Mobile': '?1',
+              'Sec-CH-UA-Platform': '"iOS"',
+            }
+          : {}),
       };
+
+      const r1Headers: Record<string, string> = { ...baseHeaders };
       if (cachedWafCookie) {
         r1Headers.Cookie = cachedWafCookie;
       }
@@ -312,9 +326,7 @@ export async function fetchTikTokHtmlWithWafBypass(
       const r2 = await fetch(finalUrl, {
         method: 'GET',
         headers: {
-          'User-Agent': DEFAULT_BROWSER_UA,
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
+          ...baseHeaders,
           Cookie: combinedCookie1,
         },
         redirect: 'follow',
@@ -350,9 +362,7 @@ export async function fetchTikTokHtmlWithWafBypass(
       const r3 = await fetch(finalUrl2, {
         method: 'GET',
         headers: {
-          'User-Agent': DEFAULT_BROWSER_UA,
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
+          ...baseHeaders,
           Cookie: combinedCookie2,
         },
         redirect: 'follow',
@@ -392,6 +402,9 @@ export interface TikTokCartProductItem {
   productUrl: string;
   coverUrl?: string;
   categoryName?: string;
+  priceText?: string;
+  priceVnd?: number;
+  soldCount?: number;
   source?: string;
 }
 
@@ -418,6 +431,8 @@ export interface RealTikTokVideoAndAuthorDetail {
   cartProducts?: TikTokCartProductItem[];
   onScreenStickers?: string[];
   subtitleUrl?: string;
+  transcriptText?: string;
+  playableUrl?: string;
   author: {
     handle: string;
     secUid?: string;
@@ -665,7 +680,31 @@ export function extractTikTokShopAnchorInfo(itemStruct: Record<string, unknown>)
             ? innerObj.cover_url.trim()
             : typeof innerObj?.cover === 'string' && innerObj.cover.trim().startsWith('http')
             ? innerObj.cover.trim()
+            : typeof innerObj?.thumbnail === 'string' && innerObj.thumbnail.trim().startsWith('http')
+            ? innerObj.thumbnail.trim()
             : undefined;
+
+        const rawPriceCandidate =
+          innerObj?.format_price ||
+          innerObj?.formatted_price ||
+          innerObj?.price_str ||
+          innerObj?.priceStr ||
+          innerObj?.display_price ||
+          innerObj?.sale_price_format ||
+          innerObj?.real_price_format ||
+          innerObj?.sale_price ||
+          innerObj?.price ||
+          outerObj.price_str ||
+          outerObj.format_price ||
+          anchor.price_str;
+        const priceText =
+          typeof rawPriceCandidate === 'string' && rawPriceCandidate.trim()
+            ? rawPriceCandidate.trim()
+            : typeof rawPriceCandidate === 'number' && rawPriceCandidate > 0
+            ? `${Math.round(rawPriceCandidate).toLocaleString('vi-VN')} đ`
+            : undefined;
+        const priceDigits = priceText ? Number(priceText.replace(/[^\d]/g, '')) : 0;
+        const priceVnd = Number.isFinite(priceDigits) && priceDigits > 0 ? priceDigits : undefined;
 
         if (productId || productUrl || innerObj?.source === 'TikTok Shop' || isShopEntry || innerTitle) {
           hasCartAnchor = true;
@@ -687,6 +726,8 @@ export function extractTikTokShopAnchorInfo(itemStruct: Record<string, unknown>)
               productUrl,
               coverUrl,
               categoryName,
+              priceText,
+              priceVnd,
               source:
                 typeof innerObj?.source === 'string' ? innerObj.source : 'TikTok Shop',
             });
@@ -1196,6 +1237,22 @@ export function parseTikTokItemStructToDetail(itemStruct: Record<string, any> | 
     preferredSub?.Url ||
     (Array.isArray(preferredSub?.urlList) ? preferredSub.urlList[0] : undefined);
 
+  // Bóc tách đường dẫn tải video gốc Không Logo (No-Watermark MP4) từ playAddr / downloadAddr theo kỹ thuật Ông Chú MMO
+  const playAddrObj = itemStruct.video?.playAddr || itemStruct.video?.play_addr || itemStruct.video?.downloadAddr;
+  const playUrlCandidates: string[] =
+    typeof playAddrObj === 'string'
+      ? [playAddrObj]
+      : Array.isArray(playAddrObj?.url_list)
+      ? playAddrObj.url_list
+      : Array.isArray(playAddrObj?.urlList)
+      ? playAddrObj.urlList
+      : typeof playAddrObj?.url === 'string'
+      ? [playAddrObj.url]
+      : [];
+  const playableUrl = playUrlCandidates.find(
+    (u) => typeof u === 'string' && /^https:\/\/[\w.-]+\.(?:tiktokcdn|tiktokcdn-us|tiktokv|muscdn|byteoversea|byteicdn)\.com\//i.test(u)
+  );
+
   const rawCaption =
     String(itemStruct.desc || '').trim() ||
     imagePostTitle ||
@@ -1266,6 +1323,7 @@ export function parseTikTokItemStructToDetail(itemStruct: Record<string, any> | 
     cartProducts,
     onScreenStickers: onScreenStickers.length > 0 ? onScreenStickers : undefined,
     subtitleUrl,
+    playableUrl,
     author: {
       handle,
       secUid,
@@ -1527,6 +1585,44 @@ export async function inspectLiveTikTokVideoPage(
       const result = parseTikTokItemStructToDetail(itemStruct);
       if (!result) return null;
 
+      // Nếu phát hiện video có giỏ hàng (hoặc bị CapCut type 54 đè trên bản Desktop) nhưng chưa lấy được chi tiết sản phẩm,
+      // tự động gọi nhánh Mobile iOS 17 Safari (kỹ thuật Ông Chú MMO __tpt_mobile=1) để lấy trọn vẹn anchors type 33/35/38
+      if (
+        (result.hasCartAnchor || itemStruct?.AnchorTypes?.includes?.('54')) &&
+        (!result.cartProducts || result.cartProducts.length === 0)
+      ) {
+        const mobileFetched = await fetchTikTokHtmlWithWafBypass(videoUrl, 5500, {
+          useMobileUa: true,
+        });
+        if (mobileFetched?.html) {
+          const mobMatch = mobileFetched.html.match(
+            /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
+          );
+          if (mobMatch?.[1]) {
+            try {
+              const mobJson = JSON.parse(mobMatch[1]);
+              const mobScope = mobJson?.__DEFAULT_SCOPE__ || {};
+              const mobStruct =
+                (mobScope?.['webapp.video-detail'] || mobScope?.['webapp.reflow.video.detail'])
+                  ?.itemInfo?.itemStruct;
+              if (mobStruct) {
+                const mobAnchor = extractTikTokShopAnchorInfo(mobStruct);
+                if (mobAnchor.cartProducts.length > 0) {
+                  result.hasCartAnchor = true;
+                  result.cartProducts = mobAnchor.cartProducts;
+                  result.cartAnchorTitle = mobAnchor.cartAnchorTitle || result.cartAnchorTitle;
+                  result.cartAnchorUrl = mobAnchor.cartAnchorUrl || result.cartAnchorUrl;
+                  result.cartProductId = mobAnchor.cartProductId || result.cartProductId;
+                  result.cartSellerId = mobAnchor.cartSellerId || result.cartSellerId;
+                }
+              }
+            } catch {
+              // ignore mobile parse error
+            }
+          }
+        }
+      }
+
       setBoundedCache(store.videoDetailCache, normalizedKey, result, VIDEO_CACHE_TTL_MS, 2500);
       return result;
     } catch {
@@ -1540,6 +1636,126 @@ export async function inspectLiveTikTokVideoPage(
   } finally {
     store.inFlightVideoDetail.delete(normalizedKey);
   }
+}
+
+/**
+ * Cho phép Chrome Extension đẩy trực tiếp dữ liệu Video, Giỏ hàng (cartProducts), Phụ đề (transcriptText)
+ * và Link tải MP4 không logo (playableUrl) đã bắt từ trình duyệt thật vào bộ nhớ đệm của máy chủ Web-Admin.
+ */
+export function injectExtensionCapturedVideoToCache(payload: {
+  videoId: string;
+  videoUrl?: string;
+  handle: string;
+  displayName?: string;
+  nickname?: string;
+  avatarUrl?: string;
+  bio?: string;
+  followers?: number;
+  caption?: string;
+  hashtags?: string[];
+  publishedAt?: string;
+  durationSeconds?: number;
+  views?: number;
+  likes?: number;
+  comments?: number;
+  shares?: number;
+  saves?: number;
+  hasCartAnchor?: boolean;
+  cartAnchorTitle?: string;
+  cartAnchorUrl?: string;
+  cartProductId?: string;
+  cartSellerId?: string;
+  cartProducts?: TikTokCartProductItem[];
+  onScreenStickers?: string[];
+  subtitleUrl?: string;
+  transcriptText?: string;
+  playableUrl?: string;
+}): RealTikTokVideoAndAuthorDetail | null {
+  const cleanHandle = String(payload.handle || '').trim().toLowerCase().replace(/^@+/, '');
+  const cleanVideoId = String(payload.videoId || '').trim();
+  if (!cleanHandle || !cleanVideoId) return null;
+
+  const canonicalUrl = `https://www.tiktok.com/@${cleanHandle}/video/${cleanVideoId}`;
+  const views = Math.max(0, Math.round(Number(payload.views || 0)));
+  const likes = Math.max(0, Math.round(Number(payload.likes || 0)));
+  const comments = Math.max(0, Math.round(Number(payload.comments || 0)));
+  const shares = Math.max(0, Math.round(Number(payload.shares || 0)));
+  const saves = Math.max(0, Math.round(Number(payload.saves || 0)));
+  const engagementRate =
+    views === 0 ? 0 : Number((((likes + comments + shares) / views) * 100).toFixed(2));
+  const cartProducts = Array.isArray(payload.cartProducts) ? payload.cartProducts : [];
+  const primaryProd = cartProducts[0];
+
+  const detail: RealTikTokVideoAndAuthorDetail = {
+    videoId: cleanVideoId,
+    videoUrl: canonicalUrl,
+    caption: String(payload.caption || `Video kênh @${cleanHandle}`),
+    hashtags: Array.isArray(payload.hashtags) ? payload.hashtags : [],
+    publishedAt: String(payload.publishedAt || getVietnamDateYmd()),
+    createTimeSec: extractUnixSecFromTikTokVideoId(cleanVideoId) || Math.floor(Date.now() / 1000),
+    durationSeconds: Number(payload.durationSeconds || 35),
+    musicTitle: `Nhạc nền - @${cleanHandle}`,
+    views,
+    likes,
+    comments,
+    shares,
+    saves,
+    engagementRate,
+    hasCartAnchor: Boolean(payload.hasCartAnchor || cartProducts.length > 0),
+    cartAnchorTitle: payload.cartAnchorTitle || primaryProd?.title,
+    cartAnchorUrl: payload.cartAnchorUrl || primaryProd?.productUrl,
+    cartProductId: payload.cartProductId || primaryProd?.productId,
+    cartSellerId: payload.cartSellerId || primaryProd?.sellerId,
+    cartProducts,
+    onScreenStickers: payload.onScreenStickers,
+    subtitleUrl: payload.subtitleUrl,
+    transcriptText: payload.transcriptText,
+    playableUrl: payload.playableUrl,
+    author: {
+      handle: cleanHandle,
+      nickname: String(payload.displayName || payload.nickname || cleanHandle),
+      bio: String(payload.bio || ''),
+      avatarUrl: payload.avatarUrl,
+      isVerified: false,
+      followers: Math.max(0, Math.round(Number(payload.followers || 0))),
+      following: 0,
+      totalLikes: 0,
+      videoCount: 0,
+    },
+  };
+
+  const store = getSharedCrawlerStore();
+  setBoundedCache(
+    store.videoDetailCache,
+    canonicalUrl.toLowerCase(),
+    detail,
+    VIDEO_CACHE_TTL_MS * 2,
+    2500
+  );
+  setBoundedCache(
+    store.videoDetailCache,
+    cleanVideoId,
+    detail,
+    VIDEO_CACHE_TTL_MS * 2,
+    2500
+  );
+  setBoundedCache(
+    store.videoDetailCache,
+    `${cleanHandle}_${cleanVideoId}`,
+    detail,
+    VIDEO_CACHE_TTL_MS * 2,
+    2500
+  );
+  if (payload.videoUrl) {
+    setBoundedCache(
+      store.videoDetailCache,
+      payload.videoUrl.trim().split('?')[0].toLowerCase(),
+      detail,
+      VIDEO_CACHE_TTL_MS * 2,
+      2500
+    );
+  }
+  return detail;
 }
 
 const BING_US_WIDGET_BLACKLIST = new Set([
@@ -3052,80 +3268,94 @@ export async function discoverRealTikTokVideoUrlsByQuery(
   return [...discovered.values()];
 }
 
-const BUYING_INTENT_KEYWORDS = [
-  'giá',
-  'bao nhiêu',
-  'mua ở đâu',
-  'mua o dau',
-  'giỏ hàng',
-  'gio hang',
-  'xin link',
-  'cho xin',
-  'da dầu',
-  'da nhạy cảm',
-  'da khô',
-  'da mụn',
-  'bầu dùng',
-  'tư vấn',
-  'ib',
-  'inbox',
-  'shop ơi',
-  'chính hãng',
-  'hàng chuẩn',
-  'có nâng tông',
-  'kiềm dầu',
-  'săn sale',
-  'mã giảm',
-  'đặt hàng',
-  'ship',
-  'how much',
-  'where to buy',
-  'link',
-  'price',
-];
-
-const FEEDBACK_KEYWORDS = [
-  'đã mua',
-  'mới nhận',
-  'dùng hợp',
-  'dùng thích',
-  'thấm nhanh',
-  'không bết',
-  'mùi thơm',
-  'đáng tiền',
-  'ưng lắm',
-  'xài êm',
-  'dùng hết',
-  'lọ thứ',
-  'tuýp thứ',
-  'good',
-  'love this',
-  'amazing',
-];
-
-function classifyCommentIntent(text: string): {
+// Bộ từ điển 10 nhóm Ý định mua hàng & Phản hồi / Rủi ro bình luận tiếng Việt (có dấu & không dấu)
+const COMMENT_INTENT_PATTERNS: Array<{
+  category: string;
   intentType: TikTokCommentIntentType;
   intentLabel: string;
+  regex: RegExp;
+}> = [
+  {
+    category: 'contact',
+    intentType: 'BUYING_INTENT',
+    intentLabel: 'Để lại SĐT / Xin tư vấn chốt đơn',
+    regex: /\b(0[35789]\d{8})\b|\b(ib|inbox|check\s*ib|rep\s*ib|nhắn\s*tin|nhan\s*tin|tư\s*vấn|tu\s*van|zalo|liên\s*hệ|lien\s*he)\b/i,
+  },
+  {
+    category: 'whereToBuy',
+    intentType: 'BUYING_INTENT',
+    intentLabel: 'Hỏi chỗ mua / Xin link giỏ hàng',
+    regex: /\b(mua\s*ở\s*đâu|mua\s*o\s*dau|xin\s*link|cho\s*xin\s*link|link\s*mua|giỏ\s*hàng|gio\s*hang|ghim\s*giỏ|ghim\s*gio|đặt\s*hàng|dat\s*hang|chốt\s*đơn|chot\s*don|where\s*to\s*buy|shop\s*ơi|shop\s*oi)\b/i,
+  },
+  {
+    category: 'price',
+    intentType: 'BUYING_INTENT',
+    intentLabel: 'Hỏi giá / Săn mã giảm giá',
+    regex: /\b(giá\s*bao\s*nhiêu|gia\s*bao\s*nhieu|bao\s*nhiêu\s*tiền|bao\s*nhieu\s*tien|mấy\s*tiền|nhiêu\s*vậy|giá\s*sao|gia\s*sao|rổ\s*giá|mã\s*giảm|ma\s*giam|voucher|săn\s*sale|san\s*sale|how\s*much|price)\b/i,
+  },
+  {
+    category: 'stock',
+    intentType: 'BUYING_INTENT',
+    intentLabel: 'Hỏi tồn kho / Phân loại / Dung tích',
+    regex: /\b(còn\s*hàng\s*không|con\s*hang\s*khong|còn\s*không\s*shop|hết\s*hàng|het\s*hang|còn\s*size|con\s*size|màu\s*nào|mau\s*nao|bản\s*nào|loại\s*nào|loai\s*nao|bao\s*nhiêu\s*ml|fullsize|mini)\b/i,
+  },
+  {
+    category: 'shipping',
+    intentType: 'BUYING_INTENT',
+    intentLabel: 'Hỏi giao hàng / Phí vận chuyển',
+    regex: /\b(freeship|free\s*ship|miễn\s*ship|mien\s*ship|phí\s*ship|phi\s*ship|giao\s*hàng|giao\s*hang|mấy\s*ngày\s*nhận|ship\s*tỉnh|hoả\s*tốc|hoa\s*toc)\b/i,
+  },
+  {
+    category: 'suitability',
+    intentType: 'BUYING_INTENT',
+    intentLabel: 'Hỏi độ phù hợp (Loại da / Cơ địa / Bầu)',
+    regex: /\b(da\s*dầu|da\s*dau|da\s*khô|da\s*kho|da\s*nhạy\s*cảm|da\s*nhay\s*cam|da\s*mụn|da\s*mun|mẹ\s*bầu|bà\s*bầu|bầu\s*dùng|cho\s*con\s*bú|tuổi\s*dùng|có\s*hợp\s*không|co\s*hop\s*khong|có\s*kích\s*ứng|nâng\s*tông|kiềm\s*dầu)\b/i,
+  },
+  {
+    category: 'authenticity',
+    intentType: 'PRODUCT_FEEDBACK',
+    intentLabel: 'Cảnh báo / Thắc mắc Hàng chính hãng (Auth/Fake)',
+    regex: /\b(hàng\s*giả|hang\s*gia|hàng\s*fake|hang\s*fake|auth\s*hay\s*fake|chính\s*hãng\s*không|chinh\s*hang\s*khong|check\s*code|check\s*mã|tem\s*phụ|mall\s*không|sợ\s*fake|coi\s*chừng\s*fake)\b/i,
+  },
+  {
+    category: 'complaint',
+    intentType: 'PRODUCT_FEEDBACK',
+    intentLabel: 'Phàn nàn chất lượng / Kích ứng / Bị lỗi',
+    regex: /\b(nổi\s*mụn|noi\s*mun|kích\s*ứng|kich\s*ung|dị\s*ứng|di\s*ung|vón\s*cục|von\s*cuc|bết\s*dính|phí\s*tiền|phi\s*tien|không\s*hiệu\s*quả|khong\s*hieu\s*qua|vỡ\s*hàng|bể\s*nắp|giao\s*sai)\b/i,
+  },
+  {
+    category: 'promoDistrust',
+    intentType: 'PRODUCT_FEEDBACK',
+    intentLabel: 'Nghi ngờ Seeding / Quảng cáo quá đà',
+    regex: /\b(quảng\s*cáo\s*lố|quang\s*cao\s*lo|seeding|ăn\s*tiền\s*quảng\s*cáo|pr\s*ảo|review\s*ảo|lùa\s*gà|lua\s*ga|đừng\s*tin|dung\s*tin)\b/i,
+  },
+  {
+    category: 'socialProof',
+    intentType: 'PRODUCT_FEEDBACK',
+    intentLabel: 'Khách đã mua khen / Trải nghiệm tích cực',
+    regex: /\b(đã\s*mua|da\s*mua|mới\s*nhận|moi\s*nhan|dùng\s*hợp|dung\s*hop|dùng\s*thích|thấm\s*nhanh|không\s*bết|mùi\s*thơm|đáng\s*tiền|ưng\s*lắm|xài\s*êm|dùng\s*hết|lọ\s*thứ|tuýp\s*thứ|chính\s*hãng|hàng\s*chuẩn|love\s*this|amazing)\b/i,
+  },
+];
+
+export function classifyCommentIntent(text: string): {
+  intentType: TikTokCommentIntentType;
+  intentLabel: string;
+  category?: string;
 } {
-  const lower = (text || '').toLowerCase();
-  if (
-    BUYING_INTENT_KEYWORDS.some((kw) => lower.includes(kw)) ||
-    /\b(0[35789]\d{8})\b/.test(lower)
-  ) {
-    return {
-      intentType: 'BUYING_INTENT',
-      intentLabel: 'Hỏi mua hàng / Xin tư vấn',
-    };
-  }
-  if (FEEDBACK_KEYWORDS.some((kw) => lower.includes(kw))) {
-    return {
-      intentType: 'PRODUCT_FEEDBACK',
-      intentLabel: 'Phản hồi / Trải nghiệm SP',
-    };
+  const clean = (text || '').trim();
+  for (const rule of COMMENT_INTENT_PATTERNS) {
+    if (rule.regex.test(clean)) {
+      return {
+        intentType: rule.intentType,
+        intentLabel: rule.intentLabel,
+        category: rule.category,
+      };
+    }
   }
   return {
     intentType: 'GENERAL',
     intentLabel: 'Bình luận tương tác',
+    category: 'general',
   };
 }
 
