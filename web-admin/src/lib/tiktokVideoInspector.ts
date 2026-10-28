@@ -838,11 +838,21 @@ export function detectProductMentionMoments(params: {
     }
   }
 
-  // 3. Cụm danh mục sản phẩm (VD: "kem chống nắng", "sữa rửa mặt", "ốp lưng"...) có xuất hiện trong tên sản phẩm hoặc bài đăng
+  // 3. Cụm danh mục sản phẩm (VD: "kem chống nắng", "sữa rửa mặt", "ốp lưng"...) có xuất hiện trong tên sản phẩm, hashtag không dấu hoặc lời thoại
   const foldedAllTitles = foldForMatch(allProductTitles);
+  const spacelessAllTitles = foldedAllTitles.replace(/\s+/g, '');
+  const foldedAllSegments = foldForMatch(segments.map((s) => s.text).join(' '));
   for (const phrase of PRODUCT_CATEGORY_PHRASES) {
-    if (!foldedAllTitles || foldedAllTitles.includes(foldForMatch(phrase))) {
+    const foldedPhrase = foldForMatch(phrase);
+    const spacelessPhrase = foldedPhrase.replace(/\s+/g, '');
+    if (
+      !foldedAllTitles ||
+      foldedAllTitles.includes(foldedPhrase) ||
+      (spacelessPhrase.length >= 5 && spacelessAllTitles.includes(spacelessPhrase))
+    ) {
       addCandidate(phrase, 2);
+    } else if (foldedAllSegments.includes(foldedPhrase)) {
+      addCandidate(phrase, 3);
     }
   }
 

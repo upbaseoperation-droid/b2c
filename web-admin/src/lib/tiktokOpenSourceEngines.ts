@@ -73,6 +73,7 @@ interface SharedTikTokCrawlerStore {
   >;
   inFlightCreatorVideoList: Map<string, Promise<RealTikTokVideoAndAuthorDetail[]>>;
   wafSessionCookie?: { cookie: string; expiresAt: number };
+  mobileWafSessionCookie?: { cookie: string; expiresAt: number };
   searchHtmlCache: Map<
     string,
     { data: Array<{ handle: string; videoId: string; videoUrl: string }>; expiresAt: number }
@@ -270,18 +271,23 @@ export async function fetchTikTokHtmlWithWafBypass(
   return store.tiktokLimiter.run(async () => {
     try {
       const now = Date.now();
+      const isMobile = Boolean(options?.useMobileUa);
+      const activeCookieSlot = isMobile ? store.mobileWafSessionCookie : store.wafSessionCookie;
       const cachedWafCookie =
-        store.wafSessionCookie && store.wafSessionCookie.expiresAt > now
-          ? store.wafSessionCookie.cookie
+        activeCookieSlot && activeCookieSlot.expiresAt > now
+          ? activeCookieSlot.cookie
           : undefined;
 
-      const activeUa = options?.useMobileUa ? MOBILE_IOS_UA : DEFAULT_BROWSER_UA;
+      const activeUa = isMobile ? MOBILE_IOS_UA : DEFAULT_BROWSER_UA;
       const baseHeaders: Record<string, string> = {
         'User-Agent': activeUa,
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
         Referer: 'https://www.tiktok.com/',
-        ...(options?.useMobileUa
+        'X-Forwarded-For': '14.161.22.108',
+        'X-Real-IP': '14.161.22.108',
+        'CF-IPCountry': 'VN',
+        ...(isMobile
           ? {
               'Sec-CH-UA-Mobile': '?1',
               'Sec-CH-UA-Platform': '"iOS"',
@@ -289,13 +295,15 @@ export async function fetchTikTokHtmlWithWafBypass(
           : {}),
       };
 
-      const vnRegionCookie = 'store-country-code=vn; store-country-code-src=uid; tt-target-idc=alisg';
+      const vnRegionCookie =
+        'store-country-code=vn; store-country-code-src=uid; tt-target-idc=alisg; tiktok_webapp_theme=light; ttwid=1%7C15aHll9t7AZRwvrCsSx2d3XrbTNJaMExICHWcNaR9pc%7C1793208695%7Cde66e96e64ad0a808b69318737111a0003e074067cb4c1a67a054344e7c0988c';
       const r1Headers: Record<string, string> = {
         ...baseHeaders,
         Cookie: mergeCookieStrings(vnRegionCookie, cachedWafCookie),
       };
 
-      const r1 = await fetch(url, {
+      const targetUrl = url.includes('?') ? url : `${url}?lang=vi-VN`;
+      const r1 = await fetch(targetUrl, {
         method: 'GET',
         headers: r1Headers,
         redirect: 'follow',
@@ -313,7 +321,7 @@ export async function fetchTikTokHtmlWithWafBypass(
       const html1 = await r1.text();
       const wafCookie1 = solveTikTokWafHtml(html1);
       if (!wafCookie1) {
-        const merged1 = mergeCookieStrings(cachedWafCookie, ...setCookies1);
+        const merged1 = mergeCookieStrings(vnRegionCookie, cachedWafCookie, ...setCookies1);
         return {
           html: html1,
           finalUrl,
@@ -322,9 +330,9 @@ export async function fetchTikTokHtmlWithWafBypass(
         };
       }
 
-      const combinedCookie1 = mergeCookieStrings(...setCookies1, wafCookie1);
+      const combinedCookie1 = mergeCookieStrings(vnRegionCookie, ...setCookies1, wafCookie1);
 
-      const r2 = await fetch(finalUrl, {
+      const r2 = await fetch(`${finalUrl}?lang=vi-VN`, {
         method: 'GET',
         headers: {
           ...baseHeaders,
@@ -345,11 +353,18 @@ export async function fetchTikTokHtmlWithWafBypass(
 
       const wafCookie2 = solveTikTokWafHtml(html2);
       if (!wafCookie2) {
-        const solvedJar2 = mergeCookieStrings(combinedCookie1, ...setCookies2);
-        store.wafSessionCookie = {
-          cookie: solvedJar2,
-          expiresAt: Date.now() + 10 * 60 * 1000,
-        };
+        const solvedJar2 = mergeCookieStrings(vnRegionCookie, combinedCookie1, ...setCookies2);
+        if (isMobile) {
+          store.mobileWafSessionCookie = {
+            cookie: solvedJar2,
+            expiresAt: Date.now() + 10 * 60 * 1000,
+          };
+        } else {
+          store.wafSessionCookie = {
+            cookie: solvedJar2,
+            expiresAt: Date.now() + 10 * 60 * 1000,
+          };
+        }
         return {
           html: html2,
           finalUrl: finalUrl2,
@@ -358,9 +373,9 @@ export async function fetchTikTokHtmlWithWafBypass(
         };
       }
 
-      const combinedCookie2 = mergeCookieStrings(combinedCookie1, ...setCookies2, wafCookie2);
+      const combinedCookie2 = mergeCookieStrings(vnRegionCookie, combinedCookie1, ...setCookies2, wafCookie2);
 
-      const r3 = await fetch(finalUrl2, {
+      const r3 = await fetch(`${finalUrl2}?lang=vi-VN`, {
         method: 'GET',
         headers: {
           ...baseHeaders,
@@ -377,11 +392,18 @@ export async function fetchTikTokHtmlWithWafBypass(
         .map((c) => c.split(';')[0].trim())
         .filter(Boolean);
       const html3 = await r3.text();
-      const solvedJar3 = mergeCookieStrings(combinedCookie2, ...setCookies3);
-      store.wafSessionCookie = {
-        cookie: solvedJar3,
-        expiresAt: Date.now() + 10 * 60 * 1000,
-      };
+      const solvedJar3 = mergeCookieStrings(vnRegionCookie, combinedCookie2, ...setCookies3);
+      if (isMobile) {
+        store.mobileWafSessionCookie = {
+          cookie: solvedJar3,
+          expiresAt: Date.now() + 10 * 60 * 1000,
+        };
+      } else {
+        store.wafSessionCookie = {
+          cookie: solvedJar3,
+          expiresAt: Date.now() + 10 * 60 * 1000,
+        };
+      }
       return {
         html: html3,
         finalUrl: r3.url ? r3.url.split('?')[0] : finalUrl2,
@@ -435,6 +457,7 @@ export interface RealTikTokVideoAndAuthorDetail {
   transcriptText?: string;
   playableUrl?: string;
   coverUrl?: string;
+  cartDebug?: string;
   author: {
     handle: string;
     secUid?: string;
@@ -1433,7 +1456,7 @@ export async function fetchTikTokCreatorVideoListBySecUid(
   rawHandle: string,
   secUid: string,
   maxItems = 40,
-  options?: { forceRefresh?: boolean }
+  options?: { forceRefresh?: boolean; initialCursorMs?: number }
 ): Promise<RealTikTokVideoAndAuthorDetail[]> {
   const cleanHandle = rawHandle.trim().toLowerCase().replace(/^@+/, '');
   const cleanSecUid = (secUid || '').trim();
@@ -1444,8 +1467,10 @@ export async function fetchTikTokCreatorVideoListBySecUid(
   const cacheKey = `${cleanHandle}_${cleanSecUid}`;
   const now = Date.now();
 
-  if (options?.forceRefresh) {
-    store.creatorVideoListCache.delete(cacheKey);
+  if (options?.forceRefresh || options?.initialCursorMs) {
+    if (options?.forceRefresh) {
+      store.creatorVideoListCache.delete(cacheKey);
+    }
   } else {
     const cached = store.creatorVideoListCache.get(cacheKey);
     if (
@@ -1465,9 +1490,13 @@ export async function fetchTikTokCreatorVideoListBySecUid(
   const taskPromise = (async (): Promise<RealTikTokVideoAndAuthorDetail[]> => {
     const deviceId =
       '7' + Array.from({ length: 18 }, () => Math.floor(Math.random() * 10)).join('');
-    let cursor = Date.now();
+    let cursor = options?.initialCursorMs && options.initialCursorMs > 1000000000000
+      ? options.initialCursorMs
+      : Date.now();
     const collected = new Map<string, RealTikTokVideoAndAuthorDetail>();
     const maxPages = Math.min(Math.ceil(targetCount / 14) + 1, 8);
+    const vnRegionCookie =
+      'store-country-code=vn; store-country-code-src=uid; tt-target-idc=alisg; tiktok_webapp_theme=light; ttwid=1%7C15aHll9t7AZRwvrCsSx2d3XrbTNJaMExICHWcNaR9pc%7C1793208695%7Cde66e96e64ad0a808b69318737111a0003e074067cb4c1a67a054344e7c0988c';
 
     for (let page = 0; page < maxPages && collected.size < targetCount; page++) {
       const currentCursor = cursor;
@@ -1507,24 +1536,58 @@ export async function fetchTikTokCreatorVideoListBySecUid(
             webcast_language: 'vi-VN',
           });
 
+          const activeWafCookie =
+            store.wafSessionCookie && store.wafSessionCookie.expiresAt > Date.now()
+              ? store.wafSessionCookie.cookie
+              : undefined;
           const reqHeaders: Record<string, string> = {
             'User-Agent': DEFAULT_BROWSER_UA,
             Accept: 'application/json, text/plain, */*',
             'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
             Referer: `https://www.tiktok.com/@${cleanHandle}`,
+            'X-Forwarded-For': '14.161.22.108',
+            'X-Real-IP': '14.161.22.108',
+            'CF-IPCountry': 'VN',
+            Cookie: mergeCookieStrings(vnRegionCookie, activeWafCookie),
           };
-          if (store.wafSessionCookie && store.wafSessionCookie.expiresAt > Date.now()) {
-            reqHeaders.Cookie = store.wafSessionCookie.cookie;
-          }
 
-          const res = await fetch(`https://www.tiktok.com/api/creator/item_list/?${qs.toString()}`, {
+          const apiUrl = `https://www.tiktok.com/api/creator/item_list/?${qs.toString()}`;
+          let res = await fetch(apiUrl, {
             method: 'GET',
             headers: reqHeaders,
             signal: AbortSignal.timeout(6500),
             cache: 'no-store',
           });
           if (!res.ok) return null;
-          return await res.json();
+          let rawText = await res.text();
+          const wafChallenge = solveTikTokWafHtml(rawText);
+          if (wafChallenge) {
+            const setCookies = (
+              res.headers.getSetCookie
+                ? res.headers.getSetCookie()
+                : [res.headers.get('set-cookie') || '']
+            )
+              .map((c) => c.split(';')[0].trim())
+              .filter(Boolean);
+            const newCookieJar = mergeCookieStrings(
+              vnRegionCookie,
+              activeWafCookie,
+              ...setCookies,
+              wafChallenge
+            );
+            store.wafSessionCookie = {
+              cookie: newCookieJar,
+              expiresAt: Date.now() + 10 * 60 * 1000,
+            };
+            res = await fetch(apiUrl, {
+              method: 'GET',
+              headers: { ...reqHeaders, Cookie: newCookieJar },
+              signal: AbortSignal.timeout(6500),
+              cache: 'no-store',
+            });
+            rawText = await res.text();
+          }
+          return JSON.parse(rawText);
         } catch {
           return null;
         }
@@ -1611,6 +1674,9 @@ export async function inspectLiveTikTokVideoPage(
     let result: RealTikTokVideoAndAuthorDetail | null = null;
     let itemStruct: Record<string, any> | undefined;
 
+    let ssrRegion = 'unknown';
+    let ssrAnchorsCount = 0;
+
     if (fetched?.html) {
       try {
         const scriptMatch = fetched.html.match(
@@ -1619,11 +1685,13 @@ export async function inspectLiveTikTokVideoPage(
         if (scriptMatch?.[1]) {
           const json = JSON.parse(scriptMatch[1]);
           const defaultScope = json?.__DEFAULT_SCOPE__ || {};
+          ssrRegion = String(defaultScope?.['webapp.app-context']?.region || 'unknown');
           const videoDetailScope =
             defaultScope?.['webapp.video-detail'] ||
             defaultScope?.['webapp.reflow.video.detail'];
           itemStruct = videoDetailScope?.itemInfo?.itemStruct;
           if (itemStruct) {
+            ssrAnchorsCount = Array.isArray(itemStruct.anchors) ? itemStruct.anchors.length : 0;
             result = parseTikTokItemStructToDetail(itemStruct);
           }
         }
@@ -1744,58 +1812,32 @@ export async function inspectLiveTikTokVideoPage(
     if (!result) return null;
 
     try {
-      // Nếu phát hiện video có giỏ hàng (hoặc bị CapCut type 54 đè trên bản Desktop) nhưng chưa lấy được chi tiết sản phẩm,
-      // tự động gọi nhánh Mobile iOS 17 Safari (kỹ thuật Ông Chú MMO __tpt_mobile=1) để lấy trọn vẹn anchors type 33/35/38
+      let creatorListCount = 0;
+      let creatorMatchedProds = 0;
+
+      // Nếu phát hiện video có giỏ hàng (hoặc bị CapCut type 54 đè trên bản Desktop) nhưng chưa lấy được chi tiết sản phẩm:
       if (
         (result.hasCartAnchor ||
           itemStruct?.AnchorTypes?.includes?.('33') ||
           itemStruct?.AnchorTypes?.includes?.('54')) &&
         (!result.cartProducts || result.cartProducts.length === 0)
       ) {
-        const mobileFetched = await fetchTikTokHtmlWithWafBypass(videoUrl, 5500, {
-          useMobileUa: true,
-        });
-        if (mobileFetched?.html) {
-          const mobMatch = mobileFetched.html.match(
-            /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
-          );
-          if (mobMatch?.[1]) {
-            try {
-              const mobJson = JSON.parse(mobMatch[1]);
-              const mobScope = mobJson?.__DEFAULT_SCOPE__ || {};
-              const mobStruct =
-                (mobScope?.['webapp.video-detail'] || mobScope?.['webapp.reflow.video.detail'])
-                  ?.itemInfo?.itemStruct;
-              if (mobStruct) {
-                const mobAnchor = extractTikTokShopAnchorInfo(mobStruct);
-                if (mobAnchor.cartProducts.length > 0) {
-                  result.hasCartAnchor = true;
-                  result.cartProducts = mobAnchor.cartProducts;
-                  result.cartAnchorTitle = mobAnchor.cartAnchorTitle || result.cartAnchorTitle;
-                  result.cartAnchorUrl = mobAnchor.cartAnchorUrl || result.cartAnchorUrl;
-                  result.cartProductId = mobAnchor.cartProductId || result.cartProductId;
-                  result.cartSellerId = mobAnchor.cartSellerId || result.cartSellerId;
-                }
-              }
-            } catch {
-              // ignore mobile parse error
-            }
-          }
-        }
-
-        // Nhánh dự phòng số 2: Truy vấn trực tiếp qua /api/creator/item_list/ (có truyền region=VN & priority_region=VN)
-        if (
-          (!result.cartProducts || result.cartProducts.length === 0) &&
-          result.author.secUid &&
-          result.author.handle
-        ) {
+        // Nhánh dự phòng số 1: Truy vấn trực tiếp qua /api/creator/item_list/ (có truyền region=VN & priority_region=VN và nhảy thẳng tới timestamp bài đăng)
+        if (result.author.secUid && result.author.handle) {
           try {
+            const targetCursorMs =
+              result.createTimeSec && result.createTimeSec > 1000000000
+                ? (result.createTimeSec + 10) * 1000
+                : undefined;
             const creatorItems = await fetchTikTokCreatorVideoListBySecUid(
               result.author.handle,
               result.author.secUid,
-              15
+              15,
+              { initialCursorMs: targetCursorMs }
             );
+            creatorListCount = creatorItems.length;
             const matchedVideo = creatorItems.find((v) => v.videoId === result.videoId);
+            creatorMatchedProds = matchedVideo?.cartProducts?.length || 0;
             if (matchedVideo?.cartProducts && matchedVideo.cartProducts.length > 0) {
               result.hasCartAnchor = true;
               result.cartProducts = matchedVideo.cartProducts;
@@ -1808,8 +1850,43 @@ export async function inspectLiveTikTokVideoPage(
             // ignore fallback error
           }
         }
+
+        // Nhánh dự phòng số 2: Mobile iOS 17 Safari
+        if (!result.cartProducts || result.cartProducts.length === 0) {
+          const mobileFetched = await fetchTikTokHtmlWithWafBypass(videoUrl, 5500, {
+            useMobileUa: true,
+          });
+          if (mobileFetched?.html) {
+            const mobMatch = mobileFetched.html.match(
+              /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
+            );
+            if (mobMatch?.[1]) {
+              try {
+                const mobJson = JSON.parse(mobMatch[1]);
+                const mobScope = mobJson?.__DEFAULT_SCOPE__ || {};
+                const mobStruct =
+                  (mobScope?.['webapp.video-detail'] || mobScope?.['webapp.reflow.video.detail'])
+                    ?.itemInfo?.itemStruct;
+                if (mobStruct) {
+                  const mobAnchor = extractTikTokShopAnchorInfo(mobStruct);
+                  if (mobAnchor.cartProducts.length > 0) {
+                    result.hasCartAnchor = true;
+                    result.cartProducts = mobAnchor.cartProducts;
+                    result.cartAnchorTitle = mobAnchor.cartAnchorTitle || result.cartAnchorTitle;
+                    result.cartAnchorUrl = mobAnchor.cartAnchorUrl || result.cartAnchorUrl;
+                    result.cartProductId = mobAnchor.cartProductId || result.cartProductId;
+                    result.cartSellerId = mobAnchor.cartSellerId || result.cartSellerId;
+                  }
+                }
+              } catch {
+                // ignore mobile parse error
+              }
+            }
+          }
+        }
       }
 
+      result.cartDebug = `ssrRegion=${ssrRegion}|ssrAnchors=${ssrAnchorsCount}|creatorList=${creatorListCount}|creatorProds=${creatorMatchedProds}|finalProds=${result.cartProducts?.length || 0}`;
       setBoundedCache(store.videoDetailCache, normalizedKey, result, VIDEO_CACHE_TTL_MS, 2500);
       return result;
     } catch {

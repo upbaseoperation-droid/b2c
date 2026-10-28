@@ -1114,7 +1114,7 @@ export async function checkSingleLinkServerless(
       productMentionMoments: mentionDetection.productMentionMoments,
       policyViolations: policyViolations.length > 0 ? policyViolations : undefined,
       limitations: [],
-      source: 'tiktok-ssr-waf',
+      source: inspected.cartDebug ? `tiktok-ssr-waf (${inspected.cartDebug})` : 'tiktok-ssr-waf',
       fetchedAt,
       fromCache: false,
       durationMs: Date.now() - started,

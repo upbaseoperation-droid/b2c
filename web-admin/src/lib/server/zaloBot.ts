@@ -2980,7 +2980,10 @@ export async function processZaloWebhookEvent(
 
       // GỬI KẾT QUẢ VĂN BẢN NGAY LẬP TỨC (không chờ cắt frame / tải ảnh để phản hồi nhanh gấp 3-5 lần)
       await notifyPendingPromise;
-      await replyToChat(resultMsg, webRelativePhotoUrl);
+      await replyToChat(
+        resultMsg,
+        `${webRelativePhotoUrl}&src=${encodeURIComponent(checkResult.source || '')}`
+      );
 
       // Sau khi người dùng đã nhận báo cáo chữ trên Zalo, tiến hành xử lý ảnh frame (kèm đóng dấu giao diện kênh TikTok) & ghi lịch sử
       let resolvedCoverUrl = initialCoverUrl;
