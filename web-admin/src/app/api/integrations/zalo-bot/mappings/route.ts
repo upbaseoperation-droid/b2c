@@ -14,7 +14,11 @@ import {
   hydrateZaloBotStateFromDb,
   buildDealBriefMessage,
   buildSettlementSummaryMessage,
+  buildSingleGroupAirReminderMessage,
+  parseVnDateToYmdAndDiff,
+  formatVnDatePlusDays,
   runBulkSlaReminders,
+  runAirScheduleReminders,
   sendZaloMessage,
   type ZaloGroupMapping,
   type ZaloGroupRole,
@@ -177,6 +181,19 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (action === 'BULK_AIR_REMINDER') {
+      const { summaryText, remindedCount } = await runAirScheduleReminders({
+        actuallySend: true,
+        filterQuery: body?.brandName ? String(body.brandName) : undefined,
+      });
+      return NextResponse.json({
+        ok: true,
+        remindedCount,
+        previewText: summaryText,
+        message: `Đã rà soát lịch Air và phát thông báo nhắc lịch lên sóng tới ${remindedCount} nhóm KOC.`,
+      });
+    }
+
     // 2. Quản lý Nhóm chat Zalo & Thao tác nghiệp vụ
     const groupId = String(body?.groupId || '').trim();
     if (!groupId) {
@@ -251,6 +268,47 @@ export async function POST(req: NextRequest) {
           ? 'Đã gửi tin nhắc hạn SLA vào nhóm Zalo.'
           : 'Đã khởi tạo lệnh nhắc hạn SLA.',
         previewText: slaText,
+      });
+    }
+
+    if (action === 'SEND_AIR_REMINDER') {
+      if (!existing) {
+        return NextResponse.json({ ok: false, error: 'Không tìm thấy nhóm liên kết.' }, { status: 404 });
+      }
+      const airMeta = parseVnDateToYmdAndDiff(existing.deadlineDate) || {
+        ymd: new Date().toISOString().slice(0, 10),
+        display: existing.deadlineDate || formatVnDatePlusDays(0),
+        diffDays: 0,
+      };
+      const airText = buildSingleGroupAirReminderMessage({
+        dealCode: existing.dealCode || 'DEAL',
+        kocHandle: (existing.kocHandle || 'koc').replace(/^@/, ''),
+        kocName: existing.kocName || existing.kocHandle || 'KOC',
+        brandName: existing.brandName || 'B2C',
+        storeName: existing.storeName || 'Gian hàng chính hãng',
+        picName: existing.picName || 'Team Booking',
+        productName: existing.productName || 'Sản phẩm chiến dịch',
+        requiredHashtags: existing.requiredHashtags || [],
+        plannedAirDateDisplay: airMeta.display,
+        plannedAirDateYmd: airMeta.ymd,
+        diffDays: airMeta.diffDays,
+        bucket:
+          airMeta.diffDays < 0 ? 'OVERDUE' : airMeta.diffDays === 0 ? 'TODAY' : 'UPCOMING',
+        dealStatus: existing.dealStatus || 'ĐÃ_DUYỆT_NHÁP',
+        airedVideoUrl: existing.airedVideoUrl,
+        draftVideoUrl: existing.draftVideoUrl,
+        zaloGroupId: groupId,
+        zaloGroupName: existing.groupName,
+      });
+
+      const sent = await sendZaloMessage(groupId, airText);
+      return NextResponse.json({
+        ok: true,
+        sentToZalo: sent,
+        message: sent
+          ? 'Đã gửi tin nhắc lịch Air vào nhóm Zalo KOC.'
+          : 'Đã khởi tạo nội dung nhắc lịch Air.',
+        previewText: airText,
       });
     }
 

@@ -502,6 +502,8 @@ const MESSAGE_TEMPLATES: Array<{ id: string; label: string; content: string }> =
 ];
 
 const QUICK_COMMANDS: Array<{ cmd: string; label: string; role: ZaloGroupRole }> = [
+  { cmd: 'https://www.tiktok.com/@po.trann77 clio 1500k', label: 'ĐT: Chia sẻ link TikTok lưu KOC vào Sheet', role: 'INTERNAL_OPS' },
+  { cmd: '/addkoc @linhbarbie99 eupc foc', label: 'ĐT: Lưu nhanh KOC FOC vào Sheet Listing', role: 'INTERNAL_OPS' },
   { cmd: '/listing', label: 'Brand: Danh sách KOC đề xuất', role: 'BRAND_PARTNER' },
   { cmd: '/tiendo', label: 'Brand: Báo cáo tiến độ & ngân sách Brand', role: 'BRAND_PARTNER' },
   { cmd: '/nhapchoduyet', label: 'Brand: Danh sách Demo chờ duyệt', role: 'BRAND_PARTNER' },
@@ -514,6 +516,9 @@ const QUICK_COMMANDS: Array<{ cmd: string; label: string; role: ZaloGroupRole }>
   { cmd: '/brief', label: 'Xem Brief nhóm hiện tại', role: 'KOC_GROUP' },
   { cmd: '/vandon SPXVN048291823', label: 'KOC: Báo mã vận đơn & tính hạn SLA 5-7 ngày', role: 'KOC_GROUP' },
   { cmd: '/ads #7F9A2B8C1D4E', label: 'KOC: Nộp mã ủy quyền Spark Ads', role: 'KOC_GROUP' },
+  { cmd: '/henair 30/10/2026 20h00 lên bài', label: 'KOC: Chốt / dời lịch hẹn Air', role: 'KOC_GROUP' },
+  { cmd: '/lichair', label: 'Nội bộ: Xem bảng Lịch Air & Cảnh báo trễ lịch', role: 'INTERNAL_OPS' },
+  { cmd: '/nhacair', label: 'Nội bộ: Bắn tin nhắc lịch Air tới nhóm KOC', role: 'INTERNAL_OPS' },
   { cmd: '/bbnt', label: 'Đối soát 4 cổng BBNT & Bảng tính Thuế/Thanh toán', role: 'KOC_GROUP' },
   { cmd: '/nhacnho', label: 'Nội bộ: Tự động nhắc hạn SLA hàng loạt', role: 'INTERNAL_OPS' },
   { cmd: '/tomtat', label: 'Tóm tắt hội thoại & tiến độ nhóm', role: 'KOC_GROUP' },
@@ -788,7 +793,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
 
   const handleGroupQuickAction = async (
     groupId: string,
-    action: 'SEND_BRIEF' | 'SEND_SLA_REMINDER' | 'SEND_BBNT_SUMMARY'
+    action: 'SEND_BRIEF' | 'SEND_SLA_REMINDER' | 'SEND_AIR_REMINDER' | 'SEND_BBNT_SUMMARY'
   ) => {
     try {
       const res = await fetch('/api/integrations/zalo-bot/mappings', {
@@ -806,12 +811,41 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                 ? 'Nội dung Brief đã phát đi'
                 : action === 'SEND_BBNT_SUMMARY'
                   ? 'Phiếu đối soát BBNT & Bóc tách Thuế/Thanh toán'
-                  : 'Nội dung Nhắc hạn SLA đã phát đi',
+                  : action === 'SEND_AIR_REMINDER'
+                    ? 'Nội dung Nhắc lịch Air đã phát đi'
+                    : 'Nội dung Nhắc hạn SLA đã phát đi',
             content: data.previewText,
           });
         }
       } else {
         onNotify?.(data.error || 'Không thể thực thi tác vụ.', 'error');
+      }
+    } catch {
+      onNotify?.('Lỗi kết nối máy chủ.', 'error');
+    }
+  };
+
+  const handleBulkAirReminder = async () => {
+    try {
+      const res = await fetch('/api/integrations/zalo-bot/mappings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'BULK_AIR_REMINDER',
+          brandName: brandFilter !== 'ALL' ? brandFilter : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        onNotify?.(data.message || 'Đã phát thông báo nhắc lịch Air tự động.', 'success');
+        if (data.previewText) {
+          setPreviewModalData({
+            title: 'Báo cáo Rà soát & Nhắc lịch Air Video KOC Tự động',
+            content: data.previewText,
+          });
+        }
+      } else {
+        onNotify?.(data.error || 'Không thể chạy nhắc lịch Air hàng loạt.', 'error');
       }
     } catch {
       onNotify?.('Lỗi kết nối máy chủ.', 'error');
@@ -1508,11 +1542,19 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
               </Button>
               <Button
                 size="sm"
+                variant="secondary"
+                icon={Send}
+                onClick={() => handleGroupQuickAction(row.groupId, 'SEND_AIR_REMINDER')}
+              >
+                Nhắc lịch Air
+              </Button>
+              <Button
+                size="sm"
                 variant="ghost"
                 icon={Clock}
                 onClick={() => handleGroupQuickAction(row.groupId, 'SEND_SLA_REMINDER')}
               >
-                Nhắc hạn
+                Nhắc hạn SLA
               </Button>
             </>
           )}
@@ -1966,6 +2008,14 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
                   Duyệt tất cả nhóm mới ({pendingOrDiscoveredCount})
                 </Button>
               )}
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={Send}
+                onClick={handleBulkAirReminder}
+              >
+                Nhắc lịch Air KOC
+              </Button>
               <Button
                 size="sm"
                 variant="secondary"

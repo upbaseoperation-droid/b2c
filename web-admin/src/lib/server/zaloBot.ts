@@ -2921,13 +2921,26 @@ export async function runBulkSlaReminders(options?: {
         `👉 Nhờ PIC (${grp.picName || 'Booking'}) kiểm tra và gõ /duyetnhap hoặc /suanhap <nội dung> để KOC kịp lịch đăng bài.`,
       ].join('\n');
     } else if (grp.dealStatus === 'ĐÃ_DUYỆT_NHÁP') {
-      actionNote = 'Nhắc KOC đăng bài TikTok gắn giỏ hàng & dán link nghiệm thu';
+      const airMeta = parseVnDateToYmdAndDiff(grp.deadlineDate);
+      const timingBadge =
+        airMeta && airMeta.diffDays < 0
+          ? `🔴 QUÁ HẠN AIR ${Math.abs(airMeta.diffDays)} NGÀY (${airMeta.display})`
+          : airMeta && airMeta.diffDays === 0
+            ? `🟠 ĐẾN LỊCH AIR HÔM NAY (${airMeta.display})`
+            : `Hạn lên sóng: ${grp.deadlineDate || 'Hôm nay'}`;
+      actionNote = `Nhắc KOC đăng bài TikTok gắn giỏ hàng (${timingBadge})`;
       reminderBody = [
         `🚀 NHẮC LỊCH ĐĂNG VIDEO LÊN SÓNG (AIR) & GẮN GIỎ HÀNG`,
         `• Mã Deal: ${grp.dealCode || '—'} (${grp.brandName || '—'}) — Bản nháp đã được phê duyệt!`,
-        `• Hạn lên sóng: ${grp.deadlineDate || 'Hôm nay'}`,
+        `• Tiến độ lịch Air: ${timingBadge}`,
+        grp.productName ? `• Sản phẩm gắn giỏ: ${grp.productName}` : '',
+        grp.requiredHashtags?.length
+          ? `• Hashtag bắt buộc: ${grp.requiredHashtags.map((h) => `#${h.replace(/^#/, '')}`).join(' ')}`
+          : '',
         `👉 Ngay sau khi đăng video lên TikTok ở chế độ Công khai kèm giỏ hàng và hashtag chuẩn, KOC dán link TikTok vào nhóm để Bot nghiệm thu tự động nhé!`,
-      ].join('\n');
+      ]
+        .filter(Boolean)
+        .join('\n');
     } else if (grp.dealStatus === 'ĐÃ_NGHIỆM_THU_AIR' && !grp.sparkAdsCode) {
       actionNote = 'Đã Air — Nhắc KOC bổ sung mã quảng cáo Spark Ads (/ads) để làm BBNT';
       reminderBody = [
@@ -2971,6 +2984,611 @@ export async function runBulkSlaReminders(options?: {
     summaryText: lines.join('\n'),
     remindedCount,
     details,
+  };
+}
+
+export interface UnifiedAirScheduleItem {
+  dealCode: string;
+  kocHandle: string;
+  kocName: string;
+  brandName: string;
+  storeName: string;
+  picName: string;
+  productName: string;
+  requiredHashtags: string[];
+  plannedAirDateDisplay: string;
+  plannedAirDateYmd: string;
+  diffDays: number;
+  bucket: 'OVERDUE' | 'TODAY' | 'UPCOMING' | 'FUTURE' | 'AIRED';
+  dealStatus: ZaloDealWorkflowStatus;
+  airedVideoUrl?: string;
+  draftVideoUrl?: string;
+  zaloGroupId?: string;
+  zaloGroupName?: string;
+}
+
+/**
+ * Chuẩn hóa chuỗi ngày (DD/MM/YYYY, DD-MM-YYYY, DD/MM hoặc YYYY-MM-DD) sang giờ Việt Nam (UTC+7)
+ * và tính khoảng cách ngày (diffDays) so với hôm nay:
+ * - diffDays < 0: Đã quá hạn |diffDays| ngày
+ * - diffDays === 0: Đúng lịch hôm nay
+ * - diffDays > 0: Còn diffDays ngày nữa tới lịch
+ */
+export function parseVnDateToYmdAndDiff(raw?: string | null): {
+  ymd: string;
+  display: string;
+  diffDays: number;
+} | null {
+  const s = String(raw || '').trim();
+  if (!s) return null;
+
+  const nowParts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const curY = Number(nowParts.find((p) => p.type === 'year')?.value || 2026);
+  const curM = Number(nowParts.find((p) => p.type === 'month')?.value || 10);
+  const curD = Number(nowParts.find((p) => p.type === 'day')?.value || 29);
+
+  let y = 0;
+  let m = 0;
+  let d = 0;
+
+  const ymdMatch = s.match(/\b(20\d{2})[/-](\d{1,2})[/-](\d{1,2})\b/);
+  const dmyMatch = s.match(/\b(\d{1,2})[/-](\d{1,2})[/-](20\d{2})\b/);
+  const dmShortMatch = s.match(/^(\d{1,2})[/-](\d{1,2})(?:\b|$)/);
+
+  if (ymdMatch) {
+    y = Number(ymdMatch[1]);
+    m = Number(ymdMatch[2]);
+    d = Number(ymdMatch[3]);
+  } else if (dmyMatch) {
+    d = Number(dmyMatch[1]);
+    m = Number(dmyMatch[2]);
+    y = Number(dmyMatch[3]);
+  } else if (dmShortMatch) {
+    d = Number(dmShortMatch[1]);
+    m = Number(dmShortMatch[2]);
+    y = curY;
+  } else {
+    return null;
+  }
+
+  if (m < 1 || m > 12 || d < 1 || d > 31 || y < 2020 || y > 2035) {
+    return null;
+  }
+
+  const targetUtcMs = Date.UTC(y, m - 1, d);
+  const todayUtcMs = Date.UTC(curY, curM - 1, curD);
+  const diffDays = Math.round((targetUtcMs - todayUtcMs) / (24 * 60 * 60 * 1000));
+
+  const dd = String(d).padStart(2, '0');
+  const mm = String(m).padStart(2, '0');
+  return {
+    ymd: `${y}-${mm}-${dd}`,
+    display: `${dd}/${mm}/${y}`,
+    diffDays,
+  };
+}
+
+/**
+ * Hợp nhất dữ liệu Lịch Air từ Nhóm Zalo KOC (mappings) và Bảng Quản lý Deal & Booking (approved-booking-list-v2)
+ */
+export async function collectUnifiedAirScheduleItems(
+  filterQuery?: string
+): Promise<UnifiedAirScheduleItem[]> {
+  const activeKocGroups = getAllMappings().filter(
+    (m) => m.groupRole === 'KOC_GROUP' && m.accessStatus !== 'BLOCKED' && !m.isAutoDiscovered
+  );
+
+  let approvedBookings: any[] = [];
+  try {
+    const rec = await readRecord<any[]>('approved-booking-list-v2', []);
+    if (Array.isArray(rec?.data)) {
+      approvedBookings = rec.data;
+    }
+  } catch {
+    // Fallback an toàn nếu chạy độc lập
+  }
+
+  const itemsByKey = new Map<string, UnifiedAirScheduleItem>();
+  const groupByDealOrHandle = new Map<string, ZaloGroupMapping>();
+
+  for (const grp of activeKocGroups) {
+    const dealKey = (grp.dealCode || '').trim().toLowerCase();
+    const handleKey = (grp.kocHandle || '').replace(/^@/, '').trim().toLowerCase();
+    if (dealKey) groupByDealOrHandle.set(`deal:${dealKey}`, grp);
+    if (handleKey) groupByDealOrHandle.set(`handle:${handleKey}`, grp);
+
+    const parsedDate = parseVnDateToYmdAndDiff(grp.deadlineDate);
+    if (!parsedDate) continue;
+
+    const isAired = Boolean(grp.airedVideoUrl || grp.dealStatus === 'ĐÃ_NGHIỆM_THU_AIR');
+    const bucket: UnifiedAirScheduleItem['bucket'] = isAired
+      ? 'AIRED'
+      : parsedDate.diffDays < 0
+        ? 'OVERDUE'
+        : parsedDate.diffDays === 0
+          ? 'TODAY'
+          : parsedDate.diffDays <= 3
+            ? 'UPCOMING'
+            : 'FUTURE';
+
+    const uniqueKey = dealKey || handleKey || grp.groupId;
+    itemsByKey.set(uniqueKey, {
+      dealCode: grp.dealCode || 'DEAL',
+      kocHandle: (grp.kocHandle || '').replace(/^@/, '') || 'koc',
+      kocName: grp.kocName || grp.kocHandle || 'KOC',
+      brandName: grp.brandName || 'B2C',
+      storeName: grp.storeName || 'Gian hàng chính hãng',
+      picName: grp.picName || 'Team Booking',
+      productName: grp.productName || 'Sản phẩm chiến dịch',
+      requiredHashtags: grp.requiredHashtags || [],
+      plannedAirDateDisplay: parsedDate.display,
+      plannedAirDateYmd: parsedDate.ymd,
+      diffDays: parsedDate.diffDays,
+      bucket,
+      dealStatus: grp.dealStatus,
+      airedVideoUrl: grp.airedVideoUrl,
+      draftVideoUrl: grp.draftVideoUrl,
+      zaloGroupId: grp.groupId,
+      zaloGroupName: grp.groupName,
+    });
+  }
+
+  // Bổ sung các Deal có lịch Air từ Bảng Quản lý Deal & Booking (approved-booking-list-v2)
+  for (const b of approvedBookings) {
+    if (!b || typeof b !== 'object') continue;
+    const rawPlanned = String(b.plannedAirDate || b.ngayAirChot || '').trim();
+    if (!rawPlanned) continue;
+
+    const parsedDate = parseVnDateToYmdAndDiff(rawPlanned);
+    if (!parsedDate) continue;
+
+    const dealCode = String(b.maBooking || b.id || '').trim();
+    const kocHandle = String(b.idKenh || '')
+      .replace(/^@/, '')
+      .trim();
+    const dealKey = dealCode.toLowerCase();
+    const handleKey = kocHandle.toLowerCase();
+
+    if ((dealKey && itemsByKey.has(dealKey)) || (handleKey && itemsByKey.has(handleKey))) {
+      continue;
+    }
+
+    const linkedGrp =
+      (dealKey ? groupByDealOrHandle.get(`deal:${dealKey}`) : undefined) ||
+      (handleKey ? groupByDealOrHandle.get(`handle:${handleKey}`) : undefined);
+
+    const isAired = Boolean(
+      b.linkAir ||
+        b.actualAirDate ||
+        b.acceptanceStatus === 'DA_NGHIEM_THU' ||
+        linkedGrp?.airedVideoUrl ||
+        linkedGrp?.dealStatus === 'ĐÃ_NGHIỆM_THU_AIR'
+    );
+
+    const bucket: UnifiedAirScheduleItem['bucket'] = isAired
+      ? 'AIRED'
+      : parsedDate.diffDays < 0
+        ? 'OVERDUE'
+        : parsedDate.diffDays === 0
+          ? 'TODAY'
+          : parsedDate.diffDays <= 3
+            ? 'UPCOMING'
+            : 'FUTURE';
+
+    const uniqueKey = dealKey || handleKey || String(b.id);
+    itemsByKey.set(uniqueKey, {
+      dealCode: dealCode || 'BO-PENDING',
+      kocHandle: kocHandle || 'koc',
+      kocName: String(b.tenKenh || kocHandle || 'KOC'),
+      brandName: String(b.brandName || linkedGrp?.brandName || 'B2C'),
+      storeName: String(b.storeName || linkedGrp?.storeName || ''),
+      picName: String(b.nguoiPhuTrach || linkedGrp?.picName || 'Team Booking'),
+      productName: String(b.sanPham || linkedGrp?.productName || 'Sản phẩm chiến dịch'),
+      requiredHashtags: linkedGrp?.requiredHashtags || [],
+      plannedAirDateDisplay: parsedDate.display,
+      plannedAirDateYmd: parsedDate.ymd,
+      diffDays: parsedDate.diffDays,
+      bucket,
+      dealStatus: isAired
+        ? 'ĐÃ_NGHIỆM_THU_AIR'
+        : linkedGrp?.dealStatus || 'ĐÃ_DUYỆT_NHÁP',
+      airedVideoUrl: String(b.linkAir || linkedGrp?.airedVideoUrl || '') || undefined,
+      draftVideoUrl: linkedGrp?.draftVideoUrl,
+      zaloGroupId: linkedGrp?.groupId,
+      zaloGroupName: linkedGrp?.groupName,
+    });
+  }
+
+  let list = Array.from(itemsByKey.values()).sort((a, b) => a.diffDays - b.diffDays);
+
+  const q = String(filterQuery || '')
+    .trim()
+    .toLowerCase();
+  if (q && q !== 'all' && q !== 'tatca' && q !== 'tất cả') {
+    if (q === 'homnay' || q === 'hôm nay' || q === 'today') {
+      list = list.filter((it) => it.bucket === 'TODAY');
+    } else if (q === 'mai' || q === 'ngày mai' || q === 'tomorrow' || q === 'saptoi' || q === 'sắp tới') {
+      list = list.filter((it) => it.bucket === 'UPCOMING' || it.bucket === 'TODAY');
+    } else if (q === 'tre' || q === 'trễ' || q === 'quahan' || q === 'quá hạn' || q === 'overdue') {
+      list = list.filter((it) => it.bucket === 'OVERDUE');
+    } else {
+      const cleanQ = q.replace(/^@/, '');
+      list = list.filter(
+        (it) =>
+          it.brandName.toLowerCase().includes(cleanQ) ||
+          it.storeName.toLowerCase().includes(cleanQ) ||
+          it.kocHandle.toLowerCase().includes(cleanQ) ||
+          it.kocName.toLowerCase().includes(cleanQ) ||
+          it.dealCode.toLowerCase().includes(cleanQ) ||
+          it.picName.toLowerCase().includes(cleanQ)
+      );
+    }
+  }
+
+  return list;
+}
+
+/**
+ * Tạo nội dung tin nhắn Nhắc lịch Air cá nhân hóa gửi vào nhóm Zalo KOC
+ */
+export function buildSingleGroupAirReminderMessage(item: UnifiedAirScheduleItem): string {
+  const timingHeader =
+    item.diffDays < 0
+      ? `🔴 CẢNH BÁO TRỄ LỊCH AIR ${Math.abs(item.diffDays)} NGÀY (Hạn cam kết: ${item.plannedAirDateDisplay})`
+      : item.diffDays === 0
+        ? `🟠 NHẮC LỊCH ĐĂNG BÀI LÊN SÓNG HÔM NAY (${item.plannedAirDateDisplay})`
+        : item.diffDays === 1
+          ? `🟡 NHẮC CHUẨN BỊ LÊN SÓNG NGÀY MAI (${item.plannedAirDateDisplay})`
+          : `📅 NHẮC LỊCH ĐĂNG VIDEO TIKTOK (Hẹn Air: ${item.plannedAirDateDisplay} — còn ${item.diffDays} ngày)`;
+
+  const hashtagsText =
+    item.requiredHashtags.length > 0
+      ? item.requiredHashtags.map((h) => `#${h.replace(/^#/, '')}`).join(' ')
+      : '#UpbaseB2C #ReviewChinhHang';
+
+  const guidanceLine =
+    item.dealStatus === 'ĐÃ_DUYỆT_NHÁP'
+      ? `👉 Bản nháp đã được phê duyệt. KOC vui lòng đăng video ở chế độ Công khai, gắn đúng sản phẩm vào giỏ hàng kèm bộ hashtag bắt buộc, sau đó dán link TikTok vào nhóm này để Bot nghiệm thu tự động nhé!`
+      : item.dealStatus === 'ĐÃ_NỘP_NHÁP'
+        ? `👉 KOC đã nộp bản nháp (${item.draftVideoUrl || 'đã gửi'}). Nhờ PIC (${item.picName}) kiểm tra và gõ /duyetnhap ngay để KOC kịp giờ đăng bài lên sóng!`
+        : `👉 Lịch lên sóng đã cận kề nhưng hệ thống chưa ghi nhận bản nháp được duyệt. KOC vui lòng gửi gấp link video nháp bằng lệnh /nopnhap <link_drive>, hoặc gõ /henair <DD/MM/YYYY> nếu cần xin điều chỉnh lịch Air.`;
+
+  return [
+    timingHeader,
+    `----------------------------------------`,
+    `• Mã Deal: [${item.dealCode}] | Thương hiệu: ${item.brandName}`,
+    `• Đối tác KOC: ${item.kocName} (@${item.kocHandle})`,
+    `• Sản phẩm gắn giỏ hàng: ${item.productName}`,
+    `• Hashtag bắt buộc: ${hashtagsText}`,
+    `• Trạng thái hiện tại: ${item.dealStatus} | PIC hỗ trợ: ${item.picName}`,
+    `----------------------------------------`,
+    guidanceLine,
+  ].join('\n');
+}
+
+/**
+ * Báo cáo tổng hợp Lịch Air & Cảnh báo Trễ hạn Lên sóng (/lichair)
+ */
+export async function buildAirScheduleReportMessage(filterQuery?: string): Promise<string> {
+  const allItems = await collectUnifiedAirScheduleItems(filterQuery);
+  const overdueList = allItems.filter((it) => it.bucket === 'OVERDUE');
+  const todayList = allItems.filter((it) => it.bucket === 'TODAY');
+  const upcomingList = allItems.filter((it) => it.bucket === 'UPCOMING');
+  const futureList = allItems.filter((it) => it.bucket === 'FUTURE');
+  const airedList = allItems.filter((it) => it.bucket === 'AIRED');
+
+  const todayStr = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date());
+
+  const lines: string[] = [
+    `📅 BẢNG THEO DÕI LỊCH AIR VIDEO KOC (Ngày ${todayStr})`,
+    filterQuery ? `• Bộ lọc đang áp dụng: "${filterQuery}"` : '',
+    `• Tổng hợp: 🔴 Quá hạn: ${overdueList.length} | 🟠 Hôm nay: ${todayList.length} | 🟡 Sắp Air (1-3 ngày): ${upcomingList.length} | ✅ Đã Air: ${airedList.length}`,
+    `----------------------------------------`,
+  ].filter(Boolean);
+
+  const formatRow = (it: UnifiedAirScheduleItem, idx: number) => {
+    const dayTag =
+      it.bucket === 'OVERDUE'
+        ? `Trễ ${Math.abs(it.diffDays)} ngày (${it.plannedAirDateDisplay})`
+        : it.bucket === 'TODAY'
+          ? `Hôm nay (${it.plannedAirDateDisplay})`
+          : `Còn ${it.diffDays} ngày (${it.plannedAirDateDisplay})`;
+    const groupBadge = it.zaloGroupId ? '💬 Đã nối nhóm Zalo' : '⚪ Chưa nối nhóm';
+    return `${idx + 1}. [${it.dealCode}] ${it.brandName} x @${it.kocHandle}\n   • Hẹn Air: ${dayTag} | TT: ${it.dealStatus} | PIC: ${it.picName} (${groupBadge})`;
+  };
+
+  if (overdueList.length > 0) {
+    lines.push(`🔴 1. QUÁ HẠN LÊN SÓNG CẦN ĐỐC THÚC GẤP (${overdueList.length} deal):`);
+    overdueList.slice(0, 8).forEach((it, idx) => lines.push(formatRow(it, idx)));
+    if (overdueList.length > 8) {
+      lines.push(`   ...và ${overdueList.length - 8} deal quá hạn khác.`);
+    }
+    lines.push(`----------------------------------------`);
+  }
+
+  if (todayList.length > 0) {
+    lines.push(`🟠 2. LỊCH LÊN SÓNG HÔM NAY (${todayList.length} deal):`);
+    todayList.slice(0, 8).forEach((it, idx) => lines.push(formatRow(it, idx)));
+    lines.push(`----------------------------------------`);
+  }
+
+  if (upcomingList.length > 0) {
+    lines.push(`🟡 3. SẮP ĐẾN LỊCH AIR TRONG 1–3 NGÀY TỚI (${upcomingList.length} deal):`);
+    upcomingList.slice(0, 8).forEach((it, idx) => lines.push(formatRow(it, idx)));
+    lines.push(`----------------------------------------`);
+  }
+
+  if (
+    overdueList.length === 0 &&
+    todayList.length === 0 &&
+    upcomingList.length === 0 &&
+    futureList.length > 0
+  ) {
+    lines.push(`🔵 LỊCH AIR DỰ KIẾN CÁC NGÀY TỚI (${futureList.length} deal):`);
+    futureList.slice(0, 8).forEach((it, idx) => lines.push(formatRow(it, idx)));
+    lines.push(`----------------------------------------`);
+  }
+
+  if (allItems.length === 0) {
+    lines.push(`• Không tìm thấy Deal nào khớp với bộ lọc "${filterQuery || 'tất cả'}".`);
+    lines.push(`----------------------------------------`);
+  }
+
+  lines.push(
+    `👉 LỆNH ĐIỀU PHỐI LỊCH AIR NHANH:`,
+    `• Gõ /nhacair [tên_brand | @handle | homnay | tre] : Tự động bắn tin nhắc lịch Air vào các nhóm Zalo KOC.`,
+    `• Gõ /henair <DD/MM/YYYY> [@handle] : Chốt hoặc cập nhật ngày hẹn lên sóng mới cho KOC.`
+  );
+
+  return lines.join('\n');
+}
+
+/**
+ * Quét & tự động bắn tin nhắn Nhắc lịch Air tới các nhóm Zalo KOC đến hạn / trễ hạn (/nhacair)
+ */
+export async function runAirScheduleReminders(options?: {
+  actuallySend?: boolean;
+  filterQuery?: string;
+  targetGroupId?: string;
+}): Promise<{
+  summaryText: string;
+  remindedCount: number;
+  overdueCount: number;
+  todayCount: number;
+  upcomingCount: number;
+  details: Array<{
+    groupId?: string;
+    dealCode: string;
+    kocHandle: string;
+    brandName: string;
+    plannedAirDate: string;
+    bucket: string;
+    sent: boolean;
+  }>;
+}> {
+  const allItems = await collectUnifiedAirScheduleItems(options?.filterQuery);
+  const candidates = options?.targetGroupId
+    ? allItems.filter((it) => it.zaloGroupId === options.targetGroupId)
+    : allItems.filter(
+        (it) =>
+          it.bucket === 'OVERDUE' ||
+          it.bucket === 'TODAY' ||
+          it.bucket === 'UPCOMING' ||
+          (Boolean(options?.filterQuery) && it.bucket !== 'AIRED')
+      );
+
+  let remindedCount = 0;
+  let overdueCount = 0;
+  let todayCount = 0;
+  let upcomingCount = 0;
+  const details: Array<{
+    groupId?: string;
+    dealCode: string;
+    kocHandle: string;
+    brandName: string;
+    plannedAirDate: string;
+    bucket: string;
+    sent: boolean;
+  }> = [];
+
+  for (const item of candidates) {
+    if (item.bucket === 'OVERDUE') overdueCount += 1;
+    else if (item.bucket === 'TODAY') todayCount += 1;
+    else if (item.bucket === 'UPCOMING') upcomingCount += 1;
+
+    let sent = false;
+    if (item.zaloGroupId) {
+      const msg = buildSingleGroupAirReminderMessage(item);
+      remindedCount += 1;
+      if (options?.actuallySend) {
+        sent = await sendZaloMessage(item.zaloGroupId, msg).catch(() => false);
+      } else {
+        sent = true;
+      }
+    }
+
+    details.push({
+      groupId: item.zaloGroupId,
+      dealCode: item.dealCode,
+      kocHandle: item.kocHandle,
+      brandName: item.brandName,
+      plannedAirDate: item.plannedAirDateDisplay,
+      bucket: item.bucket,
+      sent,
+    });
+  }
+
+  const lines: string[] = [
+    `🚀 BÁO CÁO NHẮC LỊCH AIR VIDEO KOC TỰ ĐỘNG`,
+    `----------------------------------------`,
+    `• Tổng số Deal đến hạn / trễ lịch Air: ${candidates.length} deal (🔴 Quá hạn: ${overdueCount} | 🟠 Hôm nay: ${todayCount} | 🟡 Sắp Air: ${upcomingCount})`,
+    `• Số nhóm Zalo KOC đã phát lệnh nhắc lịch Air: ${remindedCount} nhóm`,
+    `----------------------------------------`,
+    ...details.slice(0, 12).map((d, idx) => {
+      const badge =
+        d.bucket === 'OVERDUE'
+          ? '🔴 Quá hạn Air'
+          : d.bucket === 'TODAY'
+            ? '🟠 Air hôm nay'
+            : '🟡 Sắp đến lịch Air';
+      const channelNote = d.groupId
+        ? options?.actuallySend
+          ? '✅ Đã gửi tin nhắc vào nhóm KOC'
+          : '💬 Sẵn sàng gửi vào nhóm KOC'
+        : '⚠️ Chưa nối nhóm Zalo (Cần PIC nhắn trực tiếp)';
+      return `${idx + 1}. [${d.dealCode}] ${d.brandName} x @${d.kocHandle} (Hẹn Air: ${d.plannedAirDate}) — ${badge}\n   → ${channelNote}`;
+    }),
+    `----------------------------------------`,
+    options?.actuallySend
+      ? `✅ Hệ thống đã tự động bắn tin nhắn nhắc lịch đăng bài & gắn giỏ hàng tới ${remindedCount} nhóm Zalo KOC.`
+      : `💡 Chế độ kiểm thử: Đã tạo nội dung nhắc lịch Air cho ${remindedCount} nhóm KOC.`,
+  ];
+
+  return {
+    summaryText: lines.join('\n'),
+    remindedCount,
+    overdueCount,
+    todayCount,
+    upcomingCount,
+    details,
+  };
+}
+
+/**
+ * Đặt hoặc cập nhật Ngày dự kiến lên sóng (/henair <DD/MM/YYYY> [@handle | mã_deal] [ghi chú])
+ * và đồng bộ 2 chiều giữa Nhóm Zalo KOC và Bảng Quản lý Deal & Booking (approved-booking-list-v2)
+ */
+export async function updateDealPlannedAirDate(params: {
+  chatId: string;
+  rawArgs: string;
+  currentMapping?: ZaloGroupMapping;
+  senderName: string;
+}): Promise<{ ok: boolean; reply: string }> {
+  const tokens = params.rawArgs.trim().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) {
+    return {
+      ok: false,
+      reply:
+        '⚠️ Vui lòng nhập ngày hẹn lên sóng theo chuẩn DD/MM/YYYY.\nVí dụ:\n• Trong nhóm KOC: /henair 30/10/2026 Đăng khung 20h00 tối\n• Trong nhóm nội bộ: /henair 30/10/2026 @po.trann77',
+    };
+  }
+
+  // Tìm token chứa ngày tháng
+  let dateTokenIdx = tokens.findIndex((t) => Boolean(parseVnDateToYmdAndDiff(t)));
+  if (dateTokenIdx === -1) {
+    return {
+      ok: false,
+      reply: `⚠️ Không nhận diện được ngày hợp lệ trong "${params.rawArgs}". Vui lòng nhập theo định dạng DD/MM/YYYY (ví dụ: /henair 30/10/2026).`,
+    };
+  }
+
+  const parsedDate = parseVnDateToYmdAndDiff(tokens[dateTokenIdx])!;
+  const remainingTokens = tokens.filter((_, idx) => idx !== dateTokenIdx);
+
+  // Kiểm tra xem có chỉ định @handle hoặc mã BO cụ thể không
+  let targetMapping = params.currentMapping;
+  let explicitTargetKey = '';
+  if (
+    remainingTokens.length > 0 &&
+    (remainingTokens[0].startsWith('@') || /^BO\d+/i.test(remainingTokens[0]))
+  ) {
+    explicitTargetKey = remainingTokens.shift()!.replace(/^@/, '').toLowerCase();
+    for (const m of loadMappings().values()) {
+      if (
+        m.kocHandle?.toLowerCase() === explicitTargetKey ||
+        m.dealCode?.toLowerCase() === explicitTargetKey
+      ) {
+        targetMapping = m;
+        break;
+      }
+    }
+  }
+
+  const note = remainingTokens.join(' ').trim();
+  const mappings = loadMappings();
+
+  if (targetMapping) {
+    targetMapping.deadlineDate = parsedDate.display;
+    if (note) {
+      targetMapping.draftReviewNote = `[Lịch hẹn Air ${parsedDate.display}]: ${note}`;
+    }
+    targetMapping.updatedAt = new Date().toISOString();
+    mappings.set(targetMapping.groupId, targetMapping);
+    saveMappings();
+    void syncZaloBotStateToDb({ upsertGroup: targetMapping });
+  }
+
+  // Đồng bộ sang approved-booking-list-v2 trên PostgreSQL nếu tìm thấy Deal khớp
+  const matchDealCode = (targetMapping?.dealCode || explicitTargetKey || '').toLowerCase();
+  const matchHandle = (targetMapping?.kocHandle || explicitTargetKey || '')
+    .replace(/^@/, '')
+    .toLowerCase();
+  let syncedBookingCount = 0;
+
+  if (matchDealCode || matchHandle) {
+    try {
+      await upsertRecord<any[]>('approved-booking-list-v2', [], (prev) => {
+        if (!Array.isArray(prev)) return [];
+        return prev.map((row) => {
+          if (!row || typeof row !== 'object') return row;
+          const rDeal = String(row.maBooking || row.id || '').toLowerCase();
+          const rHandle = String(row.idKenh || '')
+            .replace(/^@/, '')
+            .toLowerCase();
+          if (
+            (matchDealCode && rDeal === matchDealCode) ||
+            (matchHandle && rHandle === matchHandle)
+          ) {
+            syncedBookingCount += 1;
+            return {
+              ...row,
+              plannedAirDate: parsedDate.ymd,
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return row;
+        });
+      });
+    } catch {
+      // Non-fatal fallback
+    }
+  }
+
+  const diffLabel =
+    parsedDate.diffDays < 0
+      ? `Đã qua ${Math.abs(parsedDate.diffDays)} ngày`
+      : parsedDate.diffDays === 0
+        ? 'Lên sóng ngay hôm nay'
+        : `Còn ${parsedDate.diffDays} ngày nữa tới giờ lên sóng`;
+
+  return {
+    ok: true,
+    reply: [
+      `📅 ĐÃ CẬP NHẬT LỊCH HẸN LÊN SÓNG (AIR) THÀNH CÔNG`,
+      `----------------------------------------`,
+      `• Mã Deal: ${targetMapping?.dealCode || explicitTargetKey.toUpperCase() || 'Nhóm hiện tại'} (${targetMapping?.brandName || 'B2C'})`,
+      `• KOC thực hiện: ${targetMapping?.kocName || targetMapping?.kocHandle || explicitTargetKey || params.senderName}`,
+      `• Ngày dự kiến Air mới: ${parsedDate.display} (${diffLabel})`,
+      note ? `• Ghi chú khung giờ / cam kết: ${note}` : '',
+      `• Người cập nhật: ${params.senderName}`,
+      syncedBookingCount > 0
+        ? `• Đồng bộ hệ thống: Đã cập nhật cột [P.Ngày Air] trên Bảng Quản lý Deal & Booking.`
+        : '',
+      `----------------------------------------`,
+      `👉 Hệ thống sẽ tự động theo dõi mốc ${parsedDate.display} và phát thông báo nhắc lịch đăng bài gắn giỏ hàng đúng hẹn!`,
+    ]
+      .filter(Boolean)
+      .join('\n'),
   };
 }
 
@@ -5013,6 +5631,127 @@ export async function processZaloWebhookEvent(
     return { handled: true, reply: summaryText, extractedChatId: chatId };
   }
 
+  // 12D. LỆNH XEM BẢNG THEO DÕI LỊCH AIR & CẢNH BÁO TRỄ LỊCH (/lichair [brand | @handle | homnay | mai | tre])
+  if (
+    lowerClean === '/lichair' ||
+    lowerClean === 'lichair' ||
+    lowerClean.startsWith('/lichair ') ||
+    lowerClean === '/airplan' ||
+    lowerClean.startsWith('/airplan ')
+  ) {
+    const queryArg = cleanText.replace(/^\/?(?:lichair|airplan)\s*/i, '').trim();
+
+    if (effectiveRole === 'KOC_GROUP') {
+      const airMeta = parseVnDateToYmdAndDiff(currentMapping?.deadlineDate);
+      const timingText = !airMeta
+        ? 'Chưa chốt ngày cụ thể (Gõ /henair <DD/MM/YYYY> để đặt lịch)'
+        : airMeta.diffDays < 0
+          ? `🔴 Đã quá hạn ${Math.abs(airMeta.diffDays)} ngày (${airMeta.display})`
+          : airMeta.diffDays === 0
+            ? `🟠 Đúng lịch lên sóng hôm nay (${airMeta.display})`
+            : `🟡 Còn ${airMeta.diffDays} ngày nữa (${airMeta.display})`;
+
+      const kocAirMsg = [
+        `📅 LỊCH LÊN SÓNG (AIR) CỦA DEAL TRONG NHÓM`,
+        `----------------------------------------`,
+        `• Mã Deal: ${currentMapping?.dealCode || 'Chưa liên kết (/link)'} (${currentMapping?.brandName || 'B2C'})`,
+        `• KOC thực hiện: ${currentMapping?.kocName || currentMapping?.kocHandle || '—'}`,
+        `• Sản phẩm gắn giỏ: ${currentMapping?.productName || 'Theo Brief chiến dịch'}`,
+        `• Ngày hẹn lên sóng (Air): ${timingText}`,
+        `• Trạng thái hiện tại: ${currentMapping?.dealStatus || 'ĐANG_QUAY_NHÁP'}`,
+        currentMapping?.airedVideoUrl
+          ? `• Link TikTok đã nghiệm thu: ${currentMapping.airedVideoUrl}`
+          : `• Hướng dẫn: Sau khi đăng video Công khai gắn giỏ hàng, dán link TikTok vào nhóm để Bot nghiệm thu tự động.`,
+        `----------------------------------------`,
+        `👉 Gõ /henair <DD/MM/YYYY> [ghi chú] nếu cần cập nhật lại ngày hẹn lên sóng.`,
+      ].join('\n');
+
+      await replyToChat(kocAirMsg);
+      return { handled: true, reply: kocAirMsg, extractedChatId: chatId };
+    }
+
+    const scopedFilter =
+      effectiveRole === 'BRAND_PARTNER'
+        ? currentMapping?.brandName || currentMapping?.allowedBrands?.[0] || queryArg || 'ClubClio'
+        : queryArg;
+    const reportMsg = await buildAirScheduleReportMessage(scopedFilter);
+    await replyToChat(reportMsg);
+    return { handled: true, reply: reportMsg, extractedChatId: chatId };
+  }
+
+  // 12E. LỆNH BẮN TIN NHẮC LỊCH AIR TỰ ĐỘNG (/nhacair [brand | @handle | homnay | tre])
+  if (
+    lowerClean === '/nhacair' ||
+    lowerClean === 'nhacair' ||
+    lowerClean.startsWith('/nhacair ') ||
+    lowerClean === '/remindair' ||
+    lowerClean.startsWith('/remindair ')
+  ) {
+    // Nếu gõ ngay trong nhóm KOC: phát tin nhắc lịch Air trực tiếp cho nhóm hiện tại
+    if (effectiveRole === 'KOC_GROUP') {
+      const airMeta = parseVnDateToYmdAndDiff(currentMapping?.deadlineDate) || {
+        ymd: new Date().toISOString().slice(0, 10),
+        display: currentMapping?.deadlineDate || formatVnDatePlusDays(0),
+        diffDays: 0,
+      };
+      const singleMsg = buildSingleGroupAirReminderMessage({
+        dealCode: currentMapping?.dealCode || 'DEAL',
+        kocHandle: (currentMapping?.kocHandle || 'koc').replace(/^@/, ''),
+        kocName: currentMapping?.kocName || currentMapping?.kocHandle || 'KOC',
+        brandName: currentMapping?.brandName || 'B2C',
+        storeName: currentMapping?.storeName || 'Gian hàng chính hãng',
+        picName: currentMapping?.picName || 'Team Booking',
+        productName: currentMapping?.productName || 'Sản phẩm chiến dịch',
+        requiredHashtags: currentMapping?.requiredHashtags || [],
+        plannedAirDateDisplay: airMeta.display,
+        plannedAirDateYmd: airMeta.ymd,
+        diffDays: airMeta.diffDays,
+        bucket:
+          airMeta.diffDays < 0 ? 'OVERDUE' : airMeta.diffDays === 0 ? 'TODAY' : 'UPCOMING',
+        dealStatus: currentMapping?.dealStatus || 'ĐÃ_DUYỆT_NHÁP',
+        airedVideoUrl: currentMapping?.airedVideoUrl,
+        draftVideoUrl: currentMapping?.draftVideoUrl,
+        zaloGroupId: chatId,
+        zaloGroupName: currentMapping?.groupName,
+      });
+      await replyToChat(singleMsg);
+      return { handled: true, reply: singleMsg, extractedChatId: chatId };
+    }
+
+    if (effectiveRole === 'BRAND_PARTNER') {
+      const denyBrandRemind =
+        '⛔ PHÂN QUYỀN BẢO MẬT: Lệnh phát thông báo nhắc lịch Air hàng loạt tới các nhóm KOC do Team Vận hành Upbase thực hiện. Anh/Chị có thể gõ /lichair để xem lịch lên sóng của Brand.';
+      await replyToChat(denyBrandRemind);
+      return { handled: true, reply: denyBrandRemind, extractedChatId: chatId };
+    }
+
+    const filterArg = cleanText.replace(/^\/?(?:nhacair|remindair)\s*/i, '').trim();
+    const { summaryText } = await runAirScheduleReminders({
+      actuallySend: shouldSend,
+      filterQuery: filterArg || undefined,
+    });
+    await replyToChat(summaryText);
+    return { handled: true, reply: summaryText, extractedChatId: chatId };
+  }
+
+  // 12F. LỆNH CHỐT HOẶC CẬP NHẬT NGÀY DỰ KIẾN LÊN SÓNG (/henair <DD/MM/YYYY> [@handle] [ghi chú])
+  if (
+    lowerClean === '/henair' ||
+    lowerClean.startsWith('/henair ') ||
+    lowerClean === '/datlichair' ||
+    lowerClean.startsWith('/datlichair ')
+  ) {
+    const rawArgs = cleanText.replace(/^\/?(?:henair|datlichair)\s*/i, '').trim();
+    const res = await updateDealPlannedAirDate({
+      chatId,
+      rawArgs,
+      currentMapping,
+      senderName,
+    });
+    await replyToChat(res.reply);
+    return { handled: true, reply: res.reply, extractedChatId: chatId };
+  }
+
   // 13. LỆNH KIỂM TRA TRẠNG THÁI NHÓM: /status
   if (lowerClean === '/status' || lowerClean === 'status') {
     const statusMsg = currentMapping
@@ -5061,6 +5800,9 @@ export async function processZaloWebhookEvent(
     `• /duyetnhap [ghi chú] : PIC / Brand xác nhận duyệt video nháp cho KOC đăng bài.`,
     `• /suanhap <nội dung> : PIC / Brand gửi yêu cầu chỉnh sửa video nháp.`,
     `• /ads <mã_spark_ads> : KOC gửi mã ủy quyền quảng cáo Spark Ads để làm hồ sơ thanh toán.`,
+    `• /henair <DD/MM/YYYY> [ghi chú] : Chốt hoặc cập nhật ngày dự kiến lên sóng (Air) của KOC.`,
+    `• /lichair : Xem lịch hẹn lên sóng & đếm ngược thời gian Air.`,
+    `• /nhacair : Phát thông báo nhắc lịch đăng bài TikTok & gắn giỏ hàng.`,
     `• /bbnt (hoặc /thanhtoan) : Kiểm tra 4 cổng điều kiện BBNT & bóc tách Thuế TNCN 10% / VAT 8% / Thực nhận Net.`,
     `• /brief : Xem nội dung Brief, góc quay và hashtag bắt buộc của Deal.`,
     `• /status : Kiểm tra trạng thái tiến độ Deal của nhóm.`,
@@ -5074,16 +5816,20 @@ export async function processZaloWebhookEvent(
           `• /duyetkoc <@handle> [ghi chú] : Chốt chọn KOC triển khai chiến dịch.`,
           `• /tuchoikoc <@handle> <lý do> : Yêu cầu đổi ứng viên KOC khác.`,
           `• /nhapchoduyet : Xem danh sách các video Demo đang chờ Brand duyệt.`,
+          `• /lichair : Xem lịch lên sóng (Air) dự kiến của các KOC thuộc Brand.`,
           `• /tiendo : Xem báo cáo tiến độ số lượng video & ngân sách của Brand.`,
         ]
       : isInternalOrBod
         ? [
             `----------------------------------------`,
             `🔐 CÁC LỆNH NỘI BỘ & ĐIỀU HÀNH (ĐÃ MỞ KHÓA):`,
+            `• /lichair [brand | @handle | homnay | mai | tre] : Xem bảng theo dõi Lịch Air & cảnh báo KOC trễ lịch lên sóng.`,
+            `• /nhacair [brand | @handle | homnay | tre] : Tự động bắn tin nhắn nhắc lịch đăng bài & gắn giỏ hàng tới các nhóm Zalo KOC đến hạn/trễ hạn.`,
+            `• /henair <DD/MM/YYYY> [@handle] : Chốt hoặc dời ngày hẹn Air và đồng bộ sang Bảng Quản lý Deal.`,
+            `• /nhacnho [tên_brand] : Tự động rà soát & bắn tin nhắc hạn SLA toàn trình (mẫu, nháp, duyệt nháp, Air, mã Ads).`,
             `• /koc <@handle> : Tra cứu lịch sử hợp tác, GMV, ROI & STK của KOC.`,
             `• /pnl [tên_brand] : Xem ngân sách Gross/Net, thực chi & định mức 69 gian hàng B2C.`,
             `• /bbnt [mã_deal/@handle] : Đối soát 4 cổng nghiệm thu BBNT & bảng tính thuế thanh toán.`,
-            `• /nhacnho [tên_brand] : Tự động rà soát & bắn tin nhắc hạn SLA hàng loạt tới các nhóm KOC đang trễ/chờ xử lý.`,
             `• /listing [tên_brand] : Xem danh sách đề xuất KOC theo Brand.`,
             `• /tiendo [tên_brand] : Xem báo cáo tiến độ gửi Nhãn hàng.`,
             `• /overbudget : Kiểm tra các gian hàng cảnh báo vượt trần ngân sách.`,
