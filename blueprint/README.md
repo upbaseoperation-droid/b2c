@@ -33,7 +33,7 @@ Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự á
 | HUB-GOV-01 | [Decision log](governance/DECISION_LOG.md) | Đang dùng |
 | HUB-GOV-02 | [Open issues](governance/OPEN_ISSUES.md) | Đang xử lý |
 | **HUB-GOV-03** | [**Ma trận truy vết (RTM)**](governance/TRACEABILITY.md) | **Đã hoàn thiện (`BR` → `FR` → `US` → `TC`)** |
-| **HUB-GOV-04** | [**Sổ đăng ký lỗi & Quy tắc phòng ngừa tái phát**](governance/KNOWN_BUGS_AND_LESSONS.md) | **Đang dùng (Bắt buộc đối chiếu chéo toàn hệ thống — đã cập nhật tới `BUG-058` & `FR-065`)** |
+| **HUB-GOV-04** | [**Sổ đăng ký lỗi & Quy tắc phòng ngừa tái phát**](governance/KNOWN_BUGS_AND_LESSONS.md) | **Đang dùng (Bắt buộc đối chiếu chéo toàn hệ thống — đã cập nhật tới `BUG-062` & `FR-065`)** |
 | HUB-AUDIT-01 | [Audit Giao diện & Design System](audits/2026-10-14-ui-design-system-audit.md) | Đã hoàn thành toàn diện (Gộp nhóm điều hướng NAV_GROUPS, khử trùng lặp tab chéo, chuẩn hóa Modal & loại bỏ phụ đề giải thích thừa) |
 
 ## Giai đoạn 1 — Yêu cầu

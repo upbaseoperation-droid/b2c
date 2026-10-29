@@ -5,7 +5,7 @@
 | Mã tài liệu | HUB-GOV-04 |
 | Dự án | B2C Ops Hub — Quản trị & Điều hành phòng Marketing B2C |
 | Trạng thái | Đang dùng (Sổ ghi liên tục — Bắt buộc đối chiếu khi sửa lỗi & phát triển tính năng) |
-| Cập nhật | 26/10/2026 |
+| Cập nhật | 29/10/2026 |
 
 Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hiển thị dữ liệu và lỗi logic nghiệp vụ do người dùng cùng trợ lý phát hiện trong quá trình xây dựng **B2C Ops Hub**. Mỗi lỗi đều được rút trích thành **Quy tắc phòng ngừa chuẩn** để áp dụng chéo cho tất cả các phân hệ khác (`Danh bạ KOC`, `Booking`, `Kế hoạch tháng`, `Hồ sơ Thương hiệu`, `Gian hàng`, `Hợp đồng`, `Giao việc & Workload`).
 
@@ -1151,6 +1151,25 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   3. Che mờ (`****5678`) toàn bộ SĐT, CCCD, STK trên bảng công cộng; bổ sung xác thực phiên, chặn đối tác ngoài trên tất cả API nội bộ, kiểm tra `canApprovePayment` + khớp tên `bookingLeaderName` khi duyệt phiếu thanh toán Lark, thêm whitelist tên miền TikTok CDN cho `video-frame`, và bổ sung nhánh `.catch()` fallback cho `sharedRecords.ts` & `contracts/store.ts`.
   4. Tái cấu trúc các Hook đồng bộ state sang mô hình tính toán thuần khiết trong render / lazy initializer và loại bỏ lời gọi API tự động trong `useEffect` của `KalodataSyncModal.tsx`.
 - **Phạm vi rà soát mở rộng sang phần khác:** Đạt 0 lỗi `npx eslint src/`, 0 lỗi `npm run typecheck`, 100% pass bộ kiểm thử tự động `npm test` và hoàn tất `npm run build` sạch sẽ.
+
+---
+
+### BUG-062 — Bot Zalo Nghiệm Thu Video TikTok Bị Sinh Link Tìm Kiếm Giả Thay Giỏ Hàng Thật, Bỏ Sót Từ Khóa Phụ Đề & Lỗi Mã Hóa Kép URL (`%E1...`) Trên Ảnh Nghiệm Thu
+- **Ngày phát hiện:** 29/10/2026 (Người dùng báo lỗi kiểm tra link `https://vt.tiktok.com/ZSgpE85Nn/` — video `7701192255171775762` trong nhóm Zalo `zgr-44aa552dd6423f1c6653`).
+- **Phân hệ / File liên quan:** `web-admin/src/lib/tiktokOpenSourceEngines.ts`, `web-admin/src/lib/linkAirCheckServer.ts`, `web-admin/src/lib/tiktokVideoInspector.ts`, `web-admin/src/lib/server/zaloBot.ts`, `web-admin/src/app/api/integrations/zalo-bot/webhook/route.ts`, `web-admin/src/lib/server/sharedRecords.ts`, `web-admin/scripts/vn-tiktok-cart-bridge.mjs`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Link sản phẩm bị báo sai thành link tìm kiếm `https://www.tiktok.com/search?q=...` và Mã SP bị gán bằng Mã Video:**
+     - Khi máy chủ Vercel (`sin1` Singapore) đọc SSR HTML của TikTok, TikTok ẩn mảng `anchors` giỏ hàng vùng Việt Nam (`ssrAnchors = 0`). Hàm `extractTikTokShopAnchorInfo` trong `tiktokOpenSourceEngines.ts` có nhánh dự phòng `isCommercialAdVideo` tự chế tạo một sản phẩm giả từ caption video với `productId = videoId` và `productUrl = https://www.tiktok.com/search?q=...`. Vì `cartProducts` không rỗng nên hàm `resolveCartViaVietnamBridge` bị bỏ qua hoàn toàn, không gọi sang cầu nối IP Việt Nam để lấy sản phẩm thật (`1737446289758061936` — `Miếng Tẩy Cặn Canxi Kính Đa Năng YUJIAO`).
+  2. **Báo cáo "Chưa phát hiện lời thoại nhắc tên SP trong phụ đề tự động" dù KOC đọc tên sản phẩm 4 lần:**
+     - Hàm `detectProductMentionMoments` trong `tiktokVideoInspector.ts` chỉ tách từ đơn hoặc lấy nguyên cụm tên sản phẩm dài, chưa tách các cụm 2–3 từ liền kề từ tên giỏ hàng (`"cặn canxi"`, `"tẩy cặn canxi"`) và chưa đối chiếu cụm 2–3 từ trong phụ đề WebVTT với hashtag viết liền (`#taycancanxi`).
+  3. **Ảnh chụp nghiệm thu bị nền đen và hiển thị chuỗi mã hóa URL (`Tr%E1%BA%A3 l%E1%BB%9Di...`, `27%2F10%2F2026`, `%F0%9D%90%97...`):**
+     - Máy chủ Zalo Bot Platform khi tải URL ảnh trong `sendPhoto` tự động mã hóa lại ký tự `%` trong query string thành `%25` (double URL-encoding), khiến `req.nextUrl.searchParams.get(...)` trả về chuỗi còn nguyên `%E1%BA...`; đồng thời tên kênh chứa ký tự Unicode Mathematical Bold (`𝐗 𝐁𝐚𝐫𝐛𝐞𝐫 𝐒𝐡𝐨𝐩`) không có glyph trong font `BeVietnamPro`, và `captureTikTokProductFrameBuffer` lưu cả ảnh lỗi nền đen (`rawBuffer === null`) vào cache PostgreSQL `ZALO_FRAMES_SHARED_KEY`.
+- **Cách khắc phục:**
+  1. Xóa bỏ hoàn toàn nhánh sinh link tìm kiếm giả `https://www.tiktok.com/search?q=...` trong `tiktokOpenSourceEngines.ts`, `linkAirCheckServer.ts` và `vn-tiktok-cart-bridge.mjs` (tuân thủ `RULE-DATA-01`), đảm bảo khi Vercel `sin1` bị ẩn giỏ hàng thì bắt buộc kích hoạt `resolveCartViaVietnamBridge`.
+  2. Mở rộng `detectProductMentionMoments` (`tiktokVideoInspector.ts`) tự động trích xuất cụm 2–3 từ từ `cartAnchorTitle` / `productName` và khớp cụm từ phụ đề với hashtag viết liền không dấu.
+  3. Truyền toàn bộ thông tin lớp phủ ảnh qua tham số `b64` (`base64url` không chứa ký tự `%`) trong `buildPublicZaloFrameUrl`, giải mã lặp `decodeURIComponent` tối đa 3 vòng kèm `.normalize('NFKC')` chuyển chữ Unicode kiểu cách về ASCII chuẩn, chặn cache khi `rawBuffer === null` và nâng khóa cache ảnh lên `FRMV2-`.
+  4. Xóa cache `pgRecordCache` ngay khi lệch `revision` trong `sharedRecords.ts` để tránh lỗi `409 Conflict` dây chuyền.
+- **Phạm vi rà soát mở rộng sang phần khác:** Áp dụng cho toàn bộ luồng nghiệm thu link TikTok trên Zalo Bot và Web Admin (`/api/integrations/link-air-check`, `/api/integrations/zalo-bot/webhook`).
 
 ---
 
