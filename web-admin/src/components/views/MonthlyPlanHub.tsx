@@ -920,56 +920,45 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     return rawPackages;
   }, [scopedPlans, selectedMonth, filteredBrandMonthlyPlans, canViewTeamPlansAndCoefficients, currentUser]);
 
-  // Bộ chỉ số quản trị duyệt kế hoạch & tổng hợp 4 đầu việc B2C theo tháng
+  // Bộ chỉ số quản trị duyệt kế hoạch & tổng hợp 4 đầu việc B2C theo tháng (Single-pass O(N))
   const governanceStats = useMemo(() => {
     const totalActive = activeStores.length;
-    const b2cList = storeGovernanceList.filter((item: StoreGovernanceItem) => item.isB2c);
-    const exemptList = storeGovernanceList.filter((item: StoreGovernanceItem) => !item.isB2c);
+    let totalB2cManaged = 0;
+    let totalExempt = 0;
+    let countWithLeader = 0;
+    let countDirectHead = 0;
+    let countWithPlan = 0;
+    let countMissingPlan = 0;
+    let countConfirmed41 = 0;
+    let countPending41Diff = 0;
+    let countUnconfirmed41 = 0;
+    let countHasWeekly411 = 0;
+    const emptyWeekly411List: StoreGovernanceItem[] = [];
+    let countValidMatched = 0;
+    let countValidWithNote = 0;
+    let countValidTotal = 0;
+    let countInvalid411 = 0;
+    let countUnexplainedMismatch = 0;
+    let countHasErrors = 0;
+    let countPriceWarnings = 0;
+    let countApproved = 0;
+    let countPendingApproval = 0;
+    let countPendingPreApproval = 0;
+    let countRevisionRequested = 0;
+    let countDraft = 0;
+    let countMultiVersion = 0;
+    const readyToBatchApproveList: StoreGovernanceItem[] = [];
 
-    const totalB2cManaged = b2cList.length;
-    const totalExempt = exemptList.length;
-
-    const withPlan = b2cList.filter((item: StoreGovernanceItem) => item.hasPlan);
-    const missingPlan = b2cList.filter((item: StoreGovernanceItem) => !item.hasPlan);
-
-    // Chặng 1: Tiến độ Plan Tổng 4.1
-    const confirmed41 = b2cList.filter(
-      (item: StoreGovernanceItem) => item.hasPlan && item.validity.is41Confirmed && !item.validity.hasPending41Diff
-    );
-    const pending41Diff = b2cList.filter((item: StoreGovernanceItem) => Boolean(item.plan?.pendingReference41));
-    const unconfirmed41 = b2cList.filter((item: StoreGovernanceItem) => item.plan?.reference41?.isGrowthLocked === false);
-
-    // Chặng 2: Tiến độ Plan Chi tiết 4.1.1 (Phân rã tuần)
-    const hasWeekly411 = b2cList.filter((item: StoreGovernanceItem) => item.hasPlan && item.validity.hasWeeklyBreakdown);
-    const emptyWeekly411 = b2cList.filter((item: StoreGovernanceItem) => item.hasPlan && !item.validity.hasWeeklyBreakdown);
-    const weekly411Pct = totalB2cManaged > 0 ? Math.round((hasWeekly411.length / totalB2cManaged) * 100) : 0;
-
-    // Chặng 3: Tính hợp lệ 4.1 vs 4.1.1
-    const validMatched = b2cList.filter((item: StoreGovernanceItem) => item.validity.state === 'VALID_MATCHED');
-    const validWithNote = b2cList.filter((item: StoreGovernanceItem) => item.validity.state === 'VALID_WITH_NOTE');
-    const validTotal = b2cList.filter((item: StoreGovernanceItem) => item.validity.isValidForSubmit);
-    const invalid411 = b2cList.filter((item: StoreGovernanceItem) => item.hasPlan && !item.validity.isValidForSubmit);
-    const unexplainedMismatch = b2cList.filter((item: StoreGovernanceItem) => item.validity.state === 'UNEXPLAINED_MISMATCH');
-    const hasErrors = b2cList.filter((item: StoreGovernanceItem) => item.validity.state === 'HAS_ERRORS');
-    const priceWarnings = b2cList.filter((item: StoreGovernanceItem) => item.validity.priceWarningCount > 0);
-    const validPct = withPlan.length > 0 ? Math.round((validTotal.length / withPlan.length) * 100) : 0;
-
-    // Chặng 4: Tiến độ Phê duyệt & Thực thi
-    const approved = b2cList.filter((item: StoreGovernanceItem) => item.plan && ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(item.plan.status || ''));
-    const pendingApproval = b2cList.filter((item: StoreGovernanceItem) => item.plan && item.plan.status === 'PENDING_APPROVAL');
-    const pendingPreApproval = b2cList.filter((item: StoreGovernanceItem) => item.plan && (item.plan.status === 'PENDING_PRE_APPROVAL' || item.plan.status === 'PRE_APPROVED'));
-    const revisionRequested = b2cList.filter((item: StoreGovernanceItem) => item.plan && item.plan.status === 'REVISION_REQUESTED');
-    const draft = b2cList.filter((item: StoreGovernanceItem) => item.plan && (item.plan.status === 'DRAFT' || !item.plan.status));
-    const multiVersion = b2cList.filter((item: StoreGovernanceItem) => item.plan && getPlanVersionSnapshots(item.plan).length > 1);
-    const readyToBatchApprove = b2cList.filter(
-      (item: StoreGovernanceItem) =>
-        item.plan &&
-        item.validity.isValidForSubmit &&
-        ['PENDING_APPROVAL', 'PRE_APPROVED', 'PENDING_PRE_APPROVAL'].includes(item.plan.status || '')
-    );
-
-    const withLeaderList = b2cList.filter((item: StoreGovernanceItem) => Boolean(item.plan?.hasBookingLeader ?? item.store.hasBookingLeader));
-    const directHeadList = b2cList.filter((item: StoreGovernanceItem) => !Boolean(item.plan?.hasBookingLeader ?? item.store.hasBookingLeader));
+    // Tổng hợp thông số 4 đầu việc B2C
+    let totalBudget = 0;
+    let totalVideos = 0;
+    let affPaidQty = 0;
+    let affPaidBudget = 0;
+    let focQty = 0;
+    let selfQty = 0;
+    let selfBudget = 0;
+    let otherQty = 0;
+    let otherBudget = 0;
 
     // Ma trận điểm nghẽn theo từng Chuyên viên phụ trách (PIC)
     const picMap = new Map<
@@ -985,22 +974,88 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         bottleneckCount: number;
       }
     >();
-    for (const item of b2cList) {
-      const picName = item.store.b2cOwners?.[0] || item.store.b2cOwnerName || item.plan?.pic || 'Chưa phân công';
-      const entry = picMap.get(picName) || {
-        picName,
-        totalStores: 0,
-        approvedCount: 0,
-        validCount: 0,
-        emptyWeeklyCount: 0,
-        invalidCount: 0,
-        missingCount: 0,
-        bottleneckCount: 0,
-      };
-      entry.totalStores += 1;
+
+    for (let i = 0; i < storeGovernanceList.length; i++) {
+      const item = storeGovernanceList[i];
+      if (!item.isB2c) {
+        totalExempt++;
+        continue;
+      }
+
+      totalB2cManaged++;
+
+      const hasLeader = Boolean(item.plan?.hasBookingLeader ?? item.store.hasBookingLeader);
+      if (hasLeader) {
+        countWithLeader++;
+      } else {
+        countDirectHead++;
+      }
+
+      if (item.hasPlan) {
+        countWithPlan++;
+        if (item.validity.is41Confirmed && !item.validity.hasPending41Diff) {
+          countConfirmed41++;
+        }
+        if (item.validity.hasWeeklyBreakdown) {
+          countHasWeekly411++;
+        } else {
+          emptyWeekly411List.push(item);
+        }
+        if (!item.validity.isValidForSubmit) {
+          countInvalid411++;
+        }
+      } else {
+        countMissingPlan++;
+      }
+
+      if (item.plan?.pendingReference41) {
+        countPending41Diff++;
+      }
+      if (item.plan?.reference41?.isGrowthLocked === false) {
+        countUnconfirmed41++;
+      }
+
+      if (item.validity.state === 'VALID_MATCHED') countValidMatched++;
+      if (item.validity.state === 'VALID_WITH_NOTE') countValidWithNote++;
+      if (item.validity.isValidForSubmit) countValidTotal++;
+      if (item.validity.state === 'UNEXPLAINED_MISMATCH') countUnexplainedMismatch++;
+      if (item.validity.state === 'HAS_ERRORS') countHasErrors++;
+      if (item.validity.priceWarningCount > 0) countPriceWarnings++;
+
+      const planStatus = item.plan?.status || '';
       const isApproved = Boolean(
-        item.plan && ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(item.plan.status || '')
+        item.plan && ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(planStatus)
       );
+      if (isApproved) countApproved++;
+      if (item.plan && planStatus === 'PENDING_APPROVAL') countPendingApproval++;
+      if (item.plan && (planStatus === 'PENDING_PRE_APPROVAL' || planStatus === 'PRE_APPROVED')) countPendingPreApproval++;
+      if (item.plan && planStatus === 'REVISION_REQUESTED') countRevisionRequested++;
+      if (item.plan && (planStatus === 'DRAFT' || !planStatus)) countDraft++;
+      if (item.plan && getPlanVersionSnapshots(item.plan).length > 1) countMultiVersion++;
+      if (
+        item.plan &&
+        item.validity.isValidForSubmit &&
+        ['PENDING_APPROVAL', 'PRE_APPROVED', 'PENDING_PRE_APPROVAL'].includes(planStatus)
+      ) {
+        readyToBatchApproveList.push(item);
+      }
+
+      const picName = item.store.b2cOwners?.[0] || item.store.b2cOwnerName || item.plan?.pic || 'Chưa phân công';
+      let entry = picMap.get(picName);
+      if (!entry) {
+        entry = {
+          picName,
+          totalStores: 0,
+          approvedCount: 0,
+          validCount: 0,
+          emptyWeeklyCount: 0,
+          invalidCount: 0,
+          missingCount: 0,
+          bottleneckCount: 0,
+        };
+        picMap.set(picName, entry);
+      }
+      entry.totalStores += 1;
       if (isApproved) entry.approvedCount += 1;
       if (item.validity.isValidForSubmit) entry.validCount += 1;
       if (!item.hasPlan) entry.missingCount += 1;
@@ -1010,57 +1065,58 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       if (!item.hasPlan || !item.validity.isValidForSubmit || item.plan?.status === 'REVISION_REQUESTED') {
         entry.bottleneckCount += 1;
       }
-      picMap.set(picName, entry);
+
+      totalBudget += item.breakdown.totalBudget;
+      totalVideos += item.breakdown.totalVideos;
+      affPaidQty += item.breakdown.affPaidQty;
+      affPaidBudget += item.breakdown.affPaidBudget;
+      focQty += item.breakdown.focQty;
+      selfQty += item.breakdown.selfQty;
+      selfBudget += item.breakdown.selfBudget;
+      otherQty += item.breakdown.otherQty;
+      otherBudget += item.breakdown.otherBudget;
     }
+
     const picBottleneckSummary = Array.from(picMap.values()).sort(
       (a, b) => b.bottleneckCount - a.bottleneckCount || b.totalStores - a.totalStores
     );
 
-    const coveragePct = totalB2cManaged > 0 ? Math.round((withPlan.length / totalB2cManaged) * 100) : 0;
-    const approvedPct = totalB2cManaged > 0 ? Math.round((approved.length / totalB2cManaged) * 100) : 0;
-
-    // Tổng hợp thông số 4 đầu việc B2C
-    const totalBudget = b2cList.reduce((s, it) => s + it.breakdown.totalBudget, 0);
-    const totalVideos = b2cList.reduce((s, it) => s + it.breakdown.totalVideos, 0);
-    const affPaidQty = b2cList.reduce((s, it) => s + it.breakdown.affPaidQty, 0);
-    const affPaidBudget = b2cList.reduce((s, it) => s + it.breakdown.affPaidBudget, 0);
-    const focQty = b2cList.reduce((s, it) => s + it.breakdown.focQty, 0);
-    const selfQty = b2cList.reduce((s, it) => s + it.breakdown.selfQty, 0);
-    const selfBudget = b2cList.reduce((s, it) => s + it.breakdown.selfBudget, 0);
-    const otherQty = b2cList.reduce((s, it) => s + it.breakdown.otherQty, 0);
-    const otherBudget = b2cList.reduce((s, it) => s + it.breakdown.otherBudget, 0);
+    const weekly411Pct = totalB2cManaged > 0 ? Math.round((countHasWeekly411 / totalB2cManaged) * 100) : 0;
+    const validPct = countWithPlan > 0 ? Math.round((countValidTotal / countWithPlan) * 100) : 0;
+    const coveragePct = totalB2cManaged > 0 ? Math.round((countWithPlan / totalB2cManaged) * 100) : 0;
+    const approvedPct = totalB2cManaged > 0 ? Math.round((countApproved / totalB2cManaged) * 100) : 0;
 
     return {
       totalActive,
       totalB2cManaged,
       totalExempt,
-      countWithLeader: withLeaderList.length,
-      countDirectHead: directHeadList.length,
-      countWithPlan: withPlan.length,
-      countMissingPlan: missingPlan.length,
-      countConfirmed41: confirmed41.length,
-      countPending41Diff: pending41Diff.length,
-      countUnconfirmed41: unconfirmed41.length,
-      countHasWeekly411: hasWeekly411.length,
-      countEmptyWeekly411: emptyWeekly411.length,
-      emptyWeekly411List: emptyWeekly411,
+      countWithLeader,
+      countDirectHead,
+      countWithPlan,
+      countMissingPlan,
+      countConfirmed41,
+      countPending41Diff,
+      countUnconfirmed41,
+      countHasWeekly411,
+      countEmptyWeekly411: emptyWeekly411List.length,
+      emptyWeekly411List,
       weekly411Pct,
-      countValidMatched: validMatched.length,
-      countValidWithNote: validWithNote.length,
-      countValidTotal: validTotal.length,
-      countInvalid411: invalid411.length,
-      countUnexplainedMismatch: unexplainedMismatch.length,
-      countHasErrors: hasErrors.length,
-      countPriceWarnings: priceWarnings.length,
+      countValidMatched,
+      countValidWithNote,
+      countValidTotal,
+      countInvalid411,
+      countUnexplainedMismatch,
+      countHasErrors,
+      countPriceWarnings,
       validPct,
-      countApproved: approved.length,
-      countPendingApproval: pendingApproval.length,
-      countPendingPreApproval: pendingPreApproval.length,
-      countRevisionRequested: revisionRequested.length,
-      countDraft: draft.length,
-      countMultiVersion: multiVersion.length,
-      countReadyToBatchApprove: readyToBatchApprove.length,
-      readyToBatchApproveList: readyToBatchApprove,
+      countApproved,
+      countPendingApproval,
+      countPendingPreApproval,
+      countRevisionRequested,
+      countDraft,
+      countMultiVersion,
+      countReadyToBatchApprove: readyToBatchApproveList.length,
+      readyToBatchApproveList,
       picBottleneckSummary,
       coveragePct,
       approvedPct,
@@ -1112,12 +1168,16 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       }
 
       if (storeSearchQuery.trim()) {
-        const q = storeSearchQuery.toLowerCase();
-        const sName = (item.store.storeName || '').toLowerCase();
-        const bName = (item.store.brandName || '').toLowerCase();
-        const pOwner = (item.store.b2cOwnerName || '').toLowerCase();
-        const pPlatform = (item.store.platform || '').toLowerCase();
-        if (!sName.includes(q) && !bName.includes(q) && !pOwner.includes(q) && !pPlatform.includes(q)) return false;
+        const q = storeSearchQuery.trim().toLowerCase();
+        if (item.searchKey) {
+          if (!item.searchKey.includes(q)) return false;
+        } else {
+          const sName = (item.store.storeName || '').toLowerCase();
+          const bName = (item.store.brandName || '').toLowerCase();
+          const pOwner = (item.store.b2cOwnerName || '').toLowerCase();
+          const pPlatform = (item.store.platform || '').toLowerCase();
+          if (!sName.includes(q) && !bName.includes(q) && !pOwner.includes(q) && !pPlatform.includes(q)) return false;
+        }
       }
       return true;
     });
@@ -2708,10 +2768,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             <div className="p-3 border-b border-line space-y-2.5">
               <FilterBar
                 search={{
-                  value: storeSearchQuery,
+                  value: storeSearchInput,
                   onChange: (v) => {
-                    setStoreSearchQuery(v);
-                    setGovernancePage(1);
+                    setStoreSearchInput(v);
                   },
                   placeholder: 'Tìm gian hàng, thương hiệu, PIC B2C...',
                 }}
