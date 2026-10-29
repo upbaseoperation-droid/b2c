@@ -813,6 +813,83 @@ export async function appendNewRows(opts: {
       });
     }
 
+    // Tự động định dạng đồng nhất font chữ, căn lề, số tiền và viền ô cho các dòng mới đẩy
+    if (payload.length > 0 && targetSheetProp?.sheetId !== undefined) {
+      const sId = targetSheetProp.sheetId;
+      const startR = writeStartRow - 1;
+      const endR = writeEndRow;
+      const fmtRequests: Record<string, unknown>[] = [];
+
+      fmtRequests.push({
+        repeatCell: {
+          range: { sheetId: sId, startRowIndex: startR, endRowIndex: endR, startColumnIndex: 0, endColumnIndex: header.length },
+          cell: {
+            userEnteredFormat: {
+              textFormat: { fontFamily: 'Arial', fontSize: 10, foregroundColor: { red: 0.13, green: 0.13, blue: 0.13 } },
+              verticalAlignment: 'MIDDLE',
+              wrapStrategy: 'CLIP',
+            },
+          },
+          fields: 'userEnteredFormat(textFormat,verticalAlignment,wrapStrategy)',
+        },
+      });
+
+      fmtRequests.push({
+        updateDimensionProperties: {
+          range: { sheetId: sId, dimension: 'ROWS', startIndex: startR, endIndex: endR },
+          properties: { pixelSize: 28 },
+          fields: 'pixelSize',
+        },
+      });
+
+      fmtRequests.push({
+        updateBorders: {
+          range: { sheetId: sId, startRowIndex: startR, endRowIndex: endR, startColumnIndex: 0, endColumnIndex: header.length },
+          top: { style: 'SOLID', color: { red: 0.88, green: 0.9, blue: 0.92 } },
+          bottom: { style: 'SOLID', color: { red: 0.88, green: 0.9, blue: 0.92 } },
+          left: { style: 'SOLID', color: { red: 0.88, green: 0.9, blue: 0.92 } },
+          right: { style: 'SOLID', color: { red: 0.88, green: 0.9, blue: 0.92 } },
+          innerHorizontal: { style: 'SOLID', color: { red: 0.9, green: 0.92, blue: 0.94 } },
+          innerVertical: { style: 'SOLID', color: { red: 0.9, green: 0.92, blue: 0.94 } },
+        },
+      });
+
+      header.forEach((h, colIdx) => {
+        const norm = normHeaderToken(h);
+        if (/gia|phi|doanh so|gpm|aov|follower|view|cost|gmv target|so mon/i.test(norm)) {
+          fmtRequests.push({
+            repeatCell: {
+              range: { sheetId: sId, startRowIndex: startR, endRowIndex: endR, startColumnIndex: colIdx, endColumnIndex: colIdx + 1 },
+              cell: {
+                userEnteredFormat: {
+                  horizontalAlignment: 'RIGHT',
+                  numberFormat: { type: 'NUMBER', pattern: '#,##0' },
+                },
+              },
+              fields: 'userEnteredFormat(horizontalAlignment,numberFormat)',
+            },
+          });
+        } else if (/ngay|thang|dot|tep booking|trang thai|de xuat|brand chon|rowid|ma dong/i.test(norm)) {
+          fmtRequests.push({
+            repeatCell: {
+              range: { sheetId: sId, startRowIndex: startR, endRowIndex: endR, startColumnIndex: colIdx, endColumnIndex: colIdx + 1 },
+              cell: {
+                userEnteredFormat: { horizontalAlignment: 'CENTER' },
+              },
+              fields: 'userEnteredFormat.horizontalAlignment',
+            },
+          });
+        }
+      });
+
+      if (fmtRequests.length > 0) {
+        await sheetsFetch(`${spreadsheetId}:batchUpdate`, {
+          method: 'POST',
+          body: JSON.stringify({ requests: fmtRequests }),
+        }).catch(() => {});
+      }
+    }
+
     // Tự động ẩn cột kỹ thuật "Mã dòng (Row ID)" trên Google Sheet để Brand không nhìn thấy mã hệ thống
     const finalRowIdColIdx = header.findIndex(
       h => normHeaderToken(h) === normHeaderToken(ROW_ID_COLUMN_HEADER)
