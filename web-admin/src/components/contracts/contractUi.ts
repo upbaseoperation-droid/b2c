@@ -253,6 +253,41 @@ export function templateFor(
 
 export const SOW_TASKS_META_KEY = 'meta:sowTasksJson';
 export const SOW_JOBS_META_KEY = 'meta:sowJobsJson';
+export const PAYMENT_SCHEDULE_META_KEY = 'meta:paymentScheduleOption';
+
+export type PaymentScheduleOption = 'ONE_TIME' | 'TWO_TIMES' | 'BY_SOW';
+
+export function isTwoTimePaymentField(f: ContractField): boolean {
+  if (f.source === 'advanceAmount') return true;
+  const t = `${f.title || ''} ${f.label || ''} ${f.context || ''}`.toLowerCase();
+  return (
+    t.includes('tạm ứng lần 1') ||
+    t.includes('lần 1 tạm ứng') ||
+    t.includes('hạn tạm ứng') ||
+    t.includes('hạn thanh toán lần 2')
+  );
+}
+
+export function resolvePaymentScheduleOption(
+  values: Record<string, string>,
+  templateId?: string,
+  fields: ContractField[] = [],
+): PaymentScheduleOption {
+  const explicit = values[PAYMENT_SCHEDULE_META_KEY];
+  if (explicit === 'ONE_TIME' || explicit === 'TWO_TIMES' || explicit === 'BY_SOW') {
+    return explicit;
+  }
+  const advField = fields.find(
+    f => f.source === 'advanceAmount' || (f.title || f.label || '').toLowerCase().includes('tạm ứng lần 1'),
+  );
+  const rawAdv = advField ? values[advField.key] || '' : '';
+  const advDigits = Number(String(rawAdv).replace(/\D/g, '')) || 0;
+  if (advDigits > 0) return 'TWO_TIMES';
+  if (templateId && templateId.endsWith('-HDNT') && templateId !== 'CTV-HDNT') {
+    return 'BY_SOW';
+  }
+  return 'ONE_TIME';
+}
 
 /**
  * 1 Job trong Deal = 1 Bảng công việc trong Phụ lục SOW (1 Deal -> N Jobs -> N Bảng công việc)
@@ -1500,6 +1535,30 @@ export function prefill(
     if (title.includes('hoàn trả sản phẩm mẫu')) {
       return parentValueByTitleContains('hoàn trả sản phẩm mẫu') || '15';
     }
+    if (title.includes('nội dung cung cấp') || title.includes('post-only')) {
+      return parentValueByTitleContains('nội dung cung cấp') || 'Không áp dụng';
+    }
+    if (title.includes('định dạng file bàn giao') || title.includes('production-only')) {
+      return parentValueByTitleContains('định dạng file bàn giao') || 'MP4 Full HD 1080p';
+    }
+    if (title.includes('số lượng phiên bản cắt ngắn')) {
+      return parentValueByTitleContains('số lượng phiên bản cắt ngắn') || '0';
+    }
+    if (title.includes('thời lượng từng phiên bản cắt ngắn')) {
+      return parentValueByTitleContains('thời lượng từng phiên bản cắt ngắn') || 'Không áp dụng';
+    }
+    if (
+      title.includes('link kênh shopee') ||
+      title.includes('link kênh facebook') ||
+      title.includes('link kênh instagram') ||
+      title.includes('link kênh youtube') ||
+      title.includes('link kênh threads')
+    ) {
+      const reupAddon = breakdown.addonItems.find(
+        rt => rt.termType === 'CROSS_POST_REUP' && rt.includedInSow !== false && rt.evidenceCodeOrUrl?.trim(),
+      );
+      return reupAddon?.evidenceCodeOrUrl?.trim() || parentValueByTitleContains(title) || 'Không áp dụng';
+    }
 
     // Tổng giá trị nghiệm thu (Điều 2 COM-VID-BBNT có trường chưa gắn source)
     if (title.includes('tổng giá trị nghiệm thu') && title.includes('thành tiền')) {
@@ -1661,6 +1720,9 @@ export function prefill(
       next[SOW_JOBS_META_KEY] = JSON.stringify(jobTables);
     }
   }
+  if (!next[PAYMENT_SCHEDULE_META_KEY]) {
+    next[PAYMENT_SCHEDULE_META_KEY] = advanceAmount > 0 ? 'TWO_TIMES' : 'ONE_TIME';
+  }
   return { values: next, filled };
 }
 
@@ -1752,6 +1814,11 @@ export function syncValuesFromJobAcceptanceBreakdown(
   const imgRight = breakdown.addonItems.find(rt => rt.termType === 'IMAGE_USAGE');
   const cartRight = breakdown.addonItems.find(rt => rt.termType === 'LINK_BIO_CART');
   const fin = breakdown.financials;
+  if (fin.advanceAmount > 0) {
+    next[PAYMENT_SCHEDULE_META_KEY] = 'TWO_TIMES';
+  } else if (next[PAYMENT_SCHEDULE_META_KEY] !== 'BY_SOW') {
+    next[PAYMENT_SCHEDULE_META_KEY] = 'ONE_TIME';
+  }
 
   for (const f of fields) {
     const title = (f.title || f.label || '').toLowerCase();

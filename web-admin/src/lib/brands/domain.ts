@@ -74,12 +74,12 @@ export function isLegalActor(u: UserProfile) {
 }
 
 /**
- * Trưởng phòng / quản trị: sửa mọi mục. Account PIC của nhãn: định vị, pháp nhân, quy tắc vận hành, sản phẩm,
- * quy chuẩn nội dung, câu hỏi khó, tài liệu. Đại diện nhãn hàng (BRAND_PARTNER) của đúng thương hiệu: sửa định vị,
- * pháp nhân, quy tắc vận hành/phê duyệt, sản phẩm & tồn kho mẫu, quy chuẩn nội dung, câu hỏi khó, tài liệu, pháp lý.
- * Pháp chế: mục pháp lý. Trần thù lao nội bộ (RATECARD): chỉ trưởng phòng B2C.
+ * Quyền sửa từng mục. Trưởng phòng / quản trị: mọi mục. Nhân sự nội bộ, Account PIC và đại diện nhãn hàng
+ * (BRAND_PARTNER) của đúng thương hiệu: định vị, pháp nhân, quy tắc vận hành, sản phẩm, quy chuẩn nội dung,
+ * câu hỏi khó, tài liệu. Pháp lý: lãnh đạo, pháp chế, PIC gian hàng của nhãn, đại diện nhãn hàng.
+ * Trần thù lao (RATECARD): lãnh đạo và PIC gian hàng của nhãn (`storePic`, xem `isStorePicOfBrand`).
  */
-export function permissionsFor(user: UserProfile | null, accountPic?: string, brandName?: string): BrandPermissions {
+export function permissionsFor(user: UserProfile | null, accountPic?: string, brandName?: string, storePic = false): BrandPermissions {
   const lead = !!user && isLead(user);
   const pic = !!user && sameName(user.name, accountPic);
   const legal = !!user && isLegalActor(user);
@@ -94,7 +94,17 @@ export function permissionsFor(user: UserProfile | null, accountPic?: string, br
     CONTENT_RULES: content,
     FAQS: content,
     DOCUMENTS: content,
-    LEGAL: lead || legal || internalStaff || brandPartner,
+    LEGAL: lead || legal || storePic || brandPartner,
+    RATECARD: lead || storePic,
+  };
+}
+
+/** Quyền xem mục hạn chế: nhân sự nội bộ vẫn đọc được pháp lý và trần thù lao để làm việc, chỉ không được sửa. */
+export function viewRightsFor(user: UserProfile | null, brandName?: string): { LEGAL: boolean; RATECARD: boolean } {
+  const lead = !!user && isLead(user);
+  const internalStaff = !!user && !user.partnerType && !user.role.endsWith('_PARTNER');
+  return {
+    LEGAL: lead || internalStaff || (!!user && isLegalActor(user)) || isBrandPartnerForBrand(user, brandName),
     RATECARD: lead || internalStaff,
   };
 }

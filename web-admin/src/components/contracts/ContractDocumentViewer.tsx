@@ -23,7 +23,12 @@ import {
 import type { AcceptanceScreenshotItem, ContractField, DocBlock, DocParagraph, DocTable, SigningPerson } from '../../lib/contracts/types';
 import { formatNumber } from '../../lib/format';
 import { Button, Modal } from '../ui';
-import { parseSavedSowJobs, SOW_JOBS_META_KEY } from './contractUi';
+import {
+  isTwoTimePaymentField,
+  parseSavedSowJobs,
+  resolvePaymentScheduleOption,
+  SOW_JOBS_META_KEY,
+} from './contractUi';
 
 export interface ContractDocumentViewerProps {
   title?: string;
@@ -74,9 +79,20 @@ export function ContractDocumentViewer({
   const printRef = useRef<HTMLDivElement | null>(null);
 
   // Danh sách các trường duy nhất (mỗi key 1 lần) để thống kê tiến độ điền
-  const uniqueFields = useMemo(
+  const allUniqueFields = useMemo(
     () => [...new Map(fields.map(f => [f.key, f])).values()],
     [fields],
+  );
+  const paymentScheduleOption = useMemo(
+    () => resolvePaymentScheduleOption(values, undefined, allUniqueFields),
+    [values, allUniqueFields],
+  );
+  const uniqueFields = useMemo(
+    () =>
+      isTemplatePreview || paymentScheduleOption === 'TWO_TIMES'
+        ? allUniqueFields
+        : allUniqueFields.filter(f => !isTwoTimePaymentField(f)),
+    [allUniqueFields, isTemplatePreview, paymentScheduleOption],
   );
   const requiredFields = useMemo(() => uniqueFields.filter(f => f.required), [uniqueFields]);
   const missingRequired = useMemo(
@@ -194,6 +210,9 @@ export function ContractDocumentViewer({
 
     if (!pFields || pFields.length === 0) {
       if (!text.trim()) return <span className="inline-block h-2" />;
+      if (!isTemplatePreview && /^Điều\s*…$/i.test(text.trim())) {
+        return '—';
+      }
       if (p.boldPrefix && p.boldPrefix > 0 && p.boldPrefix < text.length) {
         return (
           <>
@@ -486,11 +505,32 @@ export function ContractDocumentViewer({
       );
     }
 
-    const firstColHeader = table.rows[0]?.[0]?.blocks
-      .map(b => (b.kind === 'p' ? b.text : ''))
-      .join(' ')
-      .trim() || '';
+    const getCellText = (cell?: DocTable['rows'][number][number]) =>
+      cell?.blocks
+        .map(b => (b.kind === 'p' ? b.text : ''))
+        .join(' ')
+        .trim() || '';
+
+    const firstColHeader = getCellText(table.rows[0]?.[0]);
     const isSttCol = /^STT$/i.test(firstColHeader);
+
+    const isPaymentChoiceTable =
+      table.rows.length >= 2 &&
+      table.rows.every(r => /^Thanh toán\s*(0?1\s*lần|0?2\s*lần|theo\s*SOW)/i.test(getCellText(r[0])));
+
+    const rowsToRender = (() => {
+      if (!isPaymentChoiceTable || isTemplatePreview) return table.rows;
+      if (paymentScheduleOption === 'TWO_TIMES') {
+        const matched = table.rows.filter(r => /Thanh toán\s*0?2\s*lần/i.test(getCellText(r[0])));
+        return matched.length > 0 ? matched : table.rows;
+      }
+      if (paymentScheduleOption === 'BY_SOW') {
+        const matched = table.rows.filter(r => /Thanh toán\s*theo\s*SOW/i.test(getCellText(r[0])));
+        if (matched.length > 0) return matched;
+      }
+      const matchedOne = table.rows.filter(r => /Thanh toán\s*0?1\s*lần/i.test(getCellText(r[0])));
+      return matchedOne.length > 0 ? matchedOne : [table.rows[0]];
+    })();
 
     const getCellColStart = (r: DocTable['rows'][number], targetCellIdx: number) => {
       let col = 0;
@@ -502,8 +542,8 @@ export function ContractDocumentViewer({
 
     const computeRowSpan = (startRowIdx: number, colStart: number): number => {
       let span = 1;
-      for (let r = startRowIdx + 1; r < table.rows.length; r++) {
-        const nextRow = table.rows[r];
+      for (let r = startRowIdx + 1; r < rowsToRender.length; r++) {
+        const nextRow = rowsToRender[r];
         let curCol = 0;
         let matchedContinue = false;
         for (let c = 0; c < nextRow.length; c++) {
@@ -525,8 +565,8 @@ export function ContractDocumentViewer({
       <div key={idx} className="my-3 overflow-x-auto">
         <table className="doc-grid w-full border-collapse border border-[#333] text-[13.5px]">
           <tbody>
-            {table.rows.map((row, rIdx) => {
-              const isHeader = rIdx === 0 && row.length >= 2;
+            {rowsToRender.map((row, rIdx) => {
+              const isHeader = rIdx === 0 && row.length >= 3 && !isPaymentChoiceTable;
               return (
                 <tr key={rIdx} className={isHeader ? 'bg-[#f4f3ef] font-semibold' : undefined}>
                   {row.map((cell, cIdx) => {
@@ -539,7 +579,7 @@ export function ContractDocumentViewer({
                         colSpan={cell.colSpan}
                         rowSpan={rowSpan && rowSpan > 1 ? rowSpan : undefined}
                         className={`border border-[#333] px-2.5 py-1.5 align-top ${
-                          cIdx === 0 && row.length >= 3
+                          cIdx === 0 && row.length >= 2
                             ? isSttCol
                               ? 'w-12 text-center'
                               : 'w-[155px] font-medium'

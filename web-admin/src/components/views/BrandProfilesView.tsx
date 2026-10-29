@@ -45,6 +45,7 @@ import { CloudflareR2SetupModal } from '../brands/CloudflareR2SetupPanel';
 import { buildRows, isExpired, permissionsOf, real, type BrandAccess, type BrandRow } from '../brands/brandUi';
 import { getSharedProfilesSnapshot, subscribeSharedProfiles, updateSharedProfilesCache } from '../../lib/brands/useBrandProfiles';
 import { isBrandManagedByUser } from '../../lib/rbacScope';
+import { isStorePicOfBrand } from '../../lib/storePositions';
 
 type Filter = 'ALL' | 'MINE' | 'KEY_BUDGET' | 'COMPLETE' | 'EXPIRED_LEGAL';
 
@@ -313,7 +314,7 @@ export function BrandProfilesView({
       <BrandProfileDetail
         key={open.key}
         row={open}
-        can={permissionsOf(access, real(open.master?.accountPic), open.name)}
+        can={permissionsOf(access, real(open.master?.accountPic), open.name, isStorePicOfBrand(currentUser, open.name, allStores))}
         deals={deals}
         stores={allStores}
         monthlyPlans={monthlyPlans}

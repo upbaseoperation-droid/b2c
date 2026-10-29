@@ -1161,16 +1161,50 @@ export async function renderTemplate(
   acceptanceScreenshots?: AcceptanceScreenshotItem[],
 ) {
   const { template, zip } = await loadTemplate(id, expectedHash); requireCondition(template.hash === expectedHash, 'File nguồn không khớp phiên bản.', 409);
+  const paymentOpt = values['meta:paymentScheduleOption'];
   const texts: string[] = [];
   for (const part of Object.keys(zip.files).filter(p => /^word\/(document|header\d+|footer\d+)\.xml$/.test(p)).sort()) {
     const xml = await zip.file(part)!.async('string'); let index = 0;
-    const filled = xml.replace(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/g, paragraph => {
+    let filled = xml.replace(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/g, paragraph => {
       const paragraphIndex = index++;
       const fields = template.fields.filter(f => f.part === part && f.paragraph === paragraphIndex).sort((a, b) => (b.start || 0) - (a.start || 0));
       let next = paragraph;
       for (const field of fields) { const value = values[field.key]; if (value?.trim()) next = replaceRange(next, field.start || 0, field.end || 0, value); }
-      texts.push(paragraphText(next)); return next;
+      return next;
     });
+    if (part === 'word/document.xml' && (paymentOpt === 'ONE_TIME' || paymentOpt === 'TWO_TIMES' || paymentOpt === 'BY_SOW')) {
+      filled = filled.replace(/<w:tbl>[\s\S]*?<\/w:tbl>/g, tblXml => {
+        const rowMatches = [...tblXml.matchAll(/<w:tr\b[^>]*>[\s\S]*?<\/w:tr>/g)];
+        if (rowMatches.length < 2) return tblXml;
+        const rowFirstCells = rowMatches.map(rm => {
+          const firstCell = rm[0].match(/<w:tc\b[^>]*>[\s\S]*?<\/w:tc>/)?.[0] || '';
+          return paragraphText(firstCell).trim();
+        });
+        const isPaymentChoiceTbl = rowFirstCells.every(txt =>
+          /^Thanh toán\s*(0?1\s*lần|0?2\s*lần|theo\s*SOW)/i.test(txt),
+        );
+        if (!isPaymentChoiceTbl) return tblXml;
+        const targetPattern =
+          paymentOpt === 'TWO_TIMES'
+            ? /Thanh toán\s*0?2\s*lần/i
+            : paymentOpt === 'BY_SOW'
+              ? /Thanh toán\s*theo\s*SOW/i
+              : /Thanh toán\s*0?1\s*lần/i;
+        const hasTarget = rowFirstCells.some(txt => targetPattern.test(txt));
+        const effectivePattern = hasTarget ? targetPattern : /Thanh toán\s*0?1\s*lần/i;
+        let nextTbl = tblXml;
+        for (let i = rowMatches.length - 1; i >= 0; i--) {
+          if (!effectivePattern.test(rowFirstCells[i])) {
+            const rm = rowMatches[i];
+            if (rm.index !== undefined) {
+              nextTbl = nextTbl.slice(0, rm.index) + nextTbl.slice(rm.index + rm[0].length);
+            }
+          }
+        }
+        return nextTbl;
+      });
+    }
+    texts.push(...paragraphs(filled).map(p => paragraphText(p[0])));
     zip.file(part, filled);
   }
   if (acceptanceScreenshots && acceptanceScreenshots.length > 0) {

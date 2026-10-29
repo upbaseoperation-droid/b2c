@@ -1,7 +1,8 @@
 import type { UserProfile, BrandDetail } from '../types';
-import type { BrandProfile } from '../brands/types';
+import type { BrandPermissions, BrandProfile } from '../brands/types';
 import { isBrandManagedByUser } from '../rbacScope';
-import { permissionsFor, isBrandPartnerForBrand, requireBrand } from '../brands/domain';
+import { isStorePicOfBrand } from '../storePositions';
+import { permissionsFor, viewRightsFor, isBrandPartnerForBrand, requireBrand } from '../brands/domain';
 import { readMasterCatalog } from './masterCatalogStore';
 import { brandKey } from '../brands/types';
 
@@ -13,8 +14,16 @@ export async function requireBrandScope(user: UserProfile, name: string): Promis
   requireBrand(allowed, 'Thương hiệu không thuộc phạm vi được giao.', 403);
   return master;
 }
-export function readableProfile(profile: BrandProfile, user: UserProfile, master?: BrandDetail): BrandProfile {
-  const rights = permissionsFor(user, master?.accountPic, profile.brandName);
+
+/** Quyền sửa của người dùng trên một nhãn, có xét PIC gian hàng theo Dữ liệu gốc. */
+export async function brandEditRights(user: UserProfile, master: BrandDetail | undefined, brandName: string): Promise<BrandPermissions> {
+  const { data } = await readMasterCatalog();
+  const name = master?.name || brandName;
+  return permissionsFor(user, master?.accountPic, name, isStorePicOfBrand(user, name, data.stores));
+}
+
+export function readableProfile(profile: BrandProfile, user: UserProfile): BrandProfile {
+  const rights = viewRightsFor(user, profile.brandName);
   return {
     ...profile,
     ratecard: rights.RATECARD ? profile.ratecard : [],

@@ -27,7 +27,6 @@ import {
   Search,
   Clapperboard,
   Contact,
-  Cloud,
   Bot,
   MessageSquare,
   type LucideIcon,
@@ -97,7 +96,6 @@ const NAV = {
   research: { key: 'market-research', label: groupLabel('research'), icon: Search, group: 'research' },
   masterData: { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
   partnerAccess: { key: 'partner-access', label: 'Phân quyền & Nhân sự', icon: KeyRound },
-  cloudflareAdmin: { key: 'cloudflare-admin', label: 'Quản lý Cloudflare R2', icon: Cloud },
   apiSettings: { key: 'api-settings', label: 'Tích hợp & Kết nối API', icon: Sliders },
 } satisfies Record<string, NavItem>;
 
@@ -173,7 +171,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     },
     {
       title: 'Hệ thống',
-      items: [NAV.masterData, NAV.partnerAccess, NAV.cloudflareAdmin, NAV.apiSettings],
+      items: [NAV.masterData, NAV.partnerAccess],
     },
   ];
 }

@@ -156,7 +156,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Trần Anh Thư",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1qRsxaR8aMX8iLy6FHupLNAvKu4e5N-2UYjvps4zUens/edit",
+    "defaultSheetTab": "BELLA_Shopee_E2E-S"
   },
   {
     "id": "store-b2c-4-bella-tiktok-e2e-s",
@@ -206,7 +208,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Khánh Linh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1qRsxaR8aMX8iLy6FHupLNAvKu4e5N-2UYjvps4zUens/edit",
+    "defaultSheetTab": "BELLA_TikTok_E2E-S"
   },
   {
     "id": "store-b2c-5-babe-tiktok-e2e-o",
@@ -256,7 +260,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Vũ Mai Linh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1nibnxgNejAOxxtiO3MiDfC-cQSYx5J3eMUSFgvx4Nxw/edit",
+    "defaultSheetTab": "BaBe_TikTok_E2E-O"
   },
   {
     "id": "store-b2c-6-badlab-tiktok-e2e-s",
@@ -308,7 +314,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Phan Đức Hoàng",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1ogIr7M8jn9abs83HcqzD2K0v-9Aei5irf-AoHzAwNjU/edit",
+    "defaultSheetTab": "Badlab_TikTok_E2E-S"
   },
   {
     "id": "store-b2c-7-baegayul-tiktok-e2e-o",
@@ -356,7 +364,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Chu Nhật Linh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1zqC2cOD_04tWfD0L51eshhjsUp4TCi6MBhk_fsiZFp4/edit",
+    "defaultSheetTab": "Baegayul_TikTok_E2E-O"
   },
   {
     "id": "store-b2c-8-baniphar-shopee-e2e-s",
@@ -406,7 +416,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Văn Dũng",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1UXuyF63pEYxsNFZnZulWgQVv3i48aEcVkejwdL9m5nk/edit",
+    "defaultSheetTab": "Baniphar_Shopee_E2E-S"
   },
   {
     "id": "store-b2c-9-baniphar-tiktok-e2e-s",
@@ -460,7 +472,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Văn Dũng",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1UXuyF63pEYxsNFZnZulWgQVv3i48aEcVkejwdL9m5nk/edit",
+    "defaultSheetTab": "Baniphar_TikTok_E2E-S"
   },
   {
     "id": "store-b2c-10-bye-bye-blemish-shopee-e2e-s",
@@ -510,7 +524,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Đỗ Minh Nhật",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1IbSuYD1INqhw5rX6gsQ_aw_isK2JALblavx5g_88vMo/edit",
+    "defaultSheetTab": "Bye Bye Blemish_Shopee_E2E-S"
   },
   {
     "id": "store-b2c-11-bye-bye-blemish-tiktok-e2e-s",
@@ -563,7 +579,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Ngô Lan Hương",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1IbSuYD1INqhw5rX6gsQ_aw_isK2JALblavx5g_88vMo/edit",
+    "defaultSheetTab": "Bye Bye Blemish_TikTok_E2E-S"
   },
   {
     "id": "store-b2c-12-cm24-shopee-e2e-c",
@@ -611,7 +629,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Đào Thị Lệ Quyên",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1-Gf-Q4HfvCgQwBV30Gg2Tas0nrRMLCSutf58nU3Vsv8/edit",
+    "defaultSheetTab": "CM24_Shopee_E2E-C"
   },
   {
     "id": "store-b2c-13-cm24-tiktok-e2e-c",
@@ -665,7 +685,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Đặng Nhật Hoài",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1-Gf-Q4HfvCgQwBV30Gg2Tas0nrRMLCSutf58nU3Vsv8/edit",
+    "defaultSheetTab": "CM24_TikTok_E2E-C"
   },
   {
     "id": "store-b2c-14-cathy-doll-shopee-e2e-c",
@@ -715,7 +737,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Hà Thúy Quỳnh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1BVmbWje-cIax3Ao5AtaARVfhRX-Qg9t1HD6SeOb7hts/edit",
+    "defaultSheetTab": "Cathy Doll_Shopee_E2E-C"
   },
   {
     "id": "store-b2c-15-cathy-doll-tiktok-e2e-c",
@@ -769,7 +793,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Ngô Thị Mai Linh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1BVmbWje-cIax3Ao5AtaARVfhRX-Qg9t1HD6SeOb7hts/edit",
+    "defaultSheetTab": "Cathy Doll_TikTok_E2E-C"
   },
   {
     "id": "store-b2c-16-chulala-shopee-e2e-c",
@@ -817,7 +843,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Đào Thị Ánh Hồng",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1zj6aQbsWDvaVpj_QqpbHbAYom37dMGCgiIzIWJD31kw/edit",
+    "defaultSheetTab": "Chulala_Shopee_E2E-C"
   },
   {
     "id": "store-b2c-17-chulala-tiktok-e2e-c",
@@ -869,7 +897,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Mai Oanh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1zj6aQbsWDvaVpj_QqpbHbAYom37dMGCgiIzIWJD31kw/edit",
+    "defaultSheetTab": "Chulala_TikTok_E2E-C"
   },
   {
     "id": "store-b2c-18-cindy-bloom-tiktok-e2e-c",
@@ -928,7 +958,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Đỗ Hồng Hạnh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1_njntcJf9Km6gpg6_tkgTMCCDMDgUF3K58qCmt4p-y4/edit",
+    "defaultSheetTab": "Cindy Bloom_TikTok_E2E-C"
   },
   {
     "id": "store-b2c-19-clubclio-shopee-e2e-o",
@@ -981,7 +1013,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Khắc Công",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/171qw6gROYAQiUQXXH5oOAfgYoX1OUTjkZUqkl2yaQw4/edit",
+    "defaultSheetTab": "ClubClio_Shopee_E2E-O"
   },
   {
     "id": "store-b2c-20-clubclio-tiktok-e2e-o",
@@ -1038,7 +1072,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Đàm Thùy Dung",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/171qw6gROYAQiUQXXH5oOAfgYoX1OUTjkZUqkl2yaQw4/edit",
+    "defaultSheetTab": "ClubClio_TikTok_E2E-O"
   },
   {
     "id": "store-b2c-21-docilee-shopee-e2e-s",
@@ -1086,7 +1122,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Vũ Thị Như Quỳnh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/19OezQ34SOG1IPEWrCj3wEtM1VqX2oPgfE0VadQCQAic/edit",
+    "defaultSheetTab": "Docilee_Shopee_E2E-S"
   },
   {
     "id": "store-b2c-22-docilee-tiktok-e2e-s",
@@ -1138,7 +1176,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Lưu Hoàng Khánh Linh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/19OezQ34SOG1IPEWrCj3wEtM1VqX2oPgfE0VadQCQAic/edit",
+    "defaultSheetTab": "Docilee_TikTok_E2E-S"
   },
   {
     "id": "store-b2c-23-dynik-tiktok-e2e-c",
@@ -1190,7 +1230,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Chu Nhật Linh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1CbNjARQH4EenssRU8-PR7BvKQ074_DhKyKCqbT7iCmg/edit",
+    "defaultSheetTab": "Dynik_TikTok_E2E-C"
   },
   {
     "id": "store-b2c-24-eupc-shopee-e2e-c",
@@ -1244,7 +1286,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Thị Mỹ Hạnh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/122IGb5Mtn6GGlm2mtVjfRVZCQB3-58O_jeM6IgK6HaM/edit",
+    "defaultSheetTab": "EUPC _Shopee_E2E-C"
   },
   {
     "id": "store-b2c-25-eupc-tiktok-e2e-c",
@@ -1309,7 +1353,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Phùng Thị Thu Huệ",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/122IGb5Mtn6GGlm2mtVjfRVZCQB3-58O_jeM6IgK6HaM/edit",
+    "defaultSheetTab": "EUPC _TikTok_E2E-C"
   },
   {
     "id": "store-b2c-26-ekseption-shopee-e2e-o",
@@ -1357,7 +1403,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Khắc Công",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1NEkBbHYiSe2_MA-x9cVl6cscBqpUfLs9JApSiqpqBSY/edit",
+    "defaultSheetTab": "Ekseption_Shopee_E2E-O"
   },
   {
     "id": "store-b2c-27-ekseption-tiktok-e2e-o",
@@ -1405,7 +1453,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Vũ Ngọc Trâm Anh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1NEkBbHYiSe2_MA-x9cVl6cscBqpUfLs9JApSiqpqBSY/edit",
+    "defaultSheetTab": "Ekseption_TikTok_E2E-O"
   },
   {
     "id": "store-b2c-28-face-republic-tiktok-e2e-o",
@@ -1453,7 +1503,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Khánh Linh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1Pg78lYCwhAg6g49zCPPGkwj2L6Fq4FzVUm5uS-rJoNg/edit",
+    "defaultSheetTab": "Face republic_TikTok_E2E-O"
   },
   {
     "id": "store-b2c-29-feelcleans-shopee-e2e-s",
@@ -1501,7 +1553,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Vũ Mai Linh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1iKbP-aK30rK3AEPdoi0W83PTGvGtaFL5l7Kmbh0zJgI/edit",
+    "defaultSheetTab": "FeelCleans_Shopee_E2E-S"
   },
   {
     "id": "store-b2c-30-feelcleans-tiktok-e2e-s",
@@ -1553,7 +1607,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Lê Hương Mai",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1iKbP-aK30rK3AEPdoi0W83PTGvGtaFL5l7Kmbh0zJgI/edit",
+    "defaultSheetTab": "FeelCleans_TikTok_E2E-S"
   },
   {
     "id": "store-b2c-31-fresh-tiktok-e2e-c",
@@ -1605,7 +1661,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Anh Tú",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1BEsBsHxwFyo5Z8J_P-R9mI8VrDwiCqmP_13xReBq5IU/edit",
+    "defaultSheetTab": "Fresh_TikTok_E2E-C"
   },
   {
     "id": "store-b2c-32-hdt-shopee-e2e-c",
@@ -1655,7 +1713,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Trần Phương Anh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1OkbE0bh7DY6tZUhWqx2Pq27sgEE1N03IfhBKAMPyoDc/edit",
+    "defaultSheetTab": "HDT_Shopee_E2E-C"
   },
   {
     "id": "store-b2c-33-hdt-tiktok-e2e-c",
@@ -1709,7 +1769,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Bùi Thị Phương Chi",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1OkbE0bh7DY6tZUhWqx2Pq27sgEE1N03IfhBKAMPyoDc/edit",
+    "defaultSheetTab": "HDT_TikTok_E2E-C"
   },
   {
     "id": "store-b2c-34-herbal-care-shopee-e2e-c",
@@ -1757,7 +1819,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Chu Nhật Linh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1P5HiDybiccqtgrVatYX5Fe4kEVRzZ1YoN77m56O7Zyo/edit",
+    "defaultSheetTab": "Herbal Care_Shopee_E2E-C"
   },
   {
     "id": "store-b2c-35-herbal-care-tiktok-e2e-c",
@@ -1811,7 +1875,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Trung Kiên",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1P5HiDybiccqtgrVatYX5Fe4kEVRzZ1YoN77m56O7Zyo/edit",
+    "defaultSheetTab": "Herbal Care_TikTok_E2E-C"
   },
   {
     "id": "store-b2c-36-karmart-shopee-e2e-c",
@@ -1859,7 +1925,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Khắc Công",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1EfPO5qGxKIAc2mtUKXz541ojBvljmnKHjfCg29kK9KA/edit",
+    "defaultSheetTab": "Karmart_Shopee_E2E-C"
   },
   {
     "id": "store-b2c-37-kutieskin-mama-shopee-e2e-s",
@@ -1907,7 +1975,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Thiều Thị Lan Anh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1sUd2vStmtZk4rAbH38SHfVm8-49ITGhiBgoAh3vL7I8/edit",
+    "defaultSheetTab": "Kutieskin Mama_Shopee_E2E-S"
   },
   {
     "id": "store-b2c-38-kutieskin-mama-tiktok-e2e-s",
@@ -1961,7 +2031,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Văn Tú",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1sUd2vStmtZk4rAbH38SHfVm8-49ITGhiBgoAh3vL7I8/edit",
+    "defaultSheetTab": "Kutieskin Mama_TikTok_E2E-S"
   },
   {
     "id": "store-b2c-39-l-occitane-vi-t-nam-shopee-e2e-c",
@@ -2009,7 +2081,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Thị Vân Hồng",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1N5M2vxefba-9TYyVcR2XydNTdIv3BiI7W7iAg6FrRPw/edit",
+    "defaultSheetTab": "L'Occitane Việt Nam_Shopee_E2E-C"
   },
   {
     "id": "store-b2c-40-l-occitane-vi-t-nam-tiktok-e2e-c",
@@ -2058,7 +2132,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Thị Xuân",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1N5M2vxefba-9TYyVcR2XydNTdIv3BiI7W7iAg6FrRPw/edit",
+    "defaultSheetTab": "L'Occitane Việt Nam_TikTok_E2E-C"
   },
   {
     "id": "store-b2c-41-lipit-tiktok-e2e-c",
@@ -2112,7 +2188,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Vũ Thị Thanh Hoài",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1_aQ8v3QpEpVFPJDcLCKOmda0Ty50GxBP9IspYLkCyNc/edit",
+    "defaultSheetTab": "Lipit_TikTok_E2E-C"
   },
   {
     "id": "store-b2c-42-meracine-tiktok-e2e-s",
@@ -2162,7 +2240,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Vũ Thị Thanh Hoài",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1hRFqn3ekje7_dZoe2xiV2hoPUicMmQ34kl1rQFcGVss/edit",
+    "defaultSheetTab": "Meracine_TikTok_E2E-S"
   },
   {
     "id": "store-b2c-43-mine-shopee-e2e-c",
@@ -2212,7 +2292,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Đức Mạnh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1jKaa6YWTiARzVwat73H11__YEQDrZbFq1gnX2aOrsyo/edit",
+    "defaultSheetTab": "Mine_Shopee_E2E-C"
   },
   {
     "id": "store-b2c-44-mine-tiktok-e2e-c",
@@ -2263,7 +2345,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Phùng Thị Thu Huệ",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1jKaa6YWTiARzVwat73H11__YEQDrZbFq1gnX2aOrsyo/edit",
+    "defaultSheetTab": "Mine_TikTok_E2E-C"
   },
   {
     "id": "store-b2c-45-miss-saigon-shopee-e2e-c",
@@ -2311,7 +2395,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Trung Kiên",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1d5z6iaUD_FQd3LtaPQ65xY_yZ4RTfE6-c-Bn9613yuM/edit",
+    "defaultSheetTab": "Miss Saigon_Shopee_E2E-C"
   },
   {
     "id": "store-b2c-46-miss-saigon-tiktok-e2e-c",
@@ -2365,7 +2451,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Đàm Thùy Dung",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1d5z6iaUD_FQd3LtaPQ65xY_yZ4RTfE6-c-Bn9613yuM/edit",
+    "defaultSheetTab": "Miss Saigon_TikTok_E2E-C"
   },
   {
     "id": "store-b2c-47-nabizam-shopee-e2e-s",
@@ -2413,7 +2501,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Đỗ Hồng Hạnh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1zsV4mwg63AfobouEvpGsWr4cpVRLZLwOgJ2V3Kxw1Xs/edit",
+    "defaultSheetTab": "Nabizam_Shopee_E2E-S"
   },
   {
     "id": "store-b2c-48-nabizam-tiktok-e2e-s",
@@ -2463,7 +2553,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Thiều Thị Lan Anh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1zsV4mwg63AfobouEvpGsWr4cpVRLZLwOgJ2V3Kxw1Xs/edit",
+    "defaultSheetTab": "Nabizam_TikTok_E2E-S"
   },
   {
     "id": "store-b2c-49-natural-care-shopee-e2e-c",
@@ -2511,7 +2603,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Phùng Thị Thu Huệ",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/16vpsX4skxB2vy4hBc0_T6HmwhUHmkIDml95uwYcHVDk/edit",
+    "defaultSheetTab": "Natural Care_Shopee_E2E-C"
   },
   {
     "id": "store-b2c-50-natural-care-tiktok-e2e-c",
@@ -2565,7 +2659,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Ngô Lan Hương",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/16vpsX4skxB2vy4hBc0_T6HmwhUHmkIDml95uwYcHVDk/edit",
+    "defaultSheetTab": "Natural Care_TikTok_E2E-C"
   },
   {
     "id": "store-b2c-51-nature-s-way-shopee-e2e-s",
@@ -2615,7 +2711,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Phạm Thị Hồng Yến",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/14cUuMasODIlkeHWjPbitGQtX9A3MR3Laxc418RH_XFw/edit",
+    "defaultSheetTab": "Nature's Way_Shopee_E2E-S"
   },
   {
     "id": "store-b2c-52-nucos-tiktok-e2e-s",
@@ -2663,7 +2761,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Đỗ Thị Thanh Loan",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1D_Fth8TDHtqz0vvwghYFVpz9u06VzAcHr9TR7PaEX0o/edit",
+    "defaultSheetTab": "Nucos_TikTok_E2E-S"
   },
   {
     "id": "store-b2c-53-orgalife-mall-shopee-e2e-c",
@@ -2711,7 +2811,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Đoàn Gia Huy",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1PP7091K0I-yUyGi_4aOe7yfgIrT05asxTZ4RRVVTpDI/edit",
+    "defaultSheetTab": "ORGALIFE_Mall_Shopee_E2E-C"
   },
   {
     "id": "store-b2c-54-orgalife-shopee-e2e-c",
@@ -2761,7 +2863,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Đoàn Gia Huy",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1PP7091K0I-yUyGi_4aOe7yfgIrT05asxTZ4RRVVTpDI/edit",
+    "defaultSheetTab": "ORGALIFE_Shopee_E2E-C"
   },
   {
     "id": "store-b2c-55-orgalife-tiktok-e2e-c",
@@ -2813,7 +2917,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Phạm Trương Thu Đông",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1PP7091K0I-yUyGi_4aOe7yfgIrT05asxTZ4RRVVTpDI/edit",
+    "defaultSheetTab": "ORGALIFE_TikTok_E2E-C"
   },
   {
     "id": "store-b2c-56-rejuran-shopee-e2e-o",
@@ -2861,7 +2967,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Đỗ Minh Nhật",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1LnRpPWJk92d4SOGTxTGJdopnsSaG9AcoaFfXKfCqMJM/edit",
+    "defaultSheetTab": "Rejuran_Shopee_E2E-O"
   },
   {
     "id": "store-b2c-57-rejuran-tiktok-e2e-o",
@@ -2912,7 +3020,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Như Quỳnh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1LnRpPWJk92d4SOGTxTGJdopnsSaG9AcoaFfXKfCqMJM/edit",
+    "defaultSheetTab": "Rejuran_TikTok_E2E-O"
   },
   {
     "id": "store-b2c-58-revision-shopee-e2e-o",
@@ -2960,7 +3070,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Vũ Mai Linh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/17CrBPSkRcIsU7hGglOGpA_g0iGlG9_NTXqhWSGp3h5c/edit",
+    "defaultSheetTab": "Revision_Shopee_E2E-O"
   },
   {
     "id": "store-b2c-59-revision-tiktok-e2e-o",
@@ -3010,7 +3122,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Trần Phương Anh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/17CrBPSkRcIsU7hGglOGpA_g0iGlG9_NTXqhWSGp3h5c/edit",
+    "defaultSheetTab": "Revision_TikTok_E2E-O"
   },
   {
     "id": "store-b2c-60-royal-canin-tiktok-e2e-s",
@@ -3058,7 +3172,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Đặng Nhật Hoài",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1DMi93Z4CAf0y069Xeo2MfBR4QaJcyZbi-ziCbG1qQFE/edit",
+    "defaultSheetTab": "Royal Canin_TikTok_E2E-S"
   },
   {
     "id": "store-b2c-61-scc-saigon-cosmetics-shopee-e2e-c",
@@ -3108,7 +3224,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Thị Ánh Tuyết",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1SMfkrDIAu-Tq_Agtegst6qKljKEay6aUiXIVtxPPet0/edit",
+    "defaultSheetTab": "SCC Saigon Cosmetics_Shopee_E2E-C"
   },
   {
     "id": "store-b2c-62-tm-clean-shopee-e2e-c",
@@ -3156,7 +3274,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Vũ Gia Long",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1iP_EwW2Fc1SKG6vLp3DzYldo3sBozTNHnL4h29TCFow/edit",
+    "defaultSheetTab": "TM Clean _Shopee_E2E-C"
   },
   {
     "id": "store-b2c-63-tm-clean-tiktok-e2e-c",
@@ -3210,7 +3330,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Đào Thị Ánh Hồng",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1iP_EwW2Fc1SKG6vLp3DzYldo3sBozTNHnL4h29TCFow/edit",
+    "defaultSheetTab": "TM Clean _TikTok_E2E-C"
   },
   {
     "id": "store-b2c-64-upbeauty-tiktok-e2e-t",
@@ -3260,7 +3382,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Bùi Thị Phương Chi",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1Fubo7qvlaJRTklgZTOA0PD5Pcms5rAj_FDr0hvKMj1M/edit",
+    "defaultSheetTab": "UpBeauty_TikTok_E2E-T"
   },
   {
     "id": "store-b2c-65-venus-shopee-e2e-c",
@@ -3308,7 +3432,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Hứa Thị Ngọc Lam",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1aNGvHFS--HpKBMDpBi4zknqIPJH0J3ra6BFKdq1Jxic/edit",
+    "defaultSheetTab": "Venus_Shopee_E2E-C"
   },
   {
     "id": "store-b2c-66-venus-tiktok-e2e-c",
@@ -3360,7 +3486,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Phạm Hà Hoàng Trang",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1aNGvHFS--HpKBMDpBi4zknqIPJH0J3ra6BFKdq1Jxic/edit",
+    "defaultSheetTab": "Venus_TikTok_E2E-C"
   },
   {
     "id": "store-b2c-67-ziaja-shopee-e2e-s",
@@ -3412,7 +3540,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Nguyễn Thị Vân Hồng",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1qArVqzPgQfoNSiLCtCxAYLnzLuD589YACDKYyzW55Yk/edit",
+    "defaultSheetTab": "Ziaja_Shopee_E2E-S"
   },
   {
     "id": "store-b2c-68-ziaja-tiktok-e2e-s",
@@ -3466,7 +3596,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Lưu Hoàng Khánh Linh",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1qArVqzPgQfoNSiLCtCxAYLnzLuD589YACDKYyzW55Yk/edit",
+    "defaultSheetTab": "Ziaja_TikTok_E2E-S"
   },
   {
     "id": "store-b2c-69-phcare-tiktok-e2e-c",
@@ -3520,7 +3652,9 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "isB2cManaged": true,
     "requiresB2cPlan": true,
     "contentPic": "Phạm Thương Thảo",
-    "createdAt": "2026-10-01"
+    "createdAt": "2026-10-01",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1fdlcWEscm6L-wNL6yYGG3p7VNVeo3Lq1hr5XbFWmix4/edit",
+    "defaultSheetTab": "pHCare_TikTok_E2E-C"
   }
 ];
 

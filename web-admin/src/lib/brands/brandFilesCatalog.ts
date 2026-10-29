@@ -366,7 +366,14 @@ export const REAL_BRAND_FILE_CATALOG: BrandRealFileLinks[] = [
   },
   {
     brandMatchKeys: ['clubclio', 'clio'],
-    storeCode: 'Clio_TikTok',
+    storeCode: 'ClubClio_Shopee_E2E-O',
+    bookingSheetUrl: 'https://docs.google.com/spreadsheets/d/171qw6gROYAQiUQXXH5oOAfgYoX1OUTjkZUqkl2yaQw4/edit',
+    operatingModel: 'SPLIT_RESOURCE',
+  },
+  {
+    brandMatchKeys: ['clubclio', 'clio'],
+    storeCode: 'ClubClio_TikTok_E2E-O',
+    bookingSheetUrl: 'https://docs.google.com/spreadsheets/d/171qw6gROYAQiUQXXH5oOAfgYoX1OUTjkZUqkl2yaQw4/edit',
     operatingModel: 'SPLIT_RESOURCE',
   },
   {

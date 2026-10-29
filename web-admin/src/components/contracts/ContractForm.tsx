@@ -23,7 +23,11 @@ import {
 import {
   GROUP_ORDER,
   OFFICIAL_3STAGE_TEMPLATE_IDS,
+  PAYMENT_SCHEDULE_META_KEY,
   SOW_JOBS_META_KEY,
+  isTwoTimePaymentField,
+  resolvePaymentScheduleOption,
+  type PaymentScheduleOption,
   SOW_TASKS_META_KEY,
   SOW_TASK_DELIVERABLE_INFO,
   aggregateMultiJobAcceptanceBreakdown,
@@ -520,9 +524,17 @@ export function ContractForm({
     () => !Boolean(init?.dealId || init?.kocId || record?.dealId || record?.kocId),
   );
   const [showOmittedSowTasks, setShowOmittedSowTasks] = useState(false);
+  const paymentScheduleOption = useMemo(
+    () => resolvePaymentScheduleOption(values, templateId, fields),
+    [values, templateId, fields],
+  );
+  const activeFields = useMemo(
+    () => (paymentScheduleOption === 'TWO_TIMES' ? fields : fields.filter(f => !isTwoTimePaymentField(f))),
+    [fields, paymentScheduleOption],
+  );
   const groups = useMemo(
-    () => GROUP_ORDER.map(g => ({ ...g, fields: fields.filter(f => (f.group || 'OTHER') === g.key) })).filter(g => g.fields.length),
-    [fields],
+    () => GROUP_ORDER.map(g => ({ ...g, fields: activeFields.filter(f => (f.group || 'OTHER') === g.key) })).filter(g => g.fields.length),
+    [activeFields],
   );
   const isSecondaryOptionalField = (f: ContractField) => {
     if (f.required) return false;
@@ -545,11 +557,11 @@ export function ContractForm({
     if (!hasVal && !isSecondaryOptionalField(f)) return true;
     return false;
   };
-  const required = fields.filter(f => f.required);
+  const required = activeFields.filter(f => f.required);
   const requiredDone = required.filter(f => values[f.key]?.trim()).length;
-  const filledTotalCount = fields.filter(f => values[f.key]?.trim()).length;
-  const missingTotalCount = fields.length - filledTotalCount;
-  const needsAttentionCount = fields.filter(isFieldNeedsAttention).length;
+  const filledTotalCount = activeFields.filter(f => values[f.key]?.trim()).length;
+  const missingTotalCount = activeFields.length - filledTotalCount;
+  const needsAttentionCount = activeFields.filter(isFieldNeedsAttention).length;
 
   const refreshSystemPrefill = () => {
     if (!fields.length) return;
@@ -652,6 +664,63 @@ export function ContractForm({
       targetKoc,
       targetParent,
     );
+  };
+
+  const selectPaymentScheduleOption = (nextOpt: PaymentScheduleOption) => {
+    if (nextOpt === 'ONE_TIME' || nextOpt === 'BY_SOW') {
+      setDraftAdvanceAmount(0);
+      if (fields.length > 0) {
+        const nextBd = aggregateMultiJobAcceptanceBreakdown({
+          jobs: draftJobTables,
+          deal: dealWithActiveProfile || deal,
+          koc,
+          parentRecord,
+          advanceAmount: 0,
+        });
+        setValues(prev => {
+          const synced = syncValuesFromJobAcceptanceBreakdown(fields, prev, nextBd);
+          synced[PAYMENT_SCHEDULE_META_KEY] = nextOpt;
+          for (const f of fields) {
+            if (isTwoTimePaymentField(f)) {
+              synced[f.key] = '';
+            }
+          }
+          return synced;
+        });
+      } else {
+        setValues(prev => ({ ...prev, [PAYMENT_SCHEDULE_META_KEY]: nextOpt }));
+      }
+      return;
+    }
+
+    // nextOpt === 'TWO_TIMES'
+    const defaultAdv =
+      draftAdvanceAmount > 0
+        ? draftAdvanceAmount
+        : Math.min(2_000_000, Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.5)) || 1_000_000;
+    setDraftAdvanceAmount(defaultAdv);
+    if (fields.length > 0) {
+      const nextBd = aggregateMultiJobAcceptanceBreakdown({
+        jobs: draftJobTables,
+        deal: dealWithActiveProfile || deal,
+        koc,
+        parentRecord,
+        advanceAmount: defaultAdv,
+      });
+      setValues(prev => {
+        const synced = syncValuesFromJobAcceptanceBreakdown(fields, prev, nextBd);
+        synced[PAYMENT_SCHEDULE_META_KEY] = 'TWO_TIMES';
+        for (const f of fields) {
+          const t = (f.title || f.label || '').toLowerCase();
+          if ((t.includes('hạn tạm ứng') || t.includes('hạn thanh toán lần 2')) && !synced[f.key]?.trim()) {
+            synced[f.key] = '07 - 10';
+          }
+        }
+        return synced;
+      });
+    } else {
+      setValues(prev => ({ ...prev, [PAYMENT_SCHEDULE_META_KEY]: 'TWO_TIMES' }));
+    }
   };
 
   const handleQuickCreateFrameworkForSow = async () => {
@@ -2526,72 +2595,130 @@ export function ContractForm({
                   </div>
 
                   {isSow && (
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end pt-2 border-t border-line/70">
-                      <div className="md:col-span-5">
-                        <Field label="Số tiền tạm ứng đợt 1 khi bắt đầu Deal (VNĐ)">
-                          <Input
-                            inputMode="numeric"
-                            className="font-code tabular-nums font-semibold"
-                            value={formatMoneyInput(String(draftAdvanceAmount || 0))}
-                            onChange={e => {
-                              const nextAdv = Number(e.target.value.replace(/\D/g, '')) || 0;
-                              applyJobBreakdownToDraftValues(
-                                draftVideoFee,
-                                draftAddons,
-                                undefined,
-                                undefined,
-                                undefined,
-                                nextAdv,
-                                draftProductName,
-                                draftAirDate,
-                              );
-                            }}
-                          />
-                        </Field>
+                    <div className="pt-3 border-t border-line/70 space-y-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-semibold text-ink">
+                          Mục 1.3. Thanh toán phí dịch vụ (Lựa chọn 1 trong 2 phương án trong Phụ lục SOW)
+                        </span>
+                        <Status tone="info">
+                          {paymentScheduleOption === 'TWO_TIMES'
+                            ? 'Đang chọn: Thanh toán 2 lần (Có tạm ứng Lần 1)'
+                            : 'Đang chọn: Thanh toán 1 lần (100% sau nghiệm thu)'}
+                        </Status>
                       </div>
-                      <div className="md:col-span-7 flex flex-wrap items-center gap-1.5">
-                        <span className="text-2xs text-ink-3 mr-1">Chọn mức tạm ứng:</span>
-                        {[
-                          { label: '0đ (Trả sau 100%)', calc: () => 0 },
-                          {
-                            label: 'Tạm ứng 30%',
-                            calc: () => Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.3),
-                          },
-                          {
-                            label: 'Tạm ứng 50%',
-                            calc: () => Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.5),
-                          },
-                          {
-                            label: 'Tối đa 2.000.000đ',
-                            calc: () =>
-                              Math.min(
-                                2_000_000,
-                                Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.5),
-                              ),
-                          },
-                        ].map(preset => (
-                          <Button
-                            key={preset.label}
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => {
-                              const nextAdv = preset.calc();
-                              applyJobBreakdownToDraftValues(
-                                draftVideoFee,
-                                draftAddons,
-                                undefined,
-                                undefined,
-                                undefined,
-                                nextAdv,
-                                draftProductName,
-                                draftAirDate,
-                              );
-                            }}
-                          >
-                            {preset.label}
-                          </Button>
-                        ))}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => selectPaymentScheduleOption('ONE_TIME')}
+                          className={`text-left p-2.5 rounded-lg border transition-colors ${
+                            paymentScheduleOption !== 'TWO_TIMES'
+                              ? 'border-accent bg-accent-soft/25 ring-1 ring-accent'
+                              : 'border-line bg-surface hover:bg-sunken/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-semibold text-ink">Phương án 1: Thanh toán 1 lần</span>
+                            {paymentScheduleOption !== 'TWO_TIMES' && (
+                              <Status tone="positive">Đang áp dụng</Status>
+                            )}
+                          </div>
+                          <p className="text-2xs text-ink-2 mt-1">
+                            Thanh toán 01 (một) lần 100% trong vòng 07 - 10 ngày làm việc sau khi hoàn thành dịch vụ theo SOW, ký BBNT và cung cấp hóa đơn hợp lệ.
+                          </p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => selectPaymentScheduleOption('TWO_TIMES')}
+                          className={`text-left p-2.5 rounded-lg border transition-colors ${
+                            paymentScheduleOption === 'TWO_TIMES'
+                              ? 'border-accent bg-accent-soft/25 ring-1 ring-accent'
+                              : 'border-line bg-surface hover:bg-sunken/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-semibold text-ink">Phương án 2: Thanh toán 2 lần</span>
+                            {paymentScheduleOption === 'TWO_TIMES' && (
+                              <Status tone="positive">Đang áp dụng</Status>
+                            )}
+                          </div>
+                          <p className="text-2xs text-ink-2 mt-1">
+                            Lần 1 tạm ứng sau khi ký kết Phụ lục SOW; Lần 2 thanh toán phần giá trị còn lại sau khi hoàn thành dịch vụ và ký BBNT.
+                          </p>
+                        </button>
                       </div>
+
+                      {paymentScheduleOption === 'TWO_TIMES' && (
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end p-2.5 rounded-lg border border-line bg-surface">
+                          <div className="md:col-span-5">
+                            <Field label="Số tiền tạm ứng Lần 1 khi ký SOW (VNĐ)">
+                              <Input
+                                inputMode="numeric"
+                                className="font-code tabular-nums font-semibold"
+                                value={formatMoneyInput(String(draftAdvanceAmount || 0))}
+                                onChange={e => {
+                                  const nextAdv = Number(e.target.value.replace(/\D/g, '')) || 0;
+                                  applyJobBreakdownToDraftValues(
+                                    draftVideoFee,
+                                    draftAddons,
+                                    undefined,
+                                    undefined,
+                                    undefined,
+                                    nextAdv,
+                                    draftProductName,
+                                    draftAirDate,
+                                  );
+                                  setValues(prev => ({ ...prev, [PAYMENT_SCHEDULE_META_KEY]: 'TWO_TIMES' }));
+                                }}
+                              />
+                            </Field>
+                          </div>
+                          <div className="md:col-span-7 flex flex-wrap items-center gap-1.5">
+                            <span className="text-2xs text-ink-3 mr-1">Chọn nhanh mức tạm ứng:</span>
+                            {[
+                              {
+                                label: 'Tạm ứng 30%',
+                                calc: () => Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.3),
+                              },
+                              {
+                                label: 'Tạm ứng 50%',
+                                calc: () => Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.5),
+                              },
+                              {
+                                label: 'Tối đa 2.000.000đ',
+                                calc: () =>
+                                  Math.min(
+                                    2_000_000,
+                                    Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.5),
+                                  ),
+                              },
+                            ].map(preset => (
+                              <Button
+                                key={preset.label}
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => {
+                                  const nextAdv = preset.calc();
+                                  applyJobBreakdownToDraftValues(
+                                    draftVideoFee,
+                                    draftAddons,
+                                    undefined,
+                                    undefined,
+                                    undefined,
+                                    nextAdv,
+                                    draftProductName,
+                                    draftAirDate,
+                                  );
+                                  setValues(prev => ({ ...prev, [PAYMENT_SCHEDULE_META_KEY]: 'TWO_TIMES' }));
+                                }}
+                              >
+                                {preset.label}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -2925,7 +3052,7 @@ export function ContractForm({
             <div className="rounded-xl border border-line bg-surface p-3 flex flex-wrap items-center justify-between gap-2.5 text-xs">
               <div className="flex flex-wrap items-center gap-2">
                 <Status tone={missingTotalCount === 0 ? 'positive' : 'warning'}>
-                  Hệ thống tự điền: {filledTotalCount}/{fields.length} trường
+                  Hệ thống tự điền: {filledTotalCount}/{activeFields.length} trường
                 </Status>
                 <span className="text-ink-2">
                   {missingTotalCount === 0
@@ -2938,7 +3065,7 @@ export function ContractForm({
                   value={fieldFilterMode}
                   onChange={v => setFieldFilterMode(v as 'ALL' | 'NEEDS_ATTENTION')}
                   items={[
-                    { key: 'ALL', label: `Tất cả trường (${fields.length})` },
+                    { key: 'ALL', label: `Tất cả trường (${activeFields.length})` },
                     { key: 'NEEDS_ATTENTION', label: `Cần kiểm tra / Chỉnh tay (${needsAttentionCount})` },
                   ]}
                 />
@@ -2947,6 +3074,34 @@ export function ContractForm({
                 </Button>
               </div>
             </div>
+          )}
+
+          {!isKocOwnForm && template && kind === 'CONTRACT' && !isSow && templateId !== 'CTV-HDNT' && (
+            <Panel title="Mục 3.3. Thanh toán phí dịch vụ — Lựa chọn phương thức thanh toán">
+              <div className="space-y-3 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-ink-2">
+                    Chọn phương thức thanh toán áp dụng trên Hợp đồng để hiển thị đúng điều khoản tương ứng trên văn bản pháp lý:
+                  </span>
+                  <Segmented
+                    value={paymentScheduleOption}
+                    onChange={v => selectPaymentScheduleOption(v as PaymentScheduleOption)}
+                    items={
+                      isHdnt
+                        ? [
+                            { key: 'BY_SOW', label: 'Thanh toán theo Phụ lục SOW' },
+                            { key: 'ONE_TIME', label: 'Thanh toán 1 lần (100%)' },
+                            { key: 'TWO_TIMES', label: 'Thanh toán 2 lần (Tạm ứng + Tất toán)' },
+                          ]
+                        : [
+                            { key: 'ONE_TIME', label: 'Thanh toán 1 lần (100%)' },
+                            { key: 'TWO_TIMES', label: 'Thanh toán 2 lần (Tạm ứng + Tất toán)' },
+                          ]
+                    }
+                  />
+                </div>
+              </div>
+            </Panel>
           )}
 
           {!isKocOwnForm && template && groups.map(g => {

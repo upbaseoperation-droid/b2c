@@ -49,6 +49,7 @@ import {
   SAMPLE_SENDER_LABEL,
   type BrandRow,
 } from '../brands/brandUi';
+import { isStorePicOfBrand } from '../../lib/storePositions';
 import { brandKey, type BrandSection } from '../../lib/brands/types';
 import { StoreProfile } from '../stores/StoreProfile';
 
@@ -269,9 +270,10 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     return permissionsOf(
       access,
       activeBrandRow?.profile.workflowRules?.brandApproverName || activeBrandRow?.master?.accountPic,
-      activeBrandRow?.name || activePortal.brandName
+      activeBrandRow?.name || activePortal.brandName,
+      isStorePicOfBrand(currentUser, activeBrandRow?.name || activePortal.brandName, stores)
     );
-  }, [access, activeBrandRow, activePortal.brandName]);
+  }, [access, activeBrandRow, activePortal.brandName, currentUser, stores]);
 
   // State quản lý chi tiết / chỉnh sửa Gian hàng ngay trong Cổng Đối Tác Brand
   const [inspectingStore, setInspectingStore] = useState<StorePortfolioItem | null>(null);

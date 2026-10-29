@@ -39,10 +39,21 @@ const listingKey = (planId: string) => `listing-board-${planId.toLowerCase().rep
 
 // GET /api/booking-list/push-sheet — trạng thái cấu hình kết nối Google Sheet (kèm danh sách Tab & trạng thái ẩn/hiện nếu truyền ?sheetUrl=...)
 export async function GET(request: NextRequest) {
-  const actor = await getPlanActor(request);
-  if (!actor) return unauthorized();
   const sa = await ensureServiceAccountLoaded();
   const sheetUrl = (request.nextUrl.searchParams.get('sheetUrl') || '').trim();
+
+  // Truy vấn trạng thái Service Account thuần túy từ bảng cấu hình tích hợp (không yêu cầu phiên làm việc)
+  if (!sheetUrl) {
+    return NextResponse.json({
+      configured: sa.configured,
+      serviceAccountEmail: sa.configured ? sa.email : null,
+      source: sa.source,
+    });
+  }
+
+  const actor = await getPlanActor(request);
+  if (!actor) return unauthorized();
+
   if (sheetUrl && sa.configured) {
     const spreadsheetId = parseSpreadsheetId(sheetUrl);
     if (!spreadsheetId) {

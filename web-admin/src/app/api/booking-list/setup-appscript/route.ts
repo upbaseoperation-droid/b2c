@@ -672,7 +672,6 @@ async function deployBoundAppsScriptToSpreadsheet(params: {
 }
 
 export async function GET(request: NextRequest) {
-  if (!(await getPlanActor(request))) return unauthorized();
   const cfg = await loadOAuthConfig();
   const installedMap = await loadInstalledMap();
   const maskedClientId = cfg.clientId

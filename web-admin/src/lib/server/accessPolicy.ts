@@ -66,7 +66,6 @@ export function reconcileAccessPolicy(saved: Partial<AccessPolicy> | null | unde
     'market-research',
     'task-delegation',
     'contracts',
-    'cloudflare-admin',
   ];
 
   // 1. Đồng bộ danh sách màn hình theo từng vai trò (roleAllowedTabs & roleDefaultLanding)

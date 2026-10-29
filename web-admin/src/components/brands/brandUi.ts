@@ -124,8 +124,8 @@ export function buildRows(masters: BrandDetail[], profiles: BrandProfile[]): Bra
   return rows.sort((a, b) => a.name.localeCompare(b.name, 'vi'));
 }
 
-/** Quyền hiển thị nút “Sửa”. Máy chủ vẫn kiểm tra lại khi lưu. */
-export function permissionsOf(access: BrandAccess | undefined, accountPic?: string, brandName?: string): BrandPermissions {
+/** Quyền hiển thị nút “Sửa”. Máy chủ vẫn kiểm tra lại khi lưu. storePic: người xem là PIC gian hàng của nhãn. */
+export function permissionsOf(access: BrandAccess | undefined, accountPic?: string, brandName?: string, storePic = false): BrandPermissions {
   if (!access) {
     return {
       POSITIONING: true,
@@ -159,8 +159,8 @@ export function permissionsOf(access: BrandAccess | undefined, accountPic?: stri
     CONTENT_RULES: content,
     FAQS: content,
     DOCUMENTS: content,
-    LEGAL: Boolean(access.lead || access.legal || internalStaff || partnerMatch),
-    RATECARD: Boolean(access.lead || internalStaff),
+    LEGAL: Boolean(access.lead || access.legal || storePic || partnerMatch),
+    RATECARD: Boolean(access.lead || storePic),
   };
 }
 

@@ -103,13 +103,13 @@ Sau khi rà soát và ẩn 10 màn hình thừa / trùng lặp, hệ thống đ�
 ### Nhóm 5: Hệ thống & Tiện ích
 13. **Dữ liệu gốc (`master-data` / `MasterDataHubView`):** Quản lý danh mục Thương hiệu, 69 Gian hàng B2C, Trụ cột nội dung, Bậc cast, Tệp kênh, Định dạng video, Danh bạ KOC, VJ/CTV, Nhân sự và Chuẩn SLA & KPI (đã gỡ bỏ các tab nhập liệu sản phẩm trùng lặp tại Dữ liệu gốc để tập trung 100% về `Hồ sơ thương hiệu › Sản phẩm, Combo & Góc nội dung`).
 14. **Phân quyền & Nhân sự (`partner-access` / `CentralizedRbacHubView`):** Quản trị tài khoản Lark SSO, phân quyền 14 vai trò và Data Scoping Engine.
-15. **Quản lý Cloudflare R2 (`cloudflare-admin` / `CloudflareAdminView`):** Quản lý bucket tệp đính kèm và tài liệu hợp đồng.
+15. **Quản lý Cloudflare R2:** Đã tích hợp tập trung vào tab *Kho Lưu Trữ Cloudflare R2* bên trong màn hình **Cấu hình API & Tích hợp (`api-settings`)** và phân hệ **Hồ sơ thương hiệu**, đồng thời ẩn tab riêng trên thanh menu bên để tinh gọn điều hướng.
 16. **Quản lý Bot Zalo (`zalo-bot` / `ZaloBotManagerView`):** Quản trị tập trung Bot Zalo doanh nghiệp (`Bot tttttttupbase`), liên kết nhóm chat 4 cấp độ bảo mật (`KOC_GROUP`, `BRAND_PARTNER` — Nhóm làm việc với Nhãn hàng/Brand, `INTERNAL_OPS`, `BOD_EXECUTIVE`) với mã Deal (`BO...`) hoặc Thương hiệu, phân quyền 4 cấp nhân sự (`CEO`, `LEAD_B2C`, `LEADER`, `PIC`), quản lý & tùy biến trực tiếp **7 Kịch bản Tin nhắn Trả lời Tự động (`autoReplyTemplates`)** và **Thư viện Mẫu Thông báo Chủ động (`broadcastTemplates`)** kèm xem trước trực tiếp (Live Preview). Nghiệm thu tự động đơn lẻ hoặc hàng loạt nhiều link video TikTok trong 1 tin nhắn qua `checkSingleLinkServerless`, `extractAllTikTokUrls` & `resolveCartViaVietnamBridge` (bóc tách đầy đủ tên sản phẩm, mã SP 19 chữ số chính xác, đường link sản phẩm TikTok Shop `seo_url` / `productUrl` kể cả khi video gắn mẫu CapCut đè giỏ hàng, video chạy quảng cáo thương mại `isAd: true` + `ec_global_verdict: 1`, hoặc máy chủ Serverless đặt tại vùng `sin1` bị TikTok ẩn giỏ hàng vùng VN qua cầu nối IP Việt Nam `scripts/vn-tiktok-cart-bridge.mjs` + cache `tiktok-vn-cart-cache-v1`, ngày giờ lên sóng chuẩn Việt Nam `DD/MM/YYYY HH:mm` UTC+7, thời điểm giây KOC nhắc tới sản phẩm theo phụ đề WebVTT kể cả cụm 2–3 từ và hashtag viết liền, tự động cắt khung hình dọc 9:16 lúc KOC cầm sản phẩm và dựng giao diện ứng dụng TikTok Mobile App chuẩn qua `stampTikTokAcceptanceOverlay` kèm mã hóa `base64url` `b64` chống lỗi double-encoding URL của Zalo Platform trước khi bắn ảnh vào nhóm Zalo bằng `sendPhoto`), tự động bắt mã vận đơn hàng mẫu & tính hạn SLA 2-3-5-7 ngày (`/vandon`), tự động thu thập mã ủy quyền quảng cáo Spark Ads (`/ads`), kiểm tra 4 cổng điều kiện BBNT & bóc tách Thuế TNCN 10% / VAT 8% / Thực nhận Net (`/bbnt`, `/thanhtoan`), **hệ thống theo dõi & nhắc lịch Air video KOC tự động** (`/lichair` đối chiếu hợp nhất `ZaloGroupMapping` và `approved-booking-list-v2` phân loại Quá hạn Air / Air Hôm nay / Sắp Air 1–3 ngày tới, `/nhacair` bắn tin nhắc lịch đăng bài gắn giỏ hàng cá nhân hóa vào từng nhóm KOC, `/henair <DD/MM/YYYY>` chốt hoặc dời ngày hẹn lên sóng đồng bộ 2 chiều sang Bảng Quản lý Deal), rà soát & bắn tin nhắc hạn SLA tự động hàng loạt (`/nhacnho`), gửi Brief kịch bản, duyệt bài nháp và giả lập/gửi lệnh Bot trực tiếp (`/addkoc`, `/listing`, `/duyetkoc`, `/tuchoikoc`, `/nhapchoduyet`, `/tiendo`, `/pnl`, `/overbudget`, `/digest`, `/sla`, `/koc`, `/brief`, `/nopnhap`, `/duyetnhap`, `/suanhap`, `/vandon`, `/ads`, `/henair`, `/lichair`, `/nhacair`, `/bbnt`, `/nhacnho`).
 17. **Chân trang:** Sổ tay & Hỏi đáp (`knowledge-qa`), Quản lý Bot Zalo (`zalo-bot`), Cấu hình API (`api-settings`).
 
 ---
 
-## 3. Danh sách 10 Màn hình Thừa Đã Được Ẩn & Chuyển Hướng
+## 3. Danh sách 11 Màn hình Thừa Đã Được Ẩn & Chuyển Hướng
 
 Các màn hình sau đã được đưa vào danh sách `HIDDEN_SYSTEM_SCREENS` ([`rbacData.ts`](lib/rbacData.ts)) để ẩn hoàn toàn khỏi menu thanh bên, đồng thời được cấu hình chuyển hướng an toàn trong `TAB_ALIASES` ([`navGroups.ts`](lib/navGroups.ts)):
 
@@ -125,6 +125,7 @@ Các màn hình sau đã được đưa vào danh sách `HIDDEN_SYSTEM_SCREENS` 
 | **Bản đồ 3D Workload** | `workload-3d` | Đồ họa WebGL nặng, không phục vụ thao tác nghiệp vụ hàng ngày của phòng Marketing B2C | `manager` |
 | **Đánh giá 4P & Thưởng** | `performance-p3` | Chưa áp dụng cơ chế tính thưởng tự động trên hệ thống | `manager` |
 | **Nhật ký kiểm toán** | `audit-trail` | Màn hình tra cứu kỹ thuật, không dùng trong vận hành B2C | `partner-access` |
+| **Quản lý Cloudflare R2** | `cloudflare-admin` | Đã tích hợp cấu hình và đồng bộ tệp tập trung vào tab *Kho Lưu Trữ Cloudflare R2* trong `api-settings` và Hồ sơ thương hiệu | `api-settings` (Tab *Kho Lưu Trữ Cloudflare R2*) |
 
 ---
 

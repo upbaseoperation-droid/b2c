@@ -1,5 +1,6 @@
 import type { BrandDetail, InputPlanBreakdownState, StorePortfolioItem, UserProfile } from './types';
 import { isPersonInField, splitPeople } from './staffIdentity';
+import { brandKey } from './brands/types';
 
 /**
  * Vị trí của một người trên gian hàng, lấy từ Dữ liệu gốc (nguồn duy nhất).
@@ -206,6 +207,25 @@ export function planPositionsOf(
   }
 
   return out;
+}
+
+/**
+ * PIC gian hàng của nhãn: Booking chính, cùng làm, dự phòng đang hiệu lực hoặc Trưởng nhóm của ít nhất một gian thuộc nhãn.
+ * Nhóm này được sửa Trần thù lao và Pháp lý trong Hồ sơ thương hiệu (quyết định 29/10/2026).
+ */
+export function isStorePicOfBrand(
+  user: Person | null | undefined,
+  brandName: string | undefined,
+  stores: Array<StoreLike & Pick<StorePortfolioItem, 'brandName'>>,
+  today: Date = new Date()
+): boolean {
+  const key = brandKey(brandName || '');
+  if (!user || !key) return false;
+  return stores.some(s => {
+    if (brandKey(s.brandName || '') !== key) return false;
+    const positions = storePositionsOf(user, s, undefined, today);
+    return isBookingExecutor(positions) || positions.has('LEADER');
+  });
 }
 
 /** Người thực thi Booking của gian (chính, cùng làm, dự phòng đang hiệu lực). */

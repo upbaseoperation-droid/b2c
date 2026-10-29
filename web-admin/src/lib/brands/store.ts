@@ -21,7 +21,7 @@ import type {
   BrandWorkflowRules,
   ToneTag,
 } from './types';
-import { brandKey } from './types';
+import { brandKey, emptyProfile } from './types';
 
 const local = () => !!process.env.BRAND_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.BRAND_STORAGE !== 'postgres');
 const directory = () => path.resolve(/*turbopackIgnore: true*/ process.env.BRAND_DATA_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), '.brand-data'));
@@ -648,101 +648,124 @@ function seedFromMasterBrand(m: BrandDetail, index: number): BrandProfile {
   };
 }
 
-// Bộ nhớ tạm phòng ngừa khi database Postgres không khả dụng trên serverless hoặc local
-let inMemoryFallback: BrandProfile[] | null = null;
+// Seed cũ sinh văn mẫu theo ngành hàng (định vị, claim, MST, pháp lý, ratecard…). Nội dung đó không phải dữ liệu thật
+// nên không được hiện ra (quyết định 29/10/2026). Bản seed cũ chỉ còn dùng để nhận diện và gỡ khỏi hồ sơ đã lưu.
+const SEED_HISTORY = /^(Khởi tạo hồ sơ thương hiệu .+ từ Dữ liệu gốc|Đồng bộ hồ sơ & bộ tài liệu quy chuẩn thương hiệu)/;
+/** Link thật từ bảng 3.5 Danh sách file brand. */
+const REAL_DOC_ID = /^doc-(canva|sheet|ops|handover)-/;
+const PLACEHOLDER_TEXT = /^(Đại diện|Chưa phân công)/i;
 
-export function getFallbackProfiles(): BrandProfile[] {
-  if (!inMemoryFallback) {
-    const byKey = new Map<string, BrandProfile>();
+const realText = (v?: string) => (v && !PLACEHOLDER_TEXT.test(v.trim()) ? v.trim() : '');
+
+/** Chuỗi JSON không phụ thuộc thứ tự khóa (jsonb của Postgres sắp lại khóa) và bỏ giá trị undefined. */
+function canonical(v: unknown): string {
+  return JSON.stringify(v, (_k, x) =>
+    x && typeof x === 'object' && !Array.isArray(x)
+      ? Object.fromEntries(Object.entries(x).filter(([, y]) => y !== undefined).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+      : x,
+  );
+}
+const sameJson = (a: unknown, b: unknown) => canonical(a) === canonical(b);
+
+/** Chỉ giữ phần có nguồn thật: tên pháp nhân, người liên hệ từ Dữ liệu gốc, link tệp bảng 3.5, quy tắc vận hành mặc định. */
+function realOnlySeed(legacy: BrandProfile, master?: BrandDetail): BrandProfile {
+  const companyName = realText(master?.companyName);
+  const contactPerson = realText(master?.contactPerson);
+  return {
+    ...emptyProfile(legacy.brandName),
+    key: legacy.key,
+    revision: 1,
+    entity: companyName || contactPerson ? { companyName, taxCode: '', contactPerson, originCountry: '' } : undefined,
+    workflowRules: legacy.workflowRules,
+    documents: legacy.documents.filter(d => REAL_DOC_ID.test(d.id)),
+  };
+}
+
+/** Bỏ khỏi danh sách các mục còn y nguyên bản seed cũ, trừ mục có nguồn thật. */
+function withoutSeeded<T>(items: T[] | undefined, seeded: T[] | undefined, real: T[] | undefined): T[] {
+  return (items || []).filter(i => !(seeded || []).some(s => sameJson(s, i)) || (real || []).some(r => sameJson(r, i)));
+}
+
+/** Từng trường của một mục: còn y nguyên seed cũ thì thay bằng giá trị thật (thường là trống). */
+function stripObject<T extends object>(cur: T | undefined, legacy: T | undefined, real: T | undefined): T | undefined {
+  if (!cur) return cur;
+  const l = (legacy || {}) as Record<string, unknown>;
+  const r = (real || {}) as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(cur)) {
+    out[k] = Array.isArray(v) && Array.isArray(l[k])
+      ? withoutSeeded(v, l[k] as unknown[], r[k] as unknown[] | undefined)
+      : sameJson(v, l[k]) ? r[k] : v;
+  }
+  return out as T;
+}
+
+/** Gỡ văn mẫu tự sinh khỏi hồ sơ đã lưu. Hồ sơ chưa ai sửa thì chỉ còn phần có nguồn thật. */
+export function stripGeneratedContent(cur: BrandProfile, legacy: BrandProfile, real: BrandProfile): BrandProfile {
+  const history = cur.history.filter(h => !SEED_HISTORY.test(h.summary));
+  if (history.length === 0) return { ...real, revision: cur.revision };
+  return {
+    ...cur,
+    positioning: stripObject(cur.positioning, legacy.positioning, real.positioning),
+    entity: stripObject(cur.entity, legacy.entity, real.entity),
+    products: withoutSeeded(cur.products, legacy.products, real.products),
+    contentRules: stripObject(cur.contentRules, legacy.contentRules, real.contentRules),
+    faqs: withoutSeeded(cur.faqs, legacy.faqs, real.faqs),
+    legal: withoutSeeded(cur.legal, legacy.legal, real.legal),
+    ratecard: sameJson(cur.ratecard, legacy.ratecard) ? real.ratecard : cur.ratecard,
+    documents: withoutSeeded(cur.documents, legacy.documents, real.documents),
+    history,
+  };
+}
+
+let seedPairs: Map<string, { legacy: BrandProfile; real: BrandProfile }> | null = null;
+
+function getSeedPairs() {
+  if (!seedPairs) {
+    const byKey = new Map<string, { legacy: BrandProfile; real: BrandProfile }>();
     for (const kb of INITIAL_BRAND_KNOWLEDGE_BASES) {
       const master = REAL_B2C_42_BRANDS.find(m => brandKey(m.name) === brandKey(kb.brandName))
         || UPBASE_BRANDS_MASTER.find(m => brandKey(m.name) === brandKey(kb.brandName));
-      const seeded = seedFromMock(kb, master);
-      byKey.set(seeded.key, seeded);
+      const legacy = seedFromMock(kb, master);
+      byKey.set(legacy.key, { legacy, real: realOnlySeed(legacy, master) });
     }
     [...REAL_B2C_42_BRANDS, ...UPBASE_BRANDS_MASTER].forEach((m, idx) => {
       const k = brandKey(m.name);
       if (!byKey.has(k)) {
-        byKey.set(k, seedFromMasterBrand(m, idx));
+        const legacy = seedFromMasterBrand(m, idx);
+        byKey.set(k, { legacy, real: realOnlySeed(legacy, m) });
       }
     });
-    inMemoryFallback = Array.from(byKey.values());
+    seedPairs = byKey;
   }
-  return inMemoryFallback;
+  return seedPairs;
 }
 
-/** Bổ sung các trường mới từ seed nếu bản ghi cũ trong file JSON / DB chưa có */
-function enrichExistingProfile(cur: BrandProfile, seed: BrandProfile): { profile: BrandProfile; upgraded: boolean } {
-  let upgraded = false;
-  let next = cur;
+/** Hồ sơ khởi tạo cho mọi nhãn trong Dữ liệu gốc, chỉ gồm dữ liệu có nguồn thật. */
+export function getFallbackProfiles(): BrandProfile[] {
+  return Array.from(getSeedPairs().values(), p => p.real);
+}
 
-  if (!cur.workflowRules && seed.workflowRules) {
-    next = { ...next, workflowRules: seed.workflowRules };
-    upgraded = true;
-  }
-  if (cur.positioning && seed.positioning && (!cur.positioning.painPoints?.length || !cur.positioning.brandSays || !cur.positioning.bigIdea)) {
-    next = {
-      ...next,
-      positioning: {
-        ...cur.positioning,
-        brandSays: cur.positioning.brandSays || seed.positioning.brandSays,
-        consumerSays: cur.positioning.consumerSays || seed.positioning.consumerSays,
-        communicationGap: cur.positioning.communicationGap || seed.positioning.communicationGap,
-        bigIdea: cur.positioning.bigIdea || seed.positioning.bigIdea,
-        keyMessage: cur.positioning.keyMessage || seed.positioning.keyMessage,
-        keyVisualDirection: cur.positioning.keyVisualDirection || seed.positioning.keyVisualDirection,
-        achievements: cur.positioning.achievements?.length ? cur.positioning.achievements : seed.positioning.achievements,
-        painPoints: cur.positioning.painPoints?.length ? cur.positioning.painPoints : seed.positioning.painPoints,
-        barriersToTrial: cur.positioning.barriersToTrial?.length ? cur.positioning.barriersToTrial : seed.positioning.barriersToTrial,
-        rtbs: cur.positioning.rtbs?.length ? cur.positioning.rtbs : seed.positioning.rtbs,
-        contentPillars: cur.positioning.contentPillars?.length ? cur.positioning.contentPillars : seed.positioning.contentPillars,
-        competitors: cur.positioning.competitors?.length ? cur.positioning.competitors : seed.positioning.competitors,
-        competitorTiers: cur.positioning.competitorTiers || seed.positioning.competitorTiers,
-      },
-    };
-    upgraded = true;
-  }
-  if (cur.contentRules && seed.contentRules && !cur.contentRules.mandatoryHashtags?.length) {
-    next = {
-      ...next,
-      contentRules: {
-        ...cur.contentRules,
-        mandatoryHashtags: seed.contentRules.mandatoryHashtags,
-        mandatoryMentions: seed.contentRules.mandatoryMentions,
-        defaultCta: cur.contentRules.defaultCta || seed.contentRules.defaultCta,
-        videoDurationRule: cur.contentRules.videoDurationRule || seed.contentRules.videoDurationRule,
-      },
-    };
-    upgraded = true;
-  }
-  if (cur.products.length > 0 && cur.products.every(p => p.commissionOrganicPct === undefined)) {
-    next = {
-      ...next,
-      products: cur.products.map((p, idx) => {
-        const sp = seed.products[idx] || seed.products[0];
-        return {
-          ...p,
-          dealPriceVnd: p.dealPriceVnd ?? sp?.dealPriceVnd,
-          commissionOrganicPct: p.commissionOrganicPct ?? sp?.commissionOrganicPct ?? 12,
-          commissionAdsPct: p.commissionAdsPct ?? sp?.commissionAdsPct ?? 8,
-          sampleStockStatus: p.sampleStockStatus ?? sp?.sampleStockStatus ?? 'IN_STOCK',
-          sampleReturnRule: p.sampleReturnRule ?? sp?.sampleReturnRule ?? 'GIFT',
-        };
-      }),
-    };
-    upgraded = true;
-  }
-  // Bổ sung các tài liệu thực tế từ bảng 3.5 nếu chưa có trong documents
-  if (seed.documents.length > cur.documents.length) {
-    const existingIds = new Set(cur.documents.map(d => d.id));
-    const missingDocs = seed.documents.filter(d => !existingIds.has(d.id));
-    if (missingDocs.length > 0) {
-      next = { ...next, documents: [...cur.documents, ...missingDocs] };
-      upgraded = true;
+/** Ghép hồ sơ đã lưu với hồ sơ khởi tạo: nhãn chưa có thì thêm, nhãn đã có thì gỡ văn mẫu cũ. */
+function mergeWithSeeds(existing: BrandProfile[]): { profiles: BrandProfile[]; missing: BrandProfile[]; changed: boolean } {
+  const byKey = new Map(existing.map(p => [p.key, p]));
+  const missing: BrandProfile[] = [];
+  let changed = false;
+  for (const [key, { legacy, real }] of getSeedPairs()) {
+    const cur = byKey.get(key);
+    if (!cur) {
+      byKey.set(key, real);
+      missing.push(real);
+      changed = true;
+      continue;
+    }
+    const stripped = stripGeneratedContent(cur, legacy, real);
+    if (!sameJson(stripped, cur)) {
+      byKey.set(key, stripped);
+      changed = true;
     }
   }
-
-  return { profile: next, upgraded };
+  return { profiles: Array.from(byKey.values()), missing, changed };
 }
 
 // Bộ nhớ đệm tầng ứng dụng (In-Memory Cache) với TTL 30 giây để phản hồi ngay lập tức (<1ms)
@@ -768,22 +791,7 @@ async function localProfiles(): Promise<BrandProfile[]> {
   const seeds = getFallbackProfiles();
   try {
     const existing: BrandProfile[] = JSON.parse(await readFile(file(), 'utf8'));
-    const byKey = new Map(existing.map(p => [p.key, p]));
-    let changed = false;
-    for (const s of seeds) {
-      const cur = byKey.get(s.key);
-      if (!cur) {
-        byKey.set(s.key, s);
-        changed = true;
-      } else {
-        const { profile: enriched, upgraded } = enrichExistingProfile(cur, s);
-        if (upgraded) {
-          byKey.set(s.key, enriched);
-          changed = true;
-        }
-      }
-    }
-    const merged = Array.from(byKey.values());
+    const { profiles: merged, changed } = mergeWithSeeds(existing);
     if (changed) {
       await writeFile(file(), JSON.stringify(merged), { mode: 0o600 }).catch(() => undefined);
     }
@@ -826,19 +834,7 @@ export async function listProfiles(): Promise<BrandProfile[]> {
       );
       dbHealth.isAvailable = true;
 
-      const seeds = getFallbackProfiles();
-      const byKey = new Map(rows.map(r => [r.data.key, r.data]));
-      const missing: BrandProfile[] = [];
-      for (const s of seeds) {
-        const cur = byKey.get(s.key);
-        if (!cur) {
-          byKey.set(s.key, s);
-          missing.push(s);
-        } else {
-          const { profile: enriched } = enrichExistingProfile(cur, s);
-          byKey.set(s.key, enriched);
-        }
-      }
+      const { profiles, missing } = mergeWithSeeds(rows.map(r => r.data));
 
       if (missing.length > 0) {
         prisma.brandProfileRecord.createMany({
@@ -851,7 +847,6 @@ export async function listProfiles(): Promise<BrandProfile[]> {
         }).catch(() => undefined);
       }
 
-      const profiles = Array.from(byKey.values());
       profilesMemoryCache = { profiles, timestamp: Date.now() };
       return profiles;
     } catch (dbErr) {
@@ -876,48 +871,44 @@ export async function listProfiles(): Promise<BrandProfile[]> {
 /** Ghi hồ sơ. `expected` là revision người dùng đang xem; khác revision trên máy chủ thì từ chối. */
 export async function saveProfile(profile: BrandProfile, expected: number): Promise<BrandProfile> {
   const next = { ...profile, revision: expected + 1, updatedAt: new Date().toISOString() };
-  
-  // Cập nhật ngay vào cache bộ nhớ để phản hồi tức thì
-  if (profilesMemoryCache) {
+
+  // Cache chỉ nhận bản đã ghi xong. Lỗi thì bỏ cache để lần đọc sau lấy lại từ nguồn.
+  const remember = (saved: BrandProfile) => {
+    if (!profilesMemoryCache) return;
     const list = profilesMemoryCache.profiles;
-    const idx = list.findIndex(p => p.key === next.key);
-    if (idx >= 0) list[idx] = next; else list.push(next);
-    profilesMemoryCache.timestamp = Date.now();
-  }
+    const idx = list.findIndex(p => p.key === saved.key);
+    if (idx >= 0) list[idx] = saved; else list.push(saved);
+  };
 
   if (!local()) {
-    const isCooldown = Date.now() - dbHealth.lastFailureTime < DB_FAILURE_COOLDOWN_MS;
-    if (!isCooldown) {
-      try {
-        if (expected === 0) {
-          const inserted = await withTimeout(
-            prisma.$executeRaw`INSERT INTO "BrandProfileRecord" (key, revision, data, "updatedAt") VALUES (${next.key}, 1, ${JSON.stringify(next)}::jsonb, NOW()) ON CONFLICT (key) DO NOTHING`,
-            2000,
-            'Lưu hồ sơ vào Database quá thời gian cho phép'
-          );
-          requireBrand(inserted === 1, 'Hồ sơ vừa được người khác tạo. Tải lại rồi sửa tiếp.', 409);
-        } else {
-          const updated = await withTimeout(
-            prisma.$executeRaw`UPDATE "BrandProfileRecord" SET revision=${next.revision}, data=${JSON.stringify(next)}::jsonb, "updatedAt"=NOW() WHERE key=${next.key} AND revision=${expected}`,
-            2000,
-            'Cập nhật hồ sơ vào Database quá thời gian cho phép'
-          );
-          requireBrand(updated === 1, 'Hồ sơ đã được người khác cập nhật. Tải lại rồi sửa tiếp.', 409);
-        }
-        dbHealth.isAvailable = true;
-        return next;
-      } catch (dbErr) {
-        if (dbErr instanceof BrandError) throw dbErr;
-        console.warn('[BrandProfileStore] Postgres save failed or timed out:', (dbErr as Error).message);
-        dbHealth.isAvailable = false;
-        dbHealth.lastFailureTime = Date.now();
+    // Ghi luôn thử Postgres kể cả khi đọc vừa lỗi: ghi hiếm, và không có chỗ nào khác để lưu bền.
+    try {
+      if (expected === 0) {
+        const inserted = await withTimeout(
+          prisma.$executeRaw`INSERT INTO "BrandProfileRecord" (key, revision, data, "updatedAt") VALUES (${next.key}, 1, ${JSON.stringify(next)}::jsonb, NOW()) ON CONFLICT (key) DO NOTHING`,
+          2000,
+          'Lưu hồ sơ vào Database quá thời gian cho phép'
+        );
+        requireBrand(inserted === 1, 'Hồ sơ vừa được người khác tạo. Tải lại rồi sửa tiếp.', 409);
+      } else {
+        const updated = await withTimeout(
+          prisma.$executeRaw`UPDATE "BrandProfileRecord" SET revision=${next.revision}, data=${JSON.stringify(next)}::jsonb, "updatedAt"=NOW() WHERE key=${next.key} AND revision=${expected}`,
+          2000,
+          'Cập nhật hồ sơ vào Database quá thời gian cho phép'
+        );
+        requireBrand(updated === 1, 'Hồ sơ đã được người khác cập nhật. Tải lại rồi sửa tiếp.', 409);
       }
+      dbHealth.isAvailable = true;
+      remember(next);
+      return next;
+    } catch (dbErr) {
+      profilesMemoryCache = null;
+      if (dbErr instanceof BrandError) throw dbErr;
+      console.warn('[BrandProfileStore] Postgres save failed or timed out:', (dbErr as Error).message);
+      dbHealth.isAvailable = false;
+      dbHealth.lastFailureTime = Date.now();
+      throw new BrandError('Chưa lưu được hồ sơ vào cơ sở dữ liệu. Nội dung vẫn còn trên màn hình, thử lưu lại sau ít phút.', 503);
     }
-    // Fallback in-memory
-    const list = getFallbackProfiles();
-    const index = list.findIndex(p => p.key === next.key);
-    if (index < 0) list.push(next); else list[index] = next;
-    return next;
   }
 
   // Local filesystem
@@ -936,7 +927,11 @@ export async function saveProfile(profile: BrandProfile, expected: number): Prom
     if (index < 0) all.push(next); else all[index] = next;
     await writeFile(temp, JSON.stringify(all), { mode: 0o600 });
     await rename(temp, file());
+    remember(next);
     return next;
+  } catch (e) {
+    profilesMemoryCache = null;
+    throw e;
   } finally {
     await lock.close();
     await unlink(path.join(directory(), 'profiles.lock')).catch(() => undefined);

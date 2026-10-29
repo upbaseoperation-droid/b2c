@@ -1174,8 +1174,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   }, [activeStoreObj, collection.googleSheetUrls, activeStoreName]);
 
   const defaultGoogleSheetTab = useMemo(() => {
-    return (activeStoreObj?.defaultSheetTab || `Listing ${activeMonth.replace('/', '-')}`).trim();
-  }, [activeStoreObj, activeMonth]);
+    return (
+      activeStoreObj?.defaultSheetTab ||
+      activeStoreName ||
+      `Listing ${activeMonth.replace('/', '-')}`
+    ).trim();
+  }, [activeStoreObj, activeStoreName, activeMonth]);
 
   // Danh sách nhân sự đã điền trong Sheet hiện tại
   const staffInSheetOptions = useMemo(() => {

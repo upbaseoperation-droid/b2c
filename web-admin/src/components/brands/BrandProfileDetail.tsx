@@ -1011,7 +1011,7 @@ export function BrandProfileDetail({
                   <span>TP B2C:</span>
                   <Person name={leadB2c} size={16} />
                 </span>
-                {row.saved && (
+                {row.saved && p.updatedBy && (
                   <>
                     <span>·</span>
                     <span>

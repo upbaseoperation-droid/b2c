@@ -1758,7 +1758,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'koc-hub',
     'ads-report',
     'api-settings',
-    'cloudflare-admin',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
@@ -1799,7 +1798,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'koc-hub',
     'ads-report',
     'api-settings',
-    'cloudflare-admin',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
@@ -1991,6 +1989,7 @@ export const HIDDEN_SYSTEM_SCREENS: TabKey[] = [
   'workload-3d',
   'performance-p3',
   'audit-trail',
+  'cloudflare-admin',
 ];
 
 export const LEADERSHIP_ONLY_SCREENS: TabKey[] = ['dashboard-bi', 'dashboard-team-sla', 'dashboard-staff'];
@@ -2040,7 +2039,6 @@ const CORE_SYNCED_ROLE_TABS: TabKey[] = [
   'market-research',
   'task-delegation',
   'contracts',
-  'cloudflare-admin',
   'api-settings',
   'zalo-bot',
 ];

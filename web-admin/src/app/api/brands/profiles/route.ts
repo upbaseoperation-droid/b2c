@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requestActor } from '@/lib/server/requestActor';
-import { requireBrandScope, readableProfile } from '@/lib/server/brandAccess';
+import { brandEditRights, requireBrandScope, readableProfile } from '@/lib/server/brandAccess';
 import { readMasterCatalog } from '@/lib/server/masterCatalogStore';
 import { filterScopedBrands } from '@/lib/rbacScope';
 import { BrandError, applySection, parseSection, permissionsFor, requireBrand, requireReader } from '@/lib/brands/domain';
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     const brandByKey = new Map(allowedBrands.map(b => [brandKey(b.name), b]));
     const profiles = allProfiles
       .filter(p => brandByKey.has(p.key))
-      .map(p => readableProfile(p, user, brandByKey.get(p.key)));
+      .map(p => readableProfile(p, user));
     return NextResponse.json(
       {
         profiles,
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     const current = all.find(p => p.key === key);
     requireBrand(master || current, 'Không tìm thấy nhãn hàng trong Dữ liệu gốc.', 404);
 
-    const allowed = permissionsFor(user, master?.accountPic, body.brandName as string);
+    const allowed = await brandEditRights(user, master, body.brandName as string);
     requireBrand(allowed[section], 'Bạn không có quyền sửa mục này.', 403);
 
     const profile = current || emptyProfile(master?.name || (body.brandName as string));
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     const data = parseSection(section, body.data, user.name, profile);
     const summary = typeof body.summary === 'string' && body.summary.trim() ? body.summary.trim().slice(0, 200) : undefined;
     const saved = await saveProfile(applySection(profile, section, data, user.name, summary), profile.revision);
-    return NextResponse.json({ profile: readableProfile(saved, user, master) }, { headers: noStore });
+    return NextResponse.json({ profile: readableProfile(saved, user) }, { headers: noStore });
   } catch (e) {
     return failure(e);
   }
