@@ -502,8 +502,7 @@ const MESSAGE_TEMPLATES: Array<{ id: string; label: string; content: string }> =
 ];
 
 const QUICK_COMMANDS: Array<{ cmd: string; label: string; role: ZaloGroupRole }> = [
-  { cmd: 'https://www.tiktok.com/@po.trann77 clio 1500k', label: 'ĐT: Chia sẻ link TikTok lưu KOC vào Sheet', role: 'INTERNAL_OPS' },
-  { cmd: '/addkoc @linhbarbie99 eupc foc', label: 'ĐT: Lưu nhanh KOC FOC vào Sheet Listing', role: 'INTERNAL_OPS' },
+  { cmd: 'air', label: 'Nghiệm thu Air (tự lấy link TikTok gần nhất)', role: 'KOC_GROUP' },
   { cmd: '/listing', label: 'Brand: Danh sách KOC đề xuất', role: 'BRAND_PARTNER' },
   { cmd: '/tiendo', label: 'Brand: Báo cáo tiến độ & ngân sách Brand', role: 'BRAND_PARTNER' },
   { cmd: '/nhapchoduyet', label: 'Brand: Danh sách Demo chờ duyệt', role: 'BRAND_PARTNER' },

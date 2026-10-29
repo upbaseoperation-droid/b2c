@@ -4327,28 +4327,79 @@ export async function processZaloWebhookEvent(
     options?.overrideGroupRole || currentMapping?.groupRole || 'KOC_GROUP';
 
   // 0. KIỂM TRA PHẢN HỒI NHANH BẰNG PHÍM SỐ SAU KHI VỪA LISTING KOC TỪ ĐIỆN THOẠI (1..5 đổi gian hàng, gõ giá đổi Giá Net, gõ /air để chấm Air)
-  const quickListingFollowup = await tryHandleMobileListingQuickFollowup({
-    chatId,
-    cleanText,
-  });
+  // Tạm tắt luồng thêm KOC từ Bot để ưu tiên kiểm thử 100% lệnh Nghiệm thu Air
+  const ENABLE_MOBILE_KOC_LISTING_FROM_BOT = false;
+
   let effectiveRawText = rawText;
   let effectiveCleanText = cleanText;
-  if (quickListingFollowup.handled) {
-    if (quickListingFollowup.reply) {
-      await replyToChat(quickListingFollowup.reply);
-      return {
-        handled: true,
-        reply: quickListingFollowup.reply,
-        extractedChatId: chatId,
-      };
-    }
-    if (quickListingFollowup.triggerAirUrl) {
-      effectiveRawText = `/air ${quickListingFollowup.triggerAirUrl}`;
-      effectiveCleanText = `/air ${quickListingFollowup.triggerAirUrl}`;
+
+  if (ENABLE_MOBILE_KOC_LISTING_FROM_BOT) {
+    const quickListingFollowup = await tryHandleMobileListingQuickFollowup({
+      chatId,
+      cleanText,
+    });
+    if (quickListingFollowup.handled) {
+      if (quickListingFollowup.reply) {
+        await replyToChat(quickListingFollowup.reply);
+        return {
+          handled: true,
+          reply: quickListingFollowup.reply,
+          extractedChatId: chatId,
+        };
+      }
+      if (quickListingFollowup.triggerAirUrl) {
+        effectiveRawText = `/air ${quickListingFollowup.triggerAirUrl}`;
+        effectiveCleanText = `/air ${quickListingFollowup.triggerAirUrl}`;
+      }
     }
   }
 
-  // 1. BỘ PHÂN LUỒNG 4 LỚP TỰ ĐỘNG GIỮA [LISTING KOC TỪ ĐIỆN THOẠI] VÀ [NGHIỆM THU VIDEO AIR]
+  // Hỗ trợ gõ lệnh "air", "/air", "nghiemthu", "/nghiemthu", "checkair", "/checkair" (có kèm link hoặc tự lấy link TikTok gần nhất trong nhóm)
+  const isAirCommandTrigger = /^\/?(?:air|nghiemthu|nghiệm\s*thu|checkair)(?:\s+|$)/i.test(
+    effectiveCleanText.trim()
+  );
+  if (isAirCommandTrigger && extractAllTikTokUrls(effectiveRawText).length === 0) {
+    let recentTikTokUrl = '';
+    const historyItems = [...(currentMapping?.chatHistory || [])].reverse();
+    for (const h of historyItems) {
+      const m = String(h.text || '').match(TIKTOK_URL_REGEX);
+      if (m?.[1]) {
+        recentTikTokUrl = m[1];
+        break;
+      }
+    }
+    if (!recentTikTokUrl && currentMapping?.airedVideoUrl) {
+      recentTikTokUrl = currentMapping.airedVideoUrl;
+    }
+    if (!recentTikTokUrl) {
+      const recentFromHistory = loadAirHistory().find((item) => item.chatId === chatId && item.videoUrl);
+      if (recentFromHistory?.videoUrl) {
+        recentTikTokUrl = recentFromHistory.videoUrl;
+      }
+    }
+
+    if (recentTikTokUrl) {
+      effectiveRawText = `/air ${recentTikTokUrl}`;
+      effectiveCleanText = `/air ${recentTikTokUrl}`;
+    } else {
+      const promptAirLinkMsg = [
+        `🎬 LỆNH NGHIỆM THU VIDEO TIKTOK (AIR CHECK)`,
+        `----------------------------------------`,
+        `⚠️ Chưa tìm thấy đường dẫn video TikTok nào trong cuộc trò chuyện này.`,
+        `👉 Bạn hãy gửi theo 1 trong 2 cách sau để Bot quét nghiệm thu ngay:`,
+        `1. Gõ: air <link_tiktok> (hoặc /air <link_tiktok>)`,
+        `2. Dán trực tiếp 1 hoặc nhiều link video TikTok vào nhóm.`,
+      ].join('\n');
+      await replyToChat(promptAirLinkMsg);
+      return {
+        handled: true,
+        reply: promptAirLinkMsg,
+        extractedChatId: chatId,
+      };
+    }
+  }
+
+  // 1. TỰ ĐỘNG BẮT LINK TIKTOK ĐỂ NGHIỆM THU (HỖ TRỢ QUÉT ĐƠN LẺ & QUÉT HÀNG LOẠT NHIỀU LINK TRONG 1 TIN NHẮN)
   const allTikTokUrls = extractAllTikTokUrls(effectiveRawText);
   const parsedListingNote = parseListingNoteFromMessage(effectiveCleanText, allTikTokUrls);
   const isEstablishedKocDealGroup = Boolean(
@@ -4359,7 +4410,7 @@ export async function processZaloWebhookEvent(
   );
 
   // Trường hợp gõ lệnh trực tiếp /addkoc @handle [brand] [giá] mà không dán URL
-  if (allTikTokUrls.length === 0 && parsedListingNote.isExplicitListCommand) {
+  if (ENABLE_MOBILE_KOC_LISTING_FROM_BOT && allTikTokUrls.length === 0 && parsedListingNote.isExplicitListCommand) {
     const mobileListRes = await executeMobileTikTokListingFromZalo({
       chatId,
       senderId,
@@ -4379,6 +4430,7 @@ export async function processZaloWebhookEvent(
 
   if (allTikTokUrls.length > 1) {
     const preClassifyBatchAsListing =
+      ENABLE_MOBILE_KOC_LISTING_FROM_BOT &&
       !parsedListingNote.isExplicitAirCommand &&
       (parsedListingNote.isExplicitListCommand ||
         parsedListingNote.hasListingSignalInNote ||
@@ -4389,7 +4441,7 @@ export async function processZaloWebhookEvent(
         chatId,
         preClassifyBatchAsListing
           ? `⏳ Đang bóc tách hồ sơ ${allTikTokUrls.length} kênh TikTok & ghi vào Sheet Listing...\nVui lòng chờ trong giây lát...`
-          : `⏳ Đang quét dữ liệu ${allTikTokUrls.length} đường dẫn TikTok song song...\nVui lòng chờ trong giây lát...`
+          : `⏳ Đang quét nghiệm thu hàng loạt ${allTikTokUrls.length} video TikTok song song...\nVui lòng chờ trong giây lát...`
       ).catch(() => false);
     }
 
@@ -4425,9 +4477,10 @@ export async function processZaloWebhookEvent(
       );
 
       const shouldRouteBatchToListing =
-        preClassifyBatchAsListing ||
-        (!parsedListingNote.isExplicitAirCommand &&
-          (hasProfileLinkInBatch || (!isEstablishedKocDealGroup && !anyActiveDealWaitingAir)));
+        ENABLE_MOBILE_KOC_LISTING_FROM_BOT &&
+        (preClassifyBatchAsListing ||
+          (!parsedListingNote.isExplicitAirCommand &&
+            (hasProfileLinkInBatch || (!isEstablishedKocDealGroup && !anyActiveDealWaitingAir))));
 
       if (shouldRouteBatchToListing) {
         const mobileListRes = await executeMobileTikTokListingFromZalo({
@@ -4553,6 +4606,7 @@ export async function processZaloWebhookEvent(
   if (linkMatch) {
     const videoUrl = linkMatch[1];
     const isPreClassifiedAsListing =
+      ENABLE_MOBILE_KOC_LISTING_FROM_BOT &&
       !parsedListingNote.isExplicitAirCommand &&
       (parsedListingNote.isExplicitListCommand ||
         parsedListingNote.hasListingSignalInNote ||
@@ -4595,7 +4649,7 @@ export async function processZaloWebhookEvent(
       shouldSend && !hasFreshCache && replyConfig.sendScanningProgressMessage
         ? sendZaloMessage(
             chatId,
-            `⏳ Đang quét dữ liệu TikTok: ${videoUrl}\nVui lòng chờ trong giây lát...`
+            `⏳ Đang quét dữ liệu nghiệm thu video TikTok: ${videoUrl}\nVui lòng chờ trong giây lát...`
           ).catch(() => false)
         : Promise.resolve(true);
 
@@ -4630,6 +4684,7 @@ export async function processZaloWebhookEvent(
         : { isWaitingAir: false };
 
       const shouldAutoRouteSingleToListing =
+        ENABLE_MOBILE_KOC_LISTING_FROM_BOT &&
         !parsedListingNote.isExplicitAirCommand &&
         (isResolvedProfileUrl ||
           (!isEstablishedKocDealGroup && !activeAirDealCheck.isWaitingAir));
