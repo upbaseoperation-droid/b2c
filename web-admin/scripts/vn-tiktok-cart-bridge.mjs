@@ -9,6 +9,13 @@ import path from 'node:path';
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 const execFileAsync = promisify(execFile);
 
+process.on('uncaughtException', (err) => {
+  console.error('[VN-Bridge Error uncaughtException]:', err?.message || err);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('[VN-Bridge Error unhandledRejection]:', err?.message || err);
+});
+
 const WEBHOOK_URL =
   process.env.ZALO_WEBHOOK_URL ||
   'https://b2c-theta.vercel.app/api/integrations/zalo-bot/webhook';
@@ -286,16 +293,16 @@ async function pushResolvedItemsToWebhook(items) {
 
 async function pollOnce() {
   try {
-    const pollRes = await fetch(`${WEBHOOK_URL}?vnBridgePoll=1`, {
+    const pollRes = await fetch(`${WEBHOOK_URL}?vnBridgePoll=1&longPoll=1`, {
       headers: {
         'x-bot-api-secret-token': SECRET_TOKEN,
       },
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(12000),
     });
-    if (!pollRes.ok) return;
+    if (!pollRes.ok) return false;
     const data = await pollRes.json();
     const pendingList = Array.isArray(data?.pending) ? data.pending : [];
-    if (pendingList.length === 0) return;
+    if (pendingList.length === 0) return false;
 
     for (const item of pendingList) {
       if (!item?.videoUrl || !item?.videoId) continue;
@@ -414,9 +421,17 @@ async function bootstrap() {
     await pushResolvedItemsToWebhook(seeds);
   }
 
+  let consecutiveEmpty = 0;
   while (true) {
-    await pollOnce();
-    await new Promise((r) => setTimeout(r, 700));
+    const hasWork = await pollOnce();
+    if (hasWork) {
+      consecutiveEmpty = 0;
+      await new Promise((r) => setTimeout(r, 200));
+    } else {
+      consecutiveEmpty++;
+      const sleepMs = consecutiveEmpty > 5 ? 5000 : 2000;
+      await new Promise((r) => setTimeout(r, sleepMs));
+    }
   }
 }
 

@@ -656,9 +656,12 @@ export default function App() {
   const activePolicyUserId = currentUser?.id;
   useEffect(() => {
     if (!activePolicyUserId || isLoadingAuth) return;
-    const refresh = () => { void loadAccessPolicy().catch(error => showToast(error.message, 'error')); };
+    const refresh = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      void loadAccessPolicy().catch(error => showToast(error.message, 'error'));
+    };
     window.addEventListener('focus', refresh);
-    const timer = window.setInterval(refresh, 30000);
+    const timer = window.setInterval(refresh, 60000);
     return () => { window.removeEventListener('focus', refresh); window.clearInterval(timer); };
   }, [activePolicyUserId, isLoadingAuth, showToast]);
 

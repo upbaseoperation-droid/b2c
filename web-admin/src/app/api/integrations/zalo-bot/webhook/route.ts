@@ -30,10 +30,24 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'UNAUTHORIZED' }, { status: 403 });
     }
     const vnBridgeUrl = req.nextUrl.searchParams.get('vnBridgeUrl') || undefined;
-    const state = await getVnCartBridgeState(vnBridgeUrl);
+    const isLongPoll = req.nextUrl.searchParams.get('longPoll') === '1';
+
+    let state = await getVnCartBridgeState(vnBridgeUrl);
+    let pending = Object.values(state.pending || {});
+
+    // Long-Polling: Giữ kết nối tối đa 8s nếu chưa có video chờ để trả về ngay khi có link
+    if (isLongPoll && pending.length === 0) {
+      const waitDeadline = Date.now() + 8000;
+      while (Date.now() < waitDeadline && pending.length === 0) {
+        await new Promise((r) => setTimeout(r, 800));
+        state = await getVnCartBridgeState();
+        pending = Object.values(state.pending || {});
+      }
+    }
+
     return NextResponse.json({
       ok: true,
-      pending: Object.values(state.pending || {}),
+      pending,
       cachedCount: Object.keys(state.items || {}).length,
     });
   }
