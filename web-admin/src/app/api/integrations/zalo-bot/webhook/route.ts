@@ -11,6 +11,7 @@ import {
   saveVnCartBridgeResolvedItems,
   type VnCartBridgeItem,
 } from '@/lib/linkAirCheckServer';
+import { upsertRecord } from '@/lib/server/sharedRecords';
 
 export const dynamic = 'force-dynamic';
 export const preferredRegion = ['sin1', 'hkg1'];
@@ -97,24 +98,31 @@ export async function GET(req: NextRequest) {
       mentionSec: msecRaw ? Number(msecRaw) : null,
     };
 
+    const forcePurge = sp.get('purge') === '1' || sp.get('refresh') === '1';
+
     if (videoUrl || frameId || coverUrl) {
       const captured = await captureTikTokProductFrameBuffer({
         videoUrl,
         coverUrl,
         captureSec: Number.isFinite(sec) ? sec : 3.5,
-        frameId,
+        frameId: forcePurge ? null : frameId,
         overlayMeta,
       });
       if (captured.buffer && captured.buffer.length > 300) {
         const isPng = captured.buffer[0] === 0x89 && captured.buffer[1] === 0x50;
         const ext = isPng ? 'png' : 'jpg';
+        const cacheHeader =
+          captured.source === 'FFMPEG_FRAME'
+            ? 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=86400'
+            : 'no-cache, no-store, must-revalidate';
         return new NextResponse(new Uint8Array(captured.buffer), {
           status: 200,
           headers: {
             'Content-Type': isPng ? 'image/png' : 'image/jpeg',
             'Content-Length': String(captured.buffer.length),
             'Content-Disposition': `inline; filename="tiktok-air-check.${ext}"`,
-            'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+            'Cache-Control': cacheHeader,
+            'x-frame-source': captured.source,
           },
         });
       }
@@ -132,6 +140,7 @@ export async function GET(req: NextRequest) {
     ok: true,
     status: 'online',
     service: 'Upbase B2C Zalo Bot Webhook',
+    version: '1.2.0-frame-6.9s',
     timestamp: new Date().toISOString(),
     ...(isDebug ? { recentEvents: getDebugEvents() } : {}),
   });
@@ -171,6 +180,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => null);
     if (!body) {
       return NextResponse.json({ ok: false, error: 'INVALID_BODY' }, { status: 400 });
+    }
+
+    if (body.purgeFrameCache === true) {
+      await upsertRecord('zalo-frames-cache-v1', {}, () => ({}));
+      return NextResponse.json({ ok: true, message: 'Purged frame cache' });
     }
 
     if (body.vnBridgeResolve === true) {
