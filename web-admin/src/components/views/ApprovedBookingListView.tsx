@@ -45,8 +45,10 @@ import {
   buildBookingDealFromApprovedItem,
   buildDefaultAddonServicesForDeal,
   computeAirSlaStatus,
+  computeDealSowJobSubtotal,
   computeWeekLabelFromDate,
   downloadApprovedBookingListCsv,
+  ensureDealJobsForApprovedItem,
   evaluateVideoEffectivenessLabel,
   extractTikTokChannelAndVideoFromInput,
   formatApprovedBookingListToTsv,
@@ -60,6 +62,7 @@ import {
   transferBrandApprovedRowsToBookingList,
   type ApprovedBookingListItem,
   type ApprovedBookingPaymentStatus,
+  type DealSowJobItem,
   type VideoAcceptanceMappingInput,
 } from '../../lib/approvedBookingList';
 import {
@@ -196,41 +199,145 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     };
   }, [deals]);
 
-  // RULE-SYNC-01 & RULE-PERF-01: Đồng bộ O(1) trạng thái ký HĐNT / Phụ lục SOW thực tế từ /api/contracts vào danh sách
-  const items = useMemo(() => {
-    if (contractRecords.length === 0) return rawItems;
-    const sowByDeal = new Map<string, ContractRecord>();
-    const hdntByKoc = new Map<string, ContractRecord>();
-    for (const r of contractRecords) {
-      const docKind = documentOfTemplate(r.templateId);
-      if (docKind === 'SOW') {
+  const mergeContractsIntoItems = React.useCallback(
+    (sourceItems: ApprovedBookingListItem[], records: ContractRecord[]) => {
+      if (records.length === 0) return { mergedItems: sourceItems, matchedDealsCount: 0 };
+      const sowByDeal = new Map<string, ContractRecord>();
+      const bbntByDeal = new Map<string, ContractRecord>();
+      const hdntByKoc = new Map<string, ContractRecord>();
+      const hdntByPartner = new Map<string, ContractRecord>();
+
+      for (const r of records) {
+        const docKind = documentOfTemplate(r.templateId);
         const idKey = (r.dealId || '').trim().toUpperCase();
         const codeKey = (r.dealCode || '').trim().toUpperCase();
-        if (idKey && !sowByDeal.has(idKey)) sowByDeal.set(idKey, r);
-        if (codeKey && !sowByDeal.has(codeKey)) sowByDeal.set(codeKey, r);
-      } else if (docKind === 'HDNT' && r.kocId && !hdntByKoc.has(r.kocId)) {
-        hdntByKoc.set(r.kocId, r);
+        if (docKind === 'SOW') {
+          if (idKey && !sowByDeal.has(idKey)) sowByDeal.set(idKey, r);
+          if (codeKey && !sowByDeal.has(codeKey)) sowByDeal.set(codeKey, r);
+        } else if (docKind === 'BBNT') {
+          if (idKey && !bbntByDeal.has(idKey)) bbntByDeal.set(idKey, r);
+          if (codeKey && !bbntByDeal.has(codeKey)) bbntByDeal.set(codeKey, r);
+        } else if (docKind === 'HDNT') {
+          if (r.kocId && !hdntByKoc.has(r.kocId)) hdntByKoc.set(r.kocId, r);
+          const partnerKey = normalizeTikTokId(r.partner || '').toLowerCase();
+          if (partnerKey && !hdntByPartner.has(partnerKey)) hdntByPartner.set(partnerKey, r);
+        }
       }
+
+      let matchedDealsCount = 0;
+      const mergedItems = sourceItems.map((it) => {
+        const codeKey = (it.maBooking || '').trim().toUpperCase();
+        const dealIdKey = (it.linkedDealId || `deal-from-32-${it.id}`).trim().toUpperCase();
+        const handleKey = normalizeTikTokId(it.idKenh || '').toLowerCase();
+        const nameKey = normalizeTikTokId(it.tenKenh || '').toLowerCase();
+
+        const matchedSow = (codeKey ? sowByDeal.get(codeKey) : undefined) || sowByDeal.get(dealIdKey);
+        let matchedBbnt = (codeKey ? bbntByDeal.get(codeKey) : undefined) || bbntByDeal.get(dealIdKey);
+        if (!matchedBbnt && matchedSow) {
+          matchedBbnt = records.find(
+            (r) => documentOfTemplate(r.templateId) === 'BBNT' && r.parentId === matchedSow.id
+          );
+        }
+        const matchedHdnt =
+          (it.kocId ? hdntByKoc.get(it.kocId) : undefined) ||
+          (handleKey ? hdntByPartner.get(handleKey) : undefined) ||
+          (nameKey ? hdntByPartner.get(nameKey) : undefined) ||
+          (matchedSow?.parentId ? records.find((r) => r.id === matchedSow.parentId) : undefined);
+
+        if (!matchedSow && !matchedHdnt && !matchedBbnt) return it;
+        matchedDealsCount++;
+
+        const isHdntSigned = matchedHdnt?.signing.at(-1)?.status === 'COMPLETED';
+        const isSowSigned = matchedSow?.signing.at(-1)?.status === 'COMPLETED';
+        const isBbntSigned = matchedBbnt?.signing.at(-1)?.status === 'COMPLETED';
+
+        const hdntSignedUrl =
+          matchedHdnt?.signing.at(-1)?.signedFileUrl ||
+          matchedHdnt?.contractSystem?.signedFileUrl ||
+          (isHdntSigned && matchedHdnt ? `/api/contracts/${matchedHdnt.id}/document?version=${matchedHdnt.version}` : undefined);
+        const sowSignedUrl =
+          matchedSow?.signing.at(-1)?.signedFileUrl ||
+          matchedSow?.contractSystem?.signedFileUrl ||
+          (isSowSigned && matchedSow ? `/api/contracts/${matchedSow.id}/document?version=${matchedSow.version}` : undefined);
+        const bbntSignedUrl =
+          matchedBbnt?.signing.at(-1)?.signedFileUrl ||
+          matchedBbnt?.contractSystem?.signedFileUrl ||
+          (isBbntSigned && matchedBbnt ? `/api/contracts/${matchedBbnt.id}/document?version=${matchedBbnt.version}` : undefined);
+
+        return {
+          ...it,
+          masterContractCode:
+            matchedHdnt?.contractSystem?.contractCode || matchedHdnt?.title || it.masterContractCode,
+          masterContractStatus: isHdntSigned
+            ? ('ĐÃ_KÝ' as const)
+            : matchedHdnt
+            ? ('CHỜ_KÝ' as const)
+            : it.masterContractStatus,
+          masterContractGoogleDocsUrl:
+            matchedHdnt?.contractSystem?.googleDocsUrl || it.masterContractGoogleDocsUrl,
+          masterContractSignedUrl: hdntSignedUrl || it.masterContractSignedUrl,
+
+          contractAppendixCode:
+            matchedSow?.contractSystem?.contractCode || matchedSow?.title || it.contractAppendixCode,
+          contractAppendixStatus: isSowSigned
+            ? ('ĐÃ_KÝ' as const)
+            : matchedSow
+            ? ('CHỜ_KÝ' as const)
+            : it.contractAppendixStatus,
+          contractAppendixGoogleDocsUrl:
+            matchedSow?.contractSystem?.googleDocsUrl || it.contractAppendixGoogleDocsUrl,
+          contractAppendixSignedUrl: sowSignedUrl || it.contractAppendixSignedUrl,
+
+          bbntCode:
+            matchedBbnt?.contractSystem?.contractCode || matchedBbnt?.title || it.bbntCode,
+          bbntStatus: isBbntSigned
+            ? ('ĐÃ_KÝ' as const)
+            : matchedBbnt
+            ? ('CHỜ_KÝ' as const)
+            : it.bbntStatus,
+          bbntGoogleDocsUrl:
+            matchedBbnt?.contractSystem?.googleDocsUrl || it.bbntGoogleDocsUrl,
+          bbntSignedUrl: bbntSignedUrl || it.bbntSignedUrl,
+        };
+      });
+
+      return { mergedItems, matchedDealsCount };
+    },
+    []
+  );
+
+  // RULE-SYNC-01 & RULE-PERF-01: Đồng bộ O(1) trạng thái ký HĐNT / Phụ lục SOW / BBNT & các đường link từ /api/contracts vào danh sách
+  const items = useMemo(
+    () => mergeContractsIntoItems(rawItems, contractRecords).mergedItems,
+    [rawItems, contractRecords, mergeContractsIntoItems]
+  );
+
+  const [isPullingContractLinks, setIsPullingContractLinks] = useState(false);
+
+  const handlePullContractInfoAndLinks = async () => {
+    setIsPullingContractLinks(true);
+    try {
+      const res = await contractApi<ContractBootstrap>('/api/contracts');
+      const latestRecords = Array.isArray(res?.records) ? res.records : contractRecords;
+      setContractRecords(latestRecords);
+      const { mergedItems, matchedDealsCount } = mergeContractsIntoItems(rawItems, latestRecords);
+      const nowIso = new Date().toISOString();
+      const stampedItems = mergedItems.map((it) => ({ ...it, contractSyncedAt: nowIso }));
+      setItems(stampedItems);
+      saveApprovedBookingList(stampedItems, true);
+      if (onCreateOrUpdateDeals) {
+        onCreateOrUpdateDeals(stampedItems.map((it) => buildBookingDealFromApprovedItem(it)));
+      }
+      onNotify?.(
+        `Đã kéo thông tin HĐNT, Phụ lục SOW, BBNT & các đường link (Google Docs / Bản đã ký) cho ${matchedDealsCount} Deal từ contract-system.`,
+        'success'
+      );
+    } catch (err) {
+      onNotify?.((err as Error).message || 'Không thể kéo thông tin hợp đồng lúc này.', 'error');
+    } finally {
+      setIsPullingContractLinks(false);
     }
-    return rawItems.map((it) => {
-      const codeKey = (it.maBooking || '').trim().toUpperCase();
-      const dealIdKey = (it.linkedDealId || `deal-from-32-${it.id}`).trim().toUpperCase();
-      const matchedSow = (codeKey ? sowByDeal.get(codeKey) : undefined) || sowByDeal.get(dealIdKey);
-      const matchedHdnt = it.kocId ? hdntByKoc.get(it.kocId) : undefined;
-      if (!matchedSow && !matchedHdnt) return it;
-      const isSowSigned = matchedSow?.signing.at(-1)?.status === 'COMPLETED';
-      return {
-        ...it,
-        masterContractCode: matchedHdnt?.title || it.masterContractCode,
-        contractAppendixCode: matchedSow?.title || it.contractAppendixCode,
-        contractAppendixStatus: isSowSigned
-          ? 'ĐÃ_KÝ'
-          : matchedSow
-          ? 'CHỜ_KÝ'
-          : it.contractAppendixStatus,
-      };
-    });
-  }, [rawItems, contractRecords]);
+  };
 
   const [prevInitKey, setPrevInitKey] = useState(`${initialStoreName || ''}|${initialMonthKey || ''}`);
   const currentInitKey = `${initialStoreName || ''}|${initialMonthKey || ''}`;
@@ -281,6 +388,30 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     setSelectedDrawerItemId(item.id);
     setIsDrawerOpen(true);
   };
+
+  const { monthTotalItemCount, storeItemCountsForMonth, sortedB2cStoresForMonth } = useMemo(() => {
+    const counts = new Map<string, number>();
+    let total = 0;
+    for (const it of items) {
+      if (selectedMonth === 'ALL' || it.thangPlan === selectedMonth) {
+        total += 1;
+        counts.set(it.storeName, (counts.get(it.storeName) || 0) + 1);
+      }
+    }
+    const sorted = [...b2cStores].sort((a, b) => {
+      const ca = counts.get(a.storeName) || 0;
+      const cb = counts.get(b.storeName) || 0;
+      if (ca > 0 && cb === 0) return -1;
+      if (ca === 0 && cb > 0) return 1;
+      if (ca !== cb) return cb - ca;
+      return (a.brandName || a.storeName).localeCompare(b.brandName || b.storeName, 'vi');
+    });
+    return {
+      monthTotalItemCount: total,
+      storeItemCountsForMonth: counts,
+      sortedB2cStoresForMonth: sorted,
+    };
+  }, [items, selectedMonth, b2cStores]);
 
   // Danh sách sau khi lọc theo Tháng + Gian hàng + Từ khóa (dùng để tính số lượng trên Chips)
   const scopedItems = useMemo(() => {
@@ -490,6 +621,8 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   const [dealDraftVideoNetCost, setDealDraftVideoNetCost] = useState<number>(0);
   const [dealDraftAdvanceAmount, setDealDraftAdvanceAmount] = useState<number>(0);
   const [dealDraftAddons, setDealDraftAddons] = useState<DealRightsTermItem[]>([]);
+  const [dealDraftJobs, setDealDraftJobs] = useState<DealSowJobItem[]>([]);
+  const [activeDealDraftJobIdx, setActiveDealDraftJobIdx] = useState<number>(0);
 
   const dealBuilderItem = useMemo(
     () => items.find((i) => i.id === dealBuilderTargetId) || null,
@@ -525,21 +658,11 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       item.masterContractCode || generateMasterContractCode(item.idKenh, item.kocId);
     const appendixCode =
       item.contractAppendixCode || generateDealAppendixCode(maBo, 1);
-    const existingAddons =
-      item.addonServices && item.addonServices.length > 0
-        ? item.addonServices
-        : buildDefaultAddonServicesForDeal({
-            maBooking: maBo,
-            totalNet: item.chiPhiBookingNetCuoi,
-            sparkAdsCode: item.sparkAdsCode,
-            actualAirDate: item.actualAirDate,
-            includeDefaultAddons: true,
-          });
-    const addonsSum = existingAddons.reduce(
-      (s, a) => s + (Number(a.allocatedCostVnd) || 0),
-      0
-    );
-    const baseVideoCost = Math.max(0, item.chiPhiBookingNetCuoi - addonsSum);
+    const initialJobs = ensureDealJobsForApprovedItem({
+      ...item,
+      maBooking: maBo,
+    });
+    const firstJob = initialJobs[0];
 
     setDealBuilderTargetId(item.id);
     setDealDraftCode(maBo);
@@ -550,12 +673,83 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         ? item.contractAppendixStatus
         : 'CHỜ_KÝ'
     );
+    setDealDraftJobs(initialJobs);
+    setActiveDealDraftJobIdx(0);
     setDealDraftPlannedAirDate(
-      item.plannedAirDate || `${item.thangPlan.replace('/', '-')}-20`
+      firstJob?.plannedAirDate || item.plannedAirDate || `${item.thangPlan.replace('/', '-')}-20`
     );
-    setDealDraftVideoNetCost(baseVideoCost);
+    setDealDraftVideoNetCost(firstJob?.videoAssetNetCost ?? 0);
     setDealDraftAdvanceAmount(item.soTienTamUngTruoc || 0);
-    setDealDraftAddons(existingAddons);
+    setDealDraftAddons(firstJob?.addonServices || []);
+  };
+
+  const updateActiveDealDraftJob = (
+    updater: (job: DealSowJobItem) => DealSowJobItem,
+    targetIdx = activeDealDraftJobIdx
+  ) => {
+    setDealDraftJobs((prev) => {
+      const safeIdx = Math.max(0, Math.min(targetIdx, prev.length - 1));
+      return prev.map((j, idx) => (idx === safeIdx ? updater(j) : j));
+    });
+  };
+
+  const handleAddJobToDealBuilder = () => {
+    if (!dealBuilderItem) return;
+    const nextIdx = dealDraftJobs.length;
+    const baseBo = dealDraftCode || dealBuilderItem.maBooking || 'BO2610';
+    const nextJobCode = `${baseBo}-J${String(nextIdx + 1).padStart(2, '0')}`;
+    const defaultAddons = buildDefaultAddonServicesForDeal({
+      maBooking: nextJobCode,
+      totalNet: dealDraftVideoNetCost || 2000000,
+      includeDefaultAddons: true,
+    });
+    const newJob: DealSowJobItem = {
+      id: `${nextJobCode}-${Date.now()}`,
+      jobCode: nextJobCode,
+      jobTitle: `Bảng công việc #${nextIdx + 1} (${nextJobCode})`,
+      productName: `${dealBuilderItem.sanPham || dealBuilderItem.brandName} (Job #${nextIdx + 1})`,
+      mediaChannel: 'TikTok',
+      affiliateChannel: dealBuilderItem.storeName.toLowerCase().includes('shopee')
+        ? 'Shopee'
+        : 'TikTok Shop',
+      plannedAirDate:
+        dealDraftPlannedAirDate ||
+        dealBuilderItem.plannedAirDate ||
+        `${dealBuilderItem.thangPlan.replace('/', '-')}-20`,
+      videoAssetNetCost: dealDraftVideoNetCost || 2000000,
+      quantity: 1,
+      addonServices: defaultAddons,
+      acceptanceStatus: 'CHUA_NGHIEM_THU',
+    };
+    const nextJobs = [...dealDraftJobs, newJob];
+    setDealDraftJobs(nextJobs);
+    setActiveDealDraftJobIdx(nextIdx);
+    setDealDraftPlannedAirDate(newJob.plannedAirDate);
+    setDealDraftVideoNetCost(newJob.videoAssetNetCost);
+    setDealDraftAddons(newJob.addonServices);
+  };
+
+  const handleSelectDealDraftJob = (idx: number) => {
+    const target = dealDraftJobs[idx];
+    if (!target) return;
+    setActiveDealDraftJobIdx(idx);
+    setDealDraftPlannedAirDate(target.plannedAirDate || '');
+    setDealDraftVideoNetCost(target.videoAssetNetCost || 0);
+    setDealDraftAddons(target.addonServices || []);
+  };
+
+  const handleDeleteDealDraftJob = (idx: number) => {
+    if (dealDraftJobs.length <= 1) return;
+    const remaining = dealDraftJobs.filter((_, i) => i !== idx);
+    const nextActive = Math.max(0, Math.min(activeDealDraftJobIdx, remaining.length - 1));
+    setDealDraftJobs(remaining);
+    setActiveDealDraftJobIdx(nextActive);
+    const activeJob = remaining[nextActive];
+    if (activeJob) {
+      setDealDraftPlannedAirDate(activeJob.plannedAirDate || '');
+      setDealDraftVideoNetCost(activeJob.videoAssetNetCost || 0);
+      setDealDraftAddons(activeJob.addonServices || []);
+    }
   };
 
   const handleTogglePresetAddonInBuilder = (
@@ -564,42 +758,74 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     anchorType: 'ACCEPTANCE_DATE' | 'AIR_DATE',
     defaultDays: number
   ) => {
-    setDealDraftAddons((prev) => {
-      const exists = prev.some((a) => a.termType === termType);
-      if (exists) {
-        return prev.filter((a) => a.termType !== termType);
-      }
-      const newAddon: DealRightsTermItem = {
-        id: `${dealDraftCode || 'DEAL'}-ADDON-${termType}-${Date.now().toString().slice(-3)}`,
-        termType,
-        termLabel: defaultLabel,
-        scopeType: 'ASSET',
-        anchorType,
-        durationDays: defaultDays,
-        allocatedWeightPct: 10,
-        allocatedCostVnd: 0,
-        status: 'PENDING_ANCHOR',
-        acceptanceStatus: 'LOCKED_BY_VIDEO',
-        evidenceCodeOrUrl: '',
-      };
-      return [...prev, newAddon];
-    });
+    const activeJob = dealDraftJobs[activeDealDraftJobIdx];
+    const currentAddons = activeJob ? activeJob.addonServices : dealDraftAddons;
+    const exists = currentAddons.some((a) => a.termType === termType);
+    const nextAddons = exists
+      ? currentAddons.filter((a) => a.termType !== termType)
+      : [
+          ...currentAddons,
+          {
+            id: `${activeJob?.jobCode || dealDraftCode || 'DEAL'}-ADDON-${termType}-${Date.now().toString().slice(-3)}`,
+            termType,
+            termLabel: defaultLabel,
+            scopeType: 'ASSET' as const,
+            targetDeliverableId: activeJob?.jobCode,
+            anchorType,
+            durationDays: defaultDays,
+            allocatedWeightPct: 10,
+            allocatedCostVnd: 0,
+            status: 'PENDING_ANCHOR' as const,
+            acceptanceStatus: 'LOCKED_BY_VIDEO' as const,
+            evidenceCodeOrUrl: '',
+          },
+        ];
+    setDealDraftAddons(nextAddons);
+    updateActiveDealDraftJob((job) => ({
+      ...job,
+      addonServices: nextAddons,
+    }));
   };
 
   const handleSaveDealBuilderModal = (openSowAfterSave?: boolean) => {
     if (!dealBuilderItem) return;
-    if (!dealDraftPlannedAirDate.trim()) {
+    const normalizedJobs: DealSowJobItem[] =
+      dealDraftJobs.length > 0
+        ? dealDraftJobs
+        : [
+            {
+              id: `${dealDraftCode || 'BO'}-J01`,
+              jobCode: `${dealDraftCode || 'BO'}-J01`,
+              jobTitle: `Bảng công việc #1 (${dealDraftCode || 'BO'}-J01)`,
+              productName: dealBuilderItem.sanPham || dealBuilderItem.brandName,
+              mediaChannel: 'TikTok',
+              plannedAirDate: dealDraftPlannedAirDate,
+              videoAssetNetCost: Math.max(0, dealDraftVideoNetCost),
+              quantity: 1,
+              addonServices: dealDraftAddons,
+            },
+          ];
+
+    const missingAirJob = normalizedJobs.find((j) => !j.plannedAirDate?.trim());
+    if (missingAirJob) {
       onNotify?.(
-        `Vui lòng chọn Ngày air dự kiến cho Asset Video của kênh @${dealBuilderItem.idKenh}.`,
+        `Vui lòng chọn Ngày air dự kiến cho ${missingAirJob.jobCode} của kênh @${dealBuilderItem.idKenh}.`,
         'warning'
       );
       return;
     }
-    const addonsTotal = dealDraftAddons.reduce(
-      (s, a) => s + (Number(a.allocatedCostVnd) || 0),
-      0
-    );
-    const totalDealNet = Math.max(0, dealDraftVideoNetCost) + addonsTotal;
+
+    const jobSubtotals = normalizedJobs.map((j) => computeDealSowJobSubtotal(j));
+    const totalVideoNet = jobSubtotals.reduce((s, t) => s + t.videoNet, 0);
+    const addonsTotal = jobSubtotals.reduce((s, t) => s + t.addonsNet, 0);
+    const totalDealNet = totalVideoNet + addonsTotal;
+    const allAddons = normalizedJobs.flatMap((j) => j.addonServices || []);
+    const primaryAirDate = normalizedJobs[0]?.plannedAirDate || dealDraftPlannedAirDate;
+    const combinedProducts =
+      normalizedJobs.length > 1
+        ? Array.from(new Set(normalizedJobs.map((j) => j.productName?.trim()).filter(Boolean))).join(' + ')
+        : normalizedJobs[0]?.productName || dealBuilderItem.sanPham;
+
     const finalDealCode =
       dealDraftCode.trim() || generateBookingOrderCode(dealBuilderItem.thangPlan, 205);
     const finalAppendixCode =
@@ -615,12 +841,14 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
           bookingOrderCreated: true,
           bookingOrderCreatedAt: it.bookingOrderCreatedAt || new Date().toISOString(),
           linkedDealId: finalDealCode,
-          plannedAirDate: dealDraftPlannedAirDate,
+          sanPham: combinedProducts || it.sanPham,
+          plannedAirDate: primaryAirDate,
           chiPhiBookingNetCuoi: totalDealNet,
-          videoAssetNetCost: Math.max(0, dealDraftVideoNetCost),
+          videoAssetNetCost: totalVideoNet,
           addonServicesNetCost: addonsTotal,
           soTienTamUngTruoc: Math.max(0, dealDraftAdvanceAmount),
-          addonServices: dealDraftAddons,
+          addonServices: allAddons,
+          dealJobs: normalizedJobs,
           masterContractCode:
             dealDraftMasterContract.trim() ||
             generateMasterContractCode(it.idKenh, it.kocId),
@@ -644,7 +872,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
 
     setDealBuilderTargetId(null);
     onNotify?.(
-      `Đã tạo Deal ${finalDealCode} (1 Video Asset + ${dealDraftAddons.length} dịch vụ gia tăng) & Phụ lục ${finalAppendixCode}.`,
+      `Đã lưu Deal ${finalDealCode} gồm ${normalizedJobs.length} Job (${normalizedJobs.length} Bảng công việc trong Phụ lục ${finalAppendixCode}) · Tổng Net: ${formatVnd(totalDealNet)}.`,
       'success'
     );
     if (openSowAfterSave && mappedDeal && onOpenContractForDeal) {
@@ -867,9 +1095,15 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     Record<string, TikTokVideoInspectionResult>
   >({});
   const [isInspectingTikTokLinks, setIsInspectingTikTokLinks] = useState(false);
-  // Lưu chỉnh sửa Nghiệm thu Bước 2 (Dịch vụ gia tăng & Quyền lợi theo Deal) theo id dòng
+  // Lưu chỉnh sửa Nghiệm thu Bước 2 (Dịch vụ gia tăng & Quyền lợi theo Deal / từng Job) theo id dòng
   const [stage2AddonEdits, setStage2AddonEdits] = useState<
     Record<string, DealRightsTermItem[]>
+  >({});
+  const [stage2DealJobsEdits, setStage2DealJobsEdits] = useState<
+    Record<string, DealSowJobItem[]>
+  >({});
+  const [stage2ActiveJobIdxMap, setStage2ActiveJobIdxMap] = useState<
+    Record<string, number>
   >({});
   const [draftBbntPreviewDeal, setDraftBbntPreviewDeal] =
     useState<BookingDealItem | null>(null);
@@ -981,6 +1215,8 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     setRowManualBoMap({});
     setRowFieldOverrides({});
     setStage2AddonEdits({});
+    setStage2DealJobsEdits({});
+    setStage2ActiveJobIdxMap({});
     if (row) {
       setSelectedTargetBoItemId(row.id);
       setAcceptanceBulkText(buildSampleLineForItem(row, 0));
@@ -1330,18 +1566,39 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       allDeals: deals,
     });
 
-    // Áp dụng cập nhật Nghiệm thu Bước 2 (Dịch vụ gia tăng & Quyền lợi theo Deal) sau khi Bước 1 Video đã nghiệm thu
+    // Áp dụng cập nhật Nghiệm thu Bước 2 (theo từng Bảng công việc Job & Dịch vụ gia tăng) sau khi Bước 1 Video đã nghiệm thu
     let finalUpdatedList = result.updatedList;
     let finalUpdatedApprovedItems = result.updatedApprovedItems;
 
-    if (Object.keys(stage2AddonEdits).length > 0) {
+    if (
+      Object.keys(stage2AddonEdits).length > 0 ||
+      Object.keys(stage2DealJobsEdits).length > 0
+    ) {
       const modifiedItems: ApprovedBookingListItem[] = [];
       finalUpdatedList = finalUpdatedList.map((it) => {
+        const editedJobs = stage2DealJobsEdits[it.id];
         const editedAddons = stage2AddonEdits[it.id];
-        if (!editedAddons) return it;
+        if (!editedJobs && !editedAddons) return it;
+        const nextJobs = editedJobs
+          ? editedJobs.map((j, jIdx) =>
+              jIdx === 0
+                ? {
+                    ...j,
+                    linkAir: j.linkAir || it.linkAir,
+                    actualAirDate: j.actualAirDate || it.actualAirDate,
+                    sparkAdsCode: j.sparkAdsCode || it.sparkAdsCode,
+                  }
+                : j
+            )
+          : it.dealJobs;
+        const primaryAddons =
+          editedJobs && editedJobs.length > 0
+            ? editedJobs.flatMap((j) => j.addonServices || [])
+            : editedAddons || it.addonServices;
         const recalc = recalculateApprovedBookingItem({
           ...it,
-          addonServices: editedAddons,
+          dealJobs: nextJobs,
+          addonServices: primaryAddons,
         });
         modifiedItems.push(recalc);
         return recalc;
@@ -1600,16 +1857,112 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       },
       {
         key: 'deal',
-        header: 'Mã Deal & Phụ lục SOW',
-        width: 175,
+        header: 'Mã Deal · HĐ / PL / BBNT & Link',
+        width: 245,
         render: (item) => (
-          <div className="leading-tight space-y-0.5">
-            <div className="font-code font-medium text-ink">
-              {item.maBooking || 'Chưa cấp mã BO'}
+          <div className="leading-tight space-y-1" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="font-code font-semibold text-ink">
+                {item.maBooking || 'Chưa cấp mã BO'}
+              </span>
+              {item.contractAppendixStatus === 'ĐÃ_KÝ' ? (
+                <span className="text-2xs px-1.5 py-0.5 rounded bg-positive-soft text-positive font-medium">
+                  PL đã ký
+                </span>
+              ) : null}
             </div>
-            <div className="text-2xs font-code text-ink-3 truncate max-w-[165px]">
-              {item.contractAppendixCode ||
-                (item.maBooking ? `PL-${item.maBooking}-01` : 'Chưa lập phụ lục')}
+
+            {/* 1. HĐNT */}
+            <div className="flex items-center justify-between gap-1 text-2xs">
+              <span className="font-code text-ink-2 truncate max-w-[140px]" title={item.masterContractCode}>
+                HĐ: {item.masterContractCode || 'Chưa gắn'}
+              </span>
+              <span className="inline-flex items-center gap-1.5 shrink-0">
+                {item.masterContractGoogleDocsUrl && (
+                  <a
+                    href={item.masterContractGoogleDocsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-accent hover:underline font-medium"
+                    title="Mở Google Docs HĐNT"
+                  >
+                    GDocs↗
+                  </a>
+                )}
+                {item.masterContractSignedUrl && (
+                  <a
+                    href={item.masterContractSignedUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-positive hover:underline font-medium"
+                    title="Mở bản HĐNT đã ký"
+                  >
+                    Bản ký↗
+                  </a>
+                )}
+              </span>
+            </div>
+
+            {/* 2. Phụ lục SOW (PL) */}
+            <div className="flex items-center justify-between gap-1 text-2xs">
+              <span className="font-code text-ink-2 truncate max-w-[140px]" title={item.contractAppendixCode}>
+                PL: {item.contractAppendixCode || (item.maBooking ? `PL-${item.maBooking}-01` : 'Chưa lập')}
+              </span>
+              <span className="inline-flex items-center gap-1.5 shrink-0">
+                {item.contractAppendixGoogleDocsUrl && (
+                  <a
+                    href={item.contractAppendixGoogleDocsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-accent hover:underline font-medium"
+                    title="Mở Google Docs Phụ lục SOW"
+                  >
+                    GDocs↗
+                  </a>
+                )}
+                {item.contractAppendixSignedUrl && (
+                  <a
+                    href={item.contractAppendixSignedUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-positive hover:underline font-medium"
+                    title="Mở bản Phụ lục SOW đã ký"
+                  >
+                    Bản ký↗
+                  </a>
+                )}
+              </span>
+            </div>
+
+            {/* 3. BBNT */}
+            <div className="flex items-center justify-between gap-1 text-2xs">
+              <span className="font-code text-ink-3 truncate max-w-[140px]" title={item.bbntCode}>
+                BBNT: {item.bbntCode || (item.acceptanceStatus === 'DA_NGHIEM_THU' && item.maBooking ? `BBNT-${item.maBooking}` : '—')}
+              </span>
+              <span className="inline-flex items-center gap-1.5 shrink-0">
+                {item.bbntGoogleDocsUrl && (
+                  <a
+                    href={item.bbntGoogleDocsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-accent hover:underline font-medium"
+                    title="Mở Google Docs BBNT"
+                  >
+                    GDocs↗
+                  </a>
+                )}
+                {item.bbntSignedUrl && (
+                  <a
+                    href={item.bbntSignedUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-positive hover:underline font-medium"
+                    title="Mở bản BBNT đã ký"
+                  >
+                    Bản ký↗
+                  </a>
+                )}
+              </span>
             </div>
           </div>
         ),
@@ -1866,6 +2219,15 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         <Button
           variant="secondary"
           size="sm"
+          icon={FileText}
+          disabled={isPullingContractLinks}
+          onClick={() => void handlePullContractInfoAndLinks()}
+        >
+          Kéo HĐ · PL · BBNT &amp; Link
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           icon={Video}
           onClick={() => openAcceptanceModalForRow()}
         >
@@ -1989,46 +2351,16 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                   className="w-auto min-w-[200px] max-w-[260px]"
                 >
                   <option value="ALL">
-                    Tất cả gian hàng (
-                    {
-                      items.filter(
-                        (i) => selectedMonth === 'ALL' || i.thangPlan === selectedMonth
-                      ).length
-                    }
-                    )
+                    Tất cả gian hàng ({monthTotalItemCount})
                   </option>
-                  {[...b2cStores]
-                    .sort((a, b) => {
-                      const ca = items.filter(
-                        (i) =>
-                          i.storeName === a.storeName &&
-                          (selectedMonth === 'ALL' || i.thangPlan === selectedMonth)
-                      ).length;
-                      const cb = items.filter(
-                        (i) =>
-                          i.storeName === b.storeName &&
-                          (selectedMonth === 'ALL' || i.thangPlan === selectedMonth)
-                      ).length;
-                      if (ca > 0 && cb === 0) return -1;
-                      if (ca === 0 && cb > 0) return 1;
-                      if (ca !== cb) return cb - ca;
-                      return (a.brandName || a.storeName).localeCompare(
-                        b.brandName || b.storeName,
-                        'vi'
-                      );
-                    })
-                    .map((st) => {
-                      const count = items.filter(
-                        (i) =>
-                          i.storeName === st.storeName &&
-                          (selectedMonth === 'ALL' || i.thangPlan === selectedMonth)
-                      ).length;
-                      return (
-                        <option key={st.id} value={st.storeName}>
-                          {st.brandName} — {st.storeName} ({count})
-                        </option>
-                      );
-                    })}
+                  {sortedB2cStoresForMonth.map((st) => {
+                    const count = storeItemCountsForMonth.get(st.storeName) || 0;
+                    return (
+                      <option key={st.id} value={st.storeName}>
+                        {st.brandName} — {st.storeName} ({count})
+                      </option>
+                    );
+                  })}
                 </Select>
 
                 <Segmented
@@ -2181,6 +2513,17 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                     </th>
                   )}
 
+                  {/* Nhóm cột Kéo thông tin & Đường link HĐNT, Phụ lục SOW (PL), BBNT */}
+                  <th className="px-2.5 py-1.5 border-r border-line min-w-[220px] text-left">
+                    <div className="font-semibold text-ink">1. Hợp đồng (HĐNT) &amp; Link</div>
+                  </th>
+                  <th className="px-2.5 py-1.5 border-r border-line min-w-[220px] text-left">
+                    <div className="font-semibold text-ink">2. Phụ lục (PL SOW) &amp; Link</div>
+                  </th>
+                  <th className="px-2.5 py-1.5 border-r border-line min-w-[220px] text-left">
+                    <div className="font-semibold text-ink">3. Biên bản (BBNT) &amp; Link</div>
+                  </th>
+
                   {/* Nhóm cột Nghiệm thu Video */}
                   {viewColumnMode !== 'BOOKING_FOCUS' && (
                     <>
@@ -2291,8 +2634,8 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               {item.contractAppendixCode || `PL-${item.maBooking}-01`} ({item.contractAppendixStatus || 'CHỜ_KÝ'})
                             </div>
                             <div className="flex items-center justify-between gap-1 text-2xs text-ink-3">
-                              <span className="truncate">
-                                1 Video + {(item.addonServices || []).length} DV kèm
+                              <span className="truncate" title="Số Job (Bảng công việc) và Dịch vụ đi kèm trong Phụ lục SOW">
+                                {ensureDealJobsForApprovedItem(item).length} Job ({ensureDealJobsForApprovedItem(item).length} Bảng CV) + {(item.addonServices || []).length} DV
                               </span>
                               <button
                                 type="button"
@@ -2512,6 +2855,199 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           </div>
                         </td>
                       )}
+
+                      {/* Cột HĐNT & Link */}
+                      <td className="px-2.5 py-2 border-r border-line align-middle space-y-1 min-w-[220px]">
+                        <input
+                          type="text"
+                          value={item.masterContractCode || ''}
+                          onChange={(e) =>
+                            handleFieldChange(item.id, 'masterContractCode', e.target.value)
+                          }
+                          placeholder="Mã HĐNT (VD: 291026/HDNT/...)"
+                          className="w-full h-6 px-2 rounded border border-line bg-surface font-code text-2xs text-ink"
+                        />
+                        <input
+                          type="text"
+                          value={item.masterContractGoogleDocsUrl || ''}
+                          onChange={(e) =>
+                            handleFieldChange(item.id, 'masterContractGoogleDocsUrl', e.target.value)
+                          }
+                          placeholder="Link Google Docs HĐNT..."
+                          className="w-full h-6 px-2 rounded border border-line bg-surface font-code text-2xs text-ink-2"
+                        />
+                        <div className="flex items-center justify-between gap-1 text-2xs">
+                          <input
+                            type="text"
+                            value={item.masterContractSignedUrl || ''}
+                            onChange={(e) =>
+                              handleFieldChange(item.id, 'masterContractSignedUrl', e.target.value)
+                            }
+                            placeholder="Link HĐNT đã ký..."
+                            className="w-full h-6 px-2 rounded border border-line bg-surface font-code text-2xs text-ink-2"
+                          />
+                          {item.masterContractGoogleDocsUrl && (
+                            <a
+                              href={item.masterContractGoogleDocsUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-accent hover:underline font-medium shrink-0"
+                            >
+                              GDocs↗
+                            </a>
+                          )}
+                          {item.masterContractSignedUrl && (
+                            <a
+                              href={item.masterContractSignedUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-positive hover:underline font-medium shrink-0"
+                            >
+                              Ký↗
+                            </a>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Cột Phụ lục SOW (PL) & Link */}
+                      <td className="px-2.5 py-2 border-r border-line align-middle space-y-1 min-w-[220px]">
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="text"
+                            value={item.contractAppendixCode || ''}
+                            onChange={(e) =>
+                              handleFieldChange(item.id, 'contractAppendixCode', e.target.value)
+                            }
+                            placeholder="Mã Phụ lục SOW..."
+                            className="w-full h-6 px-2 rounded border border-line bg-surface font-code text-2xs text-ink"
+                          />
+                          <select
+                            value={item.contractAppendixStatus || 'CHỜ_KÝ'}
+                            onChange={(e) =>
+                              handleFieldChange(
+                                item.id,
+                                'contractAppendixStatus',
+                                e.target.value as DealContractAppendixStatus
+                              )
+                            }
+                            className="h-6 px-1 rounded border border-line bg-surface text-2xs text-ink shrink-0"
+                          >
+                            <option value="CHƯA_LẬP">Chưa lập</option>
+                            <option value="CHỜ_KÝ">Chờ ký</option>
+                            <option value="ĐÃ_KÝ">Đã ký</option>
+                          </select>
+                        </div>
+                        <input
+                          type="text"
+                          value={item.contractAppendixGoogleDocsUrl || ''}
+                          onChange={(e) =>
+                            handleFieldChange(item.id, 'contractAppendixGoogleDocsUrl', e.target.value)
+                          }
+                          placeholder="Link Google Docs PL SOW..."
+                          className="w-full h-6 px-2 rounded border border-line bg-surface font-code text-2xs text-ink-2"
+                        />
+                        <div className="flex items-center justify-between gap-1 text-2xs">
+                          <input
+                            type="text"
+                            value={item.contractAppendixSignedUrl || ''}
+                            onChange={(e) =>
+                              handleFieldChange(item.id, 'contractAppendixSignedUrl', e.target.value)
+                            }
+                            placeholder="Link PL SOW đã ký..."
+                            className="w-full h-6 px-2 rounded border border-line bg-surface font-code text-2xs text-ink-2"
+                          />
+                          {item.contractAppendixGoogleDocsUrl && (
+                            <a
+                              href={item.contractAppendixGoogleDocsUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-accent hover:underline font-medium shrink-0"
+                            >
+                              GDocs↗
+                            </a>
+                          )}
+                          {item.contractAppendixSignedUrl && (
+                            <a
+                              href={item.contractAppendixSignedUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-positive hover:underline font-medium shrink-0"
+                            >
+                              Ký↗
+                            </a>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Cột Biên bản nghiệm thu (BBNT) & Link */}
+                      <td className="px-2.5 py-2 border-r border-line align-middle space-y-1 min-w-[220px]">
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="text"
+                            value={item.bbntCode || ''}
+                            onChange={(e) =>
+                              handleFieldChange(item.id, 'bbntCode', e.target.value)
+                            }
+                            placeholder="Mã BBNT..."
+                            className="w-full h-6 px-2 rounded border border-line bg-surface font-code text-2xs text-ink"
+                          />
+                          <select
+                            value={item.bbntStatus || 'CHƯA_LẬP'}
+                            onChange={(e) =>
+                              handleFieldChange(
+                                item.id,
+                                'bbntStatus',
+                                e.target.value as DealContractAppendixStatus
+                              )
+                            }
+                            className="h-6 px-1 rounded border border-line bg-surface text-2xs text-ink shrink-0"
+                          >
+                            <option value="CHƯA_LẬP">Chưa lập</option>
+                            <option value="CHỜ_KÝ">Chờ ký</option>
+                            <option value="ĐÃ_KÝ">Đã ký</option>
+                          </select>
+                        </div>
+                        <input
+                          type="text"
+                          value={item.bbntGoogleDocsUrl || ''}
+                          onChange={(e) =>
+                            handleFieldChange(item.id, 'bbntGoogleDocsUrl', e.target.value)
+                          }
+                          placeholder="Link Google Docs BBNT..."
+                          className="w-full h-6 px-2 rounded border border-line bg-surface font-code text-2xs text-ink-2"
+                        />
+                        <div className="flex items-center justify-between gap-1 text-2xs">
+                          <input
+                            type="text"
+                            value={item.bbntSignedUrl || ''}
+                            onChange={(e) =>
+                              handleFieldChange(item.id, 'bbntSignedUrl', e.target.value)
+                            }
+                            placeholder="Link BBNT đã ký..."
+                            className="w-full h-6 px-2 rounded border border-line bg-surface font-code text-2xs text-ink-2"
+                          />
+                          {item.bbntGoogleDocsUrl && (
+                            <a
+                              href={item.bbntGoogleDocsUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-accent hover:underline font-medium shrink-0"
+                            >
+                              GDocs↗
+                            </a>
+                          )}
+                          {item.bbntSignedUrl && (
+                            <a
+                              href={item.bbntSignedUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-positive hover:underline font-medium shrink-0"
+                            >
+                              Ký↗
+                            </a>
+                          )}
+                        </div>
+                      </td>
 
                       {viewColumnMode !== 'BOOKING_FOCUS' && (
                         <>
@@ -3394,46 +3930,95 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
             </div>
           </div>
 
-          {/* Tầng 4 (Bước 2): Nghiệm thu Dịch vụ gia tăng & Quyền lợi theo Deal + Đối soát Kế toán thanh toán Deal */}
+          {/* Tầng 4 (Bước 2): Nghiệm thu theo từng Bảng công việc (Job) & Quyền lợi theo Deal + Đối soát Kế toán thanh toán Deal */}
           <div className="border border-line rounded-lg overflow-hidden bg-surface">
             <div className="px-3 py-2 bg-sunken border-b border-line flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-semibold text-ink inline-flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-accent" />
-                Bước 2: Nghiệm thu Dịch vụ gia tăng &amp; Quyền lợi theo Deal
+                Bước 2: Nghiệm thu theo từng Bảng công việc (Job) &amp; Quyền lợi trong Phụ lục SOW
               </span>
             </div>
 
-            <div className="p-3 space-y-3 max-h-72 overflow-y-auto">
+            <div className="p-3 space-y-3 max-h-96 overflow-y-auto">
               {parsedAcceptanceRows.map((row, idx) => {
                 const m = row.matchedItem;
                 if (!m) return null;
-                const hasVideoStep1 = Boolean(
-                  row.linkAir?.trim() || m.linkAir?.trim() || row.actualAirDate?.trim()
+                const baseJobs = ensureDealJobsForApprovedItem({
+                  ...m,
+                  linkAir: row.linkAir || m.linkAir,
+                  actualAirDate: row.actualAirDate || m.actualAirDate,
+                  sparkAdsCode: row.sparkAdsCode || m.sparkAdsCode,
+                });
+                const currentDealJobs = stage2DealJobsEdits[m.id] || baseJobs;
+                const activeJobIdx = Math.min(
+                  Math.max(0, stage2ActiveJobIdxMap[m.id] || 0),
+                  Math.max(0, currentDealJobs.length - 1)
                 );
-                const currentAddons =
-                  stage2AddonEdits[m.id] ||
-                  (m.addonServices && m.addonServices.length > 0
-                    ? m.addonServices
-                    : buildDefaultAddonServicesForDeal({
-                        maBooking: m.maBooking || 'DEAL',
-                        totalNet: m.chiPhiBookingNetCuoi,
-                        sparkAdsCode: row.sparkAdsCode || m.sparkAdsCode,
-                        actualAirDate: row.actualAirDate || m.actualAirDate,
-                        includeDefaultAddons: true,
-                      }));
+                const activeJob = currentDealJobs[activeJobIdx] || currentDealJobs[0];
+                const hasVideoStep1 = Boolean(
+                  row.linkAir?.trim() ||
+                    m.linkAir?.trim() ||
+                    row.actualAirDate?.trim() ||
+                    activeJob?.linkAir?.trim()
+                );
 
-                const addonsCost = currentAddons.reduce(
-                  (s, a) => s + (Number(a.allocatedCostVnd) || 0),
+                const currentAddons =
+                  activeJob?.addonServices && activeJob.addonServices.length > 0
+                    ? activeJob.addonServices
+                    : stage2AddonEdits[m.id] ||
+                      (m.addonServices && m.addonServices.length > 0
+                        ? m.addonServices
+                        : buildDefaultAddonServicesForDeal({
+                            maBooking: activeJob?.jobCode || m.maBooking || 'DEAL',
+                            totalNet:
+                              (activeJob
+                                ? computeDealSowJobSubtotal(activeJob).plannedJobNet
+                                : 0) || m.chiPhiBookingNetCuoi,
+                            sparkAdsCode:
+                              activeJob?.sparkAdsCode || row.sparkAdsCode || m.sparkAdsCode,
+                            actualAirDate:
+                              activeJob?.actualAirDate || row.actualAirDate || m.actualAirDate,
+                            includeDefaultAddons: true,
+                          }));
+
+                const totalVideoCostAllJobs = currentDealJobs.reduce(
+                  (s, j) => s + (Number(j.videoAssetNetCost) || 0),
                   0
                 );
-                const droppedCost = currentAddons
-                  .filter((a) => a.acceptanceStatus === 'DROPPED')
-                  .reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
-                const videoCost = Math.max(0, m.chiPhiBookingNetCuoi - addonsCost);
+                const totalAddonsCostAllJobs = currentDealJobs.reduce(
+                  (s, j) =>
+                    s +
+                    (j.addonServices || []).reduce(
+                      (sa, a) => sa + (Number(a.allocatedCostVnd) || 0),
+                      0
+                    ),
+                  0
+                );
+                const totalDroppedCostAllJobs = currentDealJobs.reduce(
+                  (s, j) =>
+                    s +
+                    (j.addonServices || [])
+                      .filter((a) => a.acceptanceStatus === 'DROPPED')
+                      .reduce((sa, a) => sa + (Number(a.allocatedCostVnd) || 0), 0),
+                  0
+                );
+                const totalDealNet =
+                  totalVideoCostAllJobs + totalAddonsCostAllJobs || m.chiPhiBookingNetCuoi;
                 const effectiveDealPayable = Math.max(
                   0,
-                  m.chiPhiBookingNetCuoi - droppedCost - (m.soTienTamUngTruoc || 0)
+                  totalDealNet - totalDroppedCostAllJobs - (m.soTienTamUngTruoc || 0)
                 );
+
+                const updateActiveJobInModal = (patch: Partial<DealSowJobItem>) => {
+                  const nextJobs = currentDealJobs.map((j, jIdx) => {
+                    if (jIdx !== activeJobIdx) return j;
+                    return { ...j, ...patch };
+                  });
+                  setStage2DealJobsEdits((prev) => ({
+                    ...prev,
+                    [m.id]: nextJobs,
+                  }));
+                };
 
                 return (
                   <div
@@ -3443,7 +4028,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                     <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-line">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-code font-semibold text-ink">
-                          Deal: {m.maBooking || 'Sẽ cấp mã BO'} · @{m.idKenh}
+                          Deal: {m.maBooking || 'Sẽ cấp mã BO'} · @{m.idKenh} ({currentDealJobs.length} Job · {currentDealJobs.length} Bảng CV)
                         </span>
                         <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-code text-2xs text-ink-2">
                           HĐNT: {m.masterContractCode || generateMasterContractCode(m.idKenh, m.kocId)}
@@ -3453,11 +4038,11 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                         </span>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 font-code text-2xs">
-                        <span>Video: {formatVnd(videoCost)}</span>
-                        <span>+ DV kèm: {formatVnd(addonsCost)}</span>
-                        {droppedCost > 0 && (
+                        <span>Video ({currentDealJobs.length} Job): {formatVnd(totalVideoCostAllJobs)}</span>
+                        <span>+ DV kèm: {formatVnd(totalAddonsCostAllJobs)}</span>
+                        {totalDroppedCostAllJobs > 0 && (
                           <span className="text-critical font-semibold">
-                            - Khấu trừ hủy: {formatVnd(droppedCost)}
+                            - Khấu trừ hủy: {formatVnd(totalDroppedCostAllJobs)}
                           </span>
                         )}
                         <span className="px-2 py-0.5 rounded bg-positive-soft text-positive font-semibold">
@@ -3466,16 +4051,13 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                         <button
                           type="button"
                           onClick={() => {
-                            const mergedItem: ApprovedBookingListItem = {
+                            const mergedItem = recalculateApprovedBookingItem({
                               ...m,
                               linkAir: row.linkAir || m.linkAir,
                               actualAirDate: row.actualAirDate || m.actualAirDate,
                               sparkAdsCode: row.sparkAdsCode || m.sparkAdsCode,
-                              videoAssetNetCost: videoCost,
-                              addonServicesNetCost: addonsCost,
-                              khauTruHangMucHuy: droppedCost,
-                              addonServices: currentAddons,
-                            };
+                              dealJobs: currentDealJobs,
+                            });
                             setDraftBbntPreviewDeal(
                               buildBookingDealFromApprovedItem(mergedItem)
                             );
@@ -3483,21 +4065,120 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-accent-soft text-accent font-sans font-semibold text-2xs transition-colors"
                         >
                           <FileText className="w-3 h-3" />
-                          Xem nháp BBNT
+                          Xem nháp BBNT ({currentDealJobs.length} Bảng CV)
                         </button>
                       </div>
                     </div>
+
+                    {/* Thanh chọn Bảng công việc (Job #1, Job #2...) trong Deal */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {currentDealJobs.map((jItem, jIdx) => {
+                        const isSelectedJob = jIdx === activeJobIdx;
+                        const sub = computeDealSowJobSubtotal(jItem);
+                        return (
+                          <button
+                            key={jItem.id || jIdx}
+                            type="button"
+                            onClick={() =>
+                              setStage2ActiveJobIdxMap((prev) => ({
+                                ...prev,
+                                [m.id]: jIdx,
+                              }))
+                            }
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded border text-2xs transition-colors ${
+                              isSelectedJob
+                                ? 'border-accent bg-accent-soft/40 text-ink font-semibold'
+                                : 'border-line bg-surface text-ink-2 hover:bg-sunken'
+                            }`}
+                          >
+                            <span className="font-code text-accent font-semibold">
+                              Bảng CV #{jIdx + 1} · {jItem.jobCode}
+                            </span>
+                            <span className="truncate max-w-[130px]">
+                              {jItem.productName || jItem.jobTitle}
+                            </span>
+                            <span className="font-code text-ink">
+                              {formatVndShort(sub.acceptedJobNet)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Thông tin nghiệm thu Video chính của Bảng công việc (Job) đang chọn */}
+                    {activeJob && (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2 rounded border border-line bg-surface">
+                        <div>
+                          <span className="text-2xs text-ink-3 block">
+                            Link Video nghiệm thu ({activeJob.jobCode})
+                          </span>
+                          <input
+                            type="text"
+                            value={
+                              activeJobIdx === 0
+                                ? activeJob.linkAir || row.linkAir || ''
+                                : activeJob.linkAir || ''
+                            }
+                            onChange={(e) =>
+                              updateActiveJobInModal({
+                                linkAir: e.target.value,
+                                acceptanceStatus: e.target.value.trim()
+                                  ? 'DA_NGHIEM_THU'
+                                  : 'CHUA_NGHIEM_THU',
+                              })
+                            }
+                            placeholder="https://www.tiktok.com/@koc/video/..."
+                            className="mt-0.5 w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-2xs text-ink-3 block">
+                            Ngày lên sóng thực tế ({activeJob.jobCode})
+                          </span>
+                          <input
+                            type="date"
+                            value={
+                              activeJobIdx === 0
+                                ? activeJob.actualAirDate || row.actualAirDate || ''
+                                : activeJob.actualAirDate || ''
+                            }
+                            onChange={(e) =>
+                              updateActiveJobInModal({ actualAirDate: e.target.value })
+                            }
+                            className="mt-0.5 w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-2xs text-ink-3 block">
+                            Mã Spark Ads ({activeJob.jobCode})
+                          </span>
+                          <input
+                            type="text"
+                            value={
+                              activeJobIdx === 0
+                                ? activeJob.sparkAdsCode || row.sparkAdsCode || ''
+                                : activeJob.sparkAdsCode || ''
+                            }
+                            onChange={(e) =>
+                              updateActiveJobInModal({ sparkAdsCode: e.target.value })
+                            }
+                            placeholder="#SPARK-..."
+                            className="mt-0.5 w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {!hasVideoStep1 ? (
                       <div className="flex items-center gap-2 p-2 rounded bg-warning-soft text-warning text-xs font-medium">
                         <Lock className="w-3.5 h-3.5 shrink-0" />
                         <span>
-                          Đang khóa Bước 2: Cần điền Link Video nghiệm thu ở Bước 1 trước khi nghiệm thu các phần dịch vụ gia tăng của Deal.
+                          Đang khóa Bước 2: Cần điền Link Video nghiệm thu ở Bước 1 trước khi nghiệm thu các phần dịch vụ gia tăng của Bảng công việc.
                         </span>
                       </div>
                     ) : currentAddons.length === 0 ? (
                       <div className="text-ink-3 text-xs">
-                        Deal chỉ gồm 1 Video thuần (không có dịch vụ gia tăng đi kèm). Đủ điều kiện chuyển Kế toán thanh toán theo Deal.
+                        Bảng công việc #{activeJobIdx + 1} ({activeJob?.jobCode}) chỉ gồm 1 Video thuần (không có dịch vụ gia tăng đi kèm).
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -3519,7 +4200,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                 <span className="font-code text-2xs text-ink-3">
                                   {addon.allocatedCostVnd
                                     ? formatVnd(addon.allocatedCostVnd)
-                                    : 'Gộp trong gói Deal'}
+                                    : 'Gộp trong gói Job'}
                                 </span>
                               </div>
                               <div className="grid grid-cols-1 sm:grid-cols-12 gap-1.5 items-center">
@@ -3527,7 +4208,10 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                   type="text"
                                   value={
                                     addon.termType === 'ADS_CODE'
-                                      ? addon.evidenceCodeOrUrl || row.sparkAdsCode || ''
+                                      ? addon.evidenceCodeOrUrl ||
+                                        activeJob?.sparkAdsCode ||
+                                        row.sparkAdsCode ||
+                                        ''
                                       : addon.evidenceCodeOrUrl || ''
                                   }
                                   onChange={(e) => {
@@ -3543,10 +4227,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                           }
                                         : a
                                     );
-                                    setStage2AddonEdits((prev) => ({
-                                      ...prev,
-                                      [m.id]: nextList,
-                                    }));
+                                    updateActiveJobInModal({ addonServices: nextList });
                                   }}
                                   placeholder="Mã Spark Ads / Link bài Reup / Link bàn giao file..."
                                   className="sm:col-span-7 h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
@@ -3564,10 +4245,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                           }
                                         : a
                                     );
-                                    setStage2AddonEdits((prev) => ({
-                                      ...prev,
-                                      [m.id]: nextList,
-                                    }));
+                                    updateActiveJobInModal({ addonServices: nextList });
                                   }}
                                   className={`sm:col-span-5 h-7 px-1.5 rounded border text-xs font-semibold ${
                                     effectiveStatus === 'VERIFIED'
@@ -3725,233 +4403,357 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               </div>
             </div>
 
-            {/* Khối 2: Cấu hình Asset (Video gốc bên trong Deal) */}
-            <div className="p-3 rounded-lg border border-line bg-surface space-y-2.5">
-              <div className="font-semibold text-ink inline-flex items-center gap-1.5">
-                <Video className="w-3.5 h-3.5 text-accent" />
-                Hạng mục chính: Video gốc ({dealBuilderItem.sanPham || dealBuilderItem.brandName})
+            {/* Khối 2: Quản lý danh sách Job trong Deal (1 Deal -> N Job, mỗi Job = 1 Bảng công việc trong Phụ lục SOW) */}
+            <div className="p-3 rounded-lg border border-line bg-sunken/50 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold text-ink inline-flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-accent" />
+                    Danh sách Job trong Deal ({dealDraftJobs.length} Job = {dealDraftJobs.length} Bảng công việc trong Phụ lục SOW)
+                  </span>
+                </div>
+                {!isDealBuilderSowLocked && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={Plus}
+                    onClick={handleAddJobToDealBuilder}
+                  >
+                    + Thêm Job (Bảng công việc mới vào Phụ lục)
+                  </Button>
+                )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                <Field label="Ngày air dự kiến (Asset Video)">
-                  <Input
-                    type="date"
-                    value={dealDraftPlannedAirDate}
-                    disabled={isDealBuilderSowLocked}
-                    onChange={(e) => setDealDraftPlannedAirDate(e.target.value)}
-                  />
-                </Field>
-                <Field label="Đơn giá Net của Asset Video (VNĐ)">
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    disabled={isDealBuilderSowLocked}
-                    value={formatNumber(Number(dealDraftVideoNetCost) || 0)}
-                    onChange={(e) =>
-                      setDealDraftVideoNetCost(parseThousandNumberInput(e.target.value))
-                    }
-                  />
-                </Field>
-                <Field label="Số tiền tạm ứng trước theo Deal (VNĐ)">
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    disabled={isDealBuilderSowLocked}
-                    value={formatNumber(Number(dealDraftAdvanceAmount) || 0)}
-                    onChange={(e) =>
-                      setDealDraftAdvanceAmount(parseThousandNumberInput(e.target.value))
-                    }
-                  />
-                </Field>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {dealDraftJobs.map((jobItem, jIdx) => {
+                  const isSelected = jIdx === activeDealDraftJobIdx;
+                  const jobSub = computeDealSowJobSubtotal(jobItem);
+                  return (
+                    <div
+                      key={jobItem.id || jIdx}
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs transition-colors ${
+                        isSelected
+                          ? 'border-accent bg-accent-soft/40 text-ink font-semibold'
+                          : 'border-line bg-surface text-ink-2 hover:bg-sunken'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleSelectDealDraftJob(jIdx)}
+                        className="text-left flex items-center gap-2"
+                      >
+                        <span className="px-1.5 py-0.5 rounded bg-accent/15 text-accent font-code text-2xs font-semibold">
+                          Bảng CV #{jIdx + 1} · {jobItem.jobCode}
+                        </span>
+                        <span className="truncate max-w-[170px]">
+                          {jobItem.productName || dealBuilderItem.sanPham || 'Sản phẩm'}
+                        </span>
+                        <span className="font-code text-accent">
+                          {formatVnd(jobSub.plannedJobNet)}
+                        </span>
+                      </button>
+                      {!isDealBuilderSowLocked && dealDraftJobs.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDealDraftJob(jIdx)}
+                          className="text-ink-3 hover:text-critical p-0.5"
+                          title="Xóa Job (Bảng công việc) này khỏi Deal"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Khối 3: Các Dịch vụ gia tăng đi kèm trong Deal (Add-on Services) */}
-            <div className="p-3 rounded-lg border border-line bg-surface space-y-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-semibold text-ink inline-flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-accent" />
-                  Dịch vụ gia tăng &amp; Quyền lợi đi kèm trong Deal
-                </span>
-                <div className="flex flex-wrap items-center gap-1">
-                  {[
-                    {
-                      type: 'ADS_CODE' as const,
-                      label: '+ Mã Spark Ads (30d)',
-                      fullLabel: 'Cấp mã quảng cáo Spark Ads (30 ngày)',
-                      anchor: 'ACCEPTANCE_DATE' as const,
-                      days: 30,
-                    },
-                    {
-                      type: 'IMAGE_USAGE' as const,
-                      label: '+ Sử dụng hình ảnh (30d)',
-                      fullLabel: 'Quyền sử dụng hình ảnh & file video gốc (30 ngày)',
-                      anchor: 'ACCEPTANCE_DATE' as const,
-                      days: 30,
-                    },
-                    {
-                      type: 'EXCLUSIVITY' as const,
-                      label: '+ Độc quyền ngành hàng',
-                      fullLabel: 'Độc quyền ngành hàng (30 ngày)',
-                      anchor: 'AIR_DATE' as const,
-                      days: 30,
-                    },
-                    {
-                      type: 'CROSS_POST_REUP' as const,
-                      label: '+ Đăng chéo / Reup Wave 1',
-                      fullLabel: 'Đăng chéo kênh phụ / Reup Wave 1',
-                      anchor: 'ACCEPTANCE_DATE' as const,
-                      days: 30,
-                    },
-                    {
-                      type: 'LINK_BIO_CART' as const,
-                      label: '+ Gắn giỏ & Link Bio',
-                      fullLabel: 'Gắn giỏ hàng & Link Bio (30 ngày)',
-                      anchor: 'AIR_DATE' as const,
-                      days: 30,
-                    },
-                  ].map((preset) => {
-                    const active = dealDraftAddons.some(
-                      (a) => a.termType === preset.type
-                    );
-                    return (
-                      <button
-                        key={preset.type}
-                        type="button"
-                        disabled={isDealBuilderSowLocked}
-                        onClick={() =>
-                          handleTogglePresetAddonInBuilder(
-                            preset.type,
-                            preset.fullLabel,
-                            preset.anchor,
-                            preset.days
-                          )
-                        }
-                        className={`px-2 py-1 rounded border text-2xs font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none ${
-                          active
-                            ? 'bg-ink border-ink text-white'
-                            : 'bg-sunken border-line text-ink-2 hover:bg-surface'
-                        }`}
-                      >
-                        {preset.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+            {/* Khối 3: Bảng công việc của Job đang chọn (Video chính + Dịch vụ gia tăng đi kèm của Job) */}
+            {(() => {
+              const activeJob = dealDraftJobs[activeDealDraftJobIdx];
+              const activeJobSub = activeJob
+                ? computeDealSowJobSubtotal(activeJob)
+                : { videoNet: dealDraftVideoNetCost, addonsNet: 0, plannedJobNet: dealDraftVideoNetCost };
+              return (
+                <div className="p-3 rounded-lg border border-line bg-surface space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
+                    <div className="font-semibold text-ink inline-flex items-center gap-1.5">
+                      <Video className="w-3.5 h-3.5 text-accent" />
+                      <span>
+                        Bảng công việc #{activeDealDraftJobIdx + 1} ({activeJob?.jobCode || `${dealDraftCode}-J01`}) — Chi tiết Hạng mục trong Phụ lục SOW
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded bg-sunken border border-line font-code text-xs font-semibold text-accent">
+                      Cộng Bảng công việc #{activeDealDraftJobIdx + 1}: {formatVnd(activeJobSub.plannedJobNet)}
+                    </span>
+                  </div>
 
-              {dealDraftAddons.length === 0 ? (
-                <div className="p-2.5 rounded border border-dashed border-line text-ink-3 text-center">
-                  Deal hiện chỉ có 1 Asset Video thuần. Bấm các nút phía trên nếu Deal có kèm Dịch vụ gia tăng (Mã Ads, Hình ảnh, Độc quyền, Đăng chéo...).
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  {dealDraftAddons.map((addon, idx) => (
-                    <div
-                      key={addon.id || idx}
-                      className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center p-2 rounded border border-line bg-sunken/30"
-                    >
-                      <div className="sm:col-span-5">
-                        <input
-                          type="text"
-                          disabled={isDealBuilderSowLocked}
-                          value={addon.termLabel}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setDealDraftAddons((prev) =>
-                              prev.map((a, i) =>
-                                i === idx ? { ...a, termLabel: val } : a
-                              )
-                            );
-                          }}
-                          className="w-full h-7 px-2 rounded border border-line bg-surface font-medium text-xs text-ink disabled:bg-sunken disabled:text-ink-3"
-                        />
-                      </div>
-                      <div className="sm:col-span-3 flex items-center gap-1">
-                        <span className="text-2xs text-ink-3 shrink-0">Thời hạn:</span>
-                        <input
-                          type="number"
-                          disabled={isDealBuilderSowLocked}
-                          value={addon.durationDays}
-                          onChange={(e) => {
-                            const days = Math.max(1, Number(e.target.value) || 30);
-                            setDealDraftAddons((prev) =>
-                              prev.map((a, i) =>
-                                i === idx ? { ...a, durationDays: days } : a
-                              )
-                            );
-                          }}
-                          className="w-14 h-7 px-1.5 rounded border border-line bg-surface font-code text-xs text-right text-ink disabled:bg-sunken disabled:text-ink-3"
-                        />
-                        <span className="text-2xs text-ink-3">ngày</span>
-                      </div>
-                      <div className="sm:col-span-3 flex items-center gap-1">
-                        <span className="text-2xs text-ink-3 shrink-0">Phí Net:</span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          disabled={isDealBuilderSowLocked}
-                          value={formatNumber(Number(addon.allocatedCostVnd) || 0)}
-                          onChange={(e) => {
-                            const cost = parseThousandNumberInput(e.target.value);
-                            setDealDraftAddons((prev) =>
-                              prev.map((a, i) =>
-                                i === idx ? { ...a, allocatedCostVnd: cost } : a
-                              )
-                            );
-                          }}
-                          className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-right font-semibold text-ink tabular-nums disabled:bg-sunken disabled:text-ink-3"
-                        />
-                      </div>
-                      <div className="sm:col-span-1 text-right">
-                        {!isDealBuilderSowLocked && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setDealDraftAddons((prev) =>
-                                prev.filter((_, i) => i !== idx)
-                              )
-                            }
-                            className="text-critical hover:underline text-xs font-semibold"
-                          >
-                            Xóa
-                          </button>
-                        )}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                    <Field label="Mã Job trên Phụ lục">
+                      <Input
+                        value={activeJob?.jobCode || `${dealDraftCode}-J0${activeDealDraftJobIdx + 1}`}
+                        disabled={isDealBuilderSowLocked}
+                        onChange={(e) => {
+                          const nextCode = e.target.value;
+                          updateActiveDealDraftJob((j) => ({ ...j, jobCode: nextCode }));
+                        }}
+                      />
+                    </Field>
+                    <Field label="Sản phẩm / Nội dung Job này" className="sm:col-span-2">
+                      <Input
+                        value={activeJob?.productName ?? dealBuilderItem.sanPham}
+                        disabled={isDealBuilderSowLocked}
+                        onChange={(e) => {
+                          const nextProd = e.target.value;
+                          updateActiveDealDraftJob((j) => ({
+                            ...j,
+                            productName: nextProd,
+                            jobTitle: `Bảng công việc #${activeDealDraftJobIdx + 1} (${j.jobCode}) — ${nextProd}`,
+                          }));
+                        }}
+                      />
+                    </Field>
+                    <Field label="Kênh đăng tải">
+                      <Select
+                        value={activeJob?.mediaChannel || 'TikTok'}
+                        disabled={isDealBuilderSowLocked}
+                        onChange={(e) => {
+                          const ch = e.target.value as NonNullable<DealSowJobItem['mediaChannel']>;
+                          updateActiveDealDraftJob((j) => ({ ...j, mediaChannel: ch }));
+                        }}
+                      >
+                        <option value="TikTok">TikTok</option>
+                        <option value="Facebook">Facebook Reels</option>
+                        <option value="Instagram">Instagram Reels</option>
+                        <option value="Shopee Video">Shopee Video</option>
+                        <option value="YouTube">YouTube Shorts</option>
+                      </Select>
+                    </Field>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <Field label="Ngày air dự kiến (Job này)">
+                      <Input
+                        type="date"
+                        value={dealDraftPlannedAirDate}
+                        disabled={isDealBuilderSowLocked}
+                        onChange={(e) => {
+                          const nextDate = e.target.value;
+                          setDealDraftPlannedAirDate(nextDate);
+                          updateActiveDealDraftJob((j) => ({ ...j, plannedAirDate: nextDate }));
+                        }}
+                      />
+                    </Field>
+                    <Field label="Đơn giá Net Hạng mục 1 - Video (VNĐ)">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        disabled={isDealBuilderSowLocked}
+                        value={formatNumber(Number(dealDraftVideoNetCost) || 0)}
+                        onChange={(e) => {
+                          const nextCost = parseThousandNumberInput(e.target.value);
+                          setDealDraftVideoNetCost(nextCost);
+                          updateActiveDealDraftJob((j) => ({ ...j, videoAssetNetCost: nextCost }));
+                        }}
+                      />
+                    </Field>
+                    <Field label="Số tiền tạm ứng trước toàn Deal (VNĐ)">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        disabled={isDealBuilderSowLocked}
+                        value={formatNumber(Number(dealDraftAdvanceAmount) || 0)}
+                        onChange={(e) =>
+                          setDealDraftAdvanceAmount(parseThousandNumberInput(e.target.value))
+                        }
+                      />
+                    </Field>
+                  </div>
+
+                  {/* Các hạng mục đi kèm trong Bảng công việc của Job đang chọn */}
+                  <div className="pt-2 border-t border-line space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-semibold text-ink">
+                        Các hạng mục công việc đi kèm trong Bảng công việc #{activeDealDraftJobIdx + 1} ({dealDraftAddons.length} hạng mục)
+                      </span>
+                      <div className="flex flex-wrap items-center gap-1">
+                        {[
+                          {
+                            type: 'ADS_CODE' as const,
+                            label: '+ Mã Spark Ads (30d)',
+                            fullLabel: 'Cấp mã quảng cáo Spark Ads (30 ngày)',
+                            anchor: 'ACCEPTANCE_DATE' as const,
+                            days: 30,
+                          },
+                          {
+                            type: 'IMAGE_USAGE' as const,
+                            label: '+ Sử dụng hình ảnh (30d)',
+                            fullLabel: 'Quyền sử dụng hình ảnh & file video gốc (30 ngày)',
+                            anchor: 'ACCEPTANCE_DATE' as const,
+                            days: 30,
+                          },
+                          {
+                            type: 'EXCLUSIVITY' as const,
+                            label: '+ Độc quyền ngành hàng',
+                            fullLabel: 'Độc quyền ngành hàng (30 ngày)',
+                            anchor: 'AIR_DATE' as const,
+                            days: 30,
+                          },
+                          {
+                            type: 'CROSS_POST_REUP' as const,
+                            label: '+ Đăng chéo / Reup Wave 1',
+                            fullLabel: 'Đăng chéo kênh phụ / Reup Wave 1',
+                            anchor: 'ACCEPTANCE_DATE' as const,
+                            days: 30,
+                          },
+                          {
+                            type: 'LINK_BIO_CART' as const,
+                            label: '+ Gắn giỏ & Link Bio',
+                            fullLabel: 'Gắn giỏ hàng & Link Bio (30 ngày)',
+                            anchor: 'AIR_DATE' as const,
+                            days: 30,
+                          },
+                        ].map((preset) => {
+                          const active = dealDraftAddons.some(
+                            (a) => a.termType === preset.type
+                          );
+                          return (
+                            <button
+                              key={preset.type}
+                              type="button"
+                              disabled={isDealBuilderSowLocked}
+                              onClick={() =>
+                                handleTogglePresetAddonInBuilder(
+                                  preset.type,
+                                  preset.fullLabel,
+                                  preset.anchor,
+                                  preset.days
+                                )
+                              }
+                              className={`px-2 py-1 rounded border text-2xs font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none ${
+                                active
+                                  ? 'bg-ink border-ink text-white'
+                                  : 'bg-sunken border-line text-ink-2 hover:bg-surface'
+                              }`}
+                            >
+                              {preset.label}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
 
-              {/* Tóm tắt Tổng giá trị Deal cho Phụ lục & Kế toán */}
-              <div className="pt-2 border-t border-line flex flex-wrap items-center justify-between gap-2 font-code text-xs">
-                <div className="text-ink-2">
-                  Cấu trúc Deal:{' '}
-                  <span className="font-semibold text-ink">1 Asset Video</span> (
-                  {formatVnd(dealDraftVideoNetCost)}) +{' '}
-                  <span className="font-semibold text-ink">
-                    {dealDraftAddons.length} Dịch vụ gia tăng
-                  </span>{' '}
-                  (
-                  {formatVnd(
-                    dealDraftAddons.reduce(
-                      (s, a) => s + (Number(a.allocatedCostVnd) || 0),
-                      0
-                    )
-                  )}
-                  )
+                    {dealDraftAddons.length === 0 ? (
+                      <div className="p-2.5 rounded border border-dashed border-line text-ink-3 text-center">
+                        Bảng công việc #{activeDealDraftJobIdx + 1} hiện chỉ có 1 Hạng mục Video chính. Bấm các nút phía trên nếu Job này có kèm Dịch vụ gia tăng (Mã Ads, Hình ảnh, Độc quyền, Đăng chéo...).
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {dealDraftAddons.map((addon, idx) => (
+                          <div
+                            key={addon.id || idx}
+                            className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center p-2 rounded border border-line bg-sunken/30"
+                          >
+                            <div className="sm:col-span-5">
+                              <input
+                                type="text"
+                                disabled={isDealBuilderSowLocked}
+                                value={addon.termLabel}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const nextAddons = dealDraftAddons.map((a, i) =>
+                                    i === idx ? { ...a, termLabel: val } : a
+                                  );
+                                  setDealDraftAddons(nextAddons);
+                                  updateActiveDealDraftJob((j) => ({ ...j, addonServices: nextAddons }));
+                                }}
+                                className="w-full h-7 px-2 rounded border border-line bg-surface font-medium text-xs text-ink disabled:bg-sunken disabled:text-ink-3"
+                              />
+                            </div>
+                            <div className="sm:col-span-3 flex items-center gap-1">
+                              <span className="text-2xs text-ink-3 shrink-0">Thời hạn:</span>
+                              <input
+                                type="number"
+                                disabled={isDealBuilderSowLocked}
+                                value={addon.durationDays}
+                                onChange={(e) => {
+                                  const days = Math.max(1, Number(e.target.value) || 30);
+                                  const nextAddons = dealDraftAddons.map((a, i) =>
+                                    i === idx ? { ...a, durationDays: days } : a
+                                  );
+                                  setDealDraftAddons(nextAddons);
+                                  updateActiveDealDraftJob((j) => ({ ...j, addonServices: nextAddons }));
+                                }}
+                                className="w-14 h-7 px-1.5 rounded border border-line bg-surface font-code text-xs text-right text-ink disabled:bg-sunken disabled:text-ink-3"
+                              />
+                              <span className="text-2xs text-ink-3">ngày</span>
+                            </div>
+                            <div className="sm:col-span-3 flex items-center gap-1">
+                              <span className="text-2xs text-ink-3 shrink-0">Phí Net:</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                disabled={isDealBuilderSowLocked}
+                                value={formatNumber(Number(addon.allocatedCostVnd) || 0)}
+                                onChange={(e) => {
+                                  const cost = parseThousandNumberInput(e.target.value);
+                                  const nextAddons = dealDraftAddons.map((a, i) =>
+                                    i === idx ? { ...a, allocatedCostVnd: cost } : a
+                                  );
+                                  setDealDraftAddons(nextAddons);
+                                  updateActiveDealDraftJob((j) => ({ ...j, addonServices: nextAddons }));
+                                }}
+                                className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-right font-semibold text-ink tabular-nums disabled:bg-sunken disabled:text-ink-3"
+                              />
+                            </div>
+                            <div className="sm:col-span-1 text-right">
+                              {!isDealBuilderSowLocked && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const nextAddons = dealDraftAddons.filter((_, i) => i !== idx);
+                                    setDealDraftAddons(nextAddons);
+                                    updateActiveDealDraftJob((j) => ({ ...j, addonServices: nextAddons }));
+                                  }}
+                                  className="text-critical hover:underline text-xs font-semibold"
+                                >
+                                  Xóa
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="px-2.5 py-1 rounded bg-sunken border border-line font-semibold text-ink">
-                  Tổng giá trị Deal (Ghi trên Phụ lục):{' '}
-                  {formatVnd(
-                    dealDraftVideoNetCost +
-                      dealDraftAddons.reduce(
-                        (s, a) => s + (Number(a.allocatedCostVnd) || 0),
-                        0
-                      )
-                  )}
+              );
+            })()}
+
+            {/* Khối 4: Bảng tổng hợp toàn bộ N Bảng công việc (Job) trong Phụ lục SOW của Deal */}
+            {(() => {
+              const allSubs = dealDraftJobs.map((j) => computeDealSowJobSubtotal(j));
+              const totalVideosNet = allSubs.reduce((s, x) => s + x.videoNet, 0);
+              const totalAddonsNet = allSubs.reduce((s, x) => s + x.addonsNet, 0);
+              const grandDealNet = totalVideosNet + totalAddonsNet;
+              return (
+                <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 font-code text-xs">
+                    <div className="text-ink-2">
+                      Tổng hợp Phụ lục SOW ({dealDraftAppendixCode}):{' '}
+                      <span className="font-semibold text-ink">
+                        {dealDraftJobs.length} Job ({dealDraftJobs.length} Bảng công việc)
+                      </span>{' '}
+                      · Video Net: <span className="font-semibold text-ink">{formatVnd(totalVideosNet)}</span> + Dịch vụ đi kèm:{' '}
+                      <span className="font-semibold text-ink">{formatVnd(totalAddonsNet)}</span>
+                    </div>
+                    <div className="px-2.5 py-1 rounded bg-surface border border-line font-semibold text-ink">
+                      Tổng giá trị Deal (Ghi trên Phụ lục): {formatVnd(grandDealNet)}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
         )}
       </Modal>
@@ -4005,8 +4807,12 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
             : undefined
         }
         onSavedRecord={(rec) => {
+          setContractRecords((prev) => {
+            const exists = prev.some((x) => x.id === rec.id);
+            return exists ? prev.map((x) => (x.id === rec.id ? rec : x)) : [rec, ...prev];
+          });
           onNotify?.(
-            `Đã lưu bản nháp Biên bản nghiệm thu (${rec.title}) vào Quản lý Hợp đồng.`,
+            `Đã lưu Biên bản nghiệm thu (${rec.contractSystem?.contractCode || rec.title}) & đồng bộ đường link về Deal.`,
             'success'
           );
         }}
@@ -4037,6 +4843,13 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         onOpenDealBuilderModal={openDealBuilderModal}
         onOpenTikTokInspector={openDeepVideoInspector}
         onOpenKocProfile={(it) => setQuickViewApprovedItem(it)}
+        onUpdateDealFields={(dealId, patch) => {
+          updateItemsAndSync((prev) =>
+            prev.map((it) => (it.id === dealId ? recalculateApprovedBookingItem({ ...it, ...patch }) : it))
+          );
+        }}
+        onPullContractLinks={handlePullContractInfoAndLinks}
+        isPullingContractLinks={isPullingContractLinks}
         onNotify={onNotify}
       />
     </div>

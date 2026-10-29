@@ -23,6 +23,7 @@ import {
 import type { AcceptanceScreenshotItem, ContractField, DocBlock, DocParagraph, DocTable, SigningPerson } from '../../lib/contracts/types';
 import { formatNumber } from '../../lib/format';
 import { Button, Modal } from '../ui';
+import { parseSavedSowJobs, SOW_JOBS_META_KEY } from './contractUi';
 
 export interface ContractDocumentViewerProps {
   title?: string;
@@ -490,6 +491,130 @@ export function ContractDocumentViewer({
     );
   };
 
+  const savedJobTables = useMemo(
+    () => parseSavedSowJobs(values[SOW_JOBS_META_KEY]),
+    [values],
+  );
+
+  const renderMultiJobSowTablesBlock = () => {
+    if (!savedJobTables || savedJobTables.length === 0) return null;
+    const isSowOrAcceptanceDoc =
+      /SOW|PHỤ LỤC|BBNT|NGHIỆM THU/i.test(templateName || '') ||
+      /SOW|PHỤ LỤC|BBNT|NGHIỆM THU/i.test(title || '') ||
+      savedJobTables.length > 1;
+    if (!isSowOrAcceptanceDoc) return null;
+
+    const grandTotalNet = savedJobTables.reduce((sum, job) => {
+      const vNet = Math.max(0, Number(job.videoFeeNetVnd) || 0) * Math.max(1, Number(job.quantity) || 1);
+      const aNet = (job.addonItems || [])
+        .filter(a => a.includedInSow !== false && a.acceptanceStatus !== 'DROPPED')
+        .reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+      return sum + vNet + aNet;
+    }, 0);
+
+    return (
+      <div className="my-5 pt-3 border-t border-[#333] space-y-4">
+        <p className="font-semibold text-[14px] uppercase text-[#111]">
+          CHI TIẾT BẢNG CÔNG VIỆC THEO TỪNG JOB TRONG PHỤ LỤC ({savedJobTables.length} JOB · {savedJobTables.length} BẢNG CÔNG VIỆC)
+        </p>
+
+        {savedJobTables.map((job, jIdx) => {
+          const qty = Math.max(1, Number(job.quantity) || 1);
+          const videoTotal = Math.max(0, Number(job.videoFeeNetVnd) || 0) * qty;
+          const activeAddons = (job.addonItems || []).filter(a => a.includedInSow !== false);
+          const addonsTotal = activeAddons
+            .filter(a => a.acceptanceStatus !== 'DROPPED')
+            .reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+          const jobSubtotal = videoTotal + addonsTotal;
+
+          return (
+            <div key={job.id || jIdx} className="space-y-1.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[13px] font-semibold text-[#111]">
+                <span>
+                  Bảng công việc #{jIdx + 1} · Mã Job: {job.jobCode} — {job.productName || 'Sản phẩm chiến dịch'} ({job.mediaChannel || 'TikTok'})
+                </span>
+                <span>
+                  Ngày dự kiến đăng: {job.airDate || 'Theo kế hoạch'}
+                </span>
+              </div>
+
+              <table className="doc-grid w-full border-collapse border border-[#333] text-[13px]">
+                <thead>
+                  <tr className="bg-[#f4f3ef] font-semibold">
+                    <th className="border border-[#333] px-2 py-1.5 w-10 text-center">STT</th>
+                    <th className="border border-[#333] px-2.5 py-1.5 text-left">Hạng mục công việc trong Job #{jIdx + 1}</th>
+                    <th className="border border-[#333] px-2.5 py-1.5 text-left">Đầu việc bàn giao / Thời hạn</th>
+                    <th className="border border-[#333] px-2 py-1.5 w-16 text-center">SL</th>
+                    <th className="border border-[#333] px-2.5 py-1.5 w-32 text-right">Thành tiền Net (VNĐ)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="border border-[#333] px-2 py-1.5 text-center">1</td>
+                    <td className="border border-[#333] px-2.5 py-1.5">
+                      <span className="font-semibold">Sản xuất &amp; đăng tải Video ({job.productName || 'Sản phẩm'})</span>
+                      <div className="text-2xs text-[#444]">
+                        Kênh: {job.mediaChannel || 'TikTok'}
+                        {job.videoUrl ? ` · Link Air: ${job.videoUrl}` : ''}
+                      </div>
+                    </td>
+                    <td className="border border-[#333] px-2.5 py-1.5">
+                      Đăng tải dự kiến: {job.airDate || '—'}
+                    </td>
+                    <td className="border border-[#333] px-2 py-1.5 text-center">{qty}</td>
+                    <td className="border border-[#333] px-2.5 py-1.5 text-right font-semibold">
+                      {formatNumber(videoTotal)}
+                    </td>
+                  </tr>
+
+                  {activeAddons.map((addon, aIdx) => (
+                    <tr key={addon.id || aIdx}>
+                      <td className="border border-[#333] px-2 py-1.5 text-center">{aIdx + 2}</td>
+                      <td className="border border-[#333] px-2.5 py-1.5">
+                        <span>{addon.termLabel}</span>
+                        {addon.evidenceCodeOrUrl && (
+                          <div className="text-2xs text-[#444]">Mã / Link: {addon.evidenceCodeOrUrl}</div>
+                        )}
+                      </td>
+                      <td className="border border-[#333] px-2.5 py-1.5">
+                        Thời hạn: {addon.durationDays || 30} ngày
+                        {addon.acceptanceStatus === 'DROPPED' ? ' (Hủy / Khấu trừ)' : ''}
+                      </td>
+                      <td className="border border-[#333] px-2 py-1.5 text-center">1</td>
+                      <td className="border border-[#333] px-2.5 py-1.5 text-right">
+                        {addon.acceptanceStatus === 'DROPPED'
+                          ? '0 (Hủy)'
+                          : addon.allocatedCostVnd > 0
+                            ? formatNumber(addon.allocatedCostVnd)
+                            : '0 (Gộp gói)'}
+                      </td>
+                    </tr>
+                  ))}
+
+                  <tr className="bg-[#faf9f5] font-semibold">
+                    <td colSpan={4} className="border border-[#333] px-2.5 py-1.5 text-right">
+                      Cộng Bảng công việc #{jIdx + 1} ({job.jobCode}) — Tiền Net:
+                    </td>
+                    <td className="border border-[#333] px-2.5 py-1.5 text-right">
+                      {formatNumber(jobSubtotal)} đ
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          );
+        })}
+
+        {savedJobTables.length > 1 && (
+          <div className="border border-[#333] bg-[#f4f3ef] px-3 py-2 flex items-center justify-between text-[13.5px] font-semibold text-[#111]">
+            <span>TỔNG CỘNG GIÁ TRỊ NET TOÀN DEAL ({savedJobTables.length} BẢNG CÔNG VIỆC / JOB):</span>
+            <span>{formatNumber(grandTotalNet)} VNĐ</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderAcceptanceScreenshotsBlock = () => {
     if (!acceptanceScreenshots || acceptanceScreenshots.length === 0) return null;
     const inspectionMeta = acceptanceScreenshots.find(s => s.inspectionMeta)?.inspectionMeta;
@@ -602,12 +727,14 @@ export function ContractDocumentViewer({
           {bodyBlocks.length > 0 ? (
             <div className="space-y-1">
               {beforeSigBlocks.map((b, i) => renderBlock(b, `body-pre-${i}`))}
+              {renderMultiJobSowTablesBlock()}
               {renderAcceptanceScreenshotsBlock()}
               {fromSigBlocks.map((b, i) => renderBlock(b, `body-sig-${i}`))}
             </div>
           ) : (
             <div className="space-y-2">
               {paragraphs.map((p, i) => p && <p key={i}>{p}</p>)}
+              {renderMultiJobSowTablesBlock()}
               {renderAcceptanceScreenshotsBlock()}
             </div>
           )}

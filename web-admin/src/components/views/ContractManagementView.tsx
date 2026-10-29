@@ -229,16 +229,36 @@ export function ContractManagementView({
         const docDate = vMap['token:[DDMMYY]'] || vMap['token:[DD/MM/YYYY]'] || '';
         const kocCode = vMap['token:[ID KOC]'] || result.record.dealCode || 'KOC';
         const targetDealId = result.record.dealId || effectiveDeals.find(d => d.dealCode === result.record.dealCode)?.id || result.record.dealCode || '';
+        const signedUrl =
+          result.record.signing.at(-1)?.signedFileUrl ||
+          result.record.contractSystem?.signedFileUrl ||
+          (isCompleted ? `/api/contracts/${result.record.id}/document?version=${result.record.version}` : undefined);
         if (docKind === 'SOW') {
           onSyncDealContractStatus(targetDealId, {
             dealCode: result.record.dealCode,
-            contractAppendixCode: `PL01-${docDate || '26'}/${kocCode}`,
+            contractAppendixCode:
+              result.record.contractSystem?.contractCode || `PL01-${docDate || '26'}/${kocCode}`,
             contractAppendixStatus: isCompleted ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
+            contractAppendixGoogleDocsUrl: result.record.contractSystem?.googleDocsUrl,
+            contractAppendixSignedUrl: signedUrl,
           });
         } else if (docKind === 'HDNT') {
           onSyncDealContractStatus(targetDealId, {
             dealCode: result.record.dealCode,
-            masterContractCode: `${docDate || '26'}/${kocCode}/HĐNT-UPB`,
+            masterContractCode:
+              result.record.contractSystem?.contractCode || `${docDate || '26'}/${kocCode}/HĐNT-UPB`,
+            masterContractStatus: isCompleted ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
+            masterContractGoogleDocsUrl: result.record.contractSystem?.googleDocsUrl,
+            masterContractSignedUrl: signedUrl,
+          });
+        } else if (docKind === 'BBNT') {
+          onSyncDealContractStatus(targetDealId, {
+            dealCode: result.record.dealCode,
+            bbntCode:
+              result.record.contractSystem?.contractCode || `BBNT-${docDate || '26'}/${kocCode}`,
+            bbntStatus: isCompleted ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
+            bbntGoogleDocsUrl: result.record.contractSystem?.googleDocsUrl,
+            bbntSignedUrl: signedUrl,
           });
         }
       }
@@ -356,6 +376,63 @@ export function ContractManagementView({
       ),
     },
     {
+      key: 'links',
+      header: 'Mã HĐ / PL / BBNT & Đường link',
+      width: 215,
+      render: r => {
+        const code = r.contractSystem?.contractCode || r.signing.at(-1)?.contractCode || r.title;
+        const parentCode = r.contractSystem?.parentContractCode;
+        const gdocsUrl = r.contractSystem?.googleDocsUrl;
+        const docxUrl = r.contractSystem?.exportedDocxUrl || `/api/contracts/${r.id}/document?version=${r.version}`;
+        const signedUrl =
+          r.signing.at(-1)?.signedFileUrl ||
+          r.contractSystem?.signedFileUrl ||
+          (r.signing.at(-1)?.status === 'COMPLETED' ? `/api/contracts/${r.id}/document?version=${r.version}` : undefined);
+        return (
+          <div className="min-w-0 max-w-[225px] leading-tight space-y-1" onClick={e => e.stopPropagation()}>
+            <div className="font-code text-xs font-semibold text-ink truncate" title={code}>
+              {code}
+            </div>
+            {parentCode && (
+              <div className="font-code text-2xs text-ink-3 truncate" title={`Kế thừa: ${parentCode}`}>
+                Kế thừa: {parentCode}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2 text-2xs">
+              {gdocsUrl && (
+                <a
+                  href={gdocsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-accent hover:underline"
+                >
+                  Google Docs ↗
+                </a>
+              )}
+              <a
+                href={docxUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-ink-2 hover:text-ink hover:underline"
+              >
+                File .docx ↗
+              </a>
+              {signedUrl && (
+                <a
+                  href={signedUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-positive hover:underline"
+                >
+                  Bản đã ký ↗
+                </a>
+              )}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
       key: 'status',
       header: 'Trạng thái duyệt',
       width: 130,
@@ -469,16 +546,36 @@ export function ContractManagementView({
                         effectiveDeals.find(d => d.dealCode === result.record.dealCode)?.id ||
                         result.record.dealCode ||
                         '';
+                      const signedUrl =
+                        result.record.signing.at(-1)?.signedFileUrl ||
+                        result.record.contractSystem?.signedFileUrl ||
+                        `/api/contracts/${result.record.id}/document?version=${result.record.version}`;
                       if (docKind === 'SOW') {
                         onSyncDealContractStatus(targetDealId, {
                           dealCode: result.record.dealCode,
-                          contractAppendixCode: `PL01-${docDate || '26'}/${kocCode}`,
+                          contractAppendixCode:
+                            result.record.contractSystem?.contractCode || `PL01-${docDate || '26'}/${kocCode}`,
                           contractAppendixStatus: 'ĐÃ_KÝ',
+                          contractAppendixGoogleDocsUrl: result.record.contractSystem?.googleDocsUrl,
+                          contractAppendixSignedUrl: signedUrl,
                         });
                       } else if (docKind === 'HDNT') {
                         onSyncDealContractStatus(targetDealId, {
                           dealCode: result.record.dealCode,
-                          masterContractCode: `${docDate || '26'}/${kocCode}/HĐNT-UPB`,
+                          masterContractCode:
+                            result.record.contractSystem?.contractCode || `${docDate || '26'}/${kocCode}/HĐNT-UPB`,
+                          masterContractStatus: 'ĐÃ_KÝ',
+                          masterContractGoogleDocsUrl: result.record.contractSystem?.googleDocsUrl,
+                          masterContractSignedUrl: signedUrl,
+                        });
+                      } else if (docKind === 'BBNT') {
+                        onSyncDealContractStatus(targetDealId, {
+                          dealCode: result.record.dealCode,
+                          bbntCode:
+                            result.record.contractSystem?.contractCode || `BBNT-${docDate || '26'}/${kocCode}`,
+                          bbntStatus: 'ĐÃ_KÝ',
+                          bbntGoogleDocsUrl: result.record.contractSystem?.googleDocsUrl,
+                          bbntSignedUrl: signedUrl,
                         });
                       }
                     }

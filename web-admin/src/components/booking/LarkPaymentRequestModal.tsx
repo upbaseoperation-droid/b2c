@@ -688,6 +688,8 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
 
                 <div className="space-y-2.5">
                   {evaluation.lineItems.map(line => {
+                    const matchedDealObj = selectedDeals.find(d => d.id === line.dealId);
+                    const dealJobsList = matchedDealObj?.dealJobs || [];
                     return (
                       <div
                         key={line.dealId}
@@ -703,7 +705,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                               Deal: {line.dealCode}
                             </span>
                             <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-code text-3xs text-ink-2">
-                              HĐNT: {line.masterContractCode} · Phụ lục SOW: {line.contractAppendixCode}
+                              HĐNT: {line.masterContractCode} · Phụ lục SOW: {line.contractAppendixCode}{dealJobsList.length > 0 ? ` (${dealJobsList.length} Job · ${dealJobsList.length} Bảng CV)` : ''}
                             </span>
                             <Status tone={line.isEligible ? 'positive' : 'critical'}>
                               {line.isEligible
@@ -735,6 +737,41 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                         </div>
 
                         {/* Tóm tắt cấu trúc chi phí của Deal: Asset Video + Dịch vụ gia tăng - Khấu trừ phần hủy */}
+                        {dealJobsList.length > 0 && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-2xs">
+                            {dealJobsList.map((jItem, jIdx) => {
+                              const jAddonsNet = (jItem.addonServices || []).reduce(
+                                (s, a) => s + (Number(a.allocatedCostVnd) || 0),
+                                0
+                              );
+                              const jDropped = (jItem.addonServices || [])
+                                .filter(a => a.acceptanceStatus === 'DROPPED')
+                                .reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+                              const jSub = Math.max(
+                                0,
+                                (Number(jItem.videoAssetNetCost) || 0) + jAddonsNet - jDropped
+                              );
+                              return (
+                                <div
+                                  key={jItem.id || jIdx}
+                                  className="px-2.5 py-1.5 rounded border border-line bg-surface flex items-center justify-between gap-2"
+                                >
+                                  <div className="min-w-0">
+                                    <span className="font-code font-semibold text-accent">
+                                      Bảng CV #{jIdx + 1} · {jItem.jobCode}
+                                    </span>{' '}
+                                    <span className="font-medium text-ink">
+                                      {jItem.productName || jItem.jobTitle}
+                                    </span>
+                                  </div>
+                                  <span className="font-code font-semibold text-ink shrink-0">
+                                    {formatVnd(jSub)}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                         <div className="flex flex-wrap items-center gap-3 px-2.5 py-1.5 rounded bg-surface border border-line text-2xs font-code text-ink-2">
                           <span>
                             Hạng mục 1 (Video review): <strong>{formatVnd(line.videoAssetNetAmount ?? line.agreedNetAmount)}</strong>

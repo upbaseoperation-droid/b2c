@@ -34,6 +34,7 @@ import {
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { GROUP_ORDER, OFFICIAL_3STAGE_TEMPLATE_IDS, ROLE_LABEL, uniqueFields } from './contractUi';
+import { enrichTemplateWithSignFlow } from '../../lib/contracts/contractSystemRules';
 
 export const CATEGORY_LABELS: Record<ContractCategory, string> = {
   BOOKING_VIDEO: 'Hợp đồng Booking Video',
@@ -638,126 +639,187 @@ export function ContractCatalogView({
                   />
                 )}
 
-                {subTab === 'FIELDS' && (
-                  <div className="space-y-4">
-                    <div className="rounded-lg bg-sunken/70 border border-line px-3.5 py-2 text-xs text-ink-2 flex flex-wrap items-center justify-between gap-2">
-                      <span>
-                        <strong>{dedupedFields.length} trường thông tin</strong> ({dedupedFields.filter(f => f.required).length} bắt buộc)
-                      </span>
-                    </div>
+                {subTab === 'FIELDS' && (() => {
+                  const enrichedTpl = enrichTemplateWithSignFlow(loadedTemplate);
+                  const signTags = enrichedTpl.signTags || [];
+                  const flowCfg = enrichedTpl.signingFlowConfig;
+                  const signers = flowCfg?.signers || [];
+                  return (
+                    <div className="space-y-4">
+                      <div className="rounded-lg bg-sunken/70 border border-line px-3.5 py-2 text-xs text-ink-2 flex flex-wrap items-center justify-between gap-2">
+                        <span>
+                          <strong>{dedupedFields.length} trường thông tin</strong> ({dedupedFields.filter(f => f.required).length} bắt buộc)
+                        </span>
+                        <span className="font-code text-2xs text-accent">
+                          Tách riêng {signTags.length} thẻ vị trí chữ ký ({signTags.join(', ')})
+                        </span>
+                      </div>
 
-                    {GROUP_ORDER.map(g => {
-                      const groupFields = dedupedFields.filter(f => (f.group || 'OTHER') === g.key);
-                      if (!groupFields.length) return null;
-                      return (
-                        <div key={g.key} className="border border-line rounded-xl overflow-hidden">
-                          <div className="bg-sunken px-4 py-2.5 border-b border-line flex items-center justify-between">
-                            <div>
-                              <span className="text-xs font-semibold text-ink">{g.title}</span>
-                            </div>
-                            <span className="text-2xs font-medium text-ink-2">{groupFields.length} trường</span>
+                      {signers.length > 0 && (
+                        <div className="border border-line rounded-xl overflow-hidden">
+                          <div className="bg-sunken px-4 py-2.5 border-b border-line flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-xs font-semibold text-ink">
+                              Vị trí chữ ký số tự động tách (Bước 2 & 3 · configureTemplateSigningFlow)
+                            </span>
+                            <span className="text-2xs font-medium text-ink-2">
+                              {flowCfg?.mode === 'PARALLEL' ? 'Ký song song' : 'Ký tuần tự'} · Thời hạn {flowCfg?.deadlineDays || 7} ngày
+                            </span>
                           </div>
                           <div className="divide-y divide-line">
-                            {groupFields.map(f => (
-                              <div key={f.key} className="px-4 py-2.5 grid lg:grid-cols-[220px_180px_minmax(0,1fr)_90px] gap-2 items-center text-xs">
+                            {signers.map(signer => (
+                              <div key={signer.signTag} className="px-4 py-2.5 grid lg:grid-cols-[220px_180px_minmax(0,1fr)_90px] gap-2 items-center text-xs">
                                 <div className="min-w-0">
-                                  <span className="font-medium text-ink block truncate">{f.title || f.label}</span>
-                                  <span className="text-2xs text-ink-3 font-code">{f.key}</span>
+                                  <span className="font-medium text-ink block truncate">{signer.role}</span>
+                                  <span className="text-2xs text-ink-3 font-code">{signer.signTag}</span>
                                 </div>
                                 <div>
-                                  {f.source ? (
-                                    <span className="inline-flex items-center gap-1 text-2xs text-accent font-medium">
-                                      <FileSpreadsheet className="w-3 h-3 shrink-0" />
-                                      {SOURCE_LABELS[f.source] || f.source}
-                                    </span>
-                                  ) : (
-                                    <span className="text-2xs text-ink-3">Nhập tay khi soạn</span>
-                                  )}
+                                  <span className="font-code text-2xs text-accent font-medium">
+                                    WeSign key: {signer.signTag.replace(/[{}]/g, '')}
+                                  </span>
                                 </div>
-                                <div className="text-2xs text-ink-2 truncate" title={f.context}>
-                                  {f.context}
+                                <div className="text-2xs text-ink-2">
+                                  Vai trò ký: {signer.role}
                                 </div>
                                 <div className="text-right">
-                                  <span className={`text-2xs font-medium ${f.required ? 'text-warning' : 'text-ink-3'}`}>
-                                    {f.required ? 'Bắt buộc' : 'Tùy chọn'}
+                                  <span className="text-2xs font-medium text-positive">
+                                    Thứ tự #{signer.order}
                                   </span>
                                 </div>
                               </div>
                             ))}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      )}
 
-                {subTab === 'META' && (
-                  <div className="grid gap-5 lg:grid-cols-2">
-                    <div className="border border-line rounded-xl p-4 space-y-3">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-ink">
-                        <Layers className="w-4 h-4 text-accent" />
-                        <span>Thông tin phân loại danh mục</span>
-                      </div>
-                      <dl className="divide-y divide-line text-xs">
-                        <div className="py-2 flex justify-between gap-4">
-                          <dt className="text-ink-3">Mã danh mục biểu mẫu</dt>
-                          <dd className="font-code font-medium text-ink">{loadedTemplate.id}</dd>
-                        </div>
-                        <div className="py-2 flex justify-between gap-4">
-                          <dt className="text-ink-3">Nhóm danh mục</dt>
-                          <dd className="font-medium text-ink">
-                            {CATEGORY_LABELS[loadedTemplate.category || 'BOOKING_VIDEO']}
-                          </dd>
-                        </div>
-                        <div className="py-2 flex justify-between gap-4">
-                          <dt className="text-ink-3">Loại văn bản</dt>
-                          <dd className="font-medium text-ink">
-                            {loadedTemplate.kind === 'CONTRACT' ? 'Hợp đồng' : 'Biên bản nghiệm thu'}
-                          </dd>
-                        </div>
-                        <div className="py-2 flex justify-between gap-4">
-                          <dt className="text-ink-3">Chủ thể ký kết (Bên B)</dt>
-                          <dd className="font-medium text-ink">{loadedTemplate.subject}</dd>
-                        </div>
-                        <div className="py-2 flex justify-between gap-4">
-                          <dt className="text-ink-3">Luồng duyệt mặc định</dt>
-                          <dd className="font-medium text-ink">
-                            {(loadedTemplate.defaultReviewRoles || ['LEGAL', 'FINANCE']).map(r => ROLE_LABEL[r]).join(' → ')}
-                          </dd>
-                        </div>
-                        <div className="py-2 flex justify-between gap-4">
-                          <dt className="text-ink-3">Mã kiểm tra toàn vẹn (SHA-256)</dt>
-                          <dd className="font-code text-2xs text-ink-2">{loadedTemplate.hash.slice(0, 20)}…</dd>
-                        </div>
-                      </dl>
-                    </div>
-
-                    <div className="border border-line rounded-xl p-4 space-y-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 text-xs font-semibold text-ink">
-                          <History className="w-4 h-4 text-accent" />
-                          <span>Lịch sử phiên bản biểu mẫu</span>
-                        </div>
-                      </div>
-                      <ul className="divide-y divide-line text-xs">
-                        {(loadedTemplate.history || []).map((h, i) => (
-                          <li key={`${h.hash}-${i}`} className="py-2.5 space-y-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="font-semibold text-ink">
-                                {h.version} {i === 0 && <span className="text-2xs text-positive font-normal">(Hiện hành)</span>}
-                              </span>
-                              <span className="text-2xs text-ink-3 tabular-nums">{formatDate(h.updatedAt)}</span>
+                      {GROUP_ORDER.map(g => {
+                        const groupFields = dedupedFields.filter(f => (f.group || 'OTHER') === g.key);
+                        if (!groupFields.length) return null;
+                        return (
+                          <div key={g.key} className="border border-line rounded-xl overflow-hidden">
+                            <div className="bg-sunken px-4 py-2.5 border-b border-line flex items-center justify-between">
+                              <div>
+                                <span className="text-xs font-semibold text-ink">{g.title}</span>
+                              </div>
+                              <span className="text-2xs font-medium text-ink-2">{groupFields.length} trường</span>
                             </div>
-                            <p className="text-2xs text-ink-2">{h.note || 'Cập nhật biểu mẫu pháp chế'}</p>
-                            <p className="text-2xs text-ink-3 font-code truncate">
-                              {h.filename} · Người ban hành: {h.updatedBy} · #{h.hash.slice(0, 10)}
-                            </p>
-                          </li>
-                        ))}
-                      </ul>
+                            <div className="divide-y divide-line">
+                              {groupFields.map(f => (
+                                <div key={f.key} className="px-4 py-2.5 grid lg:grid-cols-[220px_180px_minmax(0,1fr)_90px] gap-2 items-center text-xs">
+                                  <div className="min-w-0">
+                                    <span className="font-medium text-ink block truncate">{f.title || f.label}</span>
+                                    <span className="text-2xs text-ink-3 font-code">{f.key}</span>
+                                  </div>
+                                  <div>
+                                    {f.source ? (
+                                      <span className="inline-flex items-center gap-1 text-2xs text-accent font-medium">
+                                        <FileSpreadsheet className="w-3 h-3 shrink-0" />
+                                        {SOURCE_LABELS[f.source] || f.source}
+                                      </span>
+                                    ) : (
+                                      <span className="text-2xs text-ink-3">Nhập tay khi soạn</span>
+                                    )}
+                                  </div>
+                                  <div className="text-2xs text-ink-2 truncate" title={f.context}>
+                                    {f.context}
+                                  </div>
+                                  <div className="text-right">
+                                    <span className={`text-2xs font-medium ${f.required ? 'text-warning' : 'text-ink-3'}`}>
+                                      {f.required ? 'Bắt buộc' : 'Tùy chọn'}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
+
+                {subTab === 'META' && (() => {
+                  const enrichedTpl = enrichTemplateWithSignFlow(loadedTemplate);
+                  const flowCfg = enrichedTpl.signingFlowConfig;
+                  return (
+                    <div className="grid gap-5 lg:grid-cols-2">
+                      <div className="border border-line rounded-xl p-4 space-y-3">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-ink">
+                          <Layers className="w-4 h-4 text-accent" />
+                          <span>Thông tin phân loại danh mục & Luồng ký số</span>
+                        </div>
+                        <dl className="divide-y divide-line text-xs">
+                          <div className="py-2 flex justify-between gap-4">
+                            <dt className="text-ink-3">Mã danh mục biểu mẫu</dt>
+                            <dd className="font-code font-medium text-ink">{loadedTemplate.id}</dd>
+                          </div>
+                          <div className="py-2 flex justify-between gap-4">
+                            <dt className="text-ink-3">Nhóm danh mục</dt>
+                            <dd className="font-medium text-ink">
+                              {CATEGORY_LABELS[loadedTemplate.category || 'BOOKING_VIDEO']}
+                            </dd>
+                          </div>
+                          <div className="py-2 flex justify-between gap-4">
+                            <dt className="text-ink-3">Loại văn bản</dt>
+                            <dd className="font-medium text-ink">
+                              {loadedTemplate.kind === 'CONTRACT' ? 'Hợp đồng' : 'Biên bản nghiệm thu'}
+                            </dd>
+                          </div>
+                          <div className="py-2 flex justify-between gap-4">
+                            <dt className="text-ink-3">Chủ thể ký kết (Bên B)</dt>
+                            <dd className="font-medium text-ink">{loadedTemplate.subject}</dd>
+                          </div>
+                          <div className="py-2 flex justify-between gap-4">
+                            <dt className="text-ink-3">Luồng duyệt mặc định</dt>
+                            <dd className="font-medium text-ink">
+                              {(loadedTemplate.defaultReviewRoles || ['LEGAL', 'FINANCE']).map(r => ROLE_LABEL[r]).join(' → ')}
+                            </dd>
+                          </div>
+                          <div className="py-2 flex justify-between gap-4">
+                            <dt className="text-ink-3">Chế độ ký WeSign (Bước 3)</dt>
+                            <dd className="font-medium text-ink">
+                              {flowCfg?.mode === 'PARALLEL' ? 'Ký song song' : 'Ký tuần tự'} · Hạn {flowCfg?.deadlineDays || 7} ngày
+                            </dd>
+                          </div>
+                          <div className="py-2 flex justify-between gap-4">
+                            <dt className="text-ink-3">Thẻ chữ ký (Bước 2 & 8)</dt>
+                            <dd className="font-code text-2xs text-accent">
+                              {(enrichedTpl.signTags || []).join(' · ')}
+                            </dd>
+                          </div>
+                          <div className="py-2 flex justify-between gap-4">
+                            <dt className="text-ink-3">Mã kiểm tra toàn vẹn (SHA-256)</dt>
+                            <dd className="font-code text-2xs text-ink-2">{loadedTemplate.hash.slice(0, 20)}…</dd>
+                          </div>
+                        </dl>
+                      </div>
+
+                      <div className="border border-line rounded-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 text-xs font-semibold text-ink">
+                            <History className="w-4 h-4 text-accent" />
+                            <span>Lịch sử phiên bản biểu mẫu</span>
+                          </div>
+                        </div>
+                        <ul className="divide-y divide-line text-xs">
+                          {(loadedTemplate.history || []).map((h, i) => (
+                            <li key={`${h.hash}-${i}`} className="py-2.5 space-y-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-semibold text-ink">
+                                  {h.version} {i === 0 && <span className="text-2xs text-positive font-normal">(Hiện hành)</span>}
+                                </span>
+                                <span className="text-2xs text-ink-3 tabular-nums">{formatDate(h.updatedAt)}</span>
+                              </div>
+                              <p className="text-2xs text-ink-2">{h.note || 'Cập nhật biểu mẫu pháp chế'}</p>
+                              <p className="text-2xs text-ink-3 font-code truncate">
+                                {h.filename} · Người ban hành: {h.updatedBy} · #{h.hash.slice(0, 10)}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  );
+                })()}
               </>
             )}
           </div>

@@ -81,6 +81,27 @@ const PLAN_HEADER_TARGET_FIELDS = [
   'budgetSelfChannel',
 ] as const satisfies ReadonlyArray<keyof InputPlanBreakdownState>;
 
+const PROTECTED_STATUSES = ['PRE_APPROVED', 'LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'LOCKED', 'IN_EXECUTION', 'COMPLETED', 'REVISION_REQUESTED'];
+const FINAL_APPROVED_STATUSES = ['APPROVED', 'LOCKED', 'IN_EXECUTION'];
+
+/** Giám đốc duyệt chính thức: máy chủ tự khóa phiên bản, không phụ thuộc giao diện gửi kèm cờ khóa. */
+function withApprovalLock(plan: InputPlanBreakdownState, fromStatus: string, toStatus: string): InputPlanBreakdownState {
+  return FINAL_APPROVED_STATUSES.includes(toStatus) && !FINAL_APPROVED_STATUSES.includes(fromStatus) ? { ...plan, isVersionLocked: true } : plan;
+}
+
+/**
+ * Đổi trạng thái được bảo vệ / khóa / phiên bản thì cần quyền duyệt.
+ * Ngoại lệ: Leader sơ duyệt, và nhóm Booking gửi lại kế hoạch bị trả về (quyền gửi đã kiểm bằng canSubmitPlanForApproval).
+ */
+function needsApproveAccess(plan: InputPlanBreakdownState, stored: InputPlanBreakdownState, fromStatus: string, toStatus: string, isLeaderStep: boolean): boolean {
+  const lockOrVersionChanged =
+    Boolean(plan.isVersionLocked) !== Boolean(stored.isVersionLocked) || (plan.currentVersionCode || 'v1.0') !== (stored.currentVersionCode || 'v1.0');
+  const protectedStatusChanged = plan.status !== stored.status && (PROTECTED_STATUSES.includes(plan.status || '') || PROTECTED_STATUSES.includes(stored.status || ''));
+  const resubmitting = fromStatus === 'REVISION_REQUESTED' && ['PENDING_PRE_APPROVAL', 'PENDING_APPROVAL'].includes(toStatus);
+  if (lockOrVersionChanged) return !isLeaderStep;
+  return protectedStatusChanged && !isLeaderStep && !resubmitting;
+}
+
 const planInclude = {
   versionSnapshots: { orderBy: { lockedAt: 'asc' } },
   discussions: { orderBy: { postedAt: 'desc' } }
@@ -815,10 +836,8 @@ export async function saveMonthlyPlan(
       );
     }
 
-    const protectedStatuses = ['PRE_APPROVED', 'LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'LOCKED', 'IN_EXECUTION', 'COMPLETED', 'REVISION_REQUESTED'];
-    if ((plan.status !== stored.status && (protectedStatuses.includes(plan.status || '') || protectedStatuses.includes(stored.status || ''))) || Boolean(plan.isVersionLocked) !== Boolean(stored.isVersionLocked) || (plan.currentVersionCode || 'v1.0') !== (stored.currentVersionCode || 'v1.0')) {
-      if (!isLeaderStep) await assertPlanAccess(stored, actor, 'approve');
-    }
+    plan = withApprovalLock(plan, fromStatus, toStatus);
+    if (needsApproveAccess(plan, stored, fromStatus, toStatus, isLeaderStep)) await assertPlanAccess(stored, actor, 'approve');
     const sameVersion = (plan.currentVersionCode || 'v1.0') === (stored.currentVersionCode || 'v1.0');
     const isManagerApplyingPending41 = isGlobalManager && Boolean(stored.pendingReference41) && !plan.pendingReference41;
     if (stored.isVersionLocked && sameVersion && !isManagerApplyingPending41) {
@@ -954,10 +973,8 @@ export async function saveMonthlyPlan(
       );
     }
 
-    const protectedStatuses = ['PRE_APPROVED', 'LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'LOCKED', 'IN_EXECUTION', 'COMPLETED', 'REVISION_REQUESTED'];
-    if ((plan.status !== stored.status && (protectedStatuses.includes(plan.status || '') || protectedStatuses.includes(stored.status || ''))) || Boolean(plan.isVersionLocked) !== Boolean(stored.isVersionLocked) || (plan.currentVersionCode || 'v1.0') !== (stored.currentVersionCode || 'v1.0')) {
-      if (!isLeaderStep) await assertPlanAccess(stored, actor, 'approve');
-    }
+    plan = withApprovalLock(plan, fromStatus, toStatus);
+    if (needsApproveAccess(plan, stored, fromStatus, toStatus, isLeaderStep)) await assertPlanAccess(stored, actor, 'approve');
     const sameVersion = (plan.currentVersionCode || 'v1.0') === existing.currentVersionCode;
     const isManagerApplyingPending41 = isGlobalManager && Boolean(stored.pendingReference41) && !plan.pendingReference41;
     if (existing.isVersionLocked && sameVersion && !isManagerApplyingPending41) {

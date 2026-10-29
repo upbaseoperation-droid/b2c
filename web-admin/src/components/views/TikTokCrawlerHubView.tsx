@@ -153,7 +153,13 @@ type TrendingFilterKey =
   | 'SUITABLE'
   | 'NOT_SUITABLE';
 type FollowerTierKey = 'ALL' | 'NANO' | 'MICRO' | 'MACRO' | 'MEGA';
-type KocSortKey = 'VIEWS_DESC' | 'FOLLOWERS_DESC' | 'ER_DESC' | 'LATEST_DESC';
+type KocSortKey =
+  | 'VIEWS_DESC'
+  | 'MEDIAN_VIEWS_DESC'
+  | 'AFFILIATE_VIEWS_DESC'
+  | 'FOLLOWERS_DESC'
+  | 'ER_DESC'
+  | 'LATEST_DESC';
 type CommentFilterKey = 'ALL' | TikTokCommentIntentType | 'HAS_PHONE';
 
 function matchesFollowerTier(followers: number, tier: FollowerTierKey): boolean {
@@ -1414,6 +1420,18 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     });
 
     return [...filtered].sort((a, b) => {
+      if (compSortBy === 'MEDIAN_VIEWS_DESC') {
+        return (
+          (b.engagementMetrics.medianViews ?? b.engagementMetrics.avgViews ?? 0) -
+          (a.engagementMetrics.medianViews ?? a.engagementMetrics.avgViews ?? 0)
+        );
+      }
+      if (compSortBy === 'AFFILIATE_VIEWS_DESC') {
+        return (
+          (b.engagementMetrics.affiliateMedianViews ?? b.engagementMetrics.affiliateAvgViews ?? 0) -
+          (a.engagementMetrics.affiliateMedianViews ?? a.engagementMetrics.affiliateAvgViews ?? 0)
+        );
+      }
       if (compSortBy === 'FOLLOWERS_DESC') {
         return b.channelProfile.followers - a.channelProfile.followers;
       }
@@ -1491,6 +1509,18 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     });
 
     return [...filtered].sort((a, b) => {
+      if (tagSortBy === 'MEDIAN_VIEWS_DESC') {
+        return (
+          (b.engagementMetrics.medianViews ?? b.engagementMetrics.avgViews ?? 0) -
+          (a.engagementMetrics.medianViews ?? a.engagementMetrics.avgViews ?? 0)
+        );
+      }
+      if (tagSortBy === 'AFFILIATE_VIEWS_DESC') {
+        return (
+          (b.engagementMetrics.affiliateMedianViews ?? b.engagementMetrics.affiliateAvgViews ?? 0) -
+          (a.engagementMetrics.affiliateMedianViews ?? a.engagementMetrics.affiliateAvgViews ?? 0)
+        );
+      }
       if (tagSortBy === 'FOLLOWERS_DESC') {
         return b.channelProfile.followers - a.channelProfile.followers;
       }
@@ -2073,8 +2103,15 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     videoCount: number;
     engagementRate?: number;
     totalLikes?: number;
+    medianViews?: number;
+    affiliateVideoCount?: number;
+    affiliateMedianViews?: number;
+    organicVideoCount?: number;
+    organicMedianViews?: number;
   }) => {
     const tierBadge = getFollowerTierShortLabel(params.followers);
+    const hasCartSplit =
+      (params.affiliateVideoCount ?? 0) > 0 || (params.organicVideoCount ?? 0) > 0;
     return (
       <div className="grid gap-0.5 justify-items-end tabular-nums">
         <div className="flex items-center gap-1.5">
@@ -2085,15 +2122,44 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             {tierBadge}
           </span>
         </div>
-        <div className="text-2xs text-ink-3">
-          {params.engagementRate ? (
-            <span className="text-positive font-semibold">ER {params.engagementRate}%</span>
-          ) : params.totalLikes ? (
-            <span>{formatFollowers(params.totalLikes)} tim</span>
-          ) : null}
-          {(params.engagementRate || params.totalLikes) && params.videoCount > 0 ? ' · ' : ''}
-          {params.videoCount > 0 ? <span>{formatNumber(params.videoCount)} video</span> : null}
-        </div>
+        {params.medianViews && params.medianViews > 0 ? (
+          <div className="text-2xs text-ink">
+            <span className="text-ink-3">Trung vị: </span>
+            <strong className="text-accent font-semibold">
+              {formatFollowers(params.medianViews)}
+            </strong>
+            {params.engagementRate ? (
+              <span className="text-positive font-semibold"> · ER {params.engagementRate}%</span>
+            ) : null}
+          </div>
+        ) : (
+          <div className="text-2xs text-ink-3">
+            {params.engagementRate ? (
+              <span className="text-positive font-semibold">ER {params.engagementRate}%</span>
+            ) : params.totalLikes ? (
+              <span>{formatFollowers(params.totalLikes)} tim</span>
+            ) : null}
+            {(params.engagementRate || params.totalLikes) && params.videoCount > 0 ? ' · ' : ''}
+            {params.videoCount > 0 ? <span>{formatNumber(params.videoCount)} video</span> : null}
+          </div>
+        )}
+        {hasCartSplit && (
+          <div className="text-2xs text-ink-3">
+            <span className="text-positive font-medium">
+              Giỏ:{' '}
+              {(params.affiliateVideoCount || 0) > 0
+                ? `${formatFollowers(params.affiliateMedianViews || 0)} (${params.affiliateVideoCount})`
+                : '0'}
+            </span>
+            <span> · </span>
+            <span>
+              Thường:{' '}
+              {(params.organicVideoCount || 0) > 0
+                ? `${formatFollowers(params.organicMedianViews || 0)} (${params.organicVideoCount})`
+                : '0'}
+            </span>
+          </div>
+        )}
       </div>
     );
   };
@@ -2490,15 +2556,20 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     },
     {
       key: 'scale',
-      header: 'Quy mô kênh',
+      header: 'Quy mô & View (Giỏ/Thường)',
       align: 'right',
-      width: 145,
+      width: 195,
       render: (r) =>
         renderUnifiedKocScaleCell({
           followers: r.channelProfile.followers,
           videoCount: r.channelProfile.videoCount,
           engagementRate: r.engagementMetrics.engagementRate,
           totalLikes: r.channelProfile.totalLikes,
+          medianViews: r.engagementMetrics.medianViews ?? r.engagementMetrics.avgViews,
+          affiliateVideoCount: r.engagementMetrics.affiliateVideoCount,
+          affiliateMedianViews: r.engagementMetrics.affiliateMedianViews,
+          organicVideoCount: r.engagementMetrics.organicVideoCount,
+          organicMedianViews: r.engagementMetrics.organicMedianViews,
         }),
     },
     {
@@ -2617,15 +2688,20 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     },
     {
       key: 'scale',
-      header: 'Quy mô kênh',
+      header: 'Quy mô & View (Giỏ/Thường)',
       align: 'right',
-      width: 145,
+      width: 195,
       render: (r) =>
         renderUnifiedKocScaleCell({
           followers: r.channelProfile.followers,
           videoCount: r.channelProfile.videoCount,
           engagementRate: r.engagementMetrics.engagementRate,
           totalLikes: r.channelProfile.totalLikes,
+          medianViews: r.engagementMetrics.medianViews ?? r.engagementMetrics.avgViews,
+          affiliateVideoCount: r.engagementMetrics.affiliateVideoCount,
+          affiliateMedianViews: r.engagementMetrics.affiliateMedianViews,
+          organicVideoCount: r.engagementMetrics.organicVideoCount,
+          organicMedianViews: r.engagementMetrics.organicMedianViews,
         }),
     },
     {
@@ -3968,6 +4044,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   >
                     <option value="LATEST_DESC">Sắp xếp: Ngày air mới → cũ</option>
                     <option value="VIEWS_DESC">Sắp xếp: View cao → thấp</option>
+                    <option value="MEDIAN_VIEWS_DESC">Sắp xếp: View trung vị kênh cao → thấp</option>
+                    <option value="AFFILIATE_VIEWS_DESC">Sắp xếp: View bài gắn giỏ cao → thấp</option>
                     <option value="FOLLOWERS_DESC">Sắp xếp: Follower cao → thấp</option>
                     <option value="ER_DESC">Sắp xếp: ER% cao → thấp</option>
                   </Select>
@@ -4337,6 +4415,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   >
                     <option value="LATEST_DESC">Sắp xếp: Ngày air mới → cũ</option>
                     <option value="VIEWS_DESC">Sắp xếp: View cao → thấp</option>
+                    <option value="MEDIAN_VIEWS_DESC">Sắp xếp: View trung vị kênh cao → thấp</option>
+                    <option value="AFFILIATE_VIEWS_DESC">Sắp xếp: View bài gắn giỏ cao → thấp</option>
                     <option value="FOLLOWERS_DESC">Sắp xếp: Follower cao → thấp</option>
                     <option value="ER_DESC">Sắp xếp: ER% cao → thấp</option>
                   </Select>

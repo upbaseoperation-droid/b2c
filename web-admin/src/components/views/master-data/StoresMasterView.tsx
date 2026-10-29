@@ -35,7 +35,16 @@ import {
   BrandAvatar
 } from '../../ui';
 import type { Column } from '../../ui';
-import { StorePortfolioItem, BrandDetail, BookingDealItem, resolveStoreStaffAssignment } from '../../../lib/types';
+import { 
+  StorePortfolioItem, 
+  BrandDetail, 
+  BookingDealItem, 
+  resolveStoreStaffAssignment,
+  StoreDifficultyTier,
+  STORE_COEFFICIENT_TABLE_2,
+  normalizeStoreCoefficient,
+  getStoreCoefficientByTier
+} from '../../../lib/types';
 import { StaffSearchSelect } from './StaffSearchSelect';
 import { StoreDetailModal } from './StoreDetailModal';
 import { StoreHandoverModal } from './StoreHandoverModal';
@@ -131,6 +140,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     brandName: brandNames[0] || '',
     platform: 'Shopee Mall' as 'Shopee Mall' | 'TikTok Shop' | 'Lazada',
     servicePackage: 'E2E-S',
+    difficultyTier: 'Tiêu chuẩn' as StoreDifficultyTier,
     accountOwnerName: '',
     b2cOwnerName: '',
     bookingLeader: '',
@@ -398,6 +408,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       brandName: s.brandName,
       platform: s.platform,
       servicePackage: s.servicePackage || 'E2E-S',
+      difficultyTier: (s.difficultyTier || 'Tiêu chuẩn') as StoreDifficultyTier,
       accountOwnerName: s.accountOwnerName || '',
       b2cOwnerName: assign.primaryPic,
       bookingLeader: s.bookingLeader || '',
@@ -455,6 +466,8 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       brandName: form.brandName,
       platform: form.platform,
       servicePackage: form.servicePackage,
+      difficultyTier: form.difficultyTier || 'Tiêu chuẩn',
+      difficultyMultiplier: getStoreCoefficientByTier(form.difficultyTier || 'Tiêu chuẩn'),
       accountOwnerName: form.accountOwnerName.trim() || editingStore.accountOwnerName,
       b2cOwnerName: nextPrimary,
       primaryPic: nextPrimary,
@@ -609,6 +622,31 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       render: (s) => (
         <span className="text-ink text-xs block truncate">{s.category || 'Tiêu dùng'}</span>
       ),
+    },
+    {
+      key: 'difficulty',
+      header: 'Độ khó / Hệ số',
+      width: 140,
+      render: (s) => {
+        const coef = normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier);
+        const tierBadgeClass: Record<StoreDifficultyTier, string> = {
+          'Cơ bản': 'bg-surface-2 text-ink-2 border-line',
+          'Tiêu chuẩn': 'bg-brand/10 text-brand border-brand/30',
+          'Vừa': 'bg-warning-soft text-warning border-warning/30',
+          'Khó': 'bg-danger-soft text-danger border-danger/30',
+        };
+        return (
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium border ${
+              tierBadgeClass[coef.tier] || tierBadgeClass['Tiêu chuẩn']
+            }`}
+            title={`Hệ số Bảng 2: ${coef.tier} (×${coef.label})`}
+          >
+            <span>{coef.tier}</span>
+            <span className="font-mono text-ink-3">({coef.label})</span>
+          </span>
+        );
+      },
     },
     {
       key: 'pic',
@@ -1175,6 +1213,21 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     onChange={(e) => setForm(prev => ({ ...prev, affiliateRate: Number(e.target.value) }))}
                     className="w-full px-3 py-1.5 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-ink-2 font-medium mb-1">Độ khó / Hệ số gian hàng (Bảng 2)</label>
+                  <select
+                    value={form.difficultyTier}
+                    onChange={(e) => setForm(prev => ({ ...prev, difficultyTier: e.target.value as StoreDifficultyTier }))}
+                    className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:border-line-strong font-medium"
+                  >
+                    {STORE_COEFFICIENT_TABLE_2.rows.map(rule => (
+                      <option key={rule.tier} value={rule.tier}>
+                        {rule.tier} (×{rule.multiplierLabel})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

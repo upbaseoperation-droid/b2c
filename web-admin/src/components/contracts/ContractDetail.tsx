@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Camera, CheckCircle2, ChevronLeft, ChevronRight, Download, FileCheck2, FilePlus2, Pencil, RefreshCw, RotateCcw, Scale, ScanSearch } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Camera, CheckCircle2, ChevronLeft, ChevronRight, Download, ExternalLink, FileCheck2, FileCode2, FilePlus2, Pencil, RefreshCw, RotateCcw, Scale, ScanSearch, Send } from 'lucide-react';
 import type { BookingDealItem, KocItem } from '../../lib/types';
 import type { ContractField, ContractRecord, ContractRole, DocBlock } from '../../lib/contracts/types';
 import { ActionMenu, Button, ConfirmDialog, EmptyState, Field, Input, Modal, Person, SectionHeader, Segmented, Select, Status, StepMark, Textarea } from '../ui';
@@ -16,7 +16,20 @@ import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
-import { HISTORY_LABEL, ROLE_LABEL, computeSigningProgress, contractStatus, dateTime, isAcceptance, signerStatus, stepStatus } from './contractUi';
+import {
+  DEFAULT_SIGN_TAGS,
+  HISTORY_LABEL,
+  ROLE_LABEL,
+  buildDealSowJobTables,
+  buildStableContractCode,
+  computeSigningProgress,
+  contractStatus,
+  dateTime,
+  enrichTemplateWithSignFlow,
+  isAcceptance,
+  signerStatus,
+  stepStatus,
+} from './contractUi';
 import { evaluateContractRules } from '../../lib/contracts/contractRules';
 
 type Action = (payload: Record<string, unknown>, done?: string) => Promise<ContractRecord | undefined>;
@@ -92,7 +105,10 @@ export function ContractDetail({
       (linkedDeal?.kocChannelId && k.channelId.replace(/^@/, '').toLowerCase() === linkedDeal.kocChannelId.replace(/^@/, '').toLowerCase()),
   );
 
-  const [dialog, setDialog] = useState<null | 'submit' | 'approve' | 'changes' | 'reject' | 'withdraw' | 'link'>(null);
+  const [dialog, setDialog] = useState<null | 'submit' | 'approve' | 'changes' | 'reject' | 'withdraw' | 'link' | 'request_sign'>(null);
+  const enrichedTemplate = template ? enrichTemplateWithSignFlow(template) : undefined;
+  const stableContractCode = record.contractSystem?.contractCode || signing?.contractCode || buildStableContractCode(record);
+  const templateSignTags = record.contractSystem?.templateSnapshot?.signTags || enrichedTemplate?.signTags || [...DEFAULT_SIGN_TAGS];
   const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<number>(record.version);
   const [comparePrev, setComparePrev] = useState<boolean>(record.versions.length > 0);
@@ -134,10 +150,8 @@ export function ContractDetail({
     <Button variant="primary" icon={FileCheck2} disabled={busy} onClick={() => setDialog('submit')}>Gửi duyệt</Button>
   ) : myStep ? (
     <Button variant="primary" disabled={busy} onClick={() => setDialog('approve')}>Duyệt</Button>
-  ) : canStartSigning && data.config.wesign ? (
-    <Button variant="primary" disabled={busy} onClick={() => setDialog('link')}>Liên kết luồng ký</Button>
-  ) : canStartSigning && demo ? (
-    <Button variant="primary" disabled={busy} onClick={() => onAction({ action: 'DEMO_SIGN_START' }, 'Đã bắt đầu lượt ký thử')}>Bắt đầu ký thử</Button>
+  ) : canStartSigning ? (
+    <Button variant="primary" icon={Send} disabled={busy} onClick={() => setDialog('request_sign')}>Gửi ký WeSign (requestSign)</Button>
   ) : signing?.status === 'COMPLETED' && isFrameworkWithSow && onCreateSow && me.roles.includes('CREATOR') ? (
     <Button variant="primary" icon={FilePlus2} onClick={onCreateSow}>Tạo phụ lục SOW</Button>
   ) : signing?.status === 'COMPLETED' && !isAcceptance(record.templateId) && !isFrameworkWithSow && !hasAcceptance && me.roles.includes('CREATOR') ? (
@@ -146,6 +160,9 @@ export function ContractDetail({
 
   const menu: ActionMenuItem[] = [
     ...(myStep ? [{ label: 'Từ chối', onSelect: () => setDialog('reject') }] : []),
+    ...(canStartSigning ? [{ label: 'Gửi ký WeSign qua contract-system (requestSign)', icon: Send, onSelect: () => setDialog('request_sign') }] : []),
+    ...(canStartSigning && data.config.wesign ? [{ label: 'Liên kết luồng ký thủ công', onSelect: () => setDialog('link') }] : []),
+    ...(canStartSigning && demo ? [{ label: 'Bắt đầu ký thử nội bộ', onSelect: () => onAction({ action: 'DEMO_SIGN_START' }, 'Đã bắt đầu lượt ký thử') }] : []),
     ...(canCheck ? [{ label: 'Kiểm tra nội dung', icon: ScanSearch, onSelect: () => onAction({ action: 'CHECK' }, 'Đã kiểm tra nội dung') }] : []),
     ...(canWithdraw ? [{ label: 'Thu hồi để sửa', icon: RotateCcw, onSelect: () => setDialog('withdraw') }] : []),
   ];
@@ -498,9 +515,20 @@ export function ContractDetail({
                   {isSowDoc ? 'Xác nhận đã ký đủ 2 bên (Khóa Deal)' : 'Xác nhận đã ký đủ 2 bên'}
                 </Button>
               )}
-              {signing?.provider === 'DEMO' && coordinator && ['WAITING', 'PARTIAL'].includes(signing.status) && (
+              {signing && ['DEMO', 'CONTRACT_SYSTEM'].includes(signing.provider || '') && coordinator && ['WAITING', 'PARTIAL'].includes(signing.status) && demo && (
                 <Button size="sm" variant="secondary" disabled={busy} onClick={() => onAction({ action: 'DEMO_SIGN_NEXT' })}>
                   Ký lượt tiếp theo
+                </Button>
+              )}
+              {canStartSigning && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={Send}
+                  disabled={busy}
+                  onClick={() => setDialog('request_sign')}
+                >
+                  Gửi ký WeSign (requestSign)
                 </Button>
               )}
               {canStartSigning && (
@@ -514,18 +542,18 @@ export function ContractDetail({
                   variant="secondary"
                   icon={RefreshCw}
                   disabled={busy}
-                  onClick={() => onAction({ action: 'SYNC_WESIGN' }, 'Đã đồng bộ tiến độ ký từ MISA weSign')}
+                  onClick={() => onAction({ action: 'SYNC_WESIGN' }, 'Đã đồng bộ tiến độ ký từ contract-system / MISA weSign')}
                 >
                   Đồng bộ weSign
                 </Button>
               )}
-              {isFullySigned && signing?.provider !== 'DEMO' && (
+              {isFullySigned && (signing?.signedFileUrl || record.contractSystem?.signedFileUrl || signing?.provider !== 'DEMO') && (
                 <a
-                  href={`/api/contracts/${record.id}/document?signed=1`}
+                  href={signing?.signedFileUrl || record.contractSystem?.signedFileUrl || `/api/contracts/${record.id}/document?signed=1`}
                   className="inline-flex items-center gap-1 rounded-md border border-positive/40 bg-positive-soft px-2.5 py-1 text-xs font-medium text-positive hover:underline"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  Bản đã ký (.pdf)
+                  Bản đã ký (.pdf/.docx)
                 </a>
               )}
             </div>
@@ -671,6 +699,181 @@ export function ContractDetail({
                 {isAcceptanceDoc ? 'Đủ điều kiện trình duyệt chi' : 'Giải ngân sau khi có BBNT'}
               </span>
             </div>
+          </div>
+
+          {(isSowDoc || isAcceptanceDoc) && (() => {
+            const jobTables = buildDealSowJobTables(linkedDeal, linkedKoc, parent, shownValues['meta:sowJobsJson']);
+            if (jobTables.length === 0) return null;
+            return (
+              <div className="rounded-lg border border-line bg-sunken/25 px-3 py-2 space-y-1.5 text-2xs">
+                <div className="flex items-center justify-between gap-2 font-semibold text-ink">
+                  <span>Danh sách Bảng công việc trong Phụ lục ({jobTables.length} Job)</span>
+                  <span className="font-code text-accent">1 Job = 1 Bảng CV</span>
+                </div>
+                <div className="space-y-1">
+                  {jobTables.map((jt, jIdx) => {
+                    const activeAddonsSum = (jt.addonItems || [])
+                      .filter(a => a.includedInSow !== false && a.acceptanceStatus !== 'DROPPED')
+                      .reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+                    const sub = (Number(jt.videoFeeNetVnd) || 0) + activeAddonsSum;
+                    return (
+                      <div key={jt.id || jIdx} className="flex items-center justify-between gap-2 font-code">
+                        <span className="truncate text-ink-2">
+                          <strong className="text-ink">Bảng CV #{jIdx + 1} · {jt.jobCode}:</strong> {jt.productName || jt.jobTitle}
+                        </span>
+                        <span className="font-semibold text-ink shrink-0">
+                          {sub.toLocaleString('vi-VN')} đ
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
+      {/* LUỒNG ĐIỀU PHỐI TRUNG TÂM CONTRACT-SYSTEM (BƯỚC 4 -> BƯỚC 13) */}
+      <div className="bg-surface border border-line rounded-xl p-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-ink">
+              Luồng điều phối trung tâm · contract-system ({isAcceptanceDoc ? 'Biên bản nghiệm thu BBNT' : record.templateId.endsWith('-SOW') ? 'Phụ lục SOW' : 'Hợp đồng nguyên tắc HĐNT'})
+            </span>
+            <span className="text-2xs font-code px-2 py-0.5 rounded bg-sunken border border-line text-ink-2">
+              Mã idempotent: {stableContractCode}
+            </span>
+            {(record.contractSystem?.parentContractCode || parent?.contractSystem?.contractCode) && (
+              <span className="text-2xs font-code px-2 py-0.5 rounded bg-surface border border-line text-ink-3">
+                Kế thừa: {record.contractSystem?.parentContractCode || parent?.contractSystem?.contractCode}
+              </span>
+            )}
+            {templateSignTags.map(tag => (
+              <span key={tag} className="text-2xs font-code px-1.5 py-0.5 rounded bg-accent-soft/50 border border-accent/25 text-accent">
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            {!activeSigning && (
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={FileCode2}
+                disabled={busy}
+                onClick={() =>
+                  onAction(
+                    { action: 'GENERATE_CONTRACT_SYSTEM' },
+                    `Đã render .docx và đồng bộ lên Google Docs (${stableContractCode})`,
+                  )
+                }
+              >
+                {record.contractSystem?.googleDocsUrl ? 'Cập nhật lại Google Docs' : 'Gen .docx & Đồng bộ Google Docs'}
+              </Button>
+            )}
+            {record.contractSystem?.googleDocsUrl && (
+              <a
+                href={record.contractSystem.googleDocsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line-strong bg-surface text-xs font-medium text-accent hover:bg-sunken"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Mở bản sửa Google Docs
+              </a>
+            )}
+            {record.contractSystem?.googleDocsUrl && !activeSigning && (
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={RefreshCw}
+                disabled={busy}
+                onClick={() =>
+                  onAction(
+                    { action: 'SYNC_GOOGLE_DOCS' },
+                    'Đã xuất lại bản .docx mới nhất từ Google Docs sẵn sàng gửi ký',
+                  )
+                }
+              >
+                Xuất lại .docx từ Google Docs
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
+          <div className="rounded-lg border border-line bg-sunken/30 px-3 py-2 space-y-0.5">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-2xs font-semibold text-ink">Bước 4 · Lấy Template &amp; Snapshot</span>
+              <Status tone="positive">Đã khóa</Status>
+            </div>
+            <span className="text-2xs text-ink-2 block truncate">
+              {template?.id || record.templateId} · {record.contractSystem?.templateSnapshot?.version || template?.version || `v${record.version}`}
+            </span>
+            <span className="text-2xs text-ink-3 block truncate">
+              Luồng ký: {enrichedTemplate?.signingFlowConfig?.mode === 'PARALLEL' ? 'Song song' : 'Tuần tự'} ({enrichedTemplate?.signingFlowConfig?.deadlineDays || 7} ngày)
+            </span>
+          </div>
+
+          <div className="rounded-lg border border-line bg-sunken/30 px-3 py-2 space-y-0.5">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-2xs font-semibold text-ink">Bước 5–6 · Google Docs &amp; .docx</span>
+              <Status tone={record.contractSystem?.googleDocsSyncedAt ? 'positive' : 'neutral'}>
+                {record.contractSystem?.googleDocsSyncedAt ? 'Đã đồng bộ' : 'Bản cục bộ'}
+              </Status>
+            </div>
+            <span className="text-2xs text-ink-2 block truncate">
+              {record.contractSystem?.googleDocsId ? `Doc ID: ${record.contractSystem.googleDocsId}` : 'Bấm Gen .docx để tạo bản Google Docs'}
+            </span>
+            <span className="text-2xs text-ink-3 block truncate">
+              {record.contractSystem?.googleDocsSyncedAt
+                ? `Xuất lúc ${dateTime(record.contractSystem.googleDocsSyncedAt)}`
+                : 'Xuất lại .docx khi sửa điều khoản'}
+            </span>
+          </div>
+
+          <div className="rounded-lg border border-line bg-sunken/30 px-3 py-2 space-y-0.5">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-2xs font-semibold text-ink">Bước 7–8 · Gửi ký WeSign</span>
+              <Status tone={signing ? 'positive' : record.approval === 'APPROVED' ? 'warning' : 'neutral'}>
+                {signing ? 'Đã tạo signflow' : record.approval === 'APPROVED' ? 'Sẵn sàng gửi' : 'Chờ duyệt'}
+              </Status>
+            </div>
+            <span className="text-2xs text-ink-2 block truncate">
+              {signing ? `UUID: ${signing.documentId.slice(0, 18)}…` : 'Đổi thẻ {{SIGN_*}} sang ô ký WeSign'}
+            </span>
+            <span className="text-2xs text-ink-3 block truncate">
+              Khóa chống trùng: {stableContractCode}
+            </span>
+          </div>
+
+          <div className="rounded-lg border border-line bg-sunken/30 px-3 py-2 space-y-0.5">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-2xs font-semibold text-ink">Bước 9–13 · Webhook &amp; Tải file</span>
+              <Status
+                tone={
+                  (signing?.signedFileStatus || record.contractSystem?.signedFileStatus) === 'DOWNLOADED' || isFullySigned
+                    ? 'positive'
+                    : (signing?.signedFileStatus || record.contractSystem?.signedFileStatus) === 'QUEUED'
+                      ? 'warning'
+                      : 'neutral'
+                }
+              >
+                {(signing?.signedFileStatus || record.contractSystem?.signedFileStatus) === 'DOWNLOADED' || isFullySigned
+                  ? 'Đã tải bản ký'
+                  : (signing?.signedFileStatus || record.contractSystem?.signedFileStatus) === 'QUEUED'
+                    ? 'Trong queue tải'
+                    : 'Chờ sự kiện ký'}
+              </Status>
+            </div>
+            <span className="text-2xs text-ink-2 block truncate">
+              Chặn ghi đè lùi: Chỉ tiến (Forward-only)
+            </span>
+            <span className="text-2xs text-ink-3 block truncate">
+              {signing?.syncedAt ? `Đồng bộ: ${dateTime(signing.syncedAt)}` : 'Queue: signed-file-download'}
+            </span>
           </div>
         </div>
       </div>
@@ -966,6 +1169,16 @@ export function ContractDetail({
                   <span className="text-xs text-ink-2 italic break-words">{record.internalNotes}</span>
                 </Info>
               )}
+              <Info label="Mã hợp đồng (code)">
+                <span className="font-code text-2xs break-all">{stableContractCode}</span>
+              </Info>
+              {record.contractSystem?.templateSnapshot && (
+                <Info label="Bản chụp Template">
+                  <span className="text-xs text-ink-2">
+                    {record.contractSystem.templateSnapshot.templateId} · {record.contractSystem.templateSnapshot.version}
+                  </span>
+                </Info>
+              )}
               {signing && <Info label="Mã luồng ký"><span className="font-code text-2xs break-all">{signing.documentId}</span></Info>}
               <Info label="Tạo lúc">{dateTime(record.createdAt)}</Info>
             </dl>
@@ -1042,6 +1255,20 @@ export function ContractDetail({
         onSubmit={(ids, reqLegal) => onAction({ action: 'SUBMIT', reviewers: ids, requireLegal: reqLegal }, 'Đã gửi duyệt').then(r => r && setDialog(null))}
       />
       <LinkDialog open={dialog === 'link'} version={record.version} busy={busy} onClose={() => setDialog(null)} onSubmit={documentId => onAction({ action: 'LINK_WESIGN', documentId, confirmed: true }, 'Đã liên kết luồng ký').then(r => r && setDialog(null))} />
+      <RequestSignDialog
+        open={dialog === 'request_sign'}
+        record={record}
+        contractCode={stableContractCode}
+        signTags={templateSignTags}
+        busy={busy}
+        onClose={() => setDialog(null)}
+        onSubmit={(partyAEmail, partyBEmail) =>
+          onAction(
+            { action: 'REQUEST_SIGN', partyAEmail, partyBEmail },
+            `Đã xuất .docx từ Google Docs và tạo luồng ký WeSign (${stableContractCode})`,
+          ).then(r => r && setDialog(null))
+        }
+      />
       {myStep?.role === 'LEGAL' ? (
         <LegalApproveDialog
           open={dialog === 'approve'}
@@ -1470,3 +1697,131 @@ function LegalApproveDialog({
     </Modal>
   );
 }
+
+function RequestSignDialog({
+  open,
+  record,
+  contractCode,
+  signTags,
+  busy,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  record: ContractRecord;
+  contractCode: string;
+  signTags: readonly string[];
+  busy: boolean;
+  onClose: () => void;
+  onSubmit: (partyAEmail: string, partyBEmail: string) => unknown;
+}) {
+  const [partyAEmail, setPartyAEmail] = useState('hopdong@upbase.vn');
+  const [partyBEmail, setPartyBEmail] = useState('');
+  const [confirmed, setConfirmed] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const rawEmail =
+      record.values['src:email'] ||
+      record.values['token:[ĐIỀN EMAIL]'] ||
+      record.values['token:[EMAIL]'] ||
+      '';
+    setPartyBEmail(rawEmail.trim());
+    setConfirmed(false);
+  }, [open, record]);
+
+  const ready = Boolean(partyAEmail.trim() && partyBEmail.trim() && confirmed);
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Trình ký WeSign qua contract-system (requestSign)"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Hủy
+          </Button>
+          <Button
+            variant="primary"
+            disabled={busy || !ready}
+            onClick={() => onSubmit(partyAEmail.trim(), partyBEmail.trim())}
+          >
+            Gửi ký WeSign (requestSign)
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="rounded-lg border border-line bg-sunken/70 p-3 space-y-2 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-ink-3">Mã định danh chống trùng (Idempotent code)</span>
+            <span className="font-code font-semibold text-ink">{contractCode}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-ink-3">Nguồn tệp trình ký (Bước 6)</span>
+            <span className="font-medium text-ink">
+              {record.contractSystem?.googleDocsUrl
+                ? 'Xuất .docx mới nhất từ Google Docs'
+                : `Bản duyệt nội bộ v${record.version}`}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-ink-3">Chế độ ký & Thời hạn (Bước 3 & 8)</span>
+            <span className="font-medium text-ink">
+              Ký tuần tự (Bên A → Bên B) · Hạn 7 ngày
+            </span>
+          </div>
+          {signTags.length > 0 && (
+            <div className="pt-1 border-t border-line flex flex-wrap items-center justify-between gap-2">
+              <span className="text-ink-3">Thẻ vị trí chữ ký tự động tách</span>
+              <div className="flex flex-wrap gap-1.5">
+                {signTags.map(tag => (
+                  <span key={tag} className="font-code text-2xs px-1.5 py-0.5 rounded bg-surface border border-line text-accent">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Email đại diện Bên A (UpBase) *" htmlFor="req-sign-party-a">
+            <Input
+              id="req-sign-party-a"
+              type="email"
+              value={partyAEmail}
+              onChange={e => setPartyAEmail(e.target.value)}
+              placeholder="hopdong@upbase.vn"
+            />
+          </Field>
+          <Field label={`Email ký số Bên B (${record.partner}) *`} htmlFor="req-sign-party-b">
+            <Input
+              id="req-sign-party-b"
+              type="email"
+              value={partyBEmail}
+              onChange={e => setPartyBEmail(e.target.value)}
+              placeholder="koc@example.com"
+            />
+          </Field>
+        </div>
+
+        <label className="flex items-start gap-2 text-xs text-ink-2 cursor-pointer">
+          <input
+            type="checkbox"
+            className="mt-0.5 rounded border-line"
+            checked={confirmed}
+            onChange={e => setConfirmed(e.target.checked)}
+          />
+          <span>
+            Tôi xác nhận phát lệnh <span className="font-code font-semibold text-ink">requestSign</span> sang{' '}
+            <span className="font-code font-semibold text-ink">contract-system</span> với mã{' '}
+            <span className="font-code font-semibold text-ink">{contractCode}</span> và nhận trạng thái tự động tại Bước 13.
+          </span>
+        </label>
+      </div>
+    </Modal>
+  );
+}
+

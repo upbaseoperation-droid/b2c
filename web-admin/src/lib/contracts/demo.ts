@@ -78,7 +78,10 @@ export function simulateSigning(record: ContractRecord, actor: ContractActor, ac
     };
     next.signing.push(attempt);
   } else {
-    requireCondition(attempt?.provider === 'DEMO' && ['WAITING', 'PARTIAL'].includes(attempt.status), 'Không có lượt ký giả lập đang hoạt động.');
+    requireCondition(
+      attempt && ['DEMO', 'CONTRACT_SYSTEM'].includes(attempt.provider || '') && ['WAITING', 'PARTIAL'].includes(attempt.status),
+      'Không có lượt ký giả lập đang hoạt động.',
+    );
     if (action === 'DEMO_SIGN_REJECT') {
       const person = attempt.people.find(p => p.action === 1)!;
       person.action = 3;
@@ -101,6 +104,13 @@ export function simulateSigning(record: ContractRecord, actor: ContractActor, ac
       } else {
         attempt.status = 'COMPLETED';
         attempt.sourceStatus = -3;
+        attempt.signedFileStatus = 'DOWNLOADED';
+        attempt.signedFileUrl = `/api/contracts/${next.id}/document`;
+        if (next.contractSystem) {
+          next.contractSystem.signedFileStatus = 'DOWNLOADED';
+          next.contractSystem.signedFileUrl = `/api/contracts/${next.id}/document`;
+          next.contractSystem.lastSyncedAt = now;
+        }
       }
     }
     const completedCount = attempt.people.filter(p => p.action === 2).length;

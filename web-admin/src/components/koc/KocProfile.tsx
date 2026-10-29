@@ -12,7 +12,6 @@ import React, { useMemo, useState } from 'react';
 import {
   AlertTriangle,
   ArrowLeft,
-  Calendar,
   Check,
   CheckCircle2,
   ChevronLeft,
@@ -80,6 +79,7 @@ import {
   calculateKocPerformanceStats,
   canRevealSensitive,
   dealPostOnTimeOf,
+  evaluateLegalProfileContractReadiness,
   dealRatingOf,
   dealStatusOf,
   dealStepOf,
@@ -210,6 +210,41 @@ export function KocProfile({
   const sharedOwners = duplicates.filter((d) => !d.fields.includes('kênh'));
   const syncStatus = getUpaffiliateSyncStatus(koc);
 
+  // Dải thông tin nhanh: những gì cần biết để quyết định book, không phải mở tab
+  const realDeals = kocDeals.filter((d) => !isMasterSummaryDeal(d));
+  const latestDeal = realDeals
+    .filter((d) => d.postedDate || d.deadlinePost)
+    .sort((a, b) => String(b.postedDate || b.deadlinePost).localeCompare(String(a.postedDate || a.deadlinePost)))[0];
+  const mainPic = (koc.bookingPic || '').split('\n')[0].trim();
+  const hasRateRange = Boolean(koc.minRate && koc.maxRate && koc.minRate > 0 && koc.maxRate > koc.minRate);
+  const quickFacts: Array<{ label: string; value: string; sub?: string }> = [
+    {
+      label: 'Follower',
+      value: koc.followers ? formatFollowers(koc.followers) : '—',
+      sub: koc.avgViews ? `${formatFollowers(koc.avgViews)} view TB` : undefined,
+    },
+    {
+      label: isCooperated ? 'Đơn giá' : 'Báo giá',
+      value: koc.rateCardVideo > 1 ? formatVndShort(koc.rateCardVideo) : '—',
+      sub: hasRateRange ? `${formatVndShort(koc.minRate!)} – ${formatVndShort(koc.maxRate!)}` : undefined,
+    },
+    {
+      label: 'GMV kênh 30 ngày',
+      value: koc.recentRevenue ? formatVndShort(koc.recentRevenue) : '—',
+      sub: koc.recentRevenue ? 'Cả kênh trên TikTok Shop' : undefined,
+    },
+    {
+      label: isCooperated ? 'PIC chính' : 'PIC đề xuất',
+      value: mainPic || '—',
+      sub: koc.workedPicsCount && koc.workedPicsCount > 1 ? `${koc.workedPicsCount} PIC từng làm` : undefined,
+    },
+    {
+      label: 'Book gần nhất',
+      value: latestDeal ? shortDate(String(latestDeal.postedDate || latestDeal.deadlinePost)) : koc.latestBookMonth || 'Chưa book',
+      sub: latestDeal ? [latestDeal.brandName, latestDeal.dealCode].filter(Boolean).join(' · ') : koc.latestBoCode || undefined,
+    },
+  ];
+
   const tabItems: TabItem<MainTabKey>[] = [
     { key: 'HISTORY', label: 'Lịch sử hợp tác', count: totalHistoryCount },
     { key: 'LEGAL_PROFILES', label: 'Hồ sơ pháp lý', count: legalProfiles.length },
@@ -319,7 +354,6 @@ export function KocProfile({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <ActionMenu label="Thao tác khác" items={moreActions} />
           {onCreateContractForKoc && (
             <Button variant="secondary" icon={FileText} onClick={() => onCreateContractForKoc(koc)}>
               Ký hợp đồng
@@ -330,8 +364,23 @@ export function KocProfile({
               Tạo booking
             </Button>
           )}
+          <ActionMenu label="Thao tác khác" items={moreActions} />
         </div>
       </header>
+
+      {isPage && (
+        <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-3 rounded-xl border border-line bg-surface px-4 py-3">
+          {quickFacts.map((f) => (
+            <div key={f.label} className="min-w-0">
+              <dt className="text-2xs text-ink-3">{f.label}</dt>
+              <dd className="text-ctl-md text-ink font-medium font-figure truncate" title={f.value}>
+                {f.value}
+              </dd>
+              {f.sub && <dd className="text-2xs text-ink-3 truncate" title={f.sub}>{f.sub}</dd>}
+            </div>
+          ))}
+        </dl>
+      )}
 
       {/* Trùng kênh thật (cùng @handle) mới cảnh báo */}
       {channelDuplicates.length > 0 && (
@@ -358,7 +407,7 @@ export function KocProfile({
 
       <div className={cx('grid gap-4 items-start', isPage && 'xl:grid-cols-[minmax(0,1fr)_320px]')}>
         {/* Cột chính */}
-        <div className="grid gap-4 min-w-0">
+        <div className="grid grid-cols-1 gap-4 min-w-0">
           <Tabs items={tabItems} value={activeTab} onChange={setActiveTab} />
 
           {activeTab === 'HISTORY' && (
@@ -397,8 +446,20 @@ export function KocProfile({
           )}
         </div>
 
-        {/* Cột tra cứu */}
-        <aside className="grid gap-4 min-w-0">
+        {/* Cột tra cứu: theo thứ tự quyết định — ký được chưa, liên hệ ai, người khác đánh giá ra sao */}
+        <aside className="grid grid-cols-1 gap-4 min-w-0">
+          <div className="bg-surface border border-line rounded-xl divide-y divide-line min-w-0">
+            <LegalPaymentPanel
+              koc={koc}
+              currentUser={currentUser}
+              onScanDocs={onScanDocs}
+              onUpdateKoc={onUpdateKoc}
+              onOpenQr={() => setVietQrDeal(koc)}
+              onOpenLegalTab={() => setActiveTab('LEGAL_PROFILES')}
+              onCreateContractForKoc={onCreateContractForKoc}
+            />
+            <ShippingAndContactPanel koc={koc} onSearchSocialChannels={onSearchSocialChannels} onUpdateKoc={onUpdateKoc} />
+          </div>
           {channelReviewSummary && channelReviewSummary.totalReviews > 0 && (
             <Panel
               icon={History}
@@ -432,17 +493,7 @@ export function KocProfile({
               </ul>
             </Panel>
           )}
-          <div className="bg-surface border border-line rounded-xl divide-y divide-line min-w-0">
-            <ShippingAndContactPanel koc={koc} onSearchSocialChannels={onSearchSocialChannels} onUpdateKoc={onUpdateKoc} />
-            <LegalPaymentPanel
-              koc={koc}
-              currentUser={currentUser}
-              onScanDocs={onScanDocs}
-              onUpdateKoc={onUpdateKoc}
-              onOpenQr={() => setVietQrDeal(koc)}
-              onOpenLegalTab={() => setActiveTab('LEGAL_PROFILES')}
-              onCreateContractForKoc={onCreateContractForKoc}
-            />
+          <div className="bg-surface border border-line rounded-xl min-w-0">
             <OperationalNotesPanel koc={koc} />
           </div>
         </aside>
@@ -1040,8 +1091,11 @@ function CollaborationHistorySection({
   // Danh sách các Brand đã từng hợp tác
   const brandList = useMemo(() => Array.from(new Set(deals.map((d) => d.brandName).filter(Boolean))), [deals]);
 
+  const [showWeekly, setShowWeekly] = useState(false);
   const filteredDeals = useMemo(() => {
     return deals.filter((d) => {
+      // Đợt chỉ có số tổng từ Master không có chi tiết: gom thành một dòng dưới bảng
+      if (isMasterSummaryDeal(d)) return false;
       if (selectedBrandFilter !== 'ALL' && d.brandName !== selectedBrandFilter) return false;
       if (selectedFormatFilter !== 'ALL') {
         if (selectedFormatFilter === 'FOC' && (d.totalValue || 0) > 0) return false;
@@ -1063,69 +1117,29 @@ function CollaborationHistorySection({
   const columns: Column<BookingDealItem>[] = [
     {
       key: 'campaign',
-      header: 'Chiến dịch & Sản phẩm',
-      width: 240,
-      render: (d) =>
+      header: 'Đợt hợp tác',
+      width: 250,
+      render: (d) => {
+        const date = d.postedDate || d.deadlinePost;
+        const format = (d.totalValue || 0) === 0 ? 'FOC' : d.bookingFormat === 'Booking Livestream KOC' ? 'Livestream' : 'Paid';
         // Đợt dựng lại từ số tổng Master KOC: mã BO, brand, sản phẩm là suy đoán nên không hiện như deal thật
-        isMasterSummaryDeal(d) ? (
-          <div className="min-w-0 max-w-[260px]">
-            <span className="block font-medium text-ink-2 text-ctl">Đợt book theo Master KOC</span>
-            <span className="block text-2xs text-ink-3 mt-0.5">
+        return isMasterSummaryDeal(d) ? (
+          <div className="min-w-0 max-w-[250px] leading-snug">
+            <span className="block text-ctl text-ink-2">Đợt book theo Master KOC</span>
+            <span className="block text-2xs text-ink-3">
               Chưa có chi tiết trên hệ thống{d.bookingBatch ? ` · gần nhất ${d.bookingBatch}` : ''}
             </span>
           </div>
         ) : (
-          <div className="min-w-0 max-w-[260px]">
-            <span className="block font-semibold text-ink text-ctl hover:text-accent cursor-pointer truncate" onClick={() => onViewDetail(d)} title={d.campaignTitle}>
-              {d.campaignTitle || d.productName}
+          <div className="min-w-0 max-w-[250px] leading-snug" title={[d.campaignTitle, d.productName, d.dealCode].filter(Boolean).join('\n')}>
+            <span className="block font-medium text-ink text-ctl hover:text-accent cursor-pointer truncate" onClick={() => onViewDetail(d)}>
+              {d.brandName}
+              {d.productName ? <span className="font-normal text-ink-2"> · {d.productName}</span> : null}
             </span>
-            <div className="flex items-center gap-1 text-2xs text-ink-3 truncate mt-0.5">
-              <span className="font-medium text-ink-2">{d.brandName}</span>
-              {d.productName && (
-                <>
-                  <span>·</span>
-                  <span className="truncate">{d.productName}</span>
-                </>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 mt-0.5 text-2xs text-ink-3">
-              <span className="font-figure">{d.dealCode}</span>
-              {d.bookingBatch && <span>· {d.bookingBatch}</span>}
-            </div>
-          </div>
-        ),
-    },
-    {
-      key: 'format_time',
-      header: 'Hình thức & Ngày đăng',
-      width: 160,
-      render: (d) => {
-        const isFoc = (d.totalValue || 0) === 0;
-        const isLive = d.bookingFormat === 'Booking Livestream KOC';
-        const date = d.postedDate || d.deadlinePost;
-        return (
-          <div className="grid gap-1">
-            <div>
-              {isFoc ? (
-                <span className="text-xs font-medium text-ink-2">
-                  Suất mẫu FOC (0đ)
-                </span>
-              ) : isLive ? (
-                <span className="text-xs font-medium text-accent">
-                  Livestream KOC
-                </span>
-              ) : (
-                <span className="text-xs font-medium text-ink">
-                  Video trả phí (Paid)
-                </span>
-              )}
-            </div>
-            {date && (
-              <span className="text-2xs text-ink-3 inline-flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {shortDate(date)}
-              </span>
-            )}
+            <span className="block truncate text-2xs text-ink-3">
+              <span className="font-figure">{d.dealCode}</span> · {format}
+              {date ? ` · ${shortDate(date)}` : ''}
+            </span>
           </div>
         );
       },
@@ -1255,42 +1269,36 @@ function CollaborationHistorySection({
 
   return (
     <div className="space-y-4">
-      {/* Hiệu quả hợp tác tích lũy: chỉ cộng số thật của từng deal */}
+      {/* 4 ô chính; số đơn, chi phí, số deal làm mẫu số nằm ở dòng ghi chú */}
       <StatRow>
         <Stat
           label="GMV từ booking"
           value={stats.totalGmv > 0 ? formatVndShort(stats.totalGmv) : '—'}
-          note={`${formatNumber(stats.completedDeals)} xong · ${formatNumber(stats.runningDeals)} đang chạy`}
+          note={[
+            stats.totalOrders > 0 ? `${formatNumber(stats.totalOrders)} đơn` : '',
+            `${formatNumber(stats.completedDeals)} xong · ${formatNumber(stats.runningDeals)} đang chạy`,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         />
         <Stat
           label="ROI"
           value={stats.overallRoi > 0 ? `${stats.overallRoi.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}x` : '—'}
-          note="GMV ÷ chi phí Net"
-        />
-        <Stat label="Chi phí Net" value={formatVndShort(stats.totalSpentNet)} note={`${formatNumber(stats.paidDealsCount)} Paid · ${formatNumber(stats.focDealsCount)} FOC`} />
-        <Stat
-          label="Đơn hàng"
-          value={stats.totalOrders > 0 ? formatNumber(stats.totalOrders) : '—'}
-          note={stats.avgCpo > 0 ? `${formatVndShort(stats.avgCpo)}/đơn` : 'Chưa có số đơn'}
-        />
-        <Stat
-          label="Lượt xem video"
-          value={stats.totalCollabViews > 0 ? formatNumber(stats.totalCollabViews) : '—'}
-          note={`${formatNumber(stats.viewsDealsCount)} video có số`}
+          note={`Chi phí Net ${formatVndShort(stats.totalSpentNet)}`}
         />
         <Stat
           label="Lượt xem TB / video"
           value={stats.avgViewsPerCollab > 0 ? formatNumber(stats.avgViewsPerCollab) : '—'}
+          note={`${formatNumber(stats.viewsDealsCount)} video có số`}
         />
         <Stat
           label="Đánh giá TB"
           value={stats.ratedDealsCount > 0 ? `${stats.avgRatingScore.toLocaleString('vi-VN')} / 5` : '—'}
-          note={`${formatNumber(stats.ratedDealsCount)} deal có điểm`}
-        />
-        <Stat
-          label="Đăng đúng hạn"
-          value={stats.postCheckedDealsCount > 0 ? `${stats.onTimePostRate}%` : '—'}
-          note={`${formatNumber(stats.postCheckedDealsCount)} deal có xác nhận`}
+          note={
+            stats.postCheckedDealsCount > 0
+              ? `${stats.onTimePostRate}% đăng đúng hạn · ${formatNumber(stats.ratedDealsCount)} deal có điểm`
+              : `${formatNumber(stats.ratedDealsCount)} deal có điểm`
+          }
         />
       </StatRow>
 
@@ -1298,9 +1306,9 @@ function CollaborationHistorySection({
         flush
         icon={History}
         title="Các đợt hợp tác"
-        meta={`${formatNumber(filteredDeals.length)} / ${formatNumber(deals.length)} đợt${
-          summaryDeals > 0 ? ` · ${formatNumber(summaryDeals)} đợt chỉ có số tổng từ Master KOC` : ''
-        }${stats.uniqueBrands.length ? ` · ${stats.uniqueBrands.join(', ')}` : ''}`}
+        meta={`${formatNumber(filteredDeals.length)} / ${formatNumber(deals.length - summaryDeals)} đợt có chi tiết${
+          stats.uniqueBrands.length ? ` · ${stats.uniqueBrands.join(', ')}` : ''
+        }`}
         actions={
           onOpenHistoryEvaluation && (
             <Button size="sm" variant="ghost" icon={FileText} onClick={onOpenHistoryEvaluation}>
@@ -1338,15 +1346,40 @@ function CollaborationHistorySection({
           rowKey={(d) => d.id}
           empty={
             <EmptyState
-              title="Chưa có dữ liệu hợp tác phù hợp"
-              description="Thử thay đổi bộ lọc nhãn hàng hoặc xóa từ khóa tìm kiếm."
+              title={summaryDeals > 0 && deals.length === summaryDeals ? 'Chưa có chi tiết đợt nào trên hệ thống' : 'Chưa có dữ liệu hợp tác phù hợp'}
+              description={
+                summaryDeals > 0 && deals.length === summaryDeals
+                  ? 'Master KOC chỉ ghi số tổng, chưa có mã BO hay số liệu từng đợt.'
+                  : 'Thử thay đổi bộ lọc nhãn hàng hoặc xóa từ khóa tìm kiếm.'
+              }
             />
           }
         />
+        {summaryDeals > 0 && (
+          <p className="px-4 py-2.5 border-t border-line text-2xs text-ink-3">
+            +{formatNumber(summaryDeals)} đợt chỉ có số tổng từ Master KOC, chưa có chi tiết trên hệ thống.
+          </p>
+        )}
       </Panel>
 
-      {/* KHO LỊCH SỬ VIDEO ADS THEO TUẦN (ĐỐI SOÁT THEO VIDEO ID HỆ THỐNG) */}
-      <KocVideoWeeklyHistoryPanel targetKoc={koc} />
+      {/* Video Ads theo tuần: công cụ đối soát, mở khi cần */}
+      <div className="rounded-xl border border-line bg-surface">
+        <button
+          type="button"
+          onClick={() => setShowWeekly((v) => !v)}
+          aria-expanded={showWeekly}
+          className="w-full flex items-center justify-between gap-2 px-4 py-3 text-ctl text-ink hover:bg-canvas rounded-xl"
+        >
+          <span className="font-medium">Lịch sử Video Ads theo tuần</span>
+          <ChevronRight className={cx('w-4 h-4 text-ink-3 transition-transform', showWeekly && 'rotate-90')} />
+        </button>
+        {showWeekly && (
+          <div className="border-t border-line">
+            <KocVideoWeeklyHistoryPanel targetKoc={koc} />
+          </div>
+        )}
+      </div>
+
 
       {/* Modal hỏi đồng nghiệp */}
       {askDeal && (
@@ -1482,6 +1515,14 @@ function ShippingAndContactPanel({
 }) {
   const prefs = koc.samplePreferences;
   const tiktokHandle = koc.channelId.replace(/^@+/, '');
+  const socialLinks = [
+    { name: 'TikTok', Logo: TikTokLogo, text: `@${tiktokHandle}`, href: koc.channelLink || `https://www.tiktok.com/@${tiktokHandle}` },
+    koc.shopeeChannel && { name: 'Shopee', Logo: ShopeeLogo, text: koc.shopeeChannel, href: formatSocialChannelUrl('SHOPEE', koc.shopeeChannel) },
+    koc.facebookChannel && { name: 'Facebook', Logo: FacebookLogo, text: koc.facebookChannel, href: formatSocialChannelUrl('FACEBOOK', koc.facebookChannel) },
+    koc.instagramChannel && { name: 'Instagram', Logo: InstagramLogo, text: koc.instagramChannel, href: formatSocialChannelUrl('INSTAGRAM', koc.instagramChannel) },
+    koc.threadsChannel && { name: 'Threads', Logo: ThreadsLogo, text: koc.threadsChannel, href: formatSocialChannelUrl('THREADS', koc.threadsChannel) },
+  ].filter((c): c is { name: string; Logo: typeof TikTokLogo; text: string; href: string } => Boolean(c));
+  const missingSocial = ['Shopee', 'Facebook', 'Instagram', 'Threads'].filter((n) => !socialLinks.some((c) => c.name === n));
 
   const [isEditingContact, setIsEditingContact] = useState(false);
   const [draftEmail, setDraftEmail] = useState(koc.email || '');
@@ -1550,134 +1591,48 @@ function ShippingAndContactPanel({
 
   return (
     <AsideSection
-      title="Liên hệ & Hậu cần gửi mẫu (FOC)"
+      title="Liên hệ"
       actions={
-        <div className="flex items-center gap-1.5">
-          {!isEditingContact && onUpdateKoc && (
-            <Button size="sm" variant="ghost" onClick={openFullContactEdit}>
-              Sửa liên hệ
-            </Button>
-          )}
-          {onSearchSocialChannels && (
-            <Button size="sm" variant="secondary" icon={Search} onClick={() => onSearchSocialChannels(koc)}>
-              Tìm kênh MXH
-            </Button>
-          )}
-        </div>
+        !isEditingContact && onUpdateKoc ? (
+          <Button size="sm" variant="ghost" onClick={openFullContactEdit}>
+            Sửa
+          </Button>
+        ) : undefined
       }
     >
       <dl className="grid gap-3 text-xs">
-        {/* Kênh mạng xã hội của KOC */}
-        <div className="p-2.5 rounded-lg border border-line bg-sunken/30 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs font-semibold text-ink-2">Kênh mạng xã hội đã liên kết</span>
-            {onSearchSocialChannels && (
-              <button
-                type="button"
-                onClick={() => onSearchSocialChannels(koc)}
-                className="text-2xs font-medium text-accent hover:underline"
-              >
-                Dò tìm & xác nhận
-              </button>
-            )}
-          </div>
-          <div className="grid gap-1.5 text-2xs">
-            <div className="flex items-center justify-between gap-2">
+        {/* Kênh mạng xã hội: chỉ hiện kênh đã có, kênh còn thiếu gom thành một dòng */}
+        <div className="grid gap-1.5 text-2xs">
+          {socialLinks.map((c) => (
+            <div key={c.name} className="flex items-center justify-between gap-2">
               <span className="inline-flex items-center gap-1.5 text-ink-3">
-                <TikTokLogo className="w-3.5 h-3.5 shrink-0" />
-                TikTok
+                <c.Logo className="w-3.5 h-3.5 shrink-0" />
+                {c.name}
               </span>
               <a
-                href={koc.channelLink || `https://www.tiktok.com/@${tiktokHandle}`}
+                href={c.href}
                 target="_blank"
                 rel="noreferrer"
-                className="font-mono font-medium text-accent hover:underline inline-flex items-center gap-1 truncate max-w-[180px]"
+                className="font-figure text-accent hover:underline inline-flex items-center gap-1 truncate max-w-[180px]"
               >
-                @{tiktokHandle}
+                {c.text}
                 <ExternalLink className="w-3 h-3 shrink-0" />
               </a>
             </div>
-
-            <div className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-1.5 text-ink-3">
-                <ShopeeLogo className="w-3.5 h-3.5 shrink-0" />
-                Shopee
-              </span>
-              {koc.shopeeChannel ? (
-                <a
-                  href={formatSocialChannelUrl('SHOPEE', koc.shopeeChannel)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-mono font-medium text-accent hover:underline inline-flex items-center gap-1 truncate max-w-[180px]"
-                >
-                  {koc.shopeeChannel}
-                  <ExternalLink className="w-3 h-3 shrink-0" />
-                </a>
-              ) : (
-                <span className="text-ink-3">Chưa xác nhận</span>
+          ))}
+          {missingSocial.length > 0 && (
+            <span className="text-ink-3">
+              Chưa có {missingSocial.join(', ')}
+              {onSearchSocialChannels && (
+                <>
+                  {' · '}
+                  <button type="button" onClick={() => onSearchSocialChannels(koc)} className="text-accent hover:underline">
+                    Dò tìm
+                  </button>
+                </>
               )}
-            </div>
-
-            <div className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-1.5 text-ink-3">
-                <FacebookLogo className="w-3.5 h-3.5 shrink-0" />
-                Facebook
-              </span>
-              {koc.facebookChannel ? (
-                <a
-                  href={formatSocialChannelUrl('FACEBOOK', koc.facebookChannel)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-mono font-medium text-accent hover:underline inline-flex items-center gap-1 truncate max-w-[180px]"
-                >
-                  {koc.facebookChannel}
-                  <ExternalLink className="w-3 h-3 shrink-0" />
-                </a>
-              ) : (
-                <span className="text-ink-3">Chưa xác nhận</span>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-1.5 text-ink-3">
-                <InstagramLogo className="w-3.5 h-3.5 shrink-0" />
-                Instagram
-              </span>
-              {koc.instagramChannel ? (
-                <a
-                  href={formatSocialChannelUrl('INSTAGRAM', koc.instagramChannel)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-mono font-medium text-accent hover:underline inline-flex items-center gap-1 truncate max-w-[180px]"
-                >
-                  {koc.instagramChannel}
-                  <ExternalLink className="w-3 h-3 shrink-0" />
-                </a>
-              ) : (
-                <span className="text-ink-3">Chưa xác nhận</span>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-1.5 text-ink-3">
-                <ThreadsLogo className="w-3.5 h-3.5 shrink-0" />
-                Threads
-              </span>
-              {koc.threadsChannel ? (
-                <a
-                  href={formatSocialChannelUrl('THREADS', koc.threadsChannel)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-mono font-medium text-accent hover:underline inline-flex items-center gap-1 truncate max-w-[180px]"
-                >
-                  {koc.threadsChannel}
-                  <ExternalLink className="w-3 h-3 shrink-0" />
-                </a>
-              ) : (
-                <span className="text-ink-3">Chưa xác nhận</span>
-              )}
-            </div>
-          </div>
+            </span>
+          )}
         </div>
 
         {isEditingContact ? (
@@ -1800,13 +1755,19 @@ function ShippingAndContactPanel({
             </InfoRow>
             <InfoRow label="Khu vực">{koc.location || 'Hà Nội'}</InfoRow>
 
-            <div className="my-2 border-t border-line" />
-
-            {/* Hậu cần nhận mẫu */}
-            <div className="flex items-center gap-1.5 text-ink font-semibold text-ctl-sm">
-              <Truck className="w-3.5 h-3.5 text-accent" />
-              <span>Thông tin giao nhận hàng mẫu</span>
-            </div>
+            {/* Gửi mẫu: chỉ cần khi chuẩn bị gửi hàng nên thu gọn mặc định */}
+            <details className="group border-t border-line pt-2.5">
+              <summary className="flex items-center justify-between gap-2 cursor-pointer list-none text-ctl-sm text-ink">
+                <span className="inline-flex items-center gap-1.5 font-medium">
+                  <Truck className="w-3.5 h-3.5 text-ink-3" />
+                  Gửi mẫu
+                </span>
+                <span className="text-2xs text-ink-3 truncate">
+                  {koc.shippingAddress ? koc.shippingRecipientName || koc.realName || koc.stageName : 'Chưa có địa chỉ'}
+                  <ChevronRight className="inline w-3 h-3 ml-0.5 transition-transform group-open:rotate-90" />
+                </span>
+              </summary>
+              <dl className="grid gap-3 mt-3">
 
             <InfoRow label="Người nhận hàng">
               {koc.shippingRecipientName ? (
@@ -1831,11 +1792,13 @@ function ShippingAndContactPanel({
                 <span className="text-ink-3">Chưa có ghi chú riêng</span>
               )}
             </InfoRow>
+              </dl>
+            </details>
           </>
         )}
 
         {/* Đặc tính phục vụ chọn mẫu */}
-        {prefs && (
+        {prefs && !isEditingContact && (
           <div className="p-2.5 rounded-lg border border-line bg-sunken/40 space-y-1.5 mt-1">
             <span className="text-2xs font-semibold text-ink-2 block">Thông số chọn sản phẩm mẫu:</span>
             {prefs.skinType && (
@@ -1911,6 +1874,8 @@ function LegalPaymentPanel({
   const activeBankAccount = defProfile?.bankAccount || defProfile?.bankAccountNumber || koc.bankAccount;
   const activeBankName = defProfile?.bankName || koc.bankName;
   const show = (v: string) => (revealed ? v : mask(v));
+  const readiness = defProfile ? evaluateLegalProfileContractReadiness(defProfile, koc) : null;
+  const isSigned = defProfile?.frameworkContractStatus === 'ĐÃ_KÝ';
 
   const scanButton = onScanDocs && (
     <Button size="sm" icon={FileScan} onClick={() => onScanDocs(koc)}>
@@ -1920,32 +1885,43 @@ function LegalPaymentPanel({
 
   return (
     <AsideSection
-      title="Pháp lý & Thanh toán"
+      title="Sẵn sàng hợp tác"
       actions={
-        <div className="flex items-center gap-1.5">
-          {onOpenLegalTab && (
-            <Button size="sm" variant="ghost" onClick={onOpenLegalTab}>
-              Quản lý pháp lý &amp; TK
-            </Button>
-          )}
-          {allowed && legalId && (
-            <Button size="sm" variant="ghost" onClick={() => setRevealed((v) => !v)}>
-              {revealed ? 'Ẩn số' : 'Hiện số'}
-            </Button>
-          )}
-        </div>
+        allowed && legalId ? (
+          <Button size="sm" variant="ghost" onClick={() => setRevealed((v) => !v)}>
+            {revealed ? 'Ẩn số' : 'Hiện số'}
+          </Button>
+        ) : undefined
       }
     >
+      {/* Trạng thái ký hợp đồng lên đầu: câu hỏi đầu tiên trước khi book */}
+      <div className="mb-3 grid gap-1">
+        <div className="flex items-center justify-between gap-2">
+          {!defProfile && !legalId ? (
+            <Status tone="warning">Chưa có hồ sơ pháp lý</Status>
+          ) : isSigned ? (
+            <Status tone="positive">Đã ký HĐ nguyên tắc</Status>
+          ) : readiness && !readiness.ready ? (
+            <Status tone="warning">Chưa đủ để ký HĐ</Status>
+          ) : (
+            <Status tone="positive">Đủ hồ sơ để ký HĐ</Status>
+          )}
+          {onOpenLegalTab && (
+            <button type="button" onClick={onOpenLegalTab} className="text-2xs text-accent hover:underline shrink-0">
+              {legalProfiles.length > 1 ? `${legalProfiles.length} hồ sơ` : 'Xem hồ sơ'}
+            </button>
+          )}
+        </div>
+        {readiness && !readiness.ready && (
+          <p className="text-2xs text-ink-3">
+            Thiếu: {readiness.missingFields.slice(0, 3).join(', ')}
+            {readiness.missingFields.length > 3 ? ` và ${readiness.missingFields.length - 3} mục khác` : ''}
+          </p>
+        )}
+      </div>
       {!legalId && !activeBankAccount ? (
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {scanButton}
-            {onOpenLegalTab && (
-              <Button size="sm" variant="secondary" onClick={onOpenLegalTab}>
-                Quản lý pháp lý &amp; TK
-              </Button>
-            )}
-          </div>
+          <div className="flex flex-wrap items-center gap-2">{scanButton}</div>
         </div>
       ) : (
         <dl className="grid gap-3 text-xs">
@@ -2037,18 +2013,6 @@ function LegalPaymentPanel({
           {koc.sharedMcnInfo && (
             <InfoRow label="Đầu mối dùng chung">{koc.sharedMcnInfo}</InfoRow>
           )}
-          {legalProfiles.length > 1 && onOpenLegalTab && (
-            <InfoRow label="Hồ sơ pháp lý khác">
-              <button
-                type="button"
-                onClick={onOpenLegalTab}
-                className="inline-flex items-center gap-1 text-2xs font-semibold text-accent hover:underline cursor-pointer"
-              >
-                <span>+{legalProfiles.length - 1} hồ sơ pháp lý khác</span>
-                <span className="text-ink-3">· Xem trong tab Pháp lý →</span>
-              </button>
-            </InfoRow>
-          )}
           {koc.contractDriveUrl && (
             <InfoRow label="Hồ sơ hợp đồng">
               <a
@@ -2089,10 +2053,8 @@ function OperationalNotesPanel({ koc }: { koc: KocItem }) {
     koc.brandRejectReason && { label: 'Lý do nhãn hàng từ chối trước đó', text: koc.brandRejectReason },
   ].filter((n): n is { label: string; text: string } => !!n);
 
-  const hasRateRange = Boolean((koc.minRate && koc.minRate > 0) || (koc.maxRate && koc.maxRate > 0));
-
   return (
-    <AsideSection title="Đánh giá & Đầu mối vận hành">
+    <AsideSection title="Đầu mối vận hành">
       <div className="space-y-3 text-xs">
         <div className="p-3 rounded-lg bg-sunken/40 border border-line flex items-center justify-between">
           <div>
@@ -2119,20 +2081,6 @@ function OperationalNotesPanel({ koc }: { koc: KocItem }) {
         <dl className="grid gap-2.5">
           {koc.collabGroupLabel && (
             <InfoRow label="Nhóm hợp tác">{koc.collabGroupLabel}</InfoRow>
-          )}
-          {hasRateRange && (
-            <InfoRow label="Biên độ đơn giá lịch sử">
-              <span className="num font-medium text-ink">
-                {formatVndShort(koc.minRate || koc.rateCardVideo)} – {formatVndShort(koc.maxRate || koc.rateCardVideo)}
-              </span>
-            </InfoRow>
-          )}
-          {(koc.latestBookMonth || koc.latestBoCode) && (
-            <InfoRow label="Đợt book gần nhất">
-              <span className="text-ink-2">
-                {[koc.latestBookMonth, koc.latestBoCode, koc.brandName].filter(Boolean).join(' · ')}
-              </span>
-            </InfoRow>
           )}
           {koc.workedPicsList && (
             <InfoRow label={`PIC từng làm việc (${koc.workedPicsCount || 1})`}>
@@ -2671,8 +2619,8 @@ function AsideSection({
   return (
     <section className="px-4 py-4">
       <div className="flex items-center justify-between gap-2 mb-3 min-h-7">
-        <h3 className="text-sm font-semibold text-ink">{title}</h3>
-        {actions}
+        <h3 className="text-ctl-md font-semibold text-ink min-w-0 truncate">{title}</h3>
+        {actions && <div className="shrink-0">{actions}</div>}
       </div>
       {children}
     </section>

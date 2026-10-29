@@ -36,7 +36,8 @@ export const DOCUMENT_LABEL: Record<ContractDocument, string> = {
 export const documentOfTemplate = (templateId: string): ContractDocument | null => {
   if (templateId.endsWith('-HDNT')) return 'HDNT';
   if (templateId.endsWith('-SOW')) return 'SOW';
-  if (templateId.endsWith('-VID-BBNT') || templateId.endsWith('-LIVE-BBNT')) return 'BBNT';
+  // Gồm mẫu BBNT video bản cũ (IND-BBNT…) mà bộ gợi ý mẫu vẫn đề xuất, bản mới (-VID-BBNT) và livestream (-LIVE-BBNT)
+  if (templateId.endsWith('-BBNT')) return 'BBNT';
   return null;
 };
 

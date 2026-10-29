@@ -70,13 +70,16 @@
   function parseCompactNumber(raw) {
     if (typeof raw === 'number' && Number.isFinite(raw)) return Math.max(0, Math.round(raw));
     if (typeof raw !== 'string') return 0;
-    const cleaned = raw
+    const trimmed = raw
       .trim()
       .replace(/(?:VND|VNĐ|[₫đ$€£¥])/gi, '')
-      .replace(/\s+/g, '');
-    if (!cleaned) return 0;
+      .trim();
+    if (!trimmed) return 0;
 
-    const suffixMatch = cleaned.match(/^([0-9]+(?:[.,][0-9]+)?)(K|M|B|N|TR|TỶ|TY)$/i);
+    // 1. Khớp số rút gọn có hậu tố K, M, B, N, Tr, Tỷ
+    const suffixMatch = trimmed.match(
+      /(?:^|[\s:(])([0-9]+(?:[.,][0-9]+)?)\s*(K|M|B|N|TR|TỶ|TY)(?=$|[\s.,;!?)]|lượt|view|flw|follower|người|thích)/i
+    );
     if (suffixMatch) {
       const num = parseFloat(suffixMatch[1].replace(',', '.'));
       const unit = suffixMatch[2].toUpperCase();
@@ -85,8 +88,80 @@
       if (unit === 'B' || unit === 'TỶ' || unit === 'TY') return Math.round(num * 1000000000);
     }
 
-    const digitsOnly = cleaned.replace(/[^0-9]/g, '');
-    return digitsOnly ? Math.round(Number(digitsOnly)) : 0;
+    // 2. Chuỗi thuần số nguyên hoặc có dấu chấm/phẩy phân cách hàng nghìn (tối đa 12 chữ số, không nối gộp nhiều dòng)
+    const compactClean = trimmed.replace(/\s+/g, '');
+    if (/^[0-9]{1,3}(?:[.,][0-9]{3})+$/.test(compactClean)) {
+      const digits = compactClean.replace(/[.,]/g, '');
+      return digits.length <= 12 ? Math.round(Number(digits)) : 0;
+    }
+    if (/^[0-9]{1,12}$/.test(compactClean)) {
+      return Math.round(Number(compactClean));
+    }
+    if (/^[0-9]{1,9}[.,][0-9]{1,4}$/.test(compactClean)) {
+      const parsedFloat = parseFloat(compactClean.replace(',', '.'));
+      return Number.isFinite(parsedFloat) ? Math.round(parsedFloat) : 0;
+    }
+
+    // 3. Nếu chuỗi có chữ kèm số đơn lẻ trên 1 dòng ngắn (VD: "Đã bán 1.250"), chỉ lấy cụm số đầu tiên (tối đa 12 chữ số)
+    if (!trimmed.includes('\n') && trimmed.length <= 48) {
+      const firstNumMatch = trimmed.match(/([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{1,12})/);
+      if (firstNumMatch && firstNumMatch[1]) {
+        const digits = firstNumMatch[1].replace(/[.,]/g, '');
+        if (digits.length <= 12) {
+          return Math.round(Number(digits));
+        }
+      }
+    }
+    return 0;
+  }
+
+  function getCardCleanText(cardEl) {
+    if (!cardEl) return '';
+    if (typeof cardEl.cloneNode === 'function') {
+      const clone = cardEl.cloneNode(true);
+      if (typeof clone.querySelectorAll === 'function') {
+        clone
+          .querySelectorAll(
+            '.ub-GridCardOverlay, .ub-ThreadsPostBar, .ub-ThumbCartPill, .ub-MetaQuickDlBtn, #upbase-b2c-ext-root'
+          )
+          .forEach((el) => el.remove());
+      }
+      return String(clone.innerText || clone.textContent || '').trim();
+    }
+    return String(cardEl.innerText || cardEl.textContent || '').trim();
+  }
+
+  function extractDomCardViews(cardEl) {
+    if (!cardEl || typeof cardEl.querySelector !== 'function') return 0;
+    const directEl = cardEl.querySelector(
+      '[data-e2e="video-views"], strong[data-e2e="video-views"], [class*="StrongVideoCount"], [class*="video-count"]'
+    );
+    if (
+      directEl &&
+      !directEl.closest('.ub-GridCardOverlay, .ub-ThreadsPostBar, .ub-ThumbCartPill, .ub-MetaQuickDlBtn')
+    ) {
+      const v = parseCompactNumber(directEl.textContent || '');
+      if (v > 0 && v < 10000000000) return v;
+    }
+    if (typeof cardEl.querySelectorAll === 'function') {
+      const candidates = cardEl.querySelectorAll('strong, span');
+      for (const el of candidates) {
+        if (
+          el.closest(
+            '.ub-GridCardOverlay, .ub-ThreadsPostBar, .ub-ThumbCartPill, .ub-MetaQuickDlBtn, #upbase-b2c-ext-root'
+          )
+        ) {
+          continue;
+        }
+        if (el.children && el.children.length > 0) continue;
+        const txt = (el.textContent || '').trim();
+        if (/^[0-9]+(?:[.,][0-9]+)?\s*(?:K|M|B|N|Tr)?$/i.test(txt)) {
+          const v = parseCompactNumber(txt);
+          if (v > 0 && v < 10000000000) return v;
+        }
+      }
+    }
+    return 0;
   }
 
   function parsePercentValue(raw) {
@@ -1218,11 +1293,13 @@
           totalViews: 0,
           totalLikes: 0,
           shopVideoCount: 0,
+          viewsList: [],
         };
       }
       dateMap[dKey].videoCount++;
       dateMap[dKey].totalViews += vw;
       dateMap[dKey].totalLikes += lk;
+      dateMap[dKey].viewsList.push(vw);
       if (isShop) dateMap[dKey].shopVideoCount++;
     }
 
@@ -1249,7 +1326,31 @@
       .sort((a, b) => b.videoCount - a.videoCount || b.avgViews - a.avgViews)
       .slice(0, 12);
 
-    const byDate = Object.values(dateMap).sort((a, b) => b.date.localeCompare(a.date));
+    const byDate = Object.values(dateMap)
+      .map((d) => {
+        const sorted = (d.viewsList || [])
+          .map((n) => Number(n || 0))
+          .filter((n) => Number.isFinite(n) && n >= 0)
+          .sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        const medianViews =
+          sorted.length === 0
+            ? 0
+            : sorted.length % 2 !== 0
+              ? Math.round(sorted[mid])
+              : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+        const avgViews = d.videoCount === 0 ? 0 : Math.round(d.totalViews / d.videoCount);
+        return {
+          date: d.date,
+          videoCount: d.videoCount,
+          totalViews: d.totalViews,
+          totalLikes: d.totalLikes,
+          shopVideoCount: d.shopVideoCount,
+          medianViews,
+          avgViews,
+        };
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
 
     return {
       byHour,
@@ -1642,10 +1743,12 @@
         const mergedHasYellowCart = Boolean(
           prev.hasYellowCart || v.hasYellowCart || mergedCartProducts.length > 0
         );
+        const safePrevViews = prev.views > 0 && prev.views <= 5000000000 ? prev.views : 0;
+        const safeNewViews = v.views > 0 && v.views <= 5000000000 ? v.views : 0;
         byId.set(v.videoId, {
           ...prev,
           ...(preferPrevApi ? {} : v),
-          views: Math.max(prev.views || 0, v.views || 0),
+          views: preferPrevApi ? safePrevViews || safeNewViews : Math.max(safePrevViews, safeNewViews),
           likes: preferPrevApi ? prev.likes || v.likes || 0 : Math.max(prev.likes || 0, v.likes || 0),
           comments: preferPrevApi ? prev.comments || v.comments || 0 : Math.max(prev.comments || 0, v.comments || 0),
           shares: preferPrevApi ? prev.shares || v.shares || 0 : Math.max(prev.shares || 0, v.shares || 0),
@@ -3926,12 +4029,97 @@
     if (!Array.isArray(rawList)) return;
 
     const newSearchVids = [];
+    const upsertSearchUser = (userObj, fallbackStats, userItems) => {
+      if (!userObj || typeof userObj !== 'object') return '';
+      const h = normHandle(userObj.uniqueId || userObj.unique_id || userObj.ins_id || '');
+      if (!h) return '';
+      const followers = parseCompactNumber(
+        userObj.follower_count ??
+          userObj.followerCount ??
+          fallbackStats?.followerCount ??
+          fallbackStats?.follower_count ??
+          0
+      );
+      const totalLikes = parseCompactNumber(
+        userObj.total_favorited ??
+          userObj.heartCount ??
+          userObj.heart ??
+          fallbackStats?.heartCount ??
+          0
+      );
+      const videoCount = parseCompactNumber(
+        userObj.aweme_count ??
+          userObj.videoCount ??
+          fallbackStats?.videoCount ??
+          0
+      );
+      const avatarUrl = String(
+        userObj.avatarThumb ||
+          userObj.avatarLarger ||
+          userObj.avatar_thumb?.url_list?.[0] ||
+          userObj.avatar_larger?.url_list?.[0] ||
+          ''
+      );
+      const displayName = String(userObj.nickname || h);
+      const bio = String(userObj.signature || '');
+      const existingProf = state.profilesByHandle[h] || {};
+      mergeProfileForHandle(h, {
+        handle: h,
+        displayName: displayName || existingProf.displayName || h,
+        avatarUrl: avatarUrl || existingProf.avatarUrl || '',
+        bio: bio || existingProf.bio || '',
+        followers: Math.max(followers, existingProf.followers || 0),
+        totalLikes: Math.max(totalLikes, existingProf.totalLikes || 0),
+        videoCount: Math.max(videoCount, existingProf.videoCount || 0),
+      });
+      const existingIdx = state.searchUsersList.findIndex((u) => u.handle === h);
+      const userEntry = {
+        handle: h,
+        displayName,
+        followers: Math.max(followers, existingIdx >= 0 ? state.searchUsersList[existingIdx].followers || 0 : 0),
+        totalLikes,
+        bio: bio.slice(0, 80),
+      };
+      if (existingIdx >= 0) {
+        state.searchUsersList[existingIdx] = userEntry;
+      } else {
+        state.searchUsersList.push(userEntry);
+      }
+      if (Array.isArray(userItems)) {
+        for (const subItem of userItems) {
+          const normSub = normalizeTikTokVideo(subItem, h);
+          if (normSub) {
+            if (!normSub.authorFollowers && userEntry.followers) {
+              normSub.authorFollowers = userEntry.followers;
+            }
+            newSearchVids.push(normSub);
+            mergeVideosForHandle(h, [normSub]);
+          }
+        }
+      }
+      return h;
+    };
+
     for (const entry of rawList) {
       if (!entry || typeof entry !== 'object') continue;
+      if (Array.isArray(entry.user_list)) {
+        for (const uEntry of entry.user_list) {
+          if (!uEntry || typeof uEntry !== 'object') continue;
+          upsertSearchUser(
+            uEntry.user_info || uEntry.user,
+            uEntry.user_info || uEntry.stats,
+            uEntry.items || uEntry.item_list || []
+          );
+        }
+      }
       const item = entry.item || entry.aweme_info || (entry.id && entry.stats ? entry : null);
       if (item) {
         const norm = normalizeTikTokVideo(item, item.author?.uniqueId || '');
         if (norm) {
+          const prof = norm.handle ? state.profilesByHandle[norm.handle] : null;
+          if (!norm.authorFollowers && prof?.followers) {
+            norm.authorFollowers = prof.followers;
+          }
           newSearchVids.push(norm);
           if (norm.handle) {
             mergeVideosForHandle(norm.handle, [norm]);
@@ -3940,30 +4128,11 @@
       }
       const userObj = entry.user_info || entry.user || item?.author;
       if (userObj) {
-        const h = normHandle(userObj.uniqueId || userObj.unique_id || userObj.ins_id || '');
-        if (h) {
-          const followers = parseCompactNumber(
-            userObj.follower_count ??
-              userObj.followerCount ??
-              entry.item?.authorStats?.followerCount ??
-              0
-          );
-          mergeProfileForHandle(h, {
-            handle: h,
-            displayName: String(userObj.nickname || h),
-            avatarUrl: String(userObj.avatarThumb || userObj.avatar_thumb?.url_list?.[0] || ''),
-            bio: String(userObj.signature || ''),
-            followers,
-          });
-          if (!state.searchUsersList.some((u) => u.handle === h)) {
-            state.searchUsersList.push({
-              handle: h,
-              displayName: String(userObj.nickname || h),
-              followers,
-              bio: String(userObj.signature || '').slice(0, 80),
-            });
-          }
-        }
+        upsertSearchUser(
+          userObj,
+          entry.item?.authorStats || item?.authorStats,
+          entry.items || []
+        );
       }
     }
 
@@ -3989,8 +4158,18 @@
       (v) => v.hasYellowCart || (Array.isArray(v.cartProducts) && v.cartProducts.length > 0)
     );
     const shopRatioPct = Math.round((shopVideos.length / totalVideos) * 100);
-    const totalViews = pool.reduce((s, v) => s + Number(v.views || 0), 0);
-    const avgViews = Math.round(totalViews / totalVideos);
+    const viewValues = pool
+      .map((v) => Number(v.views || 0))
+      .filter((n) => Number.isFinite(n) && n >= 0 && n <= 5000000000)
+      .sort((a, b) => a - b);
+    const totalViews = viewValues.reduce((s, n) => s + n, 0);
+    const avgViews = viewValues.length > 0 ? Math.round(totalViews / viewValues.length) : 0;
+    const medianViews =
+      viewValues.length === 0
+        ? 0
+        : viewValues.length % 2 === 1
+          ? viewValues[(viewValues.length - 1) / 2]
+          : Math.round((viewValues[viewValues.length / 2 - 1] + viewValues[viewValues.length / 2]) / 2);
 
     const authorMap = {};
     for (const v of pool) {
@@ -4053,6 +4232,7 @@
       shopVideoCount: shopVideos.length,
       shopRatioPct,
       avgViews,
+      medianViews,
       saturationScore,
       competitionLabel,
       discoveredKocs,
@@ -4079,7 +4259,10 @@
       if (path.startsWith('/search')) {
         return {
           pageType: 'search',
-          handle: state.searchVideosList[0]?.handle || '',
+          handle:
+            state.searchUsersList[0]?.handle ||
+            state.searchVideosList[0]?.handle ||
+            '',
           videoId: null,
         };
       }
@@ -4674,14 +4857,13 @@
         href.match(/\/(?:video|photo)\/(\d+)/) ||
         href.match(/\/(?:p|reel|reels|post|videos)\/([A-Za-z0-9_-]+)/);
       const vidId = m ? m[1] : `dom-${idx}`;
-      let vObj = vidById.get(vidId) || (videos && videos[idx]) || null;
+      let vObj =
+        vidById.get(vidId) ||
+        (vidId.startsWith('dom-') && videos ? videos[idx] : null);
       if (!vObj) {
-        const viewsText =
-          card.querySelector('[data-e2e="video-views"]')?.textContent ||
-          card.innerText ||
-          '0';
-        const domViews = isThreadsFeed ? 0 : parseCompactNumber(viewsText);
-        const domCaption = card.querySelector('img')?.getAttribute('alt') || card.innerText || '';
+        const cleanCardText = getCardCleanText(card);
+        const domViews = isThreadsFeed ? 0 : extractDomCardViews(card);
+        const domCaption = card.querySelector('img')?.getAttribute('alt') || cleanCardText || '';
         const commerce = extractSocialCommerceProductsFromText(domCaption, []);
         const domHasCart = commerce.hasYellowCart || /giỏ hàng|tiktokshop/i.test(domCaption);
         vObj = {
@@ -5168,75 +5350,123 @@
       });
     }
 
-    if (state.platform === 'tiktok' && handle) {
-      const domTitle = document.querySelector('[data-e2e="user-title"]')?.textContent?.trim();
-      const domSub = document.querySelector('[data-e2e="user-subtitle"]')?.textContent?.trim();
-      const domFollowers = document.querySelector('[data-e2e="followers-count"]')?.textContent?.trim();
-      const domFollowing = document.querySelector('[data-e2e="following-count"]')?.textContent?.trim();
-      const domLikes = document.querySelector('[data-e2e="likes-count"]')?.textContent?.trim();
-      const domBio = document.querySelector('[data-e2e="user-bio"]')?.textContent?.trim();
-      const domAvatar = document.querySelector('[data-e2e="user-avatar"] img')?.getAttribute('src');
-
-      if (domFollowers || domTitle || domBio) {
-        const existing = state.profilesByHandle[handle] || {};
-        mergeProfileForHandle(handle, {
-          handle,
-          displayName: domSub || domTitle || existing.displayName || handle,
-          avatarUrl: domAvatar || existing.avatarUrl || '',
-          bio: domBio || existing.bio || '',
-          followers: domFollowers ? parseCompactNumber(domFollowers) : existing.followers || 0,
-          following: domFollowing ? parseCompactNumber(domFollowing) : existing.following || 0,
-          totalLikes: domLikes ? parseCompactNumber(domLikes) : existing.totalLikes || 0,
-        });
+    if (state.platform === 'tiktok') {
+      if (urlInfo.pageType === 'search') {
+        const searchUserLinks = Array.from(document.querySelectorAll('a[href^="/@"]')).filter(
+          (a) => !a.closest('#upbase-b2c-ext-root') && !/\/(?:video|photo)\//.test(a.getAttribute('href') || '')
+        );
+        for (const aEl of searchUserLinks) {
+          const href = aEl.getAttribute('href') || '';
+          const hm = href.match(/^\/@([^/?#]+)/);
+          if (!hm || !hm[1]) continue;
+          const uHandle = normHandle(hm[1]);
+          if (!uHandle) continue;
+          const container =
+            aEl.closest('[data-e2e*="search-user"], [class*="DivUserContainer"], [class*="UserCard"]') ||
+            aEl.parentElement?.parentElement;
+          const cardTxt = getCardCleanText(container || aEl);
+          const flwMatch = cardTxt.match(/([0-9]+(?:[.,][0-9]+)?\s*(?:K|M|B|N|Tr)?)\s*Follower/i);
+          const likeMatch = cardTxt.match(/([0-9]+(?:[.,][0-9]+)?\s*(?:K|M|B|N|Tr)?)\s*(?:Lượt thích|Likes)/i);
+          if (flwMatch) {
+            const followers = parseCompactNumber(flwMatch[1]);
+            const totalLikes = likeMatch ? parseCompactNumber(likeMatch[1]) : 0;
+            const prevProf = state.profilesByHandle[uHandle] || {};
+            mergeProfileForHandle(uHandle, {
+              handle: uHandle,
+              displayName: prevProf.displayName || uHandle,
+              followers: Math.max(followers, prevProf.followers || 0),
+              totalLikes: Math.max(totalLikes, prevProf.totalLikes || 0),
+            });
+            if (!state.searchUsersList.some((u) => u.handle === uHandle)) {
+              state.searchUsersList.unshift({
+                handle: uHandle,
+                displayName: prevProf.displayName || uHandle,
+                followers,
+                totalLikes,
+                bio: prevProf.bio || '',
+              });
+            }
+          }
+        }
       }
 
-      const postNodes = document.querySelectorAll('[data-e2e="user-post-item"]');
-      if (postNodes.length > 0) {
-        const knownIds = new Set(
-          (state.videosByHandle[handle] || []).map((v) => String(v?.videoId || ''))
-        );
-        const domVids = [];
-        let hasNewDomCard = false;
-        postNodes.forEach((node, idx) => {
-          const linkEl = node.querySelector('a[href*="/video/"], a[href*="/photo/"]');
-          const href = linkEl ? linkEl.getAttribute('href') || '' : '';
-          const m = href.match(/\/(?:video|photo)\/(\d+)/);
-          const videoId = m ? m[1] : `dom-${idx}`;
-          if (!knownIds.has(String(videoId))) {
-            hasNewDomCard = true;
-          }
-          const viewsText =
-            node.querySelector('[data-e2e="video-views"]')?.textContent ||
-            node.innerText ||
-            '0';
-          const views = parseCompactNumber(viewsText);
-          const badgeText = node.innerText || '';
-          const isPinned = idx < 3 && /ghim|pinned/i.test(badgeText);
-          const caption = node.querySelector('img')?.getAttribute('alt') || '';
-          domVids.push({
-            videoId,
-            videoUrl: href.startsWith('http') ? href : `https://www.tiktok.com/@${handle}/video/${videoId}`,
-            handle,
-            caption,
-            hashtags: extractHashtags(caption, []),
-            publishedAt: new Date().toISOString().slice(0, 10),
-            createTime: Math.floor(Date.now() / 1000) - idx * 86400,
-            views,
-            likes: Math.round(views * 0.045),
-            comments: Math.round(views * 0.003),
-            shares: Math.round(views * 0.002),
-            saves: Math.round(views * 0.002),
-            viewsPerHour: Math.max(10, Math.round(views / Math.max(24, (idx + 1) * 24))),
-            engagementRate: 5.0,
-            isPinned,
-            isSponsored: /#ad|giỏ hàng|tiktokshop/i.test(caption),
-            hasYellowCart: /giỏ hàng|tiktokshop/i.test(caption),
-            cartProducts: [],
-            _fromDomFallback: true,
+      const activeHandle =
+        handle ||
+        state.searchUsersList[0]?.handle ||
+        state.searchVideosList[0]?.handle ||
+        '';
+      if (activeHandle) {
+        const domTitle = document.querySelector('[data-e2e="user-title"]')?.textContent?.trim();
+        const domSub = document.querySelector('[data-e2e="user-subtitle"]')?.textContent?.trim();
+        const domFollowers = document.querySelector('[data-e2e="followers-count"]')?.textContent?.trim();
+        const domFollowing = document.querySelector('[data-e2e="following-count"]')?.textContent?.trim();
+        const domLikes = document.querySelector('[data-e2e="likes-count"]')?.textContent?.trim();
+        const domBio = document.querySelector('[data-e2e="user-bio"]')?.textContent?.trim();
+        const domAvatar = document.querySelector('[data-e2e="user-avatar"] img')?.getAttribute('src');
+
+        if (domFollowers || domTitle || domBio) {
+          const existing = state.profilesByHandle[activeHandle] || {};
+          mergeProfileForHandle(activeHandle, {
+            handle: activeHandle,
+            displayName: domSub || domTitle || existing.displayName || activeHandle,
+            avatarUrl: domAvatar || existing.avatarUrl || '',
+            bio: domBio || existing.bio || '',
+            followers: domFollowers ? parseCompactNumber(domFollowers) : existing.followers || 0,
+            following: domFollowing ? parseCompactNumber(domFollowing) : existing.following || 0,
+            totalLikes: domLikes ? parseCompactNumber(domLikes) : existing.totalLikes || 0,
           });
-        });
-        if (domVids.length > 0 && (hasNewDomCard || !state.videosByHandle[handle] || state.videosByHandle[handle].length === 0)) {
-          mergeVideosForHandle(handle, domVids);
+        }
+
+        const postNodes = document.querySelectorAll('[data-e2e="user-post-item"]');
+        if (postNodes.length > 0) {
+          const domVidsByHandle = new Map();
+          postNodes.forEach((node, idx) => {
+            const linkEl = node.querySelector('a[href*="/video/"], a[href*="/photo/"]');
+            const href = linkEl ? linkEl.getAttribute('href') || '' : '';
+            const fullMatch = href.match(/\/@([^/]+)\/(?:video|photo)\/(\d+)/);
+            const m = fullMatch ? [fullMatch[0], fullMatch[2]] : href.match(/\/(?:video|photo)\/(\d+)/);
+            const cardHandle = fullMatch ? normHandle(fullMatch[1]) : activeHandle;
+            const videoId = m ? m[1] : `dom-${idx}`;
+            const prevVid = (state.videosByHandle[cardHandle] || []).find(
+              (v) => String(v?.videoId || '') === String(videoId)
+            );
+            // Nếu bài đăng đã có dữ liệu chuẩn từ API (không phải DOM fallback), không ghi đè bằng số ước lượng DOM
+            if (prevVid && !prevVid._fromDomFallback) {
+              return;
+            }
+            const cleanNodeText = getCardCleanText(node);
+            const views = extractDomCardViews(node);
+            const isPinned = idx < 3 && /ghim|pinned/i.test(cleanNodeText);
+            const caption = node.querySelector('img')?.getAttribute('alt') || '';
+            const itemObj = {
+              videoId,
+              videoUrl: href.startsWith('http') ? href : `https://www.tiktok.com/@${cardHandle}/video/${videoId}`,
+              handle: cardHandle,
+              caption,
+              hashtags: extractHashtags(caption, []),
+              publishedAt: prevVid?.publishedAt || new Date().toISOString().slice(0, 10),
+              createTime: prevVid?.createTime || Math.floor(Date.now() / 1000) - idx * 86400,
+              views,
+              likes: Math.round(views * 0.045),
+              comments: Math.round(views * 0.003),
+              shares: Math.round(views * 0.002),
+              saves: Math.round(views * 0.002),
+              viewsPerHour: Math.max(10, Math.round(views / Math.max(24, (idx + 1) * 24))),
+              engagementRate: 5.0,
+              isPinned,
+              isSponsored: /#ad|giỏ hàng|tiktokshop/i.test(caption),
+              hasYellowCart: /giỏ hàng|tiktokshop/i.test(caption),
+              cartProducts: [],
+              _fromDomFallback: true,
+            };
+            if (!domVidsByHandle.has(cardHandle)) domVidsByHandle.set(cardHandle, []);
+            domVidsByHandle.get(cardHandle).push(itemObj);
+          });
+          for (const [hKey, hVids] of domVidsByHandle.entries()) {
+            if (hKey && hVids.length > 0) {
+              mergeVideosForHandle(hKey, hVids);
+            }
+          }
         }
       }
 
@@ -5817,7 +6047,7 @@
             );
 
             const { svgViews, svgLikes, svgComments } = extractSvgMetricsFromCard(aEl);
-            const cardText = (aEl.innerText || '').trim();
+            const cardText = getCardCleanText(aEl);
             const nums = (cardText.match(/\b[0-9]+(?:[.,][0-9]+)?\s*(?:K|M|B|N|Tr)?\b/gi) || [])
               .map((n) => parseCompactNumber(n))
               .filter((n) => n > 0);
@@ -6028,8 +6258,8 @@
             const existing = (state.videosByHandle[resolvedHandle] || []).find(
               (v) => String(v.videoId) === String(vidId)
             );
-            const txt = (aEl.innerText || '').trim();
-            const views = existing?.views || parseCompactNumber(txt) || 0;
+            const txt = getCardCleanText(aEl);
+            const views = existing?.views || extractDomCardViews(aEl) || 0;
             const likes = existing?.likes || (views > 0 ? Math.round(views * 0.042) : 0);
             const comments = existing?.comments || (views > 0 ? Math.round(views * 0.003) : 0);
             const shares = existing?.shares || 0;

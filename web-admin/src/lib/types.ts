@@ -781,6 +781,30 @@ export interface DealRightsTermItem {
 }
 
 export type DealContractAppendixStatus = 'CHƯA_LẬP' | 'CHỜ_KÝ' | 'ĐÃ_KÝ';
+
+/**
+ * 1 Job trong Deal = 1 Bảng công việc độc lập trong Phụ lục SOW (1 Deal -> N Jobs -> N Bảng công việc).
+ * Mỗi Job có sản phẩm, kênh đăng, ngày air, đơn giá Video chính và danh sách dịch vụ đi kèm riêng.
+ */
+export interface DealSowJobItem {
+  id: string;
+  jobCode: string; // VD: BO261035101-J01, BO261035101-J02
+  jobTitle: string; // VD: Bảng công việc #1 — Video TikTok Review Kem dưỡng
+  productName: string; // Sản phẩm / Chiến dịch của Job này
+  sanPham?: string; // Tương thích ngược với mã nghiệp vụ dùng sanPham
+  mediaChannel?: MediaChannelPlatform; // Kênh đăng tải (TikTok, Facebook, Instagram, Shopee Video...)
+  affiliateChannel?: AffiliateChannelPlatform; // Sàn gắn giỏ hàng
+  plannedAirDate: string; // Ngày dự kiến đăng tải (YYYY-MM-DD)
+  actualAirDate?: string; // Ngày đăng tải thực tế
+  linkAir?: string; // Link bài đăng nghiệm thu của Job này
+  sparkAdsCode?: string; // Mã ủy quyền Spark Ads của Job này
+  videoAssetNetCost: number; // Chi phí Net của Hạng mục 1 (Sản xuất & đăng tải Video) trong Bảng công việc này
+  addonServicesNetCost?: number; // Chi phí Net các hạng mục phụ đi kèm
+  quantity?: number; // Số lượng đầu ra của Job (mặc định 1)
+  addonServices: DealRightsTermItem[]; // Các hạng mục công việc đi kèm trong Bảng công việc của Job này
+  acceptanceStatus?: 'CHUA_NGHIEM_THU' | 'DA_NGHIEM_THU';
+  notes?: string;
+}
 export type DealSequentialAcceptanceStage =
   | '1_CHO_NGHIEM_THU_VIDEO'
   | '2_DA_NGHIEM_THU_VIDEO_CHO_PHAN_KHAC'
@@ -1003,6 +1027,16 @@ export interface BookingDealItem {
   contractAppendixCode?: string; // Mã Phụ lục hợp đồng theo từng Deal (1 HĐNT/KOC + 1 Phụ lục/Deal)
   masterContractCode?: string; // Mã Hợp đồng nguyên tắc (HĐNT) của KOC
   contractAppendixStatus?: DealContractAppendixStatus; // Trạng thái ký Phụ lục của Deal
+  dealJobs?: DealSowJobItem[]; // Danh sách N Job trong Deal (Mỗi Job = 1 Bảng công việc trong Phụ lục SOW)
+  masterContractStatus?: DealContractAppendixStatus; // Trạng thái ký HĐNT của KOC
+  masterContractGoogleDocsUrl?: string; // Đường link Google Docs của HĐNT
+  masterContractSignedUrl?: string; // Đường link bản HĐNT đã ký hoàn tất (.pdf/.docx)
+  contractAppendixGoogleDocsUrl?: string; // Đường link Google Docs của Phụ lục SOW
+  contractAppendixSignedUrl?: string; // Đường link bản Phụ lục SOW đã ký hoàn tất (.pdf/.docx)
+  bbntCode?: string; // Mã Biên bản nghiệm thu (BBNT) của Deal
+  bbntStatus?: DealContractAppendixStatus; // Trạng thái ký BBNT của Deal
+  bbntGoogleDocsUrl?: string; // Đường link Google Docs của BBNT
+  bbntSignedUrl?: string; // Đường link bản BBNT đã ký hoàn tất (.pdf/.docx)
   videoAssetCostVnd?: number; // Chi phí Net của Asset (Video chính) trong Deal
   addonsCostVnd?: number; // Tổng chi phí Net các Dịch vụ gia tăng trong Deal
   droppedCostVnd?: number; // Khấu trừ hạng mục Dịch vụ gia tăng không thực hiện khi quyết toán Deal

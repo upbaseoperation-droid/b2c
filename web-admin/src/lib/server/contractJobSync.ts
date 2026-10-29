@@ -15,7 +15,12 @@ const reviewOf = (record: ContractRecord, role: 'LEGAL' | 'FINANCE'): 'APPROVED'
 export function applyContractRecordToJob(job: DealJob, record: ContractRecord): DealJob {
   const doc = documentOfTemplate(record.templateId);
   const signed = recordSigned(record);
-  const signedUrl = `/api/contracts/${encodeURIComponent(record.id)}/document?signed=1`;
+  const latestSigning = record.signing.at(-1);
+  const signedUrl =
+    latestSigning?.signedFileUrl ||
+    record.contractSystem?.signedFileUrl ||
+    `/api/contracts/${encodeURIComponent(record.id)}/document?signed=1`;
+  const systemCode = record.contractSystem?.contractCode || formatContractRecordNumber(record);
   if (doc === 'SOW') {
     const legal = reviewOf(record, 'LEGAL');
     const finance = reviewOf(record, 'FINANCE');
@@ -23,13 +28,18 @@ export function applyContractRecordToJob(job: DealJob, record: ContractRecord): 
       ...job,
       sowContractId: record.id,
       sowSigned: signed.signed || undefined,
+      appendixNo: job.appendixNo.trim() || systemCode,
+      sowGoogleDocsUrl: record.contractSystem?.googleDocsUrl || job.sowGoogleDocsUrl,
       ...(legal ? { legalReviewStatus: legal } : {}),
       ...(finance ? { financeReviewStatus: finance } : {}),
       ...(signed.signed
         ? {
-            appendixNo: job.appendixNo.trim() || formatContractRecordNumber(record),
             appendixDate: job.appendixDate || signed.at,
-            appendixUrl: job.appendixUrl.trim() || signedUrl,
+            appendixUrl:
+              latestSigning?.signedFileUrl ||
+              record.contractSystem?.signedFileUrl ||
+              job.appendixUrl.trim() ||
+              signedUrl,
           }
         : {}),
     };
@@ -39,18 +49,37 @@ export function applyContractRecordToJob(job: DealJob, record: ContractRecord): 
       ...job,
       bbntContractId: record.id,
       bbntSigned: signed.signed || undefined,
-      ...(signed.signed ? { bbntUrl: signedUrl } : {}),
+      bbntNo: job.bbntNo?.trim() || systemCode,
+      bbntGoogleDocsUrl: record.contractSystem?.googleDocsUrl || job.bbntGoogleDocsUrl,
+      ...(signed.signed
+        ? {
+            bbntDate: job.bbntDate || signed.at,
+            bbntUrl: signedUrl,
+          }
+        : {}),
     };
   }
   return job;
 }
 
-const matches = (job: DealJob, record: ContractRecord, isFirstJob: boolean, dealCode: string, dealId: string) =>
-  job.sowContractId === record.id ||
-  job.bbntContractId === record.id ||
-  record.dealId === `PJ-${job.id}` ||
-  (Boolean(record.dealCode) && record.dealCode === job.code) ||
-  (isFirstJob && ((Boolean(record.dealCode) && record.dealCode === dealCode) || record.dealId === `PD-${dealId}`));
+const matches = (job: DealJob, record: ContractRecord, _isFirstJob: boolean, dealCode: string, dealId: string) => {
+  if (
+    job.sowContractId === record.id ||
+    job.bbntContractId === record.id ||
+    record.dealId === `PJ-${job.id}` ||
+    (Boolean(record.dealCode) && record.dealCode === job.code) ||
+    (Boolean(record.dealCode) && record.dealCode === dealCode) ||
+    record.dealId === `PD-${dealId}` ||
+    record.dealId === dealId
+  ) {
+    return true;
+  }
+  const rawSowJobs = record.values?.['meta:sowJobsJson'];
+  if (rawSowJobs && (rawSowJobs.includes(`"${job.id}"`) || (job.code && rawSowJobs.includes(`"${job.code}"`)))) {
+    return true;
+  }
+  return false;
+};
 
 /**
  * Đưa kết quả của hồ sơ Phụ lục SOW / BBNT (module Hợp đồng) về Job trên bảng Deal:

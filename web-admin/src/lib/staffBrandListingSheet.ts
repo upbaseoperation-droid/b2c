@@ -551,6 +551,10 @@ export interface StaffBrandSheetCollection {
 const STORAGE_KEY = 'upbase_b2c_staff_brand_listing_sheets_v1';
 export const STAFF_SHEET_UPDATED_EVENT = 'upbase-staff-brand-sheet-updated';
 
+let memoryCollectionCache: StaffBrandSheetCollection | null = null;
+let lastPersistedSnapshot: StaffBrandSheetCollection | null = null;
+let localStorageSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
 export function normalizeStaffSheetFieldEditPolicy(
   raw?: Partial<StaffSheetFieldEditPolicy> | null
 ): StaffSheetFieldEditPolicy {
@@ -591,11 +595,23 @@ export function normalizeStaffSheetFieldEditPolicy(
   };
 }
 
+const CACHED_DEFAULT_FIELD_EDIT_POLICY: StaffSheetFieldEditPolicy =
+  normalizeStaffSheetFieldEditPolicy(null);
+
 export function getStaffSheetFieldEditPolicy(
   collection?: StaffBrandSheetCollection | null
 ): StaffSheetFieldEditPolicy {
   if (collection?.fieldEditPolicy) {
     return normalizeStaffSheetFieldEditPolicy(collection.fieldEditPolicy);
+  }
+  if (collection) {
+    return CACHED_DEFAULT_FIELD_EDIT_POLICY;
+  }
+  if (memoryCollectionCache?.fieldEditPolicy) {
+    return normalizeStaffSheetFieldEditPolicy(memoryCollectionCache.fieldEditPolicy);
+  }
+  if (memoryCollectionCache) {
+    return CACHED_DEFAULT_FIELD_EDIT_POLICY;
   }
   if (typeof window !== 'undefined') {
     try {
@@ -610,7 +626,7 @@ export function getStaffSheetFieldEditPolicy(
       // ignore storage errors
     }
   }
-  return normalizeStaffSheetFieldEditPolicy(null);
+  return CACHED_DEFAULT_FIELD_EDIT_POLICY;
 }
 
 export function saveStaffSheetFieldEditPolicy(
@@ -622,13 +638,17 @@ export function saveStaffSheetFieldEditPolicy(
   });
   if (typeof window === 'undefined') return normalized;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    const parsed: StaffBrandSheetCollection = raw
-      ? (JSON.parse(raw) as StaffBrandSheetCollection)
-      : { sheets: {}, googleSheetUrls: {} };
+    const baseCollection: StaffBrandSheetCollection = memoryCollectionCache
+      ? memoryCollectionCache
+      : (() => {
+          const raw = window.localStorage.getItem(STORAGE_KEY);
+          return raw
+            ? (JSON.parse(raw) as StaffBrandSheetCollection)
+            : { sheets: {}, googleSheetUrls: {} };
+        })();
     const updatedCollection: StaffBrandSheetCollection = {
-      sheets: parsed.sheets || {},
-      googleSheetUrls: parsed.googleSheetUrls || {},
+      sheets: baseCollection.sheets || {},
+      googleSheetUrls: baseCollection.googleSheetUrls || {},
       fieldEditPolicy: normalized,
     };
     saveStaffSheetCollection(updatedCollection, true);
@@ -746,12 +766,10 @@ export function formatShortVnDate(date: Date = new Date()): string {
   return `${d}/${m}/${y}`;
 }
 
-/**
- * Định dạng Ngày & Giờ chuẩn Việt Nam (UTC+7): DD/MM/YYYY HH:mm
- */
-export function formatVnDateTime(date: Date = new Date()): string {
-  try {
-    const parts = new Intl.DateTimeFormat('en-GB', {
+let vnDateTimeFormatterSingleton: Intl.DateTimeFormat | null = null;
+function getVnDateTimeFormatter(): Intl.DateTimeFormat {
+  if (!vnDateTimeFormatterSingleton) {
+    vnDateTimeFormatterSingleton = new Intl.DateTimeFormat('en-GB', {
       timeZone: 'Asia/Ho_Chi_Minh',
       day: '2-digit',
       month: '2-digit',
@@ -759,7 +777,17 @@ export function formatVnDateTime(date: Date = new Date()): string {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
-    }).formatToParts(date);
+    });
+  }
+  return vnDateTimeFormatterSingleton;
+}
+
+/**
+ * Định dạng Ngày & Giờ chuẩn Việt Nam (UTC+7): DD/MM/YYYY HH:mm
+ */
+export function formatVnDateTime(date: Date = new Date()): string {
+  try {
+    const parts = getVnDateTimeFormatter().formatToParts(date);
     const get = (t: string) => parts.find((p) => p.type === t)?.value || '00';
     return `${get('day')}/${get('month')}/${get('year')} ${get('hour')}:${get('minute')}`;
   } catch {
@@ -1465,6 +1493,9 @@ export function loadStaffSheetCollection(
   if (typeof window === 'undefined') {
     return buildInitialStaffSheetCollection(kocs, stores, deals, defaultStaffName);
   }
+  if (memoryCollectionCache) {
+    return memoryCollectionCache;
+  }
   const realSheets = getOrBuildRealLarkSheetsMap(kocs, defaultStaffName);
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -1563,6 +1594,8 @@ export function loadStaffSheetCollection(
             ? { fieldEditPolicy: normalizeStaffSheetFieldEditPolicy(parsed.fieldEditPolicy) }
             : {}),
         };
+        memoryCollectionCache = resultCollection;
+        lastPersistedSnapshot = resultCollection;
         if (needsSaveHydrated) {
           try {
             window.localStorage.setItem(STORAGE_KEY, JSON.stringify(resultCollection));
@@ -1577,6 +1610,8 @@ export function loadStaffSheetCollection(
     // ignore storage errors
   }
   const initial = buildInitialStaffSheetCollection(kocs, stores, deals, defaultStaffName);
+  memoryCollectionCache = initial;
+  lastPersistedSnapshot = initial;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
   } catch {
@@ -1600,19 +1635,33 @@ export function diffStaffSheetCollections(
   const changes: StaffSheetChanges = {};
   const sheetKeys = new Set([...Object.keys(prev?.sheets || {}), ...Object.keys(next.sheets || {})]);
   for (const key of sheetKeys) {
-    const before = new Map((prev?.sheets?.[key] || []).map(r => [r.id, JSON.stringify(r)]));
+    const prevRows = prev?.sheets?.[key];
     const afterRows = next.sheets?.[key] || [];
-    const afterIds = new Set(afterRows.map(r => r.id));
-    const upserts = afterRows.filter(r => before.get(r.id) !== JSON.stringify(r));
-    const deletes = [...before.keys()].filter(id => !afterIds.has(id));
+    if (prevRows === afterRows) continue;
+    const beforeRefMap = new Map((prevRows || []).map((r) => [r.id, r]));
+    const afterIds = new Set(afterRows.map((r) => r.id));
+    const upserts = afterRows.filter((r) => {
+      const b = beforeRefMap.get(r.id);
+      if (!b) return true;
+      if (b === r) return false;
+      return JSON.stringify(b) !== JSON.stringify(r);
+    });
+    const deletes = [...beforeRefMap.keys()].filter((id) => !afterIds.has(id));
     if (upserts.length || deletes.length) {
-      (changes.sheets ||= {})[key] = { ...(upserts.length ? { upserts } : {}), ...(deletes.length ? { deletes } : {}) };
+      (changes.sheets ||= {})[key] = {
+        ...(upserts.length ? { upserts } : {}),
+        ...(deletes.length ? { deletes } : {}),
+      };
     }
   }
   for (const [store, url] of Object.entries(next.googleSheetUrls || {})) {
     if ((prev?.googleSheetUrls || {})[store] !== url) (changes.googleSheetUrls ||= {})[store] = url;
   }
-  if (next.fieldEditPolicy && JSON.stringify(next.fieldEditPolicy) !== JSON.stringify(prev?.fieldEditPolicy)) {
+  if (
+    next.fieldEditPolicy &&
+    next.fieldEditPolicy !== prev?.fieldEditPolicy &&
+    JSON.stringify(next.fieldEditPolicy) !== JSON.stringify(prev?.fieldEditPolicy)
+  ) {
     changes.fieldEditPolicy = next.fieldEditPolicy;
   }
   return changes.sheets || changes.googleSheetUrls || changes.fieldEditPolicy ? changes : null;
@@ -1664,29 +1713,58 @@ function queueStaffSheetChanges(changes: StaffSheetChanges): void {
   }, 300);
 }
 
+let unloadListenerRegistered = false;
+function flushPendingLocalStorageSave(): void {
+  if (typeof window === 'undefined' || !memoryCollectionCache) return;
+  if (localStorageSaveTimer) {
+    clearTimeout(localStorageSaveTimer);
+    localStorageSaveTimer = null;
+  }
+  try {
+    const changes = diffStaffSheetCollections(lastPersistedSnapshot, memoryCollectionCache);
+    if (changes) queueStaffSheetChanges(changes);
+    lastPersistedSnapshot = memoryCollectionCache;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(memoryCollectionCache));
+  } catch {
+    // ignore quota errors
+  }
+}
+
 export function saveStaffSheetCollection(
   collection: StaffBrandSheetCollection,
   emitEvent = true
 ): void {
   if (typeof window === 'undefined') return;
-  try {
-    const prevRaw = window.localStorage.getItem(STORAGE_KEY);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(collection));
-    if (emitEvent) {
-      let prev: StaffBrandSheetCollection | null = null;
-      try {
-        prev = prevRaw ? (JSON.parse(prevRaw) as StaffBrandSheetCollection) : null;
-      } catch {
-        prev = null;
-      }
-      const changes = diffStaffSheetCollections(prev, collection);
-      if (changes) queueStaffSheetChanges(changes);
-      window.dispatchEvent(new CustomEvent(STAFF_SHEET_UPDATED_EVENT, { detail: collection }));
-      window.dispatchEvent(new CustomEvent('upbase:staff-brand-listing-sheet-updated', { detail: collection }));
-    }
-  } catch {
-    // ignore quota errors
+  memoryCollectionCache = collection;
+
+  if (!unloadListenerRegistered) {
+    unloadListenerRegistered = true;
+    window.addEventListener('beforeunload', flushPendingLocalStorageSave);
   }
+
+  if (emitEvent) {
+    const changes = diffStaffSheetCollections(lastPersistedSnapshot, collection);
+    if (changes) queueStaffSheetChanges(changes);
+    lastPersistedSnapshot = collection;
+    window.dispatchEvent(new CustomEvent(STAFF_SHEET_UPDATED_EVENT, { detail: collection }));
+    window.dispatchEvent(
+      new CustomEvent('upbase:staff-brand-listing-sheet-updated', { detail: collection })
+    );
+  }
+
+  if (localStorageSaveTimer) clearTimeout(localStorageSaveTimer);
+  localStorageSaveTimer = setTimeout(() => {
+    localStorageSaveTimer = null;
+    if (!memoryCollectionCache) return;
+    try {
+      const changes = diffStaffSheetCollections(lastPersistedSnapshot, memoryCollectionCache);
+      if (changes) queueStaffSheetChanges(changes);
+      lastPersistedSnapshot = memoryCollectionCache;
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(memoryCollectionCache));
+    } catch {
+      // ignore quota errors
+    }
+  }, 250);
 }
 
 /**
@@ -1770,9 +1848,15 @@ export function appendKocsToStaffBrandSheet(params: {
 export function syncKocContactToStaffSheets(updatedKoc: KocItem): void {
   if (typeof window === 'undefined') return;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw) as StaffBrandSheetCollection;
+    const parsed: StaffBrandSheetCollection | null = memoryCollectionCache
+      ? {
+          ...memoryCollectionCache,
+          sheets: { ...memoryCollectionCache.sheets },
+        }
+      : (() => {
+          const raw = window.localStorage.getItem(STORAGE_KEY);
+          return raw ? (JSON.parse(raw) as StaffBrandSheetCollection) : null;
+        })();
     if (!parsed || typeof parsed.sheets !== 'object') return;
 
     const cleanHandle = normalizeTikTokId(updatedKoc.channelId || updatedKoc.tiktokChannel || '').toLowerCase();
@@ -1898,10 +1982,7 @@ export function syncKocContactToStaffSheets(updatedKoc: KocItem): void {
 
 export const KOC_MASTER_CONTACT_SYNCED_EVENT = 'upbase:koc-master-contact-synced';
 
-/**
- * Đồng bộ Email / Zalo & các chỉ số KOC từ dòng Sheet Listing ngược về Danh bạ KOC (`upbase_saved_kocs_v1` & `/api/kocs`)
- */
-export function syncSheetRowContactToKocMaster(params: {
+type SyncSheetRowContactParams = {
   kocId?: string;
   idKenh?: string;
   stageName?: string;
@@ -1934,113 +2015,149 @@ export function syncSheetRowContactToKocMaster(params: {
   bankAccount?: string;
   cccd?: string;
   allKocs?: KocItem[];
-}): void {
-  if (typeof window === 'undefined') return;
-  const cleanHandle = normalizeTikTokId(params.idKenh || '').toLowerCase();
-  if (!params.kocId && !cleanHandle) return;
+};
+
+const pendingKocMasterSyncMap = new Map<string, SyncSheetRowContactParams>();
+let kocMasterSyncFlushTimer: ReturnType<typeof setTimeout> | null = null;
+let cachedSavedKocsMap: Record<string, KocItem> | null = null;
+
+function flushPendingKocMasterSync(): void {
+  kocMasterSyncFlushTimer = null;
+  if (typeof window === 'undefined' || pendingKocMasterSyncMap.size === 0) return;
+  const entries = Array.from(pendingKocMasterSyncMap.values());
+  pendingKocMasterSyncMap.clear();
 
   try {
-    const raw = window.localStorage.getItem('upbase_saved_kocs_v1');
-    const savedMap: Record<string, KocItem> = raw ? JSON.parse(raw) : {};
+    if (!cachedSavedKocsMap) {
+      const raw = window.localStorage.getItem('upbase_saved_kocs_v1');
+      cachedSavedKocsMap = raw ? (JSON.parse(raw) as Record<string, KocItem>) : {};
+    }
+    const savedMap = cachedSavedKocsMap;
+    const allKocsSample = entries.find((e) => e.allKocs && e.allKocs.length > 0)?.allKocs || [];
+    const kocLookup = buildKocLookupMap(allKocsSample);
+    const updatedBatch: KocItem[] = [];
 
-    const matchedFromList = (params.allKocs || []).find((k) => {
-      const h = normalizeTikTokId(k.channelId || k.tiktokChannel || '').toLowerCase();
-      return (params.kocId && k.id === params.kocId) || (cleanHandle && h === cleanHandle);
-    });
+    for (const params of entries) {
+      const cleanHandle = normalizeTikTokId(params.idKenh || '').toLowerCase();
+      if (!params.kocId && !cleanHandle) continue;
 
-    const mapKey = cleanHandle || params.kocId || '';
-    const existingSaved =
-      (mapKey && savedMap[mapKey]) ||
-      Object.values(savedMap).find((k) => {
-        const h = normalizeTikTokId(k.channelId || k.tiktokChannel || '').toLowerCase();
-        return (params.kocId && k.id === params.kocId) || (cleanHandle && h === cleanHandle);
-      });
+      const matchedFromList =
+        (cleanHandle ? kocLookup.get(cleanHandle) : undefined) ||
+        (params.kocId ? kocLookup.get(params.kocId.toLowerCase()) : undefined);
 
-    const baseKoc = existingSaved || matchedFromList;
-    if (!baseKoc) return;
+      const mapKey = cleanHandle || params.kocId || '';
+      const existingSaved =
+        (mapKey && savedMap[mapKey]) ||
+        Object.values(savedMap).find((k) => {
+          const h = normalizeTikTokId(k.channelId || k.tiktokChannel || '').toLowerCase();
+          return (params.kocId && k.id === params.kocId) || (cleanHandle && h === cleanHandle);
+        });
 
-    const updatedKoc: KocItem = {
-      ...baseKoc,
-      ...(params.stageName !== undefined && params.stageName.trim()
-        ? { stageName: params.stageName.trim() }
-        : {}),
-      ...(params.tepKenh !== undefined && params.tepKenh.trim()
-        ? { tepKenh: params.tepKenh.trim() as KocItem['tepKenh'] }
-        : {}),
-      ...(params.followers !== undefined ? { followers: Number(params.followers) || 0 } : {}),
-      ...(params.rateCardVideo !== undefined
-        ? { rateCardVideo: Number(params.rateCardVideo) || 0 }
-        : {}),
-      ...(params.recentRevenue !== undefined
-        ? { recentRevenue: Number(params.recentRevenue) || 0 }
-        : {}),
-      ...(params.itemsSold !== undefined ? { itemsSold: Number(params.itemsSold) || 0 } : {}),
-      ...(params.gpm !== undefined ? { gpm: Number(params.gpm) || 0 } : {}),
-      ...(params.aov !== undefined ? { aov: Number(params.aov) || 0 } : {}),
-      ...(params.avgViews !== undefined ? { avgViews: Number(params.avgViews) || 0 } : {}),
-      ...(params.medianViews !== undefined
-        ? { medianViews: Number(params.medianViews) || 0 }
-        : {}),
-      ...(params.tiktokAvgCtr !== undefined
-        ? { tiktokAvgCtr: Number(params.tiktokAvgCtr) || 0 }
-        : {}),
-      ...(params.tiktokAvgCvr !== undefined
-        ? { tiktokAvgCvr: Number(params.tiktokAvgCvr) || 0 }
-        : {}),
-      ...(params.engagementRate !== undefined
-        ? { engagementRate: Number(params.engagementRate) || 0 }
-        : {}),
-      ...(params.gmvShareVideo !== undefined
-        ? { gmvShareVideo: Number(params.gmvShareVideo) || 0 }
-        : {}),
-      ...(params.gmvShareLive !== undefined
-        ? { gmvShareLive: Number(params.gmvShareLive) || 0 }
-        : {}),
-      ...(params.maleRatio !== undefined ? { maleRatio: Number(params.maleRatio) || 0 } : {}),
-      ...(params.femaleRatio !== undefined
-        ? { femaleRatio: Number(params.femaleRatio) || 0 }
-        : {}),
-      ...(params.age18_24 !== undefined ? { age18_24: Number(params.age18_24) || 0 } : {}),
-      ...(params.age25_34 !== undefined ? { age25_34: Number(params.age25_34) || 0 } : {}),
-      ...(params.location !== undefined && params.location.trim()
-        ? { location: params.location.trim() }
-        : {}),
-      ...(params.email !== undefined ? { email: params.email.trim() } : {}),
-      ...(params.zalo !== undefined ? { zalo: params.zalo.trim() } : {}),
-      ...(params.phone !== undefined ? { phone: params.phone.trim() } : {}),
-      ...(params.shippingRecipientName !== undefined
-        ? { shippingRecipientName: params.shippingRecipientName.trim() }
-        : {}),
-      ...(params.shippingPhone !== undefined
-        ? { shippingPhone: params.shippingPhone.trim() }
-        : {}),
-      ...(params.shippingAddress !== undefined
-        ? { shippingAddress: params.shippingAddress.trim() }
-        : {}),
-      ...(params.bankName !== undefined ? { bankName: params.bankName.trim() } : {}),
-      ...(params.bankAccount !== undefined ? { bankAccount: params.bankAccount.trim() } : {}),
-      ...(params.cccd !== undefined ? { cccd: params.cccd.trim() } : {}),
-    };
+      const baseKoc = existingSaved || matchedFromList;
+      if (!baseKoc) continue;
 
-    const targetKey =
-      normalizeTikTokId(updatedKoc.channelId || '').toLowerCase() || updatedKoc.id;
-    if (targetKey) {
-      savedMap[targetKey] = updatedKoc;
-      window.localStorage.setItem('upbase_saved_kocs_v1', JSON.stringify(savedMap));
+      const updatedKoc: KocItem = {
+        ...baseKoc,
+        ...(params.stageName !== undefined && params.stageName.trim()
+          ? { stageName: params.stageName.trim() }
+          : {}),
+        ...(params.tepKenh !== undefined && params.tepKenh.trim()
+          ? { tepKenh: params.tepKenh.trim() as KocItem['tepKenh'] }
+          : {}),
+        ...(params.followers !== undefined ? { followers: Number(params.followers) || 0 } : {}),
+        ...(params.rateCardVideo !== undefined
+          ? { rateCardVideo: Number(params.rateCardVideo) || 0 }
+          : {}),
+        ...(params.recentRevenue !== undefined
+          ? { recentRevenue: Number(params.recentRevenue) || 0 }
+          : {}),
+        ...(params.itemsSold !== undefined ? { itemsSold: Number(params.itemsSold) || 0 } : {}),
+        ...(params.gpm !== undefined ? { gpm: Number(params.gpm) || 0 } : {}),
+        ...(params.aov !== undefined ? { aov: Number(params.aov) || 0 } : {}),
+        ...(params.avgViews !== undefined ? { avgViews: Number(params.avgViews) || 0 } : {}),
+        ...(params.medianViews !== undefined
+          ? { medianViews: Number(params.medianViews) || 0 }
+          : {}),
+        ...(params.tiktokAvgCtr !== undefined
+          ? { tiktokAvgCtr: Number(params.tiktokAvgCtr) || 0 }
+          : {}),
+        ...(params.tiktokAvgCvr !== undefined
+          ? { tiktokAvgCvr: Number(params.tiktokAvgCvr) || 0 }
+          : {}),
+        ...(params.engagementRate !== undefined
+          ? { engagementRate: Number(params.engagementRate) || 0 }
+          : {}),
+        ...(params.gmvShareVideo !== undefined
+          ? { gmvShareVideo: Number(params.gmvShareVideo) || 0 }
+          : {}),
+        ...(params.gmvShareLive !== undefined
+          ? { gmvShareLive: Number(params.gmvShareLive) || 0 }
+          : {}),
+        ...(params.maleRatio !== undefined ? { maleRatio: Number(params.maleRatio) || 0 } : {}),
+        ...(params.femaleRatio !== undefined
+          ? { femaleRatio: Number(params.femaleRatio) || 0 }
+          : {}),
+        ...(params.age18_24 !== undefined ? { age18_24: Number(params.age18_24) || 0 } : {}),
+        ...(params.age25_34 !== undefined ? { age25_34: Number(params.age25_34) || 0 } : {}),
+        ...(params.location !== undefined && params.location.trim()
+          ? { location: params.location.trim() }
+          : {}),
+        ...(params.email !== undefined ? { email: params.email.trim() } : {}),
+        ...(params.zalo !== undefined ? { zalo: params.zalo.trim() } : {}),
+        ...(params.phone !== undefined ? { phone: params.phone.trim() } : {}),
+        ...(params.shippingRecipientName !== undefined
+          ? { shippingRecipientName: params.shippingRecipientName.trim() }
+          : {}),
+        ...(params.shippingPhone !== undefined
+          ? { shippingPhone: params.shippingPhone.trim() }
+          : {}),
+        ...(params.shippingAddress !== undefined
+          ? { shippingAddress: params.shippingAddress.trim() }
+          : {}),
+        ...(params.bankName !== undefined ? { bankName: params.bankName.trim() } : {}),
+        ...(params.bankAccount !== undefined ? { bankAccount: params.bankAccount.trim() } : {}),
+        ...(params.cccd !== undefined ? { cccd: params.cccd.trim() } : {}),
+      };
+
+      const targetKey =
+        normalizeTikTokId(updatedKoc.channelId || '').toLowerCase() || updatedKoc.id;
+      if (targetKey) {
+        savedMap[targetKey] = updatedKoc;
+      }
+      updatedBatch.push(updatedKoc);
+      window.dispatchEvent(
+        new CustomEvent(KOC_MASTER_CONTACT_SYNCED_EVENT, { detail: updatedKoc })
+      );
     }
 
-    window.dispatchEvent(
-      new CustomEvent(KOC_MASTER_CONTACT_SYNCED_EVENT, { detail: updatedKoc })
-    );
-
-    void fetch('/api/kocs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ created: [], updated: [updatedKoc] }),
-    }).catch(() => undefined);
+    if (updatedBatch.length > 0) {
+      window.localStorage.setItem('upbase_saved_kocs_v1', JSON.stringify(savedMap));
+      void fetch('/api/kocs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ created: [], updated: updatedBatch }),
+      }).catch(() => undefined);
+    }
   } catch {
     // ignore storage errors
   }
+}
+
+/**
+ * Đồng bộ Email / Zalo & các chỉ số KOC từ dòng Sheet Listing ngược về Danh bạ KOC (`upbase_saved_kocs_v1` & `/api/kocs`)
+ * Được gom nhóm (debounce 350ms) để không gây giật lag khi gõ phím liên tục trên bảng.
+ */
+export function syncSheetRowContactToKocMaster(params: SyncSheetRowContactParams): void {
+  if (typeof window === 'undefined') return;
+  const cleanHandle = normalizeTikTokId(params.idKenh || '').toLowerCase();
+  const key = cleanHandle || params.kocId || '';
+  if (!key) return;
+
+  const prev = pendingKocMasterSyncMap.get(key) || {};
+  pendingKocMasterSyncMap.set(key, { ...prev, ...params });
+
+  if (kocMasterSyncFlushTimer) clearTimeout(kocMasterSyncFlushTimer);
+  kocMasterSyncFlushTimer = setTimeout(flushPendingKocMasterSync, 350);
 }
 
 function cleanTsvCell(val: unknown): string {
@@ -2198,9 +2315,12 @@ export function findKocListingsByHandle(rawHandle: string): KocActiveSheetListin
   const cleanTarget = normalizeTikTokId(rawHandle).toLowerCase();
   if (!cleanTarget) return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as StaffBrandSheetCollection;
+    const parsed: StaffBrandSheetCollection | null = memoryCollectionCache
+      ? memoryCollectionCache
+      : (() => {
+          const raw = window.localStorage.getItem(STORAGE_KEY);
+          return raw ? (JSON.parse(raw) as StaffBrandSheetCollection) : null;
+        })();
     if (!parsed || typeof parsed.sheets !== 'object') return [];
     const found: KocActiveSheetListingSummary[] = [];
     for (const [sheetKey, rows] of Object.entries(parsed.sheets)) {

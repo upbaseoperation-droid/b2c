@@ -533,9 +533,9 @@ export async function POST(request: NextRequest) {
           if (d.airLink && job.airLink.trim() && d.airLink !== job.airLink.trim()) {
             changes.push({ handle: h, briefCode: bCode || undefined, field: 'Link Air', app: job.airLink, sheet: d.airLink, conflict: 'Link Air trên Sheet khác link trong app — giữ link trong app.' });
           }
-          // Kết quả Brand (vòng 2) chỉ nhận khi B2C đã duyệt nội bộ vòng 1
-          const scriptV1Ok = !job.script.scriptUrl?.trim() || job.script.internalScriptAuditStatus === 'PASSED';
-          const demoV1Ok = !job.script.demoUrl?.trim() || job.script.internalDemoAuditStatus === 'PASSED';
+          // Kết quả Brand (vòng 2) chỉ nhận khi B2C đã duyệt nội bộ vòng 1 — kể cả khi link kịch bản / demo mới có trên Sheet
+          const scriptV1Ok = job.script.internalScriptAuditStatus === 'PASSED';
+          const demoV1Ok = job.script.internalDemoAuditStatus === 'PASSED';
           if (d.brandScriptDecision && d.brandScriptDecision !== job.script.status && !scriptV1Ok) {
             changes.push({ handle: h, briefCode: bCode || undefined, field: 'Brand duyệt kịch bản', app: job.script.status, sheet: d.brandScriptDecision, conflict: 'Kịch bản chưa đạt duyệt nội bộ vòng 1 — chưa nhận kết quả Brand.' });
           }

@@ -4,6 +4,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
+  Calendar,
   Check,
   Clock,
   Copy,
@@ -14,6 +15,7 @@ import {
   MessageSquare,
   Music,
   RefreshCw,
+  RotateCcw,
   Search,
   ShoppingBag,
   Square,
@@ -23,9 +25,13 @@ import {
 import type { KocItem, TikTokVideoItem, UserProfile } from '../../lib/types';
 import {
   buildScrapedKocsCsv,
+  compareVideoAirDateDesc,
+  computeChannelDateAndCartBreakdown,
   extractShortTikTokUrlsFromInput,
   mapScrapedResultToKocItem,
   parseTikTokHandles,
+  type CrawlerSampleDatePreset,
+  type TikTokDailyViewBreakdownItem,
   type TikTokScrapedKocResult,
 } from '../../lib/tiktokKocScraper';
 import { formatDate, formatNumber, formatVnd, formatVndShort, getVietnamDateYmd } from '../../lib/format';
@@ -43,6 +49,7 @@ import {
   DataTable,
   Modal,
   Panel,
+  SearchInput,
   Select,
   Status,
 } from '../ui';
@@ -97,6 +104,14 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   const [results, setResults] = useState<TikTokScrapedKocResult[]>([]);
   const [selectedHandle, setSelectedHandle] = useState<string>('');
   const [videoFilter, setVideoFilter] = useState<VideoFilterMode>('ALL');
+  const [sampleSizeLimit, setSampleSizeLimit] = useState<number>(0);
+  const [excludePinned, setExcludePinned] = useState<boolean>(false);
+  const [sampleDatePreset, setSampleDatePreset] = useState<CrawlerSampleDatePreset>('ALL');
+  const [sampleDateFrom, setSampleDateFrom] = useState<string>('');
+  const [sampleDateTo, setSampleDateTo] = useState<string>('');
+  const [showDailyBreakdown, setShowDailyBreakdown] = useState<boolean>(true);
+  const [videoSearchQuery, setVideoSearchQuery] = useState<string>('');
+  const [videoSortBy, setVideoSortBy] = useState<'LATEST_DESC' | 'VIEWS_DESC' | 'ER_DESC' | 'LIKES_DESC'>('LATEST_DESC');
   const [reviewModalOpen, setReviewModalOpen] = useState<boolean>(false);
   const [reviewTarget, setReviewTarget] = useState<KocChannelReviewTarget | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -110,6 +125,13 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
       setRawInput(initialHandle);
       setVideoLimit(24);
       setRequestedVideoLimit(24);
+      setSampleSizeLimit(0);
+      setExcludePinned(false);
+      setSampleDatePreset('ALL');
+      setSampleDateFrom('');
+      setSampleDateTo('');
+      setVideoSearchQuery('');
+      setVideoSortBy('LATEST_DESC');
       const initCount =
         parseTikTokHandles(initialHandle).length +
         extractShortTikTokUrlsFromInput(initialHandle).length;
@@ -351,19 +373,179 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
     return findKocListingsByHandle(activeResult.handle);
   }, [activeResult]);
 
+  const activeSampleBreakdown = useMemo(() => {
+    if (!activeResult) return null;
+    return computeChannelDateAndCartBreakdown(activeResult.recentVideos, {
+      excludePinned,
+      sampleLimit: sampleSizeLimit,
+      datePreset: sampleDatePreset,
+      dateFrom: sampleDateFrom,
+      dateTo: sampleDateTo,
+    });
+  }, [
+    activeResult,
+    excludePinned,
+    sampleSizeLimit,
+    sampleDatePreset,
+    sampleDateFrom,
+    sampleDateTo,
+  ]);
+
   const filteredVideos = useMemo(() => {
-    if (!activeResult) return [];
+    if (!activeResult || !activeSampleBreakdown) return [];
+    let list = [...activeSampleBreakdown.filteredSampleVideos];
     if (videoFilter === 'AFFILIATE') {
-      return activeResult.recentVideos.filter((v) => v.isAffiliate);
+      list = list.filter((v) => v.isAffiliate);
+    } else if (videoFilter === 'ORGANIC') {
+      list = list.filter((v) => !v.isAffiliate);
+    } else if (videoFilter === 'OUTLIER') {
+      list = list.filter((v) => v.isViralOutlier || v.isPinnedOldVideo);
     }
-    if (videoFilter === 'ORGANIC') {
-      return activeResult.recentVideos.filter((v) => !v.isAffiliate);
+    if (videoSearchQuery.trim()) {
+      const q = videoSearchQuery.trim().toLowerCase();
+      list = list.filter(
+        (v) =>
+          (v.caption || '').toLowerCase().includes(q) ||
+          (v.productName || '').toLowerCase().includes(q) ||
+          (v.productId || '').toLowerCase().includes(q) ||
+          (v.musicTitle || '').toLowerCase().includes(q) ||
+          v.hashtags.some((h) => h.toLowerCase().includes(q)) ||
+          (v.cartProducts || []).some(
+            (cp) =>
+              (cp.title || '').toLowerCase().includes(q) ||
+              (cp.productId || '').toLowerCase().includes(q)
+          )
+      );
     }
-    if (videoFilter === 'OUTLIER') {
-      return activeResult.recentVideos.filter((v) => v.isViralOutlier || v.isPinnedOldVideo);
-    }
-    return activeResult.recentVideos;
-  }, [activeResult, videoFilter]);
+    list.sort((a, b) => {
+      if (videoSortBy === 'VIEWS_DESC') return (b.views || 0) - (a.views || 0);
+      if (videoSortBy === 'ER_DESC') return (b.engagementRate || 0) - (a.engagementRate || 0);
+      if (videoSortBy === 'LIKES_DESC') return (b.likes || 0) - (a.likes || 0);
+      return compareVideoAirDateDesc(a, b);
+    });
+    return list;
+  }, [activeResult, activeSampleBreakdown, videoFilter, videoSearchQuery, videoSortBy]);
+
+  const dailyBreakdownColumns: Column<TikTokDailyViewBreakdownItem>[] = [
+    {
+      key: 'date',
+      header: 'Ngày đăng',
+      width: 115,
+      render: (d) => (
+        <span className="text-xs font-semibold text-ink font-code tabular-nums">
+          {formatDate(d.date)}
+        </span>
+      ),
+    },
+    {
+      key: 'counts',
+      header: 'Số bài (Giỏ / Thường)',
+      width: 175,
+      render: (d) => (
+        <div className="flex flex-wrap items-center gap-1.5 text-2xs tabular-nums">
+          <span className="font-semibold text-ink">{d.totalVideos} bài</span>
+          <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive font-medium">
+            Giỏ: {d.affiliateVideos}
+          </span>
+          <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-2 font-medium">
+            Thường: {d.organicVideos}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'median',
+      header: 'View Trung vị & View TB ngày',
+      align: 'right',
+      width: 185,
+      render: (d) => (
+        <div className="grid gap-0.5 tabular-nums">
+          <span className="text-xs font-semibold text-accent">
+            Trung vị: {formatNumber(d.medianViews)}
+          </span>
+          <span className="text-2xs text-ink-3">TB ngày: {formatNumber(d.avgViews)}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'affiliate',
+      header: 'Video Gắn giỏ (Trung vị / TB)',
+      align: 'right',
+      width: 195,
+      render: (d) =>
+        d.affiliateVideos > 0 ? (
+          <div className="grid gap-0.5 tabular-nums">
+            <span className="text-xs font-semibold text-positive">
+              {formatNumber(d.affiliateMedianViews)}
+            </span>
+            <span className="text-2xs text-ink-3">
+              TB giỏ: {formatNumber(d.affiliateAvgViews)} ({d.affiliateVideos} bài)
+            </span>
+          </div>
+        ) : (
+          <span className="text-2xs text-ink-3">—</span>
+        ),
+    },
+    {
+      key: 'organic',
+      header: 'Không gắn giỏ (Trung vị / TB)',
+      align: 'right',
+      width: 195,
+      render: (d) =>
+        d.organicVideos > 0 ? (
+          <div className="grid gap-0.5 tabular-nums">
+            <span className="text-xs font-semibold text-ink">
+              {formatNumber(d.organicMedianViews)}
+            </span>
+            <span className="text-2xs text-ink-3">
+              TB thường: {formatNumber(d.organicAvgViews)} ({d.organicVideos} bài)
+            </span>
+          </div>
+        ) : (
+          <span className="text-2xs text-ink-3">—</span>
+        ),
+    },
+    {
+      key: 'totalViews',
+      header: 'Tổng View ngày',
+      align: 'right',
+      width: 130,
+      render: (d) => (
+        <span className="text-xs font-semibold text-ink tabular-nums">
+          {formatNumber(d.totalViews)}
+        </span>
+      ),
+    },
+    {
+      key: 'action',
+      header: 'Lọc theo ngày',
+      align: 'right',
+      width: 120,
+      render: (d) => {
+        const isSingleDayActive =
+          sampleDateFrom === d.date && sampleDateTo === d.date;
+        return (
+          <Button
+            size="sm"
+            variant={isSingleDayActive ? 'primary' : 'secondary'}
+            onClick={() => {
+              if (isSingleDayActive) {
+                setSampleDatePreset('ALL');
+                setSampleDateFrom('');
+                setSampleDateTo('');
+              } else {
+                setSampleDatePreset('CUSTOM');
+                setSampleDateFrom(d.date);
+                setSampleDateTo(d.date);
+              }
+            }}
+          >
+            {isSingleDayActive ? 'Bỏ lọc ngày' : 'Lọc ngày'}
+          </Button>
+        );
+      },
+    },
+  ];
 
   const handlePushToBrandSheet = (itemsToPush: TikTokScrapedKocResult[]) => {
     if (!onAddToBrandSheet || itemsToPush.length === 0) return;
@@ -1177,28 +1359,171 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                 </div>
               </div>
 
+              {/* Thanh chọn Cỡ mẫu, Bỏ ghim & Khoảng ngày tính View Trung vị / View TB (Tách Có giỏ vs. Không giỏ) */}
+              {activeSampleBreakdown && (
+                <div className="px-3.5 py-2 rounded-xl border border-line bg-surface flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-2xs font-semibold text-ink inline-flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-accent shrink-0" />
+                      <span>Cỡ mẫu tính View ({activeSampleBreakdown.sampleCount}/{activeResult.recentVideos.length} bài):</span>
+                    </span>
+
+                    <Select
+                      aria-label="Chọn cỡ mẫu tính View"
+                      value={String(sampleSizeLimit)}
+                      onChange={(e) => setSampleSizeLimit(Number(e.target.value) || 0)}
+                      className="h-7 text-2xs py-0"
+                    >
+                      <option value="0">Tất cả ({activeResult.recentVideos.length} bài)</option>
+                      <option value="10">10 bài mới</option>
+                      <option value="15">15 bài mới</option>
+                      <option value="30">30 bài mới</option>
+                      <option value="50">50 bài mới</option>
+                    </Select>
+
+                    <label className="inline-flex items-center gap-1.5 px-2 h-7 rounded-md border border-line bg-sunken text-2xs text-ink cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={excludePinned}
+                        onChange={(e) => setExcludePinned(e.target.checked)}
+                        className="rounded border-line"
+                      />
+                      <span>Bỏ ghim cũ</span>
+                    </label>
+
+                    <Select
+                      aria-label="Chọn khoảng ngày tính View"
+                      value={sampleDatePreset}
+                      onChange={(e) => {
+                        const preset = e.target.value as CrawlerSampleDatePreset;
+                        setSampleDatePreset(preset);
+                        if (preset === 'ALL') {
+                          setSampleDateFrom('');
+                          setSampleDateTo('');
+                        } else if (preset !== 'CUSTOM') {
+                          const daysMap: Record<string, number> = {
+                            '7D': 7,
+                            '14D': 14,
+                            '30D': 30,
+                            '60D': 60,
+                            '90D': 90,
+                          };
+                          const days = daysMap[preset] || 0;
+                          if (days > 0) {
+                            setSampleDateFrom(
+                              getVietnamDateYmd(new Date(Date.now() - days * 86400 * 1000))
+                            );
+                            setSampleDateTo(getVietnamDateYmd());
+                          }
+                        }
+                      }}
+                      className="h-7 text-2xs py-0"
+                    >
+                      <option value="ALL">Ngày: Tất cả</option>
+                      <option value="7D">7 ngày qua</option>
+                      <option value="14D">14 ngày qua</option>
+                      <option value="30D">30 ngày qua</option>
+                      <option value="60D">60 ngày qua</option>
+                      <option value="90D">90 ngày qua</option>
+                      <option value="CUSTOM">Tùy chỉnh ngày</option>
+                    </Select>
+
+                    <div className="inline-flex items-center gap-1">
+                      <input
+                        type="date"
+                        aria-label="Từ ngày"
+                        value={sampleDateFrom}
+                        onChange={(e) => {
+                          setSampleDatePreset('CUSTOM');
+                          setSampleDateFrom(e.target.value);
+                        }}
+                        className="h-7 px-2 rounded-md border border-line bg-surface text-2xs text-ink font-code focus:outline-none focus:border-line-strong"
+                      />
+                      <span className="text-2xs text-ink-3">→</span>
+                      <input
+                        type="date"
+                        aria-label="Đến ngày"
+                        value={sampleDateTo}
+                        onChange={(e) => {
+                          setSampleDatePreset('CUSTOM');
+                          setSampleDateTo(e.target.value);
+                        }}
+                        className="h-7 px-2 rounded-md border border-line bg-surface text-2xs text-ink font-code focus:outline-none focus:border-line-strong"
+                      />
+                    </div>
+
+                    {(sampleSizeLimit > 0 ||
+                      excludePinned ||
+                      sampleDatePreset !== 'ALL' ||
+                      sampleDateFrom !== '' ||
+                      sampleDateTo !== '') && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon={RotateCcw}
+                        onClick={() => {
+                          setSampleSizeLimit(0);
+                          setExcludePinned(false);
+                          setSampleDatePreset('ALL');
+                          setSampleDateFrom('');
+                          setSampleDateTo('');
+                        }}
+                      >
+                        Đặt lại
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      variant={showDailyBreakdown ? 'primary' : 'secondary'}
+                      icon={Calendar}
+                      onClick={() => setShowDailyBreakdown((prev) => !prev)}
+                    >
+                      {showDailyBreakdown
+                        ? `Ẩn bảng theo ngày (${activeSampleBreakdown.dailyBreakdown.length} ngày)`
+                        : `View theo ngày (${activeSampleBreakdown.dailyBreakdown.length} ngày)`}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* Lưới 6 chỉ số sức khỏe thật của kênh (Tách bài gắn giỏ vs bài thường, 15 bài mới nhất, độ ổn định & tần suất đăng) */}
               {(() => {
                 const em = activeResult.engagementMetrics;
-                const affCount = em.affiliateVideoCount ?? activeResult.recentVideos.filter((v) => v.isAffiliate).length;
-                const orgCount = em.organicVideoCount ?? activeResult.recentVideos.length - affCount;
-                const affMedian = em.affiliateMedianViews ?? 0;
-                const orgMedian = em.organicMedianViews ?? 0;
+                const sb = activeSampleBreakdown;
+                const sampleCount = sb ? sb.sampleCount : activeResult.recentVideos.length;
+                const effMedian = sb ? sb.medianViews : (em.medianViews ?? em.avgViews);
+                const effAvg = sb ? sb.avgViews : em.avgViews;
+                const affCount = sb
+                  ? sb.affiliateVideoCount
+                  : (em.affiliateVideoCount ?? activeResult.recentVideos.filter((v) => v.isAffiliate).length);
+                const orgCount = sb
+                  ? sb.organicVideoCount
+                  : (em.organicVideoCount ?? activeResult.recentVideos.length - affCount);
+                const affMedian = sb ? sb.affiliateMedianViews : (em.affiliateMedianViews ?? 0);
+                const affAvg = sb ? sb.affiliateAvgViews : (em.affiliateAvgViews ?? 0);
+                const orgMedian = sb ? sb.organicMedianViews : (em.organicMedianViews ?? 0);
+                const orgAvg = sb ? sb.organicAvgViews : (em.organicAvgViews ?? 0);
+                const affPct = sb ? sb.affiliateRatioPct : (sampleCount > 0 ? Math.round((affCount / sampleCount) * 100) : 0);
+                const orgPct = sb ? sb.organicRatioPct : (sampleCount > 0 ? Math.round((orgCount / sampleCount) * 100) : 0);
                 const isAffDropWarning =
                   affCount > 0 && orgCount > 0 && orgMedian > 0 && affMedian < orgMedian * 0.45;
-                const consistency = em.viewConsistencyRatioPct;
+                const consistency = sb?.viewConsistencyRatioPct ?? em.viewConsistencyRatioPct;
+                const effEr = sb ? sb.engagementRate : em.engagementRate;
                 const daysIdle = em.daysSinceLastPost;
                 return (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                     <div className="p-2.5 rounded-lg border border-line bg-surface space-y-0.5">
                       <span className="text-2xs text-ink-3 block">
-                        View trung vị ({activeResult.recentVideos.length} bài)
+                        View trung vị ({sampleCount} bài)
                       </span>
                       <span className="text-sm font-semibold text-accent tabular-nums block">
-                        {formatNumber(em.medianViews ?? em.avgViews)}
+                        {formatNumber(effMedian)}
                       </span>
                       <span className="text-2xs text-ink-3 tabular-nums block">
-                        View TB: {formatNumber(em.avgViews)}
+                        View TB: {formatNumber(effAvg)}
                       </span>
                     </div>
 
@@ -1222,33 +1547,33 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                       }`}
                     >
                       <span className="text-2xs text-ink-3 block">
-                        Bài gắn giỏ ({affCount}/{activeResult.recentVideos.length} bài)
+                        Video Gắn giỏ ({affCount}/{sampleCount} bài · {affPct}%)
                       </span>
                       <span
                         className={`text-sm font-semibold tabular-nums block ${
                           isAffDropWarning ? 'text-critical' : 'text-positive'
                         }`}
                       >
-                        {affCount > 0 ? formatNumber(affMedian) : 'Chưa có'}
+                        {affCount > 0 ? `Trung vị: ${formatNumber(affMedian)}` : 'Chưa có'}
                       </span>
                       <span className="text-2xs text-ink-3 tabular-nums block">
                         {affCount > 0
                           ? isAffDropWarning
-                            ? `Tụt view giỏ (TB ${formatNumber(em.affiliateAvgViews || 0)})`
-                            : `TB giỏ: ${formatNumber(em.affiliateAvgViews || 0)}`
+                            ? `Tụt view giỏ (TB: ${formatNumber(affAvg)})`
+                            : `View TB giỏ: ${formatNumber(affAvg)}`
                           : '0 bài gắn giỏ hàng'}
                       </span>
                     </div>
 
                     <div className="p-2.5 rounded-lg border border-line bg-surface space-y-0.5">
                       <span className="text-2xs text-ink-3 block">
-                        Bài nội dung thường ({orgCount} bài)
+                        Không gắn giỏ ({orgCount}/{sampleCount} bài · {orgPct}%)
                       </span>
                       <span className="text-sm font-semibold text-ink tabular-nums block">
-                        {orgCount > 0 ? formatNumber(orgMedian) : '—'}
+                        {orgCount > 0 ? `Trung vị: ${formatNumber(orgMedian)}` : '—'}
                       </span>
                       <span className="text-2xs text-ink-3 tabular-nums block">
-                        {orgCount > 0 ? `TB thường: ${formatNumber(em.organicAvgViews || 0)}` : 'Toàn bộ gắn giỏ'}
+                        {orgCount > 0 ? `View TB thường: ${formatNumber(orgAvg)}` : 'Toàn bộ gắn giỏ'}
                       </span>
                     </div>
 
@@ -1266,7 +1591,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                         {consistency !== undefined ? `${consistency}%` : '—'}
                       </span>
                       <span className="text-2xs text-ink-3 tabular-nums block">
-                        Giữ &ge; 50% trung vị · ER {em.engagementRate}%
+                        Giữ &ge; 50% trung vị · ER {effEr}%
                       </span>
                     </div>
 
@@ -1302,6 +1627,39 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                   </div>
                 );
               })()}
+
+              {/* Bảng View Trung vị & Tách Giỏ hàng theo từng Ngày đăng (Đồng bộ 100% với Extension) */}
+              {showDailyBreakdown &&
+                activeSampleBreakdown &&
+                activeSampleBreakdown.dailyBreakdown.length > 0 && (
+                  <Panel
+                    flush
+                    title={`View Trung vị & Tách Giỏ hàng theo Ngày đăng (${activeSampleBreakdown.dailyBreakdown.length} ngày có bài)`}
+                    actions={
+                      sampleDateFrom && sampleDateFrom === sampleDateTo ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={RotateCcw}
+                          onClick={() => {
+                            setSampleDatePreset('ALL');
+                            setSampleDateFrom('');
+                            setSampleDateTo('');
+                          }}
+                        >
+                          Đang lọc ngày {formatDate(sampleDateFrom)} · Xem tất cả ngày
+                        </Button>
+                      ) : undefined
+                    }
+                  >
+                    <DataTable
+                      columns={dailyBreakdownColumns}
+                      rows={activeSampleBreakdown.dailyBreakdown}
+                      rowKey={(d) => d.date}
+                      compact
+                    />
+                  </Panel>
+                )}
 
               {/* Khối Đánh giá Đề xuất Book, Khung giá Net gợi ý & Đối soát Lịch sử Lark 3.1 / Danh bạ Upbase */}
               {activeResult.bookingIntelligence && (() => {
@@ -1645,6 +2003,29 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                 title={`Video gần nhất trên kênh (${filteredVideos.length} / ${formatNumber(activeResult.channelProfile.videoCount)} bài)`}
                 actions={
                   <div className="flex flex-wrap items-center gap-2">
+                    <SearchInput
+                      value={videoSearchQuery}
+                      onChange={setVideoSearchQuery}
+                      placeholder="Tìm từ khóa, hashtag hoặc tên SP giỏ hàng..."
+                      className="w-48 sm:w-56 [&_input]:h-7 [&_input]:text-2xs"
+                    />
+
+                    <Select
+                      aria-label="Sắp xếp danh sách video"
+                      value={videoSortBy}
+                      onChange={(e) =>
+                        setVideoSortBy(
+                          e.target.value as 'LATEST_DESC' | 'VIEWS_DESC' | 'ER_DESC' | 'LIKES_DESC'
+                        )
+                      }
+                      className="h-7 text-2xs py-0"
+                    >
+                      <option value="LATEST_DESC">Mới đăng → Cũ</option>
+                      <option value="VIEWS_DESC">View cao → thấp</option>
+                      <option value="ER_DESC">ER% cao → thấp</option>
+                      <option value="LIKES_DESC">Tim cao → thấp</option>
+                    </Select>
+
                     <div className="inline-flex items-center rounded-lg border border-line bg-sunken p-0.5 text-2xs">
                       <button
                         type="button"
@@ -1655,7 +2036,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                             : 'text-ink-2 hover:text-ink'
                         }`}
                       >
-                        Tất cả ({activeResult.recentVideos.length})
+                        Tất cả ({activeSampleBreakdown ? activeSampleBreakdown.sampleCount : activeResult.recentVideos.length})
                       </button>
                       <button
                         type="button"
@@ -1666,7 +2047,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                             : 'text-ink-2 hover:text-ink'
                         }`}
                       >
-                        Gắn giỏ ({activeResult.recentVideos.filter((v) => v.isAffiliate).length})
+                        Gắn giỏ ({activeSampleBreakdown ? activeSampleBreakdown.affiliateVideoCount : activeResult.recentVideos.filter((v) => v.isAffiliate).length})
                       </button>
                       <button
                         type="button"
@@ -1677,7 +2058,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                             : 'text-ink-2 hover:text-ink'
                         }`}
                       >
-                        Bài thường ({activeResult.recentVideos.filter((v) => !v.isAffiliate).length})
+                        Không giỏ ({activeSampleBreakdown ? activeSampleBreakdown.organicVideoCount : activeResult.recentVideos.filter((v) => !v.isAffiliate).length})
                       </button>
                       {activeResult.recentVideos.some(
                         (v) => v.isViralOutlier || v.isPinnedOldVideo
@@ -1693,9 +2074,10 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                         >
                           Đột biến / Ghim cũ (
                           {
-                            activeResult.recentVideos.filter(
-                              (v) => v.isViralOutlier || v.isPinnedOldVideo
-                            ).length
+                            (activeSampleBreakdown
+                              ? activeSampleBreakdown.filteredSampleVideos
+                              : activeResult.recentVideos
+                            ).filter((v) => v.isViralOutlier || v.isPinnedOldVideo).length
                           }
                           )
                         </button>

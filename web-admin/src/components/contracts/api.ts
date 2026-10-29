@@ -7,7 +7,7 @@ export interface ContractBootstrap {
   demoActors: ContractActor[];
   templates: LegalTemplate[];
   records: ContractRecord[];
-  config: { ai: boolean; wesign: boolean; storage: string };
+  config: { ai: boolean; wesign: boolean; contractSystem?: boolean; storage: string };
 }
 
 export class ApiError extends Error {

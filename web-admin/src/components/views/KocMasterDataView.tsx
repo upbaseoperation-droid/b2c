@@ -10,9 +10,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Award,
-  ListChecks,
-  Scale,
-  X,
   Building2,
   Check,
   CheckCircle2,
@@ -26,6 +23,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  SlidersHorizontal,
   Sparkles,
   UserCheck,
   Users,
@@ -91,29 +89,24 @@ import {
 import {
   ActionMenu,
   Avatar,
-  BarList,
+  Chips,
   Button,
   DataTable,
   Density,
   EmptyState,
-  FacebookLogo,
   Field,
   FilterBar,
   Input,
-  InstagramLogo,
   Modal,
   PageActions,
   Pagination,
   Panel,
   Select,
-  ShopeeLogo,
   Stat,
   StatRow,
   Status,
   Tabs,
   Textarea,
-  ThreadsLogo,
-  TikTokLogo,
   closeShared,
   openShared,
   sharedFrom,
@@ -326,6 +319,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const [salaryGrade, setSalaryGrade] = useState(ALL);
   const [picFilter, setPicFilter] = useState(ALL);
   const [platform, setPlatform] = useState<PlatformFilter>(ALL);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
@@ -592,19 +586,8 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     picFilter !== ALL ||
     platform !== ALL;
 
-  // Bộ lọc chọn từ cột phải hiện thành thẻ trên bảng để người xem biết bảng đang lọc gì
-  const activeFilterTags: Array<{ key: string; label: string; clear: () => void }> = [];
-  if (datasetTab === 'COOPERATED') {
-    const l = legalChips.find((c) => c.key === legal && c.key !== ALL);
-    if (l) activeFilterTags.push({ key: 'legal', label: `Hồ sơ: ${l.label}`, clear: () => setLegal(ALL) });
-    const i = issueChips.find((c) => c.key === issue);
-    if (i) activeFilterTags.push({ key: 'issue', label: i.label, clear: () => setIssue('') });
-  } else {
-    const r = readinessChips.find((c) => c.key === readiness && c.key !== ALL);
-    if (r) activeFilterTags.push({ key: 'readiness', label: r.label, clear: () => setReadiness(ALL) });
-    const n = newIssueChips.find((c) => c.key === newIssue);
-    if (n) activeFilterTags.push({ key: 'newIssue', label: n.label, clear: () => setNewIssue('') });
-  }
+  // Số bộ lọc phụ đang bật (hiện trên nút "Thêm bộ lọc")
+  const moreFilterCount = [tepKenh !== ALL, salaryGrade !== ALL, platform !== ALL, datasetTab === 'COOPERATED' ? legal !== ALL : newIssue !== ''].filter(Boolean).length;
 
   const resetFilters = () => {
     setSearch('');
@@ -880,81 +863,72 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
   /* --------------------------------------------------------------- BẢNG 1: KOC CŨ KÈM LỊCH SỬ (COOPERATED) */
 
+  // Mỗi ô tối đa 2 dòng: dòng chính đậm, dòng phụ nhạt. Chi tiết khác (email, mã BO, kênh MXH) xem trong hồ sơ hoặc rê chuột.
   const columnsCooperated: Column<KocItem>[] = [
     {
       key: 'koc',
-      header: 'KOC & Liên hệ',
-      width: 225,
+      header: 'KOC',
+      width: 230,
       render: (k) => (
-        <div className="flex items-center gap-2.5 min-w-0 max-w-[235px]">
+        <div className="flex items-center gap-2.5 min-w-0 max-w-[240px]">
           <span {...sharedFrom('koc-avatar', k.id)} className="shrink-0 inline-flex">
             <Avatar name={k.stageName} src={k.avatarUrl} size={32} />
           </span>
-          <div className="min-w-0 leading-tight space-y-0.5">
-            <span {...sharedFrom('koc-title', k.id)} className="block truncate font-semibold text-ink text-xs">
+          <div className="min-w-0 leading-snug">
+            <span {...sharedFrom('koc-title', k.id)} className="block truncate font-medium text-ink text-ctl">
               {k.stageName}
             </span>
-            <span className="block truncate text-2xs text-ink-3">
+            <span
+              className="block truncate text-2xs text-ink-3"
+              title={[k.realName, k.email, k.phone ? `****${k.phone.trim().slice(-4)}` : ''].filter(Boolean).join(' · ') || undefined}
+            >
               @{k.channelId.replace(/^@/, '')}
               {k.realName && k.realName !== k.stageName ? ` · ${k.realName}` : ''}
             </span>
-            {k.email || k.phone ? (
-              <span className="block truncate text-2xs text-ink-2" title={[k.email, k.phone ? `****${k.phone.trim().slice(-4)}` : ''].filter(Boolean).join(' · ')}>
-                {[k.email, k.phone ? `****${k.phone.trim().slice(-4)}` : ''].filter(Boolean).join(' · ')}
-              </span>
-            ) : (
-              <span className="block truncate text-2xs text-ink-3/70">Chưa có Email / SĐT</span>
-            )}
           </div>
         </div>
       ),
     },
     {
       key: 'history',
-      header: 'Lịch sử hợp tác & PIC',
-      width: 215,
+      header: 'Hợp tác',
+      width: 200,
       render: (k) => {
         // Không tự điền "1 đợt book" khi thiếu số: hiện đúng dữ liệu, thiếu thì để "—"
         const totalDeals = k.totalPastDeals || 0;
-        const paid = k.totalPaidVideos;
-        const foc = k.totalFocVideos ?? 0;
         const pic = firstPic(k);
+        const tip = [
+          k.totalPaidVideos !== undefined ? `${k.totalPaidVideos} Paid` : '',
+          k.totalFocVideos ? `${k.totalFocVideos} FOC` : '',
+          k.latestBoCode ? `BO gần nhất ${k.latestBoCode}` : '',
+          k.workedPicsList ? `PIC từng làm: ${k.workedPicsList}` : '',
+        ]
+          .filter(Boolean)
+          .join('\n');
         return (
-          <div className="leading-tight min-w-0 max-w-[215px] space-y-0.5">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-semibold text-ink text-xs tabular-nums">
-                {totalDeals > 0 ? `${formatNumber(totalDeals)} đợt book` : '—'}
-              </span>
-              {(paid !== undefined || foc > 0) && (
-                <span className="text-2xs text-ink-3 tabular-nums">
-                  ({[paid !== undefined ? `${paid} Paid` : '', foc > 0 ? `${foc} FOC` : ''].filter(Boolean).join(' · ')})
-                </span>
-              )}
-            </div>
-            <div className="text-2xs text-ink-2 truncate">
-              {k.brandName ? <b className="text-ink">{k.brandName}</b> : 'Đa nhãn hàng'}
+          <div className="leading-snug min-w-0 max-w-[200px]" title={tip || undefined}>
+            <span className="block truncate text-ctl text-ink">
+              <span className="font-medium tabular-nums">{totalDeals > 0 ? `${formatNumber(totalDeals)} đợt` : '—'}</span>
+              {k.brandName ? <span className="text-ink-2"> · {k.brandName}</span> : null}
+            </span>
+            <span className="block truncate text-2xs text-ink-3">
+              {pic || 'Chưa gán PIC'}
               {k.latestBookMonth ? ` · ${k.latestBookMonth}` : ''}
-              {k.latestBoCode ? ` · ${k.latestBoCode}` : ''}
-            </div>
-            <div className="text-2xs text-ink-3 truncate" title={k.workedPicsList}>
-              PIC: <span className="text-ink-2 font-medium">{pic || 'Chưa gán'}</span>
-              {k.workedPicsCount && k.workedPicsCount > 1 ? ` (+${k.workedPicsCount - 1} PIC)` : ''}
-            </div>
+            </span>
           </div>
         );
       },
     },
     {
       key: 'rateAndGmv',
-      header: 'Đơn giá & GMV kênh',
+      header: 'Đơn giá',
       align: 'right',
-      width: 155,
+      width: 120,
       render: (k) => {
         // GMV kênh = doanh thu cả kênh trên TikTok Shop (không phải GMV từ booking Upbase), nên không tính ROI.
         // Không lấy gmvBestCase (số ước tính) thay cho số thật.
         const channelGmv = k.recentRevenue || k.totalPastGmv || 0;
-        const hasRange =
-          k.minRate && k.maxRate && k.minRate > 0 && k.maxRate > k.minRate;
+        const hasRange = k.minRate && k.maxRate && k.minRate > 0 && k.maxRate > k.minRate;
         const onlyFoc = !(k.rateCardVideo > 1) && (k.totalFocVideos || 0) > 0 && !(k.totalPaidVideos || 0);
         const tooltip = [
           hasRange ? `Biên độ giá: ${formatVndShort(k.minRate!)} – ${formatVndShort(k.maxRate!)}` : '',
@@ -962,15 +936,14 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         ]
           .filter(Boolean)
           .join('\n');
-
         return (
-          <div className="leading-tight text-right space-y-0.5" title={tooltip || undefined}>
-            <div className="text-xs font-semibold text-ink tabular-nums font-figure">
+          <div className="leading-snug text-right" title={tooltip || undefined}>
+            <span className="block text-ctl text-ink tabular-nums font-figure">
               {k.rateCardVideo > 1 ? formatVndShort(k.rateCardVideo) : onlyFoc ? 'Chỉ FOC' : '—'}
-            </div>
-            <div className="text-2xs tabular-nums text-ink-3">
+            </span>
+            <span className="block text-2xs tabular-nums text-ink-3">
               {channelGmv > 0 ? `GMV kênh ${formatVndShort(channelGmv)}` : '—'}
-            </div>
+            </span>
           </div>
         );
       },
@@ -978,53 +951,41 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     {
       key: 'legalProfiles',
       header: 'Hồ sơ pháp lý',
-      width: 175,
+      width: 180,
       render: (k) => {
         const profiles = getKocLegalProfiles(k);
         const dupAll = duplicates.get(k.id);
         const dup = isChannelDuplicate(k) ? dupAll?.filter((d) => d.fields.includes('kênh')) : undefined;
-        const sharedWith = !dup && dupAll ? dupAll.length : 0;
         const def = profiles.find((p) => p.isDefault) || profiles[0];
         const readiness = def ? evaluateLegalProfileContractReadiness(def, k) : null;
         const isSigned = def?.frameworkContractStatus === 'ĐÃ_KÝ';
+        const tip = [
+          dup ? `Trùng kênh: ${dup.map((d) => d.stageName).join(', ')}` : '',
+          readiness && !readiness.ready && !isSigned ? `Thiếu trường ký HĐ: ${readiness.missingFields.join(', ')}` : '',
+          profiles.length ? profiles.map((p) => `${p.profileCode}: ${p.holderName}`).join('\n') : '',
+          dupAll && !dup ? `Chung chủ / MCN với ${dupAll.length} kênh` : '',
+        ]
+          .filter(Boolean)
+          .join('\n');
 
         return (
-          <div className="leading-tight space-y-0.5 min-w-0 max-w-[175px]">
-            <div>
-              {profiles.length === 0 ? (
-                <Status tone="warning">Chưa có hồ sơ</Status>
-              ) : dup ? (
-                <span title={`Trùng: ${dup.map((d) => `${d.stageName} (${d.fields.join(', ')})`).join('; ')}`}>
-                  <Status tone="warning">Trùng kênh</Status>
-                </span>
-              ) : isSigned ? (
-                <Status tone="positive">Đã ký HĐNT</Status>
-              ) : readiness && !readiness.ready ? (
-                <span title={`Thiếu trường ký HĐ: ${readiness.missingFields.join(', ')}`}>
-                  <Status tone="warning">Chưa đủ hồ sơ</Status>
-                </span>
-              ) : (
-                <Status tone="positive">Đủ hồ sơ</Status>
-              )}
-            </div>
-            {profiles.length > 0 && (
-              <div
-                className="text-2xs text-ink-2 truncate"
-                title={profiles.map((p) => `${p.profileCode}: ${p.holderName} (${p.taxAccountType})`).join(' | ')}
-              >
-                <span>{def?.holderName || '—'}</span>
-                {profiles.length > 1 && (
-                  <span className="text-ink-3 ml-1">+{profiles.length - 1} HS</span>
-                )}
-              </div>
+          <div className="leading-snug min-w-0 max-w-[180px] grid gap-0.5 justify-items-start" title={tip || undefined}>
+            {profiles.length === 0 ? (
+              <Status tone="warning">Chưa có hồ sơ</Status>
+            ) : dup ? (
+              <Status tone="warning">Trùng kênh</Status>
+            ) : isSigned ? (
+              <Status tone="positive">Đã ký HĐNT</Status>
+            ) : readiness && !readiness.ready ? (
+              <Status tone="warning">Chưa đủ hồ sơ</Status>
+            ) : (
+              <Status tone="positive">Đủ hồ sơ</Status>
             )}
-            {sharedWith > 0 && (
-              <div
-                className="text-2xs text-ink-3 truncate"
-                title={`Cùng chủ / MCN với: ${dupAll!.map((d) => `${d.stageName} (${d.fields.join(', ')})`).join('; ')}`}
-              >
-                Chung chủ với {sharedWith} kênh
-              </div>
+            {profiles.length > 0 && (
+              <span className="block w-full truncate text-2xs text-ink-3">
+                {def?.holderName || '—'}
+                {profiles.length > 1 ? ` · +${profiles.length - 1} hồ sơ` : ''}
+              </span>
             )}
           </div>
         );
@@ -1032,56 +993,14 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     },
     {
       key: 'classification',
-      header: 'Phân loại & MXH',
-      width: 165,
+      header: 'Phân loại',
+      width: 150,
       render: (k) => (
-        <div className="leading-tight min-w-0 space-y-1">
-          <div>
-            <span className="block truncate font-medium text-ink text-xs">
-              {k.kocCategory || 'Chưa phân ngành'}
-            </span>
-            <span className="block truncate text-2xs text-ink-3">
-              {k.tepKenh || k.creatorCategory || ''}
-              {k.salaryGrade ? ` · ${k.salaryGrade}` : ''}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
-            <span title="TikTok" className={hasKocPlatform(k, 'tiktok') ? 'opacity-100' : 'opacity-25'}>
-              <TikTokLogo className="w-3.5 h-3.5" />
-            </span>
-            <button
-              type="button"
-              onClick={() => setSocialTarget(k)}
-              title={k.shopeeChannel ? `Shopee: ${k.shopeeChannel}` : 'Tìm kênh MXH'}
-              className={hasKocPlatform(k, 'shopee') ? 'opacity-100 cursor-pointer' : 'opacity-25 hover:opacity-60 cursor-pointer'}
-            >
-              <ShopeeLogo className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setSocialTarget(k)}
-              title={k.facebookChannel ? `Facebook: ${k.facebookChannel}` : 'Tìm kênh MXH'}
-              className={hasKocPlatform(k, 'facebook') ? 'opacity-100 cursor-pointer' : 'opacity-25 hover:opacity-60 cursor-pointer'}
-            >
-              <FacebookLogo className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setSocialTarget(k)}
-              title={k.instagramChannel ? `Instagram: ${k.instagramChannel}` : 'Tìm kênh MXH'}
-              className={hasKocPlatform(k, 'instagram') ? 'opacity-100 cursor-pointer' : 'opacity-25 hover:opacity-60 cursor-pointer'}
-            >
-              <InstagramLogo className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setSocialTarget(k)}
-              title={k.threadsChannel ? `Threads: ${k.threadsChannel}` : 'Tìm kênh MXH'}
-              className={hasKocPlatform(k, 'threads') ? 'opacity-100 cursor-pointer' : 'opacity-25 hover:opacity-60 cursor-pointer'}
-            >
-              <ThreadsLogo className="w-3.5 h-3.5" />
-            </button>
-          </div>
+        <div className="leading-snug min-w-0 max-w-[150px]">
+          <span className="block truncate text-ctl text-ink">{k.kocCategory || 'Chưa phân ngành'}</span>
+          <span className="block truncate text-2xs text-ink-3">
+            {[k.tepKenh || k.creatorCategory, k.salaryGrade].filter(Boolean).join(' · ') || '—'}
+          </span>
         </div>
       ),
     },
@@ -1383,37 +1302,26 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               setDatasetTab(key);
               if (key !== 'UPAFFILIATE_HUB') resetFilters();
             }}
+            // Hàng tab chỉ giữ trạng thái đồng bộ dạng chữ nhỏ + một nút; cấu hình nằm trong menu tiện ích
             actions={
               <>
-                <Status tone={upaffiliateConfig.enabled ? 'positive' : 'neutral'}>
-                  {upaffiliateConfig.enabled ? 'UpAffiliate đã kết nối' : 'UpAffiliate tạm dừng'}
-                </Status>
-                <span className="text-2xs text-ink-3 hidden xl:inline">
-                  Gần nhất <span className="font-figure text-ink-2">{formatSyncDateTime(upaffiliateConfig.lastSyncedAt)}</span>
+                <span className="text-2xs text-ink-3 whitespace-nowrap">
+                  UpAffiliate {upaffiliateConfig.enabled ? '' : '(tạm dừng) '}·{' '}
+                  <span className="font-figure text-ink-2">{formatSyncDateTime(upaffiliateConfig.lastSyncedAt)}</span>
                 </span>
                 {stagingPendingCount > 0 && (
-                  <Button size="sm" variant="secondary" onClick={() => void openStagingQueueModal()}>
+                  <Button size="sm" variant="ghost" onClick={() => void openStagingQueueModal()}>
                     Bảng tạm ({stagingPendingCount})
                   </Button>
                 )}
                 <Button
                   size="sm"
-                  variant="secondary"
+                  variant="ghost"
                   icon={RefreshCw}
                   disabled={isUpaffiliateSyncing}
                   onClick={() => void triggerUpaffiliateSync('INCREMENTAL', 'MANUAL_TRIGGER')}
                 >
-                  {isUpaffiliateSyncing ? 'Đang đồng bộ...' : 'Đồng bộ ngay'}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    void reloadUpaffiliateState();
-                    setUpaffiliateSyncOpen(true);
-                  }}
-                >
-                  Cấu hình
+                  {isUpaffiliateSyncing ? 'Đang đồng bộ...' : 'Đồng bộ'}
                 </Button>
               </>
             }
@@ -1445,51 +1353,25 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                     label="KOC đã hợp tác"
                     value={formatNumber(cooperatedKocs.length)}
                     numeric={cooperatedKocs.length}
-                    note="Có BO hoặc nghiệm thu tại Upbase"
+                    note={`${formatNumber(datasetStats.coopPicCount)} PIC từng phụ trách`}
                   />
                   <Stat
                     label="Đã ký HĐ nguyên tắc"
                     value={formatNumber(datasetStats.coopSigned)}
                     numeric={datasetStats.coopSigned}
                     progress={{ value: datasetStats.coopSigned, max: Math.max(1, cooperatedKocs.length) }}
-                    note={`${formatPercent(datasetStats.coopSigned / Math.max(1, cooperatedKocs.length))} số KOC`}
-                  />
-                  <Stat
-                    label="Có CCCD/MST + STK"
-                    value={formatNumber(datasetStats.coopWithDocs)}
-                    numeric={datasetStats.coopWithDocs}
-                    note="Đủ số để thanh toán"
-                  />
-                  <Stat
-                    label="Video Paid đã book"
-                    value={formatNumber(datasetStats.coopPaidVideos)}
-                    numeric={datasetStats.coopPaidVideos}
-                    note={`${formatNumber(datasetStats.coopFocVideos)} video FOC`}
+                    note={`${formatPercent(datasetStats.coopSigned / Math.max(1, cooperatedKocs.length))} · ${formatNumber(datasetStats.coopWithDocs)} có CCCD/MST + STK`}
                   />
                   <Stat
                     label="Chi phí booking lịch sử"
                     value={formatVndShort(datasetStats.coopTotalCost)}
                     numeric={datasetStats.coopTotalCost}
-                    note="Tổng tiền cast đã trả"
+                    note={`${formatNumber(datasetStats.coopPaidVideos)} video Paid · ${formatNumber(datasetStats.coopFocVideos)} FOC`}
                   />
                   <Stat
                     label="Đơn giá trung vị"
                     value={datasetStats.coopRatedCount ? formatVndShort(datasetStats.coopMedianRate) : '—'}
                     note={`${formatNumber(datasetStats.coopRatedCount)} KOC có đơn giá`}
-                  />
-                  <Stat
-                    label="PIC từng phụ trách"
-                    value={formatNumber(datasetStats.coopPicCount)}
-                    numeric={datasetStats.coopPicCount}
-                    note="Theo PIC chính của KOC"
-                  />
-                  <Stat
-                    label="Thiếu giấy tờ"
-                    value={formatNumber(issueChips[0].count)}
-                    numeric={issueChips[0].count}
-                    invert
-                    tone={issueChips[0].count > 0 ? 'critical' : undefined}
-                    note="Chưa có CCCD / MST"
                   />
                 </StatRow>
               ) : (
@@ -1498,7 +1380,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                     label="KOC mới / tiềm năng"
                     value={formatNumber(newKocs.length)}
                     numeric={newKocs.length}
-                    note="Chưa có đợt book hoàn thành"
+                    note={`${formatNumber(datasetStats.newHighTraffic)} kênh traffic tốt`}
                   />
                   <Stat
                     label="Sẵn sàng booking"
@@ -1511,221 +1393,167 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                     label="Có SĐT / Email"
                     value={formatNumber(datasetStats.newWithContact)}
                     numeric={datasetStats.newWithContact}
-                  />
-                  <Stat
-                    label="Đã liên hệ"
-                    value={formatNumber(datasetStats.newContacted)}
-                    numeric={datasetStats.newContacted}
-                    note="Gồm đang thương lượng"
+                    note={`${formatNumber(datasetStats.newContacted)} đã liên hệ`}
                   />
                   <Stat
                     label="Có báo giá"
                     value={formatNumber(datasetStats.newWithQuote)}
                     numeric={datasetStats.newWithQuote}
                   />
-                  <Stat
-                    label="Traffic tốt"
-                    value={formatNumber(datasetStats.newHighTraffic)}
-                    numeric={datasetStats.newHighTraffic}
-                    note="View TB ≥ 15.000 hoặc ≥ 100K follower"
-                  />
                 </StatRow>
               )}
 
-              <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
-                {/* Bảng KOC */}
-                <Panel
-                  flush
-                  icon={datasetTab === 'COOPERATED' ? Users : Sparkles}
-                  title={datasetTab === 'COOPERATED' ? 'KOC đã hợp tác' : 'KOC mới / tiềm năng'}
-                  meta={`${formatNumber(filtered.length)} / ${formatNumber(activeDataset.length)} KOC${isFiltered ? ' khớp bộ lọc' : ''} · ${
-                    datasetTab === 'COOPERATED' ? 'Danh bạ Master KOC B2C 2026' : 'Sheet KOC_Tiem_Nang, TikTok Seller, Kalodata'
-                  }`}
-                  className="min-w-0"
-                >
-                  <div className="px-4 pb-3 border-b border-line">
-                    <FilterBar
-                      search={{
-                        value: search,
-                        onChange: setSearch,
-                        placeholder:
-                          datasetTab === 'COOPERATED'
-                            ? 'Tên kênh, @handle, chủ TK, CCCD, MST, mã BO, Brand'
-                            : 'Tên kênh, @handle, gian hàng đề xuất, SĐT, Email',
-                      }}
-                      filters={
-                        <>
-                          <Select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Ngành hàng" className="w-auto">
-                            <option value={ALL}>Mọi ngành hàng</option>
-                            {options.category.map((v) => (
-                              <option key={v} value={v}>
-                                {v}
-                              </option>
-                            ))}
-                          </Select>
-                          <Select value={tepKenh} onChange={(e) => setTepKenh(e.target.value)} aria-label="Tệp kênh" className="w-auto">
-                            <option value={ALL}>Mọi tệp kênh</option>
-                            {options.tepKenh.map((v) => (
-                              <option key={v} value={v}>
-                                {v}
-                              </option>
-                            ))}
-                          </Select>
-                          <Select value={salaryGrade} onChange={(e) => setSalaryGrade(e.target.value)} aria-label="Khung lương" className="w-auto">
-                            <option value={ALL}>Mọi khung lương</option>
-                            {options.salaryGrade.map((v) => (
-                              <option key={v} value={v}>
-                                {v}
-                              </option>
-                            ))}
-                          </Select>
-                          <Select value={picFilter} onChange={(e) => setPicFilter(e.target.value)} aria-label="PIC phụ trách" className="w-auto">
-                            <option value={ALL}>Mọi PIC</option>
-                            {options.pic.map((v) => (
-                              <option key={v} value={v}>
-                                {v}
-                              </option>
-                            ))}
-                          </Select>
-                          {datasetTab === 'COOPERATED' && (
-                            <Select
-                              value={platform}
-                              onChange={(e) => setPlatform(e.target.value as PlatformFilter)}
-                              aria-label="Nền tảng"
-                              className="w-auto"
-                            >
-                              <option value={ALL}>Mọi nền tảng</option>
-                              <option value="tiktok">Có TikTok</option>
-                              <option value="shopee">Có Shopee</option>
-                              <option value="facebook">Có Facebook</option>
-                              <option value="instagram">Có Instagram</option>
-                              <option value="threads">Có Threads</option>
-                            </Select>
-                          )}
-                        </>
-                      }
-                      chips={
-                        activeFilterTags.length > 0 || isFiltered ? (
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            {activeFilterTags.map((t) => (
-                              <Button key={t.key} size="sm" variant="secondary" onClick={t.clear}>
-                                {t.label} <X className="w-3 h-3" />
-                              </Button>
-                            ))}
-                            {isFiltered && (
-                              <Button size="sm" variant="ghost" onClick={resetFilters}>
-                                Xóa bộ lọc
-                              </Button>
-                            )}
-                          </div>
-                        ) : undefined
-                      }
-                    />
-                  </div>
-
-                  <DataTable
-                    columns={datasetTab === 'COOPERATED' ? columnsCooperated : columnsNew}
-                    rows={rows}
-                    rowKey={(k) => k.id}
-                    onRowClick={(k) => openFromList(k.id)}
-                    compact
-                    stickyLast
-                    empty={
-                      <EmptyState
-                        title={activeDataset.length === 0 ? 'Chưa có KOC nào trong bảng này' : 'Không có KOC khớp bộ lọc'}
-                        description={
-                          activeDataset.length === 0
-                            ? 'Thêm KOC mới hoặc lấy dữ liệu từ TikTok để bắt đầu.'
-                            : 'Bỏ bớt điều kiện lọc hoặc tìm bằng từ khóa khác.'
-                        }
-                        action={
-                          activeDataset.length === 0 ? (
-                            <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
-                              Thêm KOC
-                            </Button>
-                          ) : (
-                            <Button onClick={resetFilters}>Xóa bộ lọc</Button>
-                          )
-                        }
-                      />
+              {/* Bảng KOC: một hàng lọc chính + một hàng chip xem nhanh; bộ lọc phụ mở khi cần */}
+              <Panel
+                flush
+                icon={datasetTab === 'COOPERATED' ? Users : Sparkles}
+                title={datasetTab === 'COOPERATED' ? 'KOC đã hợp tác' : 'KOC mới / tiềm năng'}
+                meta={`${formatNumber(filtered.length)} / ${formatNumber(activeDataset.length)} KOC${isFiltered ? ' khớp bộ lọc' : ''} · ${
+                  datasetTab === 'COOPERATED' ? 'Danh bạ Master KOC B2C 2026' : 'Sheet KOC_Tiem_Nang, TikTok Seller, Kalodata'
+                }`}
+              >
+                <div className="px-4 pb-3 border-b border-line grid gap-2.5">
+                  <FilterBar
+                    search={{
+                      value: search,
+                      onChange: setSearch,
+                      placeholder:
+                        datasetTab === 'COOPERATED'
+                          ? 'Tên kênh, @handle, chủ TK, CCCD, MST, mã BO'
+                          : 'Tên kênh, @handle, gian hàng, SĐT, Email',
+                    }}
+                    filters={
+                      <>
+                        <Select value={picFilter} onChange={(e) => setPicFilter(e.target.value)} aria-label="PIC phụ trách" className="w-auto">
+                          <option value={ALL}>Mọi PIC</option>
+                          {options.pic.map((v) => (
+                            <option key={v} value={v}>
+                              {v}
+                            </option>
+                          ))}
+                        </Select>
+                        <Select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Ngành hàng" className="w-auto">
+                          <option value={ALL}>Mọi ngành hàng</option>
+                          {options.category.map((v) => (
+                            <option key={v} value={v}>
+                              {v}
+                            </option>
+                          ))}
+                        </Select>
+                        <Button
+                          size="sm"
+                          variant={showMoreFilters ? 'secondary' : 'ghost'}
+                          icon={SlidersHorizontal}
+                          onClick={() => setShowMoreFilters((v) => !v)}
+                          aria-expanded={showMoreFilters}
+                        >
+                          Thêm bộ lọc{moreFilterCount > 0 ? ` (${moreFilterCount})` : ''}
+                        </Button>
+                        {isFiltered && (
+                          <Button size="sm" variant="ghost" onClick={resetFilters}>
+                            Xóa lọc
+                          </Button>
+                        )}
+                      </>
                     }
                   />
-                  <Pagination
-                    page={page}
-                    pageSize={pageSize}
-                    total={filtered.length}
-                    onPageChange={setPage}
-                    onPageSizeChange={setPageSize}
-                  />
-                </Panel>
 
-                {/* Cột phải: phân bổ và việc cần xử lý, bấm để lọc bảng */}
-                <div className="order-first 2xl:order-none grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-1 gap-4">
+                  {showMoreFilters && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {datasetTab === 'COOPERATED' ? (
+                        <Select value={legal} onChange={(e) => setLegal(e.target.value as LegalFilter)} aria-label="Loại hồ sơ pháp lý" className="w-auto">
+                          {legalChips.map((c) => (
+                            <option key={c.key} value={c.key}>
+                              {c.key === ALL ? 'Mọi loại hồ sơ' : `${c.label} (${formatNumber(c.count)})`}
+                            </option>
+                          ))}
+                        </Select>
+                      ) : (
+                        <Select value={newIssue} onChange={(e) => setNewIssue(e.target.value as NewIssueFilter)} aria-label="Tiếp cận" className="w-auto">
+                          <option value="">Mọi trạng thái tiếp cận</option>
+                          {newIssueChips.map((c) => (
+                            <option key={c.key} value={c.key}>
+                              {`${c.label} (${formatNumber(c.count)})`}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
+                      <Select value={tepKenh} onChange={(e) => setTepKenh(e.target.value)} aria-label="Tệp kênh" className="w-auto">
+                        <option value={ALL}>Mọi tệp kênh</option>
+                        {options.tepKenh.map((v) => (
+                          <option key={v} value={v}>
+                            {v}
+                          </option>
+                        ))}
+                      </Select>
+                      <Select value={salaryGrade} onChange={(e) => setSalaryGrade(e.target.value)} aria-label="Khung lương" className="w-auto">
+                        <option value={ALL}>Mọi khung lương</option>
+                        {options.salaryGrade.map((v) => (
+                          <option key={v} value={v}>
+                            {v}
+                          </option>
+                        ))}
+                      </Select>
+                      {datasetTab === 'COOPERATED' && (
+                        <Select value={platform} onChange={(e) => setPlatform(e.target.value as PlatformFilter)} aria-label="Nền tảng" className="w-auto">
+                          <option value={ALL}>Mọi nền tảng</option>
+                          <option value="tiktok">Có TikTok</option>
+                          <option value="shopee">Có Shopee</option>
+                          <option value="facebook">Có Facebook</option>
+                          <option value="instagram">Có Instagram</option>
+                          <option value="threads">Có Threads</option>
+                        </Select>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Một hàng chip xem nhanh: việc cần xử lý (KOC đã hợp tác) / độ sẵn sàng (KOC mới) */}
                   {datasetTab === 'COOPERATED' ? (
-                    <>
-                      <Panel icon={Scale} title="Hồ sơ pháp lý" meta="1 KOC có thể có nhiều hồ sơ · bấm để lọc">
-                        <BarList
-                          narrow
-                          items={legalChips
-                            .filter((c) => c.key !== ALL)
-                            .map((c) => ({
-                              key: c.key,
-                              label: c.label,
-                              value: c.count,
-                              display: formatNumber(c.count),
-                              active: legal === c.key,
-                              onClick: () => setLegal((cur) => (cur === c.key ? ALL : c.key)),
-                            }))}
-                        />
-                      </Panel>
-                      <Panel icon={ListChecks} title="Cần xử lý" meta="Chung chủ / MCN là thông tin, không phải lỗi">
-                        <BarList
-                          narrow
-                          items={issueChips.map((c) => ({
-                            key: c.key,
-                            label: c.label,
-                            value: c.count,
-                            display: formatNumber(c.count),
-                            active: issue === c.key,
-                            onClick: () => setIssue((cur) => (cur === c.key ? '' : c.key)),
-                          }))}
-                        />
-                      </Panel>
-                    </>
+                    <Chips<IssueFilter>
+                      items={[{ key: '', label: 'Tất cả', count: issueBase.length }, ...issueChips.filter((c) => c.count > 0 || c.key === 'DUPLICATE')]}
+                      value={issue}
+                      onChange={(k) => setIssue((cur) => (cur === k ? '' : k))}
+                    />
                   ) : (
-                    <>
-                      <Panel icon={Scale} title="Độ sẵn sàng booking" meta="Bấm để lọc">
-                        <BarList
-                          narrow
-                          items={readinessChips
-                            .filter((c) => c.key !== ALL)
-                            .map((c) => ({
-                              key: c.key,
-                              label: c.label,
-                              value: c.count,
-                              display: formatNumber(c.count),
-                              active: readiness === c.key,
-                              onClick: () => setReadiness((cur) => (cur === c.key ? ALL : c.key)),
-                            }))}
-                        />
-                      </Panel>
-                      <Panel icon={ListChecks} title="Tiếp cận & đánh giá" meta="Bấm để lọc">
-                        <BarList
-                          narrow
-                          items={newIssueChips.map((c) => ({
-                            key: c.key,
-                            label: c.label,
-                            value: c.count,
-                            display: formatNumber(c.count),
-                            active: newIssue === c.key,
-                            onClick: () => setNewIssue((cur) => (cur === c.key ? '' : c.key)),
-                          }))}
-                        />
-                      </Panel>
-                    </>
+                    <Chips label="" items={readinessChips} value={readiness} onChange={setReadiness} />
                   )}
                 </div>
-              </div>
+
+                <DataTable
+                  columns={datasetTab === 'COOPERATED' ? columnsCooperated : columnsNew}
+                  rows={rows}
+                  rowKey={(k) => k.id}
+                  onRowClick={(k) => openFromList(k.id)}
+                  compact
+                  stickyLast
+                  empty={
+                    <EmptyState
+                      title={activeDataset.length === 0 ? 'Chưa có KOC nào trong bảng này' : 'Không có KOC khớp bộ lọc'}
+                      description={
+                        activeDataset.length === 0
+                          ? 'Thêm KOC mới hoặc lấy dữ liệu từ TikTok để bắt đầu.'
+                          : 'Bỏ bớt điều kiện lọc hoặc tìm bằng từ khóa khác.'
+                      }
+                      action={
+                        activeDataset.length === 0 ? (
+                          <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
+                            Thêm KOC
+                          </Button>
+                        ) : (
+                          <Button onClick={resetFilters}>Xóa bộ lọc</Button>
+                        )
+                      }
+                    />
+                  }
+                />
+                <Pagination
+                  page={page}
+                  pageSize={pageSize}
+                  total={filtered.length}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </Panel>
             </>
           )}
         </Density>

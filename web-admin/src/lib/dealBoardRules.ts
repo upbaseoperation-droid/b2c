@@ -349,6 +349,10 @@ export interface DealJob {
   appendixUrl: string;
   /** Link Biên bản nghiệm thu (BBNT) đã ký của Job; bắt buộc trước khi lập đề nghị thanh toán Job có phí */
   bbntUrl?: string;
+  sowGoogleDocsUrl?: string;
+  bbntNo?: string;
+  bbntDate?: string;
+  bbntGoogleDocsUrl?: string;
   /** Hồ sơ Hợp đồng (module Hợp đồng) của Phụ lục SOW / BBNT gắn với Job, để đồng bộ trạng thái ký */
   sowContractId?: string;
   bbntContractId?: string;
@@ -1851,6 +1855,10 @@ export function sanitizeDealBoard(input: Partial<DealBoardData> | undefined): De
           appendixDate: day(j?.appendixDate),
           appendixUrl: s(j?.appendixUrl, 1000),
           bbntUrl: s(j?.bbntUrl, 1000) || undefined,
+          bbntNo: s(j?.bbntNo, 80) || undefined,
+          bbntDate: day(j?.bbntDate) || undefined,
+          sowGoogleDocsUrl: s(j?.sowGoogleDocsUrl, 1000) || undefined,
+          bbntGoogleDocsUrl: s(j?.bbntGoogleDocsUrl, 1000) || undefined,
           sowContractId: s(j?.sowContractId, 120) || undefined,
           bbntContractId: s(j?.bbntContractId, 120) || undefined,
           sowSigned: j?.sowSigned === true ? true : undefined,
@@ -1890,6 +1898,7 @@ export function sanitizeDealBoard(input: Partial<DealBoardData> | undefined): De
           script: {
             status: oneOf(j?.script?.status, ['NONE', 'NOT_NEEDED', 'SUBMITTED', 'CHANGES', 'APPROVED'] as const, 'NONE'),
             scriptUrl: s(j?.script?.scriptUrl, 1000),
+            internalScriptAuditStatus: oneOf(j?.script?.internalScriptAuditStatus, ['NONE', 'PASSED', 'CHANGES'] as const, 'NONE'),
             internalDemoAuditStatus: oneOf(j?.script?.internalDemoAuditStatus, ['NONE', 'PASSED', 'CHANGES'] as const, 'NONE'),
             demoStatus: oneOf(j?.script?.demoStatus, ['NONE', 'NOT_NEEDED', 'SUBMITTED', 'CHANGES', 'APPROVED'] as const, 'NONE'),
             demoUrl: s(j?.script?.demoUrl, 1000),

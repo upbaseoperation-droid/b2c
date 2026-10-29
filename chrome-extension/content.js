@@ -115,6 +115,7 @@
     sampleSize: 15,
     excludePinned: true,
     cartFilterMode: 'all', // 'all' | 'cart_only' | 'non_cart_only'
+    dateRangePreset: 'all', // 'all' | '7d' | '14d' | '30d' | '60d' | '90d' | 'custom'
     dateFromFilter: '',
     dateToFilter: '',
     keywordFilter: '',
@@ -513,7 +514,8 @@
     const organicViews = [];
     const sponsoredViews = [];
     for (const v of baseSample) {
-      const vw = Number(v.views || 0);
+      const rawVw = Number(v.views || 0);
+      const vw = Number.isFinite(rawVw) && rawVw >= 0 && rawVw <= 5000000000 ? rawVw : 0;
       const hasCart = Boolean(
         v.isSponsored ||
           v.hasYellowCart ||
@@ -590,11 +592,16 @@
     const viewsList = [];
 
     for (const v of filtered) {
-      const vw = Number(v.views || 0);
-      const lk = Number(v.likes || 0);
-      const cm = Number(v.comments || 0);
-      const sh = Number(v.shares || 0);
-      const sv = Number(v.saves || 0);
+      const rawVw = Number(v.views || 0);
+      const vw = Number.isFinite(rawVw) && rawVw >= 0 && rawVw <= 5000000000 ? rawVw : 0;
+      const rawLk = Number(v.likes || 0);
+      const lk = Number.isFinite(rawLk) && rawLk >= 0 && rawLk <= 5000000000 ? rawLk : 0;
+      const rawCm = Number(v.comments || 0);
+      const cm = Number.isFinite(rawCm) && rawCm >= 0 && rawCm <= 5000000000 ? rawCm : 0;
+      const rawSh = Number(v.shares || 0);
+      const sh = Number.isFinite(rawSh) && rawSh >= 0 && rawSh <= 5000000000 ? rawSh : 0;
+      const rawSv = Number(v.saves || 0);
+      const sv = Number.isFinite(rawSv) && rawSv >= 0 && rawSv <= 5000000000 ? rawSv : 0;
       totalViews += vw;
       totalLikes += lk;
       totalComments += cm;
@@ -3443,12 +3450,12 @@
         </div>
 
         <div class="ub-TableWrap" style="margin-bottom:8px;">
-          <table class="ub-Table">
+          <table class="ub-Table" style="table-layout:fixed; width:100%;">
             <thead>
               <tr>
-                <th>Top Phân loại hàng (SKU) khách đặt (${skuBreakdown.length})</th>
-                <th class="ub-Num">Số đơn</th>
-                <th class="ub-Num">Tỷ trọng</th>
+                <th style="width:56%;">Top Phân loại hàng (SKU) khách đặt (${skuBreakdown.length})</th>
+                <th class="ub-Num" style="width:22%;">Số đơn</th>
+                <th class="ub-Num" style="width:22%;">Tỷ trọng</th>
               </tr>
             </thead>
             <tbody>${skuRowsHtml}</tbody>
@@ -3496,9 +3503,9 @@
                       </div>
                       <div style="font-size:12px; color:var(--ub-ink-3);">Mã SP: ${escapeHtml(String(item.productId || '—'))}</div>
                     </td>
-                    <td class="ub-Num" style="font-weight:600; color:var(--ub-crit);">${formatVnd(item.priceVnd || 0)}</td>
-                    <td class="ub-Num">${item.soldCount > 0 ? formatNum(item.soldCount) : item.ratingCount > 0 ? `${formatNum(item.ratingCount)} ĐG` : '—'}</td>
-                    <td>
+                    <td class="ub-Num" style="font-weight:600; color:var(--ub-crit); white-space:nowrap;">${formatVnd(item.priceVnd || 0)}</td>
+                    <td class="ub-Num" style="white-space:nowrap;">${item.soldCount > 0 ? formatNum(item.soldCount) : item.ratingCount > 0 ? `${formatNum(item.ratingCount)} ĐG` : '—'}</td>
+                    <td class="ub-Num" style="white-space:nowrap;">
                       <button type="button" class="ub-IconBtn ub-BtnCopyPid" data-pid="${escapeHtml(String(item.productId || ''))}">Copy Mã</button>
                     </td>
                   </tr>
@@ -3528,13 +3535,13 @@
         </div>
 
         <div class="ub-TableWrap">
-          <table class="ub-Table">
+          <table class="ub-Table" style="table-layout:fixed; width:100%;">
             <thead>
               <tr>
-                <th>Sản phẩm trên Shopee (${shopItems.length})</th>
-                <th class="ub-Num">Giá bán</th>
-                <th class="ub-Num">Đã bán / ĐG</th>
-                <th>Mã SP</th>
+                <th style="width:42%;">Sản phẩm trên Shopee (${shopItems.length})</th>
+                <th class="ub-Num" style="width:22%;">Giá bán</th>
+                <th class="ub-Num" style="width:18%;">Đã bán / ĐG</th>
+                <th class="ub-Num" style="width:18%;">Mã SP</th>
               </tr>
             </thead>
             <tbody>${shopRowsHtml}</tbody>
@@ -3872,11 +3879,11 @@
                      <div style="font-size:12px; color:var(--ub-ink-2); background:var(--ub-surface); border:1px solid var(--ub-line); border-radius:4px; padding:5px 7px; margin-bottom:5px; line-height:1.35;">
                        <b style="color:var(--ub-ink);">3 câu mở màn:</b> ${escapeHtml(hookInfo.hookText || '—')}
                      </div>
-                     <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--ub-ink-3); margin-bottom:4px;">
+                     <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--ub-ink-3); margin-bottom:4px;">
                        <span>Độ dài: <b class="ub-Num" style="color:var(--ub-ink);">${hookInfo.charCount || 0} ký tự</b> (${hookInfo.wordCount || 0} từ)</span>
                        <span>${hookInfo.hasCommercialRisk ? `<b style="color:var(--ub-crit);">Chứa: ${escapeHtml(hookInfo.riskKeywords.slice(0, 2).join(', '))}</b>` : 'Không chèn link cấm'}</span>
                      </div>
-                     <div class="ub-Notice ${hookInfo.hasCommercialRisk ? 'ub-Notice--warn' : 'ub-Notice--pos'}" style="margin:0; padding:4px 6px; font-size:11px;">
+                     <div class="ub-Notice ${hookInfo.hasCommercialRisk ? 'ub-Notice--warn' : 'ub-Notice--pos'}" style="margin:0; padding:4px 6px; font-size:12px;">
                        ${escapeHtml(hookInfo.advice)}
                      </div>
                    </div>`
@@ -3897,7 +3904,7 @@
                        ${treeParts
                          .map(
                            (p) => `
-                             <div style="padding:5px 7px; background:var(--ub-surface); border:1px solid var(--ub-line); border-radius:4px; font-size:11px;">
+                             <div style="padding:5px 7px; background:var(--ub-surface); border:1px solid var(--ub-line); border-radius:4px; font-size:12px;">
                                <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
                                  <span class="ub-Badge ub-Badge--neutral">Phần ${p.order}/${treeParts.length}</span>
                                  ${p.hasLinks ? `<span class="ub-Badge ub-Badge--pos">🔗 Có link (${p.linksCount})</span>` : ''}
@@ -3989,12 +3996,12 @@
         </div>
 
         <div class="ub-TableWrap">
-          <table class="ub-Table">
+          <table class="ub-Table" style="table-layout:fixed; width:100%;">
             <thead>
               <tr>
-                <th>Link Affiliate / Sản phẩm phát hiện (${affLinks.length})</th>
-                <th>Nền tảng</th>
-                <th>Thao tác</th>
+                <th style="width:52%;">Link Affiliate / Sản phẩm phát hiện (${affLinks.length})</th>
+                <th style="width:26%;">Nền tảng</th>
+                <th class="ub-Num" style="width:22%;">Thao tác</th>
               </tr>
             </thead>
             <tbody>${affRowsHtml}</tbody>
@@ -4033,7 +4040,7 @@
                        ${leads
                          .map(
                            (l) => `
-                             <div style="padding:5px 7px; background:var(--ub-surface); border:1px solid var(--ub-line); border-radius:4px; font-size:11px;">
+                             <div style="padding:5px 7px; background:var(--ub-surface); border:1px solid var(--ub-line); border-radius:4px; font-size:12px;">
                                <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
                                  <b style="color:var(--ub-ink);">${escapeHtml(l.handle)} · <span class="ub-Num" style="color:var(--ub-ink-3); font-weight:400;">${escapeHtml(l.time)}</span></b>
                                  <span class="ub-Badge ub-Badge--pos">${escapeHtml(l.intentLabel)}</span>
@@ -4044,7 +4051,7 @@
                          )
                          .join('')}
                      </div>`
-                  : `<div style="font-size:11px; color:var(--ub-ink-3); padding:4px 0;">
+                  : `<div style="font-size:12px; color:var(--ub-ink-3); padding:4px 0;">
                        Chưa phát hiện comment xin link / hỏi mua. Hãy cuộn xuống các bài tút để quét tự động.
                      </div>`
               }
@@ -4489,7 +4496,7 @@
             <div class="ub-TableWrap" style="max-height:145px;">
               <table class="ub-Table">
                 <thead>
-                  <tr><th>Sản phẩm trên Live</th><th class="ub-Num">Giá Live</th><th class="ub-Num">Đã bán</th><th class="ub-Num">Link</th></tr>
+                  <tr><th style="width:44%;">Sản phẩm trên Live</th><th class="ub-Num" style="width:22%;">Giá Live</th><th class="ub-Num" style="width:18%;">Đã bán</th><th class="ub-Num" style="width:16%;">Link</th></tr>
                 </thead>
                 <tbody>${bagRowsHtml}</tbody>
               </table>
@@ -4570,13 +4577,17 @@
           ).join('') || `<tr><td colspan="4" style="text-align:center; color:var(--ub-ink-3);">Chưa có dữ liệu nhạc nền.</td></tr>`;
 
         const dateHtml =
-          (pa.byDate || []).slice(0, 10).map(
+          (pa.byDate || []).slice(0, 14).map(
             (d) => `
             <tr>
-              <td style="font-weight:600;">${formatDateVn(d.date)}</td>
+              <td style="font-weight:600;">
+                <button type="button" class="ub-IconBtn ub-BtnFilterSingleDate" data-date="${escapeHtml(d.date)}" title="Bấm để lọc xem video đăng ngày ${formatDateVn(d.date)}" style="height:20px; padding:0 5px; font-weight:700; color:var(--ub-accent);">
+                  ${formatDateVn(d.date)}
+                </button>
+              </td>
               <td class="ub-Num">${formatNum(d.videoCount)} bài (${d.shopVideoCount} giỏ)</td>
+              <td class="ub-Num" style="font-weight:700; color:var(--ub-accent);">${formatNum(d.medianViews || d.avgViews || d.totalViews)}</td>
               <td class="ub-Num" style="font-weight:600;">${formatNum(d.totalViews)}</td>
-              <td class="ub-Num">${formatNum(d.totalLikes)}</td>
             </tr>`
           ).join('') || `<tr><td colspan="4" style="text-align:center; color:var(--ub-ink-3);">Chưa có dữ liệu theo ngày đăng.</td></tr>`;
 
@@ -4587,7 +4598,7 @@
             <div class="ub-TableWrap" style="max-height:115px;">
               <table class="ub-Table">
                 <thead>
-                  <tr><th>Khung giờ</th><th class="ub-Num">Số bài</th><th class="ub-Num">View TB</th><th class="ub-Num">Tổng View</th></tr>
+                  <tr><th style="width:34%;">Khung giờ</th><th class="ub-Num" style="width:20%;">Số bài</th><th class="ub-Num" style="width:23%;">View TB</th><th class="ub-Num" style="width:23%;">Tổng View</th></tr>
                 </thead>
                 <tbody>${hoursHtml}</tbody>
               </table>
@@ -4599,7 +4610,7 @@
             <div class="ub-TableWrap" style="max-height:110px;">
               <table class="ub-Table">
                 <thead>
-                  <tr><th>Hashtag</th><th class="ub-Num">Số bài</th><th class="ub-Num">View TB</th></tr>
+                  <tr><th style="width:52%;">Hashtag</th><th class="ub-Num" style="width:24%;">Số bài</th><th class="ub-Num" style="width:24%;">View TB</th></tr>
                 </thead>
                 <tbody>${tagsHtml}</tbody>
               </table>
@@ -4607,7 +4618,7 @@
             <div class="ub-TableWrap" style="max-height:115px;">
               <table class="ub-Table">
                 <thead>
-                  <tr><th>Âm thanh / Nhạc nền</th><th class="ub-Num">Số bài</th><th class="ub-Num">View TB</th><th class="ub-Num">Tải về</th></tr>
+                  <tr><th style="width:44%;">Âm thanh / Nhạc nền</th><th class="ub-Num" style="width:18%;">Số bài</th><th class="ub-Num" style="width:20%;">View TB</th><th class="ub-Num" style="width:18%;">Tải về</th></tr>
                 </thead>
                 <tbody>${musicHtml}</tbody>
               </table>
@@ -4615,11 +4626,11 @@
           </div>
 
           <div class="ub-SectionBox">
-            <h4 class="ub-SectionTitle">3. Lượt xem theo Ngày đăng</h4>
-            <div class="ub-TableWrap" style="max-height:115px;">
+            <h4 class="ub-SectionTitle">3. View Trung vị & Tổng View theo Ngày đăng</h4>
+            <div class="ub-TableWrap" style="max-height:135px;">
               <table class="ub-Table">
                 <thead>
-                  <tr><th>Ngày đăng</th><th class="ub-Num">Số bài</th><th class="ub-Num">Tổng View</th><th class="ub-Num">Tổng Tim</th></tr>
+                  <tr><th style="width:28%;">Ngày đăng</th><th class="ub-Num" style="width:26%;">Số bài</th><th class="ub-Num" style="width:23%;">Trung vị</th><th class="ub-Num" style="width:23%;">Tổng View</th></tr>
                 </thead>
                 <tbody>${dateHtml}</tbody>
               </table>
@@ -4744,7 +4755,7 @@
             <div class="ub-TableWrap" style="max-height:160px;">
               <table class="ub-Table">
                 <thead>
-                  <tr><th>Mặt hàng / Shop</th><th class="ub-Num">Số bài</th><th class="ub-Num">Tổng View</th><th class="ub-Num">Giá / Hoa hồng</th></tr>
+                  <tr><th style="width:40%;">Mặt hàng / Shop</th><th class="ub-Num" style="width:16%;">Số bài</th><th class="ub-Num" style="width:20%;">Tổng View</th><th class="ub-Num" style="width:24%;">Giá / Hoa hồng</th></tr>
                 </thead>
                 <tbody>${prodRowsHtml}</tbody>
               </table>
@@ -4756,7 +4767,7 @@
             <div class="ub-TableWrap" style="max-height:115px;">
               <table class="ub-Table">
                 <thead>
-                  <tr><th>Gian hàng / Nhãn</th><th class="ub-Num">Số SP</th><th class="ub-Num">Số bài</th><th class="ub-Num">Tổng View</th></tr>
+                  <tr><th style="width:38%;">Gian hàng / Nhãn</th><th class="ub-Num" style="width:18%;">Số SP</th><th class="ub-Num" style="width:18%;">Số bài</th><th class="ub-Num" style="width:26%;">Tổng View</th></tr>
                 </thead>
                 <tbody>${shopRowsHtml}</tbody>
               </table>
@@ -4819,7 +4830,7 @@
             <div class="ub-TableWrap" style="max-height:135px;">
               <table class="ub-Table">
                 <thead>
-                  <tr><th>Kênh KOC</th><th class="ub-Num">Followers (Δ)</th><th class="ub-Num">View TB (Δ)</th><th class="ub-Num">Xóa</th></tr>
+                  <tr><th style="width:38%;">Kênh KOC</th><th class="ub-Num" style="width:22%;">Followers (Δ)</th><th class="ub-Num" style="width:22%;">View TB (Δ)</th><th class="ub-Num" style="width:18%;">Xóa</th></tr>
                 </thead>
                 <tbody>${wlRowsHtml}</tbody>
               </table>
@@ -4869,7 +4880,7 @@
                    <div class="ub-TableWrap" style="max-height:145px;">
                      <table class="ub-Table">
                        <thead>
-                         <tr><th>Kênh KOC</th><th class="ub-Num">Followers</th><th class="ub-Num">View TB</th><th class="ub-Num">Theo dõi</th></tr>
+                         <tr><th style="width:38%;">Kênh KOC</th><th class="ub-Num" style="width:20%;">Followers</th><th class="ub-Num" style="width:22%;">View TB</th><th class="ub-Num" style="width:20%;">Theo dõi</th></tr>
                        </thead>
                        <tbody>
                          ${uiState.searchSaturation.discoveredKocs
@@ -5114,8 +5125,9 @@
                    <h4 class="ub-SectionTitle">Độ bão hòa ngách trên Tìm kiếm (${searchSat.totalVideos} bài)</h4>
                    <span class="ub-Badge ${searchSat.saturationScore >= 65 ? 'ub-Badge--crit' : 'ub-Badge--pos'}">${escapeHtml(searchSat.competitionLabel)}</span>
                  </div>
-                 <div class="ub-KeyValGrid">
+                 <div class="ub-KeyValGrid" style="grid-template-columns:repeat(3, minmax(0, 1fr));">
                    <div class="ub-KeyValItem"><span class="ub-KeyLabel">Tỷ lệ bài gắn giỏ:</span><span class="ub-KeyVal">${searchSat.shopRatioPct}% (${searchSat.shopVideoCount} bài)</span></div>
+                   <div class="ub-KeyValItem"><span class="ub-KeyLabel">View trung vị ngách:</span><span class="ub-KeyVal" style="color:var(--ub-accent);">${formatNum(searchSat.medianViews || searchSat.avgViews || 0)}</span></div>
                    <div class="ub-KeyValItem"><span class="ub-KeyLabel">View TB ngách:</span><span class="ub-KeyVal">${formatNum(searchSat.avgViews)}</span></div>
                  </div>
                </div>`
@@ -5144,12 +5156,12 @@
                         .replace('Tương tác bất thường', 'Đột biến ER')
                     : '';
                   const badgeHtml = rowHasCart
-                    ? `<span class="ub-Badge ub-Badge--warn" style="font-weight:700;">🛒 Giỏ (${rowProdCount})</span>`
+                    ? `<span class="ub-Badge ub-Badge--warn" style="font-weight:700; padding:1px 4px; max-width:100%; overflow:hidden; text-overflow:ellipsis;">🛒 Giỏ (${rowProdCount})</span>`
                     : shortPerfText
-                      ? `<span class="ub-Badge ub-Badge--${perfLabel.tone || 'pos'}">${escapeHtml(shortPerfText)}</span>`
+                      ? `<span class="ub-Badge ub-Badge--${perfLabel.tone || 'pos'}" style="padding:1px 4px; max-width:100%; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(shortPerfText)}</span>`
                       : v.isPinned
-                        ? '<span class="ub-Badge ub-Badge--neutral">Ghim</span>'
-                        : '<span class="ub-Badge ub-Badge--pos">Không giỏ</span>';
+                        ? '<span class="ub-Badge ub-Badge--neutral" style="padding:1px 4px;">Ghim</span>'
+                        : '<span class="ub-Badge ub-Badge--pos" style="padding:1px 4px; max-width:100%; overflow:hidden; text-overflow:ellipsis;">Không giỏ</span>';
                   const isFeedOrSearch = uiState.pageType === 'other' || uiState.pageType === 'search';
                   const rowFirstProd =
                     Array.isArray(v.cartProducts) && v.cartProducts.length > 0 ? v.cartProducts[0] : null;
@@ -5164,29 +5176,29 @@
                     <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                       <a href="${escapeHtml(v.videoUrl)}" target="_blank" style="color:var(--ub-accent); text-decoration:none; font-weight:600;">${formatDateVn(v.publishedAt)}</a>
                     </div>
-                    <div style="color:var(--ub-ink-3); white-space:nowrap; font-size:11px;">${formatNum(v.viewsPerHour || 0)}/h</div>
+                    <div style="color:var(--ub-ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px;">${formatNum(v.viewsPerHour || 0)}/h</div>
                     ${
                       rowFirstProd
-                        ? `<div title="${escapeHtml(rowFirstProd.title || '')}" style="color:var(--ub-pos); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px;">🛒 ${escapeHtml(rowFirstProd.title || 'Sản phẩm')}</div>`
+                        ? `<div title="${escapeHtml(rowFirstProd.title || '')}" style="color:var(--ub-pos); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px;">🛒 ${escapeHtml(rowFirstProd.title || 'Sản phẩm')}</div>`
                         : ''
                     }
                   </td>
                   <td class="ub-Num" style="width:19%; white-space:nowrap;">
-                    <div style="font-weight:700; color:var(--ub-ink);">${formatNum(v.views)}</div>
-                    <div style="color:var(--ub-ink-3); font-size:11px;">ER: ${v.engagementRate || 0}%</div>
+                    <div style="font-weight:700; color:var(--ub-ink); overflow:hidden; text-overflow:ellipsis;">${formatNum(v.views)}</div>
+                    <div style="color:var(--ub-ink-3); font-size:12px; overflow:hidden; text-overflow:ellipsis;">ER: ${v.engagementRate || 0}%</div>
                   </td>
                   <td class="ub-Num" style="width:32%; white-space:nowrap;">
-                    <div style="font-weight:600; color:var(--ub-ink); font-size:11px;">❤️ ${formatNum(v.likes)} · 💬 ${formatNum(v.comments)}</div>
+                    <div style="font-weight:600; color:var(--ub-ink); font-size:12px; overflow:hidden; text-overflow:ellipsis;">❤️${formatNum(v.likes)} · 💬${formatNum(v.comments)}</div>
                     ${
                       uiState.showExtraCols
-                        ? `<div style="color:var(--ub-ink-3); font-size:11px;">🔖 ${formatNum(v.saves || 0)} · ↗ ${formatNum(v.shares || 0)}</div>`
+                        ? `<div style="color:var(--ub-ink-3); font-size:12px; overflow:hidden; text-overflow:ellipsis;">🔖${formatNum(v.saves || 0)} · ↗${formatNum(v.shares || 0)}</div>`
                         : ''
                     }
                   </td>
                   <td class="ub-Num" style="width:24%; white-space:nowrap;">
-                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:3px;">
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:3px; max-width:100%; overflow:hidden;">
                       ${badgeHtml}
-                      <button type="button" class="ub-IconBtn ub-BtnRowDlMp4" data-row-idx="${idx}" title="Tải MP4 không logo" style="height:20px; padding:0 6px; font-size:11px; white-space:nowrap;">⬇ MP4</button>
+                      <button type="button" class="ub-IconBtn ub-BtnRowDlMp4" data-row-idx="${idx}" title="Tải MP4 không logo" style="height:20px; padding:0 5px; font-size:12px; white-space:nowrap; max-width:100%;">⬇ MP4</button>
                     </div>
                   </td>
                 </tr>
@@ -5304,39 +5316,19 @@
              </div>`
           : '';
 
-        const statRowHtml = isHomeFeedOrSearch
-          ? `
+        const statRowHtml = `
           <div class="ub-StatRow">
             <div class="ub-StatCard">
-              <div class="ub-StatLabel">View bài</div>
-              <div class="ub-StatVal">${formatNum(curFeedVid?.views || 0)}</div>
+              <div class="ub-StatLabel">${displayFollowers > 0 ? 'Follower' : stats.sampleCount > 0 ? 'Cỡ mẫu' : 'View bài'}</div>
+              <div class="ub-StatVal">${displayFollowers > 0 ? formatNum(displayFollowers) : stats.sampleCount > 0 ? `${stats.sampleCount} bài` : formatNum(curFeedVid?.views || 0)}</div>
+            </div>
+            <div class="ub-StatCard" style="border-color:var(--ub-line-strong); background:var(--ub-surface);">
+              <div class="ub-StatLabel" style="color:var(--ub-accent); font-weight:700;">View trung vị</div>
+              <div class="ub-StatVal" style="color:var(--ub-accent);">${formatNum(displayMedian)}</div>
             </div>
             <div class="ub-StatCard">
-              <div class="ub-StatLabel">Lượt tim</div>
-              <div class="ub-StatVal">${formatNum(curFeedVid?.likes || 0)}</div>
-            </div>
-            <div class="ub-StatCard">
-              <div class="ub-StatLabel">BL / Lưu</div>
-              <div class="ub-StatVal">${formatNum(curFeedVid?.comments || 0)} / ${formatNum(curFeedVid?.saves || 0)}</div>
-            </div>
-            <div class="ub-StatCard">
-              <div class="ub-StatLabel">Chia sẻ</div>
-              <div class="ub-StatVal">${formatNum(curFeedVid?.shares || 0)}</div>
-            </div>
-          </div>`
-          : `
-          <div class="ub-StatRow">
-            <div class="ub-StatCard">
-              <div class="ub-StatLabel">${stats.sampleCount > 0 || displayFollowers > 0 ? 'Follower' : 'View bài'}</div>
-              <div class="ub-StatVal">${formatNum(stats.sampleCount > 0 || displayFollowers > 0 ? displayFollowers : curFeedVid?.views || 0)}</div>
-            </div>
-            <div class="ub-StatCard">
-              <div class="ub-StatLabel">${stats.sampleCount > 0 ? 'Trung vị' : 'Lượt tim'}</div>
-              <div class="ub-StatVal">${formatNum(stats.sampleCount > 0 ? displayMedian : curFeedVid?.likes || 0)}</div>
-            </div>
-            <div class="ub-StatCard">
-              <div class="ub-StatLabel">${stats.sampleCount > 0 ? 'View TB' : 'BL / Lưu'}</div>
-              <div class="ub-StatVal">${formatNum(stats.sampleCount > 0 ? displayAvg : curFeedVid?.comments || 0)}</div>
+              <div class="ub-StatLabel">View TB</div>
+              <div class="ub-StatVal">${formatNum(displayAvg)}</div>
             </div>
             <div class="ub-StatCard">
               <div class="ub-StatLabel">Tỷ lệ ER</div>
@@ -5344,8 +5336,7 @@
             </div>
           </div>`;
 
-        const medianBreakdownBoxHtml = !isHomeFeedOrSearch
-          ? `<div class="ub-SectionBox" style="background:var(--ub-surface); padding:6px 8px; gap:5px;">
+        const medianBreakdownBoxHtml = `<div class="ub-SectionBox" style="background:var(--ub-surface); padding:6px 8px; gap:5px;">
                <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; flex-wrap:wrap;">
                  <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
                    <span style="font-weight:700; color:var(--ub-ink);">Cỡ mẫu tính View:</span>
@@ -5368,6 +5359,25 @@
                    <option value="cart_only" ${uiState.cartFilterMode === 'cart_only' ? 'selected' : ''}>Chỉ Gắn giỏ (${stats.sponsoredCount || 0})</option>
                    <option value="non_cart_only" ${uiState.cartFilterMode === 'non_cart_only' ? 'selected' : ''}>Không gắn giỏ (${stats.organicCount || 0})</option>
                  </select>
+               </div>
+               <div style="display:flex; align-items:center; justify-content:space-between; gap:4px; flex-wrap:nowrap; padding-top:4px; border-top:1px dashed var(--ub-line);">
+                 <select class="ub-Select" id="ub-sel-daterange-main" style="width:92px; height:24px; padding:0 3px;" title="Tính View Trung vị theo khoảng ngày đăng">
+                   <option value="all" ${uiState.dateRangePreset === 'all' ? 'selected' : ''}>Ngày: Tất cả</option>
+                   <option value="7d" ${uiState.dateRangePreset === '7d' ? 'selected' : ''}>7 ngày qua</option>
+                   <option value="14d" ${uiState.dateRangePreset === '14d' ? 'selected' : ''}>14 ngày qua</option>
+                   <option value="30d" ${uiState.dateRangePreset === '30d' ? 'selected' : ''}>30 ngày qua</option>
+                   <option value="60d" ${uiState.dateRangePreset === '60d' ? 'selected' : ''}>60 ngày qua</option>
+                   <option value="90d" ${uiState.dateRangePreset === '90d' ? 'selected' : ''}>90 ngày qua</option>
+                   <option value="custom" ${uiState.dateRangePreset === 'custom' ? 'selected' : ''}>Tùy chọn ngày</option>
+                 </select>
+                 <input class="ub-Input" id="ub-inp-date-from-main" type="date" title="Từ ngày đăng" value="${escapeHtml(uiState.dateFromFilter)}" style="flex:1; min-width:0; height:24px; padding:0 3px;" />
+                 <span style="color:var(--ub-ink-3);">→</span>
+                 <input class="ub-Input" id="ub-inp-date-to-main" type="date" title="Đến ngày đăng" value="${escapeHtml(uiState.dateToFilter)}" style="flex:1; min-width:0; height:24px; padding:0 3px;" />
+                 ${
+                   uiState.dateFromFilter || uiState.dateToFilter
+                     ? `<button type="button" class="ub-IconBtn" id="ub-btn-clear-dates" title="Xóa lọc theo ngày" style="height:24px; padding:0 5px;">✕</button>`
+                     : ''
+                 }
                </div>
                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; padding-top:4px; border-top:1px dashed var(--ub-line);">
                  <div style="background:var(--ub-canvas); border:1px solid var(--ub-line); border-radius:4px; padding:4px 6px;">
@@ -5399,8 +5409,7 @@
                    </div>
                  </div>
                </div>
-             </div>`
-          : '';
+             </div>`;
 
         tabBodyHtml = `
           ${subNavHtml}
@@ -5499,12 +5508,12 @@
 
             <div class="ub-CompareBox">
               <div class="ub-CompareItem">
-                <span style="font-size:12px; color:var(--ub-ink-2);">View tự nhiên:</span>
-                <strong style="font-size:12px; color:var(--ub-ink);">${formatNum(stats.organicAvgViews)}</strong>
+                <span style="font-size:12px; color:var(--ub-ink-2);">Trung vị tự nhiên:</span>
+                <strong style="font-size:12px; color:var(--ub-ink);">${formatNum(stats.organicMedianViews || stats.organicAvgViews)}</strong>
               </div>
               <div class="ub-CompareItem">
-                <span style="font-size:12px; color:var(--ub-ink-2);">View giỏ (${stats.sponsoredCount}):</span>
-                <strong style="font-size:12px; color:var(--ub-accent);">${stats.sponsoredCount > 0 ? formatNum(stats.sponsoredAvgViews) : '—'}</strong>
+                <span style="font-size:12px; color:var(--ub-ink-2);">Trung vị giỏ (${stats.sponsoredCount}):</span>
+                <strong style="font-size:12px; color:var(--ub-accent);">${stats.sponsoredCount > 0 ? formatNum(stats.sponsoredMedianViews || stats.sponsoredAvgViews) : '—'}</strong>
               </div>
             </div>
           </div>
@@ -5854,11 +5863,11 @@
             <table class="ub-Table">
               <thead>
                 <tr>
-                  <th>Mã Video / Ad</th>
-                  <th class="ub-Num">Chi phí Ads</th>
-                  <th class="ub-Num">GMV Ads</th>
-                  <th class="ub-Num">Đơn hàng</th>
-                  <th class="ub-Num">ROAS</th>
+                  <th style="width:26%;">Mã Video / Ad</th>
+                  <th class="ub-Num" style="width:23%;">Chi phí Ads</th>
+                  <th class="ub-Num" style="width:23%;">GMV Ads</th>
+                  <th class="ub-Num" style="width:14%;">Đơn</th>
+                  <th class="ub-Num" style="width:14%;">ROAS</th>
                 </tr>
               </thead>
               <tbody>
@@ -5977,11 +5986,11 @@
               <table class="ub-Table">
                 <thead>
                   <tr>
-                    <th>Mã BO</th>
-                    <th>Gian hàng / Brand</th>
-                    <th class="ub-Num">Giá Net</th>
-                    <th class="ub-Num">View</th>
-                    <th>PIC</th>
+                    <th style="width:24%;">Mã BO</th>
+                    <th style="width:24%;">Gian hàng / Brand</th>
+                    <th class="ub-Num" style="width:20%;">Giá Net</th>
+                    <th class="ub-Num" style="width:16%;">View</th>
+                    <th style="width:16%;">PIC</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -7085,7 +7094,52 @@
 
     root.querySelector('#ub-inp-date-from')?.addEventListener('change', (e) => {
       uiState.dateFromFilter = e.target.value;
+      uiState.dateRangePreset = e.target.value || uiState.dateToFilter ? 'custom' : 'all';
       render();
+    });
+    root.querySelector('#ub-inp-date-from-main')?.addEventListener('change', (e) => {
+      uiState.dateFromFilter = e.target.value;
+      uiState.dateRangePreset = e.target.value || uiState.dateToFilter ? 'custom' : 'all';
+      render();
+    });
+    root.querySelector('#ub-inp-date-to-main')?.addEventListener('change', (e) => {
+      uiState.dateToFilter = e.target.value;
+      uiState.dateRangePreset = uiState.dateFromFilter || e.target.value ? 'custom' : 'all';
+      render();
+    });
+    root.querySelector('#ub-sel-daterange-main')?.addEventListener('change', (e) => {
+      const preset = String(e.target.value || 'all');
+      uiState.dateRangePreset = preset;
+      if (preset === 'all') {
+        uiState.dateFromFilter = '';
+        uiState.dateToFilter = '';
+      } else if (preset !== 'custom') {
+        const days = parseInt(preset, 10) || 30;
+        const now = new Date();
+        const from = new Date(now.getTime() - days * 86400 * 1000);
+        uiState.dateFromFilter = from.toISOString().slice(0, 10);
+        uiState.dateToFilter = now.toISOString().slice(0, 10);
+        if (uiState.sampleSize < 50) uiState.sampleSize = 100;
+      }
+      render();
+    });
+    root.querySelector('#ub-btn-clear-dates')?.addEventListener('click', () => {
+      uiState.dateRangePreset = 'all';
+      uiState.dateFromFilter = '';
+      uiState.dateToFilter = '';
+      render();
+    });
+    root.querySelectorAll('.ub-BtnFilterSingleDate').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const d = btn.getAttribute('data-date') || '';
+        if (!d) return;
+        uiState.dateRangePreset = 'custom';
+        uiState.dateFromFilter = d;
+        uiState.dateToFilter = d;
+        uiState.sampleSize = 100;
+        uiState.metricsSubView = 'posts';
+        render();
+      });
     });
     root.querySelector('#ub-inp-kw-filter')?.addEventListener('input', (e) => {
       uiState.keywordFilter = e.target.value;

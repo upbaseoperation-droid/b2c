@@ -7,6 +7,16 @@ import { listContracts, getContract, saveContract, storageMode } from '@/lib/con
 import { loadTemplate, templateCatalog, renderTemplate, archiveTemplate, saveTemplateMeta, parseAndStoreCustomDocx, readArchivedDocxBuffer, uploadTemplateDocx } from '@/lib/contracts/templates';
 import { checkContract, aiConfigured } from '@/lib/contracts/check';
 import { wesignConfigured, wesignDetail } from '@/lib/contracts/wesign';
+import {
+  canAdvanceSigningStatus,
+  contractSystemConfigured,
+  createStandaloneContractSystemMeta,
+  generateContractOnSystem,
+  querySigningStatusFromContractSystem,
+  requestSignOnSystem,
+  syncTemplatesWithContractSystem,
+} from '@/lib/contracts/contractSystemClient';
+import { buildStableContractCode } from '@/lib/contracts/contractSystemRules';
 import type { AcceptanceScreenshotItem, ContractActor, ContractRecord, ReviewStep } from '@/lib/contracts/types';
 import { simulateSigning } from '@/lib/contracts/demo';
 export const runtime = 'nodejs';
@@ -17,7 +27,24 @@ export async function GET(req: NextRequest) {
   try {
     const actor = actorFromRequest(req);
     const actors = configuredActors();
-    return NextResponse.json({ actor, reviewers: actors.filter(a => a.roles.some(r => ['LEGAL', 'FINANCE', 'LEAD'].includes(r))), demoActors: process.env.NODE_ENV !== 'production' ? DEMO_ACTORS : [], templates: await templateCatalog(), records: (await listContracts()).filter(r => canRead(r, actor)), config: { storage: storageMode(), ai: aiConfigured(), wesign: wesignConfigured() } }, { headers: { 'Cache-Control': 'no-store' } });
+    const rawTemplates = await templateCatalog();
+    const templates = await syncTemplatesWithContractSystem(rawTemplates);
+    return NextResponse.json(
+      {
+        actor,
+        reviewers: actors.filter(a => a.roles.some(r => ['LEGAL', 'FINANCE', 'LEAD'].includes(r))),
+        demoActors: process.env.NODE_ENV !== 'production' ? DEMO_ACTORS : [],
+        templates,
+        records: (await listContracts()).filter(r => canRead(r, actor)),
+        config: {
+          storage: storageMode(),
+          ai: aiConfigured(),
+          wesign: wesignConfigured(),
+          contractSystem: contractSystemConfigured(),
+        },
+      },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
   } catch (error) { return failure(error); }
 }
 async function parseInput(body: Record<string, unknown>, actor: ContractActor, existing?: ContractRecord) {
@@ -80,22 +107,37 @@ export async function POST(req: NextRequest) {
     requireCondition(body && typeof body === 'object' && !Array.isArray(body), 'Yêu cầu không hợp lệ.');
     if (body.action === 'CREATE') {
       const input = await parseInput(body, actor);
+      let parentContractCode: string | undefined;
       if (input.parentId) {
         const parent = await getContract(input.parentId);
         requireCondition(canRead(parent, actor), 'Không có quyền truy cập hồ sơ gốc.', 403);
+        parentContractCode = parent.contractSystem?.contractCode || buildStableContractCode(parent);
         if (input.templateId.endsWith('-SOW')) {
           requireCondition(parent.templateId.endsWith('-HDNT'), 'Phụ lục SOW phải gắn với Hợp đồng nguyên tắc (HĐNT).');
           requireCondition(!input.kocId || !parent.kocId || parent.kocId === input.kocId, 'Hợp đồng nguyên tắc gốc phải thuộc cùng KOC.');
         }
       }
-      const draft = createContract(input, actor); await archiveTemplate(input.templateId, input.templateHash);
+      const draft = createContract(input, actor);
+      const { template } = await loadTemplate(input.templateId, input.templateHash);
+      draft.contractSystem = await generateContractOnSystem(draft, template, parentContractCode).catch(() =>
+        createStandaloneContractSystemMeta(draft, template, parentContractCode),
+      );
+      await archiveTemplate(input.templateId, input.templateHash);
       const saved = await saveContract(draft); await syncContractToJob(saved).catch(() => 0); return NextResponse.json({ record: saved });
     }
     requireCondition(typeof body.id === 'string', 'Thiếu mã hồ sơ.');
     const record = await getContract(body.id); requireCondition(canRead(record, actor), 'Không có quyền truy cập hồ sơ.', 403);
     requireCondition(body.revision === record.revision, 'Hồ sơ đã thay đổi. Vui lòng tải lại.', 409);
     let next: ContractRecord = structuredClone(record);
-    if (body.action === 'EDIT') next = editContract(record, actor, await parseInput(body, actor, record));
+    if (body.action === 'EDIT') {
+      next = editContract(record, actor, await parseInput(body, actor, record));
+      const { template } = await loadTemplate(next.templateId, next.templateHash);
+      const parentRec = next.parentId ? await getContract(next.parentId).catch(() => null) : null;
+      const parentCode = parentRec ? (parentRec.contractSystem?.contractCode || buildStableContractCode(parentRec)) : undefined;
+      next.contractSystem = await generateContractOnSystem(next, template, parentCode).catch(() =>
+        createStandaloneContractSystemMeta(next, template, parentCode),
+      );
+    }
     else if (body.action === 'SUBMIT') {
       const { template } = await loadTemplate(record.templateId, record.templateHash);
       requireCondition(template.hash === record.templateHash, 'Mẫu nguồn đã thay đổi.', 409);
@@ -196,6 +238,50 @@ export async function POST(req: NextRequest) {
       const previous = record.checks.find(c => c.version === record.version && c.provider === (aiConfigured() ? 'AI' : 'RULES'));
       requireCondition(!previous || Date.now() - Date.parse(previous.at) > 60000, 'Đã có kết quả cho phiên bản này. Thử lại sau một phút.');
       next.checks.push(await checkContract(record)); event(next, actor, aiConfigured() ? 'AI_CHECK' : 'RULE_CHECK');
+    } else if (body.action === 'GENERATE_CONTRACT_SYSTEM') {
+      requireCondition(inScope(record.brand, actor), 'Không có quyền đồng bộ bản hợp đồng.', 403);
+      const { template } = await loadTemplate(record.templateId, record.templateHash);
+      const parentRec = next.parentId ? await getContract(next.parentId).catch(() => null) : null;
+      const parentCode = parentRec ? (parentRec.contractSystem?.contractCode || buildStableContractCode(parentRec)) : undefined;
+      const meta = await generateContractOnSystem(next, template, parentCode);
+      next.contractSystem = meta;
+      event(next, actor, 'GENERATE_CONTRACT_SYSTEM', `Đã tạo bản .docx và đồng bộ Google Docs (${meta.contractCode})`);
+    } else if (body.action === 'SYNC_GOOGLE_DOCS') {
+      requireCondition(inScope(record.brand, actor), 'Không có quyền đồng bộ Google Docs.', 403);
+      const { template } = await loadTemplate(record.templateId, record.templateHash);
+      const baseMeta = next.contractSystem || createStandaloneContractSystemMeta(next, template);
+      const now = new Date().toISOString();
+      next.contractSystem = {
+        ...baseMeta,
+        googleDocsSyncedAt: now,
+        lastSyncedAt: now,
+      };
+      const syncNote = typeof body.note === 'string' && body.note.trim() ? body.note.trim() : 'Đã xuất lại bản .docx mới nhất từ Google Docs';
+      event(next, actor, 'SYNC_GOOGLE_DOCS', syncNote);
+    } else if (body.action === 'REQUEST_SIGN') {
+      assertCanSign(record, actor);
+      const { template } = await loadTemplate(record.templateId, record.templateHash);
+      const rendered = await renderTemplate(record.templateId, record.templateHash, record.values);
+      const partyAEmail = typeof body.partyAEmail === 'string' ? body.partyAEmail.trim() : undefined;
+      const partyBEmail = typeof body.partyBEmail === 'string' ? body.partyBEmail.trim() : undefined;
+      const { meta, attempt, reusedExisting } = await requestSignOnSystem({
+        record: next,
+        actor,
+        renderedParagraphs: rendered.paragraphs,
+        template,
+        partyAEmail,
+        partyBEmail,
+      });
+      next.contractSystem = meta;
+      if (!reusedExisting) {
+        next.signing.push(attempt);
+        event(
+          next,
+          actor,
+          'REQUEST_SIGN',
+          `Đã xuất .docx từ Google Docs và gửi ký sang WeSign qua contract-system (Mã: ${meta.contractCode})`,
+        );
+      }
     } else if (body.action === 'LINK_WESIGN') {
       assertCanSign(record, actor);
       requireCondition(typeof body.documentId === 'string' && body.confirmed === true, 'Cần mã weSign và xác nhận đã đối chiếu bản duyệt.');
@@ -213,10 +299,37 @@ export async function POST(req: NextRequest) {
       const attempt = next.signing.at(-1); requireCondition(attempt, 'Chưa liên kết luồng ký.');
       requireCondition(attempt.provider !== 'DEMO', 'Luồng giả lập không đồng bộ với MISA.');
       try {
-        const detail = await wesignDetail(attempt.documentId);
-        // Không đổi gì thì không ghi: tránh lịch sử phình và lỗi “người khác đã cập nhật” khi nhiều người cùng xem.
-        if (!signingChanged(attempt, detail)) return NextResponse.json({ record: { ...record, signing: [...record.signing.slice(0, -1), { ...attempt, syncedAt: detail.syncedAt }] } });
-        Object.assign(attempt, detail, { error: undefined }); event(next, actor, 'SYNC_WESIGN', String(detail.sourceStatus));
+        const remoteSystemDetail =
+          attempt.provider === 'CONTRACT_SYSTEM'
+            ? await querySigningStatusFromContractSystem(next)
+            : null;
+        if (remoteSystemDetail) {
+          const guard = canAdvanceSigningStatus({
+            currentStatus: attempt.status,
+            nextStatus: remoteSystemDetail.status,
+            lastWebhookTimestamp: attempt.lastWebhookTimestamp,
+            incomingTimestamp: remoteSystemDetail.eventTimestamp,
+          });
+          if (guard.allowed) {
+            Object.assign(attempt, remoteSystemDetail, {
+              error: undefined,
+              lastWebhookTimestamp: remoteSystemDetail.eventTimestamp || Date.now(),
+            });
+            if (next.contractSystem) {
+              next.contractSystem.lastSyncedAt = remoteSystemDetail.syncedAt;
+              if (remoteSystemDetail.signedFileUrl) next.contractSystem.signedFileUrl = remoteSystemDetail.signedFileUrl;
+              if (remoteSystemDetail.signedFileStatus) next.contractSystem.signedFileStatus = remoteSystemDetail.signedFileStatus;
+            }
+            event(next, actor, 'SYNC_WESIGN', `Đồng bộ từ contract-system: ${remoteSystemDetail.status}`);
+          } else {
+            return NextResponse.json({ record });
+          }
+        } else {
+          const detail = await wesignDetail(attempt.documentId);
+          // Không đổi gì thì không ghi: tránh lịch sử phình và lỗi “người khác đã cập nhật” khi nhiều người cùng xem.
+          if (!signingChanged(attempt, detail)) return NextResponse.json({ record: { ...record, signing: [...record.signing.slice(0, -1), { ...attempt, syncedAt: detail.syncedAt }] } });
+          Object.assign(attempt, detail, { error: undefined }); event(next, actor, 'SYNC_WESIGN', String(detail.sourceStatus));
+        }
       }
       catch (error) {
         const message = error instanceof ContractError ? error.message : 'Không kết nối được weSign. Trạng thái đang hiển thị là lần đồng bộ trước.';

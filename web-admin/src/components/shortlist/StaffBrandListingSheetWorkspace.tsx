@@ -124,6 +124,192 @@ const parseThousandNumberInput = (raw: string): number => {
   return digits ? Number(digits) || 0 : 0;
 };
 
+interface BufferedSheetTextInputProps {
+  value: string;
+  onCommit: (nextValue: string) => void;
+  onBlurAfterCommit?: () => void;
+  onDoubleClick?: () => void;
+  disabled?: boolean;
+  readOnly?: boolean;
+  type?: 'text' | 'email' | 'url';
+  placeholder?: string;
+  className?: string;
+}
+
+const BufferedSheetTextInput = React.memo<BufferedSheetTextInputProps>(function BufferedSheetTextInput({
+  value,
+  onCommit,
+  onBlurAfterCommit,
+  onDoubleClick,
+  disabled,
+  readOnly,
+  type = 'text',
+  placeholder,
+  className,
+}) {
+  const [draft, setDraft] = useState(value);
+  const focusedRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestCommittedRef = useRef(value);
+  const onCommitRef = useRef(onCommit);
+  onCommitRef.current = onCommit;
+
+  useEffect(() => {
+    latestCommittedRef.current = value;
+    if (!focusedRef.current) {
+      setDraft(value);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const flushCommit = (valToCommit: string) => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (valToCommit !== latestCommittedRef.current) {
+      latestCommittedRef.current = valToCommit;
+      onCommitRef.current(valToCommit);
+    }
+  };
+
+  return (
+    <input
+      type={type}
+      disabled={disabled}
+      readOnly={readOnly}
+      value={draft}
+      onFocus={() => {
+        focusedRef.current = true;
+      }}
+      onChange={(e) => {
+        const nextVal = e.target.value;
+        setDraft(nextVal);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => {
+          timerRef.current = null;
+          if (nextVal !== latestCommittedRef.current) {
+            latestCommittedRef.current = nextVal;
+            onCommitRef.current(nextVal);
+          }
+        }, 160);
+      }}
+      onBlur={() => {
+        focusedRef.current = false;
+        flushCommit(draft);
+        onBlurAfterCommit?.();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          flushCommit(draft);
+        }
+      }}
+      onDoubleClick={onDoubleClick}
+      placeholder={placeholder}
+      className={className}
+    />
+  );
+});
+
+interface BufferedSheetNumberInputProps {
+  value: number;
+  onCommit: (nextValue: number) => void;
+  disabled?: boolean;
+  readOnly?: boolean;
+  mode?: 'thousand' | 'percent';
+  className?: string;
+}
+
+const BufferedSheetNumberInput = React.memo<BufferedSheetNumberInputProps>(function BufferedSheetNumberInput({
+  value,
+  onCommit,
+  disabled,
+  readOnly,
+  mode = 'thousand',
+  className,
+}) {
+  const formatVal = (v: number) =>
+    mode === 'thousand' ? formatNumber(Number(v) || 0) : String(Number(v) || 0);
+  const [draft, setDraft] = useState(() => formatVal(value));
+  const focusedRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestCommittedRef = useRef(Number(value) || 0);
+  const onCommitRef = useRef(onCommit);
+  onCommitRef.current = onCommit;
+
+  useEffect(() => {
+    const num = Number(value) || 0;
+    latestCommittedRef.current = num;
+    if (!focusedRef.current) {
+      setDraft(formatVal(num));
+    }
+  }, [value, mode]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const parseDraft = (raw: string): number =>
+    mode === 'thousand' ? parseThousandNumberInput(raw) : Number(raw) || 0;
+
+  const flushCommit = (raw: string) => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    const parsed = parseDraft(raw);
+    if (parsed !== latestCommittedRef.current) {
+      latestCommittedRef.current = parsed;
+      onCommitRef.current(parsed);
+    }
+    setDraft(formatVal(parsed));
+  };
+
+  return (
+    <input
+      type={mode === 'percent' ? 'number' : 'text'}
+      step={mode === 'percent' ? '0.1' : undefined}
+      inputMode="numeric"
+      disabled={disabled}
+      readOnly={readOnly}
+      value={draft}
+      onFocus={() => {
+        focusedRef.current = true;
+      }}
+      onChange={(e) => {
+        const raw = e.target.value;
+        const parsed = parseDraft(raw);
+        setDraft(mode === 'thousand' ? formatNumber(parsed) : raw);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => {
+          timerRef.current = null;
+          if (parsed !== latestCommittedRef.current) {
+            latestCommittedRef.current = parsed;
+            onCommitRef.current(parsed);
+          }
+        }, 160);
+      }}
+      onBlur={() => {
+        focusedRef.current = false;
+        flushCommit(draft);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          flushCommit(draft);
+        }
+      }}
+      className={className}
+    />
+  );
+});
+
 const UI_HEADER_OVERRIDES: Partial<Record<StaffListingColumnKey, string>> = {
   ngayDien: 'TG Listing (Ngày giờ)',
   dot: 'Đợt',
@@ -490,14 +676,34 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     });
   };
 
+  const sheetCountsSignature = useMemo(() => {
+    const sheets = collection?.sheets;
+    if (!sheets) return '';
+    return Object.keys(sheets)
+      .map((k) => `${k}:${Array.isArray(sheets[k]) ? sheets[k].length : 0}`)
+      .join('|');
+  }, [collection?.sheets]);
+
+  const sheetCountMap = useMemo(() => {
+    void sheetCountsSignature;
+    const map = new Map<string, number>();
+    const sheets = collection?.sheets;
+    if (sheets) {
+      for (const [k, list] of Object.entries(sheets)) {
+        if (Array.isArray(list)) map.set(k, list.length);
+      }
+    }
+    return map;
+  }, [sheetCountsSignature]);
+
   const getStoreMonthCount = React.useCallback(
     (month: string, storeName: string): number => {
       const key = makeSheetKey(month, storeName);
-      const localLen = Array.isArray(collection?.sheets?.[key]) ? collection.sheets[key].length : 0;
+      const localLen = sheetCountMap.get(key) || 0;
       const srvLen = serverSummary[key] || 0;
       return Math.max(localLen, srvLen);
     },
-    [collection?.sheets, serverSummary]
+    [sheetCountMap, serverSummary]
   );
 
   // Thống kê tổng KOC và số gian hàng có dữ liệu theo từng tháng để hiển thị ngay trên ô chọn Tháng
@@ -560,8 +766,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   const activeMonthBrandSheets = useMemo(() => {
     const prefix = `${activeMonth}__`;
     const storeNamesWithData = new Set<string>();
-    Object.entries(collection?.sheets || {}).forEach(([key, list]) => {
-      if (key.startsWith(prefix) && Array.isArray(list) && list.length > 0) {
+    sheetCountMap.forEach((len, key) => {
+      if (key.startsWith(prefix) && len > 0) {
         storeNamesWithData.add(key.slice(prefix.length));
       }
     });
@@ -573,8 +779,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     storeNamesWithData.add(activeStoreName);
     return Array.from(storeNamesWithData).map((sName) => {
       const st = b2cStores.find((s) => s.storeName === sName);
-      const sheetList = collection?.sheets?.[makeSheetKey(activeMonth, sName)];
-      const localCount = Array.isArray(sheetList) ? sheetList.length : 0;
+      const localCount = sheetCountMap.get(makeSheetKey(activeMonth, sName)) || 0;
       const count = localCount > 0 ? localCount : (serverSummary[makeSheetKey(activeMonth, sName)] || 0);
       return {
         storeName: sName,
@@ -582,7 +787,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         count,
       };
     });
-  }, [activeMonth, collection?.sheets, serverSummary, activeStoreName, b2cStores]);
+  }, [activeMonth, sheetCountMap, serverSummary, activeStoreName, b2cStores]);
 
   // Mặc định mở bộ cột GĐ 1: 17 cột trọng tâm phục vụ Listing & Trình Brand duyệt ngay trên màn hình đầu tiên
   // (Khi đẩy/copy Google Sheet vẫn xuất đủ 57 cột chuẩn A -> BE)
@@ -702,16 +907,32 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   const [quickContentTag, setQuickContentTag] = useState('Review trực tiếp');
   const [quickUpbaseProposal, setQuickUpbaseProposal] = useState('Recommend');
 
+  const activeBrandProductCatalog = useMemo(
+    () =>
+      buildBrandProductCatalogGroups({
+        brandName: activeStoreObj?.brandName,
+        storeName: activeStoreName,
+        storeObj: activeStoreObj,
+        deals,
+      }),
+    [activeStoreObj, activeStoreName, deals]
+  );
+
+  const kocByChannelMap = useMemo(() => {
+    const map = new Map<string, KocItem>();
+    for (const k of kocs) {
+      const ch = normalizeTikTokId(k.channelId).toLowerCase();
+      if (ch && !map.has(ch)) map.set(ch, k);
+    }
+    return map;
+  }, [kocs]);
+
   const handleOpenDirectoryPickerModal = () => {
     setPickerTargetMonth(activeMonth);
     setPickerTargetStoreName(activeStoreName);
-    const defaultCat = buildBrandProductCatalogGroups({
-      brandName: activeStoreObj?.brandName,
-      storeName: activeStoreName,
-      storeObj: activeStoreObj,
-      deals,
-    });
-    setQuickProduct(defaultCat.flatOptions[0]?.name || activeStoreObj?.mainProducts?.[0] || '');
+    setQuickProduct(
+      activeBrandProductCatalog.flatOptions[0]?.name || activeStoreObj?.mainProducts?.[0] || ''
+    );
     setPickedKocIds([]);
     setIsDirectoryPickerOpen(true);
   };
@@ -720,6 +941,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   const [copyWithHeaders, setCopyWithHeaders] = useState(true);
   const [copyWithFormulas, setCopyWithFormulas] = useState(false);
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
+  const selectedRowIdSet = useMemo(() => new Set(selectedRowIds), [selectedRowIds]);
   const [filterDot, setFilterDot] = useState<string>('ALL');
   const [filterBrandChon, setFilterBrandChon] = useState<string>('ALL');
   const [filterNhanSu, setFilterNhanSu] = useState<string>('ALL');
@@ -806,7 +1028,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   );
   const fieldEditPolicy = useMemo(
     () => getStaffSheetFieldEditPolicy(collection),
-    [collection]
+    [collection?.fieldEditPolicy]
   );
   const currentRoleTier: StaffSheetRoleTier = useMemo(() => {
     if (isAdminOrManager) return 'ADMIN';
@@ -1056,6 +1278,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   }, [rows, filterDot, filterBrandChon, filterNhanSu, currentUserName, rowSearchQuery, appSortBy]);
 
   // Các nhóm dòng thuộc Tháng cũ của cùng Gian hàng (dựa trên Cột B: Tháng) để hiển thị thu gọn / mở rộng ngay trên Bảng
+  const oldMonthSheet202611 = activeMonth !== '2026/11' ? collection?.sheets?.[makeSheetKey('2026/11', activeStoreName)] : undefined;
+  const oldMonthSheet202610 = activeMonth !== '2026/10' ? collection?.sheets?.[makeSheetKey('2026/10', activeStoreName)] : undefined;
+  const oldMonthSheet202609 = activeMonth !== '2026/09' ? collection?.sheets?.[makeSheetKey('2026/09', activeStoreName)] : undefined;
+  const oldMonthSheet202608 = activeMonth !== '2026/08' ? collection?.sheets?.[makeSheetKey('2026/08', activeStoreName)] : undefined;
+
   const storeOldMonthGroups = useMemo(() => {
     const groups: {
       month: string;
@@ -1064,10 +1291,16 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       totalNet: number;
     }[] = [];
 
+    const byMonth: Record<string, StaffListingSheetRow[] | undefined> = {
+      '2026/11': oldMonthSheet202611,
+      '2026/10': oldMonthSheet202610,
+      '2026/09': oldMonthSheet202609,
+      '2026/08': oldMonthSheet202608,
+    };
+
     for (const m of MONTH_OPTIONS) {
       if (m === activeMonth) continue;
-      const key = makeSheetKey(m, activeStoreName);
-      const rawList = collection?.sheets?.[key];
+      const rawList = byMonth[m];
       const list = Array.isArray(rawList) ? rawList : [];
       if (list.length === 0) continue;
       const approvedCount = list.filter((r) => r.brandChon === 'Yes').length;
@@ -1080,7 +1313,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       });
     }
     return groups.sort((a, b) => b.month.localeCompare(a.month));
-  }, [collection.sheets, activeMonth, activeStoreName]);
+  }, [
+    activeMonth,
+    oldMonthSheet202611,
+    oldMonthSheet202610,
+    oldMonthSheet202609,
+    oldMonthSheet202608,
+  ]);
 
   const toggleExpandOldMonthInTable = (month: string) => {
     setExpandedOldMonths((prev) =>
@@ -1278,9 +1517,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       prev.map((r) => {
         if (r.id !== rowId) return r;
         const clean = normalizeTikTokId(String(r.idKenh || '')).toLowerCase();
-        const matchedKoc = clean
-          ? kocs.find((k) => normalizeTikTokId(k.channelId).toLowerCase() === clean)
-          : undefined;
+        const matchedKoc = clean ? kocByChannelMap.get(clean) : undefined;
         const wasBlank = !r.kocId && !r.tenKenh;
         const nowIso = new Date().toISOString();
         const nowFormatted = formatVnDateTime(new Date());
@@ -1318,14 +1555,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
   // Thêm 1 dòng trống để nhân viên tự gõ hoặc dán ID kênh
   const handleAddBlankRow = () => {
-    const cat = buildBrandProductCatalogGroups({
-      brandName: activeStoreObj?.brandName,
-      storeName: activeStoreName,
-      storeObj: activeStoreObj,
-      deals,
-    });
     const defaultProd =
-      cat.flatOptions[0]?.name ||
+      activeBrandProductCatalog.flatOptions[0]?.name ||
       activeStoreObj?.mainProducts?.[0] ||
       (activeStoreObj?.brandName ? `Sản phẩm ${activeStoreObj.brandName}` : '');
     const blankRow = buildStaffListingRowFromKoc({
@@ -2655,9 +2886,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
 
     setIsCreateDealsModalOpen(false);
     onNotify?.(
-      `Đã tạo/cập nhật ${selectedDrafts.length} Deal (${createdDealCodes
+      `Đã tạo ${selectedDrafts.length} deal (${createdDealCodes
         .slice(0, 4)
-        .join(', ')}${createdDealCodes.length > 4 ? '...' : ''}) từ danh sách Brand duyệt!`,
+        .join(', ')}${createdDealCodes.length > 4 ? '…' : ''})`,
       'success'
     );
 
@@ -3571,6 +3802,24 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
+              {rows.some(
+                (r) => selectedRowIds.includes(r.id) && r.brandChon === 'Yes'
+              ) && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={ArrowRight}
+                  onClick={() => handleOpenCreateDealsModal(rows, selectedRowIds)}
+                >
+                  Tạo deal (
+                  {
+                    rows.filter(
+                      (r) => selectedRowIds.includes(r.id) && r.brandChon === 'Yes'
+                    ).length
+                  }
+                  )
+                </Button>
+              )}
               <Button
                 variant="secondary"
                 size="sm"
@@ -3585,7 +3834,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 icon={Upload}
                 onClick={handleOpenPushSheetModal}
               >
-                Đẩy {selectedRowIds.length} dòng lên Sheet
+                Đẩy Sheet ({selectedRowIds.length})
               </Button>
               <Button
                 variant="danger"
@@ -3943,7 +4192,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 </tr>
               ) : (
                 displayedRows.map((row, rIdx) => {
-                  const isSelected = selectedRowIds.includes(row.id);
+                  const isSelected = selectedRowIdSet.has(row.id);
                   const rowEditable = canEditRow(row);
                   const stickyCellBg = isSelected
                     ? 'bg-accent-soft'
@@ -4279,12 +4528,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           return (
                             <td key={col.key} className={cellBaseClass} title={cellTitle}>
                               <div className="flex items-center gap-1">
-                                <input
+                                <BufferedSheetTextInput
                                   type="url"
                                   disabled={!cellEditable}
                                   value={String(row.linkAirNghiemThu ?? '')}
-                                  onChange={(e) =>
-                                    handleCellChange(row.id, 'linkAirNghiemThu', e.target.value)
+                                  onCommit={(val) =>
+                                    handleCellChange(row.id, 'linkAirNghiemThu', val)
                                   }
                                   placeholder="Dán link video Air..."
                                   className={flatInputClass}
@@ -4364,18 +4613,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         ) {
                           return (
                             <td key={col.key} className={cellBaseClass} title={cellTitle}>
-                              <input
-                                type="text"
-                                inputMode="numeric"
+                              <BufferedSheetNumberInput
                                 disabled={!cellEditable}
-                                value={formatNumber(Number(row[col.key]) || 0)}
-                                onChange={(e) =>
-                                  handleCellChange(
-                                    row.id,
-                                    col.key,
-                                    parseThousandNumberInput(e.target.value)
-                                  )
-                                }
+                                value={Number(row[col.key]) || 0}
+                                onCommit={(val) => handleCellChange(row.id, col.key, val)}
                                 className={`${flatInputClass} text-right font-mono tabular-nums`}
                               />
                             </td>
@@ -4439,18 +4680,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         ) {
                           return (
                             <td key={col.key} className={cellBaseClass} title={cellTitle}>
-                              <input
-                                type="text"
-                                inputMode="numeric"
+                              <BufferedSheetNumberInput
                                 disabled={!cellEditable}
-                                value={formatNumber(Number(row[col.key]) || 0)}
-                                onChange={(e) =>
-                                  handleCellChange(
-                                    row.id,
-                                    col.key,
-                                    parseThousandNumberInput(e.target.value)
-                                  )
-                                }
+                                value={Number(row[col.key]) || 0}
+                                onCommit={(val) => handleCellChange(row.id, col.key, val)}
                                 className={`${flatInputClass} text-right font-mono tabular-nums`}
                               />
                             </td>
@@ -4481,19 +4714,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                               }`}
                             >
                               <div className="flex items-center justify-end gap-0.5">
-                                <input
-                                  type="number"
-                                  step="0.1"
+                                <BufferedSheetNumberInput
+                                  mode="percent"
                                   disabled={!cellEditable || isFormulaCol}
                                   readOnly={isFormulaCol}
-                                  value={row[col.key]}
-                                  onChange={(e) =>
-                                    handleCellChange(
-                                      row.id,
-                                      col.key,
-                                      Number(e.target.value) || 0
-                                    )
-                                  }
+                                  value={Number(row[col.key]) || 0}
+                                  onCommit={(val) => handleCellChange(row.id, col.key, val)}
                                   className={`w-16 h-7 px-1 rounded border text-right font-mono text-xs tabular-nums ${
                                     isFormulaCol
                                       ? 'border-transparent bg-transparent text-ink-2 font-semibold'
@@ -4520,14 +4746,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                               title={cellTitle}
                             >
                               <div className="flex items-center gap-0.5">
-                                <input
+                                <BufferedSheetTextInput
                                   type="text"
                                   disabled={!cellEditable}
                                   value={String(row.idKenh ?? '')}
-                                  onChange={(e) =>
-                                    handleCellChange(row.id, 'idKenh', e.target.value)
-                                  }
-                                  onBlur={() => handleIdKenhBlur(row.id)}
+                                  onCommit={(val) => handleCellChange(row.id, 'idKenh', val)}
+                                  onBlurAfterCommit={() => handleIdKenhBlur(row.id)}
                                   onDoubleClick={() => {
                                     if (cleanH || row.kocId) setQuickViewRow(row);
                                   }}
@@ -4582,13 +4806,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           const cleanH = normalizeTikTokId(row.idKenh).toLowerCase();
                           return (
                             <td key={col.key} className={cellBaseClass} title={cellTitle}>
-                              <input
+                              <BufferedSheetTextInput
                                 type="text"
                                 disabled={!cellEditable}
                                 value={String(row.tenKenh ?? '')}
-                                onChange={(e) =>
-                                  handleCellChange(row.id, 'tenKenh', e.target.value)
-                                }
+                                onCommit={(val) => handleCellChange(row.id, 'tenKenh', val)}
                                 onDoubleClick={() => {
                                   if (cleanH || row.kocId) setQuickViewRow(row);
                                 }}
@@ -4603,13 +4825,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           return (
                             <td key={col.key} className={cellBaseClass} title={cellTitle}>
                               <div className="flex items-center gap-1">
-                                <input
+                                <BufferedSheetTextInput
                                   type="email"
                                   disabled={!cellEditable}
                                   value={String(row.email ?? '')}
-                                  onChange={(e) =>
-                                    handleCellChange(row.id, 'email', e.target.value)
-                                  }
+                                  onCommit={(val) => handleCellChange(row.id, 'email', val)}
                                   placeholder="email@gmail.com"
                                   className={flatInputClass}
                                 />
@@ -4638,6 +4858,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                 storeName={activeStoreName}
                                 storeObj={activeStoreObj}
                                 deals={deals}
+                                precomputedCatalog={activeBrandProductCatalog}
                                 placeholder="Chọn SP của Brand..."
                               />
                             </td>
@@ -4647,13 +4868,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         // Các cột văn bản chung (contentNote, leaderNote, lyDoTuChoi, thanhQuaHopTac, ngayAirPlan, thông tin liên hệ/ngân hàng/CCCD...)
                         return (
                           <td key={col.key} className={cellBaseClass} title={cellTitle}>
-                            <input
+                            <BufferedSheetTextInput
                               type="text"
                               disabled={!cellEditable}
                               value={String(row[col.key] ?? '')}
-                              onChange={(e) =>
-                                handleCellChange(row.id, col.key, e.target.value)
-                              }
+                              onCommit={(val) => handleCellChange(row.id, col.key, val)}
                               placeholder={col.header}
                               className={flatInputClass}
                             />
@@ -5898,12 +6117,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         </div>
       </Modal>
 
-      {/* Modal 2B: Tạo các Deal từ KOC Brand đã duyệt & Chuyển sang Bảng Deal */}
+      {/* Modal 2B: Tạo Deal từ KOC Brand đã duyệt */}
       <Modal
         open={isCreateDealsModalOpen}
         onClose={() => setIsCreateDealsModalOpen(false)}
-        title={`Tạo các Deal từ KOC Brand đã duyệt & Chuyển sang Bảng Deal — "${activeStoreName}" (${activeMonth})`}
-        size="xl"
+        title={`Tạo deal — ${activeStoreName} (${activeMonth})`}
+        size="3xl"
         footer={
           <>
             <Button variant="ghost" onClick={() => setIsCreateDealsModalOpen(false)}>
@@ -5915,7 +6134,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               disabled={dealDrafts.filter((d) => d.selected).length === 0}
               onClick={() => handleConfirmCreateDealsAndOpenBoard(false)}
             >
-              {`Chỉ tạo Deal tại chỗ (${dealDrafts.filter((d) => d.selected).length} Deal)`}
+              {`Tạo tại chỗ (${dealDrafts.filter((d) => d.selected).length})`}
             </Button>
             <Button
               variant="primary"
@@ -5923,43 +6142,82 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               disabled={dealDrafts.filter((d) => d.selected).length === 0}
               onClick={() => handleConfirmCreateDealsAndOpenBoard(true)}
             >
-              {`Xác nhận Tạo ${dealDrafts.filter((d) => d.selected).length} Deal & Chuyển sang Bảng Deal`}
+              {`Tạo & mở deal (${dealDrafts.filter((d) => d.selected).length})`}
             </Button>
           </>
         }
       >
         <div className="space-y-3 text-xs">
-          {/* Thanh tóm tắt số lượng Deal, Ngân sách Net/Gross và SLA Brand duyệt */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            <div className="rounded-lg border border-line bg-sunken p-2.5 space-y-0.5">
-              <div className="text-2xs text-ink-3">Số KOC Brand duyệt chọn tạo Deal</div>
-              <div className="text-base font-bold text-ink tabular-nums">
-                {dealDrafts.filter((d) => d.selected).length} / {dealDrafts.length} KOC đã duyệt
-              </div>
-              <div className="text-2xs text-ink-2">
-                Tạo mới:{' '}
-                <strong>
-                  {dealDrafts.filter((d) => d.selected && !d.isExistingBo).length} Deal
-                </strong>{' '}
-                · Cập nhật Deal đã có:{' '}
-                <strong>
-                  {dealDrafts.filter((d) => d.selected && d.isExistingBo).length} Deal
-                </strong>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-line bg-sunken p-2.5 space-y-0.5">
-              <div className="text-2xs text-ink-3">Tổng Ngân sách Chốt (Net / Gross kèm thuế)</div>
-              <div className="text-base font-bold text-positive tabular-nums">
-                {formatVnd(
-                  dealDrafts
-                    .filter((d) => d.selected)
-                    .reduce((s, d) => s + (Number(d.giaChotCuoi) || 0), 0)
+          {/* Thanh tóm tắt gọn trên 1 hàng */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-line">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+              <div className="inline-flex items-center gap-1.5">
+                <span className="text-ink-3">Đã chọn:</span>
+                <span className="font-semibold text-ink tabular-nums">
+                  {dealDrafts.filter((d) => d.selected).length}/{dealDrafts.length} KOC
+                </span>
+                <Status tone="positive">
+                  {dealDrafts.filter((d) => d.selected && !d.isExistingBo).length} tạo mới
+                </Status>
+                {dealDrafts.some((d) => d.selected && d.isExistingBo) && (
+                  <Status tone="neutral">
+                    {dealDrafts.filter((d) => d.selected && d.isExistingBo).length} cập nhật
+                  </Status>
                 )}
               </div>
-              <div className="text-2xs text-ink-2 tabular-nums">
-                Tổng Gross (kèm thuế TNCN 10%):{' '}
-                <strong className="text-accent">
+
+              {dealDrafts.length > 1 && (
+                <div className="flex items-center gap-2 text-2xs">
+                  <span className="text-line-strong">|</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDealDrafts((prev) =>
+                        prev.map((d) => ({ ...d, selected: !d.isExistingBo }))
+                      )
+                    }
+                    className="text-positive hover:underline font-medium"
+                  >
+                    Chưa có mã BO ({dealDrafts.filter((d) => !d.isExistingBo).length})
+                  </button>
+                  <span className="text-ink-3">·</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDealDrafts((prev) => prev.map((d) => ({ ...d, selected: true })))
+                    }
+                    className="text-accent hover:underline font-medium"
+                  >
+                    Chọn tất cả
+                  </button>
+                  <span className="text-ink-3">·</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDealDrafts((prev) => prev.map((d) => ({ ...d, selected: false })))
+                    }
+                    className="text-ink-3 hover:text-ink hover:underline"
+                  >
+                    Bỏ chọn
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 tabular-nums">
+              <div>
+                <span className="text-ink-3">Tổng Net: </span>
+                <span className="font-semibold text-positive">
+                  {formatVnd(
+                    dealDrafts
+                      .filter((d) => d.selected)
+                      .reduce((s, d) => s + (Number(d.giaChotCuoi) || 0), 0)
+                  )}
+                </span>
+              </div>
+              <div>
+                <span className="text-ink-3">Tổng Gross (10%): </span>
+                <span className="font-semibold text-ink">
                   {formatVnd(
                     dealDrafts
                       .filter((d) => d.selected)
@@ -5968,80 +6226,77 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         0
                       )
                   )}
-                </strong>
+                </span>
               </div>
-            </div>
 
-            <div className="rounded-lg border border-line bg-sunken p-2.5 space-y-0.5">
-              <div className="text-2xs text-ink-3">Đồng bộ Tự động sau khi tạo Deal</div>
-              <div className="text-2xs text-ink-2 leading-relaxed">
-                Hệ thống tự động cấp mã <strong>BO...</strong>, tạo Hợp đồng khung &amp; Phụ lục Deal, đồng bộ sang <strong>Bảng Deal &amp; Nghiệm thu</strong> và gắn ngược mã BO về dòng Listing.
-              </div>
+              {dealDrafts.length > 1 && (
+                <div className="inline-flex items-center gap-1.5 pl-2 border-l border-line">
+                  <span className="text-2xs text-ink-3">Gán ngày air:</span>
+                  <input
+                    type="date"
+                    value={
+                      dealDrafts.find((d) => d.selected)?.ngayAirChot ||
+                      `${activeMonth.replace('/', '-')}-20`
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val) return;
+                      setDealDrafts((prev) =>
+                        prev.map((item) =>
+                          item.selected ? { ...item, ngayAirChot: val } : item
+                        )
+                      );
+                    }}
+                    className="h-7 px-2 text-2xs tabular-nums rounded-md border border-line-strong bg-surface text-ink focus:outline-none focus:border-ink"
+                  />
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 text-2xs text-ink-2">
-            <span>
-              Kiểm tra và chỉnh sửa nhanh Sản phẩm, Chi phí Net chốt cuối hoặc Ngày Air dự kiến trước khi chuyển sang Bảng Deal:
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  setDealDrafts((prev) =>
-                    prev.map((d) => ({ ...d, selected: !d.isExistingBo }))
-                  )
-                }
-                className="text-positive hover:underline font-semibold"
-              >
-                Chọn các KOC chưa có mã Deal (
-                {dealDrafts.filter((d) => !d.isExistingBo).length})
-              </button>
-              <span>·</span>
-              <button
-                type="button"
-                onClick={() =>
-                  setDealDrafts((prev) => prev.map((d) => ({ ...d, selected: true })))
-                }
-                className="text-accent hover:underline font-medium"
-              >
-                Chọn tất cả ({dealDrafts.length})
-              </button>
-              <span>·</span>
-              <button
-                type="button"
-                onClick={() =>
-                  setDealDrafts((prev) => prev.map((d) => ({ ...d, selected: false })))
-                }
-                className="text-ink-3 hover:underline"
-              >
-                Bỏ chọn
-              </button>
-            </div>
-          </div>
-
-          <div className="max-h-80 overflow-y-auto border border-line rounded-md">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead className="sticky top-0 bg-sunken border-b border-line text-2xs font-semibold text-ink-2">
+          {/* Bảng danh sách KOC tạo Deal: 1 dòng gọn mỗi KOC, không tràn ngang */}
+          <div className="max-h-[440px] overflow-y-auto overflow-x-auto border border-line rounded-xl">
+            <table className="w-full table-fixed min-w-[920px] text-left text-xs border-collapse">
+              <thead className="sticky top-0 z-10 bg-sunken/70 border-b border-line text-2xs font-semibold text-ink-3">
                 <tr>
-                  <th className="py-2 px-2 w-9 text-center">Chọn</th>
-                  <th className="py-2 px-2.5 w-[20%]">KOC (@ID kênh)</th>
-                  <th className="py-2 px-2.5 w-[18%]">TG Brand duyệt &amp; SLA</th>
-                  <th className="py-2 px-2.5 w-[16%]">Mã Deal (BO)</th>
-                  <th className="py-2 px-2.5 w-[20%]">Sản phẩm chốt</th>
-                  <th className="py-2 px-2.5 w-[13%]">Giá Net chốt (đ)</th>
-                  <th className="py-2 px-2.5 w-[13%]">Ngày Air dự kiến</th>
+                  <th className="py-2.5 px-2.5 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      aria-label="Chọn tất cả KOC"
+                      checked={
+                        dealDrafts.length > 0 && dealDrafts.every((d) => d.selected)
+                      }
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setDealDrafts((prev) =>
+                          prev.map((item) => ({ ...item, selected: checked }))
+                        );
+                      }}
+                      className="rounded border-line-strong"
+                    />
+                  </th>
+                  <th className="py-2.5 px-3 w-[23%]">KOC</th>
+                  <th className="py-2.5 px-2.5 w-[14%]">Mã deal</th>
+                  <th className="py-2.5 px-2.5 w-[25%]">Sản phẩm chốt</th>
+                  <th className="py-2.5 px-2.5 w-[13%] text-right">Giá Net (đ)</th>
+                  <th className="py-2.5 px-2.5 w-[12%] text-right">Phí Gross (10%)</th>
+                  <th className="py-2.5 px-2.5 w-[13%]">Ngày air dự kiến</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line">
+              <tbody className="divide-y divide-line bg-surface">
                 {dealDrafts.map((draft, idx) => (
                   <tr
                     key={draft.rowId}
-                    className={draft.selected ? 'bg-accent-soft/20' : 'hover:bg-sunken/40'}
+                    className={
+                      draft.selected
+                        ? 'bg-surface hover:bg-canvas transition-colors'
+                        : 'bg-sunken/30 hover:bg-sunken/50 transition-colors opacity-65'
+                    }
                   >
-                    <td className="py-2 px-2 text-center">
+                    <td className="py-2.5 px-2.5 align-middle text-center">
                       <input
                         type="checkbox"
+                        aria-label={`Chọn ${draft.idKenh}`}
                         checked={draft.selected}
                         onChange={(e) => {
                           const checked = e.target.checked;
@@ -6051,48 +6306,39 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                             )
                           );
                         }}
-                        className="rounded border-line"
+                        className="rounded border-line-strong"
                       />
                     </td>
-                    <td className="py-2 px-2.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const matchedRow = rows.find((r) => r.id === draft.rowId);
-                          setQuickViewRow(
-                            matchedRow || {
-                              idKenh: draft.idKenh,
-                              tenKenh: draft.tenKenh,
-                              dot: draft.dot,
-                              sanPham: draft.sanPham,
-                            }
-                          );
-                        }}
-                        className="inline-flex items-center gap-1 font-semibold text-accent hover:underline"
-                        title="Xem nhanh hồ sơ, hiệu suất & lịch sử KOC"
-                      >
-                        <span>@{draft.idKenh}</span>
-                        <Eye className="w-3 h-3 shrink-0" />
-                      </button>
-                      <div className="text-2xs text-ink-3">
-                        {draft.tenKenh} · {draft.dot}
-                      </div>
-                      <div className="text-2xs text-ink-3">PIC: {draft.nhanSuDien}</div>
-                    </td>
-                    <td className="py-2 px-2.5 text-2xs tabular-nums">
-                      <div className="text-ink font-medium">{draft.ngayBrandDuyet || '—'}</div>
-                      <div className="text-ink-3">Listing: {draft.ngayDien || '—'}</div>
-                      <div className="pt-0.5">
-                        <Status
-                          tone={
-                            draft.slaBrandDuyet.startsWith('Trễ') ? 'critical' : 'positive'
-                          }
+                    <td className="py-2.5 px-3 align-middle min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const matchedRow = rows.find((r) => r.id === draft.rowId);
+                            setQuickViewRow(
+                              matchedRow || {
+                                idKenh: draft.idKenh,
+                                tenKenh: draft.tenKenh,
+                                dot: draft.dot,
+                                sanPham: draft.sanPham,
+                              }
+                            );
+                          }}
+                          className="inline-flex items-center gap-1 font-semibold text-accent hover:underline min-w-0 max-w-full"
+                          title="Xem hồ sơ KOC"
                         >
-                          {draft.slaBrandDuyet || 'Đúng hạn'}
-                        </Status>
+                          <span className="truncate">@{draft.idKenh}</span>
+                          <Eye className="w-3.5 h-3.5 shrink-0" />
+                        </button>
+                      </div>
+                      <div
+                        className="text-2xs text-ink-3 truncate mt-0.5"
+                        title={`${draft.tenKenh} · ${draft.dot} · PIC: ${draft.nhanSuDien}`}
+                      >
+                        {draft.tenKenh} · {draft.dot} · {draft.nhanSuDien}
                       </div>
                     </td>
-                    <td className="py-2 px-2.5">
+                    <td className="py-2.5 px-2.5 align-middle">
                       <input
                         type="text"
                         value={draft.maBooking}
@@ -6104,17 +6350,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                             )
                           );
                         }}
-                        className="w-full h-7 px-2 text-xs font-mono font-semibold rounded border border-line-strong bg-surface text-accent"
+                        className="w-full h-8 px-2.5 text-xs font-code font-semibold rounded-md border border-line-strong bg-surface text-accent focus:outline-none focus:border-ink"
                       />
-                      <div className="text-2xs mt-0.5">
-                        {draft.isExistingBo ? (
-                          <span className="text-ink-3">Đã có trên Bảng Deal</span>
-                        ) : (
-                          <span className="text-positive font-medium">+ Tạo mới Deal</span>
-                        )}
-                      </div>
                     </td>
-                    <td className="py-2 px-2.5">
+                    <td className="py-2.5 px-2.5 align-middle">
                       <BrandProductDropdownInput
                         size="sm"
                         value={draft.sanPham}
@@ -6129,10 +6368,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         storeName={activeStoreName}
                         storeObj={activeStoreObj}
                         deals={deals}
-                        placeholder="Chọn sản phẩm từ Danh mục SP..."
+                        placeholder="Chọn sản phẩm..."
                       />
                     </td>
-                    <td className="py-2 px-2.5">
+                    <td className="py-2.5 px-2.5 align-middle">
                       <input
                         type="text"
                         inputMode="numeric"
@@ -6145,13 +6384,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                             )
                           );
                         }}
-                        className="w-full h-7 px-2 text-xs text-right font-mono font-semibold tabular-nums rounded border border-line-strong bg-surface text-ink"
+                        className="w-full h-8 px-2.5 text-xs text-right font-semibold tabular-nums rounded-md border border-line-strong bg-surface text-ink focus:outline-none focus:border-ink"
                       />
-                      <div className="text-2xs text-ink-3 tabular-nums mt-0.5">
-                        Gross: {formatVnd(computeGrossFeeWithTax(draft.giaChotCuoi))}
-                      </div>
                     </td>
-                    <td className="py-2 px-2.5">
+                    <td className="py-2.5 px-2.5 align-middle text-right tabular-nums font-medium text-ink-2">
+                      {formatVnd(computeGrossFeeWithTax(draft.giaChotCuoi))}
+                    </td>
+                    <td className="py-2.5 px-2.5 align-middle">
                       <input
                         type="date"
                         value={draft.ngayAirChot}
@@ -6163,7 +6402,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                             )
                           );
                         }}
-                        className="w-full h-7 px-2 text-xs tabular-nums rounded border border-line-strong bg-surface text-ink"
+                        className="w-full h-8 px-2 text-xs tabular-nums rounded-md border border-line-strong bg-surface text-ink focus:outline-none focus:border-ink"
                       />
                     </td>
                   </tr>

@@ -24,7 +24,7 @@
   position: fixed;
   top: 56px;
   right: 12px;
-  z-index: 2147483640;
+  z-index: 2147483647 !important;
   font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 12px;
   line-height: 1.35;
@@ -258,15 +258,18 @@
 }
 
 .ub-Tabs {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: flex; /* Co giãn đều 100% cho cả 4 tab (Shopee/Meta) và 5 tab (repeat(5, 1fr)) */
+  align-items: stretch;
   background: var(--ub-canvas);
   border-bottom: 1px solid var(--ub-line);
   padding: 0 2px;
+  width: 100%;
 }
 
 .ub-TabBtn {
-  padding: 5px 2px;
+  flex: 1 1 0%;
+  min-width: 0;
+  padding: 6px 2px;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
@@ -292,6 +295,7 @@
 
 .ub-Body {
   padding: 6px 8px;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   min-height: 0;
@@ -299,6 +303,20 @@
   flex-direction: column;
   gap: 5px;
   flex: 1;
+}
+
+.ub-Body::-webkit-scrollbar,
+.ub-TableWrap::-webkit-scrollbar,
+.ub-TranscriptContent::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.ub-Body::-webkit-scrollbar-thumb,
+.ub-TableWrap::-webkit-scrollbar-thumb,
+.ub-TranscriptContent::-webkit-scrollbar-thumb {
+  background: var(--ub-line-strong);
+  border-radius: 4px;
 }
 
 .ub-StickyFooter {
@@ -312,10 +330,12 @@
   flex-shrink: 0;
 }
 
-.ub-StatRow {
+.ub-StatRow,
+.ub-StatGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
+  width: 100%;
 }
 
 .ub-StatCard {
@@ -323,6 +343,8 @@
   background: var(--ub-canvas);
   border: 1px solid var(--ub-line);
   border-radius: 4px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .ub-StatLabel {
@@ -330,6 +352,9 @@
   color: var(--ub-ink-2);
   margin-bottom: 1px;
   line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ub-StatVal {
@@ -337,6 +362,92 @@
   font-weight: 700;
   color: var(--ub-ink);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ub-ActiveVideoBox {
+  padding: 7px 9px;
+  background: var(--ub-canvas);
+  border: 1px solid var(--ub-line);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ub-ActiveVideoHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ub-ActiveStatsRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.ub-MiniMetric {
+  padding: 4px 5px;
+  background: var(--ub-surface);
+  border: 1px solid var(--ub-line);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ub-MiniMetric span {
+  color: var(--ub-ink-3);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ub-MiniMetric strong {
+  color: var(--ub-ink);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ub-FormSection {
+  padding: 7px 9px;
+  background: var(--ub-canvas);
+  border: 1px solid var(--ub-line);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ub-RoutingBox {
+  padding: 5px 8px;
+  background: var(--ub-surface);
+  border: 1px solid var(--ub-line);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ub-accent);
+  line-height: 1.35;
+}
+
+.ub-Empty {
+  padding: 12px 8px;
+  text-align: center;
+  color: var(--ub-ink-3);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .ub-QuickToolbar {
@@ -437,6 +548,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  gap: 4px;
+}
+
+.ub-CompareItem strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ub-TableWrap {
@@ -447,13 +567,28 @@
   overscroll-behavior: contain;
   max-height: 172px;
   width: 100%;
+  max-width: 100%;
+}
+
+#upbase-b2c-ext-root .ub-TableWrap {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
 }
 
 .ub-Table {
   width: 100%;
+  max-width: 100%;
+  min-width: 0 !important;
   table-layout: fixed; /* Khóa ma trận cột vừa khít 100% khung hình, không bị tràn ngang */
   border-collapse: collapse;
   font-size: 12px;
+}
+
+#upbase-b2c-ext-root .ub-Table th,
+#upbase-b2c-ext-root .ub-Table td {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .ub-Table th {
@@ -704,18 +839,21 @@
 }
 
 .ub-SubNav {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: flex;
+  align-items: center;
   gap: 2px;
   padding: 2px;
   background: var(--ub-sunken);
   border: 1px solid var(--ub-line);
   border-radius: 5px;
+  width: 100%;
 }
 
 .ub-SubNavBtn {
-  height: 23px;
-  padding: 0 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 24px;
+  padding: 0 3px;
   background: transparent;
   color: var(--ub-ink-2);
   border: 1px solid transparent;

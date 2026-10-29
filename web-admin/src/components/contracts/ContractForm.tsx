@@ -23,8 +23,11 @@ import {
 import {
   GROUP_ORDER,
   OFFICIAL_3STAGE_TEMPLATE_IDS,
+  SOW_JOBS_META_KEY,
   SOW_TASKS_META_KEY,
   SOW_TASK_DELIVERABLE_INFO,
+  aggregateMultiJobAcceptanceBreakdown,
+  buildDealSowJobTables,
   buildJobAcceptanceBreakdown,
   describeFieldDataSource,
   formatMoneyInput,
@@ -38,9 +41,11 @@ import {
   uniqueFields,
   type ContractDocStage,
   type JobAcceptanceAddonRow,
+  type SowJobTableDraft,
   type SowTaskTermType,
 } from './contractUi';
 import { evaluateContractRules } from '../../lib/contracts/contractRules';
+import { buildStableContractCode, enrichTemplateWithSignFlow } from '../../lib/contracts/contractSystemRules';
 import { parseDocxInBrowser } from './docxClientParser';
 
 export interface ContractFormInit {
@@ -404,33 +409,59 @@ export function ContractForm({
     return matched.length > 0 ? matched.slice(0, 5) : deal ? [deal] : [];
   }, [deals, targetKocId, deal]);
 
-  const initialBreakdown = useMemo(
-    () => buildJobAcceptanceBreakdown(initialDeal, findKoc(kocs, initialDeal) || initialKocLookup, initialParent),
+  const initialJobTables = useMemo(
+    () =>
+      buildDealSowJobTables(
+        initialDeal,
+        findKoc(kocs, initialDeal) || initialKocLookup,
+        initialParent,
+        record?.values?.[SOW_JOBS_META_KEY],
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
-  const [draftVideoFee, setDraftVideoFee] = useState<number>(initialBreakdown.videoItem.feeNetVnd);
-  const [draftAddons, setDraftAddons] = useState<JobAcceptanceAddonRow[]>(initialBreakdown.addonItems);
+  const initialBreakdown = useMemo(
+    () =>
+      aggregateMultiJobAcceptanceBreakdown({
+        jobs: initialJobTables,
+        deal: initialDeal,
+        koc: findKoc(kocs, initialDeal) || initialKocLookup,
+        parentRecord: initialParent,
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+  const [draftJobTables, setDraftJobTables] = useState<SowJobTableDraft[]>(initialJobTables);
+  const [activeJobTableIdx, setActiveJobTableIdx] = useState<number>(0);
+  const [draftVideoFee, setDraftVideoFee] = useState<number>(
+    initialJobTables[0]?.videoFeeNetVnd ?? initialBreakdown.videoItem.feeNetVnd,
+  );
+  const [draftAddons, setDraftAddons] = useState<JobAcceptanceAddonRow[]>(
+    initialJobTables[0]?.addonItems ?? initialBreakdown.addonItems,
+  );
   const [draftAdvanceAmount, setDraftAdvanceAmount] = useState<number>(initialBreakdown.financials.advanceAmount);
-  const [draftProductName, setDraftProductName] = useState<string>(initialBreakdown.videoItem.productName);
+  const [draftProductName, setDraftProductName] = useState<string>(
+    initialJobTables[0]?.productName ?? initialBreakdown.videoItem.productName,
+  );
   const [draftAirDate, setDraftAirDate] = useState<string>(
-    initialDeal?.postedDate || initialDeal?.deadlinePost || initialBreakdown.videoItem.airDate || '',
+    initialJobTables[0]?.airDate ||
+      initialDeal?.postedDate ||
+      initialDeal?.deadlinePost ||
+      initialBreakdown.videoItem.airDate ||
+      '',
   );
   const [creatingQuickFramework, setCreatingQuickFramework] = useState<boolean>(false);
   const [quickFwNotice, setQuickFwNotice] = useState<string>('');
   const jobAcceptanceBreakdown = useMemo(
     () =>
-      buildJobAcceptanceBreakdown(
-        dealWithActiveProfile || deal,
+      aggregateMultiJobAcceptanceBreakdown({
+        jobs: draftJobTables,
+        deal: dealWithActiveProfile || deal,
         koc,
         parentRecord,
-        draftAddons,
-        draftVideoFee,
-        draftAdvanceAmount,
-        draftProductName,
-        draftAirDate,
-      ),
-    [dealWithActiveProfile, deal, koc, parentRecord, draftAddons, draftVideoFee, draftAdvanceAmount, draftProductName, draftAirDate],
+        advanceAmount: draftAdvanceAmount,
+      }),
+    [draftJobTables, dealWithActiveProfile, deal, koc, parentRecord, draftAdvanceAmount],
   );
 
   const latestPrefillCtxRef = useRef({
@@ -511,19 +542,47 @@ export function ContractForm({
       legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
       ctvAcceptedDeals,
     });
-    const nextBd = buildJobAcceptanceBreakdown(
-      dealWithActiveProfile || deal,
+    const nextBd = aggregateMultiJobAcceptanceBreakdown({
+      jobs: draftJobTables,
+      deal: dealWithActiveProfile || deal,
       koc,
       parentRecord,
-      draftAddons,
-      draftVideoFee,
-      draftAdvanceAmount,
-      draftProductName,
-      draftAirDate,
-    );
+      advanceAmount: draftAdvanceAmount,
+    });
     const synced = syncValuesFromJobAcceptanceBreakdown(fields, result.values, nextBd);
     setValues(synced);
     setPrefilled(new Set(result.filled));
+  };
+
+  const applyMultiJobTablesToDraftValues = (
+    nextJobs: SowJobTableDraft[],
+    nextActiveIdx = activeJobTableIdx,
+    nextAdvanceAmount = draftAdvanceAmount,
+    targetDeal = dealWithActiveProfile || deal,
+    targetKoc = koc,
+    targetParent = parentRecord,
+  ) => {
+    const safeIdx = Math.max(0, Math.min(nextActiveIdx, nextJobs.length - 1));
+    const activeJob = nextJobs[safeIdx];
+    setDraftJobTables(nextJobs);
+    setActiveJobTableIdx(safeIdx);
+    if (activeJob) {
+      setDraftVideoFee(activeJob.videoFeeNetVnd);
+      setDraftAddons(activeJob.addonItems);
+      setDraftProductName(activeJob.productName);
+      setDraftAirDate(activeJob.airDate);
+    }
+    setDraftAdvanceAmount(nextAdvanceAmount);
+    if (fields.length > 0) {
+      const nextBd = aggregateMultiJobAcceptanceBreakdown({
+        jobs: nextJobs,
+        deal: targetDeal,
+        koc: targetKoc,
+        parentRecord: targetParent,
+        advanceAmount: nextAdvanceAmount,
+      });
+      setValues(prev => syncValuesFromJobAcceptanceBreakdown(fields, prev, nextBd));
+    }
   };
 
   const applyJobBreakdownToDraftValues = (
@@ -536,24 +595,42 @@ export function ContractForm({
     nextProductName = draftProductName,
     nextAirDate = draftAirDate,
   ) => {
-    setDraftVideoFee(nextVideoFee);
-    setDraftAddons(nextAddons);
-    setDraftAdvanceAmount(nextAdvanceAmount);
-    setDraftProductName(nextProductName);
-    setDraftAirDate(nextAirDate);
-    if (fields.length > 0) {
-      const nextBd = buildJobAcceptanceBreakdown(
-        targetDeal,
-        targetKoc,
-        targetParent,
-        nextAddons,
-        nextVideoFee,
-        nextAdvanceAmount,
-        nextProductName,
-        nextAirDate,
-      );
-      setValues(prev => syncValuesFromJobAcceptanceBreakdown(fields, prev, nextBd));
-    }
+    const safeIdx = Math.max(0, Math.min(activeJobTableIdx, draftJobTables.length - 1));
+    const nextJobs =
+      draftJobTables.length > 0
+        ? draftJobTables.map((job, idx) =>
+            idx === safeIdx
+              ? {
+                  ...job,
+                  videoFeeNetVnd: nextVideoFee,
+                  addonItems: nextAddons,
+                  productName: nextProductName,
+                  airDate: nextAirDate,
+                }
+              : job,
+          )
+        : [
+            {
+              id: 'sow-job-1',
+              jobCode: `${targetDeal?.dealCode || 'DEAL'}-J01`,
+              jobTitle: `Bảng công việc #1 (${targetDeal?.dealCode || 'DEAL'}-J01)`,
+              productName: nextProductName,
+              mediaChannel: 'TikTok',
+              airDate: nextAirDate,
+              videoUrl: targetDeal?.tiktokVideoUrl || '',
+              videoFeeNetVnd: nextVideoFee,
+              quantity: 1,
+              addonItems: nextAddons,
+            },
+          ];
+    applyMultiJobTablesToDraftValues(
+      nextJobs,
+      safeIdx,
+      nextAdvanceAmount,
+      targetDeal,
+      targetKoc,
+      targetParent,
+    );
   };
 
   const handleQuickCreateFrameworkForSow = async () => {
@@ -632,12 +709,20 @@ export function ContractForm({
           : undefined;
     setParentId(matchedParent?.id || '');
 
-    const freshBd = buildJobAcceptanceBreakdown(d, k, matchedParent);
-    setDraftVideoFee(freshBd.videoItem.feeNetVnd);
-    setDraftAddons(freshBd.addonItems);
+    const freshJobs = buildDealSowJobTables(d, k, matchedParent);
+    const freshBd = aggregateMultiJobAcceptanceBreakdown({
+      jobs: freshJobs,
+      deal: d,
+      koc: k,
+      parentRecord: matchedParent,
+    });
+    setDraftJobTables(freshJobs);
+    setActiveJobTableIdx(0);
+    setDraftVideoFee(freshJobs[0]?.videoFeeNetVnd ?? freshBd.videoItem.feeNetVnd);
+    setDraftAddons(freshJobs[0]?.addonItems ?? freshBd.addonItems);
     setDraftAdvanceAmount(freshBd.financials.advanceAmount);
-    setDraftProductName(freshBd.videoItem.productName);
-    setDraftAirDate(d.postedDate || d.deadlinePost || freshBd.videoItem.airDate || '');
+    setDraftProductName(freshJobs[0]?.productName ?? freshBd.videoItem.productName);
+    setDraftAirDate(freshJobs[0]?.airDate || d.postedDate || d.deadlinePost || freshBd.videoItem.airDate || '');
     const savedShots = loadSavedScreenshotsForDeal(d, k?.id);
     if (savedShots.length > 0 && acceptanceScreenshots.length === 0) {
       setAcceptanceScreenshots(savedShots);
@@ -744,12 +829,26 @@ export function ContractForm({
         } as unknown as BookingDealItem)
       : matchedDealForKoc;
 
-    const freshBd = buildJobAcceptanceBreakdown(syntheticDeal, k, nextParent);
-    setDraftVideoFee(freshBd.videoItem.feeNetVnd);
-    setDraftAddons(freshBd.addonItems);
+    const freshJobs = buildDealSowJobTables(syntheticDeal, k, nextParent);
+    const freshBd = aggregateMultiJobAcceptanceBreakdown({
+      jobs: freshJobs,
+      deal: syntheticDeal,
+      koc: k,
+      parentRecord: nextParent,
+    });
+    setDraftJobTables(freshJobs);
+    setActiveJobTableIdx(0);
+    setDraftVideoFee(freshJobs[0]?.videoFeeNetVnd ?? freshBd.videoItem.feeNetVnd);
+    setDraftAddons(freshJobs[0]?.addonItems ?? freshBd.addonItems);
     setDraftAdvanceAmount(freshBd.financials.advanceAmount);
-    setDraftProductName(freshBd.videoItem.productName);
-    setDraftAirDate(matchedDealForKoc?.postedDate || matchedDealForKoc?.deadlinePost || freshBd.videoItem.airDate || '');
+    setDraftProductName(freshJobs[0]?.productName ?? freshBd.videoItem.productName);
+    setDraftAirDate(
+      freshJobs[0]?.airDate ||
+        matchedDealForKoc?.postedDate ||
+        matchedDealForKoc?.deadlinePost ||
+        freshBd.videoItem.airDate ||
+        '',
+    );
 
     const nextParentTpl = nextParent ? data.templates.find(t => t.id === nextParent.templateId) : undefined;
     const nextCtvDeals = deals
@@ -1939,6 +2038,42 @@ export function ContractForm({
                     <Field label="Đối tác (Bên B)" htmlFor="ct-partner">
                       <Input id="ct-partner" required maxLength={180} value={partner} onChange={e => setPartner(e.target.value)} />
                     </Field>
+                    {template && (() => {
+                      const enrichedTpl = enrichTemplateWithSignFlow(template);
+                      const previewCode = buildStableContractCode({
+                        id: record?.id || 'DRAFT',
+                        templateId: template.id,
+                        brand: brand || 'UPBASE',
+                        dealCode: deal?.dealCode || record?.dealCode,
+                        kocId: koc?.id || record?.kocId,
+                        values,
+                      });
+                      return (
+                        <div className="md:col-span-2 rounded-lg border border-line bg-sunken/70 px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-2xs">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-ink-2">
+                            <span>
+                              Mã chống trùng (<span className="font-code font-semibold text-ink">contractCode</span>):{' '}
+                              <span className="font-code font-semibold text-accent">{previewCode}</span>
+                            </span>
+                            <span>·</span>
+                            <span>
+                              Khóa phiên bản mẫu:{' '}
+                              <span className="font-code font-semibold text-ink">{template.version}</span>
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-ink-3">
+                              {enrichedTpl.signingFlowConfig?.mode === 'PARALLEL' ? 'Ký song song' : 'Ký tuần tự'} ({enrichedTpl.signingFlowConfig?.deadlineDays || 7} ngày)
+                            </span>
+                            {(enrichedTpl.signTags || []).map(tag => (
+                              <span key={tag} className="font-code px-1.5 py-0.5 rounded bg-surface border border-line text-accent">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                     {isKocOwnForm && (
                       <Field label="Tổng giá trị hợp đồng (VNĐ)" htmlFor="ct-koc-total" className="md:col-span-2">
                         <Input
@@ -1966,18 +2101,19 @@ export function ContractForm({
                                 if (!partner.trim()) setPartner(pRec.partner);
                                 if (pRec.dealId && !dealId) chooseDeal(pRec.dealId);
                                 if (!title.trim()) setTitle(formatStageTitle(docStage, koc, deal, pRec.partner, pRec.brand));
-                                const freshBd = buildJobAcceptanceBreakdown(
+                                const freshJobs = buildDealSowJobTables(
                                   dealWithActiveProfile || deal,
                                   koc,
                                   pRec,
-                                  undefined,
-                                  undefined,
-                                  draftAdvanceAmount,
-                                  draftProductName || undefined,
-                                  draftAirDate || undefined,
                                 );
-                                setDraftVideoFee(freshBd.videoItem.feeNetVnd);
-                                setDraftAddons(freshBd.addonItems);
+                                setDraftJobTables(freshJobs);
+                                setActiveJobTableIdx(0);
+                                if (freshJobs[0]) {
+                                  setDraftVideoFee(freshJobs[0].videoFeeNetVnd);
+                                  setDraftAddons(freshJobs[0].addonItems);
+                                  setDraftProductName(freshJobs[0].productName);
+                                  setDraftAirDate(freshJobs[0].airDate);
+                                }
                                 const inferredTpl = isSow ? '' : inferAcceptanceTemplate(pRec.templateId);
                                 if (inferredTpl && inferredTpl !== templateId) {
                                   setTemplate(null);
@@ -2146,11 +2282,42 @@ export function ContractForm({
             <Panel
               title={
                 isSow
-                  ? 'Các Task trong Phụ lục SOW theo Job & Gắn đầu việc Nghiệm thu'
-                  : 'Nghiệm thu từng Task theo Phụ lục SOW của Job'
+                  ? `Tổ chức Bảng công việc theo từng Job trong Phụ lục SOW (${draftJobTables.length} Job · ${draftJobTables.length} Bảng công việc)`
+                  : `Nghiệm thu theo từng Bảng công việc (Job) của Phụ lục SOW (${draftJobTables.length} Job)`
               }
               actions={
                 <div className="flex flex-wrap items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      const nextIdx = draftJobTables.length;
+                      const baseDealCode = deal?.dealCode || jobAcceptanceBreakdown.jobCode || 'DEAL';
+                      const nextJobCode = `${baseDealCode}-J0${nextIdx + 1}`;
+                      const templateJob = draftJobTables[activeJobTableIdx] || draftJobTables[0];
+                      const defaultAddons: JobAcceptanceAddonRow[] = (templateJob?.addonItems || draftAddons).map((a, i) => ({
+                        ...a,
+                        id: `${nextJobCode}-addon-${Date.now()}-${i}`,
+                        taskCode: `${nextJobCode}-T0${i + 2}`,
+                      }));
+                      const newJob: SowJobTableDraft = {
+                        id: `sow-job-${Date.now()}`,
+                        jobCode: nextJobCode,
+                        jobTitle: `Bảng công việc #${nextIdx + 1} (${nextJobCode})`,
+                        productName: brand ? `Sản phẩm ${brand} (Job #${nextIdx + 1})` : `Sản phẩm Job #${nextIdx + 1}`,
+                        mediaChannel: templateJob?.mediaChannel || 'TikTok',
+                        airDate: templateJob?.airDate || draftAirDate || '',
+                        videoUrl: '',
+                        videoFeeNetVnd: templateJob?.videoFeeNetVnd || draftVideoFee || 2000000,
+                        quantity: 1,
+                        addonItems: defaultAddons,
+                      };
+                      const nextJobs = [...draftJobTables, newJob];
+                      applyMultiJobTablesToDraftValues(nextJobs, nextIdx);
+                    }}
+                  >
+                    + Thêm Job (Bảng công việc mới)
+                  </Button>
                   <Button
                     size="sm"
                     variant="secondary"
@@ -2191,12 +2358,14 @@ export function ContractForm({
                     size="sm"
                     variant="secondary"
                     onClick={() => {
+                      const activeJob = draftJobTables[activeJobTableIdx];
+                      const activeJobCode = activeJob?.jobCode || jobAcceptanceBreakdown.jobCode;
                       const info = SOW_TASK_DELIVERABLE_INFO.CROSS_POST_REUP;
                       const nextList: JobAcceptanceAddonRow[] = [
                         ...draftAddons,
                         {
                           id: `addon-${Date.now()}`,
-                          taskCode: `${jobAcceptanceBreakdown.jobCode}-T0${draftAddons.length + 2}`,
+                          taskCode: `${activeJobCode}-T0${draftAddons.length + 2}`,
                           termType: 'CROSS_POST_REUP',
                           termLabel: info.taskTitle,
                           includedInSow: true,
@@ -2210,7 +2379,7 @@ export function ContractForm({
                       applyJobBreakdownToDraftValues(draftVideoFee, nextList);
                     }}
                   >
-                    + Thêm Task khác
+                    + Thêm Task vào Job này
                   </Button>
                   <Button
                     size="sm"
@@ -2223,33 +2392,88 @@ export function ContractForm({
               }
             >
               <div className="space-y-3 text-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg border border-line bg-sunken/50">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2 py-0.5 rounded bg-accent/15 text-accent font-code font-semibold">
-                      Job: {jobAcceptanceBreakdown.jobCode}
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-surface border border-line font-code text-ink-2">
-                      Phụ lục SOW: {jobAcceptanceBreakdown.appendixCode}
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-surface border border-line font-code text-ink-2">
-                      HĐNT: {jobAcceptanceBreakdown.masterContractCode}
-                    </span>
+                {/* Thanh chuyển đổi giữa N Bảng công việc (N Job trong Deal) */}
+                <div className="p-2.5 rounded-lg border border-line bg-sunken/60 space-y-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-ink">
+                        Danh sách Job trong Deal ({draftJobTables.length} Job = {draftJobTables.length} Bảng công việc trong Phụ lục SOW):
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-surface border border-line font-code text-ink-2">
+                        Phụ lục SOW: {jobAcceptanceBreakdown.appendixCode}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-surface border border-line font-code text-ink-2">
+                        HĐNT: {jobAcceptanceBreakdown.masterContractCode}
+                      </span>
+                    </div>
+                    <Status tone="positive">
+                      Tổng Phụ lục ({draftJobTables.length} Job): {formatNumber(jobAcceptanceBreakdown.financials.plannedTotalNet)}đ
+                    </Status>
                   </div>
-                  <Status tone="positive">
-                    Phạm vi Job: {1 + draftAddons.filter(a => a.includedInSow !== false).length} Task (1 Video +{' '}
-                    {draftAddons.filter(a => a.includedInSow !== false).length} Task đi kèm)
-                  </Status>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {draftJobTables.map((jTab, jIdx) => {
+                      const isSelectedJob = jIdx === activeJobTableIdx;
+                      const jVideoNet = Math.max(0, Number(jTab.videoFeeNetVnd) || 0) * Math.max(1, Number(jTab.quantity) || 1);
+                      const jAddonsNet = (jTab.addonItems || [])
+                        .filter(a => a.includedInSow !== false && a.acceptanceStatus !== 'DROPPED')
+                        .reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+                      const jSubtotal = jVideoNet + jAddonsNet;
+                      return (
+                        <div
+                          key={jTab.id || jIdx}
+                          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs transition-colors ${
+                            isSelectedJob
+                              ? 'border-accent bg-accent-soft/40 text-ink font-semibold'
+                              : 'border-line bg-surface text-ink-2 hover:bg-sunken'
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveJobTableIdx(jIdx);
+                              setDraftVideoFee(jTab.videoFeeNetVnd);
+                              setDraftAddons(jTab.addonItems);
+                              setDraftProductName(jTab.productName);
+                              setDraftAirDate(jTab.airDate);
+                            }}
+                            className="text-left flex items-center gap-2"
+                          >
+                            <span className="px-1.5 py-0.5 rounded bg-accent/15 text-accent font-code text-2xs font-semibold">
+                              Bảng CV #{jIdx + 1} · {jTab.jobCode}
+                            </span>
+                            <span className="truncate max-w-[180px]">{jTab.productName || 'Sản phẩm'}</span>
+                            <span className="font-code text-accent">{formatNumber(jSubtotal)}đ</span>
+                          </button>
+                          {draftJobTables.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const remaining = draftJobTables.filter((_, idx) => idx !== jIdx);
+                                const nextActive = Math.max(0, Math.min(activeJobTableIdx, remaining.length - 1));
+                                applyMultiJobTablesToDraftValues(remaining, nextActive);
+                              }}
+                              className="text-ink-3 hover:text-critical p-0.5"
+                              title="Xóa Bảng công việc (Job) này khỏi Phụ lục"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                {/* Task #1: Sản xuất & đăng tải Video chính */}
+                {/* Task #1 của Bảng công việc đang chọn: Sản xuất & đăng tải Video chính */}
                 <div className="p-3 rounded-lg border border-line bg-surface space-y-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="px-1.5 py-0.5 rounded bg-accent/15 text-accent font-code text-2xs font-semibold">
-                        Task #1 · {jobAcceptanceBreakdown.videoItem.taskCode}
+                        Bảng công việc #{activeJobTableIdx + 1} ({draftJobTables[activeJobTableIdx]?.jobCode || jobAcceptanceBreakdown.jobCode}) · Hạng mục #1
                       </span>
                       <span className="font-semibold text-ink">
-                        Sản xuất và đăng tải Video review ({jobAcceptanceBreakdown.videoItem.productName || brand || 'Sản phẩm chiến dịch'})
+                        Sản xuất và đăng tải Video review ({draftProductName || brand || 'Sản phẩm chiến dịch'})
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">

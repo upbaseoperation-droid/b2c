@@ -11,6 +11,7 @@ import {
   Eye,
   FileCheck,
   FileText,
+  RefreshCw,
   Send,
   UserCheck,
   Video,
@@ -21,6 +22,8 @@ import type { ContractRecord } from '../../lib/contracts/types';
 import { formatDate, formatNumber, formatVnd, formatVndShort } from '../../lib/format';
 import {
   buildBookingDealFromApprovedItem,
+  computeDealSowJobSubtotal,
+  ensureDealJobsForApprovedItem,
   type ApprovedBookingListItem,
 } from '../../lib/approvedBookingList';
 import { normalizeTikTokId } from '../../lib/staffBrandListingSheet';
@@ -43,6 +46,9 @@ export interface DealDetailDrawerProps {
   onOpenDealBuilderModal?: (item: ApprovedBookingListItem) => void;
   onOpenTikTokInspector?: (item: ApprovedBookingListItem) => void;
   onOpenKocProfile?: (item: ApprovedBookingListItem) => void;
+  onUpdateDealFields?: (dealId: string, patch: Partial<ApprovedBookingListItem>) => void;
+  onPullContractLinks?: () => void;
+  isPullingContractLinks?: boolean;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
@@ -70,6 +76,9 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
   onOpenDealBuilderModal,
   onOpenTikTokInspector,
   onOpenKocProfile,
+  onUpdateDealFields,
+  onPullContractLinks,
+  isPullingContractLinks,
   onNotify,
 }) => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -667,13 +676,26 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                 <Panel
                   title="Chuỗi 3 chặng văn bản pháp lý (Kết nối Quản lý Hợp đồng)"
                   actions={
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setShowSensitive((v) => !v)}
-                    >
-                      {showSensitive ? 'Che CCCD / MST' : 'Hiện đầy đủ CCCD / MST'}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {onPullContractLinks && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          icon={RefreshCw}
+                          disabled={isPullingContractLinks}
+                          onClick={onPullContractLinks}
+                        >
+                          Kéo HĐ · PL · BBNT &amp; Link
+                        </Button>
+                      )}
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setShowSensitive((v) => !v)}
+                      >
+                        {showSensitive ? 'Che CCCD / MST' : 'Hiện đầy đủ CCCD / MST'}
+                      </Button>
+                    </div>
                   }
                 >
                   <div className="space-y-3">
@@ -717,16 +739,47 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                             )}
                           </div>
                           <div className="font-code text-xs font-semibold text-ink truncate">
-                            {linkedContracts.hdnt?.title ||
+                            {linkedContracts.hdnt?.contractSystem?.contractCode ||
+                              linkedContracts.hdnt?.title ||
                               deal.masterContractCode ||
                               'Chưa gắn mã HĐNT'}
                           </div>
                           <div className="text-2xs text-ink-3">
                             {linkedContracts.hdnt
                               ? computeSigningProgress(linkedContracts.hdnt.signing.at(-1))?.summaryText ||
-                                'Đã khởi tạo hồ sơ HĐNT'
+                                'Đã khởi tạo hồ sơ HĐNT (contract-system)'
                               : 'Áp dụng chung cho mọi Deal của KOC'}
                           </div>
+                          {linkedContracts.hdnt && (
+                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                              {linkedContracts.hdnt.contractSystem?.googleDocsUrl && (
+                                <a
+                                  href={linkedContracts.hdnt.contractSystem.googleDocsUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  Google Docs
+                                </a>
+                              )}
+                              {(linkedContracts.hdnt.signing.at(-1)?.signedFileUrl ||
+                                linkedContracts.hdnt.contractSystem?.signedFileUrl) && (
+                                <a
+                                  href={
+                                    linkedContracts.hdnt.signing.at(-1)?.signedFileUrl ||
+                                    linkedContracts.hdnt.contractSystem?.signedFileUrl
+                                  }
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-2xs font-medium text-positive hover:underline"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  Bản đã ký
+                                </a>
+                              )}
+                            </div>
+                          )}
                         </div>
                         {onOpenContractForDeal && mappedBookingDeal && (
                           <Button
@@ -750,7 +803,8 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                             </Status>
                           </div>
                           <div className="font-code text-xs font-semibold text-ink truncate">
-                            {linkedContracts.sow?.title ||
+                            {linkedContracts.sow?.contractSystem?.contractCode ||
+                              linkedContracts.sow?.title ||
                               deal.contractAppendixCode ||
                               (deal.maBooking ? `PL-${deal.maBooking}-01` : 'Chưa cấp mã SOW')}
                           </div>
@@ -760,6 +814,36 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                                 `Giá trị Net: ${formatVnd(deal.chiPhiBookingNetCuoi)}`
                               : `Giá trị Net: ${formatVnd(deal.chiPhiBookingNetCuoi)}`}
                           </div>
+                          {linkedContracts.sow && (
+                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                              {linkedContracts.sow.contractSystem?.googleDocsUrl && (
+                                <a
+                                  href={linkedContracts.sow.contractSystem.googleDocsUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  Google Docs
+                                </a>
+                              )}
+                              {(linkedContracts.sow.signing.at(-1)?.signedFileUrl ||
+                                linkedContracts.sow.contractSystem?.signedFileUrl) && (
+                                <a
+                                  href={
+                                    linkedContracts.sow.signing.at(-1)?.signedFileUrl ||
+                                    linkedContracts.sow.contractSystem?.signedFileUrl
+                                  }
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-2xs font-medium text-positive hover:underline"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  Bản đã ký
+                                </a>
+                              )}
+                            </div>
+                          )}
                         </div>
                         {onOpenContractForDeal && mappedBookingDeal && (
                           <Button
@@ -787,14 +871,50 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                             </Status>
                           </div>
                           <div className="font-code text-xs font-semibold text-ink truncate">
-                            {linkedContracts.bbnt?.title ||
+                            {linkedContracts.bbnt?.contractSystem?.contractCode ||
+                              linkedContracts.bbnt?.title ||
                               (deal.maBooking ? `BBNT-${deal.maBooking}` : 'Chưa lập BBNT')}
                           </div>
                           <div className="text-2xs text-ink-3">
-                            {isAccepted
+                            {linkedContracts.bbnt
+                              ? computeSigningProgress(linkedContracts.bbnt.signing.at(-1))?.summaryText ||
+                                (isAccepted
+                                  ? `Đã nghiệm thu ngày ${formatDate(deal.actualAirDate)}`
+                                  : 'Đã khởi tạo BBNT (contract-system)')
+                              : isAccepted
                               ? `Đã nghiệm thu ngày ${formatDate(deal.actualAirDate)}`
                               : 'Cần có link video thực tế để xuất BBNT'}
                           </div>
+                          {linkedContracts.bbnt && (
+                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                              {linkedContracts.bbnt.contractSystem?.googleDocsUrl && (
+                                <a
+                                  href={linkedContracts.bbnt.contractSystem.googleDocsUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  Google Docs
+                                </a>
+                              )}
+                              {(linkedContracts.bbnt.signing.at(-1)?.signedFileUrl ||
+                                linkedContracts.bbnt.contractSystem?.signedFileUrl) && (
+                                <a
+                                  href={
+                                    linkedContracts.bbnt.signing.at(-1)?.signedFileUrl ||
+                                    linkedContracts.bbnt.contractSystem?.signedFileUrl
+                                  }
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-2xs font-medium text-positive hover:underline"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  Bản đã ký
+                                </a>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-1.5">
                           {onOpenContractForDeal && mappedBookingDeal && (
@@ -822,71 +942,439 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                   </div>
                 </Panel>
 
+                {/* Bảng trường thông tin & Đường link HĐNT, Phụ lục SOW (PL), BBNT */}
                 <Panel
-                  title="Cấu trúc Hạng mục bàn giao & Quyền đi kèm trong Phụ lục SOW"
+                  title="Trường thông tin & Đường link Hợp đồng (HĐNT) · Phụ lục (PL) · BBNT"
                   actions={
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => onOpenDealBuilderModal?.(deal)}
-                    >
-                      {sowSigningCompleted
-                        ? 'Lập Phụ lục bổ sung'
-                        : 'Chỉnh sửa điều khoản SOW'}
-                    </Button>
+                    onPullContractLinks ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        icon={RefreshCw}
+                        disabled={isPullingContractLinks}
+                        onClick={onPullContractLinks}
+                      >
+                        Đồng bộ lại từ contract-system
+                      </Button>
+                    ) : undefined
                   }
                 >
-                  <div className="divide-y divide-line text-xs">
-                    <div className="py-2.5 flex items-center justify-between gap-3">
-                      <div>
-                        <div className="font-medium text-ink">
-                          01 Video TikTok hoàn chỉnh — {deal.sanPham || deal.brandName}
-                        </div>
-                        <div className="text-2xs text-ink-3">
-                          Kịch bản, quay dựng và đăng tải trên kênh @{deal.idKenh.replace(/^@/, '')}
-                        </div>
+                  <div className="space-y-4 text-xs">
+                    {/* 1. Trường thông tin HĐNT */}
+                    <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-ink">1. Hợp đồng nguyên tắc (HĐNT)</span>
+                        <span className="text-2xs font-code text-ink-2">
+                          {deal.masterContractStatus || (linkedContracts.hdnt ? contractStatus(linkedContracts.hdnt).label : 'CHƯA_LẬP')}
+                        </span>
                       </div>
-                      <div className="text-right font-code tabular-nums shrink-0">
-                        <div className="font-semibold text-ink">
-                          {formatVnd(deal.videoAssetNetCost ?? deal.chiPhiBookingNetCuoi)}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                          <label className="text-2xs text-ink-3 block mb-1">Số / Mã HĐNT</label>
+                          <input
+                            type="text"
+                            value={
+                              deal.masterContractCode ||
+                              linkedContracts.hdnt?.contractSystem?.contractCode ||
+                              linkedContracts.hdnt?.title ||
+                              ''
+                            }
+                            onChange={(e) =>
+                              onUpdateDealFields?.(deal.id, { masterContractCode: e.target.value })
+                            }
+                            placeholder="VD: 291026/HDNT/KOC"
+                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
+                          />
                         </div>
-                        <div className="text-2xs text-ink-3">Hạng mục chính</div>
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-2xs text-ink-3">Link Google Docs HĐNT</label>
+                            {(deal.masterContractGoogleDocsUrl ||
+                              linkedContracts.hdnt?.contractSystem?.googleDocsUrl) && (
+                              <a
+                                href={
+                                  deal.masterContractGoogleDocsUrl ||
+                                  linkedContracts.hdnt?.contractSystem?.googleDocsUrl
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-2xs font-medium text-accent hover:underline"
+                              >
+                                Mở ↗
+                              </a>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            value={
+                              deal.masterContractGoogleDocsUrl ||
+                              linkedContracts.hdnt?.contractSystem?.googleDocsUrl ||
+                              ''
+                            }
+                            onChange={(e) =>
+                              onUpdateDealFields?.(deal.id, {
+                                masterContractGoogleDocsUrl: e.target.value,
+                              })
+                            }
+                            placeholder="https://docs.google.com/document/d/..."
+                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink-2"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-2xs text-ink-3">Link bản HĐNT đã ký</label>
+                            {(deal.masterContractSignedUrl ||
+                              linkedContracts.hdnt?.signing.at(-1)?.signedFileUrl ||
+                              linkedContracts.hdnt?.contractSystem?.signedFileUrl) && (
+                              <a
+                                href={
+                                  deal.masterContractSignedUrl ||
+                                  linkedContracts.hdnt?.signing.at(-1)?.signedFileUrl ||
+                                  linkedContracts.hdnt?.contractSystem?.signedFileUrl
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-2xs font-medium text-positive hover:underline"
+                              >
+                                Tải ↗
+                              </a>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            value={
+                              deal.masterContractSignedUrl ||
+                              linkedContracts.hdnt?.signing.at(-1)?.signedFileUrl ||
+                              linkedContracts.hdnt?.contractSystem?.signedFileUrl ||
+                              ''
+                            }
+                            onChange={(e) =>
+                              onUpdateDealFields?.(deal.id, {
+                                masterContractSignedUrl: e.target.value,
+                              })
+                            }
+                            placeholder="/api/contracts/.../document"
+                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink-2"
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    {(deal.addonServices || []).map((addon, idx) => (
-                      <div
-                        key={addon.id || idx}
-                        className="py-2.5 flex items-center justify-between gap-3"
-                      >
+                    {/* 2. Trường thông tin Phụ lục SOW (PL) */}
+                    <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-ink">2. Phụ lục Hợp đồng theo Deal (PL / SOW)</span>
+                        <span className="text-2xs font-code text-ink-2">
+                          {deal.contractAppendixStatus || 'CHỜ_KÝ'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div>
-                          <div className="font-medium text-ink">{addon.termLabel}</div>
-                          <div className="text-2xs text-ink-3">
-                            Thời hạn: {addon.durationDays ? `${addon.durationDays} ngày` : 'Theo thỏa thuận'} ·{' '}
-                            {addon.evidenceCodeOrUrl || 'Chờ bàn giao mã / file'}
-                          </div>
+                          <label className="text-2xs text-ink-3 block mb-1">Số / Mã Phụ lục SOW</label>
+                          <input
+                            type="text"
+                            value={
+                              deal.contractAppendixCode ||
+                              linkedContracts.sow?.contractSystem?.contractCode ||
+                              linkedContracts.sow?.title ||
+                              ''
+                            }
+                            onChange={(e) =>
+                              onUpdateDealFields?.(deal.id, {
+                                contractAppendixCode: e.target.value,
+                              })
+                            }
+                            placeholder="VD: PL-BO2610-01"
+                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
+                          />
                         </div>
-                        <div className="text-right font-code tabular-nums shrink-0">
-                          <div className="font-semibold text-ink">
-                            {(addon.allocatedCostVnd || 0) > 0
-                              ? formatVnd(addon.allocatedCostVnd || 0)
-                              : 'Đã gộp trong gói'}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-2xs text-ink-3">Link Google Docs Phụ lục</label>
+                            {(deal.contractAppendixGoogleDocsUrl ||
+                              linkedContracts.sow?.contractSystem?.googleDocsUrl) && (
+                              <a
+                                href={
+                                  deal.contractAppendixGoogleDocsUrl ||
+                                  linkedContracts.sow?.contractSystem?.googleDocsUrl
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-2xs font-medium text-accent hover:underline"
+                              >
+                                Mở ↗
+                              </a>
+                            )}
                           </div>
-                          <div className="text-2xs text-ink-3">
-                            {addon.acceptanceStatus === 'VERIFIED' ? 'Đã bàn giao' : 'Đi kèm video'}
+                          <input
+                            type="text"
+                            value={
+                              deal.contractAppendixGoogleDocsUrl ||
+                              linkedContracts.sow?.contractSystem?.googleDocsUrl ||
+                              ''
+                            }
+                            onChange={(e) =>
+                              onUpdateDealFields?.(deal.id, {
+                                contractAppendixGoogleDocsUrl: e.target.value,
+                              })
+                            }
+                            placeholder="https://docs.google.com/document/d/..."
+                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink-2"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-2xs text-ink-3">Link bản Phụ lục đã ký</label>
+                            {(deal.contractAppendixSignedUrl ||
+                              linkedContracts.sow?.signing.at(-1)?.signedFileUrl ||
+                              linkedContracts.sow?.contractSystem?.signedFileUrl) && (
+                              <a
+                                href={
+                                  deal.contractAppendixSignedUrl ||
+                                  linkedContracts.sow?.signing.at(-1)?.signedFileUrl ||
+                                  linkedContracts.sow?.contractSystem?.signedFileUrl
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-2xs font-medium text-positive hover:underline"
+                              >
+                                Tải ↗
+                              </a>
+                            )}
                           </div>
+                          <input
+                            type="text"
+                            value={
+                              deal.contractAppendixSignedUrl ||
+                              linkedContracts.sow?.signing.at(-1)?.signedFileUrl ||
+                              linkedContracts.sow?.contractSystem?.signedFileUrl ||
+                              ''
+                            }
+                            onChange={(e) =>
+                              onUpdateDealFields?.(deal.id, {
+                                contractAppendixSignedUrl: e.target.value,
+                              })
+                            }
+                            placeholder="/api/contracts/.../document"
+                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink-2"
+                          />
                         </div>
                       </div>
-                    ))}
+                    </div>
+
+                    {/* 3. Trường thông tin Biên bản nghiệm thu (BBNT) */}
+                    <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-ink">3. Biên bản nghiệm thu (BBNT)</span>
+                        <span className="text-2xs font-code text-ink-2">
+                          {deal.bbntStatus || (linkedContracts.bbnt ? contractStatus(linkedContracts.bbnt).label : 'CHƯA_LẬP')}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                          <label className="text-2xs text-ink-3 block mb-1">Số / Mã BBNT</label>
+                          <input
+                            type="text"
+                            value={
+                              deal.bbntCode ||
+                              linkedContracts.bbnt?.contractSystem?.contractCode ||
+                              linkedContracts.bbnt?.title ||
+                              ''
+                            }
+                            onChange={(e) =>
+                              onUpdateDealFields?.(deal.id, { bbntCode: e.target.value })
+                            }
+                            placeholder="VD: BBNT-BO2610-01"
+                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-2xs text-ink-3">Link Google Docs BBNT</label>
+                            {(deal.bbntGoogleDocsUrl ||
+                              linkedContracts.bbnt?.contractSystem?.googleDocsUrl) && (
+                              <a
+                                href={
+                                  deal.bbntGoogleDocsUrl ||
+                                  linkedContracts.bbnt?.contractSystem?.googleDocsUrl
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-2xs font-medium text-accent hover:underline"
+                              >
+                                Mở ↗
+                              </a>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            value={
+                              deal.bbntGoogleDocsUrl ||
+                              linkedContracts.bbnt?.contractSystem?.googleDocsUrl ||
+                              ''
+                            }
+                            onChange={(e) =>
+                              onUpdateDealFields?.(deal.id, {
+                                bbntGoogleDocsUrl: e.target.value,
+                              })
+                            }
+                            placeholder="https://docs.google.com/document/d/..."
+                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink-2"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-2xs text-ink-3">Link bản BBNT đã ký</label>
+                            {(deal.bbntSignedUrl ||
+                              linkedContracts.bbnt?.signing.at(-1)?.signedFileUrl ||
+                              linkedContracts.bbnt?.contractSystem?.signedFileUrl) && (
+                              <a
+                                href={
+                                  deal.bbntSignedUrl ||
+                                  linkedContracts.bbnt?.signing.at(-1)?.signedFileUrl ||
+                                  linkedContracts.bbnt?.contractSystem?.signedFileUrl
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-2xs font-medium text-positive hover:underline"
+                              >
+                                Tải ↗
+                              </a>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            value={
+                              deal.bbntSignedUrl ||
+                              linkedContracts.bbnt?.signing.at(-1)?.signedFileUrl ||
+                              linkedContracts.bbnt?.contractSystem?.signedFileUrl ||
+                              ''
+                            }
+                            onChange={(e) =>
+                              onUpdateDealFields?.(deal.id, {
+                                bbntSignedUrl: e.target.value,
+                              })
+                            }
+                            placeholder="/api/contracts/.../document"
+                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink-2"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </Panel>
+
+                {(() => {
+                  const dealJobs = ensureDealJobsForApprovedItem(deal);
+                  return (
+                    <Panel
+                      title={`Cấu trúc Bảng công việc theo từng Job trong Phụ lục SOW (${dealJobs.length} Job · ${dealJobs.length} Bảng công việc)`}
+                      actions={
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => onOpenDealBuilderModal?.(deal)}
+                        >
+                          {sowSigningCompleted
+                            ? 'Lập Phụ lục bổ sung'
+                            : 'Tổ chức Job & Bảng công việc SOW'}
+                        </Button>
+                      }
+                    >
+                      <div className="space-y-3 text-xs">
+                        {dealJobs.map((jobItem, jIdx) => {
+                          const jobSub = computeDealSowJobSubtotal(jobItem);
+                          return (
+                            <div
+                              key={jobItem.id || jIdx}
+                              className="rounded-lg border border-line bg-sunken/30 p-3 space-y-2"
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="px-2 py-0.5 rounded bg-accent/15 text-accent font-code text-2xs font-semibold">
+                                    Bảng công việc #{jIdx + 1} · {jobItem.jobCode}
+                                  </span>
+                                  <span className="font-semibold text-ink">
+                                    {jobItem.productName || deal.sanPham || deal.brandName}
+                                  </span>
+                                  <span className="text-2xs text-ink-3">
+                                    ({jobItem.mediaChannel || 'TikTok'} · Air dự kiến: {jobItem.plannedAirDate || deal.plannedAirDate || '—'})
+                                  </span>
+                                </div>
+                                <span className="font-code font-semibold text-accent">
+                                  Cộng Bảng CV #{jIdx + 1}: {formatVnd(jobSub.plannedJobNet)}
+                                </span>
+                              </div>
+
+                              <div className="divide-y divide-line">
+                                <div className="py-2 flex items-center justify-between gap-3">
+                                  <div>
+                                    <div className="font-medium text-ink">
+                                      1. Sản xuất &amp; đăng tải Video — {jobItem.productName || deal.sanPham || deal.brandName}
+                                    </div>
+                                    <div className="text-2xs text-ink-3">
+                                      Kênh @{deal.idKenh.replace(/^@/, '')} ({jobItem.mediaChannel || 'TikTok'})
+                                      {jobItem.linkAir ? ` · Đã có Link Air` : ''}
+                                    </div>
+                                  </div>
+                                  <div className="text-right font-code tabular-nums shrink-0">
+                                    <div className="font-semibold text-ink">
+                                      {formatVnd(jobSub.videoNet)}
+                                    </div>
+                                    <div className="text-2xs text-ink-3">Hạng mục chính</div>
+                                  </div>
+                                </div>
+
+                                {(jobItem.addonServices || []).map((addon, idx) => (
+                                  <div
+                                    key={addon.id || idx}
+                                    className="py-2 flex items-center justify-between gap-3"
+                                  >
+                                    <div>
+                                      <div className="font-medium text-ink">
+                                        {idx + 2}. {addon.termLabel}
+                                      </div>
+                                      <div className="text-2xs text-ink-3">
+                                        Thời hạn: {addon.durationDays ? `${addon.durationDays} ngày` : 'Theo thỏa thuận'} ·{' '}
+                                        {addon.evidenceCodeOrUrl || 'Chờ bàn giao mã / file'}
+                                      </div>
+                                    </div>
+                                    <div className="text-right font-code tabular-nums shrink-0">
+                                      <div className="font-semibold text-ink">
+                                        {(addon.allocatedCostVnd || 0) > 0
+                                          ? formatVnd(addon.allocatedCostVnd || 0)
+                                          : 'Đã gộp trong gói'}
+                                      </div>
+                                      <div className="text-2xs text-ink-3">
+                                        {addon.acceptanceStatus === 'VERIFIED' ? 'Đã bàn giao' : 'Đi kèm Job'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        <div className="pt-2 border-t border-line flex items-center justify-between font-code text-xs">
+                          <span className="text-ink-2">
+                            Tổng hợp Phụ lục SOW ({dealJobs.length} Job = {dealJobs.length} Bảng công việc):
+                          </span>
+                          <span className="font-semibold text-ink">
+                            {formatVnd(deal.chiPhiBookingNetCuoi)}
+                          </span>
+                        </div>
+                      </div>
+                    </Panel>
+                  );
+                })()}
               </div>
             )}
 
             {activeTab === 'ACCEPTANCE' && (
               <div className="space-y-4">
                 <Panel
-                  title="Nghiệm thu Video & Mã ủy quyền Spark Ads"
+                  title={`Nghiệm thu theo Bảng công việc (Job) & Mã Spark Ads (${ensureDealJobsForApprovedItem(deal).length} Job)`}
                   actions={
                     <div className="flex items-center gap-2">
                       {deal.linkAir && onOpenTikTokInspector && (
@@ -910,75 +1398,109 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                     </div>
                   }
                 >
-                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    <div className="sm:col-span-2">
-                      <dt className="text-2xs text-ink-3">Đường dẫn video nghiệm thu (TikTok)</dt>
-                      <dd className="mt-1">
-                        {deal.linkAir ? (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <a
-                              href={deal.linkAir}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="font-code text-xs text-accent hover:underline break-all"
-                            >
-                              {deal.linkAir}
-                            </a>
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(deal.linkAir, 'linkAir', 'link video')}
-                              className="p-1 rounded text-ink-3 hover:text-ink hover:bg-sunken"
-                              title="Sao chép link video"
-                            >
-                              {copiedField === 'linkAir' ? (
-                                <Check className="w-3.5 h-3.5 text-positive" />
-                              ) : (
-                                <Copy className="w-3.5 h-3.5" />
-                              )}
-                            </button>
+                  <div className="space-y-2.5 text-xs">
+                    {ensureDealJobsForApprovedItem(deal).map((jobItem, jIdx) => {
+                      const sub = computeDealSowJobSubtotal(jobItem);
+                      const jobLink = jobItem.linkAir || (jIdx === 0 ? deal.linkAir : '');
+                      const jobAirDate = jobItem.actualAirDate || (jIdx === 0 ? deal.actualAirDate : '');
+                      const jobSpark = jobItem.sparkAdsCode || (jIdx === 0 ? deal.sparkAdsCode : '');
+                      return (
+                        <div
+                          key={jobItem.id || jIdx}
+                          className="p-2.5 rounded-lg border border-line bg-sunken/30 space-y-2"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-line">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="px-2 py-0.5 rounded bg-accent/15 text-accent font-code font-semibold text-2xs">
+                                Bảng công việc #{jIdx + 1} · {jobItem.jobCode}
+                              </span>
+                              <span className="font-semibold text-ink">
+                                {jobItem.productName || jobItem.jobTitle}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-code text-2xs font-semibold text-ink">
+                                Nghiệm thu Net: {formatVnd(sub.acceptedJobNet)}
+                              </span>
+                              <Status tone={jobLink ? 'positive' : 'warning'}>
+                                {jobLink ? 'Đã nghiệm thu' : 'Chờ nghiệm thu'}
+                              </Status>
+                            </div>
                           </div>
-                        ) : (
-                          <span className="text-ink-3">Chưa cập nhật đường dẫn video lên sóng</span>
-                        )}
-                      </dd>
-                    </div>
 
-                    <div>
-                      <dt className="text-2xs text-ink-3">Mã ủy quyền quảng cáo (Spark Ads)</dt>
-                      <dd className="mt-1 flex items-center gap-2">
-                        {deal.sparkAdsCode ? (
-                          <>
-                            <span className="font-code font-medium text-ink px-2 py-0.5 rounded bg-sunken border border-line">
-                              {deal.sparkAdsCode}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(deal.sparkAdsCode, 'sparkAds', 'mã Spark Ads')}
-                              className="p-1 rounded text-ink-3 hover:text-ink hover:bg-sunken"
-                              title="Sao chép mã Spark Ads"
-                            >
-                              {copiedField === 'sparkAds' ? (
-                                <Check className="w-3.5 h-3.5 text-positive" />
-                              ) : (
-                                <Copy className="w-3.5 h-3.5" />
-                              )}
-                            </button>
-                          </>
-                        ) : (
-                          <span className="text-ink-3">Chưa cấp mã Spark Ads</span>
-                        )}
-                      </dd>
-                    </div>
+                          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="sm:col-span-2">
+                              <dt className="text-2xs text-ink-3">Đường dẫn video nghiệm thu (TikTok)</dt>
+                              <dd className="mt-0.5">
+                                {jobLink ? (
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <a
+                                      href={jobLink}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="font-code text-xs text-accent hover:underline break-all"
+                                    >
+                                      {jobLink}
+                                    </a>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCopy(jobLink, `linkAir_${jIdx}`, 'link video')}
+                                      className="p-1 rounded text-ink-3 hover:text-ink hover:bg-sunken"
+                                      title="Sao chép link video"
+                                    >
+                                      {copiedField === `linkAir_${jIdx}` ? (
+                                        <Check className="w-3.5 h-3.5 text-positive" />
+                                      ) : (
+                                        <Copy className="w-3.5 h-3.5" />
+                                      )}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="text-ink-3">Chưa cập nhật đường dẫn video lên sóng</span>
+                                )}
+                              </dd>
+                            </div>
 
-                    <div>
-                      <dt className="text-2xs text-ink-3">Ngày lên sóng thực tế &amp; Tuần</dt>
-                      <dd className="mt-1 font-code text-ink tabular-nums">
-                        {deal.actualAirDate
-                          ? `${formatDate(deal.actualAirDate)} (${deal.tuanReal || '—'})`
-                          : 'Chưa lên sóng'}
-                      </dd>
-                    </div>
-                  </dl>
+                            <div>
+                              <dt className="text-2xs text-ink-3">Mã ủy quyền quảng cáo (Spark Ads)</dt>
+                              <dd className="mt-0.5 flex items-center gap-2">
+                                {jobSpark ? (
+                                  <>
+                                    <span className="font-code font-medium text-ink px-2 py-0.5 rounded bg-surface border border-line">
+                                      {jobSpark}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCopy(jobSpark, `sparkAds_${jIdx}`, 'mã Spark Ads')}
+                                      className="p-1 rounded text-ink-3 hover:text-ink hover:bg-sunken"
+                                      title="Sao chép mã Spark Ads"
+                                    >
+                                      {copiedField === `sparkAds_${jIdx}` ? (
+                                        <Check className="w-3.5 h-3.5 text-positive" />
+                                      ) : (
+                                        <Copy className="w-3.5 h-3.5" />
+                                      )}
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span className="text-ink-3">Chưa cấp mã Spark Ads</span>
+                                )}
+                              </dd>
+                            </div>
+
+                            <div>
+                              <dt className="text-2xs text-ink-3">Ngày lên sóng thực tế &amp; KH</dt>
+                              <dd className="mt-0.5 font-code text-ink tabular-nums">
+                                {jobAirDate
+                                  ? `${formatDate(jobAirDate)} (KH: ${jobItem.plannedAirDate ? formatDate(jobItem.plannedAirDate) : '—'})`
+                                  : `Chưa lên sóng (KH: ${jobItem.plannedAirDate ? formatDate(jobItem.plannedAirDate) : '—'})`}
+                              </dd>
+                            </div>
+                          </dl>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </Panel>
 
                 <Panel

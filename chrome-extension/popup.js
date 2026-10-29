@@ -16,14 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
       },
       (resp) => {
         void chrome?.runtime?.lastError;
-        if (resp && resp.ok && resp.data?.success) {
+        if (resp && resp.ok && resp.data?.success && !resp.data?.offlineFallback) {
           const storeCount = resp.data.stores?.length || 69;
           statusMsg.className = 'status-box status-ok';
-          statusMsg.textContent = `Đã kết nối thành công (${storeCount} gian hàng B2C sẵn sàng).`;
+          statusMsg.textContent = `Đã kết nối máy chủ Database Upbase B2C (${storeCount} gian hàng sẵn sàng).`;
         } else {
-          statusMsg.className = 'status-box status-ok';
+          statusMsg.className = 'status-box';
           statusMsg.textContent =
-            'Đang hoạt động độc lập (Đã nạp sẵn 5.020 KOC & 69 gian hàng B2C nội bộ).';
+            'Chưa kết nối máy chủ Web-Admin (Đang chạy chế độ bóc tách trực tiếp trên trang).';
         }
       }
     );

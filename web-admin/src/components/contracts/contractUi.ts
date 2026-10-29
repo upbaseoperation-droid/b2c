@@ -4,7 +4,7 @@
  * Đảm bảo áp dụng chính xác 100% bộ 8 biểu mẫu chuẩn Ver052026 và quy tắc pháp lý BR-01, BR-03, BR-04, BR-05.
  */
 
-import type { BookingDealItem, KocItem, KocLegalProfile } from '../../lib/types';
+import type { BookingDealItem, DealSowJobItem, KocItem, KocLegalProfile } from '../../lib/types';
 import { OFFICIAL_3STAGE_TEMPLATE_IDS, type ContractField, type ContractRecord, type ContractRole, type FieldGroup, type LegalTemplate, type ReviewStep, type SigningAttempt } from '../../lib/contracts/types';
 import type { StatusTone } from '../ui';
 import { formatNumber, getVietnamDateYmd } from '../../lib/format';
@@ -19,11 +19,23 @@ import {
   type SubjectKind,
   type TaxCalculationResult,
 } from '../../lib/contracts/contractRules';
+import {
+  buildStableContractCode,
+  canAdvanceSigningStatus,
+  DEFAULT_SIGN_TAGS,
+  enrichTemplateWithSignFlow,
+  mapRecordValuesToTemplateVariables,
+} from '../../lib/contracts/contractSystemRules';
 
 export {
+  buildStableContractCode,
   calculateContractTax,
+  canAdvanceSigningStatus,
+  DEFAULT_SIGN_TAGS,
   detectSubjectKind,
+  enrichTemplateWithSignFlow,
   evaluateContractRules,
+  mapRecordValuesToTemplateVariables,
   numberToVietnameseWords,
   OFFICIAL_3STAGE_TEMPLATE_IDS,
   type ContractRuleEvaluation,
@@ -152,7 +164,12 @@ export function contractStatus(r: ContractRecord): StatusView {
 export const HISTORY_LABEL: Record<string, string> = {
   CREATE: 'Tạo hồ sơ', EDIT: 'Tạo phiên bản mới', SUBMIT: 'Gửi duyệt', APPROVED: 'Duyệt', CHANGES: 'Yêu cầu bổ sung',
   REJECTED: 'Từ chối', WITHDRAW: 'Thu hồi', NOTE: 'Ghi chú đàm phán', RULE_CHECK: 'Kiểm tra ô bắt buộc', AI_CHECK: 'Kiểm tra nội dung',
-  DEMO_SIGN_START: 'Bắt đầu ký thử', DEMO_SIGN_NEXT: 'Ký thử', DEMO_SIGN_REJECT: 'Từ chối ký thử',
+  GENERATE_CONTRACT_SYSTEM: 'Render .docx & đồng bộ Google Docs',
+  SYNC_GOOGLE_DOCS: 'Xuất lại .docx từ Google Docs',
+  REQUEST_SIGN: 'Gửi ký WeSign (requestSign)',
+  CONTRACT_SYSTEM_WEBHOOK: 'Nhận trạng thái ký (Webhook)',
+  SIGNED_FILE_READY: 'Tải file đã ký (Worker)',
+  DEMO_SIGN_START: 'Bắt đầu ký thử', DEMO_SIGN_NEXT: 'Ký thử', DEMO_SIGN_REJECT: 'Từ chối ký thử', DEMO_FAST_SIGN: 'Hoàn tất ký đủ 2 bên',
   LINK_WESIGN: 'Liên kết luồng ký', SYNC_WESIGN: 'Cập nhật tiến độ ký', SYNC_ERROR: 'Lỗi cập nhật tiến độ ký',
 };
 
@@ -235,6 +252,24 @@ export function templateFor(
 }
 
 export const SOW_TASKS_META_KEY = 'meta:sowTasksJson';
+export const SOW_JOBS_META_KEY = 'meta:sowJobsJson';
+
+/**
+ * 1 Job trong Deal = 1 Bảng công việc trong Phụ lục SOW (1 Deal -> N Jobs -> N Bảng công việc)
+ */
+export interface SowJobTableDraft {
+  id: string;
+  jobCode: string;
+  jobId?: string;
+  jobTitle: string;
+  productName: string;
+  mediaChannel?: string;
+  airDate: string;
+  videoUrl: string;
+  videoFeeNetVnd: number;
+  quantity: number;
+  addonItems: JobAcceptanceAddonRow[];
+}
 
 export type SowTaskTermType = 'ADS_CODE' | 'IMAGE_USAGE' | 'EXCLUSIVITY' | 'CROSS_POST_REUP' | 'LINK_BIO_CART';
 
@@ -307,6 +342,8 @@ export interface JobAcceptanceBreakdown {
     acceptanceStatus: 'VERIFIED' | 'PENDING_ACCEPTANCE';
   };
   addonItems: JobAcceptanceAddonRow[];
+  /** Danh sách N Bảng công việc tương ứng N Job trong Deal (1 Deal -> N Jobs -> N Bảng công việc trong Phụ lục SOW) */
+  jobTables?: SowJobTableDraft[];
   financials: {
     plannedTotalNet: number;
     videoNet: number;
@@ -348,6 +385,283 @@ const parseSavedSowTasks = (rawJson?: string): JobAcceptanceAddonRow[] | null =>
   }
   return null;
 };
+
+export const parseSavedSowJobs = (rawJson?: string): SowJobTableDraft[] | null => {
+  if (!rawJson?.trim()) return null;
+  try {
+    const parsed = JSON.parse(rawJson);
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.jobCode) {
+      return parsed as SowJobTableDraft[];
+    }
+  } catch {
+    // ignore malformed json
+  }
+  return null;
+};
+
+/**
+ * Chuyển đổi 1 DealSowJobItem thành danh sách JobAcceptanceAddonRow cho Bảng công việc của Job đó
+ */
+export function buildAddonRowsForDealJob(
+  job: DealSowJobItem,
+  deal?: BookingDealItem,
+): JobAcceptanceAddonRow[] {
+  const jobCode = job.jobCode || deal?.dealCode || 'JOB-01';
+  const jobRights = job.addonServices || [];
+  const hasExplicitRights = Array.isArray(job.addonServices);
+  const adsFromJob = jobRights.find(r => r.termType === 'ADS_CODE');
+  const imgFromJob = jobRights.find(r => r.termType === 'IMAGE_USAGE');
+  const otherFromJob = jobRights.filter(r => r.termType !== 'ADS_CODE' && r.termType !== 'IMAGE_USAGE');
+
+  const adsIncluded = hasExplicitRights ? Boolean(adsFromJob || job.sparkAdsCode) : true;
+  const imgIncluded = hasExplicitRights ? Boolean(imgFromJob) : true;
+
+  return [
+    {
+      id: adsFromJob?.id || `${jobCode}-task-ads`,
+      taskCode: `${jobCode}-T02`,
+      termType: 'ADS_CODE',
+      termLabel: adsFromJob?.termLabel || SOW_TASK_DELIVERABLE_INFO.ADS_CODE.taskTitle,
+      includedInSow: adsIncluded,
+      deliverableLabel: SOW_TASK_DELIVERABLE_INFO.ADS_CODE.deliverableLabel,
+      durationDays: adsFromJob?.durationDays || deal?.sparkAdsExpiryDays || 30,
+      evidenceCodeOrUrl: adsFromJob?.evidenceCodeOrUrl || job.sparkAdsCode || '',
+      allocatedCostVnd: Number(adsFromJob?.allocatedCostVnd) || 0,
+      acceptanceStatus:
+        adsFromJob?.acceptanceStatus === 'DROPPED'
+          ? 'DROPPED'
+          : adsFromJob?.acceptanceStatus === 'VERIFIED' || Boolean(job.sparkAdsCode || adsFromJob?.evidenceCodeOrUrl)
+            ? 'VERIFIED'
+            : 'PENDING_ACCEPTANCE',
+    },
+    {
+      id: imgFromJob?.id || `${jobCode}-task-img`,
+      taskCode: `${jobCode}-T03`,
+      termType: 'IMAGE_USAGE',
+      termLabel: imgFromJob?.termLabel || SOW_TASK_DELIVERABLE_INFO.IMAGE_USAGE.taskTitle,
+      includedInSow: imgIncluded,
+      deliverableLabel: SOW_TASK_DELIVERABLE_INFO.IMAGE_USAGE.deliverableLabel,
+      durationDays: imgFromJob?.durationDays || 90,
+      evidenceCodeOrUrl: imgFromJob?.evidenceCodeOrUrl || job.linkAir || '',
+      allocatedCostVnd: Number(imgFromJob?.allocatedCostVnd) || 0,
+      acceptanceStatus:
+        imgFromJob?.acceptanceStatus === 'DROPPED'
+          ? 'DROPPED'
+          : imgFromJob?.acceptanceStatus === 'VERIFIED' || Boolean(imgFromJob?.evidenceCodeOrUrl || job.linkAir)
+            ? 'VERIFIED'
+            : 'PENDING_ACCEPTANCE',
+    },
+    ...otherFromJob.map((rt, i) => {
+      const info = SOW_TASK_DELIVERABLE_INFO[rt.termType] || SOW_TASK_DELIVERABLE_INFO.CROSS_POST_REUP;
+      return {
+        id: rt.id || `${jobCode}-task-extra-${i + 4}`,
+        taskCode: `${jobCode}-T0${i + 4}`,
+        termType: rt.termType,
+        termLabel: rt.termLabel || info.taskTitle,
+        includedInSow: true,
+        deliverableLabel: info.deliverableLabel,
+        durationDays: rt.durationDays || info.defaultDays,
+        evidenceCodeOrUrl: rt.evidenceCodeOrUrl || '',
+        allocatedCostVnd: Number(rt.allocatedCostVnd) || 0,
+        acceptanceStatus:
+          rt.acceptanceStatus === 'DROPPED'
+            ? ('DROPPED' as const)
+            : rt.acceptanceStatus === 'VERIFIED' || Boolean(rt.evidenceCodeOrUrl)
+              ? ('VERIFIED' as const)
+              : ('PENDING_ACCEPTANCE' as const),
+      };
+    }),
+  ];
+}
+
+/**
+ * Dựng danh sách N Bảng công việc tương ứng N Job trong Deal (1 Deal -> N Jobs -> N Bảng công việc trong Phụ lục SOW)
+ */
+export function buildDealSowJobTables(
+  deal?: BookingDealItem,
+  koc?: KocItem,
+  parentRecord?: ContractRecord,
+  rawJobsJson?: string,
+): SowJobTableDraft[] {
+  const savedJobs =
+    parseSavedSowJobs(rawJobsJson) ||
+    parseSavedSowJobs(parentRecord?.values?.[SOW_JOBS_META_KEY]);
+  if (savedJobs && savedJobs.length > 0) {
+    return savedJobs.map((j, idx) => {
+      const matchedDealJob = deal?.dealJobs?.find(dj => dj.jobCode === j.jobCode) || deal?.dealJobs?.[idx];
+      const liveAirUrl = j.videoUrl || matchedDealJob?.linkAir || (idx === 0 ? deal?.tiktokVideoUrl || '' : '');
+      const liveAirDate =
+        j.airDate ||
+        formatYmdToVnDate(
+          matchedDealJob?.actualAirDate ||
+            matchedDealJob?.plannedAirDate ||
+            (idx === 0 ? deal?.postedDate || deal?.deadlinePost || '' : ''),
+        );
+      return {
+        ...j,
+        id: j.id || `sow-job-${idx + 1}`,
+        jobCode: j.jobCode || `${deal?.dealCode || 'DEAL'}-J0${idx + 1}`,
+        jobTitle: j.jobTitle || `Bảng công việc #${idx + 1} (${j.jobCode || `J0${idx + 1}`})`,
+        productName: j.productName || matchedDealJob?.productName || deal?.productName || deal?.brandName || '',
+        mediaChannel: j.mediaChannel || matchedDealJob?.mediaChannel || 'TikTok',
+        airDate: liveAirDate,
+        videoUrl: liveAirUrl,
+        videoFeeNetVnd: Math.max(0, Number(j.videoFeeNetVnd) || 0),
+        quantity: Math.max(1, Number(j.quantity) || 1),
+        addonItems: (j.addonItems || []).map((a, aIdx) => ({
+          ...a,
+          taskCode: a.taskCode || `${j.jobCode || `J0${idx + 1}`}-T0${aIdx + 2}`,
+          includedInSow: a.includedInSow ?? true,
+        })),
+      };
+    });
+  }
+
+  if (deal?.dealJobs && deal.dealJobs.length > 0) {
+    return deal.dealJobs.map((dj, idx) => {
+      const jobCode = dj.jobCode || `${deal.dealCode || 'DEAL'}-J0${idx + 1}`;
+      return {
+        id: dj.id || `sow-job-${idx + 1}`,
+        jobCode,
+        jobTitle: dj.jobTitle || `Bảng công việc #${idx + 1} (${jobCode})`,
+        productName: dj.productName || deal.productName || deal.brandName || '',
+        mediaChannel: dj.mediaChannel || 'TikTok',
+        airDate: formatYmdToVnDate(dj.actualAirDate || dj.plannedAirDate || deal.postedDate || deal.deadlinePost || ''),
+        videoUrl: dj.linkAir || (idx === 0 ? deal.tiktokVideoUrl || '' : ''),
+        videoFeeNetVnd: Math.max(0, Number(dj.videoAssetNetCost) || 0),
+        quantity: Math.max(1, Number(dj.quantity) || 1),
+        addonItems: buildAddonRowsForDealJob(dj, deal),
+      };
+    });
+  }
+
+  const single = buildJobAcceptanceBreakdown(deal, koc, parentRecord);
+  return [
+    {
+      id: `sow-job-1`,
+      jobCode: `${single.jobCode}-J01`,
+      jobTitle: `Bảng công việc #1 (${single.jobCode}-J01)`,
+      productName: single.videoItem.productName,
+      mediaChannel: 'TikTok',
+      airDate: single.videoItem.airDate,
+      videoUrl: single.videoItem.videoUrl,
+      videoFeeNetVnd: single.videoItem.feeNetVnd,
+      quantity: single.videoItem.quantity || 1,
+      addonItems: single.addonItems,
+    },
+  ];
+}
+
+/**
+ * Tổng hợp N Bảng công việc (N Job trong Deal) thành JobAcceptanceBreakdown toàn Deal để điền vào Phụ lục SOW & BBNT
+ */
+export function aggregateMultiJobAcceptanceBreakdown(params: {
+  jobs: SowJobTableDraft[];
+  deal?: BookingDealItem;
+  koc?: KocItem;
+  parentRecord?: ContractRecord;
+  advanceAmount?: number;
+}): JobAcceptanceBreakdown {
+  const { jobs, deal, koc, parentRecord, advanceAmount } = params;
+  const safeJobs = jobs.length > 0 ? jobs : buildDealSowJobTables(deal, koc, parentRecord);
+  const firstJob = safeJobs[0];
+  const baseSingle = buildJobAcceptanceBreakdown(
+    deal,
+    koc,
+    parentRecord,
+    firstJob.addonItems,
+    firstJob.videoFeeNetVnd,
+    advanceAmount,
+    firstJob.productName,
+    firstJob.airDate,
+  );
+
+  let totalVideoNet = 0;
+  let totalPlannedAddons = 0;
+  let totalActiveAddons = 0;
+  let totalDroppedDeduction = 0;
+  let totalQuantity = 0;
+  const combinedAddonItems: JobAcceptanceAddonRow[] = [];
+
+  safeJobs.forEach((j, jIdx) => {
+    const qty = Math.max(1, Number(j.quantity) || 1);
+    const vNet = Math.max(0, Number(j.videoFeeNetVnd) || 0) * qty;
+    totalVideoNet += vNet;
+    totalQuantity += qty;
+
+    const inc = (j.addonItems || []).filter(a => a.includedInSow !== false);
+    totalPlannedAddons += inc.reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+    totalActiveAddons += inc
+      .filter(a => a.acceptanceStatus !== 'DROPPED')
+      .reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+    totalDroppedDeduction += inc
+      .filter(a => a.acceptanceStatus === 'DROPPED')
+      .reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+
+    (j.addonItems || []).forEach((a, aIdx) => {
+      combinedAddonItems.push({
+        ...a,
+        id: a.id || `${j.jobCode}-addon-${aIdx + 1}`,
+        taskCode: a.taskCode || `${j.jobCode}-T0${aIdx + 2}`,
+        termLabel:
+          safeJobs.length > 1
+            ? `[Job #${jIdx + 1} · ${j.jobCode}] ${a.termLabel}`
+            : a.termLabel,
+      });
+    });
+  });
+
+  const plannedTotalNet = totalVideoNet + totalPlannedAddons;
+  const acceptedTotalNet = Math.max(0, totalVideoNet + totalActiveAddons);
+  const tax = calculateContractTax({
+    subjectKind: baseSingle.subjectKind,
+    baseAmount: acceptedTotalNet,
+    vatRatePercent: deal?.vatRatePercent,
+    isNetPayment: true,
+  });
+
+  const resolvedAdvance =
+    advanceAmount !== undefined
+      ? Math.max(0, advanceAmount)
+      : Number(deal?.advanceAmount || 0);
+  const remainingPayable =
+    baseSingle.subjectKind === 'COM'
+      ? Math.max(0, tax.grossTotalContract - resolvedAdvance)
+      : Math.max(0, tax.netAmountToReceive - resolvedAdvance);
+
+  const combinedProductLabel =
+    safeJobs.length > 1
+      ? safeJobs.map((j, idx) => `Job #${idx + 1} (${j.jobCode}): ${j.productName || 'Sản phẩm'}`).join(' · ')
+      : firstJob.productName || baseSingle.videoItem.productName;
+
+  return {
+    ...baseSingle,
+    videoItem: {
+      ...baseSingle.videoItem,
+      productName: combinedProductLabel,
+      airDate: firstJob.airDate || baseSingle.videoItem.airDate,
+      videoUrl: firstJob.videoUrl || baseSingle.videoItem.videoUrl,
+      feeNetVnd: totalVideoNet,
+      quantity: totalQuantity,
+      acceptanceStatus: safeJobs.every(j => Boolean(j.videoUrl?.trim())) ? 'VERIFIED' : 'PENDING_ACCEPTANCE',
+    },
+    addonItems: combinedAddonItems,
+    jobTables: safeJobs,
+    financials: {
+      plannedTotalNet,
+      videoNet: totalVideoNet,
+      activeAddonsNet: totalActiveAddons,
+      droppedDeduction: totalDroppedDeduction,
+      acceptedTotalNet,
+      pitTax: tax.pitDeductionAmount,
+      vatTax: tax.vatAmount,
+      grossTotal: tax.grossTotalContract,
+      advanceAmount: resolvedAdvance,
+      remainingPayable,
+      amountInWords: tax.amountInWords,
+    },
+  };
+}
 
 /**
  * Tổng hợp bảng kê Phụ lục SOW & Nghiệm thu theo từng Task (Đầu việc) của Job:
@@ -827,7 +1141,16 @@ export function prefill(
     return Number.isFinite(num) && num > 0 ? num : 0;
   })();
 
-  const breakdown = buildJobAcceptanceBreakdown(deal, koc, effectiveParentRecord);
+  const savedJobsFromParent = parseSavedSowJobs(effectiveParentRecord?.values?.[SOW_JOBS_META_KEY]);
+  const breakdown =
+    (savedJobsFromParent && savedJobsFromParent.length > 0) || (deal?.dealJobs && deal.dealJobs.length > 1)
+      ? aggregateMultiJobAcceptanceBreakdown({
+          jobs: buildDealSowJobTables(deal, koc, effectiveParentRecord),
+          deal,
+          koc,
+          parentRecord: effectiveParentRecord,
+        })
+      : buildJobAcceptanceBreakdown(deal, koc, effectiveParentRecord);
   const droppedDeduction = deal?.droppedCostVnd ?? breakdown.financials.droppedDeduction;
   const isMultiRowCtvBbnt =
     Boolean(ctx.ctvAcceptedDeals && ctx.ctvAcceptedDeals.length > 1) &&
@@ -1255,6 +1578,15 @@ export function prefill(
   if (!next[SOW_TASKS_META_KEY] && breakdown.addonItems.length > 0) {
     next[SOW_TASKS_META_KEY] = JSON.stringify(breakdown.addonItems);
   }
+  if (!next[SOW_JOBS_META_KEY]) {
+    const jobTables =
+      breakdown.jobTables && breakdown.jobTables.length > 0
+        ? breakdown.jobTables
+        : buildDealSowJobTables(deal, koc, effectiveParentRecord);
+    if (jobTables.length > 0) {
+      next[SOW_JOBS_META_KEY] = JSON.stringify(jobTables);
+    }
+  }
   return { values: next, filled };
 }
 
@@ -1339,6 +1671,9 @@ export function syncValuesFromJobAcceptanceBreakdown(
 ): Record<string, string> {
   const next = { ...prevValues };
   next[SOW_TASKS_META_KEY] = JSON.stringify(breakdown.addonItems);
+  if (breakdown.jobTables && breakdown.jobTables.length > 0) {
+    next[SOW_JOBS_META_KEY] = JSON.stringify(breakdown.jobTables);
+  }
   const adsRight = breakdown.addonItems.find(rt => rt.termType === 'ADS_CODE');
   const imgRight = breakdown.addonItems.find(rt => rt.termType === 'IMAGE_USAGE');
   const fin = breakdown.financials;
@@ -1349,6 +1684,8 @@ export function syncValuesFromJobAcceptanceBreakdown(
 
     if (f.source === 'product' && breakdown.videoItem.productName) {
       next[f.key] = breakdown.videoItem.productName;
+    } else if (f.source === 'quantity' && breakdown.videoItem.quantity) {
+      next[f.key] = String(breakdown.videoItem.quantity);
     } else if (f.source === 'airDate' && breakdown.videoItem.airDate) {
       next[f.key] = breakdown.videoItem.airDate;
     } else if (f.source === 'lineTotal') {

@@ -4,6 +4,11 @@ import type { AcceptanceScreenshotItem, ContractActor, ContractField, ContractRe
 import type { ContractBootstrap } from './api';
 import { OFFICIAL_TEMPLATES_SNAPSHOT } from '../../lib/contracts/builtInTemplatesSnapshot';
 import { numberToVietnameseWords } from '../../lib/contracts/contractRules';
+import {
+  createStandaloneContractSystemMeta,
+  createStandaloneRequestSignAttempt,
+  enrichTemplateWithSignFlow,
+} from '../../lib/contracts/contractSystemRules';
 
 // Kho thử riêng trên trình duyệt; đồng bộ 100% bộ 8 biểu mẫu chuẩn Ver052026 từ Quản lý hợp đồng
 const KEY = 'b2c-contract-browser-demo-v1';
@@ -16,7 +21,7 @@ const actors: ContractActor[] = [
 ];
 
 // Nạp toàn bộ 8 biểu mẫu chính thức từ bản chụp snapshot của Quản lý hợp đồng
-const templates: LegalTemplate[] = Object.values(OFFICIAL_TEMPLATES_SNAPSHOT);
+const templates: LegalTemplate[] = Object.values(OFFICIAL_TEMPLATES_SNAPSHOT).map(enrichTemplateWithSignFlow);
 
 interface DemoState { actorId: string; records: ContractRecord[] }
 
@@ -370,6 +375,7 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
 
   if (body.action === 'CREATE') {
     const record = createContract(parse(), actor);
+    record.contractSystem = createStandaloneContractSystemMeta(record, template);
     state.records.push(record);
     write(state);
     return { record } as T;
@@ -382,6 +388,36 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
   let next = structuredClone(record);
   if (body.action === 'EDIT') {
     next = editContract(record, actor, parse(record));
+    next.contractSystem = createStandaloneContractSystemMeta(next, template);
+  } else if (body.action === 'GENERATE_CONTRACT_SYSTEM') {
+    next.contractSystem = createStandaloneContractSystemMeta(next, template);
+    event(next, actor, 'GENERATE_CONTRACT_SYSTEM', `Đã tạo bản .docx và đồng bộ Google Docs (${next.contractSystem.contractCode})`);
+  } else if (body.action === 'SYNC_GOOGLE_DOCS') {
+    const baseMeta = next.contractSystem || createStandaloneContractSystemMeta(next, template);
+    const now = new Date().toISOString();
+    next.contractSystem = {
+      ...baseMeta,
+      googleDocsSyncedAt: now,
+      lastSyncedAt: now,
+    };
+    event(next, actor, 'SYNC_GOOGLE_DOCS', typeof body.note === 'string' && body.note.trim() ? body.note.trim() : 'Đã xuất lại bản .docx mới nhất từ Google Docs');
+  } else if (body.action === 'REQUEST_SIGN') {
+    assertCanSign(record, actor);
+    const meta = next.contractSystem || createStandaloneContractSystemMeta(next, template);
+    next.contractSystem = meta;
+    const existingActive = next.signing.find(
+      s =>
+        (s.contractCode === meta.contractCode || s.version === next.version) &&
+        !['CANCELLED', 'REJECTED'].includes(s.status),
+    );
+    if (!existingActive) {
+      const attempt = createStandaloneRequestSignAttempt(next, actor.id, `demo-evidence-v${next.version}`, {
+        partyAEmail: typeof body.partyAEmail === 'string' ? body.partyAEmail : undefined,
+        partyBEmail: typeof body.partyBEmail === 'string' ? body.partyBEmail : undefined,
+      });
+      next.signing.push(attempt);
+      event(next, actor, 'REQUEST_SIGN', `Đã xuất .docx từ Google Docs và gửi ký sang WeSign qua contract-system (Mã: ${meta.contractCode})`);
+    }
   } else if (body.action === 'SUBMIT') {
     if (!record.isKocOwnForm) {
       const requiredFields = template?.fields.filter(f => f.required) || [];
@@ -533,7 +569,10 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
         ],
       });
     } else {
-      requireCondition(attempt?.provider === 'DEMO' && ['WAITING', 'PARTIAL'].includes(attempt.status), 'Không có lượt ký thử đang hoạt động.');
+      requireCondition(
+        attempt && ['DEMO', 'CONTRACT_SYSTEM'].includes(attempt.provider || '') && ['WAITING', 'PARTIAL'].includes(attempt.status),
+        'Không có lượt ký thử đang hoạt động.',
+      );
       const person = attempt.people.find(p => p.action === 1)!;
       if (body.action === 'DEMO_SIGN_REJECT') {
         person.action = 3;
@@ -554,6 +593,13 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
         } else {
           attempt.status = 'COMPLETED';
           attempt.sourceStatus = -3;
+          attempt.signedFileStatus = 'DOWNLOADED';
+          attempt.signedFileUrl = `/api/contracts/${next.id}/document`;
+          if (next.contractSystem) {
+            next.contractSystem.signedFileStatus = 'DOWNLOADED';
+            next.contractSystem.signedFileUrl = `/api/contracts/${next.id}/document`;
+            next.contractSystem.lastSyncedAt = at;
+          }
         }
       }
       const completedCount = attempt.people.filter(p => p.action === 2).length;

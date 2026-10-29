@@ -170,6 +170,230 @@ export function computeMedianViews(viewsList: number[]): number {
   return Math.round(sorted[mid]);
 }
 
+export type CrawlerSampleDatePreset = 'ALL' | '7D' | '14D' | '30D' | '60D' | '90D' | 'CUSTOM';
+
+export interface TikTokDailyViewBreakdownItem {
+  date: string; // YYYY-MM-DD
+  totalVideos: number;
+  affiliateVideos: number;
+  organicVideos: number;
+  medianViews: number;
+  avgViews: number;
+  totalViews: number;
+  affiliateMedianViews: number;
+  affiliateAvgViews: number;
+  organicMedianViews: number;
+  organicAvgViews: number;
+}
+
+export interface TikTokChannelSampleBreakdownResult {
+  filteredSampleVideos: TikTokVideoItem[];
+  sampleCount: number;
+  medianViews: number;
+  avgViews: number;
+  totalViews: number;
+  avgLikes: number;
+  avgComments: number;
+  avgShares: number;
+  engagementRate: number;
+  affiliateVideoCount: number;
+  affiliateRatioPct: number;
+  affiliateMedianViews: number;
+  affiliateAvgViews: number;
+  affiliateTotalViews: number;
+  organicVideoCount: number;
+  organicRatioPct: number;
+  organicMedianViews: number;
+  organicAvgViews: number;
+  organicTotalViews: number;
+  viewConsistencyRatioPct?: number;
+  dailyBreakdown: TikTokDailyViewBreakdownItem[];
+}
+
+/**
+ * Chuẩn hóa chuỗi ngày đăng video về định dạng YYYY-MM-DD (giờ Việt Nam UTC+7)
+ */
+export function normalizeVideoDateYmd(v: { publishedAt?: string; videoId?: string }): string {
+  if (v.publishedAt) {
+    const trimmed = v.publishedAt.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    const dmy = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (dmy) {
+      return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
+    }
+    const parsed = new Date(trimmed);
+    if (Number.isFinite(parsed.getTime())) {
+      return getVietnamDateYmd(parsed);
+    }
+  }
+  const snowSec = extractUnixSecFromTikTokVideoId(v.videoId);
+  if (snowSec > 0) {
+    return getVietnamDateYmd(new Date(snowSec * 1000));
+  }
+  return '';
+}
+
+/**
+ * Tính toán động View Trung vị, View TB, Tách Video Có giỏ vs. Không gắn giỏ và Bảng thống kê theo từng Ngày đăng
+ * hỗ trợ lọc theo Cỡ mẫu, Bỏ ghim cũ, Khoảng ngày nhanh (7d/14d/30d/60d/90d) và Từ ngày -> Đến ngày (đồng bộ 100% với Extension).
+ */
+export function computeChannelDateAndCartBreakdown(
+  videos: TikTokVideoItem[],
+  options?: {
+    excludePinned?: boolean;
+    sampleLimit?: number; // 0 = Tất cả
+    datePreset?: CrawlerSampleDatePreset;
+    dateFrom?: string; // YYYY-MM-DD
+    dateTo?: string; // YYYY-MM-DD
+  }
+): TikTokChannelSampleBreakdownResult {
+  const excludePinned = Boolean(options?.excludePinned);
+  const sampleLimit = Number(options?.sampleLimit || 0);
+  const datePreset = options?.datePreset || 'ALL';
+  let effectiveFrom = (options?.dateFrom || '').trim();
+  const effectiveTo = (options?.dateTo || '').trim();
+
+  if (datePreset !== 'ALL' && datePreset !== 'CUSTOM') {
+    const daysMap: Record<string, number> = {
+      '7D': 7,
+      '14D': 14,
+      '30D': 30,
+      '60D': 60,
+      '90D': 90,
+    };
+    const days = daysMap[datePreset] || 0;
+    if (days > 0) {
+      const cutoff = new Date(Date.now() - days * 86400 * 1000);
+      effectiveFrom = getVietnamDateYmd(cutoff);
+    }
+  }
+
+  let pool = excludePinned ? videos.filter((v) => !v.isPinnedOldVideo) : [...videos];
+
+  if (effectiveFrom || effectiveTo) {
+    pool = pool.filter((v) => {
+      const ymd = normalizeVideoDateYmd(v);
+      if (!ymd) return false;
+      if (effectiveFrom && ymd < effectiveFrom) return false;
+      if (effectiveTo && ymd > effectiveTo) return false;
+      return true;
+    });
+  }
+
+  pool.sort((a, b) => compareVideoAirDateDesc(a, b));
+  if (sampleLimit > 0 && pool.length > sampleLimit) {
+    pool = pool.slice(0, sampleLimit);
+  }
+
+  const sampleCount = pool.length;
+  const totalViews = pool.reduce((s, v) => s + (v.views || 0), 0);
+  const avgViews = sampleCount > 0 ? Math.round(totalViews / sampleCount) : 0;
+  const medianViews = sampleCount > 0 ? computeMedianViews(pool.map((v) => v.views || 0)) : 0;
+
+  const avgLikes =
+    sampleCount > 0 ? Math.round(pool.reduce((s, v) => s + (v.likes || 0), 0) / sampleCount) : 0;
+  const avgComments =
+    sampleCount > 0 ? Math.round(pool.reduce((s, v) => s + (v.comments || 0), 0) / sampleCount) : 0;
+  const avgShares =
+    sampleCount > 0 ? Math.round(pool.reduce((s, v) => s + (v.shares || 0), 0) / sampleCount) : 0;
+  const engagementRate =
+    avgViews > 0 ? Number((((avgLikes + avgComments + avgShares) / avgViews) * 100).toFixed(2)) : 0;
+
+  const affiliateList = pool.filter((v) => Boolean(v.isAffiliate));
+  const organicList = pool.filter((v) => !v.isAffiliate);
+
+  const affiliateVideoCount = affiliateList.length;
+  const affiliateRatioPct =
+    sampleCount > 0 ? Math.round((affiliateVideoCount / sampleCount) * 100) : 0;
+  const affiliateTotalViews = affiliateList.reduce((s, v) => s + (v.views || 0), 0);
+  const affiliateAvgViews =
+    affiliateVideoCount > 0 ? Math.round(affiliateTotalViews / affiliateVideoCount) : 0;
+  const affiliateMedianViews =
+    affiliateVideoCount > 0 ? computeMedianViews(affiliateList.map((v) => v.views || 0)) : 0;
+
+  const organicVideoCount = organicList.length;
+  const organicRatioPct =
+    sampleCount > 0 ? Math.round((organicVideoCount / sampleCount) * 100) : 0;
+  const organicTotalViews = organicList.reduce((s, v) => s + (v.views || 0), 0);
+  const organicAvgViews =
+    organicVideoCount > 0 ? Math.round(organicTotalViews / organicVideoCount) : 0;
+  const organicMedianViews =
+    organicVideoCount > 0 ? computeMedianViews(organicList.map((v) => v.views || 0)) : 0;
+
+  const positiveViews = pool.map((v) => v.views || 0).filter((v) => v > 0);
+  const steadyCount =
+    medianViews > 0 ? positiveViews.filter((v) => v >= medianViews * 0.5).length : 0;
+  const viewConsistencyRatioPct =
+    positiveViews.length > 0 ? Math.round((steadyCount / positiveViews.length) * 100) : undefined;
+
+  // Thống kê chi tiết theo từng ngày đăng (YYYY-MM-DD)
+  const byDateMap = new Map<string, TikTokVideoItem[]>();
+  for (const v of pool) {
+    const ymd = normalizeVideoDateYmd(v);
+    if (!ymd) continue;
+    const arr = byDateMap.get(ymd) || [];
+    arr.push(v);
+    byDateMap.set(ymd, arr);
+  }
+
+  const dailyBreakdown: TikTokDailyViewBreakdownItem[] = [...byDateMap.entries()]
+    .map(([date, dayVideos]) => {
+      const dayTotal = dayVideos.length;
+      const dayAff = dayVideos.filter((v) => Boolean(v.isAffiliate));
+      const dayOrg = dayVideos.filter((v) => !v.isAffiliate);
+      const daySumViews = dayVideos.reduce((s, v) => s + (v.views || 0), 0);
+      const dayAvg = dayTotal > 0 ? Math.round(daySumViews / dayTotal) : 0;
+      const dayMed = dayTotal > 0 ? computeMedianViews(dayVideos.map((v) => v.views || 0)) : 0;
+
+      const dayAffViews = dayAff.reduce((s, v) => s + (v.views || 0), 0);
+      const dayAffAvg = dayAff.length > 0 ? Math.round(dayAffViews / dayAff.length) : 0;
+      const dayAffMed = dayAff.length > 0 ? computeMedianViews(dayAff.map((v) => v.views || 0)) : 0;
+
+      const dayOrgViews = dayOrg.reduce((s, v) => s + (v.views || 0), 0);
+      const dayOrgAvg = dayOrg.length > 0 ? Math.round(dayOrgViews / dayOrg.length) : 0;
+      const dayOrgMed = dayOrg.length > 0 ? computeMedianViews(dayOrg.map((v) => v.views || 0)) : 0;
+
+      return {
+        date,
+        totalVideos: dayTotal,
+        affiliateVideos: dayAff.length,
+        organicVideos: dayOrg.length,
+        medianViews: dayMed,
+        avgViews: dayAvg,
+        totalViews: daySumViews,
+        affiliateMedianViews: dayAffMed,
+        affiliateAvgViews: dayAffAvg,
+        organicMedianViews: dayOrgMed,
+        organicAvgViews: dayOrgAvg,
+      };
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  return {
+    filteredSampleVideos: pool,
+    sampleCount,
+    medianViews,
+    avgViews,
+    totalViews,
+    avgLikes,
+    avgComments,
+    avgShares,
+    engagementRate,
+    affiliateVideoCount,
+    affiliateRatioPct,
+    affiliateMedianViews,
+    affiliateAvgViews,
+    affiliateTotalViews,
+    organicVideoCount,
+    organicRatioPct,
+    organicMedianViews,
+    organicAvgViews,
+    organicTotalViews,
+    viewConsistencyRatioPct,
+    dailyBreakdown,
+  };
+}
+
 export interface TikTokAffiliateMetrics {
   period: '7d' | '30d' | '90d';
   gmv30d: number;
@@ -2163,11 +2387,31 @@ export async function discoverTikTokKocsByHashtag(
       excludeSet.add(inspected.author.handle);
       excludeSet.add(entry.handle);
 
+      let channelVideos: RealTikTokVideoAndAuthorDetail[] = [inspected];
+      if (inspected.author.secUid) {
+        try {
+          const extraChronological = await fetchTikTokCreatorVideoListBySecUid(
+            inspected.author.handle,
+            inspected.author.secUid,
+            15
+          );
+          if (extraChronological.length > 0) {
+            const merged = new Map<string, RealTikTokVideoAndAuthorDetail>();
+            for (const v of [inspected, ...extraChronological]) {
+              if (!merged.has(v.videoId)) merged.set(v.videoId, v);
+            }
+            channelVideos = [...merged.values()];
+          }
+        } catch {
+          // Giữ nguyên [inspected] nếu không lấy thêm được danh sách video
+        }
+      }
+
       const baseResult = buildScrapedResultFromRealData(
         inspected.author.handle,
         period,
         null,
-        [inspected]
+        channelVideos
       );
 
       const followers = Math.max(1, baseResult.channelProfile.followers);
@@ -2849,11 +3093,31 @@ export async function discoverCompetitorKocs(
       excludeSet.add(kocHandle);
       excludeSet.add(candidateHandle);
 
+      let channelVideos: RealTikTokVideoAndAuthorDetail[] = [inspected];
+      if (inspected.author.secUid) {
+        try {
+          const extraChronological = await fetchTikTokCreatorVideoListBySecUid(
+            kocHandle,
+            inspected.author.secUid,
+            15
+          );
+          if (extraChronological.length > 0) {
+            const merged = new Map<string, RealTikTokVideoAndAuthorDetail>();
+            for (const v of [inspected, ...extraChronological]) {
+              if (!merged.has(v.videoId)) merged.set(v.videoId, v);
+            }
+            channelVideos = [...merged.values()];
+          }
+        } catch {
+          // Giữ nguyên [inspected] nếu không lấy thêm được danh sách video
+        }
+      }
+
       const baseResult = buildScrapedResultFromRealData(
         kocHandle,
         period,
         null,
-        [inspected]
+        channelVideos
       );
 
       const isAlreadyInUpbase = upbaseHandleSet.has(kocHandle);
@@ -2962,6 +3226,12 @@ export function buildCompetitorKocsCsv(results: TikTokCompetitorKocResult[]): st
     'Tổng lượt thích kênh KOC',
     'View trung vị kênh KOC',
     'View TB kênh KOC',
+    'Số bài gắn giỏ (mẫu quét)',
+    'View trung vị bài gắn giỏ',
+    'View TB bài gắn giỏ',
+    'Số bài không giỏ (mẫu quét)',
+    'View trung vị bài không giỏ',
+    'View TB bài không giỏ',
     'Tỷ lệ tương tác ER (%)',
     'SĐT / Zalo (tách từ Bio thực)',
     'Email liên hệ (tách từ Bio thực)',
@@ -2995,6 +3265,12 @@ export function buildCompetitorKocsCsv(results: TikTokCompetitorKocResult[]): st
       p.totalLikes,
       e.medianViews ?? e.avgViews,
       e.avgViews,
+      e.affiliateVideoCount ?? 0,
+      e.affiliateMedianViews ?? 0,
+      e.affiliateAvgViews ?? 0,
+      e.organicVideoCount ?? 0,
+      e.organicMedianViews ?? 0,
+      e.organicAvgViews ?? 0,
       e.engagementRate,
       p.extractedPhone || '',
       p.extractedEmail || '',

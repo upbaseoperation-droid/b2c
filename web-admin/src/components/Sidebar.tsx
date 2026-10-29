@@ -57,6 +57,7 @@ interface NavSection {
 interface SidebarProps {
   activeTab: TabKey;
   onTabSelect: (tab: TabKey) => void;
+  onTabHover?: (tab: TabKey) => void;
   currentUser: UserProfile;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
@@ -197,6 +198,7 @@ export function getNavLabelForRole(role: UserProfile['role'], tab: TabKey): stri
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabSelect,
+  onTabHover,
   currentUser,
   isMobileOpen = false,
   onCloseMobile,
@@ -368,6 +370,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <div key={`group-${item.key}-${item.label}`} className="space-y-0.5">
                           <button
                             type="button"
+                            onMouseEnter={() => {
+                              if (item.children?.[0]?.key) onTabHover?.(item.children[0].key);
+                            }}
                             onClick={() => {
                               if (!isDashboardMenuOpen) {
                                 setIsDashboardMenuOpen(true);
@@ -416,6 +421,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                   <button
                                     key={child.key}
                                     type="button"
+                                    onMouseEnter={() => onTabHover?.(child.key)}
                                     onClick={() => handleItemClick(child.key)}
                                     aria-current={isChildActive ? 'page' : undefined}
                                     data-active={isChildActive}
@@ -448,6 +454,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     return (
                       <button
                         key={item.group ?? item.key}
+                        onMouseEnter={() => onTabHover?.(item.key)}
                         onClick={() => {
                           // Đang ở một màn trong nhóm thì giữ nguyên màn đó, chỉ đóng menu trên mobile.
                           if (isActive && groupTabs) onCloseMobile?.();
@@ -492,6 +499,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <button
                     key={f.key}
                     type="button"
+                    onMouseEnter={() => onTabHover?.(f.key)}
                     onClick={() => handleItemClick(f.key)}
                     aria-current={isActive ? 'page' : undefined}
                     className={`h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors cursor-pointer ${

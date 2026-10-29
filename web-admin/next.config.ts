@@ -9,10 +9,6 @@ const customDistDir = process.env.NEXT_DIST_DIR || (isBuildWhileDevRunning ? ".n
 
 const nextConfig: NextConfig = {
   ...(customDistDir ? { distDir: customDistDir } : {}),
-  experimental: {
-    cpus: 1,
-    webpackBuildWorker: false,
-  },
 };
 
 export default nextConfig;

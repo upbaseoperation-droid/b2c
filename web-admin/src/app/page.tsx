@@ -12,7 +12,6 @@ import { ImportExcelModal } from '../components/ImportExcelModal';
 import { UserProfileModal } from '../components/UserProfileModal';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { CockpitView } from '../components/views/CockpitView';
-import { ExecutiveDashboardReportsView } from '../components/views/ExecutiveDashboardReportsView';
 
 import dynamic from 'next/dynamic';
 import type { ContractIntent } from '../components/views/ContractManagementView';
@@ -45,6 +44,7 @@ function ViewLoading() {
   );
 }
 
+const ExecutiveDashboardReportsView = dynamic(() => import('../components/views/ExecutiveDashboardReportsView').then(m => m.ExecutiveDashboardReportsView), { loading: ViewLoading });
 const BrandView = dynamic(() => import('../components/views/BrandView').then(m => m.BrandView), { loading: ViewLoading });
 const BrandProfilesView = dynamic(() => import('../components/views/BrandProfilesView').then(m => m.BrandProfilesView), { loading: ViewLoading });
 const ContentView = dynamic(() => import('../components/views/ContentView').then(m => m.ContentView), { loading: ViewLoading });
@@ -76,6 +76,112 @@ const AuditTrailView = dynamic(() => import('../components/views/AuditTrailView'
 const TikTokCrawlerHubView = dynamic(() => import('../components/views/TikTokCrawlerHubView').then(m => m.TikTokCrawlerHubView), { loading: ViewLoading });
 const BrandMarketResearchHubView = dynamic(() => import('../components/views/BrandMarketResearchHubView').then(m => m.BrandMarketResearchHubView), { loading: ViewLoading });
 const WorkToolkitHubView = dynamic(() => import('../components/views/WorkToolkitHubView').then(m => m.WorkToolkitHubView), { loading: ViewLoading });
+
+function prefetchViewTab(tab: TabKey) {
+  switch (tab) {
+    case 'dashboard-bi':
+    case 'dashboard-brand':
+    case 'overview':
+    case 'dashboard-video':
+    case 'dashboard-team-sla':
+    case 'dashboard-staff':
+      void import('../components/views/ExecutiveDashboardReportsView');
+      break;
+    case 'input-plan':
+      void import('../components/views/InputPlanBreakdownView');
+      break;
+    case 'booking':
+      void import('../components/views/BookingView');
+      break;
+    case 'koc-listing':
+      void import('../components/views/KocListingBatchHubView');
+      break;
+    case 'contracts':
+      void import('../components/views/ContractManagementView');
+      break;
+    case 'brand-knowledge':
+      void import('../components/views/BrandProfilesView');
+      break;
+    case 'stores':
+      void import('../components/views/StoreManagementView');
+      break;
+    case 'master-data':
+      void import('../components/views/MasterDataHubView');
+      break;
+    case 'koc-master':
+      void import('../components/views/KocMasterDataView');
+      break;
+    case 'tiktok-crawler':
+      void import('../components/views/TikTokCrawlerHubView');
+      break;
+    case 'market-research':
+      void import('../components/views/BrandMarketResearchHubView');
+      break;
+    case 'task-delegation':
+      void import('../components/views/TaskDelegationView');
+      break;
+    case 'content':
+      void import('../components/views/ContentView');
+      break;
+    case 'self-channel-hub':
+      void import('../components/views/SelfChannelCtvHubView');
+      break;
+    case 'sample-tracker':
+      void import('../components/views/SampleTrackerView');
+      break;
+    case 'push-products':
+      void import('../components/views/PushProductsView');
+      break;
+    case 'manager':
+      void import('../components/views/ManagerView');
+      break;
+    case 'performance-p3':
+      void import('../components/views/PerformanceP3View');
+      break;
+    case 'campaigns':
+      void import('../components/views/BrandView');
+      break;
+    case 'ads-report':
+      void import('../components/views/WeeklyAdsReportHubView');
+      break;
+    case 'knowledge-qa':
+      void import('../components/views/MarketingKnowledgeQaView');
+      break;
+    case 'partner-access':
+      void import('../components/views/CentralizedRbacHubView');
+      break;
+    case 'workload-3d':
+      void import('../components/views/Workload3dMapView');
+      break;
+    case 'audit-trail':
+      void import('../components/views/AuditTrailView');
+      break;
+    case 'work-toolkit':
+      void import('../components/views/WorkToolkitHubView');
+      break;
+    case 'api-settings':
+      void import('../components/views/ApiKeySetupView');
+      break;
+    case 'cloudflare-admin':
+      void import('../components/views/CloudflareAdminView');
+      break;
+    case 'zalo-bot':
+      void import('../components/views/ZaloBotManagerView');
+      break;
+    case 'approved-booking-list':
+      void import('../components/views/ApprovedBookingListView');
+      break;
+    case 'store-air-plan-report':
+      void import('../components/views/AirBookingReportHubView');
+      break;
+    case 'brand-hub':
+      void import('../components/views/BrandHubView');
+      break;
+    case 'koc-hub':
+      void import('../components/views/KocKolHubView');
+      break;
+  }
+}
 
 import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
 import { hydrateAllSharedStatesFromDb, pushSharedStateToDb } from '../lib/sharedStateClient';
@@ -204,7 +310,7 @@ function resolveUserById(id: string): UserProfile | null {
 }
 
 function resolveInitialTab(user: UserProfile | null): TabKey {
-  if (!user) return 'dashboard-bi';
+  if (!user) return 'cockpit';
   if (user.id.startsWith('contract-demo-')) {
     return 'contracts';
   }
@@ -226,7 +332,7 @@ function getInitialAuthState(): {
   tab: TabKey;
 } {
   if (typeof window === 'undefined') {
-    return { user: null, isLoading: true, tab: 'dashboard-bi' };
+    return { user: null, isLoading: true, tab: 'cockpit' };
   }
   try {
     const savedUserId = localStorage.getItem('upbase_selected_user_id');
@@ -243,8 +349,8 @@ function getInitialAuthState(): {
   } catch {
     // bỏ qua lỗi storage
   }
-  // Giữ trạng thái chờ tải để nạp chuẩn vai trò từ máy chủ (/api/auth/me), tuyệt đối không tự gán USERS[0] gây giật màn hình Giám đốc
-  return { user: null, isLoading: true, tab: 'dashboard-bi' };
+  // Giữ trạng thái chờ tải để nạp chuẩn vai trò từ máy chủ (/api/auth/me)
+  return { user: null, isLoading: true, tab: 'cockpit' };
 }
 
 export default function App() {
@@ -380,36 +486,29 @@ export default function App() {
     }
   }, [activeTab, currentUser, isLoadingAuth]);
 
-  // Nạp sẵn các gói giao diện trọng yếu cho cả Quản lý và Chuyên viên khi trình duyệt rảnh để chuyển tab 0ms
+  // Nạp sẵn tối đa 2 màn thường dùng khi trình duyệt thực sự rảnh rỗi (idle) để không chiếm dụng băng thông / CPU lúc vào trang
   useEffect(() => {
     if (isLoadingAuth) return;
-    const timerWave1 = window.setTimeout(() => {
+    const idleCallback = typeof window !== 'undefined'
+      ? (window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback
+      : undefined;
+    let cancelId: number | undefined;
+    let timerId: number | undefined;
+    const prefetchIdle = () => {
       void import('../components/views/InputPlanBreakdownView');
       void import('../components/views/BookingView');
-      void import('../components/views/KocListingBatchHubView');
-      void import('../components/views/TaskDelegationView');
-      void import('../components/views/ContractManagementView');
-      void import('../components/views/BrandProfilesView');
-      void import('../components/views/StoreManagementView');
-      void import('../components/views/TikTokCrawlerHubView');
-      void import('../components/views/BrandMarketResearchHubView');
-      void import('../components/views/MasterDataHubView');
-      void import('../components/views/KocMasterDataView');
-    }, 350);
-    const timerWave2 = window.setTimeout(() => {
-      void import('../components/views/ContentView');
-      void import('../components/views/SelfChannelCtvHubView');
-      void import('../components/views/SampleTrackerView');
-      void import('../components/views/PushProductsView');
-      void import('../components/views/PerformanceP3View');
-      void import('../components/views/BrandView');
-      void import('../components/views/WeeklyAdsReportHubView');
-      void import('../components/views/MarketingKnowledgeQaView');
-      void import('../components/views/CentralizedRbacHubView');
-    }, 1000);
+    };
+    if (typeof idleCallback === 'function') {
+      cancelId = idleCallback(prefetchIdle, { timeout: 3500 });
+    } else if (typeof window !== 'undefined') {
+      timerId = window.setTimeout(prefetchIdle, 3500);
+    }
     return () => {
-      window.clearTimeout(timerWave1);
-      window.clearTimeout(timerWave2);
+      if (typeof window !== 'undefined') {
+        const cancelIdle = (window as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
+        if (cancelIdle && cancelId !== undefined) cancelIdle(cancelId);
+        if (timerId !== undefined) window.clearTimeout(timerId);
+      }
     };
   }, [isLoadingAuth]);
 
@@ -1546,6 +1645,7 @@ export default function App() {
       <Sidebar
         activeTab={activeTab}
         onTabSelect={handleSelectTab}
+        onTabHover={prefetchViewTab}
         currentUser={currentUser}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}

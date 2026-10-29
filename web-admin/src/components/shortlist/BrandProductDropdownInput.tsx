@@ -699,6 +699,11 @@ export interface BrandProductDropdownInputProps {
   storeName?: string;
   storeObj?: StorePortfolioItem | null;
   deals?: BookingDealItem[];
+  precomputedCatalog?: {
+    resolvedBrandName: string;
+    groups: BrandCatalogGroupOption[];
+    flatOptions: BrandCatalogProductOption[];
+  };
   placeholder?: string;
   disabled?: boolean;
   size?: 'sm' | 'md';
@@ -713,6 +718,7 @@ export const BrandProductDropdownInput: React.FC<BrandProductDropdownInputProps>
   storeName,
   storeObj,
   deals = [],
+  precomputedCatalog,
   placeholder,
   disabled = false,
   size = 'md',
@@ -724,6 +730,21 @@ export const BrandProductDropdownInput: React.FC<BrandProductDropdownInputProps>
   const [syncing, setSyncing] = useState(false);
   const [remoteCatalog, setRemoteCatalog] = useState<BrandProductCatalog | null>(null);
   const [filterQuery, setFilterQuery] = useState('');
+  const [draftValue, setDraftValue] = useState(value);
+  const isEditingRef = useRef(false);
+  const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!isEditingRef.current) {
+      setDraftValue(value);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    return () => {
+      if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
+    };
+  }, []);
 
   const boxRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -733,18 +754,19 @@ export const BrandProductDropdownInput: React.FC<BrandProductDropdownInputProps>
     width: 340,
   });
 
-  const { resolvedBrandName, groups, flatOptions } = useMemo(
-    () =>
-      buildBrandProductCatalogGroups({
-        brandName,
-        storeName,
-        storeObj,
-        deals,
-        brandProfiles,
-        remoteCatalog,
-      }),
-    [brandName, storeName, storeObj, deals, brandProfiles, remoteCatalog]
-  );
+  const { resolvedBrandName, groups, flatOptions } = useMemo(() => {
+    if (precomputedCatalog && !remoteCatalog) {
+      return precomputedCatalog;
+    }
+    return buildBrandProductCatalogGroups({
+      brandName,
+      storeName,
+      storeObj,
+      deals,
+      brandProfiles,
+      remoteCatalog,
+    });
+  }, [precomputedCatalog, brandName, storeName, storeObj, deals, brandProfiles, remoteCatalog]);
 
   const updatePos = useCallback(() => {
     const el = boxRef.current;
@@ -832,17 +854,36 @@ export const BrandProductDropdownInput: React.FC<BrandProductDropdownInputProps>
   const isCompact = size === 'sm';
 
   return (
-    <div ref={boxRef} className={`relative ${className}`} title={title}>
+    <div ref={boxRef} className={`relative ${className}`} title={title || draftValue}>
       <input
         type="text"
         disabled={disabled}
-        value={value}
-        onFocus={handleOpenDropdown}
+        value={draftValue}
+        title={draftValue || resolvedPlaceholder}
+        onFocus={() => {
+          isEditingRef.current = true;
+          handleOpenDropdown();
+        }}
         onClick={handleOpenDropdown}
+        onBlur={() => {
+          isEditingRef.current = false;
+          if (commitTimerRef.current) {
+            clearTimeout(commitTimerRef.current);
+            commitTimerRef.current = null;
+          }
+          if (draftValue !== value) {
+            onChange(draftValue);
+          }
+        }}
         onChange={(e) => {
           const nextVal = e.target.value;
-          onChange(nextVal);
+          setDraftValue(nextVal);
           setFilterQuery(nextVal);
+          if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
+          commitTimerRef.current = setTimeout(() => {
+            commitTimerRef.current = null;
+            onChange(nextVal);
+          }, 180);
           if (!open && !disabled) {
             setOpen(true);
             void handleLoadFromProductCatalogApi(false);
@@ -851,8 +892,8 @@ export const BrandProductDropdownInput: React.FC<BrandProductDropdownInputProps>
         placeholder={resolvedPlaceholder}
         className={
           isCompact
-            ? 'w-full h-7 pl-2 pr-6 rounded border border-line bg-surface text-xs text-ink focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3'
-            : 'w-full h-9 pl-3 pr-8 rounded-md border border-line bg-surface text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3'
+            ? 'w-full h-8 pl-2.5 pr-7 rounded border border-line-strong bg-surface text-xs font-medium text-ink focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3'
+            : 'w-full h-9 pl-3 pr-8 rounded-md border border-line-strong bg-surface text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:border-ink disabled:bg-sunken disabled:text-ink-3'
         }
       />
       <button
@@ -870,7 +911,7 @@ export const BrandProductDropdownInput: React.FC<BrandProductDropdownInputProps>
         title={`Chọn từ Danh mục Sản phẩm (${flatOptions.length} SP)`}
         className={
           isCompact
-            ? 'absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded text-ink-3 hover:text-ink disabled:opacity-40'
+            ? 'absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-ink-3 hover:text-ink disabled:opacity-40'
             : 'absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded text-ink-3 hover:text-ink hover:bg-sunken disabled:opacity-40'
         }
       >
@@ -884,6 +925,7 @@ export const BrandProductDropdownInput: React.FC<BrandProductDropdownInputProps>
         createPortal(
           <div
             ref={menuRef}
+            data-select-portal="true"
             style={{ top: pos.top, left: pos.left, width: pos.width }}
             className="fixed z-[1300] bg-surface border border-line-strong rounded-lg shadow-lg overflow-hidden animate-fade-in"
           >
@@ -925,7 +967,7 @@ export const BrandProductDropdownInput: React.FC<BrandProductDropdownInputProps>
                     </div>
                     {group.items.map((item) => {
                       const isSelected =
-                        value.trim().toLowerCase() === item.name.trim().toLowerCase();
+                        draftValue.trim().toLowerCase() === item.name.trim().toLowerCase();
                       const isCombo =
                         item.productType === 'HARD_BUNDLE' ||
                         item.productType === 'ROUTINE_COMBO';
@@ -937,6 +979,12 @@ export const BrandProductDropdownInput: React.FC<BrandProductDropdownInputProps>
                           type="button"
                           onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
+                            if (commitTimerRef.current) {
+                              clearTimeout(commitTimerRef.current);
+                              commitTimerRef.current = null;
+                            }
+                            isEditingRef.current = false;
+                            setDraftValue(item.name);
                             onChange(item.name, item);
                             setOpen(false);
                           }}

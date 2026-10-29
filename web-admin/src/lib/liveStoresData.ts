@@ -26,7 +26,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 15,
     "activeBookingsCount": 16,
     "activeContentsCount": 21,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1Klr0MHEO0gssy5ygNlCSZDjvKY3YnxbRncRkQ2LjyVk/edit",
+    "defaultSheetTab": "82x_TikTok_SoCom"
   },
   {
     "id": "store-port-35",
@@ -53,7 +55,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 17,
     "activeBookingsCount": 13,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1LRigMURqam8Tq5i12yPPP5CCc6hvaqdWSf5c-U9aLYI/edit",
+    "defaultSheetTab": "AQUA VIETNAM_Shopee_SoCom"
   },
   {
     "id": "store-port-36",
@@ -80,7 +84,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 18,
     "activeBookingsCount": 14,
     "activeContentsCount": 15,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1LRigMURqam8Tq5i12yPPP5CCc6hvaqdWSf5c-U9aLYI/edit",
+    "defaultSheetTab": "AQUA VIETNAM_TikTok_SoCom"
   },
   {
     "id": "store-port-37",
@@ -108,7 +114,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 19,
     "activeBookingsCount": 15,
     "activeContentsCount": 16,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1ogdrNycSM74n6eqCjXjkSWcbkMbUKtKcYdwXcDLVP2Y/edit",
+    "defaultSheetTab": "ARENCIA_Shopee_SoCom"
   },
   {
     "id": "store-port-38",
@@ -136,7 +144,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 20,
     "activeBookingsCount": 16,
     "activeContentsCount": 17,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1ogdrNycSM74n6eqCjXjkSWcbkMbUKtKcYdwXcDLVP2Y/edit",
+    "defaultSheetTab": "ARENCIA_TikTok_SoCom"
   },
   {
     "id": "store-port-85",
@@ -166,7 +176,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 22,
     "activeBookingsCount": 13,
     "activeContentsCount": 16,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1qRsxaR8aMX8iLy6FHupLNAvKu4e5N-2UYjvps4zUens/edit",
+    "defaultSheetTab": "BELLA_Shopee_E2E-S"
   },
   {
     "id": "store-port-86",
@@ -196,7 +208,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 23,
     "activeBookingsCount": 14,
     "activeContentsCount": 17,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1qRsxaR8aMX8iLy6FHupLNAvKu4e5N-2UYjvps4zUens/edit",
+    "defaultSheetTab": "BELLA_TikTok_E2E-S"
   },
   {
     "id": "store-port-106",
@@ -226,7 +240,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 13,
     "activeBookingsCount": 14,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1nibnxgNejAOxxtiO3MiDfC-cQSYx5J3eMUSFgvx4Nxw/edit",
+    "defaultSheetTab": "BaBe_Shopee_E2E-O"
   },
   {
     "id": "store-port-107",
@@ -256,7 +272,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 14,
     "activeBookingsCount": 15,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1nibnxgNejAOxxtiO3MiDfC-cQSYx5J3eMUSFgvx4Nxw/edit",
+    "defaultSheetTab": "BaBe_TikTok_E2E-O"
   },
   {
     "id": "store-port-109",
@@ -286,7 +304,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 16,
     "activeBookingsCount": 17,
     "activeContentsCount": 16,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1ogIr7M8jn9abs83HcqzD2K0v-9Aei5irf-AoHzAwNjU/edit",
+    "defaultSheetTab": "Badlab_Shopee_E2E-S"
   },
   {
     "id": "store-port-110",
@@ -316,7 +336,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 17,
     "activeBookingsCount": 8,
     "activeContentsCount": 17,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1ogIr7M8jn9abs83HcqzD2K0v-9Aei5irf-AoHzAwNjU/edit",
+    "defaultSheetTab": "Badlab_TikTok_E2E-S"
   },
   {
     "id": "store-port-111",
@@ -345,7 +367,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 18,
     "activeBookingsCount": 9,
     "activeContentsCount": 18,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1zqC2cOD_04tWfD0L51eshhjsUp4TCi6MBhk_fsiZFp4/edit",
+    "defaultSheetTab": "Baegayul_Meta_E2E-O"
   },
   {
     "id": "store-port-112",
@@ -374,7 +398,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 19,
     "activeBookingsCount": 10,
     "activeContentsCount": 19,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1zqC2cOD_04tWfD0L51eshhjsUp4TCi6MBhk_fsiZFp4/edit",
+    "defaultSheetTab": "Baegayul_Shopee_E2E-O"
   },
   {
     "id": "store-port-117",
@@ -404,7 +430,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 24,
     "activeBookingsCount": 15,
     "activeContentsCount": 24,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1UXuyF63pEYxsNFZnZulWgQVv3i48aEcVkejwdL9m5nk/edit",
+    "defaultSheetTab": "Baniphar_Shopee_E2E-S"
   },
   {
     "id": "store-port-118",
@@ -434,7 +462,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 25,
     "activeBookingsCount": 16,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1UXuyF63pEYxsNFZnZulWgQVv3i48aEcVkejwdL9m5nk/edit",
+    "defaultSheetTab": "Baniphar_TikTok_E2E-S"
   },
   {
     "id": "store-port-143",
@@ -463,7 +493,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 20,
     "activeBookingsCount": 11,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1lIaGz9uV_t8Y0fO_i3eccvRXqlZ5JTQWiSn3fHiSVp0/edit",
+    "defaultSheetTab": "Blissberry_Shopee_E2E-C"
   },
   {
     "id": "store-port-153",
@@ -493,7 +525,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 15,
     "activeBookingsCount": 11,
     "activeContentsCount": 24,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1IbSuYD1INqhw5rX6gsQ_aw_isK2JALblavx5g_88vMo/edit",
+    "defaultSheetTab": "Bye Bye Blemish_Shopee_E2E-S"
   },
   {
     "id": "store-port-154",
@@ -523,7 +557,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 16,
     "activeBookingsCount": 12,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1IbSuYD1INqhw5rX6gsQ_aw_isK2JALblavx5g_88vMo/edit",
+    "defaultSheetTab": "Bye Bye Blemish_TikTok_E2E-S"
   },
   {
     "id": "store-port-178",
@@ -553,7 +589,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 25,
     "activeBookingsCount": 16,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1-Gf-Q4HfvCgQwBV30Gg2Tas0nrRMLCSutf58nU3Vsv8/edit",
+    "defaultSheetTab": "CM24_Shopee_E2E-C"
   },
   {
     "id": "store-port-179",
@@ -583,7 +621,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 26,
     "activeBookingsCount": 17,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1-Gf-Q4HfvCgQwBV30Gg2Tas0nrRMLCSutf58nU3Vsv8/edit",
+    "defaultSheetTab": "CM24_TikTok_E2E-C"
   },
   {
     "id": "store-port-184",
@@ -610,7 +650,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 16,
     "activeBookingsCount": 12,
     "activeContentsCount": 19,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1td0E3dGVDYZPtteHPPHrskOTp-2yMvsF9K5R4jIGL4I/edit",
+    "defaultSheetTab": "CNP_TikTok_SoCom"
   },
   {
     "id": "store-port-189",
@@ -640,7 +682,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 21,
     "activeBookingsCount": 17,
     "activeContentsCount": 24,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1BVmbWje-cIax3Ao5AtaARVfhRX-Qg9t1HD6SeOb7hts/edit",
+    "defaultSheetTab": "Cathy Doll_Shopee_E2E-C"
   },
   {
     "id": "store-port-190",
@@ -670,7 +714,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 22,
     "activeBookingsCount": 8,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1BVmbWje-cIax3Ao5AtaARVfhRX-Qg9t1HD6SeOb7hts/edit",
+    "defaultSheetTab": "Cathy Doll_TikTok_E2E-C"
   },
   {
     "id": "store-port-209",
@@ -700,7 +746,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 26,
     "activeBookingsCount": 17,
     "activeContentsCount": 20,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1zj6aQbsWDvaVpj_QqpbHbAYom37dMGCgiIzIWJD31kw/edit",
+    "defaultSheetTab": "Chulala_Shopee_E2E-C"
   },
   {
     "id": "store-port-210",
@@ -730,7 +778,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 12,
     "activeBookingsCount": 8,
     "activeContentsCount": 21,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1zj6aQbsWDvaVpj_QqpbHbAYom37dMGCgiIzIWJD31kw/edit",
+    "defaultSheetTab": "Chulala_TikTok_E2E-C"
   },
   {
     "id": "store-port-216",
@@ -760,7 +810,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 18,
     "activeBookingsCount": 14,
     "activeContentsCount": 15,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1_njntcJf9Km6gpg6_tkgTMCCDMDgUF3K58qCmt4p-y4/edit",
+    "defaultSheetTab": "Cindy Bloom_TikTok_E2E-C"
   },
   {
     "id": "store-port-219",
@@ -790,7 +842,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 21,
     "activeBookingsCount": 17,
     "activeContentsCount": 18,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/171qw6gROYAQiUQXXH5oOAfgYoX1OUTjkZUqkl2yaQw4/edit",
+    "defaultSheetTab": "ClubClio_Shopee_E2E-O"
   },
   {
     "id": "store-port-220",
@@ -820,7 +874,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 22,
     "activeBookingsCount": 8,
     "activeContentsCount": 19,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/171qw6gROYAQiUQXXH5oOAfgYoX1OUTjkZUqkl2yaQw4/edit",
+    "defaultSheetTab": "ClubClio_TikTok_E2E-O"
   },
   {
     "id": "store-port-229",
@@ -847,7 +903,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 16,
     "activeBookingsCount": 17,
     "activeContentsCount": 16,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1ha6TMbUW5lxz1zRmaNqTcxmnN_Dz2XSiITAptdiu7C4/edit",
+    "defaultSheetTab": "Corine de Farme_Lazada_FFM"
   },
   {
     "id": "store-port-230",
@@ -874,7 +932,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 17,
     "activeBookingsCount": 8,
     "activeContentsCount": 17,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1ha6TMbUW5lxz1zRmaNqTcxmnN_Dz2XSiITAptdiu7C4/edit",
+    "defaultSheetTab": "Corine de Farme_Shopee_FFM"
   },
   {
     "id": "store-port-231",
@@ -901,7 +961,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 18,
     "activeBookingsCount": 9,
     "activeContentsCount": 18,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1ha6TMbUW5lxz1zRmaNqTcxmnN_Dz2XSiITAptdiu7C4/edit",
+    "defaultSheetTab": "Corine de Farme_TikTok_FFM"
   },
   {
     "id": "store-port-262",
@@ -930,7 +992,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 19,
     "activeBookingsCount": 10,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1XL6-EMczC3DHY3XjEUoCil7GiyScu2lIIIt2y6Q2bs8/edit",
+    "defaultSheetTab": "DOJI VIETNAM_Shopee_E2E-C"
   },
   {
     "id": "store-port-263",
@@ -959,7 +1023,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 20,
     "activeBookingsCount": 11,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1XL6-EMczC3DHY3XjEUoCil7GiyScu2lIIIt2y6Q2bs8/edit",
+    "defaultSheetTab": "DOJI VIETNAM_TikTok_E2E-C"
   },
   {
     "id": "store-port-283",
@@ -989,7 +1055,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 25,
     "activeBookingsCount": 11,
     "activeContentsCount": 22,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/19OezQ34SOG1IPEWrCj3wEtM1VqX2oPgfE0VadQCQAic/edit",
+    "defaultSheetTab": "Docilee_Shopee_E2E-S"
   },
   {
     "id": "store-port-284",
@@ -1019,7 +1087,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 26,
     "activeBookingsCount": 12,
     "activeContentsCount": 23,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/19OezQ34SOG1IPEWrCj3wEtM1VqX2oPgfE0VadQCQAic/edit",
+    "defaultSheetTab": "Docilee_TikTok_E2E-S"
   },
   {
     "id": "store-port-303",
@@ -1049,7 +1119,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 15,
     "activeBookingsCount": 11,
     "activeContentsCount": 18,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1yhqpMFgn65rOEWsIYWMo77AfrjNPGVWf5cH7H490L8I/edit",
+    "defaultSheetTab": "Dulux_Shopee_E2E-C"
   },
   {
     "id": "store-port-304",
@@ -1079,7 +1151,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 16,
     "activeBookingsCount": 12,
     "activeContentsCount": 19,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1yhqpMFgn65rOEWsIYWMo77AfrjNPGVWf5cH7H490L8I/edit",
+    "defaultSheetTab": "Dulux_TikTok_E2E-C"
   },
   {
     "id": "store-port-307",
@@ -1107,7 +1181,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 19,
     "activeBookingsCount": 15,
     "activeContentsCount": 22,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1CbNjARQH4EenssRU8-PR7BvKQ074_DhKyKCqbT7iCmg/edit",
+    "defaultSheetTab": "Dynik _Shopee_FFM"
   },
   {
     "id": "store-port-309",
@@ -1137,7 +1213,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 21,
     "activeBookingsCount": 17,
     "activeContentsCount": 24,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1CbNjARQH4EenssRU8-PR7BvKQ074_DhKyKCqbT7iCmg/edit",
+    "defaultSheetTab": "Dynik_TikTok_E2E-C"
   },
   {
     "id": "store-port-323",
@@ -1167,7 +1245,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 20,
     "activeBookingsCount": 11,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/122IGb5Mtn6GGlm2mtVjfRVZCQB3-58O_jeM6IgK6HaM/edit",
+    "defaultSheetTab": "EUPC _Shopee_E2E-C"
   },
   {
     "id": "store-port-324",
@@ -1197,7 +1277,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 21,
     "activeBookingsCount": 12,
     "activeContentsCount": 15,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/122IGb5Mtn6GGlm2mtVjfRVZCQB3-58O_jeM6IgK6HaM/edit",
+    "defaultSheetTab": "EUPC _TikTok_E2E-C"
   },
   {
     "id": "store-port-333",
@@ -1227,7 +1309,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 15,
     "activeBookingsCount": 11,
     "activeContentsCount": 24,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1NEkBbHYiSe2_MA-x9cVl6cscBqpUfLs9JApSiqpqBSY/edit",
+    "defaultSheetTab": "Ekseption_Shopee_E2E-O"
   },
   {
     "id": "store-port-334",
@@ -1257,7 +1341,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 16,
     "activeBookingsCount": 12,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1NEkBbHYiSe2_MA-x9cVl6cscBqpUfLs9JApSiqpqBSY/edit",
+    "defaultSheetTab": "Ekseption_TikTok_E2E-O"
   },
   {
     "id": "store-port-335",
@@ -1286,7 +1372,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 17,
     "activeBookingsCount": 13,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1vN-tqKO1i4EPbXJqr5PoVps76UvaEXTjt8G2eFIlINQ/edit",
+    "defaultSheetTab": "Elprairie_Shopee_E2E-S"
   },
   {
     "id": "store-port-350",
@@ -1315,7 +1403,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 17,
     "activeBookingsCount": 8,
     "activeContentsCount": 17,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1Pg78lYCwhAg6g49zCPPGkwj2L6Fq4FzVUm5uS-rJoNg/edit",
+    "defaultSheetTab": "Face republic_Shopee_E2E-O"
   },
   {
     "id": "store-port-351",
@@ -1344,7 +1434,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 18,
     "activeBookingsCount": 9,
     "activeContentsCount": 18,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1Pg78lYCwhAg6g49zCPPGkwj2L6Fq4FzVUm5uS-rJoNg/edit",
+    "defaultSheetTab": "Face republic_TikTok_E2E-O"
   },
   {
     "id": "store-port-355",
@@ -1374,7 +1466,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 22,
     "activeBookingsCount": 13,
     "activeContentsCount": 22,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1iKbP-aK30rK3AEPdoi0W83PTGvGtaFL5l7Kmbh0zJgI/edit",
+    "defaultSheetTab": "FeelCleans_Shopee_E2E-S"
   },
   {
     "id": "store-port-356",
@@ -1404,7 +1498,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 23,
     "activeBookingsCount": 14,
     "activeContentsCount": 23,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1iKbP-aK30rK3AEPdoi0W83PTGvGtaFL5l7Kmbh0zJgI/edit",
+    "defaultSheetTab": "FeelCleans_TikTok_E2E-S"
   },
   {
     "id": "store-port-365",
@@ -1433,7 +1529,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 17,
     "activeBookingsCount": 13,
     "activeContentsCount": 20,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1f8bSkmPW2cZFVm64PWwedScdbswR1wDgmkv8D2ugFCU/edit",
+    "defaultSheetTab": "FontActiv_Shopee_E2E-C"
   },
   {
     "id": "store-port-369",
@@ -1463,7 +1561,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 21,
     "activeBookingsCount": 17,
     "activeContentsCount": 24,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1BEsBsHxwFyo5Z8J_P-R9mI8VrDwiCqmP_13xReBq5IU/edit",
+    "defaultSheetTab": "Fresh_TikTok_E2E-C"
   },
   {
     "id": "store-port-382",
@@ -1492,7 +1592,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 19,
     "activeBookingsCount": 10,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1eiucyMvzzzlHpASzt8MkbE-oUlNz05BmZAGQrJzch0I/edit",
+    "defaultSheetTab": "GREE_Shopee_E2E-C"
   },
   {
     "id": "store-port-383",
@@ -1521,7 +1623,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 20,
     "activeBookingsCount": 11,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1eiucyMvzzzlHpASzt8MkbE-oUlNz05BmZAGQrJzch0I/edit",
+    "defaultSheetTab": "GREE_TikTok_E2E-C"
   },
   {
     "id": "store-port-402",
@@ -1551,7 +1655,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 24,
     "activeBookingsCount": 10,
     "activeContentsCount": 21,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1OkbE0bh7DY6tZUhWqx2Pq27sgEE1N03IfhBKAMPyoDc/edit",
+    "defaultSheetTab": "HDT_Shopee_E2E-C"
   },
   {
     "id": "store-port-403",
@@ -1581,7 +1687,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 25,
     "activeBookingsCount": 11,
     "activeContentsCount": 22,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1OkbE0bh7DY6tZUhWqx2Pq27sgEE1N03IfhBKAMPyoDc/edit",
+    "defaultSheetTab": "HDT_TikTok_E2E-C"
   },
   {
     "id": "store-port-406",
@@ -1610,7 +1718,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 13,
     "activeBookingsCount": 14,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1shJ5iOyyvnI9pTbU4Y6qLbxA8Sta4WE0hsrfNuzYwt8/edit",
+    "defaultSheetTab": "HLA Garment Vietnam_Shopee_E2E-"
   },
   {
     "id": "store-port-408",
@@ -1640,7 +1750,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 15,
     "activeBookingsCount": 16,
     "activeContentsCount": 15,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1ZXPYWUPEVtNhtyVaZKkc-m1D4LojXIb2M4TTpOe1JFk/edit",
+    "defaultSheetTab": "HLA_TikTok_E2E-C"
   },
   {
     "id": "store-port-422",
@@ -1670,7 +1782,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 14,
     "activeBookingsCount": 10,
     "activeContentsCount": 17,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1P5HiDybiccqtgrVatYX5Fe4kEVRzZ1YoN77m56O7Zyo/edit",
+    "defaultSheetTab": "Herbal Care_Shopee_E2E-C"
   },
   {
     "id": "store-port-423",
@@ -1700,7 +1814,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 15,
     "activeBookingsCount": 11,
     "activeContentsCount": 18,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1P5HiDybiccqtgrVatYX5Fe4kEVRzZ1YoN77m56O7Zyo/edit",
+    "defaultSheetTab": "Herbal Care_TikTok_E2E-C"
   },
   {
     "id": "store-port-427",
@@ -1729,7 +1845,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 19,
     "activeBookingsCount": 15,
     "activeContentsCount": 22,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1Qh_DZkkh-Hni7Q_wxSRycW_pHEVubjIwHOSMRuBvM8w/edit",
+    "defaultSheetTab": "Hitachi_Shopee_E2E-C"
   },
   {
     "id": "store-port-442",
@@ -1757,7 +1875,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 19,
     "activeBookingsCount": 10,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1qArVqzPgQfoNSiLCtCxAYLnzLuD589YACDKYyzW55Yk/edit",
+    "defaultSheetTab": "Intimate_Website_E2E-S"
   },
   {
     "id": "store-port-467",
@@ -1786,7 +1906,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 14,
     "activeBookingsCount": 15,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1EfPO5qGxKIAc2mtUKXz541ojBvljmnKHjfCg29kK9KA/edit",
+    "defaultSheetTab": "Karmart_Shopee_E2E-C"
   },
   {
     "id": "store-port-468",
@@ -1813,7 +1935,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 15,
     "activeBookingsCount": 16,
     "activeContentsCount": 15,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1EfPO5qGxKIAc2mtUKXz541ojBvljmnKHjfCg29kK9KA/edit",
+    "defaultSheetTab": "Karmart_TikTok_FFM"
   },
   {
     "id": "store-port-471",
@@ -1842,7 +1966,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 18,
     "activeBookingsCount": 9,
     "activeContentsCount": 18,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1SuQJcGCV-MKJqKbLn1uEfRsUPwabcyWf2BZWDUu32vM/edit",
+    "defaultSheetTab": "Keyshu_Philippines_Shopee_E2E-O"
   },
   {
     "id": "store-port-472",
@@ -1871,7 +1997,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 19,
     "activeBookingsCount": 10,
     "activeContentsCount": 19,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1SuQJcGCV-MKJqKbLn1uEfRsUPwabcyWf2BZWDUu32vM/edit",
+    "defaultSheetTab": "Keyshu_Philippines_TikTok_E2E-O"
   },
   {
     "id": "store-port-481",
@@ -1901,7 +2029,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 13,
     "activeBookingsCount": 9,
     "activeContentsCount": 16,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1sUd2vStmtZk4rAbH38SHfVm8-49ITGhiBgoAh3vL7I8/edit",
+    "defaultSheetTab": "Kutieskin Mama_Shopee_E2E-S"
   },
   {
     "id": "store-port-482",
@@ -1931,7 +2061,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 14,
     "activeBookingsCount": 10,
     "activeContentsCount": 17,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1sUd2vStmtZk4rAbH38SHfVm8-49ITGhiBgoAh3vL7I8/edit",
+    "defaultSheetTab": "Kutieskin Mama_TikTok_E2E-S"
   },
   {
     "id": "store-port-484",
@@ -1959,7 +2091,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 16,
     "activeBookingsCount": 12,
     "activeContentsCount": 19,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1e0mbZ3ofh5hIkSjS2gEj4Ch8DxVsjeezEYGIi7ZYg_w/edit",
+    "defaultSheetTab": "Kênh tick xanh_TikTok_"
   },
   {
     "id": "store-port-488",
@@ -1988,7 +2122,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 20,
     "activeBookingsCount": 16,
     "activeContentsCount": 23,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1N5M2vxefba-9TYyVcR2XydNTdIv3BiI7W7iAg6FrRPw/edit",
+    "defaultSheetTab": "L'Occitane Việt Nam Hana_Websit"
   },
   {
     "id": "store-port-489",
@@ -2017,7 +2153,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 21,
     "activeBookingsCount": 17,
     "activeContentsCount": 24,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1zHPR7H1pGR6-dUfbGTzUA7uP7diA-UClvhGJIxAK1ug/edit",
+    "defaultSheetTab": "L'Occitane Việt Nam_Lazada_E2E-"
   },
   {
     "id": "store-port-490",
@@ -2047,7 +2185,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 22,
     "activeBookingsCount": 8,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1zHPR7H1pGR6-dUfbGTzUA7uP7diA-UClvhGJIxAK1ug/edit",
+    "defaultSheetTab": "L'Occitane Việt Nam_Shopee_E2E-"
   },
   {
     "id": "store-port-491",
@@ -2077,7 +2217,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 23,
     "activeBookingsCount": 9,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1zHPR7H1pGR6-dUfbGTzUA7uP7diA-UClvhGJIxAK1ug/edit",
+    "defaultSheetTab": "L'Occitane Việt Nam_TikTok_E2E-"
   },
   {
     "id": "store-port-492",
@@ -2106,7 +2248,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 24,
     "activeBookingsCount": 10,
     "activeContentsCount": 15,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1zHPR7H1pGR6-dUfbGTzUA7uP7diA-UClvhGJIxAK1ug/edit",
+    "defaultSheetTab": "L'Occitane Việt Nam_Website_E2E"
   },
   {
     "id": "store-port-500",
@@ -2134,7 +2278,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 17,
     "activeBookingsCount": 8,
     "activeContentsCount": 23,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1_8Sy_YyDkYOij4VH0ZibAkRqB2yHTBAaj668vJaPxQM/edit",
+    "defaultSheetTab": "LGVina Socom _Website_FFM"
   },
   {
     "id": "store-port-511",
@@ -2164,7 +2310,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 13,
     "activeBookingsCount": 9,
     "activeContentsCount": 22,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1F2Lw-9YCCcpE7LmcUGPYP2MsDJH6OCrh5p0YYOqSICc/edit",
+    "defaultSheetTab": "Ladofoods_TikTok_E2E-S"
   },
   {
     "id": "store-port-533",
@@ -2194,7 +2342,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 20,
     "activeBookingsCount": 11,
     "activeContentsCount": 20,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1_aQ8v3QpEpVFPJDcLCKOmda0Ty50GxBP9IspYLkCyNc/edit",
+    "defaultSheetTab": "Lipit_TikTok_E2E-C"
   },
   {
     "id": "store-port-555",
@@ -2223,7 +2373,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 12,
     "activeBookingsCount": 13,
     "activeContentsCount": 18,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1JNf5hLpMhSXo0Bzx2yBoO_mQQ45t6DK6OheCIiWay9I/edit",
+    "defaultSheetTab": "MATSUKIYO_Shopee_E2E-S"
   },
   {
     "id": "store-port-558",
@@ -2250,7 +2402,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 15,
     "activeBookingsCount": 16,
     "activeContentsCount": 21,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1U6Y9zSvxjZMugwHlLg5p1GMU5QEVICf-nOZXj5DS-M8/edit",
+    "defaultSheetTab": "MEDSI_Lazada_FFM"
   },
   {
     "id": "store-port-560",
@@ -2277,7 +2431,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 17,
     "activeBookingsCount": 8,
     "activeContentsCount": 23,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1U6Y9zSvxjZMugwHlLg5p1GMU5QEVICf-nOZXj5DS-M8/edit",
+    "defaultSheetTab": "MEDSI_Shopee_FFM"
   },
   {
     "id": "store-port-562",
@@ -2304,7 +2460,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 19,
     "activeBookingsCount": 10,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1U6Y9zSvxjZMugwHlLg5p1GMU5QEVICf-nOZXj5DS-M8/edit",
+    "defaultSheetTab": "MEDSI_TikTok_FFM"
   },
   {
     "id": "store-port-566",
@@ -2331,7 +2489,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 23,
     "activeBookingsCount": 14,
     "activeContentsCount": 17,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1lNSRZXdFTzjJGLaQBAPDhl55dhMHzmZ6g49Wdz08CkA/edit",
+    "defaultSheetTab": "MKT B2B_UpBase_"
   },
   {
     "id": "store-port-593",
@@ -2359,7 +2519,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 20,
     "activeBookingsCount": 11,
     "activeContentsCount": 20,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1hRFqn3ekje7_dZoe2xiV2hoPUicMmQ34kl1rQFcGVss/edit",
+    "defaultSheetTab": "Meracine_TikTok_E2E-S"
   },
   {
     "id": "store-port-598",
@@ -2388,7 +2550,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 25,
     "activeBookingsCount": 16,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1jKaa6YWTiARzVwat73H11__YEQDrZbFq1gnX2aOrsyo/edit",
+    "defaultSheetTab": "Mine_Shopee_E2E-C"
   },
   {
     "id": "store-port-599",
@@ -2418,7 +2582,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 26,
     "activeBookingsCount": 17,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1jKaa6YWTiARzVwat73H11__YEQDrZbFq1gnX2aOrsyo/edit",
+    "defaultSheetTab": "Mine_TikTok_E2E-C"
   },
   {
     "id": "store-port-600",
@@ -2448,7 +2614,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 12,
     "activeBookingsCount": 8,
     "activeContentsCount": 15,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1d5z6iaUD_FQd3LtaPQ65xY_yZ4RTfE6-c-Bn9613yuM/edit",
+    "defaultSheetTab": "Miss Saigon_Shopee_E2E-C"
   },
   {
     "id": "store-port-601",
@@ -2478,7 +2646,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 13,
     "activeBookingsCount": 9,
     "activeContentsCount": 16,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1d5z6iaUD_FQd3LtaPQ65xY_yZ4RTfE6-c-Bn9613yuM/edit",
+    "defaultSheetTab": "Miss Saigon_TikTok_E2E-C"
   },
   {
     "id": "store-port-615",
@@ -2508,7 +2678,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 12,
     "activeBookingsCount": 13,
     "activeContentsCount": 18,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1zsV4mwg63AfobouEvpGsWr4cpVRLZLwOgJ2V3Kxw1Xs/edit",
+    "defaultSheetTab": "Nabizam_Shopee_E2E-S"
   },
   {
     "id": "store-port-616",
@@ -2538,7 +2710,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 13,
     "activeBookingsCount": 14,
     "activeContentsCount": 19,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1zsV4mwg63AfobouEvpGsWr4cpVRLZLwOgJ2V3Kxw1Xs/edit",
+    "defaultSheetTab": "Nabizam_TikTok_E2E-S"
   },
   {
     "id": "store-port-624",
@@ -2568,7 +2742,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 21,
     "activeBookingsCount": 12,
     "activeContentsCount": 15,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/16vpsX4skxB2vy4hBc0_T6HmwhUHmkIDml95uwYcHVDk/edit",
+    "defaultSheetTab": "Natural Care_Shopee_E2E-C"
   },
   {
     "id": "store-port-625",
@@ -2598,7 +2774,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 22,
     "activeBookingsCount": 13,
     "activeContentsCount": 16,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/16vpsX4skxB2vy4hBc0_T6HmwhUHmkIDml95uwYcHVDk/edit",
+    "defaultSheetTab": "Natural Care_TikTok_E2E-C"
   },
   {
     "id": "store-port-628",
@@ -2628,7 +2806,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 25,
     "activeBookingsCount": 16,
     "activeContentsCount": 19,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/14cUuMasODIlkeHWjPbitGQtX9A3MR3Laxc418RH_XFw/edit",
+    "defaultSheetTab": "Nature's Way_Shopee_E2E-S"
   },
   {
     "id": "store-port-640",
@@ -2658,7 +2838,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 22,
     "activeBookingsCount": 8,
     "activeContentsCount": 19,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1D_Fth8TDHtqz0vvwghYFVpz9u06VzAcHr9TR7PaEX0o/edit",
+    "defaultSheetTab": "Nucos_TikTok_E2E-S"
   },
   {
     "id": "store-port-649",
@@ -2687,7 +2869,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 16,
     "activeBookingsCount": 17,
     "activeContentsCount": 16,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1dskKJFSKvrVLbktY3jc5m4B4bfDgvLq5F8Orjv4In8E/edit",
+    "defaultSheetTab": "ORGALIFE_Mall_Shopee_E2E-C"
   },
   {
     "id": "store-port-650",
@@ -2717,7 +2901,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 17,
     "activeBookingsCount": 8,
     "activeContentsCount": 17,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1PP7091K0I-yUyGi_4aOe7yfgIrT05asxTZ4RRVVTpDI/edit",
+    "defaultSheetTab": "ORGALIFE_Shopee_E2E-C"
   },
   {
     "id": "store-port-651",
@@ -2747,7 +2933,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 18,
     "activeBookingsCount": 9,
     "activeContentsCount": 18,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1PP7091K0I-yUyGi_4aOe7yfgIrT05asxTZ4RRVVTpDI/edit",
+    "defaultSheetTab": "ORGALIFE_TikTok_E2E-C"
   },
   {
     "id": "store-port-676",
@@ -2776,7 +2964,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 13,
     "activeBookingsCount": 14,
     "activeContentsCount": 19,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/173f-ldJI3wRQr25TxePvJOEx9tmL1RFTDwH9iP-DzRk/edit",
+    "defaultSheetTab": "Philips Home Appliances_Shopee_"
   },
   {
     "id": "store-port-700",
@@ -2805,7 +2995,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 22,
     "activeBookingsCount": 8,
     "activeContentsCount": 19,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1e1DtJagJrWRpx0FudlQVAGuRT76sAnxs2725V5wTVwA/edit",
+    "defaultSheetTab": "Redwin _Shopee_E2E-S"
   },
   {
     "id": "store-port-704",
@@ -2834,7 +3026,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 26,
     "activeBookingsCount": 12,
     "activeContentsCount": 23,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1LnRpPWJk92d4SOGTxTGJdopnsSaG9AcoaFfXKfCqMJM/edit",
+    "defaultSheetTab": "Rejuran_Shopee_E2E-O"
   },
   {
     "id": "store-port-705",
@@ -2864,7 +3058,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 12,
     "activeBookingsCount": 13,
     "activeContentsCount": 24,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1LnRpPWJk92d4SOGTxTGJdopnsSaG9AcoaFfXKfCqMJM/edit",
+    "defaultSheetTab": "Rejuran_TikTok_E2E-O"
   },
   {
     "id": "store-port-707",
@@ -2893,7 +3089,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 14,
     "activeBookingsCount": 15,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/17CrBPSkRcIsU7hGglOGpA_g0iGlG9_NTXqhWSGp3h5c/edit",
+    "defaultSheetTab": "Revision_Shopee_E2E-O"
   },
   {
     "id": "store-port-708",
@@ -2923,7 +3121,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 15,
     "activeBookingsCount": 16,
     "activeContentsCount": 15,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/17CrBPSkRcIsU7hGglOGpA_g0iGlG9_NTXqhWSGp3h5c/edit",
+    "defaultSheetTab": "Revision_TikTok_E2E-O"
   },
   {
     "id": "store-port-718",
@@ -2952,7 +3152,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 25,
     "activeBookingsCount": 16,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1Yh0WOypZO9nLpmGDMUi5Vb_jw49qsV0oHqzfFsInbrY/edit",
+    "defaultSheetTab": "Royal Ausnz_Shopee_E2E-S"
   },
   {
     "id": "store-port-719",
@@ -2981,7 +3183,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 26,
     "activeBookingsCount": 17,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1DMi93Z4CAf0y069Xeo2MfBR4QaJcyZbi-ziCbG1qQFE/edit",
+    "defaultSheetTab": "Royal Canin_TikTok_E2E-S"
   },
   {
     "id": "store-port-724",
@@ -3011,7 +3215,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 16,
     "activeBookingsCount": 12,
     "activeContentsCount": 19,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1SMfkrDIAu-Tq_Agtegst6qKljKEay6aUiXIVtxPPet0/edit",
+    "defaultSheetTab": "SCC Saigon Cosmetics_Shopee_E2E"
   },
   {
     "id": "store-port-731",
@@ -3038,7 +3244,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 23,
     "activeBookingsCount": 9,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1TvZE34AEUsIqrEPgiWbwZfBeCM1L7fZ8PPeu7ViXxVA/edit",
+    "defaultSheetTab": "SOME BY MI_Shopee_SoCom"
   },
   {
     "id": "store-port-733",
@@ -3065,7 +3273,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 25,
     "activeBookingsCount": 11,
     "activeContentsCount": 16,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1TvZE34AEUsIqrEPgiWbwZfBeCM1L7fZ8PPeu7ViXxVA/edit",
+    "defaultSheetTab": "SOME BY MI_TikTok_SoCom"
   },
   {
     "id": "store-port-751",
@@ -3092,7 +3302,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 13,
     "activeBookingsCount": 9,
     "activeContentsCount": 22,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1SmlNYI_J8PhQbsEWdrLBtMzSuSDEO2rzI8rl0nwZEn0/edit",
+    "defaultSheetTab": "Sensilis Vietnam_Shopee_FFM"
   },
   {
     "id": "store-port-754",
@@ -3119,7 +3331,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 16,
     "activeBookingsCount": 12,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1wFOxVvYcZh53kA5nDx5c6vO62RdRzm6J9aQpsCThLkU/edit",
+    "defaultSheetTab": "Sensodyne_Shopee_SoCom"
   },
   {
     "id": "store-port-755",
@@ -3146,7 +3360,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 17,
     "activeBookingsCount": 13,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1wFOxVvYcZh53kA5nDx5c6vO62RdRzm6J9aQpsCThLkU/edit",
+    "defaultSheetTab": "Sensodyne_TikTok_SoCom"
   },
   {
     "id": "store-port-798",
@@ -3176,7 +3392,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 15,
     "activeBookingsCount": 16,
     "activeContentsCount": 21,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1iP_EwW2Fc1SKG6vLp3DzYldo3sBozTNHnL4h29TCFow/edit",
+    "defaultSheetTab": "TM Clean _Shopee_E2E-C"
   },
   {
     "id": "store-port-799",
@@ -3206,7 +3424,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 16,
     "activeBookingsCount": 17,
     "activeContentsCount": 22,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1iP_EwW2Fc1SKG6vLp3DzYldo3sBozTNHnL4h29TCFow/edit",
+    "defaultSheetTab": "TM Clean _TikTok_E2E-C"
   },
   {
     "id": "store-port-814",
@@ -3235,7 +3455,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 16,
     "activeBookingsCount": 12,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/19Zb6O5XLON_r05861LH2dXL6aK5WXvpaxbJ_ubF5dtU/edit",
+    "defaultSheetTab": "The Vigo_Shopee_E2E-O"
   },
   {
     "id": "store-port-815",
@@ -3263,7 +3485,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 17,
     "activeBookingsCount": 13,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/19Zb6O5XLON_r05861LH2dXL6aK5WXvpaxbJ_ubF5dtU/edit",
+    "defaultSheetTab": "The Vigo_TikTok_E2E-O"
   },
   {
     "id": "store-port-831",
@@ -3290,7 +3514,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 18,
     "activeBookingsCount": 9,
     "activeContentsCount": 18,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1bjQjOGTzR_L1yvOlLPaCIUOnZlUzarcepcKvrK6deSA/edit",
+    "defaultSheetTab": "Topicrem_Lazada_FFM"
   },
   {
     "id": "store-port-833",
@@ -3317,7 +3543,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 20,
     "activeBookingsCount": 11,
     "activeContentsCount": 20,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1bjQjOGTzR_L1yvOlLPaCIUOnZlUzarcepcKvrK6deSA/edit",
+    "defaultSheetTab": "Topicrem_Shopee_FFM"
   },
   {
     "id": "store-port-861",
@@ -3346,7 +3574,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 18,
     "activeBookingsCount": 9,
     "activeContentsCount": 24,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1Fubo7qvlaJRTklgZTOA0PD5Pcms5rAj_FDr0hvKMj1M/edit",
+    "defaultSheetTab": "UpBeauty_Meta_E2E-T"
   },
   {
     "id": "store-port-862",
@@ -3375,7 +3605,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 19,
     "activeBookingsCount": 10,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1Fubo7qvlaJRTklgZTOA0PD5Pcms5rAj_FDr0hvKMj1M/edit",
+    "defaultSheetTab": "UpBeauty_Shopee_E2E-T"
   },
   {
     "id": "store-port-863",
@@ -3405,7 +3637,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 20,
     "activeBookingsCount": 11,
     "activeContentsCount": 26,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1Fubo7qvlaJRTklgZTOA0PD5Pcms5rAj_FDr0hvKMj1M/edit",
+    "defaultSheetTab": "UpBeauty_TikTok_E2E-T"
   },
   {
     "id": "store-port-864",
@@ -3434,7 +3668,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 21,
     "activeBookingsCount": 12,
     "activeContentsCount": 15,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1Fubo7qvlaJRTklgZTOA0PD5Pcms5rAj_FDr0hvKMj1M/edit",
+    "defaultSheetTab": "UpBeauty_Website_E2E-T"
   },
   {
     "id": "store-port-868",
@@ -3461,7 +3697,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 25,
     "activeBookingsCount": 16,
     "activeContentsCount": 19,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1-mBLLAckCM1COOjYM4n8pLXVjJjG2_1E5CgRDlMtfhs/edit",
+    "defaultSheetTab": "Upbaby68_TikTok_MCN"
   },
   {
     "id": "store-port-869",
@@ -3488,7 +3726,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 26,
     "activeBookingsCount": 17,
     "activeContentsCount": 20,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1dH9dC3XQaWaGBO9__XSUGtucveHAPdRoCu-8t4SHInk/edit",
+    "defaultSheetTab": "Upbeauty_Suthat_"
   },
   {
     "id": "store-port-870",
@@ -3515,7 +3755,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 12,
     "activeBookingsCount": 8,
     "activeContentsCount": 21,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1YoXs-8ncPOFRHtFGf766028MUSAdzgZgLw33PLmuLHU/edit",
+    "defaultSheetTab": "Upbeautysuthat_TikTok_MCN"
   },
   {
     "id": "store-port-871",
@@ -3542,7 +3784,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 13,
     "activeBookingsCount": 9,
     "activeContentsCount": 22,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1AMGE7fnL9E4lQPPC_rpcjI0t44FrEmnbsM3jV812vJU/edit",
+    "defaultSheetTab": "Upecom_Shopee_MCN"
   },
   {
     "id": "store-port-889",
@@ -3572,7 +3816,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 16,
     "activeBookingsCount": 17,
     "activeContentsCount": 16,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1aNGvHFS--HpKBMDpBi4zknqIPJH0J3ra6BFKdq1Jxic/edit",
+    "defaultSheetTab": "Venus_Shopee_E2E-C"
   },
   {
     "id": "store-port-890",
@@ -3602,7 +3848,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 17,
     "activeBookingsCount": 8,
     "activeContentsCount": 17,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1aNGvHFS--HpKBMDpBi4zknqIPJH0J3ra6BFKdq1Jxic/edit",
+    "defaultSheetTab": "Venus_TikTok_E2E-C"
   },
   {
     "id": "store-port-904",
@@ -3632,7 +3880,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 16,
     "activeBookingsCount": 12,
     "activeContentsCount": 19,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1WieTeDKt_IgtxT63fgRL7oL9cxR8jf7FMCzQxhMcNHE/edit",
+    "defaultSheetTab": "Vitabiotics_Shopee_E2E-S"
   },
   {
     "id": "store-port-905",
@@ -3661,7 +3911,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 17,
     "activeBookingsCount": 13,
     "activeContentsCount": 20,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1WieTeDKt_IgtxT63fgRL7oL9cxR8jf7FMCzQxhMcNHE/edit",
+    "defaultSheetTab": "Vitabiotics_TikTok_SoCom"
   },
   {
     "id": "store-port-925",
@@ -3691,7 +3943,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 22,
     "activeBookingsCount": 13,
     "activeContentsCount": 16,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1pTZZV3TjtTctfKD4FgxfLnXM1FcodvS-gKvTyGCUAvk/edit",
+    "defaultSheetTab": "Ziaja_Shopee_E2E-S"
   },
   {
     "id": "store-port-926",
@@ -3721,7 +3975,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 23,
     "activeBookingsCount": 14,
     "activeContentsCount": 17,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1pTZZV3TjtTctfKD4FgxfLnXM1FcodvS-gKvTyGCUAvk/edit",
+    "defaultSheetTab": "Ziaja_TikTok_E2E-S"
   },
   {
     "id": "store-port-945",
@@ -3750,7 +4006,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 12,
     "activeBookingsCount": 13,
     "activeContentsCount": 24,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1GmXXdbNrpv6LZsqBlyTlf8TcY0ZmrRkTC9FeLDl82Ko/edit",
+    "defaultSheetTab": "lgdailybeauty_vietnam_Shopee_E2"
   },
   {
     "id": "store-port-946",
@@ -3779,7 +4037,9 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 13,
     "activeBookingsCount": 14,
     "activeContentsCount": 25,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1GmXXdbNrpv6LZsqBlyTlf8TcY0ZmrRkTC9FeLDl82Ko/edit",
+    "defaultSheetTab": "lgdailybeauty_vietnam_TikTok_E2"
   },
   {
     "id": "store-port-950",
@@ -3809,6 +4069,8 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "activeCandidatesCount": 17,
     "activeBookingsCount": 8,
     "activeContentsCount": 17,
-    "createdAt": "2026-01-15"
+    "createdAt": "2026-01-15",
+    "bookingSheetUrl": "https://docs.google.com/spreadsheets/d/1fdlcWEscm6L-wNL6yYGG3p7VNVeo3Lq1hr5XbFWmix4/edit",
+    "defaultSheetTab": "pHCare_TikTok_E2E-C"
   }
 ];

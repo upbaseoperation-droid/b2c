@@ -125,6 +125,18 @@ export interface LegalTemplate {
   customType?: 'UPBASE_AMENDED' | 'KOC_FORM';
   /** Ghi chú và lưu ý nghiệp vụ của Pháp chế cho KOC. */
   legalNotes?: string;
+  /** Danh sách thẻ ô ký tự động trong mẫu (ví dụ: {{SIGN_BEN_A}}, {{SIGN_BEN_B}}) do contract-system bóc tách. */
+  signTags?: string[];
+  /** Cấu hình luồng ký từ configureTemplateSigningFlow (Agency Portal / contract-system). */
+  signingFlowConfig?: {
+    mode: 'SEQUENTIAL' | 'PARALLEL';
+    deadlineDays: number;
+    signers: Array<{
+      order: number;
+      role: string;
+      signTag: string;
+    }>;
+  };
 }
 export interface ReviewStep { role: 'LEGAL' | 'FINANCE' | 'LEAD'; reviewerId: string; reviewerName: string; status: 'PENDING' | 'APPROVED' | 'CHANGES' | 'REJECTED'; note: string; decidedAt?: string; version: number }
 export interface ContractFinding { severity: 'ERROR' | 'WARNING' | 'INFO'; message: string; evidence: string; fieldKey?: string }
@@ -151,13 +163,20 @@ export interface SigningAttempt {
   error?: string;
   evidenceConfirmedBy: string;
   evidenceHash: string;
-  provider?: 'MISA' | 'DEMO';
+  provider?: 'MISA' | 'CONTRACT_SYSTEM' | 'DEMO';
   name?: string;
   completedCount?: number;
   totalCount?: number;
   progressPercent?: number;
   currentSignerName?: string;
   currentSignerEmail?: string;
+  /** Mã hợp đồng idempotent dùng khi gọi requestSign sang contract-system. */
+  contractCode?: string;
+  /** File đã ký được worker tải về từ queue signed-file-download. */
+  signedFileUrl?: string;
+  signedFileStatus?: 'IDLE' | 'QUEUED' | 'DOWNLOADED' | 'FAILED';
+  /** Dấu thời gian sự kiện webhook gần nhất để chặn sự kiện cũ ghi đè lùi trạng thái. */
+  lastWebhookTimestamp?: number;
 }
 export interface ContractEvent { at: string; actorId: string; actorName: string; action: string; note: string; version: number }
 export interface VideoAcceptanceInspectionMeta {
@@ -220,6 +239,36 @@ export interface ContractRevision {
   };
   acceptanceScreenshots?: AcceptanceScreenshotItem[];
 }
+export interface ContractSystemSyncMeta {
+  /** Mã hợp đồng ổn định làm khóa idempotent khi gọi generateContract / requestSign. */
+  contractCode: string;
+  /** ID bản ghi hợp đồng bên contract-system. */
+  contractSystemId: string;
+  /** Phân loại chặng văn bản trong chuỗi 3 bước: HĐNT Khung -> Phụ lục SOW -> Biên bản nghiệm thu BBNT. */
+  documentStage?: 'HDNT' | 'SOW' | 'BBNT';
+  /** Mã hợp đồng gốc / Phụ lục SOW gốc mà văn bản này kế thừa (HĐNT -> SOW -> BBNT). */
+  parentContractCode?: string;
+  /** ID và URL tài liệu trên Google Docs để chỉnh sửa điều khoản trước khi ký (Bước 5 & 6). */
+  googleDocsId?: string;
+  googleDocsUrl?: string;
+  googleDocsSyncedAt?: string;
+  /** URL file .docx đã render / xuất lại từ Google Docs trên UpBase upload API. */
+  exportedDocxUrl?: string;
+  /** Trạng thái và URL file đã ký từ worker queue signed-file-download (Bước 11 & 12). */
+  signedFileStatus?: 'IDLE' | 'QUEUED' | 'DOWNLOADED' | 'FAILED';
+  signedFileUrl?: string;
+  /** Bản chụp phiên bản template và thẻ ô ký tại thời điểm generateContract. */
+  templateSnapshot?: {
+    templateId: string;
+    version: string;
+    hash: string;
+    signTags: string[];
+    capturedAt: string;
+  };
+  /** Thời điểm nhận sự kiện đồng bộ gần nhất từ contract-system (Bước 13). */
+  lastSyncedAt?: string;
+  lastWebhookTimestamp?: number;
+}
 export interface ContractRecord {
   id: string; title: string; brand: string; partner: string; ownerId: string; ownerName: string;
   templateId: string; templateHash: string; version: number; revision: number; values: Record<string, string>;
@@ -247,4 +296,6 @@ export interface ContractRecord {
   };
   /** Danh sách ảnh chụp màn hình video lúc sản phẩm xuất hiện đính kèm Biên bản nghiệm thu. */
   acceptanceScreenshots?: AcceptanceScreenshotItem[];
+  /** Metadata đồng bộ với contract-system (generateContract, Google Docs, requestSign, webhook Step 13). */
+  contractSystem?: ContractSystemSyncMeta;
 }

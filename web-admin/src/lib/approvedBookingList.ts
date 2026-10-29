@@ -4,10 +4,13 @@ import type {
   DealDeliverableItem,
   DealRightsTermItem,
   DealSequentialAcceptanceStage,
+  DealSowJobItem,
   KocItem,
   SalaryGrade,
   StorePortfolioItem,
 } from './types';
+
+export type { DealSowJobItem };
 import {
   buildTikTokChannelUrl,
   computeGrossFeeWithTax,
@@ -126,15 +129,26 @@ export interface ApprovedBookingListItem {
   nganHang: string;                    // Cột 25: Ngân hàng
   soCccd: string;                      // Cột 26: CCCD/MST/Passport
 
-  // 6. Cấu trúc Deal (1 Video Asset + Dịch vụ gia tăng) & Phụ lục Hợp đồng & Nghiệm thu 2 tầng
+  // 6. Cấu trúc Deal (1 Deal -> N Jobs, mỗi Job = 1 Bảng công việc trong Phụ lục SOW) & Nghiệm thu 2 tầng
   dealStructureType?: 'VIDEO_ONLY' | 'VIDEO_AND_ADDONS';
-  videoAssetNetCost?: number;          // Chi phí Net phần Asset Video gốc trong Deal
-  addonServicesNetCost?: number;       // Tổng chi phí Net các dịch vụ gia tăng đi kèm trong Deal
+  videoAssetNetCost?: number;          // Tổng chi phí Net phần Asset Video gốc của các Job trong Deal
+  addonServicesNetCost?: number;       // Tổng chi phí Net các dịch vụ gia tăng đi kèm của các Job trong Deal
   khauTruHangMucHuy?: number;          // Khấu trừ dịch vụ gia tăng không thực hiện (DROPPED) khi quyết toán Deal
-  addonServices?: DealRightsTermItem[]; // Danh sách các dịch vụ gia tăng & quyền lợi đi kèm trong Deal
+  addonServices?: DealRightsTermItem[]; // Danh sách gộp các dịch vụ gia tăng & quyền lợi đi kèm trong Deal
+  dealJobs?: DealSowJobItem[];         // Danh sách N Job trong Deal (Mỗi Job tương ứng 1 Bảng công việc trong Phụ lục SOW)
   masterContractCode?: string;         // Mã HĐNT của KOC (1 HĐNT / KOC)
+  masterContractStatus?: DealContractAppendixStatus; // Trạng thái ký HĐNT
+  masterContractGoogleDocsUrl?: string; // Link Google Docs HĐNT (contract-system)
+  masterContractSignedUrl?: string;    // Link file HĐNT đã ký hoàn tất
   contractAppendixCode?: string;       // Mã Phụ lục hợp đồng của Deal (1 Phụ lục / Deal)
   contractAppendixStatus?: DealContractAppendixStatus; // Trạng thái ký Phụ lục Deal
+  contractAppendixGoogleDocsUrl?: string; // Link Google Docs Phụ lục SOW (contract-system)
+  contractAppendixSignedUrl?: string;  // Link file Phụ lục SOW đã ký hoàn tất
+  bbntCode?: string;                   // Mã Biên bản nghiệm thu (BBNT) của Deal
+  bbntStatus?: DealContractAppendixStatus; // Trạng thái ký BBNT
+  bbntGoogleDocsUrl?: string;          // Link Google Docs BBNT (contract-system)
+  bbntSignedUrl?: string;              // Link file BBNT đã ký hoàn tất
+  contractSyncedAt?: string;           // Thời điểm kéo/đồng bộ thông tin HĐ, PL, BBNT gần nhất
   sequentialAcceptanceStage?: DealSequentialAcceptanceStage; // Nghiệm thu tuần tự: (1) Video -> (2) Phần khác
   addonsAcceptanceStatus?: AddonServicesAcceptanceStatus;
 
@@ -349,6 +363,158 @@ export function buildTransferDescription(
 }
 
 /**
+ * Tính tổng chi phí của 1 Job (= 1 Bảng công việc trong Phụ lục SOW)
+ */
+export function computeDealSowJobSubtotal(job: DealSowJobItem): {
+  videoNet: number;
+  addonsNet: number;
+  droppedDeduction: number;
+  plannedJobNet: number;
+  acceptedJobNet: number;
+} {
+  const qty = Math.max(1, Number(job.quantity) || 1);
+  const videoNet = Math.max(0, Number(job.videoAssetNetCost) || 0) * qty;
+  const addons = job.addonServices || [];
+  const addonsNet = addons.reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+  const droppedDeduction = addons
+    .filter((a) => a.acceptanceStatus === 'DROPPED')
+    .reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+  const plannedJobNet = videoNet + addonsNet;
+  const acceptedJobNet = Math.max(0, plannedJobNet - droppedDeduction);
+  return {
+    videoNet,
+    addonsNet,
+    droppedDeduction,
+    plannedJobNet,
+    acceptedJobNet,
+  };
+}
+
+/**
+ * Chuẩn hóa danh sách Job (1 Job = 1 Bảng công việc trong Phụ lục SOW) của 1 Deal
+ */
+export function ensureDealJobsForApprovedItem(
+  item: ApprovedBookingListItem
+): DealSowJobItem[] {
+  const maBo = item.maBooking || 'BO-DEAL';
+  const defaultAffiliateChannel = item.storeName?.toLowerCase().includes('shopee')
+    ? 'Shopee'
+    : 'TikTok Shop';
+
+  if (Array.isArray(item.dealJobs) && item.dealJobs.length > 0) {
+    return item.dealJobs.map((job, idx) => {
+      const seqStr = String(idx + 1).padStart(2, '0');
+      const jobCode = job.jobCode?.trim() || `${maBo}-J${seqStr}`;
+      const hasJobAir = Boolean(
+        job.linkAir?.trim() ||
+          job.actualAirDate?.trim() ||
+          (idx === 0 && (item.linkAir?.trim() || item.actualAirDate?.trim()))
+      );
+      const jobLinkAir = job.linkAir?.trim() || (idx === 0 ? item.linkAir || '' : '');
+      const jobActualAir = job.actualAirDate?.trim() || (idx === 0 ? item.actualAirDate || '' : '');
+      const jobSparkCode = job.sparkAdsCode?.trim() || (idx === 0 ? item.sparkAdsCode || '' : '');
+
+      const normalizedJobAddons: DealRightsTermItem[] = (job.addonServices || []).map((addon, aIdx) => {
+        if (addon.acceptanceStatus === 'DROPPED') {
+          return {
+            ...addon,
+            id: addon.id || `${jobCode}-ADDON-${aIdx + 1}`,
+            targetDeliverableId: jobCode,
+            status: 'EXPIRED',
+          };
+        }
+        if (!hasJobAir) {
+          return {
+            ...addon,
+            id: addon.id || `${jobCode}-ADDON-${aIdx + 1}`,
+            targetDeliverableId: jobCode,
+            status: 'PENDING_ANCHOR',
+            acceptanceStatus: 'LOCKED_BY_VIDEO',
+          };
+        }
+        const isAdsTerm = addon.termType === 'ADS_CODE';
+        const syncedEvidence = isAdsTerm
+          ? jobSparkCode || addon.evidenceCodeOrUrl?.trim() || ''
+          : addon.evidenceCodeOrUrl?.trim() || '';
+        const isVerifiedAddon =
+          addon.acceptanceStatus === 'VERIFIED' || (isAdsTerm && Boolean(syncedEvidence));
+        return {
+          ...addon,
+          id: addon.id || `${jobCode}-ADDON-${aIdx + 1}`,
+          targetDeliverableId: jobCode,
+          evidenceCodeOrUrl: syncedEvidence,
+          status: isVerifiedAddon ? 'ACTIVE' : 'PENDING_ANCHOR',
+          acceptanceStatus: isVerifiedAddon ? 'VERIFIED' : 'PENDING_ACCEPTANCE',
+        };
+      });
+
+      return {
+        ...job,
+        id: job.id || `${jobCode}-ID`,
+        jobCode,
+        jobTitle:
+          job.jobTitle?.trim() ||
+          `Bảng công việc #${idx + 1} (${jobCode}) — ${job.productName || item.sanPham || item.brandName}`,
+        productName: job.productName?.trim() || item.sanPham || item.brandName,
+        mediaChannel: job.mediaChannel || 'TikTok',
+        affiliateChannel: job.affiliateChannel || defaultAffiliateChannel,
+        plannedAirDate: job.plannedAirDate || item.plannedAirDate || '',
+        actualAirDate: jobActualAir || undefined,
+        linkAir: jobLinkAir || undefined,
+        sparkAdsCode: jobSparkCode || undefined,
+        videoAssetNetCost: Math.max(0, Number(job.videoAssetNetCost) || 0),
+        quantity: Math.max(1, Number(job.quantity) || 1),
+        addonServices: normalizedJobAddons,
+        acceptanceStatus: hasJobAir ? 'DA_NGHIEM_THU' : 'CHUA_NGHIEM_THU',
+      };
+    });
+  }
+
+  const fallbackNet = Math.max(0, Number(item.chiPhiBookingNetCuoi) || 0);
+  const rawAddons =
+    item.addonServices !== undefined
+      ? item.addonServices
+      : item.bookingOrderCreated && fallbackNet > 0
+        ? buildDefaultAddonServicesForDeal({
+            maBooking: item.maBooking,
+            totalNet: fallbackNet,
+            sparkAdsCode: item.sparkAdsCode,
+            actualAirDate: item.actualAirDate,
+          })
+        : [];
+  const addonsCost = rawAddons.reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+  const defaultVideoNet =
+    item.videoAssetNetCost !== undefined
+      ? Math.max(0, Number(item.videoAssetNetCost) || 0)
+      : Math.max(0, fallbackNet - addonsCost);
+  const jobCode = `${maBo}-J01`;
+  const hasAir = Boolean(item.linkAir?.trim() || item.actualAirDate?.trim());
+
+  return [
+    {
+      id: `${jobCode}-ID`,
+      jobCode,
+      jobTitle: `Bảng công việc #1 (${jobCode}) — ${item.sanPham || item.brandName}`,
+      productName: item.sanPham || item.brandName,
+      mediaChannel: 'TikTok',
+      affiliateChannel: defaultAffiliateChannel,
+      plannedAirDate: item.plannedAirDate || '',
+      actualAirDate: item.actualAirDate || undefined,
+      linkAir: item.linkAir || undefined,
+      sparkAdsCode: item.sparkAdsCode || undefined,
+      videoAssetNetCost: defaultVideoNet,
+      quantity: 1,
+      addonServices: rawAddons.map((a, aIdx) => ({
+        ...a,
+        id: a.id || `${jobCode}-ADDON-${aIdx + 1}`,
+        targetDeliverableId: jobCode,
+      })),
+      acceptanceStatus: hasAir ? 'DA_NGHIEM_THU' : 'CHUA_NGHIEM_THU',
+    },
+  ];
+}
+
+/**
  * Tự động tính toán lại dòng trong List Duyệt Book khi nhân viên sửa Giá cuối, Ngày air hoặc thông tin nghiệm thu
  */
 export function recalculateApprovedBookingItem(
@@ -356,12 +522,27 @@ export function recalculateApprovedBookingItem(
 ): ApprovedBookingListItem {
   const cleanId = normalizeTikTokId(item.idKenh);
   const linkKenh = cleanId ? buildTikTokChannelUrl(cleanId) : item.linkKenh;
-  const finalNet = Math.max(0, Number(item.chiPhiBookingNetCuoi) || 0);
+  const hasExplicitMultiJobs = Array.isArray(item.dealJobs) && item.dealJobs.length > 0;
+  const normalizedDealJobs = ensureDealJobsForApprovedItem(item);
+
+  // Nếu Deal được cấu hình theo danh sách Job (1 Deal -> N Jobs), tổng hợp chi phí từ N Bảng công việc
+  const jobsTotals = normalizedDealJobs.map((j) => computeDealSowJobSubtotal(j));
+  const sumJobsVideoNet = jobsTotals.reduce((s, t) => s + t.videoNet, 0);
+  const sumJobsAddonsNet = jobsTotals.reduce((s, t) => s + t.addonsNet, 0);
+  const sumJobsPlannedNet = sumJobsVideoNet + sumJobsAddonsNet;
+
+  const finalNet = hasExplicitMultiJobs
+    ? sumJobsPlannedNet
+    : Math.max(0, Number(item.chiPhiBookingNetCuoi) || 0);
   const grossWithTax = computeGrossFeeWithTax(finalNet);
   const klGrade = mapTepBookingToSalaryGrade(finalNet);
   const tamUng = Math.max(0, Number(item.soTienTamUngTruoc) || 0);
 
-  const hasAir = Boolean(item.linkAir?.trim() || item.actualAirDate?.trim());
+  const hasAir = Boolean(
+    item.linkAir?.trim() ||
+      item.actualAirDate?.trim() ||
+      (hasExplicitMultiJobs && normalizedDealJobs.every((j) => j.acceptanceStatus === 'DA_NGHIEM_THU'))
+  );
   const acceptanceStatus = hasAir ? 'DA_NGHIEM_THU' : 'CHUA_NGHIEM_THU';
   const extractedVideoMatch = (item.linkAir || '').match(/\/video\/(\d+)/i);
   const videoId = extractedVideoMatch ? extractedVideoMatch[1] : item.videoId || '';
@@ -373,8 +554,9 @@ export function recalculateApprovedBookingItem(
     : item.thangAirReal || '';
 
   // Chuẩn hóa danh sách Dịch vụ gia tăng (Add-on Services) trong Deal & Nghiệm thu 2 tầng tuần tự
-  const rawAddons =
-    item.addonServices !== undefined
+  const rawAddons = hasExplicitMultiJobs
+    ? normalizedDealJobs.flatMap((j) => j.addonServices || [])
+    : item.addonServices !== undefined
       ? item.addonServices
       : item.bookingOrderCreated && finalNet > 0
         ? buildDefaultAddonServicesForDeal({
@@ -441,9 +623,23 @@ export function recalculateApprovedBookingItem(
   const khauTruHangMucHuy = normalizedAddons
     .filter((a) => a.acceptanceStatus === 'DROPPED')
     .reduce((sum, a) => sum + (Number(a.allocatedCostVnd) || 0), 0);
-  const videoAssetNetCost = Math.max(0, finalNet - addonServicesNetCost);
+  const videoAssetNetCost = hasExplicitMultiJobs
+    ? sumJobsVideoNet
+    : Math.max(0, finalNet - addonServicesNetCost);
   const dealStructureType: 'VIDEO_ONLY' | 'VIDEO_AND_ADDONS' =
-    normalizedAddons.length > 0 ? 'VIDEO_AND_ADDONS' : 'VIDEO_ONLY';
+    normalizedAddons.length > 0 || normalizedDealJobs.length > 1
+      ? 'VIDEO_AND_ADDONS'
+      : 'VIDEO_ONLY';
+  const syncedDealJobs: DealSowJobItem[] =
+    normalizedDealJobs.length === 1 && !hasExplicitMultiJobs
+      ? [
+          {
+            ...normalizedDealJobs[0],
+            videoAssetNetCost,
+            addonServices: normalizedAddons,
+          },
+        ]
+      : normalizedDealJobs;
 
   const activeAddons = normalizedAddons.filter((a) => a.acceptanceStatus !== 'DROPPED');
   let sequentialAcceptanceStage: DealSequentialAcceptanceStage = '1_CHO_NGHIEM_THU_VIDEO';
@@ -563,6 +759,7 @@ export function recalculateApprovedBookingItem(
     addonServicesNetCost,
     khauTruHangMucHuy,
     addonServices: normalizedAddons,
+    dealJobs: syncedDealJobs,
     masterContractCode,
     contractAppendixCode,
     contractAppendixStatus,
@@ -839,6 +1036,31 @@ function buildRealBrandApprovedListFromSheets(
   return items;
 }
 
+let memoryApprovedListCache: ApprovedBookingListItem[] | null = null;
+let lastApprovedKocsCount = -1;
+let lastApprovedDealsCount = -1;
+let pendingApprovedPersistTimer: ReturnType<typeof setTimeout> | null = null;
+
+function flushPendingApprovedListPersist(): void {
+  if (typeof window === 'undefined' || !memoryApprovedListCache) return;
+  if (pendingApprovedPersistTimer) {
+    clearTimeout(pendingApprovedPersistTimer);
+    pendingApprovedPersistTimer = null;
+  }
+  try {
+    window.localStorage.setItem(
+      APPROVED_BOOKING_LIST_STORAGE_KEY,
+      JSON.stringify(memoryApprovedListCache)
+    );
+  } catch {
+    // ignore storage errors
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', flushPendingApprovedListPersist);
+}
+
 export function loadApprovedBookingList(
   kocs: KocItem[] = [],
   stores: StorePortfolioItem[] = [],
@@ -860,6 +1082,20 @@ export function loadApprovedBookingList(
       deals
     );
   }
+
+  if (memoryApprovedListCache && memoryApprovedListCache.length > 0) {
+    if (kocs.length !== lastApprovedKocsCount || deals.length !== lastApprovedDealsCount) {
+      memoryApprovedListCache = mergeDealsAndKocsIntoApprovedList(
+        memoryApprovedListCache,
+        kocs,
+        deals
+      );
+      lastApprovedKocsCount = kocs.length;
+      lastApprovedDealsCount = deals.length;
+    }
+    return memoryApprovedListCache;
+  }
+
   const realApproved = buildRealBrandApprovedListFromSheets(
     kocs,
     stores,
@@ -877,6 +1113,9 @@ export function loadApprovedBookingList(
         // Nếu localStorage chỉ có vài dòng mẫu cũ chưa có dữ liệu Lark Base 3.1 thực tế -> nạp dữ liệu thực tế
         if (!hasRealRows && realApproved.length > 0) {
           const mergedReal = mergeDealsAndKocsIntoApprovedList(realApproved, kocs, deals);
+          memoryApprovedListCache = mergedReal;
+          lastApprovedKocsCount = kocs.length;
+          lastApprovedDealsCount = deals.length;
           try {
             window.localStorage.setItem(
               APPROVED_BOOKING_LIST_STORAGE_KEY,
@@ -901,6 +1140,9 @@ export function loadApprovedBookingList(
               kocs,
               deals
             );
+            memoryApprovedListCache = combined;
+            lastApprovedKocsCount = kocs.length;
+            lastApprovedDealsCount = deals.length;
             try {
               window.localStorage.setItem(
                 APPROVED_BOOKING_LIST_STORAGE_KEY,
@@ -912,7 +1154,11 @@ export function loadApprovedBookingList(
             return combined;
           }
         }
-        return mergeDealsAndKocsIntoApprovedList(parsed, kocs, deals);
+        const mergedParsed = mergeDealsAndKocsIntoApprovedList(parsed, kocs, deals);
+        memoryApprovedListCache = mergedParsed;
+        lastApprovedKocsCount = kocs.length;
+        lastApprovedDealsCount = deals.length;
+        return mergedParsed;
       }
     }
   } catch {
@@ -933,9 +1179,14 @@ export function saveApprovedBookingList(
   list: ApprovedBookingListItem[],
   emitEvent = true
 ): void {
+  memoryApprovedListCache = list;
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(APPROVED_BOOKING_LIST_STORAGE_KEY, JSON.stringify(list));
+    if (pendingApprovedPersistTimer) clearTimeout(pendingApprovedPersistTimer);
+    pendingApprovedPersistTimer = setTimeout(() => {
+      pendingApprovedPersistTimer = null;
+      flushPendingApprovedListPersist();
+    }, 250);
     if (emitEvent) {
       pushSharedStateToDb('approved-booking-list-v2', list);
       window.dispatchEvent(
@@ -1097,25 +1348,33 @@ export function buildBookingDealFromApprovedItem(
   const addonsCost = normalized.addonServicesNetCost || 0;
   const videoCost =
     normalized.videoAssetNetCost ?? Math.max(0, normalized.chiPhiBookingNetCuoi - addonsCost);
-  const primaryDeliverable: DealDeliverableItem = {
-    id: `${maBo}-ASSET-VID-01`,
-    title: `Video gốc TikTok - ${normalized.sanPham || normalized.brandName}`,
-    mediaChannel: 'TikTok',
-    affiliateChannel: normalized.storeName.toLowerCase().includes('shopee')
-      ? 'Shopee'
-      : 'TikTok Shop',
-    productionType: 'ORIGINAL',
-    wave: 0,
-    lockStatus: isVideoVerified ? 'VERIFIED' : 'UNLOCKED',
-    assignedChannelPic: normalized.nguoiPhuTrach,
-    allocatedWeightPct:
-      normalized.chiPhiBookingNetCuoi > 0
-        ? Math.round((videoCost / normalized.chiPhiBookingNetCuoi) * 100)
-        : 100,
-    allocatedCostVnd: videoCost,
-    airDate: normalized.actualAirDate || normalized.plannedAirDate || undefined,
-    publishedUrl: normalized.linkAir || undefined,
-  };
+  const dealJobs = ensureDealJobsForApprovedItem({
+    ...normalized,
+    maBooking: maBo,
+  });
+  const deliverables: DealDeliverableItem[] = dealJobs.map((job, idx) => {
+    const jobSub = computeDealSowJobSubtotal(job);
+    const isJobVerified = job.acceptanceStatus === 'DA_NGHIEM_THU' || isVideoVerified;
+    return {
+      id: `${job.jobCode || `${maBo}-J0${idx + 1}`}-ASSET-VID`,
+      title: `Bảng công việc #${idx + 1} (${job.jobCode}) — ${job.productName || normalized.sanPham || normalized.brandName}`,
+      mediaChannel: job.mediaChannel || 'TikTok',
+      affiliateChannel:
+        job.affiliateChannel ||
+        (normalized.storeName.toLowerCase().includes('shopee') ? 'Shopee' : 'TikTok Shop'),
+      productionType: 'ORIGINAL',
+      wave: 0,
+      lockStatus: isJobVerified ? 'VERIFIED' : 'UNLOCKED',
+      assignedChannelPic: normalized.nguoiPhuTrach,
+      allocatedWeightPct:
+        normalized.chiPhiBookingNetCuoi > 0
+          ? Math.round((jobSub.plannedJobNet / normalized.chiPhiBookingNetCuoi) * 100)
+          : Math.round(100 / Math.max(1, dealJobs.length)),
+      allocatedCostVnd: jobSub.videoNet,
+      airDate: job.actualAirDate || job.plannedAirDate || normalized.actualAirDate || normalized.plannedAirDate || undefined,
+      publishedUrl: job.linkAir || (idx === 0 ? normalized.linkAir || undefined : undefined),
+    };
+  });
 
   return {
     id: maBo,
@@ -1189,9 +1448,9 @@ export function buildBookingDealFromApprovedItem(
     kocIdCardNumber: normalized.soCccd || undefined,
     hasIdCardScan: Boolean(normalized.soCccd?.trim()),
     contractScanUrl: undefined,
-    signedContractUrl: undefined,
     larkFinalApprovalCode: normalized.larkApprovalInstanceCode || undefined,
-    dealType: addons.length > 0 ? 'MULTI_PLATFORM_CONTENT' : 'SINGLE_CONTENT',
+    committedOutputsCount: dealJobs.reduce((s, j) => s + Math.max(1, Number(j.quantity) || 1), 0),
+    dealType: addons.length > 0 || dealJobs.length > 1 ? 'MULTI_PLATFORM_CONTENT' : 'SINGLE_CONTENT',
     pricingDisplayMode:
       salaryGrade === 'KL4' ||
       salaryGrade === 'KL5' ||
@@ -1199,12 +1458,26 @@ export function buildBookingDealFromApprovedItem(
       salaryGrade === 'KL7'
         ? 'ITEMIZED_SOW'
         : 'PACKAGE_TOTAL',
-    deliverables: [primaryDeliverable],
+    deliverables,
     rightsTerms: addons,
+    dealJobs,
     masterContractCode: normalized.masterContractCode,
+    masterContractStatus: normalized.masterContractStatus,
+    masterContractGoogleDocsUrl: normalized.masterContractGoogleDocsUrl,
+    masterContractSignedUrl: normalized.masterContractSignedUrl,
     contractAppendixCode:
       normalized.contractAppendixCode || generateDealAppendixCode(maBo, 1),
     contractAppendixStatus: normalized.contractAppendixStatus || 'CHỜ_KÝ',
+    contractAppendixGoogleDocsUrl: normalized.contractAppendixGoogleDocsUrl,
+    contractAppendixSignedUrl: normalized.contractAppendixSignedUrl,
+    bbntCode: normalized.bbntCode,
+    bbntStatus: normalized.bbntStatus,
+    bbntGoogleDocsUrl: normalized.bbntGoogleDocsUrl,
+    bbntSignedUrl: normalized.bbntSignedUrl,
+    signedContractUrl:
+      normalized.contractAppendixSignedUrl ||
+      normalized.masterContractSignedUrl ||
+      undefined,
     videoAssetCostVnd: videoCost,
     addonsCostVnd: addonsCost,
     droppedCostVnd: normalized.khauTruHangMucHuy || 0,
@@ -1481,6 +1754,18 @@ export function formatApprovedBookingListToTsv(
     'CCCD/MST/Passport',
     'SĐT nhận hàng',
     'Địa chỉ nhận hàng',
+    'Mã HĐNT',
+    'Trạng thái HĐNT',
+    'Link HĐNT (Google Docs)',
+    'Link HĐNT đã ký',
+    'Mã Phụ lục (PL SOW)',
+    'Trạng thái PL SOW',
+    'Link PL SOW (Google Docs)',
+    'Link PL SOW đã ký',
+    'Mã BBNT',
+    'Trạng thái BBNT',
+    'Link BBNT (Google Docs)',
+    'Link BBNT đã ký',
     'Ghi chú',
   ];
 
@@ -1529,6 +1814,18 @@ export function formatApprovedBookingListToTsv(
       it.soCccd,
       it.sdtNhanHang,
       it.diaChiNhanHang,
+      it.masterContractCode || '',
+      it.masterContractStatus || '',
+      it.masterContractGoogleDocsUrl || '',
+      it.masterContractSignedUrl || '',
+      it.contractAppendixCode || '',
+      it.contractAppendixStatus || '',
+      it.contractAppendixGoogleDocsUrl || '',
+      it.contractAppendixSignedUrl || '',
+      it.bbntCode || '',
+      it.bbntStatus || '',
+      it.bbntGoogleDocsUrl || '',
+      it.bbntSignedUrl || '',
       it.ghiChu,
     ]
       .map(clean)
