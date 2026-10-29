@@ -203,7 +203,7 @@ export function ContractCatalogView({
 
   const scopeChips = useMemo(() => [
     { key: 'ALL' as const, label: 'Tất cả nguồn', count: activeCatalogTemplates.length },
-    { key: 'GLOBAL' as const, label: 'Bộ 11 mẫu chuẩn Upbase', count: activeCatalogTemplates.filter(t => (t.scope || 'GLOBAL') === 'GLOBAL').length },
+    { key: 'GLOBAL' as const, label: 'Bộ mẫu chuẩn Upbase (Ver092026)', count: activeCatalogTemplates.filter(t => (t.scope || 'GLOBAL') === 'GLOBAL').length },
     { key: 'KOC_CUSTOM' as const, label: 'Mẫu duyệt theo KOC', count: data.templates.filter(t => t.scope === 'KOC_CUSTOM').length },
   ], [data.templates]);
 

@@ -14,6 +14,7 @@ import {
   Package,
   Video,
   TrendingUp,
+  LayoutDashboard,
   type LucideIcon,
 } from 'lucide-react';
 import { UserProfile, TabKey } from '../lib/types';
@@ -54,7 +55,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         { key: 'brand-hub', label: 'Cổng Brand', icon: ExternalLink },
         { key: 'koc-listing', label: 'Listing & Air', icon: Film },
         { key: 'content', label: 'Kịch bản', icon: FileText },
-        { key: 'campaigns', label: 'Chiến dịch', icon: Layers },
+        { key: 'dashboard-bi', label: 'Báo cáo', icon: LayoutDashboard },
       ];
       return brandItems;
     }

@@ -145,6 +145,9 @@ const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
   );
 };
 
+/** Cấu hình hiển thị tính năng quản lý Campaign (ẩn khi chưa dùng tới) */
+const SHOW_CAMPAIGN_MANAGEMENT = false;
+
 const BASE_PIC_OPTIONS = [
   'Lê Phương Thảo',
   'Lương Thị Như Quỳnh',
@@ -2395,146 +2398,12 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     </span>
                     <span className="text-slate-300">·</span>
                     <span className="text-2xs font-semibold text-slate-700 shrink-0">
-                      Chiến dịch {planState.month}:
+                      Chỉ tiêu kỳ {planState.month}
                     </span>
-
-                    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const candidate =
-                            effectiveCampaigns.find(
-                              c =>
-                                isCampaignActiveInMonth(c, planState.month) &&
-                                c.brand.toLowerCase().includes(brandRoot.toLowerCase())
-                            ) || effectiveCampaigns[0];
-                          const ph = candidate ? getCampaignPhaseForMonth(candidate, planState.month) : undefined;
-                          const updated: Partial<InputPlanBreakdownState> = {
-                            hasCampaign: true,
-                            campaignId: candidate?.id,
-                            campaignCode: candidate?.code,
-                            campaignTitle: candidate?.title,
-                            campaignPhaseName: ph?.phaseName || `Giai đoạn ${planState.month}`,
-                          };
-                          setPlanState(prev => ({ ...prev, ...updated }));
-                          setMonthlyPlans(prev => prev.map(p => (p.id === planState.id ? { ...p, ...updated } : p)));
-                          notify(`Đã bật chế độ CÓ Chiến dịch (Campaign) cho kế hoạch tháng ${planState.month}`);
-                        }}
-                        className={`px-2 py-0.5 rounded-md text-2xs font-semibold transition cursor-pointer ${
-                          hasCampaignActive ? 'bg-accent text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        Có Campaign
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated: Partial<InputPlanBreakdownState> = {
-                            hasCampaign: false,
-                            campaignId: undefined,
-                            campaignCode: undefined,
-                            campaignTitle: undefined,
-                            campaignPhaseName: undefined,
-                          };
-                          setPlanState(prev => ({ ...prev, ...updated }));
-                          setMonthlyPlans(prev => prev.map(p => (p.id === planState.id ? { ...p, ...updated } : p)));
-                          notify(`Đã chuyển kế hoạch ${planState.storeName || planState.brandName} kỳ ${planState.month} sang Không có Campaign`);
-                        }}
-                        className={`px-2 py-0.5 rounded-md text-2xs font-semibold transition cursor-pointer ${
-                          !hasCampaignActive ? 'bg-ink text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        Không có Campaign
-                      </button>
-                    </div>
-
-                    {hasCampaignActive && (
-                      <>
-                        <select
-                          value={linkedCampaign?.id || ''}
-                          onChange={(e) => {
-                            const selected = effectiveCampaigns.find(c => c.id === e.target.value);
-                            if (!selected) return;
-                            const ph = getCampaignPhaseForMonth(selected, planState.month);
-                            const updated: Partial<InputPlanBreakdownState> = {
-                              hasCampaign: true,
-                              campaignId: selected.id,
-                              campaignCode: selected.code,
-                              campaignTitle: selected.title,
-                              campaignPhaseName: ph?.phaseName || `Giai đoạn ${planState.month}`,
-                            };
-                            setPlanState(prev => ({ ...prev, ...updated }));
-                            setMonthlyPlans(prev => prev.map(p => (p.id === planState.id ? { ...p, ...updated } : p)));
-                            notify(`Đã gắn Chiến dịch [${selected.code}] ${selected.title} vào kế hoạch tháng ${planState.month}`);
-                          }}
-                          className="h-7 px-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:border-accent w-full sm:w-auto sm:max-w-[320px] truncate"
-                        >
-                          {brandCampaignCandidates.map(c => (
-                            <option key={c.id} value={c.id}>
-                              [{c.code}] {c.brand} — {c.title}
-                            </option>
-                          ))}
-                        </select>
-                        <span className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-2xs font-semibold text-slate-700 truncate max-w-[200px]">
-                          {activePhase?.phaseName || planState.campaignPhaseName || `Giai đoạn ${planState.month}`}
-                        </span>
-                        {activePhase && !isLayer1Locked && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleUpdateLayer1Metrics({
-                                targetNmvTotal: activePhase.targetGmv || layer1Metrics.targetNmvTotal,
-                                pnlTotalBudgetNet: activePhase.allocatedBudget || layer1Metrics.pnlTotalBudgetNet,
-                              });
-                              notify(`Đã áp dụng Hạn mức Phase ${planState.month} (${formatVndShort(activePhase.allocatedBudget)}) vào bảng Chỉ tiêu!`);
-                            }}
-                            className="text-2xs font-semibold text-accent hover:underline cursor-pointer shrink-0"
-                          >
-                            Áp hạn mức Phase →
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {hasCampaignActive && linkedCampaign && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setIsCampaignDetailExpanded(prev => !prev)}
-                          className="px-2 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold text-2xs inline-flex items-center gap-1 transition cursor-pointer"
-                        >
-                          <span>{isCampaignDetailExpanded ? 'Thu gọn KV & CTKM' : 'Chi tiết KV & CTKM'}</span>
-                          {isCampaignDetailExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingCampaignForModal(linkedCampaign);
-                            setIsCampaignModalOpen(true);
-                          }}
-                          className="px-2 py-1 rounded-lg border border-line bg-sunken hover:bg-slate-100 text-ink font-semibold text-2xs transition cursor-pointer"
-                        >
-                          Sửa Campaign
-                        </button>
-                      </>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingCampaignForModal(null);
-                        setIsCampaignModalOpen(true);
-                      }}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-primary hover:bg-primary-hover text-white font-semibold text-2xs transition cursor-pointer"
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>Tạo Campaign</span>
-                    </button>
                   </div>
                 </div>
 
-                {hasCampaignActive && linkedCampaign && isCampaignDetailExpanded && (
+                {SHOW_CAMPAIGN_MANAGEMENT && hasCampaignActive && linkedCampaign && isCampaignDetailExpanded && (
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 pt-2 border-t border-slate-100">
                     {/* Cột 1: Thông điệp & CTKM Section 01 */}
                     <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 space-y-1 text-2xs">
@@ -4354,11 +4223,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               prev.map(p => (p.id === planState.id ? { ...p, oneSheetPlanData: savedData } : p))
             );
           }}
-          onOpenCampaignModal={() => {
+          onOpenCampaignModal={SHOW_CAMPAIGN_MANAGEMENT ? () => {
             const activeCamp = effectiveCampaigns.find(c => c.id === planState.campaignId);
             setEditingCampaignForModal(activeCamp || null);
             setIsCampaignModalOpen(true);
-          }}
+          } : undefined}
           onNotify={notify}
         />
       )}

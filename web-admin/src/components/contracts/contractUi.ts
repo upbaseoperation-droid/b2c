@@ -277,14 +277,20 @@ export const SOW_TASK_DELIVERABLE_INFO: Record<
   SowTaskTermType,
   { taskTitle: string; deliverableLabel: string; evidencePlaceholder: string; defaultDays: number }
 > = {
+  LINK_BIO_CART: {
+    taskTitle: 'Hạng mục thương mại: Gắn giỏ hàng / Link Affiliate',
+    deliverableLabel: 'Đầu việc nghiệm thu: Gắn giỏ hàng / Link Affiliate trên bài đăng',
+    evidencePlaceholder: 'Link sản phẩm giỏ hàng / Link Affiliate...',
+    defaultDays: 30,
+  },
   ADS_CODE: {
-    taskTitle: 'Cấp mã code chạy quảng cáo video (Spark Ads)',
+    taskTitle: 'Hạng mục quảng cáo: Cấp mã code chạy quảng cáo video (Spark Ads)',
     deliverableLabel: 'Đầu việc nghiệm thu: Bàn giao Mã Spark Ads',
     evidencePlaceholder: 'Nhập mã Spark Ads (#...)...',
     defaultDays: 30,
   },
   IMAGE_USAGE: {
-    taskTitle: 'Sử dụng hình ảnh và video gốc kể từ ngày đăng tải',
+    taskTitle: 'Hạng mục quyền sử dụng hình ảnh và nội dung sản xuất',
     deliverableLabel: 'Đầu việc nghiệm thu: Bàn giao File gốc / Quyền sử dụng HA',
     evidencePlaceholder: 'Link Drive file gốc / Link video...',
     defaultDays: 90,
@@ -299,12 +305,6 @@ export const SOW_TASK_DELIVERABLE_INFO: Record<
     taskTitle: 'Cam kết độc quyền ngành hàng theo thời hạn',
     deliverableLabel: 'Đầu việc nghiệm thu: Kiểm tra tuân thủ độc quyền',
     evidencePlaceholder: 'Ghi chú kiểm tra kênh trong thời hạn...',
-    defaultDays: 30,
-  },
-  LINK_BIO_CART: {
-    taskTitle: 'Gắn giỏ hàng / Link Bio duy trì trên kênh',
-    deliverableLabel: 'Đầu việc nghiệm thu: Kiểm tra gắn giỏ hàng / Link Bio',
-    evidencePlaceholder: 'Link giỏ hàng / Ảnh chụp giỏ hàng...',
     defaultDays: 30,
   },
 };
@@ -409,17 +409,38 @@ export function buildAddonRowsForDealJob(
   const jobCode = job.jobCode || deal?.dealCode || 'JOB-01';
   const jobRights = job.addonServices || [];
   const hasExplicitRights = Array.isArray(job.addonServices);
+  const cartFromJob = jobRights.find(r => r.termType === 'LINK_BIO_CART');
   const adsFromJob = jobRights.find(r => r.termType === 'ADS_CODE');
   const imgFromJob = jobRights.find(r => r.termType === 'IMAGE_USAGE');
-  const otherFromJob = jobRights.filter(r => r.termType !== 'ADS_CODE' && r.termType !== 'IMAGE_USAGE');
+  const otherFromJob = jobRights.filter(
+    r => r.termType !== 'LINK_BIO_CART' && r.termType !== 'ADS_CODE' && r.termType !== 'IMAGE_USAGE',
+  );
 
+  const cartIncluded = hasExplicitRights ? Boolean(cartFromJob) : true;
   const adsIncluded = hasExplicitRights ? Boolean(adsFromJob || job.sparkAdsCode) : true;
   const imgIncluded = hasExplicitRights ? Boolean(imgFromJob) : true;
 
   return [
     {
-      id: adsFromJob?.id || `${jobCode}-task-ads`,
+      id: cartFromJob?.id || `${jobCode}-task-cart`,
       taskCode: `${jobCode}-T02`,
+      termType: 'LINK_BIO_CART',
+      termLabel: cartFromJob?.termLabel || SOW_TASK_DELIVERABLE_INFO.LINK_BIO_CART.taskTitle,
+      includedInSow: cartIncluded,
+      deliverableLabel: SOW_TASK_DELIVERABLE_INFO.LINK_BIO_CART.deliverableLabel,
+      durationDays: cartFromJob?.durationDays || 30,
+      evidenceCodeOrUrl: cartFromJob?.evidenceCodeOrUrl || job.linkAir || '',
+      allocatedCostVnd: Number(cartFromJob?.allocatedCostVnd) || 0,
+      acceptanceStatus:
+        cartFromJob?.acceptanceStatus === 'DROPPED'
+          ? 'DROPPED'
+          : cartFromJob?.acceptanceStatus === 'VERIFIED' || Boolean(cartFromJob?.evidenceCodeOrUrl || job.linkAir)
+            ? 'VERIFIED'
+            : 'PENDING_ACCEPTANCE',
+    },
+    {
+      id: adsFromJob?.id || `${jobCode}-task-ads`,
+      taskCode: `${jobCode}-T03`,
       termType: 'ADS_CODE',
       termLabel: adsFromJob?.termLabel || SOW_TASK_DELIVERABLE_INFO.ADS_CODE.taskTitle,
       includedInSow: adsIncluded,
@@ -436,7 +457,7 @@ export function buildAddonRowsForDealJob(
     },
     {
       id: imgFromJob?.id || `${jobCode}-task-img`,
-      taskCode: `${jobCode}-T03`,
+      taskCode: `${jobCode}-T04`,
       termType: 'IMAGE_USAGE',
       termLabel: imgFromJob?.termLabel || SOW_TASK_DELIVERABLE_INFO.IMAGE_USAGE.taskTitle,
       includedInSow: imgIncluded,
@@ -454,8 +475,8 @@ export function buildAddonRowsForDealJob(
     ...otherFromJob.map((rt, i) => {
       const info = SOW_TASK_DELIVERABLE_INFO[rt.termType] || SOW_TASK_DELIVERABLE_INFO.CROSS_POST_REUP;
       return {
-        id: rt.id || `${jobCode}-task-extra-${i + 4}`,
-        taskCode: `${jobCode}-T0${i + 4}`,
+        id: rt.id || `${jobCode}-task-extra-${i + 5}`,
+        taskCode: `${jobCode}-T0${i + 5}`,
         termType: rt.termType,
         termLabel: rt.termLabel || info.taskTitle,
         includedInSow: true,
@@ -743,12 +764,16 @@ export function buildJobAcceptanceBreakdown(
     }
 
     // Dựng danh sách Task từ Job (BookingDealItem):
-    // Kiểm tra xem trong Job thực tế có hạng mục ADS_CODE và IMAGE_USAGE hay không
+    // Bám sát 4 nhóm hạng mục chuẩn của SOW & BBNT (1. Video, 2. Thương mại/Giỏ hàng, 3. Quảng cáo/Mã Ads, 4. Quyền sử dụng HA)
+    const cartFromDeal = dealRights.find(r => r.termType === 'LINK_BIO_CART');
     const adsFromDeal = dealRights.find(r => r.termType === 'ADS_CODE');
     const imgFromDeal = dealRights.find(r => r.termType === 'IMAGE_USAGE');
-    const otherFromDeal = dealRights.filter(r => r.termType !== 'ADS_CODE' && r.termType !== 'IMAGE_USAGE');
+    const otherFromDeal = dealRights.filter(
+      r => r.termType !== 'LINK_BIO_CART' && r.termType !== 'ADS_CODE' && r.termType !== 'IMAGE_USAGE',
+    );
 
     // Nếu Job có mảng rightsTerms tường minh từ Deal Board, chỉ bật những Task thực sự có trong Job
+    const cartIncluded = hasExplicitDealRightsArray ? Boolean(cartFromDeal) : true;
     const adsIncluded = hasExplicitDealRightsArray
       ? Boolean(adsFromDeal || deal?.sparkAdsCode)
       : true;
@@ -758,8 +783,27 @@ export function buildJobAcceptanceBreakdown(
 
     const list: JobAcceptanceAddonRow[] = [
       {
-        id: adsFromDeal?.id || 'task-ads-code',
+        id: cartFromDeal?.id || 'task-link-bio-cart',
         taskCode: `${jobCode}-T02`,
+        termType: 'LINK_BIO_CART',
+        termLabel: cartFromDeal?.termLabel || SOW_TASK_DELIVERABLE_INFO.LINK_BIO_CART.taskTitle,
+        includedInSow: cartIncluded,
+        deliverableLabel: SOW_TASK_DELIVERABLE_INFO.LINK_BIO_CART.deliverableLabel,
+        durationDays: cartFromDeal?.durationDays || 30,
+        evidenceCodeOrUrl: cartFromDeal?.evidenceCodeOrUrl || deal?.tiktokVideoUrl || '',
+        allocatedCostVnd: Number(cartFromDeal?.allocatedCostVnd) || 0,
+        acceptanceStatus:
+          cartFromDeal?.acceptanceStatus === 'DROPPED'
+            ? 'DROPPED'
+            : cartFromDeal?.acceptanceStatus === 'VERIFIED' || Boolean(cartFromDeal?.evidenceCodeOrUrl || deal?.tiktokVideoUrl)
+              ? 'VERIFIED'
+              : hasExplicitDealRightsArray
+                ? 'PENDING_ACCEPTANCE'
+                : 'VERIFIED',
+      },
+      {
+        id: adsFromDeal?.id || 'task-ads-code',
+        taskCode: `${jobCode}-T03`,
         termType: 'ADS_CODE',
         termLabel: adsFromDeal?.termLabel || SOW_TASK_DELIVERABLE_INFO.ADS_CODE.taskTitle,
         includedInSow: adsIncluded,
@@ -778,7 +822,7 @@ export function buildJobAcceptanceBreakdown(
       },
       {
         id: imgFromDeal?.id || 'task-image-usage',
-        taskCode: `${jobCode}-T03`,
+        taskCode: `${jobCode}-T04`,
         termType: 'IMAGE_USAGE',
         termLabel: imgFromDeal?.termLabel || SOW_TASK_DELIVERABLE_INFO.IMAGE_USAGE.taskTitle,
         includedInSow: imgIncluded,
@@ -798,8 +842,8 @@ export function buildJobAcceptanceBreakdown(
       ...otherFromDeal.map((rt, i) => {
         const info = SOW_TASK_DELIVERABLE_INFO[rt.termType] || SOW_TASK_DELIVERABLE_INFO.CROSS_POST_REUP;
         return {
-          id: rt.id || `task-extra-${i + 4}`,
-          taskCode: `${jobCode}-T0${i + 4}`,
+          id: rt.id || `task-extra-${i + 5}`,
+          taskCode: `${jobCode}-T0${i + 5}`,
           termType: rt.termType,
           termLabel: rt.termLabel || info.taskTitle,
           includedInSow: true,
@@ -1399,10 +1443,24 @@ export function prefill(
     }
 
     // 2. Tự động nhận diện các ô hạng mục dịch vụ đi kèm, thuế, tổng tiền từ ngữ cảnh biểu mẫu
-    // Thành tiền Hạng mục 2: Cấp mã code quảng cáo video (Spark Ads)
+    // Phí dịch vụ / Thành tiền Hạng mục thương mại (Gắn giỏ hàng / Link Affiliate)
     if (
-      (title.includes('cấp mã code') || context.includes('cấp mã code')) &&
-      (title.includes('thành tiền') || f.kind === 'money')
+      (title.includes('hạng mục thương mại') || title.includes('gắn giỏ hàng') || context.includes('hạng mục thương mại')) &&
+      (title.includes('thành tiền') || title.includes('phí dịch vụ') || f.kind === 'money')
+    ) {
+      const cartRight = breakdown.addonItems.find(rt => rt.termType === 'LINK_BIO_CART');
+      if (cartRight) {
+        if (cartRight.includedInSow === false) return 'Không áp dụng';
+        if (cartRight.acceptanceStatus === 'DROPPED') return '0';
+        if (cartRight.allocatedCostVnd > 0) return money(cartRight.allocatedCostVnd);
+      }
+      return parentValueByTitleContains('hạng mục thương mại') || (totalAmount > 0 ? '0' : '');
+    }
+
+    // Thành tiền / Phí dịch vụ Hạng mục quảng cáo: Cấp mã code quảng cáo video (Spark Ads)
+    if (
+      (title.includes('cấp mã code') || title.includes('hạng mục quảng cáo') || context.includes('cấp mã code') || context.includes('cấp code chạy ad')) &&
+      (title.includes('thành tiền') || title.includes('phí dịch vụ') || f.kind === 'money')
     ) {
       const adsRight = breakdown.addonItems.find(rt => rt.termType === 'ADS_CODE');
       if (adsRight) {
@@ -1410,13 +1468,13 @@ export function prefill(
         if (adsRight.acceptanceStatus === 'DROPPED') return '0';
         if (adsRight.allocatedCostVnd > 0) return money(adsRight.allocatedCostVnd);
       }
-      return parentValueByTitleContains('cấp mã code', 'thành tiền') || (totalAmount > 0 ? '0' : '');
+      return parentValueByTitleContains('cấp mã code') || parentValueByTitleContains('hạng mục quảng cáo') || (totalAmount > 0 ? '0' : '');
     }
 
-    // Thành tiền Hạng mục 3: Sử dụng hình ảnh và video
+    // Thành tiền / Phí dịch vụ Hạng mục quyền sử dụng hình ảnh và nội dung sản xuất
     if (
       (title.includes('sử dụng hình ảnh') || context.includes('sử dụng hình ảnh')) &&
-      (title.includes('thành tiền') || f.kind === 'money')
+      (title.includes('thành tiền') || title.includes('phí dịch vụ') || f.kind === 'money')
     ) {
       const imgRight = breakdown.addonItems.find(rt => rt.termType === 'IMAGE_USAGE');
       if (imgRight) {
@@ -1424,7 +1482,23 @@ export function prefill(
         if (imgRight.acceptanceStatus === 'DROPPED') return '0';
         if (imgRight.allocatedCostVnd > 0) return money(imgRight.allocatedCostVnd);
       }
-      return parentValueByTitleContains('sử dụng hình ảnh', 'thành tiền') || (totalAmount > 0 ? '0' : '');
+      return parentValueByTitleContains('sử dụng hình ảnh') || (totalAmount > 0 ? '0' : '');
+    }
+
+    // Link video nghiệm thu (Link Air) trên BBNT
+    if (title.includes('link video nghiệm thu') || context.includes('link video')) {
+      return deal?.tiktokVideoUrl || breakdown.videoItem.videoUrl || parentValueByTitleContains('link video') || '';
+    }
+
+    // Thời lượng video (giây), Số vòng chỉnh sửa tối đa, Thời hạn hoàn trả sản phẩm mẫu (ngày) trên SOW
+    if (title.includes('thời lượng video')) {
+      return parentValueByTitleContains('thời lượng video') || '60';
+    }
+    if (title.includes('vòng chỉnh sửa')) {
+      return parentValueByTitleContains('vòng chỉnh sửa') || '02';
+    }
+    if (title.includes('hoàn trả sản phẩm mẫu')) {
+      return parentValueByTitleContains('hoàn trả sản phẩm mẫu') || '15';
     }
 
     // Tổng giá trị nghiệm thu (Điều 2 COM-VID-BBNT có trường chưa gắn source)
@@ -1676,6 +1750,7 @@ export function syncValuesFromJobAcceptanceBreakdown(
   }
   const adsRight = breakdown.addonItems.find(rt => rt.termType === 'ADS_CODE');
   const imgRight = breakdown.addonItems.find(rt => rt.termType === 'IMAGE_USAGE');
+  const cartRight = breakdown.addonItems.find(rt => rt.termType === 'LINK_BIO_CART');
   const fin = breakdown.financials;
 
   for (const f of fields) {
@@ -1709,8 +1784,22 @@ export function syncValuesFromJobAcceptanceBreakdown(
     } else if (f.source === 'amountInWords' || title.includes('bằng chữ') || context.includes('bằng chữ')) {
       next[f.key] = fin.amountInWords;
     } else if (
-      (title.includes('cấp mã code') || context.includes('cấp mã code')) &&
-      (title.includes('thành tiền') || f.kind === 'money')
+      (title.includes('hạng mục thương mại') || title.includes('gắn giỏ hàng') || context.includes('hạng mục thương mại')) &&
+      (title.includes('thành tiền') || title.includes('phí dịch vụ') || f.kind === 'money')
+    ) {
+      if (cartRight) {
+        next[f.key] =
+          cartRight.includedInSow === false
+            ? 'Không áp dụng'
+            : cartRight.acceptanceStatus === 'DROPPED'
+              ? '0'
+              : money(cartRight.allocatedCostVnd) || '0';
+      } else {
+        next[f.key] = '0';
+      }
+    } else if (
+      (title.includes('cấp mã code') || title.includes('hạng mục quảng cáo') || context.includes('cấp mã code') || context.includes('cấp code chạy ad')) &&
+      (title.includes('thành tiền') || title.includes('phí dịch vụ') || f.kind === 'money')
     ) {
       if (adsRight) {
         next[f.key] =
@@ -1722,7 +1811,7 @@ export function syncValuesFromJobAcceptanceBreakdown(
       }
     } else if (
       (title.includes('sử dụng hình ảnh') || context.includes('sử dụng hình ảnh')) &&
-      (title.includes('thành tiền') || f.kind === 'money')
+      (title.includes('thành tiền') || title.includes('phí dịch vụ') || f.kind === 'money')
     ) {
       if (imgRight) {
         next[f.key] =
@@ -1732,6 +1821,8 @@ export function syncValuesFromJobAcceptanceBreakdown(
               ? '0'
               : money(imgRight.allocatedCostVnd) || '0';
       }
+    } else if ((title.includes('link video nghiệm thu') || context.includes('link video')) && breakdown.videoItem.videoUrl) {
+      next[f.key] = breakdown.videoItem.videoUrl;
     } else if (title.includes('mã quảng cáo') || context.includes('mã code để chạy quảng cáo')) {
       if (adsRight) {
         next[f.key] = adsRight.includedInSow === false ? '0' : String(adsRight.durationDays || 30);

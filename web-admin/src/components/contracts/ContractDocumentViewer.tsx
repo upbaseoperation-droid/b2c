@@ -290,6 +290,29 @@ export function ContractDocumentViewer({
       );
     }
 
+    const isCompactOptional =
+      !f.required &&
+      /link kênh (shopee|facebook|instagram|youtube|threads)|post-only|production-only|phiên bản cắt ngắn|điều khoản điều chỉnh/i.test(
+        fieldTitle,
+      );
+    if (isCompactOptional) {
+      return (
+        <span
+          data-field-key={f.key}
+          role={onSelectField ? 'button' : undefined}
+          tabIndex={onSelectField ? 0 : undefined}
+          onClick={onSelectField ? () => onSelectField(f.key) : undefined}
+          onKeyDown={onSelectField ? e => (e.key === 'Enter' || e.key === ' ') && onSelectField(f.key) : undefined}
+          title={`${fieldTitle} (Tùy chọn — Bấm để điền nếu có)`}
+          className={`field-mark inline px-1 rounded-xs text-ink-3 border-b border-dashed border-line-strong transition-colors ${
+            isSelected ? 'ring-2 ring-accent bg-warning-soft text-ink' : ''
+          } ${onSelectField ? 'cursor-pointer hover:text-accent hover:border-accent' : ''}`}
+        >
+          {rawPlaceholder || '……'}
+        </span>
+      );
+    }
+
     return (
       <span
         data-field-key={f.key}
@@ -463,6 +486,41 @@ export function ContractDocumentViewer({
       );
     }
 
+    const firstColHeader = table.rows[0]?.[0]?.blocks
+      .map(b => (b.kind === 'p' ? b.text : ''))
+      .join(' ')
+      .trim() || '';
+    const isSttCol = /^STT$/i.test(firstColHeader);
+
+    const getCellColStart = (r: DocTable['rows'][number], targetCellIdx: number) => {
+      let col = 0;
+      for (let i = 0; i < targetCellIdx; i++) {
+        col += r[i]?.colSpan || 1;
+      }
+      return col;
+    };
+
+    const computeRowSpan = (startRowIdx: number, colStart: number): number => {
+      let span = 1;
+      for (let r = startRowIdx + 1; r < table.rows.length; r++) {
+        const nextRow = table.rows[r];
+        let curCol = 0;
+        let matchedContinue = false;
+        for (let c = 0; c < nextRow.length; c++) {
+          if (curCol === colStart) {
+            if (nextRow[c].vMerge === 'continue') {
+              matchedContinue = true;
+            }
+            break;
+          }
+          curCol += nextRow[c].colSpan || 1;
+        }
+        if (matchedContinue) span++;
+        else break;
+      }
+      return span;
+    };
+
     return (
       <div key={idx} className="my-3 overflow-x-auto">
         <table className="doc-grid w-full border-collapse border border-[#333] text-[13.5px]">
@@ -471,17 +529,27 @@ export function ContractDocumentViewer({
               const isHeader = rIdx === 0 && row.length >= 2;
               return (
                 <tr key={rIdx} className={isHeader ? 'bg-[#f4f3ef] font-semibold' : undefined}>
-                  {row.map((cell, cIdx) => (
-                    <td
-                      key={cIdx}
-                      colSpan={cell.colSpan}
-                      className={`border border-[#333] px-2.5 py-1.5 align-top ${
-                        cIdx === 0 && row.length >= 3 ? 'w-12 text-center' : ''
-                      }`}
-                    >
-                      {cell.blocks.map((b, bIdx) => renderBlock(b, `${idx}-r${rIdx}-c${cIdx}-${bIdx}`))}
-                    </td>
-                  ))}
+                  {row.map((cell, cIdx) => {
+                    if (cell.vMerge === 'continue') return null;
+                    const colStart = getCellColStart(row, cIdx);
+                    const rowSpan = cell.vMerge === 'restart' ? computeRowSpan(rIdx, colStart) : undefined;
+                    return (
+                      <td
+                        key={cIdx}
+                        colSpan={cell.colSpan}
+                        rowSpan={rowSpan && rowSpan > 1 ? rowSpan : undefined}
+                        className={`border border-[#333] px-2.5 py-1.5 align-top ${
+                          cIdx === 0 && row.length >= 3
+                            ? isSttCol
+                              ? 'w-12 text-center'
+                              : 'w-[155px] font-medium'
+                            : ''
+                        }`}
+                      >
+                        {cell.blocks.map((b, bIdx) => renderBlock(b, `${idx}-r${rIdx}-c${cIdx}-${bIdx}`))}
+                      </td>
+                    );
+                  })}
                 </tr>
               );
             })}
@@ -497,7 +565,7 @@ export function ContractDocumentViewer({
   );
 
   const renderMultiJobSowTablesBlock = () => {
-    if (!savedJobTables || savedJobTables.length === 0) return null;
+    if (!savedJobTables || savedJobTables.length <= 1) return null;
     const isSowOrAcceptanceDoc =
       /SOW|PHỤ LỤC|BBNT|NGHIỆM THU/i.test(templateName || '') ||
       /SOW|PHỤ LỤC|BBNT|NGHIỆM THU/i.test(title || '') ||

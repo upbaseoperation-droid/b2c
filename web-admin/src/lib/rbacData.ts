@@ -1762,7 +1762,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'work-toolkit',
     'zalo-bot'
   ],
   MANAGER: [
@@ -1804,7 +1803,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'work-toolkit',
     'zalo-bot'
   ],
   LEADER: [
@@ -1841,7 +1839,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'work-toolkit',
     'zalo-bot'
   ],
   BOOKING_MEMBER: [
@@ -1867,7 +1864,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'work-toolkit',
     'zalo-bot'
   ],
   CONTENT_MEMBER: [
@@ -1886,7 +1882,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'work-toolkit',
     'zalo-bot'
   ],
   BRAND_MEMBER: [
@@ -1909,7 +1904,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'work-toolkit',
     'zalo-bot'
   ],
   MEMBER: [
@@ -1934,12 +1928,10 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'knowledge-qa',
     'tiktok-crawler',
     'market-research',
-    'work-toolkit',
     'zalo-bot'
   ],
   LEGAL: [
     'contracts',
-    'work-toolkit',
     'zalo-bot'
   ],
   FINANCE: [
@@ -1947,12 +1939,10 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'store-air-plan-report',
     'contracts',
     'dashboard-finance',
-    'work-toolkit',
     'zalo-bot'
   ],
   SIGN_ADMIN: [
     'contracts',
-    'work-toolkit',
     'zalo-bot'
   ],
   BRAND_PARTNER: [
@@ -2051,7 +2041,6 @@ const CORE_SYNCED_ROLE_TABS: TabKey[] = [
   'task-delegation',
   'contracts',
   'cloudflare-admin',
-  'work-toolkit',
   'api-settings',
   'zalo-bot',
 ];
@@ -2137,7 +2126,6 @@ const BASE_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
   { key: 'master-data', label: 'Dữ liệu gốc (Master Data)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản trị dữ liệu gốc Brand, Store, KOC, Nhân sự.' },
   { key: 'partner-access', label: 'Phân quyền & Nhân sự (RBAC)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản trị Role, gán quyền nhân sự và kiểm soát cổng đăng nhập.' },
   { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp B2C', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Cẩm nang quy trình SLA, khung lương và tính thuế.' },
-  { key: 'work-toolkit', label: 'Bộ công cụ tiện ích', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Kho công cụ tính thuế Gross/Net, ROAS hòa vốn, bóc tách link TikTok/Shopee, tạo VietQR, kiểm tra từ hạn chế TikTok Shop và đếm thời lượng kịch bản.' },
   { key: 'api-settings', label: 'Cấu hình API & Công cụ', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Cấu hình kết nối Kalodata, Lark Base, TikTok Seller.' },
   { key: 'cloudflare-admin', label: 'Quản lý Cloudflare R2', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản lý kết nối Cloudflare R2 và tệp đính kèm của 42 thương hiệu B2C.' },
   { key: 'brand-hub', label: 'Cổng đối tác Brand', group: 'PARTNER_PORTAL', groupTitle: '6. Cổng Đối Tác Ngoài', description: 'Giao diện dành riêng cho đại diện thương hiệu duyệt KOC & kịch bản.' },

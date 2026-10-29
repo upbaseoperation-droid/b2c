@@ -171,7 +171,7 @@ let cachedToken: { token: string; expiresAt: number } | null = null;
 
 const b64url = (v: string | Buffer) => Buffer.from(v).toString('base64url');
 
-async function getAccessToken(): Promise<string> {
+export async function getAccessToken(): Promise<string> {
   const sa = await ensureServiceAccountLoaded();
   if (!sa.configured) throw new GoogleSheetsError('Chưa cấu hình tài khoản dịch vụ Google.', 'NOT_CONFIGURED', 503);
   const now = Math.floor(Date.now() / 1000);

@@ -9,7 +9,6 @@ import {
   Modal,
   PageActions,
   Panel,
-  Segmented,
   Stat,
   StatRow,
   Status,
@@ -95,16 +94,16 @@ const DASHBOARD_TO_SIDEBAR_TAB: Partial<Record<DashboardMainTab, string>> = {
   STAFF_EFFICIENCY: 'dashboard-staff',
 };
 
-// Thanh tab đầu trang chỉ còn 3 mục; các báo cáo cũ gom vào "Báo cáo chi tiết" và chuyển bằng Segmented.
-type DashboardTopTab = 'SUMMARY' | 'ANALYSIS' | 'DETAIL';
-type DashboardDetailTab = Exclude<DashboardMainTab, 'SUMMARY' | 'ANALYSIS'>;
-const DETAIL_SECTIONS: { key: DashboardDetailTab; label: string }[] = [
-  { key: 'OVERVIEW_FINANCE', label: 'Ngân sách' },
+// Danh mục các tab báo cáo Dashboard điều hành (1 tầng phẳng chuẩn UI)
+const DASHBOARD_TABS: { key: DashboardMainTab; label: string }[] = [
+  { key: 'SUMMARY', label: 'Tổng quan' },
+  { key: 'OVERVIEW_FINANCE', label: 'Ngân sách & PnL' },
   { key: 'STORE_PIPELINE', label: 'Tiến độ gian hàng' },
-  { key: 'PLAN_ACTUAL', label: 'Kế hoạch vs thực tế' },
+  { key: 'PLAN_ACTUAL', label: 'Kế hoạch vs Thực tế' },
   { key: 'VIDEO_CREATIVE', label: 'Hiệu quả video' },
   { key: 'TEAM_SLA', label: 'Lịch đăng video' },
-  { key: 'STAFF_EFFICIENCY', label: 'Nhân sự' },
+  { key: 'STAFF_EFFICIENCY', label: 'Hiệu suất nhân sự' },
+  { key: 'ANALYSIS', label: 'Phân tích' },
 ];
 
 
@@ -148,12 +147,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
     }
   }
 
-  const topTab: DashboardTopTab = activeTab === 'SUMMARY' || activeTab === 'ANALYSIS' ? activeTab : 'DETAIL';
-  // Quay lại "Báo cáo chi tiết" thì mở đúng báo cáo xem gần nhất.
-  const [lastDetailTab, setLastDetailTab] = useState<DashboardDetailTab>(
-    topTab === 'DETAIL' ? (activeTab as DashboardDetailTab) : 'OVERVIEW_FINANCE',
-  );
-  if (topTab === 'DETAIL' && activeTab !== lastDetailTab) setLastDetailTab(activeTab as DashboardDetailTab);
+
 
   const handleSelectDashboardSection = (section: DashboardMainTab) => {
     setActiveTab(section);
@@ -1079,23 +1073,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       </PageActions>
 
       {/* Thanh tab chuyển nhanh góc nhìn Dashboard điều hành */}
-      <Tabs<DashboardTopTab>
-        items={[
-          { key: 'SUMMARY', label: 'Tổng quan' },
-          { key: 'ANALYSIS', label: 'Phân tích' },
-          { key: 'DETAIL', label: 'Báo cáo chi tiết' },
-        ]}
-        value={topTab}
-        onChange={(k) => handleSelectDashboardSection(k === 'DETAIL' ? lastDetailTab : k)}
+      <Tabs<DashboardMainTab>
+        items={DASHBOARD_TABS}
+        value={activeTab}
+        onChange={handleSelectDashboardSection}
       />
-
-      {topTab === 'DETAIL' && (
-        <Segmented<DashboardDetailTab>
-          items={DETAIL_SECTIONS}
-          value={activeTab as DashboardDetailTab}
-          onChange={handleSelectDashboardSection}
-        />
-      )}
 
       {activeTab === 'ANALYSIS' && <DashboardAnalysisView stores={stores} bookedVideos={scopedBookedVideos} />}
 

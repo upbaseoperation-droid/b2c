@@ -4,7 +4,6 @@ import React, { useState, useMemo } from 'react';
 import { formatVndShort, getVietnamDateYmd } from '../../lib/format';
 import { ActionMenu, Button, ConfirmDialog, Field, Input, Modal, PageActions, Panel, Select, Status, Tabs, Textarea } from '../ui';
 import { ContentPlanBoard } from './ContentPlanBoard';
-import { BrandMonthlyPlanForm } from './BrandMonthlyPlanForm';
 import {
   CheckCircle,
   Clock,
@@ -56,7 +55,7 @@ interface ContentViewProps {
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
-type ContentSubTab = 'BRAND_PLAN' | 'CONTENT_PLAN' | 'CONTENT_ITEMS' | 'SCRIPTS' | 'DRAFT_VIDEOS' | 'PUBLICATIONS';
+type ContentSubTab = 'CONTENT_PLAN' | 'CONTENT_ITEMS' | 'SCRIPTS' | 'DRAFT_VIDEOS' | 'PUBLICATIONS';
 
 const PILLAR_OPTIONS = [
   'Nỗi đau - Giải pháp',
@@ -90,7 +89,7 @@ export const ContentView: React.FC<ContentViewProps> = ({
   const [contentItems, setContentItems] = useState<ContentItemModel[]>(INITIAL_CONTENT_ITEMS);
   const [publications, setPublications] = useState<PublicationItemModel[]>(INITIAL_PUBLICATIONS);
   const [selectedScript, setSelectedScript] = useState<ScriptReviewItem | null>(null);
-  const [activeSubTab, setActiveSubTab] = useState<ContentSubTab>('BRAND_PLAN');
+  const [activeSubTab, setActiveSubTab] = useState<ContentSubTab>('CONTENT_PLAN');
   const [approvingDraftVideo, setApprovingDraftVideo] = useState<string | null>(null);
   const [approvedDraftVideos, setApprovedDraftVideos] = useState<Set<string>>(new Set());
   const [isScriptReportOpen, setIsScriptReportOpen] = useState(false);
@@ -708,7 +707,6 @@ export const ContentView: React.FC<ContentViewProps> = ({
         value={activeSubTab}
         onChange={setActiveSubTab}
         items={[
-          { key: 'BRAND_PLAN', label: 'Plan tháng của Brand' },
           { key: 'CONTENT_PLAN', label: 'Kế hoạch content' },
           { key: 'CONTENT_ITEMS', label: 'Kho nội dung', count: contentItems.length },
           { key: 'SCRIPTS', label: 'Chờ duyệt kịch bản', count: scripts.filter(s => s.status === 'PENDING').length },
@@ -716,17 +714,6 @@ export const ContentView: React.FC<ContentViewProps> = ({
           { key: 'PUBLICATIONS', label: 'Đối soát bài đăng', count: publications.length },
         ]}
       />
-
-      {activeSubTab === 'BRAND_PLAN' && (
-        <BrandMonthlyPlanForm
-          currentUserName={currentUserName}
-          currentUserRole={currentUserRole}
-          initialPlanId={initialPlanId}
-          initialStoreName={initialStoreName}
-          initialMonth={initialMonth}
-          onNotify={onNotify}
-        />
-      )}
 
       {activeSubTab === 'CONTENT_PLAN' && (
         <ContentPlanBoard

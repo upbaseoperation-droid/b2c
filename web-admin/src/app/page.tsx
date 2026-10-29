@@ -75,7 +75,6 @@ const Workload3dMapView = dynamic(() => import('../components/views/Workload3dMa
 const AuditTrailView = dynamic(() => import('../components/views/AuditTrailView').then(m => m.AuditTrailView), { loading: ViewLoading });
 const TikTokCrawlerHubView = dynamic(() => import('../components/views/TikTokCrawlerHubView').then(m => m.TikTokCrawlerHubView), { loading: ViewLoading });
 const BrandMarketResearchHubView = dynamic(() => import('../components/views/BrandMarketResearchHubView').then(m => m.BrandMarketResearchHubView), { loading: ViewLoading });
-const WorkToolkitHubView = dynamic(() => import('../components/views/WorkToolkitHubView').then(m => m.WorkToolkitHubView), { loading: ViewLoading });
 
 function prefetchViewTab(tab: TabKey) {
   switch (tab) {
@@ -155,9 +154,6 @@ function prefetchViewTab(tab: TabKey) {
       break;
     case 'audit-trail':
       void import('../components/views/AuditTrailView');
-      break;
-    case 'work-toolkit':
-      void import('../components/views/WorkToolkitHubView');
       break;
     case 'api-settings':
       void import('../components/views/ApiKeySetupView');
@@ -1593,7 +1589,7 @@ export default function App() {
     } else if (task.type === 'CONTRACT_APPROVAL') {
       setActiveTab('contracts');
     } else if (task.type === 'CAMPAIGN_BRIEF') {
-      setActiveTab('campaigns');
+      setActiveTab('input-plan');
     } else {
       handleCompleteTask(task.id);
     }
@@ -2440,17 +2436,6 @@ export default function App() {
                 setBrandInitialDetailTab('PRODUCTS');
                 setActiveTab('brand-knowledge');
               }}
-              onNotify={showToast}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="work-toolkit" currentTab={activeTab}>
-            <WorkToolkitHubView
-              currentUser={currentUser}
-              brands={scopedBrands}
-              stores={scopedStores}
-              kocs={kocs}
-              deals={scopedDeals}
               onNotify={showToast}
             />
           </KeepAliveTab>

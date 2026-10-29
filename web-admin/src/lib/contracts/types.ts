@@ -54,6 +54,7 @@ export interface DocParagraph {
 }
 export interface DocTableCell {
   colSpan?: number;
+  vMerge?: 'restart' | 'continue';
   blocks: DocBlock[];
 }
 export interface DocTable {

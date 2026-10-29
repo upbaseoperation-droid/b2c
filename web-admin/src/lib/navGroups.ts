@@ -37,14 +37,13 @@ export const TAB_LABELS: Record<TabKey, string> = {
   'brand-hub': 'Cổng đối tác Brand',
   'koc-hub': 'Cổng đối tác KOC / KOL',
   'ads-report': 'Báo cáo Ads TikTok',
-  'api-settings': 'Cấu hình API',
+  'api-settings': 'Cài đặt hệ thống & Tích hợp',
   'cloudflare-admin': 'Quản lý Cloudflare R2',
   'knowledge-qa': 'Sổ tay & Hỏi đáp',
   'audit-trail': 'Nhật ký kiểm toán',
   'tiktok-crawler': 'Crawler KOC & Đối thủ',
   'market-research': 'Nghiên cứu Brand & Đối thủ',
   'store-air-plan-report': 'Báo cáo Kế hoạch & Air Video',
-  'work-toolkit': 'Bộ công cụ tiện ích',
   'zalo-bot': 'Quản lý Zalo Bot',
 };
 
@@ -99,6 +98,7 @@ export const DASHBOARD_EXEC_TAB_KEYS: TabKey[] = [
 ];
 
 export const TAB_ALIASES: Partial<Record<TabKey, TabKey>> = {
+  campaigns: 'input-plan',
   overview: 'dashboard-brand',
   'dashboard-bi': 'dashboard-brand',
   'dashboard-air-sync': 'dashboard-team-sla',
@@ -114,6 +114,8 @@ export const TAB_ALIASES: Partial<Record<TabKey, TabKey>> = {
   'workload-3d': 'manager',
   'performance-p3': 'manager',
   'audit-trail': 'partner-access',
+  'cloudflare-admin': 'api-settings',
+  'zalo-bot': 'api-settings',
 };
 
 export function resolveNavGroupTabKey(tab: TabKey): TabKey {

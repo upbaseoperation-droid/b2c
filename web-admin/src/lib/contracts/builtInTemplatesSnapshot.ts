@@ -1,4 +1,4 @@
-/* Auto-generated snapshot of official Ver052026 legal templates from Quản lý hợp đồng */
+/* Auto-generated snapshot of official legal templates from Quản lý hợp đồng & Lark Wiki (Ver092026) */
 import type { LegalTemplate } from './types';
 
 export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
@@ -38782,11 +38782,11 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
   "IND-HDNT": {
     "id": "IND-HDNT",
     "name": "Hợp đồng nguyên tắc video · Cá nhân",
-    "filename": "1. HĐNT cá nhân booking Video.docx",
+    "filename": "1.1 HĐNT cá nhân booking Video.docx",
     "subject": "Cá nhân",
     "kind": "CONTRACT",
-    "version": "Ver052026",
-    "hash": "8087b09e80e26030d7ad5e24a453e1b48e53815b4a84a2a8217a15cb87d6a29f",
+    "version": "Ver092026",
+    "hash": "ff0ed66e3068e80ff4d06fc035de5c7a1327bdb55b4098e66f5353bc5642cd0f",
     "fields": [
       {
         "key": "token:[dd.mm.yy]",
@@ -39014,7 +39014,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "start": 44,
         "end": 45,
         "label": "nh toán số tiền còn lại trong vòng  [điền]  ngày làm việc (trừ thứ b",
-        "context": "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây). ",
+        "context": "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được biên bản nghiệm thu Phụ lục SOW có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây). ",
         "required": false,
         "title": "Hạn thanh toán lần 2 (ngày làm việc)",
         "group": "MONEY",
@@ -39050,7 +39050,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       }
     ],
     "paragraphs": [
-      "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM",
+      "oCỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM",
       "Độc lập – Tự do – Hạnh phúc",
       "",
       "HỢP ĐỒNG NGUYÊN TẮC DỊCH VỤ BOOKING VIDEO",
@@ -39065,7 +39065,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Luật sửa đổi, bổ sung một số điều của Luật Quảng cáo số 75/2025/QH15, có hiệu lực từ ngày 01/01/2026;",
       "Luật Sở hữu Trí tuệ số 50/2005/QH11, có hiệu lực từ ngày 01/07/2006;",
       "Luật Sửa đổi bổ sung một số điều của Luật Sở hữu Trí tuệ số 131/2025/QH15, có hiệu lực từ ngày 01/04/2026;",
-      "Luật Bảo vệ người tiêu dùng số 19/2023/QH15, có hiệu lực từ ngày 01/07/2024;",
+      "Luật Bảo vệ quyền lợi người tiêu dùng số 19/2023/QH15, có hiệu lực từ ngày 01/07/2024;",
       "Nhu cầu và khả năng của hai Bên.",
       "",
       "Hôm nay, ngày … tháng … năm 202…, tại trụ sở chính của Công Ty Cổ Phần Công Nghệ UpBase - Nhà J03.LO21, Khu Đô thị Nam Cường, đường Tố Hữu, Phường Dương Nội, TP Hà Nội, Việt Nam. Chúng tôi gồm các bên có tên dưới đây cùng ký kết Hợp Đồng cung ứng Dịch vụ (“Hợp Đồng”):",
@@ -39164,7 +39164,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "7",
       "Duyệt video",
       "Bên A xem xét, phản hồi và yêu cầu chỉnh sửa (nếu có). ",
-      "Tối đa 01 vòng chỉnh sửa trước khi duyệt cuối cùng, trừ khi SOW quy định khác.",
+      "Theo quy định chi tiết tại SOW.",
       "8",
       "Đăng tải video",
       "Bên B đăng tải theo đúng nội dung đã duyệt, đúng tài khoản và timeline.",
@@ -39199,11 +39199,11 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Tại Ngân hàng: ",
       " Thời hạn thanh toán",
       "Thanh toán 1 lần",
-      "Phí dịch vụ được thanh toán 1 lần trong vòng 7 - 10 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây).",
+      "Phí dịch vụ được thanh toán 1 lần trong vòng 7 - 10 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ theo Phụ lục SOW và Bên A đã nhận được biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây).",
       "Thanh toán 2 lần",
       "Phí dịch vụ được thanh toán làm 2 lần:",
       "Lần 1 tạm ứng … trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm hai bên ký kết Phụ lục SOW.",
-      "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây). ",
+      "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được biên bản nghiệm thu Phụ lục SOW có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây). ",
       "Thanh toán theo SOW",
       "Thời hạn thanh toán được xác định cụ thể theo từng SOW tương ứng với từng chiến dịch hoặc công việc cụ thể.",
       " Hồ sơ nghiệm thu thanh toán (Giá trị tại khoản này là giá trị của SOW đã bao gồm cả thuế TNCN)",
@@ -39225,7 +39225,6 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Cung cấp đầy đủ, kịp thời các thông tin, tài liệu, sản phẩm mẫu và phối hợp với Bên B để triển khai dịch vụ theo Hợp đồng;",
       "Không sử dụng hình ảnh, nội dung của Bên B theo cách gây ảnh hưởng tiêu cực đến uy tín hoặc hình ảnh cá nhân của Bên B.",
       "",
-      "",
       "ĐIỀU 5: QUYỀN VÀ NGHĨA VỤ CỦA BÊN B",
       "Quyền của Bên B",
       "Yêu cầu Bên A cung cấp đầy đủ thông tin, tài liệu, sản phẩm mẫu, guideline, chính sách thương hiệu và các dữ liệu cần thiết để thực hiện dịch vụ; ",
@@ -39235,7 +39234,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Nghĩa vụ thực hiện dịch vụ: Thực hiện công việc đúng nội dung, chất lượng, số lượng, thời hạn, nền tảng theo Hợp đồng đã ký kết; không được chuyển giao, ủy quyền cho bên thứ ba thực hiện công việc; chủ động thông báo kịp thời cho Bên A về bất kỳ sự kiện nào có thể ảnh hưởng đến việc thực hiện dịch vụ.",
       "Nghĩa vụ duy trì nội dung đã đăng tải:",
       "Bên B không được tự ý xóa, ẩn hoặc hạn chế hiển thị đối với video đã đăng tải theo Hợp đồng và Phụ lục SOW liên quan. Trong trường hợp nội dung phát sinh lỗi kỹ thuật do nền tảng, bao gồm nhưng không giới hạn mất tiếng, lỗi hình ảnh, lỗi hiển thị hoặc các sự cố tương tự, Bên B có nghĩa vụ phối hợp với Bên A để khắc phục và đăng tải lại nội dung trong thời gian sớm nhất theo yêu cầu của Bên A. Trường hợp không thể khắc phục hoặc đăng tải lại, Bên B bàn giao video hoàn chỉnh cho Bên A để Bên A đăng tải trên kênh chính thức của nhãn hàng trong thời hạn ít nhất 03 (ba) tháng.",
-      "Trừ trường hợp sản phẩm hoặc nhãn hiệu của sản phẩm bị cơ quan nhà nước có thẩm quyền xử phạt hoặc phát sinh khủng hoảng, tranh cãi truyền thông có khả năng ảnh hưởng đến hình ảnh, uy tín của Bên B, Bên B được quyền chủ động ẩn video sau khi thông báo cho Bên A. Sau khi vụ việc được làm rõ hoặc giải quyết, tùy từng trường hợp, Hai Bên sẽ thỏa thuận về việc hiển thị lại nội dung.",
+      "Trường hợp sản phẩm hoặc nhãn hiệu của sản phẩm bị cơ quan nhà nước có thẩm quyền xử phạt hoặc phát sinh khủng hoảng, tranh cãi truyền thông có khả năng ảnh hưởng đến hình ảnh, uy tín của Bên B, Bên B được quyền chủ động ẩn video sau khi thông báo cho Bên A. Sau khi vụ việc được làm rõ hoặc giải quyết, tùy từng trường hợp, Hai Bên sẽ thỏa thuận về việc hiển thị lại nội dung.",
       "Nghĩa vụ về nội dung và trách nhiệm quảng cáo: Bên B là người chuyển tải sản phẩm quảng cáo theo quy định pháp luật và cam kết tuân thủ quy định tại Luật Quảng cáo, Luật Bảo vệ quyền lợi người tiêu dùng hiện hành cũng như quy định của sàn TMĐT.",
       "Nghĩa vụ bảo vệ hình ảnh và uy tín nhãn hiệu: Bên B cam kết bảo vệ hình ảnh, uy tín của nhãn hiệu và Bên A bằng việc không thực hiện bất kỳ hành vi, phát ngôn hoặc đăng tải nội dung nào gây ảnh hưởng tiêu cực, gây hiểu nhầm hoặc chưa được kiểm chứng liên quan đến Bên A hoặc sản phẩm/dịch vụ, cũng như không sử dụng ngôn từ, hình ảnh phản cảm, vi phạm pháp luật hoặc không phù hợp với định vị thương hiệu của Bên A; các nghĩa vụ này áp dụng trong suốt thời gian thực hiện Hợp đồng và kéo dài ít nhất 06 tháng sau khi chấm dứt việc hợp tác với nhãn hàng.",
       "Nghĩa vụ bảo vệ hình ảnh và uy tín cá nhân: Bên B cam kết duy trì danh tiếng cá nhân, không để xảy ra các sự kiện, hành vi hoặc phát ngôn có thể gây scandal, tranh cãi hoặc ảnh hưởng trực tiếp hoặc gián tiếp đến uy tín của Bên A; trong trường hợp phát sinh sự kiện có nguy cơ ảnh hưởng tiêu cực, Bên B phải thông báo kịp thời và phối hợp với Bên A để xử lý phù hợp.",
@@ -39263,9 +39262,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Bên vi phạm phải chịu trách nhiệm bồi thường toàn bộ thiệt hại phát sinh cho Bên còn lại và các bên liên quan (nếu có).",
       "Thời hạn bảo mật: Nghĩa vụ bảo mật tiếp tục có hiệu lực sau khi Hợp Đồng chấm dứt hoặc hết hạn, cho đến khi Thông Tin Bảo Mật trở thành thông tin công khai hợp pháp.",
       "",
-      "",
       "ĐIỀU 9: BẤT KHẢ KHÁNG",
       "Một Bên sẽ không bị xem là vi phạm Hợp Đồng nếu việc chậm trễ hoặc không thực hiện nghĩa vụ do sự kiện khách quan, không thể lường trước và không thể khắc phục mặc dù đã áp dụng mọi biện pháp cần thiết (“Sự Kiện Bất Khả Kháng”), bao gồm nhưng không giới hạn: thiên tai, hỏa hoạn, chiến tranh, bạo loạn, đình công, dịch bệnh, hoặc các quyết định, hạn chế của cơ quan nhà nước có thẩm quyền. Bên bị ảnh hưởng phải thông báo bằng văn bản cho Bên còn lại trong vòng 03 ngày làm việc kể từ khi xảy ra sự kiện, nêu rõ bản chất sự kiện, phạm vi ảnh hưởng và thời gian dự kiến khắc phục.",
+      "",
       "ĐIỀU 10: ĐIỀU KHOẢN CHUNG",
       "Luật áp dụng: Hợp Đồng này được điều chỉnh và giải thích theo pháp luật Việt Nam.",
       "Giải quyết tranh chấp: Mọi tranh chấp phát sinh từ hoặc liên quan đến Hợp Đồng sẽ được ưu tiên giải quyết thông qua thương lượng, hòa giải giữa các Bên. Nếu tranh chấp không được giải quyết trong vòng 30 ngày kể từ ngày một Bên thông báo bằng văn bản về tranh chấp, tranh chấp sẽ được đưa ra Tòa án có thẩm quyền tại Việt Nam để giải quyết.",
@@ -39282,7 +39281,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "",
       "",
-      "BM.HĐ.VID.IND.Ver072026",
+      "BM.HĐ.VID.IND.Ver102026",
       ""
     ],
     "blocks": [
@@ -39314,7 +39313,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/header1.xml",
                   "paragraph": 2,
-                  "text": "BM.HĐ.VID.IND.Ver072026",
+                  "text": "BM.HĐ.VID.IND.Ver102026",
                   "align": "right"
                 }
               ]
@@ -39332,7 +39331,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 0,
-        "text": "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM",
+        "text": "oCỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM",
         "align": "center",
         "bold": true
       },
@@ -39452,7 +39451,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 15,
-        "text": "Luật Bảo vệ người tiêu dùng số 19/2023/QH15, có hiệu lực từ ngày 01/07/2024;",
+        "text": "Luật Bảo vệ quyền lợi người tiêu dùng số 19/2023/QH15, có hiệu lực từ ngày 01/07/2024;",
         "align": "justify",
         "italic": true
       },
@@ -40601,7 +40600,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 114,
-                  "text": "Tối đa 01 vòng chỉnh sửa trước khi duyệt cuối cùng, trừ khi SOW quy định khác.",
+                  "text": "Theo quy định chi tiết tại SOW.",
                   "align": "justify"
                 }
               ]
@@ -40924,7 +40923,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 149,
-                  "text": "Phí dịch vụ được thanh toán 1 lần trong vòng 7 - 10 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây).",
+                  "text": "Phí dịch vụ được thanh toán 1 lần trong vòng 7 - 10 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ theo Phụ lục SOW và Bên A đã nhận được biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây).",
                   "align": "justify"
                 }
               ]
@@ -40963,7 +40962,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 153,
-                  "text": "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây). ",
+                  "text": "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được biên bản nghiệm thu Phụ lục SOW có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây). ",
                   "align": "justify"
                 }
               ]
@@ -41145,14 +41144,6 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 175,
-        "text": "",
-        "align": "justify",
-        "bold": true
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 176,
         "text": "ĐIỀU 5: QUYỀN VÀ NGHĨA VỤ CỦA BÊN B",
         "align": "justify",
         "bold": true
@@ -41160,7 +41151,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 177,
+        "paragraph": 176,
         "text": "Quyền của Bên B",
         "align": "justify",
         "bold": true
@@ -41168,28 +41159,28 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 178,
+        "paragraph": 177,
         "text": "Yêu cầu Bên A cung cấp đầy đủ thông tin, tài liệu, sản phẩm mẫu, guideline, chính sách thương hiệu và các dữ liệu cần thiết để thực hiện dịch vụ; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 179,
+        "paragraph": 178,
         "text": "Yêu cầu Bên A phối hợp phản hồi, xác nhận nội dung, kế hoạch triển khai; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 180,
+        "paragraph": 179,
         "text": "Được sử dụng tên thương mại, nhãn hiệu, hình ảnh sản phẩm của Bên A trong phạm vi cần thiết để thực hiện dịch vụ theo Hợp đồng.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 181,
+        "paragraph": 180,
         "text": " Nghĩa vụ của Bên B",
         "align": "justify",
         "bold": true
@@ -41197,7 +41188,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 182,
+        "paragraph": 181,
         "text": "Nghĩa vụ thực hiện dịch vụ: Thực hiện công việc đúng nội dung, chất lượng, số lượng, thời hạn, nền tảng theo Hợp đồng đã ký kết; không được chuyển giao, ủy quyền cho bên thứ ba thực hiện công việc; chủ động thông báo kịp thời cho Bên A về bất kỳ sự kiện nào có thể ảnh hưởng đến việc thực hiện dịch vụ.",
         "align": "justify",
         "bold": true
@@ -41205,7 +41196,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 183,
+        "paragraph": 182,
         "text": "Nghĩa vụ duy trì nội dung đã đăng tải:",
         "align": "justify",
         "bold": true
@@ -41213,21 +41204,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 184,
+        "paragraph": 183,
         "text": "Bên B không được tự ý xóa, ẩn hoặc hạn chế hiển thị đối với video đã đăng tải theo Hợp đồng và Phụ lục SOW liên quan. Trong trường hợp nội dung phát sinh lỗi kỹ thuật do nền tảng, bao gồm nhưng không giới hạn mất tiếng, lỗi hình ảnh, lỗi hiển thị hoặc các sự cố tương tự, Bên B có nghĩa vụ phối hợp với Bên A để khắc phục và đăng tải lại nội dung trong thời gian sớm nhất theo yêu cầu của Bên A. Trường hợp không thể khắc phục hoặc đăng tải lại, Bên B bàn giao video hoàn chỉnh cho Bên A để Bên A đăng tải trên kênh chính thức của nhãn hàng trong thời hạn ít nhất 03 (ba) tháng.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 185,
-        "text": "Trừ trường hợp sản phẩm hoặc nhãn hiệu của sản phẩm bị cơ quan nhà nước có thẩm quyền xử phạt hoặc phát sinh khủng hoảng, tranh cãi truyền thông có khả năng ảnh hưởng đến hình ảnh, uy tín của Bên B, Bên B được quyền chủ động ẩn video sau khi thông báo cho Bên A. Sau khi vụ việc được làm rõ hoặc giải quyết, tùy từng trường hợp, Hai Bên sẽ thỏa thuận về việc hiển thị lại nội dung.",
+        "paragraph": 184,
+        "text": "Trường hợp sản phẩm hoặc nhãn hiệu của sản phẩm bị cơ quan nhà nước có thẩm quyền xử phạt hoặc phát sinh khủng hoảng, tranh cãi truyền thông có khả năng ảnh hưởng đến hình ảnh, uy tín của Bên B, Bên B được quyền chủ động ẩn video sau khi thông báo cho Bên A. Sau khi vụ việc được làm rõ hoặc giải quyết, tùy từng trường hợp, Hai Bên sẽ thỏa thuận về việc hiển thị lại nội dung.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 186,
+        "paragraph": 185,
         "text": "Nghĩa vụ về nội dung và trách nhiệm quảng cáo: Bên B là người chuyển tải sản phẩm quảng cáo theo quy định pháp luật và cam kết tuân thủ quy định tại Luật Quảng cáo, Luật Bảo vệ quyền lợi người tiêu dùng hiện hành cũng như quy định của sàn TMĐT.",
         "align": "justify",
         "bold": true
@@ -41235,7 +41226,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 187,
+        "paragraph": 186,
         "text": "Nghĩa vụ bảo vệ hình ảnh và uy tín nhãn hiệu: Bên B cam kết bảo vệ hình ảnh, uy tín của nhãn hiệu và Bên A bằng việc không thực hiện bất kỳ hành vi, phát ngôn hoặc đăng tải nội dung nào gây ảnh hưởng tiêu cực, gây hiểu nhầm hoặc chưa được kiểm chứng liên quan đến Bên A hoặc sản phẩm/dịch vụ, cũng như không sử dụng ngôn từ, hình ảnh phản cảm, vi phạm pháp luật hoặc không phù hợp với định vị thương hiệu của Bên A; các nghĩa vụ này áp dụng trong suốt thời gian thực hiện Hợp đồng và kéo dài ít nhất 06 tháng sau khi chấm dứt việc hợp tác với nhãn hàng.",
         "align": "justify",
         "boldPrefix": 46
@@ -41243,7 +41234,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 188,
+        "paragraph": 187,
         "text": "Nghĩa vụ bảo vệ hình ảnh và uy tín cá nhân: Bên B cam kết duy trì danh tiếng cá nhân, không để xảy ra các sự kiện, hành vi hoặc phát ngôn có thể gây scandal, tranh cãi hoặc ảnh hưởng trực tiếp hoặc gián tiếp đến uy tín của Bên A; trong trường hợp phát sinh sự kiện có nguy cơ ảnh hưởng tiêu cực, Bên B phải thông báo kịp thời và phối hợp với Bên A để xử lý phù hợp.",
         "align": "justify",
         "boldPrefix": 43
@@ -41251,7 +41242,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 189,
+        "paragraph": 188,
         "text": "",
         "align": "justify",
         "bold": true
@@ -41259,7 +41250,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 190,
+        "paragraph": 189,
         "text": "ĐIỀU 6: PHẠT VI PHẠM, BỒI THƯỜNG THIỆT HẠI",
         "align": "justify",
         "bold": true
@@ -41267,7 +41258,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 191,
+        "paragraph": 190,
         "text": "Vi phạm của Bên A",
         "align": "justify",
         "bold": true
@@ -41275,7 +41266,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 192,
+        "paragraph": 191,
         "text": "Chậm thanh toán: Trừ trường hợp bất khả kháng hoặc do lỗi của Bên B, nếu Bên A chậm thanh toán quá 30 (ba mươi) ngày so với thời hạn đã thỏa thuận (thời hạn thanh toán được tính từ thời điểm Bên B hoàn tất chứng từ thanh toán), Bên A phải trả lãi chậm thanh toán với mức lãi suất 8%/năm trên số tiền chậm trả, tính theo số ngày chậm thanh toán.",
         "align": "justify",
         "bold": true
@@ -41283,7 +41274,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 193,
+        "paragraph": 192,
         "text": "Vi phạm của Bên B",
         "align": "justify",
         "bold": true
@@ -41291,7 +41282,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 194,
+        "paragraph": 193,
         "text": "Vi phạm tiến độ thực hiện: Trường hợp Bên B không thực hiện đúng tiến độ theo Hợp đồng mà không do lỗi của Bên A hoặc yếu tố khách quan, Bên A sẽ gia hạn để Bên B khắc phục kịp thời theo tiến độ của dự án. Nếu Bên B không khắc phục trong vòng 3 – 5 ngày hoặc xong trước deadline cuối của dự án, Bên B phải chịu phạt tương đương 1% giá trị phí dịch vụ của hạng mục công việc bị vi phạm cho mỗi ngày chậm, tổng mức phạt không vượt quá 8% giá trị hạng mục vi phạm.",
         "align": "justify",
         "boldPrefix": 27
@@ -41299,7 +41290,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 195,
+        "paragraph": 194,
         "text": "Vi phạm nghĩa vụ về nội dung và trách nhiệm quảng cáo: Bên A có quyền yêu cầu Bên B gỡ bỏ, chỉnh sửa nội dung và chịu mọi trách nhiệm phát sinh; đồng thời Bên A có quyền giảm trừ hoặc không thanh toán phần Phí Dịch vụ liên quan đến nội dung vi phạm pháp luật hoặc đơn phương chấm dứt Hợp đồng tùy theo mức độ nghiêm trọng của sự việc. ",
         "align": "justify",
         "boldPrefix": 55
@@ -41307,7 +41298,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 196,
+        "paragraph": 195,
         "text": "Vi phạm nghĩa vụ bảo vệ hình ảnh, uy tín và danh tiếng thương hiệu và danh tiếng cá nhân của Bên B: Bên A có quyền đơn phương chấm dứt Hợp đồng, từ chối thanh toán phần phí dịch vụ chưa thực hiện và yêu cầu Bên B thực hiện các biện pháp khắc phục (bao gồm đính chính, gỡ bỏ nội dung nếu có).",
         "align": "justify",
         "boldPrefix": 100
@@ -41315,7 +41306,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 197,
+        "paragraph": 196,
         "text": "Bồi thường thiệt hại: Bên nào vi phạm nghĩa vụ theo Hợp đồng gây thiệt hại cho Bên còn lại thì phải bồi thường toàn bộ thiệt hại thực tế, trực tiếp phát sinh theo quy định của pháp luật.",
         "align": "justify",
         "bold": true
@@ -41323,7 +41314,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 198,
+        "paragraph": 197,
         "text": "",
         "align": "justify",
         "bold": true
@@ -41331,7 +41322,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 199,
+        "paragraph": 198,
         "text": "ĐIỀU 7: HIỆU LỰC VÀ CHẤM DỨT HỢP ĐỒNG ",
         "align": "justify",
         "bold": true
@@ -41339,7 +41330,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 200,
+        "paragraph": 199,
         "text": "Hiệu lực: Hợp Đồng có hiệu lực kể từ ngày ký và tiếp tục duy trì hiệu lực cho đến khi một trong Hai Bên đơn phương chấm dứt Hợp đồng hoặc Hai bên có thỏa thuận cùng chấm dứt bằng văn bản.",
         "align": "justify",
         "bold": true
@@ -41347,7 +41338,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 201,
+        "paragraph": 200,
         "text": "Các trường hợp chấm dứt hợp đồng",
         "align": "justify",
         "bold": true
@@ -41355,49 +41346,49 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 202,
+        "paragraph": 201,
         "text": "Một Bên thông báo bằng văn bản cho Bên còn lại ít nhất 30 (ba mươi) ngày trước ngày dự kiến chấm dứt;",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 203,
+        "paragraph": 202,
         "text": "Hai bên cùng thỏa thuận chấm dứt Hợp đồng bằng văn bản;",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 204,
+        "paragraph": 203,
         "text": "Bên A bị giải thể, phá sản, chấm dứt hoạt động hoặc thuộc trường hợp không còn khả năng tiếp tục thực hiện Hợp đồng;",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 205,
+        "paragraph": 204,
         "text": "Các trường hợp khác theo quy định của pháp luật.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 206,
+        "paragraph": 205,
         "text": "Việc chấm dứt Hợp đồng không làm ảnh hưởng đến các quyền, nghĩa vụ và trách nhiệm đã phát sinh trước ngày chấm dứt. Hai bên có trách nhiệm hoàn tất việc nghiệm thu, đối soát và thanh toán các khoản còn tồn đọng theo các Phụ lục SOW đã ký kết.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 207,
+        "paragraph": 206,
         "text": "",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 208,
+        "paragraph": 207,
         "text": "ĐIỀU 8: BẢO MẬT THÔNG TIN",
         "align": "justify",
         "bold": true
@@ -41405,7 +41396,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 209,
+        "paragraph": 208,
         "text": "Trong quá trình thực hiện Hợp đồng và sau khi Hợp đồng chấm dứt, mỗi Bên (sau đây gọi là “Bên Nhận Thông Tin”) có nghĩa vụ bảo mật tuyệt đối đối với mọi thông tin, tài liệu do Bên còn lại (“Bên Tiết Lộ”) cung cấp hoặc phát sinh liên quan đến việc thực hiện Hợp đồng, bao gồm nhưng không giới hạn các điều khoản Hợp đồng, dữ liệu, tài liệu, kế hoạch kinh doanh, thông tin tài chính, chiến lược marketing, bí mật kinh doanh và các thông tin có tính chất bảo mật khác (“Thông Tin Mật”); theo đó, Bên Nhận Thông Tin không được tiết lộ, công bố hoặc sử dụng Thông Tin Mật cho bất kỳ mục đích nào ngoài mục đích thực hiện Hợp đồng nếu không có sự chấp thuận trước bằng văn bản của Bên Tiết Lộ.",
         "align": "justify",
         "bold": true
@@ -41413,7 +41404,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 210,
+        "paragraph": 209,
         "text": "Bên vi phạm phải chịu trách nhiệm bồi thường toàn bộ thiệt hại phát sinh cho Bên còn lại và các bên liên quan (nếu có).",
         "align": "justify",
         "bold": true
@@ -41421,7 +41412,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 211,
+        "paragraph": 210,
         "text": "Thời hạn bảo mật: Nghĩa vụ bảo mật tiếp tục có hiệu lực sau khi Hợp Đồng chấm dứt hoặc hết hạn, cho đến khi Thông Tin Bảo Mật trở thành thông tin công khai hợp pháp.",
         "align": "justify",
         "bold": true
@@ -41429,23 +41420,15 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
+        "paragraph": 211,
+        "text": "",
+        "align": "justify",
+        "bold": true
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
         "paragraph": 212,
-        "text": "",
-        "align": "justify",
-        "bold": true
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 213,
-        "text": "",
-        "align": "justify",
-        "bold": true
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 214,
         "text": "ĐIỀU 9: BẤT KHẢ KHÁNG",
         "align": "justify",
         "bold": true
@@ -41453,14 +41436,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 215,
+        "paragraph": 213,
         "text": "Một Bên sẽ không bị xem là vi phạm Hợp Đồng nếu việc chậm trễ hoặc không thực hiện nghĩa vụ do sự kiện khách quan, không thể lường trước và không thể khắc phục mặc dù đã áp dụng mọi biện pháp cần thiết (“Sự Kiện Bất Khả Kháng”), bao gồm nhưng không giới hạn: thiên tai, hỏa hoạn, chiến tranh, bạo loạn, đình công, dịch bệnh, hoặc các quyết định, hạn chế của cơ quan nhà nước có thẩm quyền. Bên bị ảnh hưởng phải thông báo bằng văn bản cho Bên còn lại trong vòng 03 ngày làm việc kể từ khi xảy ra sự kiện, nêu rõ bản chất sự kiện, phạm vi ảnh hưởng và thời gian dự kiến khắc phục.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 216,
+        "paragraph": 214,
+        "text": "",
+        "align": "justify"
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 215,
         "text": "ĐIỀU 10: ĐIỀU KHOẢN CHUNG",
         "align": "justify",
         "bold": true
@@ -41468,21 +41458,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 217,
+        "paragraph": 216,
         "text": "Luật áp dụng: Hợp Đồng này được điều chỉnh và giải thích theo pháp luật Việt Nam.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 218,
+        "paragraph": 217,
         "text": "Giải quyết tranh chấp: Mọi tranh chấp phát sinh từ hoặc liên quan đến Hợp Đồng sẽ được ưu tiên giải quyết thông qua thương lượng, hòa giải giữa các Bên. Nếu tranh chấp không được giải quyết trong vòng 30 ngày kể từ ngày một Bên thông báo bằng văn bản về tranh chấp, tranh chấp sẽ được đưa ra Tòa án có thẩm quyền tại Việt Nam để giải quyết.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 219,
+        "paragraph": 218,
         "text": "Hợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản, có giá trị pháp lý như nhau.",
         "align": "justify",
         "bold": true
@@ -41490,7 +41480,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 220,
+        "paragraph": 219,
         "text": "",
         "align": "justify"
       },
@@ -41505,7 +41495,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 221,
+                  "paragraph": 220,
                   "text": "ĐẠI DIỆN BÊN A",
                   "align": "center",
                   "bold": true
@@ -41517,7 +41507,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 222,
+                  "paragraph": 221,
                   "text": "ĐẠI DIỆN BÊN B",
                   "align": "center",
                   "bold": true
@@ -41530,7 +41520,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 223,
+        "paragraph": 222,
         "text": "",
         "align": "justify",
         "bold": true
@@ -41594,39 +41584,16 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "paragraph": 5,
         "text": ""
       }
-    ],
-    "category": "BOOKING_VIDEO",
-    "description": "Hợp đồng nguyên tắc booking video (ký một lần khi bắt đầu hợp tác) dành cho đối tác là cá nhân.",
-    "active": true,
-    "defaultReviewRoles": [
-      "LEGAL",
-      "FINANCE"
-    ],
-    "exemptLegalReview": true,
-    "scope": "GLOBAL",
-    "updatedAt": "2026-05-01T08:00:00.000Z",
-    "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 19,
-    "requiredFieldCount": 13,
-    "history": [
-      {
-        "version": "Ver052026",
-        "hash": "8087b09e80e26030d7ad5e24a453e1b48e53815b4a84a2a8217a15cb87d6a29f",
-        "filename": "1. HĐNT cá nhân booking Video.docx",
-        "updatedAt": "2026-05-01T08:00:00.000Z",
-        "updatedBy": "Phòng Pháp chế",
-        "note": "Phiên bản chuẩn ban hành bởi Pháp chế"
-      }
     ]
   },
   "IND-SOW": {
     "id": "IND-SOW",
     "name": "SOW booking video · Cá nhân",
-    "filename": "2. SOW cá nhân booking Video.docx",
+    "filename": "2.1 SOW cá nhân booking Video.docx",
     "subject": "Cá nhân",
     "kind": "CONTRACT",
-    "version": "Ver052026",
-    "hash": "744048f327e49146cd768e6dfc2ee6396466fc93e71fb8577ad14bdcdec0b0af",
+    "version": "Ver092026",
+    "hash": "92db605e9cd467f15068d8255af6b03194fa9e4c888b63b3cfdb27aa59a64c02",
     "fields": [
       {
         "key": "token:[dd.mm.yy]",
@@ -41807,147 +41774,342 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "email"
       },
       {
-        "key": "word/document.xml:p56:109",
-        "part": "word/document.xml",
-        "paragraph": 56,
-        "start": 109,
-        "end": 110,
-        "label": "đẩy doanh số bán hàng với sản phẩm  [điền] . Nhãn hiệu ….",
-        "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-        "required": false,
-        "title": "Sản phẩm",
-        "group": "SCOPE",
-        "kind": "text",
-        "source": "product"
-      },
-      {
-        "key": "word/document.xml:p56:122",
-        "part": "word/document.xml",
-        "paragraph": 56,
-        "start": 122,
-        "end": 123,
-        "label": "bán hàng với sản phẩm …. Nhãn hiệu  [điền] .",
-        "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-        "required": false,
-        "title": "Nhãn hiệu",
-        "group": "SCOPE",
-        "kind": "text",
-        "source": "brand"
-      },
-      {
-        "key": "word/document.xml:p57:32",
+        "key": "word/document.xml:p57:cell",
         "part": "word/document.xml",
         "paragraph": 57,
-        "start": 32,
-        "end": 33,
-        "label": "Thời gian đăng tải (air video):  [điền] .",
-        "context": "Thời gian đăng tải (air video): ….",
+        "label": "Sản xuất và đăng tải video review · Phí dịch vụ",
+        "context": "Hạng mục video · Sản xuất và đăng tải video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng cho sản phẩm. · …",
         "required": false,
-        "title": "Thời gian đăng tải (air video)",
-        "group": "SCOPE",
-        "kind": "date",
-        "source": "airDate"
-      },
-      {
-        "key": "word/document.xml:p59:cell",
-        "part": "word/document.xml",
-        "paragraph": 59,
-        "label": "Sản xuất và đăng tải Video review · Thành tiền",
-        "context": "1 · Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….Thời gian đăng tải (air video): ….Video có gắn giỏ hàng sản phẩm (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
-        "required": false,
-        "title": "Sản xuất và đăng tải Video review · Thành tiền",
+        "start": 0,
+        "end": 1,
+        "title": "Sản xuất và đăng tải video review · Phí dịch vụ",
         "group": "SCOPE",
         "kind": "money",
         "source": "lineTotal"
       },
       {
-        "key": "word/document.xml:p61:47",
+        "key": "word/document.xml:p59:25",
         "part": "word/document.xml",
-        "paragraph": 61,
+        "paragraph": 59,
+        "start": 25,
+        "end": 26,
+        "label": "Sản phẩm được quảng cáo:  [điền]  (tên sản phẩm + nhãn hiệ",
+        "context": "Sản phẩm được quảng cáo: … (tên sản phẩm + nhãn hiệu)",
+        "required": false,
+        "title": "Sản phẩm được quảng cáo (tên sản phẩm + nhãn hiệu)",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "product"
+      },
+      {
+        "key": "word/document.xml:p62:16",
+        "part": "word/document.xml",
+        "paragraph": 62,
+        "start": 16,
+        "end": 17,
+        "label": "Số lượng video   [điền] ",
+        "context": "Số lượng video  …",
+        "required": false,
+        "title": "Số lượng video",
+        "group": "SCOPE",
+        "kind": "number",
+        "source": "quantity"
+      },
+      {
+        "key": "word/document.xml:p65:17",
+        "part": "word/document.xml",
+        "paragraph": 65,
+        "start": 17,
+        "end": 18,
+        "label": "Thời lượng video  [điền] s",
+        "context": "Thời lượng video …s",
+        "required": false,
+        "title": "Thời lượng video (giây)",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
+        "key": "word/document.xml:p84:116",
+        "part": "word/document.xml",
+        "paragraph": 84,
+        "start": 116,
+        "end": 117,
+        "label": "của Bên B. Nội dung được cung cấp:  [điền] ",
+        "context": "Bên A/Brand cung cấp nội dung hoàn chỉnh; Bên B chỉ thực hiện đăng tải trên kênh của Bên B. Nội dung được cung cấp: …",
+        "required": false,
+        "title": "Nội dung cung cấp (Post-only, nếu có)",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p88:110",
+        "part": "word/document.xml",
+        "paragraph": 88,
+        "start": 110,
+        "end": 111,
+        "label": "của Bên B.Định dạng file bàn giao:  [điền] ; ",
+        "context": "Bên B sản xuất video và bàn giao cho Bên A/Brand, không đăng tải trên kênh của Bên B.Định dạng file bàn giao: …; ",
+        "required": false,
+        "title": "Định dạng file bàn giao (Production-only, nếu có)",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p89:19",
+        "part": "word/document.xml",
+        "paragraph": 89,
+        "start": 19,
+        "end": 20,
+        "label": "Thời hạn bàn giao:  [điền] ",
+        "context": "Thời hạn bàn giao: …",
+        "required": false,
+        "title": "Thời gian đăng tải / bàn giao video (air video)",
+        "group": "SCOPE",
+        "kind": "date",
+        "source": "airDate"
+      },
+      {
+        "key": "word/document.xml:p94:20",
+        "part": "word/document.xml",
+        "paragraph": 94,
+        "start": 20,
+        "end": 21,
+        "label": "Số lượng phiên bản:  [điền] ;",
+        "context": "Số lượng phiên bản: …;",
+        "required": false,
+        "title": "Số lượng phiên bản cắt ngắn (nếu có)",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
+        "key": "word/document.xml:p95:27",
+        "part": "word/document.xml",
+        "paragraph": 95,
+        "start": 27,
+        "end": 28,
+        "label": "Thời lượng từng phiên bản:  [điền] ",
+        "context": "Thời lượng từng phiên bản: …",
+        "required": false,
+        "title": "Thời lượng từng phiên bản cắt ngắn (nếu có)",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p99:36",
+        "part": "word/document.xml",
+        "paragraph": 99,
+        "start": 36,
+        "end": 37,
+        "label": "ên A được yêu cầu chỉnh sửa tối đa  [điền]  vòng.",
+        "context": "Bên A được yêu cầu chỉnh sửa tối đa … vòng.",
+        "required": false,
+        "title": "Số vòng chỉnh sửa video tối đa",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
+        "key": "word/document.xml:p105:8",
+        "part": "word/document.xml",
+        "paragraph": 105,
+        "start": 8,
+        "end": 12,
+        "label": "Link kênh TikTok đăng tải",
+        "context": "TikTok: Link",
+        "required": false,
+        "title": "Link kênh TikTok đăng tải",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
+        "key": "word/document.xml:p106:8",
+        "part": "word/document.xml",
+        "paragraph": 106,
+        "start": 8,
+        "end": 12,
+        "label": "Link kênh Shopee đăng tải",
+        "context": "Shopee: Link",
+        "required": false,
+        "title": "Link kênh Shopee đăng tải",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p107:10",
+        "part": "word/document.xml",
+        "paragraph": 107,
+        "start": 10,
+        "end": 14,
+        "label": "Link kênh Facebook đăng tải",
+        "context": "Facebook: Link",
+        "required": false,
+        "title": "Link kênh Facebook đăng tải",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p108:11",
+        "part": "word/document.xml",
+        "paragraph": 108,
+        "start": 11,
+        "end": 15,
+        "label": "Link kênh Instagram đăng tải",
+        "context": "Instagram: Link",
+        "required": false,
+        "title": "Link kênh Instagram đăng tải",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p109:9",
+        "part": "word/document.xml",
+        "paragraph": 109,
+        "start": 9,
+        "end": 13,
+        "label": "Link kênh YouTube đăng tải",
+        "context": "YouTube: Link",
+        "required": false,
+        "title": "Link kênh YouTube đăng tải",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p110:23",
+        "part": "word/document.xml",
+        "paragraph": 110,
+        "start": 23,
+        "end": 27,
+        "label": "Link kênh Threads/nền tảng khác đăng tải",
+        "context": "Threads/nền tảng khác: Link",
+        "required": false,
+        "title": "Link kênh Threads/nền tảng khác đăng tải",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p115:cell",
+        "part": "word/document.xml",
+        "paragraph": 115,
+        "label": "Hạng mục thương mại · Gắn giỏ hàng/ Link Affiliate · Phí dịch vụ",
+        "context": "Hạng mục thương mại · Gắn giỏ hàng/ Link Affiliate · Gắn giỏ hàng sản phẩm được quảng cáo và/hoặc gắn, chèn Link Affiliate tại video, bài đăng, showcase và các vị trí khác được nền tảng hỗ trợ. Hình thức, vị trí và thời điểm bắt đầu thực hiện được Hai Bên thống nhất qua email/tin nhắn. · …",
+        "required": false,
+        "start": 0,
+        "end": 1,
+        "title": "Hạng mục thương mại · Gắn giỏ hàng/ Link Affiliate · Phí dịch vụ",
+        "group": "SCOPE",
+        "kind": "money"
+      },
+      {
+        "key": "word/document.xml:p117:47",
+        "part": "word/document.xml",
+        "paragraph": 117,
         "start": 47,
         "end": 48,
-        "label": "để chạy quảng cáo video trong vòng  [điền]  ngày (thời gian bắt đầu ",
-        "context": "Cấp mã code để chạy quảng cáo video trong vòng … ngày (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
+        "label": "để chạy quảng cáo video trong vòng  [điền]  ngày.",
+        "context": "Cấp mã code để chạy quảng cáo video trong vòng … ngày.",
         "required": false,
         "title": "Số ngày cấp mã quảng cáo",
         "group": "SCOPE",
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p62:cell",
+        "key": "word/document.xml:p121:cell",
         "part": "word/document.xml",
-        "paragraph": 62,
-        "label": "Cấp mã code để chạy quảng cáo video trong vòng · Thành tiền",
-        "context": "2 · Cấp mã code để chạy quảng cáo video trong vòng … ngày (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
+        "paragraph": 121,
+        "label": "Cấp mã code để chạy quảng cáo video trong vòng · Phí dịch vụ",
+        "context": "Hạng mục quảng cáo · Cấp mã code để chạy quảng cáo video trong vòng … ngày.Thời hạn chạy quảng cáo tính thời điểm bàn giao mã code quảng cáo.Thời điểm bắt đầu chạy quảng cáo được hai bên thống nhất qua email/tin nhắn.Brand, Bên A và/hoặc agency được Brand hoặc Bên A ủy quyền được sử dụng video và mã quảng cáo để chạy Ads trong phạm vi, thời hạn đã thỏa thuận. · …",
         "required": false,
-        "title": "Cấp mã code để chạy quảng cáo video trong vòng · Thành tiền",
+        "start": 0,
+        "end": 1,
+        "title": "Cấp mã code để chạy quảng cáo video trong vòng · Phí dịch vụ",
         "group": "SCOPE",
         "kind": "money"
       },
       {
-        "key": "word/document.xml:p64:32",
+        "key": "word/document.xml:p127:18",
         "part": "word/document.xml",
-        "paragraph": 64,
-        "start": 32,
-        "end": 33,
-        "label": "Sử dụng hình ảnh và video trong  [điền]  ngày kể từ ngày đăng tải",
-        "context": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
+        "paragraph": 127,
+        "start": 18,
+        "end": 19,
+        "label": "Thời hạn sử dụng:  [điền]  ngày kể từ ngày video đư",
+        "context": "Thời hạn sử dụng: … ngày kể từ ngày video được đăng tải.",
         "required": false,
         "title": "Số ngày sử dụng hình ảnh và video",
         "group": "SCOPE",
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p67:cell",
+        "key": "word/document.xml:p128:cell",
         "part": "word/document.xml",
-        "paragraph": 67,
-        "label": "Sử dụng hình ảnh và video trong · Thành tiền",
-        "context": "3 · Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải videoSử dụng hình ảnh: Bên A được sử dụng hình ảnh của Bên B (hình ảnh chụp riêng, không trích xuất từ video hoặc hình ảnh từ video) để gắn với sản phẩm trên listing gian hàng, phiên livestream, website, sàn TMĐT, landing page và các kênh truyền thông số khác, sau khi Bên B xác nhận cụ thể hình ảnh được phép sử dụng, phục vụ dự án truyền thông sản phẩm.Sử dụng video: Bên A được chủ động chỉnh sửa, cắt ghép, chuyển thể, lồng ghép, biên tập, tái sử dụng và đăng tải lại video do Bên B thực hiện trên website, landing page, sàn TMĐT, Facebook, TikTok, Instagram, YouTube và các kênh khác; đồng thời được cho phép KOC/KOL/người dùng duet, stitch, chia sẻ hoặc tái sử dụng video để phục vụ hoạt động truyền thông, quảng cáo, PR, livestream, affiliate và chiến dịch TMĐT của sản phẩm.",
+        "paragraph": 128,
+        "label": "Quyền sử dụng hình ảnh · Phí dịch vụ",
+        "context": "Hạng mục quyền sử dụng hình ảnh và nội dung sản xuất · Quyền sử dụng hình ảnh: Bên A được sử dụng các hình ảnh của Bên B đã được Hai Bên xác nhận, bao gồm ảnh chụp riêng, hình ảnh trích xuất từ video và/hoặc tài sản khác theo thỏa thuận, để gắn với sản phẩm trên listing/PDP/SIS, banner, cover, sàn TMĐT, website, landing page, livestream, mạng xã hội và các hoạt động quảng cáo, PR, truyền thông online. Bên A được crop, resize, điều chỉnh bố cục, chèn chữ hoặc nhận diện thương hiệu nhưng không được làm sai lệch hình ảnh của Bên B.Quyền sử dụng video: Bên A được sử dụng video để đăng lại trên kênh của nhãn hàng, chạy quảng cáo trả phí, sử dụng trên sàn TMĐT, livestream, website, landing page và phục vụ hoạt động PR, truyền thông online. Bên A được crop, resize, thêm phụ đề, cắt ghép, biên tập, chuyển thể, lồng ghép, đăng lại và cho phép duet, stitch, chia sẻ hoặc tái sử dụng video cho hoạt ",
         "required": false,
-        "title": "Sử dụng hình ảnh và video trong · Thành tiền",
+        "start": 0,
+        "end": 1,
+        "title": "Quyền sử dụng hình ảnh · Phí dịch vụ",
         "group": "SCOPE",
         "kind": "money"
       },
       {
-        "key": "word/document.xml:p69:cell",
+        "key": "word/document.xml:p131:89",
         "part": "word/document.xml",
-        "paragraph": 69,
-        "label": "Tổng giá trị chưa bao gồm thuế TNCN (giá trị NET Bên B thực nhận)",
-        "context": "Tổng giá trị chưa bao gồm thuế TNCN (giá trị NET Bên B thực nhận)",
+        "paragraph": 131,
+        "start": 89,
+        "end": 90,
+        "label": ", sản xuất nội dung trong thời hạn  [điền]  ngày kể từ ngày Bên B nh",
+        "context": "Bên  A gửi sản phẩm mẫu cho Bên B để phục vụ việc quay, sản xuất nội dung trong thời hạn … ngày kể từ ngày Bên B nhận sản phẩm. Khi hết thời hạn nêu trên hoặc hoàn tất việc quay, tùy thời điểm nào đến trước, Bên B có trách nhiệm hoàn trả sản phẩm cho Bên A hoặc phối hợp để Bên A đến nhận lại. Trường hợp sản phẩm bị mất hoặc hư hỏng do lỗi của Bên B, Bên B có trách nhiệm bồi thường theo giá trị thực tế của sản phẩm tại thời điểm bàn giao, trừ hao hụt hoặc hư hỏng hợp lý phát sinh từ việc sử dụng sản phẩm đúng mục đích đã thống nhất.",
+        "required": false,
+        "title": "Thời hạn hoàn trả sản phẩm mẫu (ngày)",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
+        "key": "word/document.xml:p140:cell",
+        "part": "word/document.xml",
+        "paragraph": 140,
+        "label": "Tổng giá trị chưa bao gồm thuế TNCN(Giá trị NET Bên B thực nhận)",
+        "context": "Tổng giá trị chưa bao gồm thuế TNCN(Giá trị NET Bên B thực nhận) · …",
         "required": true,
-        "title": "Tổng giá trị chưa bao gồm thuế TNCN (giá trị NET Bên B thực nhận)",
+        "start": 0,
+        "end": 1,
+        "title": "Tổng giá trị chưa bao gồm thuế TNCN(Giá trị NET Bên B thực nhận)",
         "group": "MONEY",
         "kind": "money",
         "source": "netTotal"
       },
       {
-        "key": "word/document.xml:p71:cell",
+        "key": "word/document.xml:p143:cell",
         "part": "word/document.xml",
-        "paragraph": 71,
-        "label": "Thuế TNCN (Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
-        "context": "Thuế TNCN (Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
+        "paragraph": 143,
+        "label": "Thuế TNCN(Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
+        "context": "Thuế TNCN(Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định) · …",
         "required": false,
-        "title": "Thuế TNCN (Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
+        "start": 0,
+        "end": 1,
+        "title": "Thuế TNCN(Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
         "group": "MONEY",
         "kind": "money",
         "source": "pitAmount"
       },
       {
-        "key": "word/document.xml:p73:cell",
+        "key": "word/document.xml:p145:cell",
         "part": "word/document.xml",
-        "paragraph": 73,
-        "label": "Tổng giá trị đã bao gồm thuế TNCN",
-        "context": "Tổng giá trị đã bao gồm thuế TNCN",
+        "paragraph": 145,
+        "label": "Tổng giá trị đã bao gồm thuế TNCN (VNĐ)",
+        "context": "Tổng giá trị đã bao gồm thuế TNCN (VNĐ) · …",
         "required": false,
-        "title": "Tổng giá trị đã bao gồm thuế TNCN",
+        "start": 0,
+        "end": 1,
+        "title": "Tổng giá trị đã bao gồm thuế TNCN (VNĐ)",
         "group": "MONEY",
         "kind": "money",
         "source": "grossTotal"
       },
       {
-        "key": "word/document.xml:p77:64",
+        "key": "word/document.xml:p149:64",
         "part": "word/document.xml",
-        "paragraph": 77,
+        "paragraph": 149,
         "start": 64,
         "end": 65,
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
@@ -41958,9 +42120,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p78:65",
+        "key": "word/document.xml:p150:65",
         "part": "word/document.xml",
-        "paragraph": 78,
+        "paragraph": 150,
         "start": 65,
         "end": 66,
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
@@ -41971,9 +42133,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p86:14",
+        "key": "word/document.xml:p158:14",
         "part": "word/document.xml",
-        "paragraph": 86,
+        "paragraph": 158,
         "start": 14,
         "end": 15,
         "label": "Lần 1 tạm ứng  [điền]  trong vòng … ngày làm vi",
@@ -41985,9 +42147,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "advanceAmount"
       },
       {
-        "key": "word/document.xml:p86:27",
+        "key": "word/document.xml:p158:27",
         "part": "word/document.xml",
-        "paragraph": 86,
+        "paragraph": 158,
         "start": 27,
         "end": 28,
         "label": "Lần 1 tạm ứng … trong vòng  [điền]  ngày làm việc (trừ thứ b",
@@ -41998,9 +42160,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p87:44",
+        "key": "word/document.xml:p159:44",
         "part": "word/document.xml",
-        "paragraph": 87,
+        "paragraph": 159,
         "start": 44,
         "end": 45,
         "label": "nh toán số tiền còn lại trong vòng  [điền]  ngày làm việc (trừ thứ b",
@@ -42013,7 +42175,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tên chủ tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 89,
+        "paragraph": 161,
         "start": 19,
         "end": 19,
         "label": "Tên chủ tài khoản",
@@ -42027,7 +42189,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Số tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 90,
+        "paragraph": 162,
         "start": 14,
         "end": 14,
         "label": "Số tài khoản",
@@ -42041,7 +42203,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tại Ngân hàng]",
         "part": "word/document.xml",
-        "paragraph": 91,
+        "paragraph": 163,
         "start": 15,
         "end": 15,
         "label": "Tại Ngân hàng",
@@ -42053,9 +42215,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "bankName"
       },
       {
-        "key": "word/document.xml:p100:cell",
+        "key": "word/document.xml:p172:cell",
         "part": "word/document.xml",
-        "paragraph": 100,
+        "paragraph": 172,
         "label": "Điều …",
         "context": "Điều … · Nội dung review sửa đổi",
         "required": false,
@@ -42066,9 +42228,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "long"
       },
       {
-        "key": "word/document.xml:p102:cell",
+        "key": "word/document.xml:p174:cell",
         "part": "word/document.xml",
-        "paragraph": 102,
+        "paragraph": 174,
         "label": "Điều …",
         "context": "Điều … · Nội dung review sửa đổi",
         "required": false,
@@ -42080,7 +42242,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       },
       {
         "key": "token:[dd.mm.yy]",
-        "part": "word/footer1.xml",
+        "part": "word/footer2.xml",
         "paragraph": 1,
         "start": 0,
         "end": 6,
@@ -42094,7 +42256,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       },
       {
         "key": "token:[BRAND]",
-        "part": "word/footer1.xml",
+        "part": "word/footer2.xml",
         "paragraph": 1,
         "start": 18,
         "end": 23,
@@ -42108,7 +42270,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       },
       {
         "key": "token:[ID KOC]",
-        "part": "word/footer1.xml",
+        "part": "word/footer2.xml",
         "paragraph": 1,
         "start": 24,
         "end": 30,
@@ -42174,28 +42336,100 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "Điều 1: Phạm vi và phí dịch vụ",
       "Phạm vi công việc và phí dịch vụ",
-      "STT",
-      "Dịch vụ Bên B cung ứng cho Bên A",
-      "Thành tiền",
-      "1",
-      "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-      "Thời gian đăng tải (air video): ….",
-      "Video có gắn giỏ hàng sản phẩm (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
+      "Nhóm hạng mục",
+      "Nội dung chi tiết/",
+      "Phí dịch vụ (VNĐ)",
+      "Hạng mục video",
+      "Sản xuất và đăng tải video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng cho sản phẩm.",
+      "…",
       "",
-      "2",
-      "Cấp mã code để chạy quảng cáo video trong vòng … ngày (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
+      "Sản phẩm được quảng cáo: … (tên sản phẩm + nhãn hiệu)",
       "",
-      "3",
-      "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
-      "Sử dụng hình ảnh: Bên A được sử dụng hình ảnh của Bên B (hình ảnh chụp riêng, không trích xuất từ video hoặc hình ảnh từ video) để gắn với sản phẩm trên listing gian hàng, phiên livestream, website, sàn TMĐT, landing page và các kênh truyền thông số khác, sau khi Bên B xác nhận cụ thể hình ảnh được phép sử dụng, phục vụ dự án truyền thông sản phẩm.",
-      "Sử dụng video: Bên A được chủ động chỉnh sửa, cắt ghép, chuyển thể, lồng ghép, biên tập, tái sử dụng và đăng tải lại video do Bên B thực hiện trên website, landing page, sàn TMĐT, Facebook, TikTok, Instagram, YouTube và các kênh khác; đồng thời được cho phép KOC/KOL/người dùng duet, stitch, chia sẻ hoặc tái sử dụng video để phục vụ hoạt động truyền thông, quảng cáo, PR, livestream, affiliate và chiến dịch TMĐT của sản phẩm.",
       "",
-      "Tổng giá trị chưa bao gồm thuế TNCN (giá trị NET Bên B thực nhận)",
+      "Số lượng video  …",
       "",
-      "Thuế TNCN (Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
       "",
-      "Tổng giá trị đã bao gồm thuế TNCN",
+      "Thời lượng video …s",
       "",
+      "",
+      "Hình thức sản xuất video",
+      "",
+      "",
+      "Sản xuất nội dung mới",
+      "Bên B xây dựng ý tưởng, kịch bản và sản xuất video mới trên cơ sở Brief/Kịch bản do Bên A cung cấp hoặc được Hai Bên thống nhất trước khi thực hiện.",
+      "",
+      "",
+      "Chuyển thể nội dung (Adapt)",
+      "Bên B sử dụng nội dung, hình ảnh, video hoặc tài liệu nguồn do Bên A cung cấp hoặc được Hai Bên thống nhất để biên tập, điều chỉnh hoặc chuyển thể thành video phù hợp với yêu cầu kỹ thuật, định dạng và đặc điểm của nền tảng đăng tải.",
+      "",
+      "",
+      "Đăng chéo/ Đăng lại (Cross-post/Repost)",
+      "Bên B đăng tải lại video đã được sản xuất và phê duyệt trên một hoặc nhiều nền tảng khác. Bên B được thực hiện các điều chỉnh kỹ thuật cần thiết về kích thước, tỷ lệ khung hình, thời lượng, phụ đề hoặc định dạng để phù hợp với từng nền tảng nhưng không làm thay đổi nội dung, thông điệp chính đã được phê duyệt.",
+      "",
+      "",
+      "Chỉ đăng tải (Post-only)",
+      "Bên A/Brand cung cấp nội dung hoàn chỉnh; Bên B chỉ thực hiện đăng tải trên kênh của Bên B. Nội dung được cung cấp: …",
+      "",
+      "",
+      "Chỉ sản xuất (Production-only)",
+      "Bên B sản xuất video và bàn giao cho Bên A/Brand, không đăng tải trên kênh của Bên B.Định dạng file bàn giao: …; ",
+      "Thời hạn bàn giao: …",
+      "",
+      "",
+      "Cắt ngắn/ Biên tập lại (Cut-down/Re-edit)",
+      "Bên B tạo các phiên bản rút gọn hoặc phiên bản mới từ video gốc theo yêu cầu đã thống nhất.",
+      "Số lượng phiên bản: …;",
+      "Thời lượng từng phiên bản: …",
+      "",
+      "",
+      "Số vòng chỉnh sửa video",
+      "Bên A được yêu cầu chỉnh sửa tối đa … vòng.",
+      "Mỗi vòng được tính từ khi Bên A gửi một lần tổng hợp ý kiến đến khi Bên B hoàn thành toàn bộ ý kiến đó.",
+      "",
+      "",
+      "Nền tảng",
+      "đăng tải",
+      "TikTok: Link",
+      "Shopee: Link",
+      "Facebook: Link",
+      "Instagram: Link",
+      "YouTube: Link",
+      "Threads/nền tảng khác: Link",
+      "",
+      "Hạng mục thương mại",
+      "Gắn giỏ hàng/ Link Affiliate",
+      "Gắn giỏ hàng sản phẩm được quảng cáo và/hoặc gắn, chèn Link Affiliate tại video, bài đăng, showcase và các vị trí khác được nền tảng hỗ trợ. Hình thức, vị trí và thời điểm bắt đầu thực hiện được Hai Bên thống nhất qua email/tin nhắn.",
+      "…",
+      "Hạng mục quảng cáo",
+      "Cấp mã code để chạy quảng cáo video trong vòng … ngày.",
+      "Thời hạn chạy quảng cáo tính thời điểm bàn giao mã code quảng cáo.",
+      "Thời điểm bắt đầu chạy quảng cáo được hai bên thống nhất qua email/tin nhắn.",
+      "Brand, Bên A và/hoặc agency được Brand hoặc Bên A ủy quyền được sử dụng video và mã quảng cáo để chạy Ads trong phạm vi, thời hạn đã thỏa thuận.",
+      "…",
+      "Hạng mục quyền sử dụng hình ảnh và nội dung sản xuất",
+      "Quyền sử dụng hình ảnh: Bên A được sử dụng các hình ảnh của Bên B đã được Hai Bên xác nhận, bao gồm ảnh chụp riêng, hình ảnh trích xuất từ video và/hoặc tài sản khác theo thỏa thuận, để gắn với sản phẩm trên listing/PDP/SIS, banner, cover, sàn TMĐT, website, landing page, livestream, mạng xã hội và các hoạt động quảng cáo, PR, truyền thông online. Bên A được crop, resize, điều chỉnh bố cục, chèn chữ hoặc nhận diện thương hiệu nhưng không được làm sai lệch hình ảnh của Bên B.",
+      "",
+      "Quyền sử dụng video: Bên A được sử dụng video để đăng lại trên kênh của nhãn hàng, chạy quảng cáo trả phí, sử dụng trên sàn TMĐT, livestream, website, landing page và phục vụ hoạt động PR, truyền thông online. Bên A được crop, resize, thêm phụ đề, cắt ghép, biên tập, chuyển thể, lồng ghép, đăng lại và cho phép duet, stitch, chia sẻ hoặc tái sử dụng video cho hoạt động quảng cáo, affiliate và chiến dịch TMĐT, với điều kiện không làm sai lệch nội dung hoặc gây ảnh hưởng tiêu cực đến hình ảnh, uy tín của Bên B.",
+      "Bên được sử dụng: Bên A, Brand và agency/đối tác được Bên A hoặc Brand ủy quyền.",
+      "Thời hạn sử dụng: … ngày kể từ ngày video được đăng tải.",
+      "…",
+      "Hạng mục thông tin thực hiện",
+      "(nếu có)",
+      "Bên  A gửi sản phẩm mẫu cho Bên B để phục vụ việc quay, sản xuất nội dung trong thời hạn … ngày kể từ ngày Bên B nhận sản phẩm. Khi hết thời hạn nêu trên hoặc hoàn tất việc quay, tùy thời điểm nào đến trước, Bên B có trách nhiệm hoàn trả sản phẩm cho Bên A hoặc phối hợp để Bên A đến nhận lại. Trường hợp sản phẩm bị mất hoặc hư hỏng do lỗi của Bên B, Bên B có trách nhiệm bồi thường theo giá trị thực tế của sản phẩm tại thời điểm bàn giao, trừ hao hụt hoặc hư hỏng hợp lý phát sinh từ việc sử dụng sản phẩm đúng mục đích đã thống nhất.",
+      "-",
+      "",
+      "Báo cáo hiệu suất video:",
+      "Thời điểm báo cáo: T+7, T+14 và T+30, tính từ ngày bài đăng được đăng tải.",
+      "Chỉ số cần báo cáo: lượt xem/tiếp cận, lượt tương tác, lượt thích, bình luận, chia sẻ, lưu bài, lượt nhấp liên kết và các chỉ số khác tùy theo từng nền tảng, định dạng bài đăng. Báo cáo được cung cấp dưới hình thức ảnh chụp màn hình insight hoặc dữ liệu trích xuất từ nền tảng.",
+      "-",
+      "Tổng giá trị chưa bao gồm thuế TNCN",
+      "(Giá trị NET Bên B thực nhận)",
+      "…",
+      "Thuế TNCN",
+      "(Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
+      "…",
+      "Tổng giá trị đã bao gồm thuế TNCN (VNĐ)",
+      "…",
       "",
       " Hoa hồng Affiliate ",
       "Hoa hồng affiliate gồm hai loại như sau:",
@@ -42234,19 +42468,29 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "",
       "",
+      "",
       "ddmmyy/SOW/UPBASE-BRAND-ID KOC",
       "http://www.upbase.asia",
       "Trang 1 ",
       "",
       "",
       "",
-      "BM.HĐ.VID.IND.Ver072026",
+      "",
+      "",
+      "BM.HĐ.VID.IND.Ver092026",
+      "",
       ""
     ],
     "blocks": [
       {
-        "kind": "table",
+        "kind": "p",
         "part": "word/header1.xml",
+        "paragraph": 0,
+        "text": ""
+      },
+      {
+        "kind": "table",
+        "part": "word/header2.xml",
         "variant": "grid",
         "rows": [
           [
@@ -42254,7 +42498,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               "blocks": [
                 {
                   "kind": "p",
-                  "part": "word/header1.xml",
+                  "part": "word/header2.xml",
                   "paragraph": 0,
                   "text": ""
                 }
@@ -42264,9 +42508,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               "blocks": [
                 {
                   "kind": "p",
-                  "part": "word/header1.xml",
+                  "part": "word/header2.xml",
                   "paragraph": 1,
-                  "text": "BM.HĐ.VID.IND.Ver072026",
+                  "text": "BM.HĐ.VID.IND.Ver092026",
                   "align": "right"
                 }
               ]
@@ -42276,8 +42520,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       },
       {
         "kind": "p",
-        "part": "word/header1.xml",
+        "part": "word/header2.xml",
         "paragraph": 2,
+        "text": ""
+      },
+      {
+        "kind": "p",
+        "part": "word/header3.xml",
+        "paragraph": 0,
         "text": ""
       },
       {
@@ -42883,7 +43133,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 52,
-                  "text": "STT",
+                  "text": "Nhóm hạng mục",
                   "align": "center",
                   "bold": true
                 }
@@ -42895,11 +43145,12 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 53,
-                  "text": "Dịch vụ Bên B cung ứng cho Bên A",
+                  "text": "Nội dung chi tiết/",
                   "align": "center",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -42907,7 +43158,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 54,
-                  "text": "Thành tiền",
+                  "text": "Phí dịch vụ (VNĐ)",
                   "align": "center",
                   "bold": true
                 }
@@ -42921,11 +43172,12 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 55,
-                  "text": "1",
-                  "align": "center",
+                  "text": "Hạng mục video",
+                  "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "vMerge": "restart"
             },
             {
               "blocks": [
@@ -42933,27 +43185,38 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 56,
-                  "text": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-                  "align": "justify",
-                  "bold": true
-                },
+                  "text": "Sản xuất và đăng tải video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng cho sản phẩm.",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 57,
-                  "text": "Thời gian đăng tải (air video): ….",
-                  "align": "justify",
-                  "bold": true
-                },
+                  "text": "…",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "restart"
+            }
+          ],
+          [
+            {
+              "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 58,
-                  "text": "Video có gắn giỏ hàng sản phẩm (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
+                  "text": "",
                   "align": "justify",
-                  "boldPrefix": 31
+                  "bold": true
                 }
-              ]
+              ],
+              "vMerge": "continue"
             },
             {
               "blocks": [
@@ -42961,10 +43224,23 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 59,
-                  "text": "",
-                  "align": "right"
+                  "text": "Sản phẩm được quảng cáo: … (tên sản phẩm + nhãn hiệu)",
+                  "align": "justify"
                 }
-              ]
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 60,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
             }
           ],
           [
@@ -42973,24 +43249,13 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 60,
-                  "text": "2",
-                  "align": "center",
+                  "paragraph": 61,
+                  "text": "",
+                  "align": "justify",
                   "bold": true
                 }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 61,
-                  "text": "Cấp mã code để chạy quảng cáo video trong vòng … ngày (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
-                  "align": "justify",
-                  "boldPrefix": 54
-                }
-              ]
+              ],
+              "vMerge": "continue"
             },
             {
               "blocks": [
@@ -42998,10 +43263,23 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 62,
-                  "text": "",
-                  "align": "right"
+                  "text": "Số lượng video  …",
+                  "align": "justify"
                 }
-              ]
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 63,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
             }
           ],
           [
@@ -43010,41 +43288,40 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 63,
-                  "text": "3",
-                  "align": "center",
+                  "paragraph": 64,
+                  "text": "",
+                  "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "vMerge": "continue"
             },
             {
               "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 64,
-                  "text": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
-                  "align": "justify",
-                  "bold": true
-                },
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
                   "paragraph": 65,
-                  "text": "Sử dụng hình ảnh: Bên A được sử dụng hình ảnh của Bên B (hình ảnh chụp riêng, không trích xuất từ video hoặc hình ảnh từ video) để gắn với sản phẩm trên listing gian hàng, phiên livestream, website, sàn TMĐT, landing page và các kênh truyền thông số khác, sau khi Bên B xác nhận cụ thể hình ảnh được phép sử dụng, phục vụ dự án truyền thông sản phẩm.",
-                  "align": "justify",
-                  "boldPrefix": 17
-                },
+                  "text": "Thời lượng video …s",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 66,
-                  "text": "Sử dụng video: Bên A được chủ động chỉnh sửa, cắt ghép, chuyển thể, lồng ghép, biên tập, tái sử dụng và đăng tải lại video do Bên B thực hiện trên website, landing page, sàn TMĐT, Facebook, TikTok, Instagram, YouTube và các kênh khác; đồng thời được cho phép KOC/KOL/người dùng duet, stitch, chia sẻ hoặc tái sử dụng video để phục vụ hoạt động truyền thông, quảng cáo, PR, livestream, affiliate và chiến dịch TMĐT của sản phẩm.",
-                  "align": "justify",
-                  "boldPrefix": 14
+                  "text": "",
+                  "align": "center"
                 }
-              ]
-            },
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
             {
               "blocks": [
                 {
@@ -43052,21 +43329,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 67,
                   "text": "",
-                  "align": "right"
+                  "align": "justify",
+                  "bold": true
                 }
-              ]
-            }
-          ],
-          [
+              ],
+              "vMerge": "continue"
+            },
             {
               "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 68,
-                  "text": "Tổng giá trị chưa bao gồm thuế TNCN (giá trị NET Bên B thực nhận)",
-                  "align": "justify",
-                  "boldPrefix": 36
+                  "text": "Hình thức sản xuất video",
+                  "align": "justify"
                 }
               ],
               "colSpan": 2
@@ -43078,9 +43354,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 69,
                   "text": "",
-                  "align": "right"
+                  "align": "center"
                 }
-              ]
+              ],
+              "vMerge": "continue"
             }
           ],
           [
@@ -43090,12 +43367,12 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 70,
-                  "text": "Thuế TNCN (Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
+                  "text": "",
                   "align": "justify",
-                  "boldPrefix": 10
+                  "bold": true
                 }
               ],
-              "colSpan": 2
+              "vMerge": "continue"
             },
             {
               "blocks": [
@@ -43103,8 +43380,491 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 71,
+                  "text": "Sản xuất nội dung mới",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 72,
+                  "text": "Bên B xây dựng ý tưởng, kịch bản và sản xuất video mới trên cơ sở Brief/Kịch bản do Bên A cung cấp hoặc được Hai Bên thống nhất trước khi thực hiện.",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 73,
                   "text": "",
-                  "align": "right"
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 74,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 75,
+                  "text": "Chuyển thể nội dung (Adapt)",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 76,
+                  "text": "Bên B sử dụng nội dung, hình ảnh, video hoặc tài liệu nguồn do Bên A cung cấp hoặc được Hai Bên thống nhất để biên tập, điều chỉnh hoặc chuyển thể thành video phù hợp với yêu cầu kỹ thuật, định dạng và đặc điểm của nền tảng đăng tải.",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 77,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 78,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 79,
+                  "text": "Đăng chéo/ Đăng lại (Cross-post/Repost)",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 80,
+                  "text": "Bên B đăng tải lại video đã được sản xuất và phê duyệt trên một hoặc nhiều nền tảng khác. Bên B được thực hiện các điều chỉnh kỹ thuật cần thiết về kích thước, tỷ lệ khung hình, thời lượng, phụ đề hoặc định dạng để phù hợp với từng nền tảng nhưng không làm thay đổi nội dung, thông điệp chính đã được phê duyệt.",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 81,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 82,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 83,
+                  "text": "Chỉ đăng tải (Post-only)",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 84,
+                  "text": "Bên A/Brand cung cấp nội dung hoàn chỉnh; Bên B chỉ thực hiện đăng tải trên kênh của Bên B. Nội dung được cung cấp: …",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 85,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 86,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 87,
+                  "text": "Chỉ sản xuất (Production-only)",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 88,
+                  "text": "Bên B sản xuất video và bàn giao cho Bên A/Brand, không đăng tải trên kênh của Bên B.Định dạng file bàn giao: …; ",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 89,
+                  "text": "Thời hạn bàn giao: …",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 90,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 91,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 92,
+                  "text": "Cắt ngắn/ Biên tập lại (Cut-down/Re-edit)",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 93,
+                  "text": "Bên B tạo các phiên bản rút gọn hoặc phiên bản mới từ video gốc theo yêu cầu đã thống nhất.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 94,
+                  "text": "Số lượng phiên bản: …;",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 95,
+                  "text": "Thời lượng từng phiên bản: …",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 96,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 97,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 98,
+                  "text": "Số vòng chỉnh sửa video",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 99,
+                  "text": "Bên A được yêu cầu chỉnh sửa tối đa … vòng.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 100,
+                  "text": "Mỗi vòng được tính từ khi Bên A gửi một lần tổng hợp ý kiến đến khi Bên B hoàn thành toàn bộ ý kiến đó.",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 101,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 102,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 103,
+                  "text": "Nền tảng",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 104,
+                  "text": "đăng tải",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 105,
+                  "text": "TikTok: Link",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 106,
+                  "text": "Shopee: Link",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 107,
+                  "text": "Facebook: Link",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 108,
+                  "text": "Instagram: Link",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 109,
+                  "text": "YouTube: Link",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 110,
+                  "text": "Threads/nền tảng khác: Link",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 111,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 112,
+                  "text": "Hạng mục thương mại",
+                  "align": "justify",
+                  "bold": true
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 113,
+                  "text": "Gắn giỏ hàng/ Link Affiliate",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 114,
+                  "text": "Gắn giỏ hàng sản phẩm được quảng cáo và/hoặc gắn, chèn Link Affiliate tại video, bài đăng, showcase và các vị trí khác được nền tảng hỗ trợ. Hình thức, vị trí và thời điểm bắt đầu thực hiện được Hai Bên thống nhất qua email/tin nhắn.",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 115,
+                  "text": "…",
+                  "align": "center"
                 }
               ]
             }
@@ -43115,10 +43875,42 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 72,
-                  "text": "Tổng giá trị đã bao gồm thuế TNCN",
+                  "paragraph": 116,
+                  "text": "Hạng mục quảng cáo",
                   "align": "justify",
                   "bold": true
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 117,
+                  "text": "Cấp mã code để chạy quảng cáo video trong vòng … ngày.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 118,
+                  "text": "Thời hạn chạy quảng cáo tính thời điểm bàn giao mã code quảng cáo.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 119,
+                  "text": "Thời điểm bắt đầu chạy quảng cáo được hai bên thống nhất qua email/tin nhắn.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 120,
+                  "text": "Brand, Bên A và/hoặc agency được Brand hoặc Bên A ủy quyền được sử dụng video và mã quảng cáo để chạy Ads trong phạm vi, thời hạn đã thỏa thuận.",
+                  "align": "justify"
                 }
               ],
               "colSpan": 2
@@ -43128,9 +43920,269 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 73,
+                  "paragraph": 121,
+                  "text": "…",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 122,
+                  "text": "Hạng mục quyền sử dụng hình ảnh và nội dung sản xuất",
+                  "align": "justify",
+                  "bold": true
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 123,
+                  "text": "Quyền sử dụng hình ảnh: Bên A được sử dụng các hình ảnh của Bên B đã được Hai Bên xác nhận, bao gồm ảnh chụp riêng, hình ảnh trích xuất từ video và/hoặc tài sản khác theo thỏa thuận, để gắn với sản phẩm trên listing/PDP/SIS, banner, cover, sàn TMĐT, website, landing page, livestream, mạng xã hội và các hoạt động quảng cáo, PR, truyền thông online. Bên A được crop, resize, điều chỉnh bố cục, chèn chữ hoặc nhận diện thương hiệu nhưng không được làm sai lệch hình ảnh của Bên B.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 124,
                   "text": "",
-                  "align": "right"
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 125,
+                  "text": "Quyền sử dụng video: Bên A được sử dụng video để đăng lại trên kênh của nhãn hàng, chạy quảng cáo trả phí, sử dụng trên sàn TMĐT, livestream, website, landing page và phục vụ hoạt động PR, truyền thông online. Bên A được crop, resize, thêm phụ đề, cắt ghép, biên tập, chuyển thể, lồng ghép, đăng lại và cho phép duet, stitch, chia sẻ hoặc tái sử dụng video cho hoạt động quảng cáo, affiliate và chiến dịch TMĐT, với điều kiện không làm sai lệch nội dung hoặc gây ảnh hưởng tiêu cực đến hình ảnh, uy tín của Bên B.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 126,
+                  "text": "Bên được sử dụng: Bên A, Brand và agency/đối tác được Bên A hoặc Brand ủy quyền.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 127,
+                  "text": "Thời hạn sử dụng: … ngày kể từ ngày video được đăng tải.",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 128,
+                  "text": "…",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 129,
+                  "text": "Hạng mục thông tin thực hiện",
+                  "align": "justify",
+                  "bold": true
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 130,
+                  "text": "(nếu có)",
+                  "align": "justify",
+                  "bold": true,
+                  "italic": true
+                }
+              ],
+              "vMerge": "restart"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 131,
+                  "text": "Bên  A gửi sản phẩm mẫu cho Bên B để phục vụ việc quay, sản xuất nội dung trong thời hạn … ngày kể từ ngày Bên B nhận sản phẩm. Khi hết thời hạn nêu trên hoặc hoàn tất việc quay, tùy thời điểm nào đến trước, Bên B có trách nhiệm hoàn trả sản phẩm cho Bên A hoặc phối hợp để Bên A đến nhận lại. Trường hợp sản phẩm bị mất hoặc hư hỏng do lỗi của Bên B, Bên B có trách nhiệm bồi thường theo giá trị thực tế của sản phẩm tại thời điểm bàn giao, trừ hao hụt hoặc hư hỏng hợp lý phát sinh từ việc sử dụng sản phẩm đúng mục đích đã thống nhất.",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 132,
+                  "text": "-",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 133,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 134,
+                  "text": "Báo cáo hiệu suất video:",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 135,
+                  "text": "Thời điểm báo cáo: T+7, T+14 và T+30, tính từ ngày bài đăng được đăng tải.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 136,
+                  "text": "Chỉ số cần báo cáo: lượt xem/tiếp cận, lượt tương tác, lượt thích, bình luận, chia sẻ, lưu bài, lượt nhấp liên kết và các chỉ số khác tùy theo từng nền tảng, định dạng bài đăng. Báo cáo được cung cấp dưới hình thức ảnh chụp màn hình insight hoặc dữ liệu trích xuất từ nền tảng.",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 137,
+                  "text": "-",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 138,
+                  "text": "Tổng giá trị chưa bao gồm thuế TNCN",
+                  "align": "justify",
+                  "bold": true
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 139,
+                  "text": "(Giá trị NET Bên B thực nhận)",
+                  "align": "justify",
+                  "bold": true,
+                  "italic": true
+                }
+              ],
+              "colSpan": 3
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 140,
+                  "text": "…",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 141,
+                  "text": "Thuế TNCN",
+                  "align": "justify",
+                  "bold": true
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 142,
+                  "text": "(Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
+                  "align": "justify",
+                  "bold": true,
+                  "italic": true
+                }
+              ],
+              "colSpan": 3
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 143,
+                  "text": "…",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 144,
+                  "text": "Tổng giá trị đã bao gồm thuế TNCN (VNĐ)",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "colSpan": 3
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 145,
+                  "text": "…",
+                  "align": "center"
                 }
               ]
             }
@@ -43140,7 +44192,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 74,
+        "paragraph": 146,
         "text": "",
         "align": "justify",
         "bold": true
@@ -43148,7 +44200,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 75,
+        "paragraph": 147,
         "text": " Hoa hồng Affiliate ",
         "align": "justify",
         "bold": true
@@ -43156,14 +44208,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 76,
+        "paragraph": 148,
         "text": "Hoa hồng affiliate gồm hai loại như sau:",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 77,
+        "paragraph": 149,
         "text": "Hoa hồng organic: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh tự nhiên từ video, được ghi nhận thông qua link/mã theo dõi của Bên B và không bao gồm doanh thu phát sinh từ ngân sách quảng cáo do Bên A hoặc bên thứ ba chi trả. ",
         "align": "justify",
         "boldPrefix": 17
@@ -43171,7 +44223,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 78,
+        "paragraph": 150,
         "text": "Hoa hồng chạy ads: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ video được sử dụng để chạy quảng cáo, với điều kiện doanh thu đó được ghi nhận thông qua link/mã theo dõi của Bên B và được Bên A xác nhận trong báo cáo đối soát.",
         "align": "justify",
         "boldPrefix": 18
@@ -43179,14 +44231,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 79,
+        "paragraph": 151,
         "text": "Hoa hồng affiliate do nền tảng chi trả trực tiếp cho Bên B. Bên B tự chịu trách nhiệm kê khai, khấu trừ và nộp các loại thuế, phí liên quan đến khoản thu nhập từ hoa hồng affiliate theo quy định pháp luật.     ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 80,
+        "paragraph": 152,
         "text": "",
         "align": "justify",
         "bold": true
@@ -43194,7 +44246,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 81,
+        "paragraph": 153,
         "text": "Thanh toán phí dịch vụ",
         "align": "justify",
         "bold": true
@@ -43210,7 +44262,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 82,
+                  "paragraph": 154,
                   "text": "Thanh toán 1 lần",
                   "align": "center",
                   "bold": true
@@ -43222,7 +44274,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 83,
+                  "paragraph": 155,
                   "text": "Phí dịch vụ được thanh toán 1 lần trong vòng 7 - 10 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được biên bản nghiệm thu có chữ ký hai bên (nếu cần theo quy định tại Hợp đồng).",
                   "align": "justify"
                 }
@@ -43235,7 +44287,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 84,
+                  "paragraph": 156,
                   "text": "Thanh toán 2 lần",
                   "align": "center",
                   "bold": true
@@ -43247,21 +44299,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 85,
+                  "paragraph": 157,
                   "text": "Phí dịch vụ được thanh toán làm 2 lần:",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 86,
+                  "paragraph": 158,
                   "text": "Lần 1 tạm ứng … trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm hai bên ký kết Phụ lục SOW.",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 87,
+                  "paragraph": 159,
                   "text": "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được biên bản nghiệm thu có chữ ký hai bên (nếu cần theo quy định tại Hợp đồng).  ",
                   "align": "justify"
                 }
@@ -43273,35 +44325,35 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 88,
+        "paragraph": 160,
         "text": "Bên A thanh toán bằng hình thức chuyển khoản ngân hàng vào tài khoản của Bên B theo thông tin như sau:",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 89,
+        "paragraph": 161,
         "text": "Tên chủ tài khoản: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 90,
+        "paragraph": 162,
         "text": "Số tài khoản: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 91,
+        "paragraph": 163,
         "text": "Tại Ngân hàng: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 92,
+        "paragraph": 164,
         "text": "",
         "align": "justify",
         "bold": true
@@ -43309,7 +44361,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 93,
+        "paragraph": 165,
         "text": "Điều 2: Hiệu lực ",
         "align": "justify",
         "bold": true
@@ -43317,7 +44369,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 94,
+        "paragraph": 166,
         "text": "Hiệu lực áp dụng: Phụ lục này có hiệu lực kể từ ngày ký cho đến khi các Bên hoàn thành toàn bộ nghĩa vụ theo SOW này, trừ khi bị chấm dứt theo quy định tại Hợp đồng.",
         "align": "justify",
         "boldPrefix": 18
@@ -43325,7 +44377,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 95,
+        "paragraph": 167,
         "text": "Nguyên tắc ưu tiên áp dụng: Trong trường hợp có bất kỳ mâu thuẫn, khác biệt hoặc không thống nhất nào giữa nội dung của SOW này và Hợp đồng, thì nội dung tại SOW này sẽ được ưu tiên áp dụng đối với phạm vi công việc được quy định tại SOW này.",
         "align": "justify",
         "boldPrefix": 28
@@ -43333,7 +44385,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 96,
+        "paragraph": 168,
         "text": "Cơ chế ngoại lệ: Các Bên thống nhất rằng SOW này có thể quy định các nội dung khác với Hợp đồng (“Ngoại lệ”). Các Ngoại lệ này có hiệu lực ràng buộc và thay thế cho các điều khoản tương ứng tại Hợp đồng, nhưng chỉ áp dụng riêng cho SOW này, bao gồm: ",
         "align": "justify",
         "boldPrefix": 17
@@ -43349,7 +44401,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 97,
+                  "paragraph": 169,
                   "text": "Điều khoản tại Hợp đồng",
                   "align": "justify",
                   "bold": true
@@ -43361,7 +44413,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 98,
+                  "paragraph": 170,
                   "text": "Nội dung điều chỉnh/áp dụng theo SOW",
                   "align": "justify",
                   "bold": true
@@ -43375,7 +44427,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 99,
+                  "paragraph": 171,
                   "text": "Điều …",
                   "align": "justify"
                 }
@@ -43386,7 +44438,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 100,
+                  "paragraph": 172,
                   "text": "Nội dung review sửa đổi",
                   "align": "justify"
                 }
@@ -43399,7 +44451,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 101,
+                  "paragraph": 173,
                   "text": "Điều …",
                   "align": "justify"
                 }
@@ -43410,7 +44462,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 102,
+                  "paragraph": 174,
                   "text": "Nội dung review sửa đổi",
                   "align": "justify"
                 }
@@ -43422,21 +44474,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 103,
+        "paragraph": 175,
         "text": "",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 104,
+        "paragraph": 176,
         "text": "Phụ lục này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi Bên giữ 01 (một) bản để thực hiện.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 105,
+        "paragraph": 177,
         "text": "",
         "align": "justify"
       },
@@ -43451,7 +44503,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 106,
+                  "paragraph": 178,
                   "text": "ĐẠI DIỆN BÊN A",
                   "align": "center",
                   "bold": true
@@ -43459,7 +44511,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 107,
+                  "paragraph": 179,
                   "text": "",
                   "align": "center"
                 }
@@ -43470,7 +44522,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 108,
+                  "paragraph": 180,
                   "text": "ĐẠI DIỆN BÊN B ",
                   "align": "center",
                   "bold": true
@@ -43478,7 +44530,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 109,
+                  "paragraph": 181,
                   "text": "",
                   "align": "center"
                 }
@@ -43490,7 +44542,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 110,
+        "paragraph": 182,
         "text": "",
         "align": "center",
         "bold": true
@@ -43502,8 +44554,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "text": ""
       },
       {
+        "kind": "p",
+        "part": "word/footer2.xml",
+        "paragraph": 0,
+        "text": ""
+      },
+      {
         "kind": "table",
-        "part": "word/footer1.xml",
+        "part": "word/footer2.xml",
         "variant": "grid",
         "rows": [
           [
@@ -43511,7 +44569,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               "blocks": [
                 {
                   "kind": "p",
-                  "part": "word/footer1.xml",
+                  "part": "word/footer2.xml",
                   "paragraph": 1,
                   "text": "ddmmyy/SOW/UPBASE-BRAND-ID KOC"
                 }
@@ -43521,7 +44579,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               "blocks": [
                 {
                   "kind": "p",
-                  "part": "word/footer1.xml",
+                  "part": "word/footer2.xml",
                   "paragraph": 2,
                   "text": "http://www.upbase.asia",
                   "align": "center"
@@ -43532,14 +44590,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               "blocks": [
                 {
                   "kind": "p",
-                  "part": "word/footer1.xml",
+                  "part": "word/footer2.xml",
                   "paragraph": 3,
                   "text": "Trang 1 ",
                   "align": "right"
                 },
                 {
                   "kind": "p",
-                  "part": "word/footer1.xml",
+                  "part": "word/footer2.xml",
                   "paragraph": 4,
                   "text": ""
                 }
@@ -43550,43 +44608,26 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       },
       {
         "kind": "p",
-        "part": "word/footer1.xml",
+        "part": "word/footer2.xml",
         "paragraph": 5,
         "text": ""
-      }
-    ],
-    "category": "LIVESTREAM_APPENDIX",
-    "description": "Phụ lục SOW của booking video (mỗi job hoặc mỗi tháng một phụ lục) đi kèm hợp đồng nguyên tắc, áp dụng cho đối tác là cá nhân.",
-    "active": true,
-    "defaultReviewRoles": [
-      "LEGAL",
-      "FINANCE"
-    ],
-    "exemptLegalReview": true,
-    "scope": "GLOBAL",
-    "updatedAt": "2026-05-01T08:00:00.000Z",
-    "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 37,
-    "requiredFieldCount": 18,
-    "history": [
+      },
       {
-        "version": "Ver052026",
-        "hash": "744048f327e49146cd768e6dfc2ee6396466fc93e71fb8577ad14bdcdec0b0af",
-        "filename": "2. SOW cá nhân booking Video.docx",
-        "updatedAt": "2026-05-01T08:00:00.000Z",
-        "updatedBy": "Phòng Pháp chế",
-        "note": "Phiên bản chuẩn ban hành bởi Pháp chế"
+        "kind": "p",
+        "part": "word/footer3.xml",
+        "paragraph": 0,
+        "text": ""
       }
     ]
   },
   "IND-VID-BBNT": {
     "id": "IND-VID-BBNT",
     "name": "Nghiệm thu video (bản mới) · Cá nhân",
-    "filename": "3. BBNT cá nhân booking Video.docx",
+    "filename": "3.1 BBNT cá nhân booking Video.docx",
     "subject": "Cá nhân",
     "kind": "ACCEPTANCE",
-    "version": "Ver052026",
-    "hash": "f0cc09fa4b0258faa0b050101f42ffcb64a9a505cfec2c1895ce9743e23393df",
+    "version": "Ver092026",
+    "hash": "28494c872f31b942c8e02a295a6f656efec06038433c1eeec3d1932776587475",
     "fields": [
       {
         "key": "token:[dd.mm.yy]",
@@ -43837,111 +44878,93 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "kocId"
       },
       {
-        "key": "word/document.xml:p58:109",
-        "part": "word/document.xml",
-        "paragraph": 58,
-        "start": 109,
-        "end": 110,
-        "label": "đẩy doanh số bán hàng với sản phẩm  [điền] . Nhãn hiệu ….",
-        "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-        "required": false,
-        "title": "Sản phẩm",
-        "group": "SCOPE",
-        "kind": "text",
-        "source": "product"
-      },
-      {
-        "key": "word/document.xml:p58:122",
-        "part": "word/document.xml",
-        "paragraph": 58,
-        "start": 122,
-        "end": 123,
-        "label": "bán hàng với sản phẩm …. Nhãn hiệu  [điền] .",
-        "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-        "required": false,
-        "title": "Nhãn hiệu",
-        "group": "SCOPE",
-        "kind": "text",
-        "source": "brand"
-      },
-      {
-        "key": "word/document.xml:p59:27",
+        "key": "word/document.xml:p59:11",
         "part": "word/document.xml",
         "paragraph": 59,
-        "start": 27,
-        "end": 28,
-        "label": "Ngày đăng tải (air video):  [điền] ",
-        "context": "Ngày đăng tải (air video): …",
+        "start": 11,
+        "end": 14,
+        "label": "link video  [điền] ",
+        "context": "link video ...",
         "required": false,
-        "title": "Thời gian đăng tải (air video)",
+        "title": "Link video nghiệm thu (Link Air)",
         "group": "SCOPE",
-        "kind": "date",
-        "source": "airDate"
+        "kind": "text"
       },
       {
-        "key": "word/document.xml:p62:cell",
+        "key": "word/document.xml:p61:cell",
         "part": "word/document.xml",
-        "paragraph": 62,
-        "label": "Sản xuất và đăng tải Video review · Thành tiền",
-        "context": "1 · Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….Ngày đăng tải (air video): …Video có gắn giỏ hàng sản phẩm · Hoàn thành",
+        "paragraph": 61,
+        "label": "Hạng mục video · Thành tiền",
+        "context": "1 · Hạng mục video: link video ... · Hoàn thành",
         "required": false,
-        "title": "Sản xuất và đăng tải Video review · Thành tiền",
+        "title": "Hạng mục video · Thành tiền",
         "group": "SCOPE",
         "kind": "money",
         "source": "lineTotal"
       },
       {
-        "key": "word/document.xml:p64:47",
+        "key": "word/document.xml:p65:cell",
         "part": "word/document.xml",
-        "paragraph": 64,
-        "start": 47,
-        "end": 48,
-        "label": "để chạy quảng cáo video trong vòng  [điền]  ngày ",
-        "context": "Cấp mã code để chạy quảng cáo video trong vòng … ngày ",
+        "paragraph": 65,
+        "label": "Hạng mục thương mại · Thành tiền",
+        "context": "2 · Hạng mục thương mại (gắn Gắn giỏ hàng/ Link Affiliate) · Hoàn thành",
+        "required": false,
+        "title": "Hạng mục thương mại · Thành tiền",
+        "group": "SCOPE",
+        "kind": "money"
+      },
+      {
+        "key": "word/document.xml:p67:44",
+        "part": "word/document.xml",
+        "paragraph": 67,
+        "start": 44,
+        "end": 45,
+        "label": "Quảng cáo (cấp code chạy ad) trong  [điền]  ngày tính từ ngày cấp mã",
+        "context": "Hạng mục Quảng cáo (cấp code chạy ad) trong … ngày tính từ ngày cấp mã code",
         "required": false,
         "title": "Số ngày cấp mã quảng cáo",
         "group": "SCOPE",
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p66:cell",
+        "key": "word/document.xml:p69:cell",
         "part": "word/document.xml",
-        "paragraph": 66,
-        "label": "Cấp mã code để chạy quảng cáo video trong vòng · Thành tiền",
-        "context": "2 · Cấp mã code để chạy quảng cáo video trong vòng … ngày · Hoàn thành",
+        "paragraph": 69,
+        "label": "Hạng mục Quảng cáo · Thành tiền",
+        "context": "3 · Hạng mục Quảng cáo (cấp code chạy ad) trong … ngày tính từ ngày cấp mã code · Hoàn thành",
         "required": false,
-        "title": "Cấp mã code để chạy quảng cáo video trong vòng · Thành tiền",
+        "title": "Hạng mục Quảng cáo · Thành tiền",
         "group": "SCOPE",
         "kind": "money"
       },
       {
-        "key": "word/document.xml:p68:32",
+        "key": "word/document.xml:p71:59",
         "part": "word/document.xml",
-        "paragraph": 68,
-        "start": 32,
-        "end": 33,
-        "label": "Sử dụng hình ảnh và video trong  [điền]  ngày kể từ ngày đăng tải",
-        "context": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
+        "paragraph": 71,
+        "start": 59,
+        "end": 60,
+        "label": "ình ảnh và nội dung sản xuất trong  [điền]  ngày tính từ đăng tải vi",
+        "context": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong … ngày tính từ đăng tải video",
         "required": false,
         "title": "Số ngày sử dụng hình ảnh và video",
         "group": "SCOPE",
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p70:cell",
+        "key": "word/document.xml:p73:cell",
         "part": "word/document.xml",
-        "paragraph": 70,
-        "label": "Sử dụng hình ảnh và video trong · Thành tiền",
-        "context": "3 · Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video · Hoàn thành",
+        "paragraph": 73,
+        "label": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong · Thành tiền",
+        "context": "4 · Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong … ngày tính từ đăng tải video · Hoàn thành",
         "required": false,
-        "title": "Sử dụng hình ảnh và video trong · Thành tiền",
+        "title": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong · Thành tiền",
         "group": "SCOPE",
         "kind": "money"
       },
       {
-        "key": "word/document.xml:p73:cell",
+        "key": "word/document.xml:p76:cell",
         "part": "word/document.xml",
-        "paragraph": 73,
+        "paragraph": 76,
         "label": "Tổng giá trị nghiệm thu chưa bao gồm thuế TNCN (giá trị NET Bên B thực nhận)",
         "context": "Tổng giá trị nghiệm thu chưa bao gồm thuế TNCN (giá trị NET Bên B thực nhận)",
         "required": true,
@@ -43951,9 +44974,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "netTotal"
       },
       {
-        "key": "word/document.xml:p76:cell",
+        "key": "word/document.xml:p79:cell",
         "part": "word/document.xml",
-        "paragraph": 76,
+        "paragraph": 79,
         "label": "Thuế TNCN (Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
         "context": "Thuế TNCN (Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
         "required": false,
@@ -43963,21 +44986,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "pitAmount"
       },
       {
-        "key": "word/document.xml:p79:cell",
+        "key": "word/document.xml:p81:cell",
         "part": "word/document.xml",
-        "paragraph": 79,
-        "label": "Tổng giá trị nghiệm thu đã bao gồm thuế TNCN",
-        "context": "Tổng giá trị nghiệm thu đã bao gồm thuế TNCN",
+        "paragraph": 81,
+        "label": "Tổng giá trị nghiệm thu đã bao gồm thuế TNCN (VNĐ)",
+        "context": "Tổng giá trị nghiệm thu đã bao gồm thuế TNCN (VNĐ)",
         "required": false,
-        "title": "Tổng giá trị nghiệm thu đã bao gồm thuế TNCN",
+        "title": "Tổng giá trị nghiệm thu đã bao gồm thuế TNCN (VNĐ)",
         "group": "MONEY",
         "kind": "money",
         "source": "grossTotal"
       },
       {
-        "key": "word/document.xml:p92:cell",
+        "key": "word/document.xml:p94:cell",
         "part": "word/document.xml",
-        "paragraph": 92,
+        "paragraph": 94,
         "label": "Tổng giá trị nghiệm thu · Thành tiền",
         "context": "1 · Tổng giá trị nghiệm thu",
         "required": false,
@@ -43987,9 +45010,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "netTotal"
       },
       {
-        "key": "word/document.xml:p95:cell",
+        "key": "word/document.xml:p97:cell",
         "part": "word/document.xml",
-        "paragraph": 95,
+        "paragraph": 97,
         "label": "Giá trị đã tạm ứng/thanh toán · Thành tiền",
         "context": "2 · Giá trị đã tạm ứng/thanh toán (nếu có)",
         "required": false,
@@ -43999,9 +45022,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "advanceAmount"
       },
       {
-        "key": "word/document.xml:p98:cell",
+        "key": "word/document.xml:p100:cell",
         "part": "word/document.xml",
-        "paragraph": 98,
+        "paragraph": 100,
         "label": "Chi phí phát sinh tăng/giảm · Thành tiền",
         "context": "3 · Chi phí phát sinh tăng/giảm (nếu có)",
         "required": false,
@@ -44011,9 +45034,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "adjustmentAmount"
       },
       {
-        "key": "word/document.xml:p101:cell",
+        "key": "word/document.xml:p103:cell",
         "part": "word/document.xml",
-        "paragraph": 101,
+        "paragraph": 103,
         "label": "Giá trị Bên A còn phải thanh toán cho Bên B · Thành tiền",
         "context": "4 · Giá trị Bên A còn phải thanh toán cho Bên B",
         "required": false,
@@ -44025,7 +45048,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tên chủ tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 108,
+        "paragraph": 110,
         "start": 19,
         "end": 19,
         "label": "Tên chủ tài khoản",
@@ -44039,7 +45062,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Số tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 109,
+        "paragraph": 111,
         "start": 14,
         "end": 14,
         "label": "Số tài khoản",
@@ -44053,7 +45076,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tại Ngân hàng]",
         "part": "word/document.xml",
-        "paragraph": 110,
+        "paragraph": 112,
         "start": 15,
         "end": 15,
         "label": "Tại Ngân hàng",
@@ -44166,27 +45189,29 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Nghiệm thu",
       "Thành tiền",
       "1",
-      "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-      "Ngày đăng tải (air video): …",
-      "Video có gắn giỏ hàng sản phẩm ",
+      "Hạng mục video: ",
+      "link video ...",
       "Hoàn thành",
       "",
       "2",
-      "Cấp mã code để chạy quảng cáo video trong vòng … ngày ",
+      "Hạng mục thương mại (gắn Gắn giỏ hàng/ Link Affiliate)",
       "Hoàn thành",
       "",
       "3",
-      "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
+      "Hạng mục Quảng cáo (cấp code chạy ad) trong … ngày tính từ ngày cấp mã code",
       "Hoàn thành",
       "",
-      "Tổng giá trị nghiệm thu chưa bao gồm thuế TNCN (giá trị NET Bên B thực nhận)",
+      "4",
+      "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong … ngày tính từ đăng tải video",
+      "Hoàn thành",
       "",
+      "Tổng giá trị nghiệm thu chưa bao gồm thuế TNCN ",
+      "(giá trị NET Bên B thực nhận)",
       "",
-      "Thuế TNCN (Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
+      "Thuế TNCN ",
+      "(Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
       "",
-      "",
-      "Tổng giá trị nghiệm thu đã bao gồm thuế TNCN",
-      "",
+      "Tổng giá trị nghiệm thu đã bao gồm thuế TNCN (VNĐ)",
       "",
       "",
       "Hình ảnh nghiệm thu dịch vụ",
@@ -44222,6 +45247,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "Điều 3: Hiệu lực ",
       "Biên bản này được lập và có hiệu lực từ ngày ký.",
+      "Trường hợp tại thời điểm ký Biên bản này, thời hạn sử dụng hình ảnh và/hoặc cấp quyền chạy quảng cáo (nếu có) theo thỏa thuận giữa Các Bên vẫn còn, Các Bên tiếp tục thực hiện đầy đủ các quyền và nghĩa vụ liên quan cho đến hết thời hạn đã thỏa thuận.",
       "Biên bản này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi Bên giữ 01 (một) bản để thực hiện.",
       "",
       "ĐẠI DIỆN BÊN A",
@@ -44238,7 +45264,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "",
       "",
-      "BM.BBNTVID.IND.Ver072026",
+      "BM.BBNTVID.IND.Ver102026",
       ""
     ],
     "blocks": [
@@ -44264,7 +45290,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/header1.xml",
                   "paragraph": 1,
-                  "text": "BM.BBNTVID.IND.Ver072026",
+                  "text": "BM.BBNTVID.IND.Ver102026",
                   "align": "right"
                 }
               ]
@@ -44950,7 +45976,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 58,
-                  "text": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
+                  "text": "Hạng mục video: ",
                   "align": "justify",
                   "bold": true
                 },
@@ -44958,17 +45984,19 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 59,
-                  "text": "Ngày đăng tải (air video): …",
-                  "align": "justify",
-                  "bold": true
-                },
+                  "text": "link video ...",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 60,
-                  "text": "Video có gắn giỏ hàng sản phẩm ",
-                  "align": "justify",
-                  "bold": true
+                  "text": "Hoàn thành",
+                  "align": "right"
                 }
               ]
             },
@@ -44978,17 +46006,6 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 61,
-                  "text": "Hoàn thành",
-                  "align": "center"
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 62,
                   "text": "",
                   "align": "right"
                 }
@@ -45001,7 +46018,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 63,
+                  "paragraph": 62,
                   "text": "2",
                   "align": "center",
                   "bold": true
@@ -45013,10 +46030,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 64,
-                  "text": "Cấp mã code để chạy quảng cáo video trong vòng … ngày ",
+                  "paragraph": 63,
+                  "text": "Hạng mục thương mại (gắn Gắn giỏ hàng/ Link Affiliate)",
                   "align": "justify",
-                  "bold": true
+                  "boldPrefix": 20
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 64,
+                  "text": "Hoàn thành",
+                  "align": "right"
                 }
               ]
             },
@@ -45026,17 +46054,6 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 65,
-                  "text": "Hoàn thành",
-                  "align": "center"
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 66,
                   "text": "",
                   "align": "right"
                 }
@@ -45049,7 +46066,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 67,
+                  "paragraph": 66,
                   "text": "3",
                   "align": "center",
                   "bold": true
@@ -45061,8 +46078,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 68,
-                  "text": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
+                  "paragraph": 67,
+                  "text": "Hạng mục Quảng cáo (cấp code chạy ad) trong … ngày tính từ ngày cấp mã code",
                   "align": "justify",
                   "bold": true
                 }
@@ -45073,9 +46090,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 69,
+                  "paragraph": 68,
                   "text": "Hoàn thành",
-                  "align": "center"
+                  "align": "right"
                 }
               ]
             },
@@ -45084,7 +46101,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 70,
+                  "paragraph": 69,
                   "text": "",
                   "align": "right"
                 }
@@ -45097,13 +46114,24 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 71,
-                  "text": "Tổng giá trị nghiệm thu chưa bao gồm thuế TNCN (giá trị NET Bên B thực nhận)",
-                  "align": "justify",
-                  "boldPrefix": 47
+                  "paragraph": 70,
+                  "text": "4",
+                  "align": "center",
+                  "bold": true
                 }
-              ],
-              "colSpan": 2
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 71,
+                  "text": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong … ngày tính từ đăng tải video",
+                  "align": "justify",
+                  "bold": true
+                }
+              ]
             },
             {
               "blocks": [
@@ -45111,8 +46139,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 72,
-                  "text": "",
-                  "align": "center"
+                  "text": "Hoàn thành",
+                  "align": "right"
                 }
               ]
             },
@@ -45135,23 +46163,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 74,
-                  "text": "Thuế TNCN (Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
+                  "text": "Tổng giá trị nghiệm thu chưa bao gồm thuế TNCN ",
                   "align": "justify",
-                  "boldPrefix": 10
-                }
-              ],
-              "colSpan": 2
-            },
-            {
-              "blocks": [
+                  "bold": true
+                },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 75,
-                  "text": "",
-                  "align": "center"
+                  "text": "(giá trị NET Bên B thực nhận)",
+                  "align": "justify",
+                  "italic": true
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -45162,7 +46187,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "text": "",
                   "align": "right"
                 }
-              ]
+              ],
+              "colSpan": 2
             }
           ],
           [
@@ -45172,7 +46198,42 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 77,
-                  "text": "Tổng giá trị nghiệm thu đã bao gồm thuế TNCN",
+                  "text": "Thuế TNCN ",
+                  "align": "justify",
+                  "bold": true
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 78,
+                  "text": "(Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
+                  "align": "justify",
+                  "italic": true
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 79,
+                  "text": "",
+                  "align": "right"
+                }
+              ],
+              "colSpan": 2
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 80,
+                  "text": "Tổng giá trị nghiệm thu đã bao gồm thuế TNCN (VNĐ)",
                   "align": "justify",
                   "bold": true
                 }
@@ -45184,41 +46245,15 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 78,
-                  "text": "",
-                  "align": "center"
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 79,
+                  "paragraph": 81,
                   "text": "",
                   "align": "right"
                 }
-              ]
+              ],
+              "colSpan": 2
             }
           ]
         ]
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 80,
-        "text": "",
-        "align": "justify",
-        "bold": true
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 81,
-        "text": "Hình ảnh nghiệm thu dịch vụ",
-        "align": "justify",
-        "bold": true
       },
       {
         "kind": "p",
@@ -45232,7 +46267,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 83,
-        "text": "",
+        "text": "Hình ảnh nghiệm thu dịch vụ",
         "align": "justify",
         "bold": true
       },
@@ -45240,7 +46275,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 84,
-        "text": "Điều 2: Thanh toán phí dịch vụ",
+        "text": "",
         "align": "justify",
         "bold": true
       },
@@ -45248,6 +46283,22 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 85,
+        "text": "",
+        "align": "justify",
+        "bold": true
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 86,
+        "text": "Điều 2: Thanh toán phí dịch vụ",
+        "align": "justify",
+        "bold": true
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 87,
         "text": "Phí dịch vụ Bên A phải thanh toán cho Bên B là:",
         "align": "justify",
         "bold": true
@@ -45263,7 +46314,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 86,
+                  "paragraph": 88,
                   "text": "STT",
                   "align": "center",
                   "bold": true
@@ -45275,7 +46326,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 87,
+                  "paragraph": 89,
                   "text": "Nội dung",
                   "align": "center",
                   "bold": true
@@ -45283,7 +46334,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 88,
+                  "paragraph": 90,
                   "text": "(số tiền thực nhận không gồm thuế TNCN)",
                   "align": "center",
                   "bold": true,
@@ -45296,7 +46347,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 89,
+                  "paragraph": 91,
                   "text": "Thành tiền (VNĐ)",
                   "align": "center",
                   "bold": true
@@ -45310,7 +46361,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 90,
+                  "paragraph": 92,
                   "text": "1",
                   "bold": true
                 }
@@ -45321,7 +46372,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 91,
+                  "paragraph": 93,
                   "text": "Tổng giá trị nghiệm thu",
                   "bold": true
                 }
@@ -45332,7 +46383,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 92,
+                  "paragraph": 94,
                   "text": "",
                   "bold": true
                 }
@@ -45345,7 +46396,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 93,
+                  "paragraph": 95,
                   "text": "2",
                   "bold": true
                 }
@@ -45356,7 +46407,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 94,
+                  "paragraph": 96,
                   "text": "Giá trị đã tạm ứng/thanh toán (nếu có)",
                   "bold": true
                 }
@@ -45367,7 +46418,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 95,
+                  "paragraph": 97,
                   "text": "",
                   "bold": true
                 }
@@ -45380,7 +46431,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 96,
+                  "paragraph": 98,
                   "text": "3",
                   "bold": true
                 }
@@ -45391,7 +46442,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 97,
+                  "paragraph": 99,
                   "text": "Chi phí phát sinh tăng/giảm (nếu có)",
                   "bold": true
                 }
@@ -45402,7 +46453,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 98,
+                  "paragraph": 100,
                   "text": "",
                   "bold": true
                 }
@@ -45415,7 +46466,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 99,
+                  "paragraph": 101,
                   "text": "4",
                   "bold": true
                 }
@@ -45426,7 +46477,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 100,
+                  "paragraph": 102,
                   "text": "Giá trị Bên A còn phải thanh toán cho Bên B",
                   "bold": true
                 }
@@ -45437,7 +46488,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 101,
+                  "paragraph": 103,
                   "text": "",
                   "bold": true
                 }
@@ -45449,7 +46500,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 102,
+        "paragraph": 104,
         "text": " ",
         "align": "justify",
         "bold": true
@@ -45457,7 +46508,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 103,
+        "paragraph": 105,
         "text": "Thời hạn thanh toán:",
         "align": "justify",
         "bold": true
@@ -45473,7 +46524,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 104,
+                  "paragraph": 106,
                   "text": "Thanh toán ",
                   "align": "center",
                   "bold": true
@@ -45485,7 +46536,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 105,
+                  "paragraph": 107,
                   "text": "Phí dịch vụ được thanh toán trong vòng 7 - 10 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được biên bản nghiệm thu có chữ ký hai bên.",
                   "align": "justify"
                 }
@@ -45497,59 +46548,43 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 106,
-        "text": "",
-        "align": "justify"
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 107,
-        "text": "Bên A thanh toán bằng hình thức chuyển khoản ngân hàng vào tài khoản của Bên B theo thông tin như sau:",
-        "align": "justify"
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
         "paragraph": 108,
-        "text": "Tên chủ tài khoản: ",
+        "text": "",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 109,
-        "text": "Số tài khoản: ",
+        "text": "Bên A thanh toán bằng hình thức chuyển khoản ngân hàng vào tài khoản của Bên B theo thông tin như sau:",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 110,
-        "text": "Tại Ngân hàng: ",
+        "text": "Tên chủ tài khoản: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 111,
-        "text": "",
-        "align": "justify",
-        "bold": true
+        "text": "Số tài khoản: ",
+        "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 112,
-        "text": "Điều 3: Hiệu lực ",
-        "align": "justify",
-        "bold": true
+        "text": "Tại Ngân hàng: ",
+        "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 113,
-        "text": "Biên bản này được lập và có hiệu lực từ ngày ký.",
+        "text": "",
         "align": "justify",
         "bold": true
       },
@@ -45557,7 +46592,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 114,
-        "text": "Biên bản này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi Bên giữ 01 (một) bản để thực hiện.",
+        "text": "Điều 3: Hiệu lực ",
         "align": "justify",
         "bold": true
       },
@@ -45565,6 +46600,29 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 115,
+        "text": "Biên bản này được lập và có hiệu lực từ ngày ký.",
+        "align": "justify",
+        "bold": true
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 116,
+        "text": "Trường hợp tại thời điểm ký Biên bản này, thời hạn sử dụng hình ảnh và/hoặc cấp quyền chạy quảng cáo (nếu có) theo thỏa thuận giữa Các Bên vẫn còn, Các Bên tiếp tục thực hiện đầy đủ các quyền và nghĩa vụ liên quan cho đến hết thời hạn đã thỏa thuận.",
+        "align": "justify"
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 117,
+        "text": "Biên bản này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi Bên giữ 01 (một) bản để thực hiện.",
+        "align": "justify",
+        "bold": true
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 118,
         "text": "",
         "align": "justify"
       },
@@ -45579,7 +46637,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 116,
+                  "paragraph": 119,
                   "text": "ĐẠI DIỆN BÊN A",
                   "align": "center",
                   "bold": true
@@ -45587,7 +46645,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 117,
+                  "paragraph": 120,
                   "text": "",
                   "align": "center"
                 }
@@ -45598,7 +46656,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 118,
+                  "paragraph": 121,
                   "text": "ĐẠI DIỆN BÊN B ",
                   "align": "center",
                   "bold": true
@@ -45606,7 +46664,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 119,
+                  "paragraph": 122,
                   "text": "",
                   "align": "center"
                 }
@@ -45618,7 +46676,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 120,
+        "paragraph": 123,
         "text": "",
         "align": "center",
         "bold": true
@@ -45626,7 +46684,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 121,
+        "paragraph": 124,
         "text": "",
         "align": "center",
         "bold": true
@@ -45696,39 +46754,16 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "paragraph": 6,
         "text": ""
       }
-    ],
-    "category": "ACCEPTANCE_SETTLEMENT",
-    "description": "Biên bản nghiệm thu link bài đăng, mã Spark Ads và giá trị thanh toán thực tế cho đối tác cá nhân.",
-    "active": true,
-    "defaultReviewRoles": [
-      "FINANCE",
-      "LEAD"
-    ],
-    "exemptLegalReview": true,
-    "scope": "GLOBAL",
-    "updatedAt": "2026-05-01T08:00:00.000Z",
-    "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 39,
-    "requiredFieldCount": 23,
-    "history": [
-      {
-        "version": "Ver052026",
-        "hash": "f0cc09fa4b0258faa0b050101f42ffcb64a9a505cfec2c1895ce9743e23393df",
-        "filename": "3. BBNT cá nhân booking Video.docx",
-        "updatedAt": "2026-05-01T08:00:00.000Z",
-        "updatedBy": "Phòng Pháp chế",
-        "note": "Phiên bản chuẩn ban hành bởi Pháp chế"
-      }
     ]
   },
   "HKD-HDNT": {
     "id": "HKD-HDNT",
     "name": "Hợp đồng nguyên tắc video · Hộ kinh doanh",
-    "filename": "1. HĐNT HKD booking Video.docx",
+    "filename": "1.3 HĐNT HKD booking Video.docx",
     "subject": "Hộ kinh doanh",
     "kind": "CONTRACT",
-    "version": "Ver052026",
-    "hash": "13642892727b6f3280e666ebf98aed819c845305f4fa10956de5483500a8b586",
+    "version": "Ver092026",
+    "hash": "3933915e2685cf8cefee6b2cbb42d318c00f12d4ad73858e78e3a1d4f8cb805e",
     "fields": [
       {
         "key": "token:[dd.mm.yy]",
@@ -45899,9 +46934,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "email"
       },
       {
-        "key": "word/document.xml:p70:34",
+        "key": "word/document.xml:p69:34",
         "part": "word/document.xml",
-        "paragraph": 70,
+        "paragraph": 69,
         "start": 34,
         "end": 35,
         "label": "Là tài khoản mạng xã hội có link:  [điền] ",
@@ -45915,7 +46950,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tên chủ tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 150,
+        "paragraph": 149,
         "start": 19,
         "end": 19,
         "label": "Tên chủ tài khoản",
@@ -45929,7 +46964,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Số tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 151,
+        "paragraph": 150,
         "start": 14,
         "end": 14,
         "label": "Số tài khoản",
@@ -45943,7 +46978,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tại Ngân hàng]",
         "part": "word/document.xml",
-        "paragraph": 152,
+        "paragraph": 151,
         "start": 15,
         "end": 15,
         "label": "Tại Ngân hàng",
@@ -45955,9 +46990,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "bankName"
       },
       {
-        "key": "word/document.xml:p162:29",
+        "key": "word/document.xml:p161:29",
         "part": "word/document.xml",
-        "paragraph": 162,
+        "paragraph": 161,
         "start": 29,
         "end": 30,
         "label": "Lần 1: Bên A tạm ứng số tiền  [điền]  trong vòng … ngày làm vi",
@@ -45969,9 +47004,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "advanceAmount"
       },
       {
-        "key": "word/document.xml:p162:42",
+        "key": "word/document.xml:p161:42",
         "part": "word/document.xml",
-        "paragraph": 162,
+        "paragraph": 161,
         "start": 42,
         "end": 43,
         "label": "Bên A tạm ứng số tiền … trong vòng  [điền]  ngày làm việc (không bao",
@@ -45982,9 +47017,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p165:56",
+        "key": "word/document.xml:p164:56",
         "part": "word/document.xml",
-        "paragraph": 165,
+        "paragraph": 164,
         "start": 56,
         "end": 57,
         "label": "án phần giá trị còn lại trong vòng  [điền]  ngày làm việc (không bao",
@@ -45996,7 +47031,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       },
       {
         "key": "token:[dd.mm.yy]",
-        "part": "word/footer1.xml",
+        "part": "word/footer2.xml",
         "paragraph": 1,
         "start": 0,
         "end": 6,
@@ -46010,7 +47045,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       },
       {
         "key": "token:[ID KOC]",
-        "part": "word/footer1.xml",
+        "part": "word/footer2.xml",
         "paragraph": 1,
         "start": 19,
         "end": 25,
@@ -46039,7 +47074,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Luật sửa đổi, bổ sung một số điều của Luật Quảng cáo số 75/2025/QH15, có hiệu lực từ ngày 01/01/2026;",
       "Luật Sở hữu Trí tuệ số 50/2005/QH11, có hiệu lực từ ngày 01/07/2006;",
       "Luật Sửa đổi bổ sung một số điều của Luật Sở hữu Trí tuệ số 131/2025/QH15, có hiệu lực từ ngày 01/04/2026;",
-      "Luật Bảo vệ người tiêu dùng số 19/2023/QH15, có hiệu lực từ ngày 01/07/2024;",
+      "Luật Bảo vệ quyền lợi người tiêu dùng số 19/2023/QH15, có hiệu lực từ ngày 01/07/2024;",
       "Nhu cầu và khả năng của hai Bên.",
       "",
       "Hôm nay, ngày … tháng … năm 202…, tại trụ sở chính của Công Ty Cổ Phần Công Nghệ UpBase - Nhà J03.LO21, Khu Đô thị Nam Cường, đường Tố Hữu, Phường Dương Nội, TP Hà Nội, Việt Nam. Chúng tôi gồm các bên có tên dưới đây cùng ký kết Hợp Đồng cung ứng Dịch vụ (“Hợp Đồng”):",
@@ -46088,7 +47123,6 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Sau đây gọi tắt là “Bên B”",
       "",
       "Bên A có nhu cầu triển khai các hoạt động quảng bá sản phẩm thông qua các KOL/KOC trên các nền tảng truyền thông. Hai bên cùng hợp tác ký kết hợp đồng dịch vụ khung nhằm quảng cáo, tiếp thị, thúc đẩy doanh số kinh doanh với các điều khoản như sau:",
-      "",
       "",
       "ĐIỀU 1: ĐỊNH NGHĨA",
       "Khái niệm",
@@ -46144,7 +47178,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "7",
       "Duyệt video",
       "Bên A xem xét, phản hồi và yêu cầu chỉnh sửa (nếu có). ",
-      "Tối đa 01 vòng chỉnh sửa trước khi duyệt cuối cùng, trừ khi SOW quy định khác.",
+      "Theo quy định chi tiết tại SOW.",
       "8",
       "Đăng tải video",
       "Bên B đăng tải theo đúng nội dung đã duyệt, đúng tài khoản và timeline.",
@@ -46181,18 +47215,18 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "Thanh toán 1 lần",
       "Phí dịch vụ được thanh toán 01 (một) lần trong vòng 07 - 10 ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau:",
-      "Bên B đã hoàn thành dịch vụ theo Hợp đồng; ",
+      "Bên B đã hoàn thành dịch vụ theo Phụ lục SOW; ",
       "Bên A đã nhận được Biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây); ",
-      "Bên B đã cung cấp hóa đơn hộ kinh doanh hợp lệ (toàn bộ giá trị Hợp đồng) cho Bên A.",
+      "Bên B đã cung cấp hóa đơn hộ kinh doanh hợp lệ (toàn bộ giá trị Phụ lục SOW) cho Bên A.",
       "Thanh toán 2 lần",
       "Phí dịch vụ được thanh toán thành 02 (hai) lần như sau:",
       "Lần 1: Bên A tạm ứng số tiền … trong vòng … ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau: ",
-      "Hai Bên đã hoàn tất ký kết Hợp đồng và Bên A đã nhận được Hợp đồng có đầy đủ chữ ký của hai Bên; ",
+      "Hai Bên đã hoàn tất ký kết Phụ lục SOW và Bên A đã nhận được Phụ lục SOW có đầy đủ chữ ký của hai Bên; ",
       "Bên B đã cung cấp hóa đơn hộ kinh doanh hợp lệ tương ứng với giá trị thanh toán đợt 1 cho Bên A.",
       "Lần 2: Bên A thanh toán phần giá trị còn lại trong vòng … ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau: ",
-      "Bên B đã hoàn thành dịch vụ theo Hợp đồng; ",
+      "Bên B đã hoàn thành dịch vụ theo Phụ lục SOW;  ",
       "Bên A đã nhận được Biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây); ",
-      "Bên B đã cung cấp hóa đơn hộ kinh doanh hợp lệ (toàn bộ giá trị Hợp đồng) cho Bên A.",
+      "Bên B đã cung cấp hóa đơn hộ kinh doanh hợp lệ (toàn bộ giá trị Phụ lục SOW) cho Bên A.",
       "Thanh toán theo SOW",
       "Thời hạn thanh toán được xác định cụ thể theo từng SOW tương ứng với từng chiến dịch hoặc công việc cụ thể.",
       "",
@@ -46224,7 +47258,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Nghĩa vụ thực hiện dịch vụ: Thực hiện công việc đúng nội dung, chất lượng, số lượng, thời hạn, nền tảng theo Hợp đồng đã ký kết; không được chuyển giao, ủy quyền cho bên thứ ba thực hiện công việc; chủ động thông báo kịp thời cho Bên A về bất kỳ sự kiện nào có thể ảnh hưởng đến việc thực hiện dịch vụ.",
       "Nghĩa vụ duy trì nội dung đã đăng tải:",
       "Bên B không được tự ý xóa, ẩn hoặc hạn chế hiển thị đối với video đã đăng tải theo Hợp đồng và Phụ lục SOW liên quan. Trong trường hợp nội dung phát sinh lỗi kỹ thuật do nền tảng, bao gồm nhưng không giới hạn mất tiếng, lỗi hình ảnh, lỗi hiển thị hoặc các sự cố tương tự, Bên B có nghĩa vụ phối hợp với Bên A để khắc phục và đăng tải lại nội dung trong thời gian sớm nhất theo yêu cầu của Bên A. Trường hợp không thể khắc phục hoặc đăng tải lại, Bên B bàn giao video hoàn chỉnh cho Bên A để Bên A đăng tải trên kênh chính thức của nhãn hàng trong thời hạn ít nhất 03 (ba) tháng.",
-      "Trừ trường hợp sản phẩm hoặc nhãn hiệu của sản phẩm bị cơ quan nhà nước có thẩm quyền xử phạt hoặc phát sinh khủng hoảng, tranh cãi truyền thông có khả năng ảnh hưởng đến hình ảnh, uy tín của Bên B, Bên B được quyền chủ động ẩn video sau khi thông báo cho Bên A. Sau khi vụ việc được làm rõ hoặc giải quyết, tùy từng trường hợp, Hai Bên sẽ thỏa thuận về việc hiển thị lại nội dung.",
+      "Trường hợp sản phẩm hoặc nhãn hiệu của sản phẩm bị cơ quan nhà nước có thẩm quyền xử phạt hoặc phát sinh khủng hoảng, tranh cãi truyền thông có khả năng ảnh hưởng đến hình ảnh, uy tín của Bên B, Bên B được quyền chủ động ẩn video sau khi thông báo cho Bên A. Sau khi vụ việc được làm rõ hoặc giải quyết, tùy từng trường hợp, Hai Bên sẽ thỏa thuận về việc hiển thị lại nội dung.",
       "Nghĩa vụ về nội dung và trách nhiệm quảng cáo: Bên B là người chuyển tải sản phẩm quảng cáo theo quy định pháp luật và cam kết tuân thủ quy định tại Luật Quảng cáo, Luật Bảo vệ quyền lợi người tiêu dùng hiện hành cũng như quy định của sàn TMĐT.",
       "Nghĩa vụ bảo vệ hình ảnh và uy tín nhãn hiệu: Bên B cam kết bảo vệ hình ảnh, uy tín của nhãn hiệu và Bên A bằng việc không thực hiện bất kỳ hành vi, phát ngôn hoặc đăng tải nội dung nào gây ảnh hưởng tiêu cực, gây hiểu nhầm hoặc chưa được kiểm chứng liên quan đến Bên A hoặc sản phẩm/dịch vụ, cũng như không sử dụng ngôn từ, hình ảnh phản cảm, vi phạm pháp luật hoặc không phù hợp với định vị thương hiệu của Bên A; các nghĩa vụ này áp dụng trong suốt thời gian thực hiện Hợp đồng và kéo dài ít nhất 06 tháng sau khi chấm dứt việc hợp tác với nhãn hàng.",
       "Nghĩa vụ bảo vệ hình ảnh và uy tín cá nhân: Bên B cam kết duy trì danh tiếng cá nhân, không để xảy ra các sự kiện, hành vi hoặc phát ngôn có thể gây scandal, tranh cãi hoặc ảnh hưởng trực tiếp hoặc gián tiếp đến uy tín của Bên A; trong trường hợp phát sinh sự kiện có nguy cơ ảnh hưởng tiêu cực, Bên B phải thông báo kịp thời và phối hợp với Bên A để xử lý phù hợp.",
@@ -46252,9 +47286,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Bên vi phạm phải chịu trách nhiệm bồi thường toàn bộ thiệt hại phát sinh cho Bên còn lại và các bên liên quan (nếu có).",
       "Thời hạn bảo mật: Nghĩa vụ bảo mật tiếp tục có hiệu lực sau khi Hợp Đồng chấm dứt hoặc hết hạn, cho đến khi Thông Tin Bảo Mật trở thành thông tin công khai hợp pháp.",
       "",
-      "",
       "ĐIỀU 9: BẤT KHẢ KHÁNG",
       "Một Bên sẽ không bị xem là vi phạm Hợp Đồng nếu việc chậm trễ hoặc không thực hiện nghĩa vụ do sự kiện khách quan, không thể lường trước và không thể khắc phục mặc dù đã áp dụng mọi biện pháp cần thiết (“Sự Kiện Bất Khả Kháng”), bao gồm nhưng không giới hạn: thiên tai, hỏa hoạn, chiến tranh, bạo loạn, đình công, dịch bệnh, hoặc các quyết định, hạn chế của cơ quan nhà nước có thẩm quyền. Bên bị ảnh hưởng phải thông báo bằng văn bản cho Bên còn lại trong vòng 03 ngày làm việc kể từ khi xảy ra sự kiện, nêu rõ bản chất sự kiện, phạm vi ảnh hưởng và thời gian dự kiến khắc phục.",
+      "",
       "ĐIỀU 10: ĐIỀU KHOẢN CHUNG",
       "Luật áp dụng: Hợp Đồng này được điều chỉnh và giải thích theo pháp luật Việt Nam.",
       "Giải quyết tranh chấp: Mọi tranh chấp phát sinh từ hoặc liên quan đến Hợp Đồng sẽ được ưu tiên giải quyết thông qua thương lượng, hòa giải giữa các Bên. Nếu tranh chấp không được giải quyết trong vòng 30 ngày kể từ ngày một Bên thông báo bằng văn bản về tranh chấp, tranh chấp sẽ được đưa ra Tòa án có thẩm quyền tại Việt Nam để giải quyết.",
@@ -46264,6 +47298,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "ĐẠI DIỆN BÊN B",
       "",
       "",
+      "",
       "ddmmyy/HĐNT/UPBASE-ID KOC",
       "http://www.upbase.asia",
       "Trang 1 ",
@@ -46271,7 +47306,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "",
       "",
-      "BM.HĐ.VID.HKD.Ver072026",
+      "",
+      "",
+      "BM.HĐ.VID.HKD.Ver102026",
+      "",
       ""
     ],
     "blocks": [
@@ -46282,8 +47320,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "text": ""
       },
       {
+        "kind": "p",
+        "part": "word/header2.xml",
+        "paragraph": 0,
+        "text": ""
+      },
+      {
         "kind": "table",
-        "part": "word/header1.xml",
+        "part": "word/header2.xml",
         "variant": "grid",
         "rows": [
           [
@@ -46291,7 +47335,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               "blocks": [
                 {
                   "kind": "p",
-                  "part": "word/header1.xml",
+                  "part": "word/header2.xml",
                   "paragraph": 1,
                   "text": ""
                 }
@@ -46301,9 +47345,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               "blocks": [
                 {
                   "kind": "p",
-                  "part": "word/header1.xml",
+                  "part": "word/header2.xml",
                   "paragraph": 2,
-                  "text": "BM.HĐ.VID.HKD.Ver072026",
+                  "text": "BM.HĐ.VID.HKD.Ver102026",
                   "align": "right"
                 }
               ]
@@ -46313,8 +47357,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       },
       {
         "kind": "p",
-        "part": "word/header1.xml",
+        "part": "word/header2.xml",
         "paragraph": 3,
+        "text": ""
+      },
+      {
+        "kind": "p",
+        "part": "word/header3.xml",
+        "paragraph": 0,
         "text": ""
       },
       {
@@ -46441,7 +47491,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 15,
-        "text": "Luật Bảo vệ người tiêu dùng số 19/2023/QH15, có hiệu lực từ ngày 01/07/2024;",
+        "text": "Luật Bảo vệ quyền lợi người tiêu dùng số 19/2023/QH15, có hiệu lực từ ngày 01/07/2024;",
         "align": "justify",
         "italic": true
       },
@@ -46802,8 +47852,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 45,
                   "text": "MST hộ kinh doanh",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ]
             }
@@ -46840,8 +47889,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 48,
                   "text": "Địa chỉ hộ kinh doanh",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ]
             }
@@ -46916,8 +47964,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 54,
                   "text": "Số… cấp ngày … tại…",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ]
             }
@@ -47043,14 +48090,6 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 65,
-        "text": "",
-        "align": "justify",
-        "bold": true
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 66,
         "text": "ĐIỀU 1: ĐỊNH NGHĨA",
         "align": "justify",
         "bold": true
@@ -47066,7 +48105,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 67,
+                  "paragraph": 66,
                   "text": "Khái niệm",
                   "align": "center",
                   "bold": true
@@ -47078,7 +48117,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 68,
+                  "paragraph": 67,
                   "text": "Định nghĩa",
                   "align": "center",
                   "bold": true
@@ -47092,7 +48131,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 69,
+                  "paragraph": 68,
                   "text": "Tài khoản mạng xã hội",
                   "align": "center",
                   "bold": true
@@ -47104,13 +48143,13 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 70,
+                  "paragraph": 69,
                   "text": "Là tài khoản mạng xã hội có link: …"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 71,
+                  "paragraph": 70,
                   "text": "Bên B là chủ sở hữu hợp pháp và có toàn quyền quản lý, vận hành tài khoản mạng xã hội trong suốt thời gian thực hiện Hợp đồng. ",
                   "align": "justify"
                 }
@@ -47123,7 +48162,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 72,
+                  "paragraph": 71,
                   "text": "Hợp đồng dịch vụ khung",
                   "align": "center",
                   "bold": true
@@ -47131,7 +48170,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 73,
+                  "paragraph": 72,
                   "text": "(Hợp đồng)",
                   "align": "center",
                   "bold": true
@@ -47143,14 +48182,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 74,
+                  "paragraph": 73,
                   "text": "Là Hợp đồng này và quy định nguyên tắc hợp tác tổng thể giữa các Bên.",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 75,
+                  "paragraph": 74,
                   "text": "Trường hợp có mâu thuẫn giữa Hợp đồng và Phụ lục phạm vi công việc (SOW): ưu tiên áp dụng theo thứ tự (i) SOW, (ii) Hợp đồng, trừ khi có quy định khác trong SOW.",
                   "align": "justify"
                 }
@@ -47163,7 +48202,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 76,
+                  "paragraph": 75,
                   "text": "Phụ lục phạm vi công việc",
                   "align": "center",
                   "bold": true
@@ -47171,7 +48210,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 77,
+                  "paragraph": 76,
                   "text": "(SOW)",
                   "align": "center",
                   "bold": true
@@ -47183,7 +48222,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 78,
+                  "paragraph": 77,
                   "text": "Là phụ lục của Hợp đồng do hai bên cùng xác nhận, quy định chi tiết nội dung công việc, số lượng, thời gian, phí booking, hoa hồng (nếu có) và các yêu cầu, các dịch vụ đi kèm liên quan. SOW được hai bên xác nhận dưới dạng bản cứng hoặc bản ký điện tử.",
                   "align": "justify"
                 }
@@ -47196,7 +48235,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 79,
+                  "paragraph": 78,
                   "text": "Tiếp thị ",
                   "align": "center",
                   "bold": true
@@ -47204,7 +48243,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 80,
+                  "paragraph": 79,
                   "text": "liên kết ",
                   "align": "center",
                   "bold": true
@@ -47212,7 +48251,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 81,
+                  "paragraph": 80,
                   "text": "(Affiliate)",
                   "align": "center",
                   "bold": true
@@ -47224,7 +48263,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 82,
+                  "paragraph": 81,
                   "text": "Là việc Bên B quảng bá sản phẩm/dịch vụ thông qua cơ chế của nền tảng thương mại điện tử (sàn TMĐT) (bao gồm link, mã, giỏ hàng hoặc công cụ tương đương), trong đó doanh thu chỉ được ghi nhận khi được hệ thống nền tảng xác nhận. Hoa hồng và doanh thu được xác định theo dữ liệu cuối cùng từ nền tảng và có thể bị điều chỉnh trong trường hợp hoàn đơn, gian lận hoặc vi phạm chính sách.",
                   "align": "justify"
                 }
@@ -47237,7 +48276,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 83,
+                  "paragraph": 82,
                   "text": "Booking video",
                   "align": "center",
                   "bold": true
@@ -47249,7 +48288,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 84,
+                  "paragraph": 83,
                   "text": "Booking video là việc Bên A thuê Bên B sản xuất và đăng tải Video theo các yêu cầu cụ thể của Bên A, có nội dung review, đánh giá, giới thiệu, quảng bá sản phẩm và thúc đẩy doanh số bán hàng (có thể bao gồm các cơ chế như gắn link, mã, giỏ hàng hoặc kêu gọi hành động theo chi tiết tại SOW nếu có). ",
                   "align": "justify"
                 }
@@ -47262,7 +48301,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 85,
+                  "paragraph": 84,
                   "text": "Phí dịch vụ booking",
                   "align": "center",
                   "bold": true
@@ -47274,7 +48313,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 86,
+                  "paragraph": 85,
                   "text": "Phí dịch vụ booking là khoản phí cố định Bên A thanh toán cho Bên B theo Hợp đồng.",
                   "align": "justify"
                 }
@@ -47287,7 +48326,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 87,
+                  "paragraph": 86,
                   "text": "Hoa hồng",
                   "align": "center",
                   "bold": true
@@ -47299,7 +48338,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 88,
+                  "paragraph": 87,
                   "text": "Là khoản thu nhập của Bên B dựa trên doanh thu Affiliate hợp lệ được nền tảng thương mại điện tử chi trả. Bên B tự chịu trách nhiệm kê khai, nộp thuế và các nghĩa vụ tài chính liên quan đến khoản hoa hồng này theo quy định pháp luật (nếu áp dụng).",
                   "align": "justify"
                 }
@@ -47311,7 +48350,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 89,
+        "paragraph": 88,
         "text": "",
         "align": "justify",
         "bold": true
@@ -47319,7 +48358,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 90,
+        "paragraph": 89,
         "text": "ĐIỀU 2: PHẠM VI CÔNG VIỆC",
         "align": "justify",
         "bold": true
@@ -47327,7 +48366,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 91,
+        "paragraph": 90,
         "text": " Phạm vi công việc cần thực hiện",
         "align": "justify",
         "bold": true
@@ -47335,14 +48374,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 92,
+        "paragraph": 91,
         "text": "Bên B thực hiện sản xuất và đăng tải video theo yêu cầu đặt hàng của Bên A. Phạm vi công việc, nội dung, số lượng video, kịch bản, hình thức thể hiện, kênh đăng tải, tiến độ thực hiện và các yêu cầu cụ thể khác của từng đợt đặt hàng sẽ được Hai Bên thỏa thuận tại từng SOW.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 93,
+        "paragraph": 92,
         "text": "Quy trình cung ứng dịch vụ",
         "align": "justify",
         "bold": true
@@ -47358,7 +48397,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 94,
+                  "paragraph": 93,
                   "text": "Bước",
                   "align": "center",
                   "bold": true
@@ -47370,7 +48409,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 95,
+                  "paragraph": 94,
                   "text": "Tên bước",
                   "align": "center",
                   "bold": true
@@ -47382,7 +48421,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 96,
+                  "paragraph": 95,
                   "text": "Mô tả công việc",
                   "align": "center",
                   "bold": true
@@ -47396,7 +48435,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 97,
+                  "paragraph": 96,
                   "text": "1",
                   "align": "center",
                   "bold": true
@@ -47408,7 +48447,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 98,
+                  "paragraph": 97,
                   "text": "Ký Hợp đồng ",
                   "align": "center",
                   "bold": true
@@ -47416,7 +48455,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 99,
+                  "paragraph": 98,
                   "text": "dịch vụ khung",
                   "align": "center",
                   "bold": true
@@ -47428,7 +48467,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 100,
+                  "paragraph": 99,
                   "text": "Hai Bên ký Hợp đồng dịch vụ khung làm cơ sở pháp lý điều chỉnh toàn bộ hoạt động hợp tác.",
                   "align": "justify"
                 }
@@ -47441,7 +48480,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 101,
+                  "paragraph": 100,
                   "text": "2",
                   "align": "center",
                   "bold": true
@@ -47453,7 +48492,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 102,
+                  "paragraph": 101,
                   "text": "Yêu cầu dịch vụ",
                   "align": "center",
                   "bold": true
@@ -47465,7 +48504,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 103,
+                  "paragraph": 102,
                   "text": "Bên A gửi brief/yêu cầu cung ứng dịch vụ, bao gồm: thông tin chiến dịch, sản phẩm/dịch vụ, nội dung quảng bá, nền tảng triển khai, timeline và các yêu cầu liên quan.",
                   "align": "justify"
                 }
@@ -47478,7 +48517,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 104,
+                  "paragraph": 103,
                   "text": "3",
                   "align": "center",
                   "bold": true
@@ -47490,7 +48529,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 105,
+                  "paragraph": 104,
                   "text": "Xác nhận SOW",
                   "align": "center",
                   "bold": true
@@ -47502,7 +48541,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 106,
+                  "paragraph": 105,
                   "text": "Hai bên thống nhất SOW qua các hình thức ký bản cứng/ký điện tử.",
                   "align": "justify"
                 }
@@ -47515,7 +48554,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 107,
+                  "paragraph": 106,
                   "text": "4",
                   "align": "center",
                   "bold": true
@@ -47527,7 +48566,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 108,
+                  "paragraph": 107,
                   "text": "Dựng kịch bản",
                   "align": "center",
                   "bold": true
@@ -47539,7 +48578,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 109,
+                  "paragraph": 108,
                   "text": "Bên B xây dựng kịch bản và nội dung video dựa trên brief của Bên A và gửi Bên A phê duyệt trước khi sản xuất.",
                   "align": "justify"
                 }
@@ -47552,7 +48591,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 110,
+                  "paragraph": 109,
                   "text": "5",
                   "align": "center",
                   "bold": true
@@ -47564,7 +48603,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 111,
+                  "paragraph": 110,
                   "text": "Duyệt kịch bản",
                   "align": "center",
                   "bold": true
@@ -47576,14 +48615,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 112,
+                  "paragraph": 111,
                   "text": "Bên A xem xét, phản hồi và yêu cầu chỉnh sửa (nếu có).",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 113,
+                  "paragraph": 112,
                   "text": "Tối đa 01 vòng chỉnh sửa trước khi duyệt cuối cùng, trừ khi SOW quy định khác.",
                   "align": "justify"
                 }
@@ -47596,7 +48635,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 114,
+                  "paragraph": 113,
                   "text": "6",
                   "align": "center",
                   "bold": true
@@ -47608,7 +48647,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 115,
+                  "paragraph": 114,
                   "text": "Sản xuất video",
                   "align": "center",
                   "bold": true
@@ -47620,7 +48659,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 116,
+                  "paragraph": 115,
                   "text": "Bên B tiến hành quay dựng, chỉnh lý, biên tập, hậu kỳ video theo kịch bản đã thống nhất.",
                   "align": "justify"
                 }
@@ -47633,7 +48672,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 117,
+                  "paragraph": 116,
                   "text": "7",
                   "align": "center",
                   "bold": true
@@ -47645,7 +48684,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 118,
+                  "paragraph": 117,
                   "text": "Duyệt video",
                   "align": "center",
                   "bold": true
@@ -47657,15 +48696,15 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 119,
+                  "paragraph": 118,
                   "text": "Bên A xem xét, phản hồi và yêu cầu chỉnh sửa (nếu có). ",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 120,
-                  "text": "Tối đa 01 vòng chỉnh sửa trước khi duyệt cuối cùng, trừ khi SOW quy định khác.",
+                  "paragraph": 119,
+                  "text": "Theo quy định chi tiết tại SOW.",
                   "align": "justify"
                 }
               ]
@@ -47677,7 +48716,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 121,
+                  "paragraph": 120,
                   "text": "8",
                   "align": "center",
                   "bold": true
@@ -47689,7 +48728,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 122,
+                  "paragraph": 121,
                   "text": "Đăng tải video",
                   "align": "center",
                   "bold": true
@@ -47701,7 +48740,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 123,
+                  "paragraph": 122,
                   "text": "Bên B đăng tải theo đúng nội dung đã duyệt, đúng tài khoản và timeline.",
                   "align": "justify"
                 }
@@ -47714,7 +48753,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 124,
+                  "paragraph": 123,
                   "text": "9",
                   "align": "center",
                   "bold": true
@@ -47726,7 +48765,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 125,
+                  "paragraph": 124,
                   "text": "Nghiệm thu",
                   "align": "center",
                   "bold": true
@@ -47738,7 +48777,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 126,
+                  "paragraph": 125,
                   "text": "Bên A kiểm tra việc thực hiện dịch vụ theo SOW.",
                   "align": "justify"
                 }
@@ -47751,7 +48790,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 127,
+                  "paragraph": 126,
                   "text": "10",
                   "align": "center",
                   "bold": true
@@ -47763,7 +48802,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 128,
+                  "paragraph": 127,
                   "text": "Thanh toán phí Booking",
                   "align": "center",
                   "bold": true
@@ -47775,7 +48814,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 129,
+                  "paragraph": 128,
                   "text": "Bên A thực hiện thanh toán phí booking theo SOW và Biên bản nghiệm thu (nếu có)",
                   "align": "justify"
                 }
@@ -47787,7 +48826,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 130,
+        "paragraph": 129,
         "text": "",
         "align": "justify",
         "bold": true
@@ -47795,7 +48834,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 131,
+        "paragraph": 130,
         "text": "Tiêu chuẩn nghiệm thu dịch vụ ",
         "align": "justify",
         "bold": true
@@ -47803,7 +48842,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 132,
+        "paragraph": 131,
         "text": "Tiêu chuẩn về nội dung và đăng tải",
         "align": "justify",
         "bold": true
@@ -47811,28 +48850,28 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 133,
+        "paragraph": 132,
         "text": "Video phải tuân thủ đầy đủ kịch bản, thông điệp và guideline do Bên A cung cấp; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 134,
+        "paragraph": 133,
         "text": "Chỉ được đăng tải sau khi có phê duyệt nội dung từ Bên A; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 135,
+        "paragraph": 134,
         "text": "Không vi phạm pháp luật, chính sách nền tảng hoặc gây ảnh hưởng tiêu cực đến hình ảnh thương hiệu. ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 136,
+        "paragraph": 135,
         "text": "Tiêu chuẩn về kịch bản và sản xuất",
         "align": "justify",
         "bold": true
@@ -47840,35 +48879,35 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 137,
+        "paragraph": 136,
         "text": "Kịch bản phải được Bên A phê duyệt bằng email/tin nhắn/văn bản trước khi quay dựng; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 138,
+        "paragraph": 137,
         "text": "Mọi chi phí phát sinh do sản xuất khi chưa có phê duyệt hợp lệ do Bên B tự chi trả; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 139,
+        "paragraph": 138,
         "text": "Cảnh quay, bố cục và thông điệp phải phù hợp với kịch bản đã duyệt; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 140,
+        "paragraph": 139,
         "text": "Trường hợp sai lệch, Bên A có quyền từ chối nghiệm thu và yêu cầu chỉnh sửa hoặc quay lại mà không phát sinh chi phí. ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 141,
+        "paragraph": 140,
         "text": "Tiêu chuẩn về chất lượng và hậu kỳ: Video phải được dựng và hoàn thiện theo tiêu chuẩn đã thống nhất (video mẫu, guideline thương hiệu).",
         "align": "justify",
         "bold": true
@@ -47876,7 +48915,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 142,
+        "paragraph": 141,
         "text": "Tiêu chuẩn về hình ảnh và nhận diện: Bên B phải kiểm soát trang phục, bối cảnh, nhận diện cá nhân và các yếu tố hình ảnh khác nhằm không được gây trùng lặp, xung đột hoặc ảnh hưởng tiêu cực đến hiệu quả truyền thông của Bên A;",
         "align": "justify",
         "bold": true
@@ -47884,7 +48923,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 143,
+        "paragraph": 142,
         "text": "Áp dụng đối với dịch vụ khác: tiêu chuẩn nghiệm thu được áp dụng theo quy định cụ thể tại Phụ lục (nếu có).",
         "align": "justify",
         "bold": true
@@ -47892,7 +48931,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 144,
+        "paragraph": 143,
         "text": "",
         "align": "justify",
         "bold": true
@@ -47900,7 +48939,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 145,
+        "paragraph": 144,
         "text": "ĐIỀU 3: PHÍ DỊCH VỤ VÀ THANH TOÁN",
         "align": "justify",
         "bold": true
@@ -47908,7 +48947,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 146,
+        "paragraph": 145,
         "text": "Phí dịch vụ booking và hoa hồng",
         "align": "justify",
         "bold": true
@@ -47916,14 +48955,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 147,
+        "paragraph": 146,
         "text": "Phí dịch vụ booking và hoa hồng được xác định cụ thể theo từng SOW tương ứng với từng chiến dịch hoặc công việc. Bên A có nghĩa vụ thanh toán đối với phần công việc đã được nghiệm thu hợp lệ theo tiêu chí quy định tại Hợp đồng khung và SOW. ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 148,
+        "paragraph": 147,
         "text": "Hình thức thanh toán",
         "align": "justify",
         "bold": true
@@ -47931,35 +48970,35 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 149,
+        "paragraph": 148,
         "text": "Bên A thanh toán bằng hình thức chuyển khoản ngân hàng vào tài khoản của Bên B theo thông tin như sau:",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 150,
+        "paragraph": 149,
         "text": "Tên chủ tài khoản: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 151,
+        "paragraph": 150,
         "text": "Số tài khoản: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 152,
+        "paragraph": 151,
         "text": "Tại Ngân hàng: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 153,
+        "paragraph": 152,
         "text": " Thời hạn thanh toán",
         "align": "justify",
         "bold": true
@@ -47967,7 +49006,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 154,
+        "paragraph": 153,
         "text": "",
         "align": "justify",
         "bold": true
@@ -47983,7 +49022,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 155,
+                  "paragraph": 154,
                   "text": "Thanh toán 1 lần",
                   "align": "center",
                   "bold": true
@@ -47995,29 +49034,29 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 156,
+                  "paragraph": 155,
                   "text": "Phí dịch vụ được thanh toán 01 (một) lần trong vòng 07 - 10 ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau:",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 157,
-                  "text": "Bên B đã hoàn thành dịch vụ theo Hợp đồng; ",
+                  "paragraph": 156,
+                  "text": "Bên B đã hoàn thành dịch vụ theo Phụ lục SOW; ",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 158,
+                  "paragraph": 157,
                   "text": "Bên A đã nhận được Biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây); ",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 159,
-                  "text": "Bên B đã cung cấp hóa đơn hộ kinh doanh hợp lệ (toàn bộ giá trị Hợp đồng) cho Bên A.",
+                  "paragraph": 158,
+                  "text": "Bên B đã cung cấp hóa đơn hộ kinh doanh hợp lệ (toàn bộ giá trị Phụ lục SOW) cho Bên A.",
                   "align": "justify"
                 }
               ]
@@ -48029,7 +49068,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 160,
+                  "paragraph": 159,
                   "text": "Thanh toán 2 lần",
                   "align": "center",
                   "bold": true
@@ -48041,13 +49080,13 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 161,
+                  "paragraph": 160,
                   "text": "Phí dịch vụ được thanh toán thành 02 (hai) lần như sau:"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 162,
+                  "paragraph": 161,
                   "text": "Lần 1: Bên A tạm ứng số tiền … trong vòng … ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau: ",
                   "align": "justify",
                   "boldPrefix": 6
@@ -48055,21 +49094,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 163,
-                  "text": "Hai Bên đã hoàn tất ký kết Hợp đồng và Bên A đã nhận được Hợp đồng có đầy đủ chữ ký của hai Bên; ",
+                  "paragraph": 162,
+                  "text": "Hai Bên đã hoàn tất ký kết Phụ lục SOW và Bên A đã nhận được Phụ lục SOW có đầy đủ chữ ký của hai Bên; ",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 164,
+                  "paragraph": 163,
                   "text": "Bên B đã cung cấp hóa đơn hộ kinh doanh hợp lệ tương ứng với giá trị thanh toán đợt 1 cho Bên A.",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 165,
+                  "paragraph": 164,
                   "text": "Lần 2: Bên A thanh toán phần giá trị còn lại trong vòng … ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau: ",
                   "align": "justify",
                   "boldPrefix": 6
@@ -48077,22 +49116,22 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 166,
-                  "text": "Bên B đã hoàn thành dịch vụ theo Hợp đồng; ",
+                  "paragraph": 165,
+                  "text": "Bên B đã hoàn thành dịch vụ theo Phụ lục SOW;  ",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 167,
+                  "paragraph": 166,
                   "text": "Bên A đã nhận được Biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây); ",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 168,
-                  "text": "Bên B đã cung cấp hóa đơn hộ kinh doanh hợp lệ (toàn bộ giá trị Hợp đồng) cho Bên A.",
+                  "paragraph": 167,
+                  "text": "Bên B đã cung cấp hóa đơn hộ kinh doanh hợp lệ (toàn bộ giá trị Phụ lục SOW) cho Bên A.",
                   "align": "justify"
                 }
               ]
@@ -48104,7 +49143,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 169,
+                  "paragraph": 168,
                   "text": "Thanh toán theo SOW",
                   "align": "center",
                   "bold": true
@@ -48116,8 +49155,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 170,
-                  "text": "Thời hạn thanh toán được xác định cụ thể theo từng SOW tương ứng với từng chiến dịch hoặc công việc cụ thể."
+                  "paragraph": 169,
+                  "text": "Thời hạn thanh toán được xác định cụ thể theo từng SOW tương ứng với từng chiến dịch hoặc công việc cụ thể.",
+                  "align": "justify"
                 }
               ]
             }
@@ -48127,7 +49167,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 171,
+        "paragraph": 170,
         "text": "",
         "align": "justify",
         "bold": true
@@ -48135,7 +49175,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 172,
+        "paragraph": 171,
         "text": " Hồ sơ nghiệm thu thanh toán (Giá trị tại khoản này là giá trị của SOW đã bao gồm tất cả các khoản thuế phí mà Bên B phải đóng nộp theo quy định pháp luật)",
         "align": "justify",
         "bold": true
@@ -48143,56 +49183,56 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 173,
+        "paragraph": 172,
         "text": "Hai Bên bắt buộc ký Biên bản nghiệm thu Phụ lục SOW trong các trường hợp sau:",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 174,
+        "paragraph": 173,
         "text": "Giá trị nghiệm thu hoặc thanh toán thực tế từ 20.000.000 đồng trở lên; hoặc",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 175,
+        "paragraph": 174,
         "text": "Giá trị nghiệm thu/thanh toán thực tế dưới 20.000.000 đồng nhưng khác với giá trị Phụ lục SOW đã ký kết.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 176,
+        "paragraph": 175,
         "text": "Phụ lục SOW được tự động nghiệm thu và thanh lý mà không cần ký Biên bản nghiệm thu khi đồng thời đáp ứng đầy đủ các điều kiện sau:",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 177,
+        "paragraph": 176,
         "text": "Giá trị Phụ lục SOW dưới 20.000.000 đồng;",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 178,
+        "paragraph": 177,
         "text": "Giá trị nghiệm thu thực tế và giá trị thanh toán thực tế đúng bằng giá trị Phụ lục SOW;",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 179,
+        "paragraph": 178,
         "text": "Hai Bên đã hoàn tất toàn bộ quyền và nghĩa vụ theo Phụ lục SOW.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 180,
+        "paragraph": 179,
         "text": "",
         "align": "justify",
         "bold": true
@@ -48200,7 +49240,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 181,
+        "paragraph": 180,
         "text": "ĐIỀU 4: QUYỀN VÀ NGHĨA VỤ CỦA BÊN A",
         "align": "justify",
         "bold": true
@@ -48208,7 +49248,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 182,
+        "paragraph": 181,
         "text": "Quyền của Bên A",
         "align": "justify",
         "bold": true
@@ -48216,7 +49256,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 183,
+        "paragraph": 182,
         "text": "Quyền kiểm tra, giám sát: Bên A có quyền kiểm tra và giám sát Bên B thực hiện công việc đúng nội dung, chất lượng, tiến độ theo Hợp đồng; có quyền phê duyệt hoặc đưa ra ý kiến trong thời gian hợp lý đối với các nội dung, đề xuất của Bên B.",
         "align": "justify",
         "boldPrefix": 25
@@ -48224,7 +49264,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 184,
+        "paragraph": 183,
         "text": "Quyền chỉnh sửa kịch bản: Bên A có quyền kiểm tra và yêu cầu Bên B chỉnh sửa nội dung kịch bản trước khi sản xuất/trước khi đăng tải trong trường hợp nội dung chưa phù hợp với yêu cầu đã thống nhất.",
         "align": "justify",
         "boldPrefix": 25
@@ -48232,7 +49272,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 185,
+        "paragraph": 184,
         "text": "Quyền chỉnh sửa sản phẩm: Trường hợp nội dung video/bài đăng do Bên B đăng tải không đúng với nội dung đã được hai Bên thống nhất, Bên A có quyền yêu cầu Bên B chỉnh sửa, gỡ bỏ hoặc thay thế ngay nội dung đã đăng tải sai.",
         "align": "justify",
         "bold": true
@@ -48240,7 +49280,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 186,
+        "paragraph": 185,
         "text": "Nghĩa vụ của Bên A",
         "align": "justify",
         "bold": true
@@ -48248,7 +49288,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 187,
+        "paragraph": 186,
         "text": "Thanh toán đầy đủ và đúng hạn Phí Booking cho Bên B theo Hợp đồng;",
         "align": "justify",
         "bold": true
@@ -48256,7 +49296,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 188,
+        "paragraph": 187,
         "text": "Cung cấp đầy đủ, kịp thời các thông tin, tài liệu, sản phẩm mẫu và phối hợp với Bên B để triển khai dịch vụ theo Hợp đồng;",
         "align": "justify",
         "bold": true
@@ -48264,7 +49304,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 189,
+        "paragraph": 188,
         "text": "Không sử dụng hình ảnh, nội dung của Bên B theo cách gây ảnh hưởng tiêu cực đến uy tín hoặc hình ảnh cá nhân của Bên B.",
         "align": "justify",
         "bold": true
@@ -48272,7 +49312,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 190,
+        "paragraph": 189,
         "text": "",
         "align": "justify",
         "bold": true
@@ -48280,7 +49320,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 191,
+        "paragraph": 190,
         "text": "ĐIỀU 5: QUYỀN VÀ NGHĨA VỤ CỦA BÊN B",
         "align": "justify",
         "bold": true
@@ -48288,7 +49328,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 192,
+        "paragraph": 191,
         "text": "Quyền của Bên B",
         "align": "justify",
         "bold": true
@@ -48296,28 +49336,28 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 193,
+        "paragraph": 192,
         "text": "Yêu cầu Bên A cung cấp đầy đủ thông tin, tài liệu, sản phẩm mẫu, guideline, chính sách thương hiệu và các dữ liệu cần thiết để thực hiện dịch vụ; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 194,
+        "paragraph": 193,
         "text": "Yêu cầu Bên A phối hợp phản hồi, xác nhận nội dung, kế hoạch triển khai; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 195,
+        "paragraph": 194,
         "text": "Được sử dụng tên thương mại, nhãn hiệu, hình ảnh sản phẩm của Bên A trong phạm vi cần thiết để thực hiện dịch vụ theo Hợp đồng.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 196,
+        "paragraph": 195,
         "text": " Nghĩa vụ của Bên B",
         "align": "justify",
         "bold": true
@@ -48325,7 +49365,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 197,
+        "paragraph": 196,
         "text": "Nghĩa vụ thực hiện dịch vụ: Thực hiện công việc đúng nội dung, chất lượng, số lượng, thời hạn, nền tảng theo Hợp đồng đã ký kết; không được chuyển giao, ủy quyền cho bên thứ ba thực hiện công việc; chủ động thông báo kịp thời cho Bên A về bất kỳ sự kiện nào có thể ảnh hưởng đến việc thực hiện dịch vụ.",
         "align": "justify",
         "bold": true
@@ -48333,7 +49373,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 198,
+        "paragraph": 197,
         "text": "Nghĩa vụ duy trì nội dung đã đăng tải:",
         "align": "justify",
         "bold": true
@@ -48341,21 +49381,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 199,
+        "paragraph": 198,
         "text": "Bên B không được tự ý xóa, ẩn hoặc hạn chế hiển thị đối với video đã đăng tải theo Hợp đồng và Phụ lục SOW liên quan. Trong trường hợp nội dung phát sinh lỗi kỹ thuật do nền tảng, bao gồm nhưng không giới hạn mất tiếng, lỗi hình ảnh, lỗi hiển thị hoặc các sự cố tương tự, Bên B có nghĩa vụ phối hợp với Bên A để khắc phục và đăng tải lại nội dung trong thời gian sớm nhất theo yêu cầu của Bên A. Trường hợp không thể khắc phục hoặc đăng tải lại, Bên B bàn giao video hoàn chỉnh cho Bên A để Bên A đăng tải trên kênh chính thức của nhãn hàng trong thời hạn ít nhất 03 (ba) tháng.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 200,
-        "text": "Trừ trường hợp sản phẩm hoặc nhãn hiệu của sản phẩm bị cơ quan nhà nước có thẩm quyền xử phạt hoặc phát sinh khủng hoảng, tranh cãi truyền thông có khả năng ảnh hưởng đến hình ảnh, uy tín của Bên B, Bên B được quyền chủ động ẩn video sau khi thông báo cho Bên A. Sau khi vụ việc được làm rõ hoặc giải quyết, tùy từng trường hợp, Hai Bên sẽ thỏa thuận về việc hiển thị lại nội dung.",
+        "paragraph": 199,
+        "text": "Trường hợp sản phẩm hoặc nhãn hiệu của sản phẩm bị cơ quan nhà nước có thẩm quyền xử phạt hoặc phát sinh khủng hoảng, tranh cãi truyền thông có khả năng ảnh hưởng đến hình ảnh, uy tín của Bên B, Bên B được quyền chủ động ẩn video sau khi thông báo cho Bên A. Sau khi vụ việc được làm rõ hoặc giải quyết, tùy từng trường hợp, Hai Bên sẽ thỏa thuận về việc hiển thị lại nội dung.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 201,
+        "paragraph": 200,
         "text": "Nghĩa vụ về nội dung và trách nhiệm quảng cáo: Bên B là người chuyển tải sản phẩm quảng cáo theo quy định pháp luật và cam kết tuân thủ quy định tại Luật Quảng cáo, Luật Bảo vệ quyền lợi người tiêu dùng hiện hành cũng như quy định của sàn TMĐT.",
         "align": "justify",
         "bold": true
@@ -48363,7 +49403,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 202,
+        "paragraph": 201,
         "text": "Nghĩa vụ bảo vệ hình ảnh và uy tín nhãn hiệu: Bên B cam kết bảo vệ hình ảnh, uy tín của nhãn hiệu và Bên A bằng việc không thực hiện bất kỳ hành vi, phát ngôn hoặc đăng tải nội dung nào gây ảnh hưởng tiêu cực, gây hiểu nhầm hoặc chưa được kiểm chứng liên quan đến Bên A hoặc sản phẩm/dịch vụ, cũng như không sử dụng ngôn từ, hình ảnh phản cảm, vi phạm pháp luật hoặc không phù hợp với định vị thương hiệu của Bên A; các nghĩa vụ này áp dụng trong suốt thời gian thực hiện Hợp đồng và kéo dài ít nhất 06 tháng sau khi chấm dứt việc hợp tác với nhãn hàng.",
         "align": "justify",
         "boldPrefix": 46
@@ -48371,7 +49411,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 203,
+        "paragraph": 202,
         "text": "Nghĩa vụ bảo vệ hình ảnh và uy tín cá nhân: Bên B cam kết duy trì danh tiếng cá nhân, không để xảy ra các sự kiện, hành vi hoặc phát ngôn có thể gây scandal, tranh cãi hoặc ảnh hưởng trực tiếp hoặc gián tiếp đến uy tín của Bên A; trong trường hợp phát sinh sự kiện có nguy cơ ảnh hưởng tiêu cực, Bên B phải thông báo kịp thời và phối hợp với Bên A để xử lý phù hợp.",
         "align": "justify",
         "boldPrefix": 43
@@ -48379,7 +49419,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 204,
+        "paragraph": 203,
         "text": "",
         "align": "justify",
         "bold": true
@@ -48387,7 +49427,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 205,
+        "paragraph": 204,
         "text": "ĐIỀU 6: PHẠT VI PHẠM, BỒI THƯỜNG THIỆT HẠI",
         "align": "justify",
         "bold": true
@@ -48395,7 +49435,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 206,
+        "paragraph": 205,
         "text": "Vi phạm của Bên A",
         "align": "justify",
         "bold": true
@@ -48403,7 +49443,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 207,
+        "paragraph": 206,
         "text": "Chậm thanh toán: Trừ trường hợp bất khả kháng hoặc do lỗi của Bên B, nếu Bên A chậm thanh toán quá 30 (ba mươi) ngày so với thời hạn đã thỏa thuận (thời hạn thanh toán được tính từ thời điểm Bên B hoàn tất chứng từ thanh toán), Bên A phải trả lãi chậm thanh toán với mức lãi suất 8%/năm trên số tiền chậm trả, tính theo số ngày chậm thanh toán.",
         "align": "justify",
         "bold": true
@@ -48411,7 +49451,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 208,
+        "paragraph": 207,
         "text": "Vi phạm của Bên B",
         "align": "justify",
         "bold": true
@@ -48419,7 +49459,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 209,
+        "paragraph": 208,
         "text": "Vi phạm tiến độ thực hiện: Trường hợp Bên B không thực hiện đúng tiến độ theo Hợp đồng mà không do lỗi của Bên A hoặc yếu tố khách quan, Bên A sẽ gia hạn để Bên B khắc phục kịp thời theo tiến độ của dự án. Nếu Bên B không khắc phục trong vòng 3 – 5 ngày hoặc xong trước deadline cuối của dự án, Bên B phải chịu phạt tương đương 1% giá trị phí dịch vụ của hạng mục công việc bị vi phạm cho mỗi ngày chậm, tổng mức phạt không vượt quá 8% giá trị hạng mục vi phạm.",
         "align": "justify",
         "boldPrefix": 27
@@ -48427,7 +49467,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 210,
+        "paragraph": 209,
         "text": "Vi phạm nghĩa vụ về nội dung và trách nhiệm quảng cáo: Bên A có quyền yêu cầu Bên B gỡ bỏ, chỉnh sửa nội dung và chịu mọi trách nhiệm phát sinh; đồng thời Bên A có quyền giảm trừ hoặc không thanh toán phần Phí Dịch vụ liên quan đến nội dung vi phạm pháp luật hoặc đơn phương chấm dứt Hợp đồng tùy theo mức độ nghiêm trọng của sự việc. ",
         "align": "justify",
         "boldPrefix": 55
@@ -48435,7 +49475,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 211,
+        "paragraph": 210,
         "text": "Vi phạm nghĩa vụ bảo vệ hình ảnh, uy tín và danh tiếng thương hiệu và danh tiếng cá nhân của Bên B: Bên A có quyền đơn phương chấm dứt Hợp đồng, từ chối thanh toán phần phí dịch vụ chưa thực hiện và yêu cầu Bên B thực hiện các biện pháp khắc phục (bao gồm đính chính, gỡ bỏ nội dung nếu có).",
         "align": "justify",
         "boldPrefix": 100
@@ -48443,7 +49483,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 212,
+        "paragraph": 211,
         "text": "Bồi thường thiệt hại: Bên nào vi phạm nghĩa vụ theo Hợp đồng gây thiệt hại cho Bên còn lại thì phải bồi thường toàn bộ thiệt hại thực tế, trực tiếp phát sinh theo quy định của pháp luật.",
         "align": "justify",
         "bold": true
@@ -48451,7 +49491,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 213,
+        "paragraph": 212,
         "text": "",
         "align": "justify",
         "bold": true
@@ -48459,7 +49499,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 214,
+        "paragraph": 213,
         "text": "ĐIỀU 7: HIỆU LỰC VÀ CHẤM DỨT HỢP ĐỒNG ",
         "align": "justify",
         "bold": true
@@ -48467,7 +49507,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 215,
+        "paragraph": 214,
         "text": "Hiệu lực: Hợp Đồng có hiệu lực kể từ ngày ký và tiếp tục duy trì hiệu lực cho đến khi một trong Hai Bên đơn phương chấm dứt Hợp đồng hoặc Hai bên có thỏa thuận cùng chấm dứt bằng văn bản.",
         "align": "justify",
         "bold": true
@@ -48475,7 +49515,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 216,
+        "paragraph": 215,
         "text": "Các trường hợp chấm dứt hợp đồng",
         "align": "justify",
         "bold": true
@@ -48483,49 +49523,49 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 217,
+        "paragraph": 216,
         "text": "Một Bên thông báo bằng văn bản cho Bên còn lại ít nhất 30 (ba mươi) ngày trước ngày dự kiến chấm dứt;",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 218,
+        "paragraph": 217,
         "text": "Hai bên cùng thỏa thuận chấm dứt Hợp đồng bằng văn bản;",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 219,
+        "paragraph": 218,
         "text": "Bên A bị giải thể, phá sản, chấm dứt hoạt động hoặc thuộc trường hợp không còn khả năng tiếp tục thực hiện Hợp đồng;",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 220,
+        "paragraph": 219,
         "text": "Các trường hợp khác theo quy định của pháp luật.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 221,
+        "paragraph": 220,
         "text": "Việc chấm dứt Hợp đồng không làm ảnh hưởng đến các quyền, nghĩa vụ và trách nhiệm đã phát sinh trước ngày chấm dứt. Hai bên có trách nhiệm hoàn tất việc nghiệm thu, đối soát và thanh toán các khoản còn tồn đọng theo các Phụ lục SOW đã ký kết.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 222,
+        "paragraph": 221,
         "text": "",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 223,
+        "paragraph": 222,
         "text": "ĐIỀU 8: BẢO MẬT THÔNG TIN",
         "align": "justify",
         "bold": true
@@ -48533,7 +49573,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 224,
+        "paragraph": 223,
         "text": "Trong quá trình thực hiện Hợp đồng và sau khi Hợp đồng chấm dứt, mỗi Bên (sau đây gọi là “Bên Nhận Thông Tin”) có nghĩa vụ bảo mật tuyệt đối đối với mọi thông tin, tài liệu do Bên còn lại (“Bên Tiết Lộ”) cung cấp hoặc phát sinh liên quan đến việc thực hiện Hợp đồng, bao gồm nhưng không giới hạn các điều khoản Hợp đồng, dữ liệu, tài liệu, kế hoạch kinh doanh, thông tin tài chính, chiến lược marketing, bí mật kinh doanh và các thông tin có tính chất bảo mật khác (“Thông Tin Mật”); theo đó, Bên Nhận Thông Tin không được tiết lộ, công bố hoặc sử dụng Thông Tin Mật cho bất kỳ mục đích nào ngoài mục đích thực hiện Hợp đồng nếu không có sự chấp thuận trước bằng văn bản của Bên Tiết Lộ.",
         "align": "justify",
         "bold": true
@@ -48541,7 +49581,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 225,
+        "paragraph": 224,
         "text": "Bên vi phạm phải chịu trách nhiệm bồi thường toàn bộ thiệt hại phát sinh cho Bên còn lại và các bên liên quan (nếu có).",
         "align": "justify",
         "bold": true
@@ -48549,7 +49589,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 226,
+        "paragraph": 225,
         "text": "Thời hạn bảo mật: Nghĩa vụ bảo mật tiếp tục có hiệu lực sau khi Hợp Đồng chấm dứt hoặc hết hạn, cho đến khi Thông Tin Bảo Mật trở thành thông tin công khai hợp pháp.",
         "align": "justify",
         "bold": true
@@ -48557,23 +49597,15 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
+        "paragraph": 226,
+        "text": "",
+        "align": "justify",
+        "bold": true
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
         "paragraph": 227,
-        "text": "",
-        "align": "justify",
-        "bold": true
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 228,
-        "text": "",
-        "align": "justify",
-        "bold": true
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 229,
         "text": "ĐIỀU 9: BẤT KHẢ KHÁNG",
         "align": "justify",
         "bold": true
@@ -48581,14 +49613,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 230,
+        "paragraph": 228,
         "text": "Một Bên sẽ không bị xem là vi phạm Hợp Đồng nếu việc chậm trễ hoặc không thực hiện nghĩa vụ do sự kiện khách quan, không thể lường trước và không thể khắc phục mặc dù đã áp dụng mọi biện pháp cần thiết (“Sự Kiện Bất Khả Kháng”), bao gồm nhưng không giới hạn: thiên tai, hỏa hoạn, chiến tranh, bạo loạn, đình công, dịch bệnh, hoặc các quyết định, hạn chế của cơ quan nhà nước có thẩm quyền. Bên bị ảnh hưởng phải thông báo bằng văn bản cho Bên còn lại trong vòng 03 ngày làm việc kể từ khi xảy ra sự kiện, nêu rõ bản chất sự kiện, phạm vi ảnh hưởng và thời gian dự kiến khắc phục.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 231,
+        "paragraph": 229,
+        "text": "",
+        "align": "justify"
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 230,
         "text": "ĐIỀU 10: ĐIỀU KHOẢN CHUNG",
         "align": "justify",
         "bold": true
@@ -48596,21 +49635,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 232,
+        "paragraph": 231,
         "text": "Luật áp dụng: Hợp Đồng này được điều chỉnh và giải thích theo pháp luật Việt Nam.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 233,
+        "paragraph": 232,
         "text": "Giải quyết tranh chấp: Mọi tranh chấp phát sinh từ hoặc liên quan đến Hợp Đồng sẽ được ưu tiên giải quyết thông qua thương lượng, hòa giải giữa các Bên. Nếu tranh chấp không được giải quyết trong vòng 30 ngày kể từ ngày một Bên thông báo bằng văn bản về tranh chấp, tranh chấp sẽ được đưa ra Tòa án có thẩm quyền tại Việt Nam để giải quyết.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 234,
+        "paragraph": 233,
         "text": "Hợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản, có giá trị pháp lý như nhau.",
         "align": "justify",
         "bold": true
@@ -48618,7 +49657,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 235,
+        "paragraph": 234,
         "text": "",
         "align": "justify"
       },
@@ -48633,7 +49672,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 236,
+                  "paragraph": 235,
                   "text": "ĐẠI DIỆN BÊN A",
                   "align": "center",
                   "bold": true
@@ -48645,7 +49684,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 237,
+                  "paragraph": 236,
                   "text": "ĐẠI DIỆN BÊN B",
                   "align": "center",
                   "bold": true
@@ -48658,7 +49697,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 238,
+        "paragraph": 237,
         "text": "",
         "align": "justify",
         "bold": true
@@ -48670,8 +49709,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "text": ""
       },
       {
+        "kind": "p",
+        "part": "word/footer2.xml",
+        "paragraph": 0,
+        "text": ""
+      },
+      {
         "kind": "table",
-        "part": "word/footer1.xml",
+        "part": "word/footer2.xml",
         "variant": "grid",
         "rows": [
           [
@@ -48679,7 +49724,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               "blocks": [
                 {
                   "kind": "p",
-                  "part": "word/footer1.xml",
+                  "part": "word/footer2.xml",
                   "paragraph": 1,
                   "text": "ddmmyy/HĐNT/UPBASE-ID KOC"
                 }
@@ -48689,7 +49734,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               "blocks": [
                 {
                   "kind": "p",
-                  "part": "word/footer1.xml",
+                  "part": "word/footer2.xml",
                   "paragraph": 2,
                   "text": "http://www.upbase.asia",
                   "align": "center"
@@ -48700,14 +49745,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               "blocks": [
                 {
                   "kind": "p",
-                  "part": "word/footer1.xml",
+                  "part": "word/footer2.xml",
                   "paragraph": 3,
                   "text": "Trang 1 ",
                   "align": "right"
                 },
                 {
                   "kind": "p",
-                  "part": "word/footer1.xml",
+                  "part": "word/footer2.xml",
                   "paragraph": 4,
                   "text": ""
                 }
@@ -48718,43 +49763,26 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       },
       {
         "kind": "p",
-        "part": "word/footer1.xml",
+        "part": "word/footer2.xml",
         "paragraph": 5,
         "text": ""
-      }
-    ],
-    "category": "BOOKING_VIDEO",
-    "description": "Hợp đồng nguyên tắc booking video (ký một lần khi bắt đầu hợp tác) dành cho đối tác là hộ kinh doanh.",
-    "active": true,
-    "defaultReviewRoles": [
-      "LEGAL",
-      "FINANCE"
-    ],
-    "exemptLegalReview": true,
-    "scope": "GLOBAL",
-    "updatedAt": "2026-05-01T08:00:00.000Z",
-    "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 21,
-    "requiredFieldCount": 15,
-    "history": [
+      },
       {
-        "version": "Ver052026",
-        "hash": "13642892727b6f3280e666ebf98aed819c845305f4fa10956de5483500a8b586",
-        "filename": "1. HĐNT HKD booking Video.docx",
-        "updatedAt": "2026-05-01T08:00:00.000Z",
-        "updatedBy": "Phòng Pháp chế",
-        "note": "Phiên bản chuẩn ban hành bởi Pháp chế"
+        "kind": "p",
+        "part": "word/footer3.xml",
+        "paragraph": 0,
+        "text": ""
       }
     ]
   },
   "HKD-SOW": {
     "id": "HKD-SOW",
     "name": "SOW booking video · Hộ kinh doanh",
-    "filename": "2. SOW HKD booking Video.docx",
+    "filename": "2.3 SOW HKD booking Video.docx",
     "subject": "Hộ kinh doanh",
     "kind": "CONTRACT",
-    "version": "Ver052026",
-    "hash": "44f62e4335242060b08971540df5a28d2e82ccf9337074a84aacd1d792286231",
+    "version": "Ver092026",
+    "hash": "7bbec3eaa5faf1b6eef5621730fe8c81c3732ae8eb81632ef6820d0bb223322f",
     "fields": [
       {
         "key": "token:[dd.mm.yy]",
@@ -48967,123 +49995,314 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "email"
       },
       {
-        "key": "word/document.xml:p61:109",
-        "part": "word/document.xml",
-        "paragraph": 61,
-        "start": 109,
-        "end": 110,
-        "label": "đẩy doanh số bán hàng với sản phẩm  [điền] . Nhãn hiệu ….",
-        "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-        "required": false,
-        "title": "Sản phẩm",
-        "group": "SCOPE",
-        "kind": "text",
-        "source": "product"
-      },
-      {
-        "key": "word/document.xml:p61:122",
-        "part": "word/document.xml",
-        "paragraph": 61,
-        "start": 122,
-        "end": 123,
-        "label": "bán hàng với sản phẩm …. Nhãn hiệu  [điền] .",
-        "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-        "required": false,
-        "title": "Nhãn hiệu",
-        "group": "SCOPE",
-        "kind": "text",
-        "source": "brand"
-      },
-      {
-        "key": "word/document.xml:p62:32",
+        "key": "word/document.xml:p62:cell",
         "part": "word/document.xml",
         "paragraph": 62,
-        "start": 32,
-        "end": 33,
-        "label": "Thời gian đăng tải (air video):  [điền] .",
-        "context": "Thời gian đăng tải (air video): ….",
+        "label": "Sản xuất và đăng tải video review · Phí dịch vụ",
+        "context": "Hạng mục video · Sản xuất và đăng tải video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng cho sản phẩm. · …",
         "required": false,
-        "title": "Thời gian đăng tải (air video)",
-        "group": "SCOPE",
-        "kind": "date",
-        "source": "airDate"
-      },
-      {
-        "key": "word/document.xml:p64:cell",
-        "part": "word/document.xml",
-        "paragraph": 64,
-        "label": "Sản xuất và đăng tải Video review · Thành tiền",
-        "context": "1 · Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….Thời gian đăng tải (air video): ….Video có gắn giỏ hàng sản phẩm (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
-        "required": false,
-        "title": "Sản xuất và đăng tải Video review · Thành tiền",
+        "start": 0,
+        "end": 1,
+        "title": "Sản xuất và đăng tải video review · Phí dịch vụ",
         "group": "SCOPE",
         "kind": "money",
         "source": "lineTotal"
       },
       {
-        "key": "word/document.xml:p66:47",
+        "key": "word/document.xml:p64:25",
         "part": "word/document.xml",
-        "paragraph": 66,
+        "paragraph": 64,
+        "start": 25,
+        "end": 26,
+        "label": "Sản phẩm được quảng cáo:  [điền]  (tên sản phẩm + nhãn hiệ",
+        "context": "Sản phẩm được quảng cáo: … (tên sản phẩm + nhãn hiệu)",
+        "required": false,
+        "title": "Sản phẩm được quảng cáo (tên sản phẩm + nhãn hiệu)",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "product"
+      },
+      {
+        "key": "word/document.xml:p67:16",
+        "part": "word/document.xml",
+        "paragraph": 67,
+        "start": 16,
+        "end": 17,
+        "label": "Số lượng video   [điền] ",
+        "context": "Số lượng video  …",
+        "required": false,
+        "title": "Số lượng video",
+        "group": "SCOPE",
+        "kind": "number",
+        "source": "quantity"
+      },
+      {
+        "key": "word/document.xml:p70:17",
+        "part": "word/document.xml",
+        "paragraph": 70,
+        "start": 17,
+        "end": 18,
+        "label": "Thời lượng video  [điền] s",
+        "context": "Thời lượng video …s",
+        "required": false,
+        "title": "Thời lượng video (giây)",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
+        "key": "word/document.xml:p89:116",
+        "part": "word/document.xml",
+        "paragraph": 89,
+        "start": 116,
+        "end": 117,
+        "label": "của Bên B. Nội dung được cung cấp:  [điền] ;",
+        "context": "Bên A/Brand cung cấp nội dung hoàn chỉnh; Bên B chỉ thực hiện đăng tải trên kênh của Bên B. Nội dung được cung cấp: …;",
+        "required": false,
+        "title": "Nội dung cung cấp (Post-only, nếu có)",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p93:111",
+        "part": "word/document.xml",
+        "paragraph": 93,
+        "start": 111,
+        "end": 112,
+        "label": "ủa Bên B. Định dạng file bàn giao:  [điền] ; ",
+        "context": "Bên B sản xuất video và bàn giao cho Bên A/Brand, không đăng tải trên kênh của Bên B. Định dạng file bàn giao: …; ",
+        "required": false,
+        "title": "Định dạng file bàn giao (Production-only, nếu có)",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p94:19",
+        "part": "word/document.xml",
+        "paragraph": 94,
+        "start": 19,
+        "end": 20,
+        "label": "Thời hạn bàn giao:  [điền] ",
+        "context": "Thời hạn bàn giao: …",
+        "required": false,
+        "title": "Thời gian đăng tải / bàn giao video (air video)",
+        "group": "SCOPE",
+        "kind": "date",
+        "source": "airDate"
+      },
+      {
+        "key": "word/document.xml:p99:20",
+        "part": "word/document.xml",
+        "paragraph": 99,
+        "start": 20,
+        "end": 21,
+        "label": "Số lượng phiên bản:  [điền] ;",
+        "context": "Số lượng phiên bản: …;",
+        "required": false,
+        "title": "Số lượng phiên bản cắt ngắn (nếu có)",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
+        "key": "word/document.xml:p100:27",
+        "part": "word/document.xml",
+        "paragraph": 100,
+        "start": 27,
+        "end": 28,
+        "label": "Thời lượng từng phiên bản:  [điền] ",
+        "context": "Thời lượng từng phiên bản: …",
+        "required": false,
+        "title": "Thời lượng từng phiên bản cắt ngắn (nếu có)",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p104:36",
+        "part": "word/document.xml",
+        "paragraph": 104,
+        "start": 36,
+        "end": 37,
+        "label": "ên A được yêu cầu chỉnh sửa tối đa  [điền]  vòng.",
+        "context": "Bên A được yêu cầu chỉnh sửa tối đa … vòng.",
+        "required": false,
+        "title": "Số vòng chỉnh sửa video tối đa",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
+        "key": "word/document.xml:p110:8",
+        "part": "word/document.xml",
+        "paragraph": 110,
+        "start": 8,
+        "end": 12,
+        "label": "Link kênh TikTok đăng tải",
+        "context": "TikTok: Link",
+        "required": false,
+        "title": "Link kênh TikTok đăng tải",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
+        "key": "word/document.xml:p111:8",
+        "part": "word/document.xml",
+        "paragraph": 111,
+        "start": 8,
+        "end": 12,
+        "label": "Link kênh Shopee đăng tải",
+        "context": "Shopee: Link",
+        "required": false,
+        "title": "Link kênh Shopee đăng tải",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p112:10",
+        "part": "word/document.xml",
+        "paragraph": 112,
+        "start": 10,
+        "end": 14,
+        "label": "Link kênh Facebook đăng tải",
+        "context": "Facebook: Link",
+        "required": false,
+        "title": "Link kênh Facebook đăng tải",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p113:11",
+        "part": "word/document.xml",
+        "paragraph": 113,
+        "start": 11,
+        "end": 15,
+        "label": "Link kênh Instagram đăng tải",
+        "context": "Instagram: Link",
+        "required": false,
+        "title": "Link kênh Instagram đăng tải",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p114:9",
+        "part": "word/document.xml",
+        "paragraph": 114,
+        "start": 9,
+        "end": 13,
+        "label": "Link kênh YouTube đăng tải",
+        "context": "YouTube: Link",
+        "required": false,
+        "title": "Link kênh YouTube đăng tải",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p115:23",
+        "part": "word/document.xml",
+        "paragraph": 115,
+        "start": 23,
+        "end": 27,
+        "label": "Link kênh Threads/nền tảng khác đăng tải",
+        "context": "Threads/nền tảng khác: Link",
+        "required": false,
+        "title": "Link kênh Threads/nền tảng khác đăng tải",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p120:cell",
+        "part": "word/document.xml",
+        "paragraph": 120,
+        "label": "Hạng mục thương mại · Gắn giỏ hàng/ Link Affiliate · Phí dịch vụ",
+        "context": "Hạng mục thương mại · Gắn giỏ hàng/ Link Affiliate · Gắn giỏ hàng sản phẩm được quảng cáo và/hoặc gắn, chèn Link Affiliate tại video, bài đăng, showcase và các vị trí khác được nền tảng hỗ trợ. Hình thức, vị trí và thời điểm bắt đầu thực hiện được Hai Bên thống nhất qua email/tin nhắn. · …",
+        "required": false,
+        "start": 0,
+        "end": 1,
+        "title": "Hạng mục thương mại · Gắn giỏ hàng/ Link Affiliate · Phí dịch vụ",
+        "group": "SCOPE",
+        "kind": "money"
+      },
+      {
+        "key": "word/document.xml:p122:47",
+        "part": "word/document.xml",
+        "paragraph": 122,
         "start": 47,
         "end": 48,
-        "label": "để chạy quảng cáo video trong vòng  [điền]  ngày (thời gian bắt đầu ",
-        "context": "Cấp mã code để chạy quảng cáo video trong vòng … ngày (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
+        "label": "để chạy quảng cáo video trong vòng  [điền]  ngày.",
+        "context": "Cấp mã code để chạy quảng cáo video trong vòng … ngày.",
         "required": false,
         "title": "Số ngày cấp mã quảng cáo",
         "group": "SCOPE",
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p67:cell",
+        "key": "word/document.xml:p126:cell",
         "part": "word/document.xml",
-        "paragraph": 67,
-        "label": "Cấp mã code để chạy quảng cáo video trong vòng · Thành tiền",
-        "context": "2 · Cấp mã code để chạy quảng cáo video trong vòng … ngày (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
+        "paragraph": 126,
+        "label": "Cấp mã code để chạy quảng cáo video trong vòng · Phí dịch vụ",
+        "context": "Hạng mục Quảng cáo · Cấp mã code để chạy quảng cáo video trong vòng … ngày.Thời hạn chạy quảng cáo tính thời điểm bàn giao mã code quảng cáo.Thời điểm bắt đầu chạy quảng cáo được hai bên thống nhất qua email/tin nhắn.Brand, Bên A và/hoặc agency được Brand hoặc Bên A ủy quyền được sử dụng video và mã quảng cáo để chạy Ads trong phạm vi, thời hạn đã thỏa thuận. · …",
         "required": false,
-        "title": "Cấp mã code để chạy quảng cáo video trong vòng · Thành tiền",
+        "start": 0,
+        "end": 1,
+        "title": "Cấp mã code để chạy quảng cáo video trong vòng · Phí dịch vụ",
         "group": "SCOPE",
         "kind": "money"
       },
       {
-        "key": "word/document.xml:p69:32",
+        "key": "word/document.xml:p132:18",
         "part": "word/document.xml",
-        "paragraph": 69,
-        "start": 32,
-        "end": 33,
-        "label": "Sử dụng hình ảnh và video trong  [điền]  ngày kể từ ngày đăng tải",
-        "context": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
+        "paragraph": 132,
+        "start": 18,
+        "end": 19,
+        "label": "Thời hạn sử dụng:  [điền]  ngày kể từ ngày video đư",
+        "context": "Thời hạn sử dụng: … ngày kể từ ngày video được đăng tải.",
         "required": false,
         "title": "Số ngày sử dụng hình ảnh và video",
         "group": "SCOPE",
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p72:cell",
+        "key": "word/document.xml:p133:cell",
         "part": "word/document.xml",
-        "paragraph": 72,
-        "label": "Sử dụng hình ảnh và video trong · Thành tiền",
-        "context": "3 · Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải videoSử dụng hình ảnh: Bên A được sử dụng hình ảnh của Bên B (hình ảnh chụp riêng, không trích xuất từ video hoặc hình ảnh từ video) để gắn với sản phẩm trên listing gian hàng, phiên livestream, website, sàn TMĐT, landing page và các kênh truyền thông số khác, sau khi Bên B xác nhận cụ thể hình ảnh được phép sử dụng, phục vụ dự án truyền thông sản phẩm.Sử dụng video: Bên A được chủ động chỉnh sửa, cắt ghép, chuyển thể, lồng ghép, biên tập, tái sử dụng và đăng tải lại video do Bên B thực hiện trên website, landing page, sàn TMĐT, Facebook, TikTok, Instagram, YouTube và các kênh khác; đồng thời được cho phép KOC/KOL/người dùng duet, stitch, chia sẻ hoặc tái sử dụng video để phục vụ hoạt động truyền thông, quảng cáo, PR, livestream, affiliate và chiến dịch TMĐT của sản phẩm.",
+        "paragraph": 133,
+        "label": "Quyền sử dụng hình ảnh · Phí dịch vụ",
+        "context": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất · Quyền sử dụng hình ảnh: Bên A được sử dụng hình ảnh của: (i) Bên B, nếu Bên B trực tiếp thực hiện Dịch vụ với tư cách KOL/KOC/Creator; và/hoặc (ii) KOL/KOC/Creator thực hiện Dịch vụ (do Bên B quản lý, đại diện), bao gồm ảnh chụp riêng, hình ảnh trích xuất từ video và/hoặc tài sản khác theo thỏa thuận, để gắn với sản phẩm trên listing/PDP/SIS, banner, cover, sàn TMĐT, website, landing page, livestream, mạng xã hội và các hoạt động quảng cáo, PR, truyền thông online. Bên A được crop, resize, điều chỉnh bố cục, chèn chữ hoặc nhận diện thương hiệu nhưng không được làm sai lệch hình ảnh của Bên B và/hoặc KOL/KOC/Creator Bên B.Quyền sử dụng video: Bên A được sử dụng video của Bên B và/hoặc KOL/KOC/Creator Bên B để đăng lại trên kênh của nhãn hàng, chạy quảng cáo trả phí, sử dụng trên sàn TMĐT, livestream, website, landing page và phục vụ h",
         "required": false,
-        "title": "Sử dụng hình ảnh và video trong · Thành tiền",
+        "start": 0,
+        "end": 1,
+        "title": "Quyền sử dụng hình ảnh · Phí dịch vụ",
         "group": "SCOPE",
         "kind": "money"
       },
       {
-        "key": "word/document.xml:p75:cell",
+        "key": "word/document.xml:p135:88",
         "part": "word/document.xml",
-        "paragraph": 75,
-        "label": "Tổng giá trị Hợp đồng(Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có)",
-        "context": "Tổng giá trị Hợp đồng(Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có)",
+        "paragraph": 135,
+        "start": 88,
+        "end": 89,
+        "label": ", sản xuất nội dung trong thời hạn  [điền]  ngày kể từ ngày Bên B nh",
+        "context": "Bên A gửi sản phẩm mẫu cho Bên B để phục vụ việc quay, sản xuất nội dung trong thời hạn … ngày kể từ ngày Bên B nhận sản phẩm. Khi hết thời hạn nêu trên hoặc hoàn tất việc quay, tùy thời điểm nào đến trước, Bên B có trách nhiệm hoàn trả sản phẩm cho Bên A hoặc phối hợp để Bên A đến nhận lại. Trường hợp sản phẩm bị mất hoặc hư hỏng do lỗi của Bên B, Bên B có trách nhiệm bồi thường theo giá trị thực tế của sản phẩm tại thời điểm bàn giao, trừ hao hụt hoặc hư hỏng hợp lý phát sinh từ việc sử dụng sản phẩm đúng mục đích đã thống nhất.",
         "required": false,
-        "title": "Tổng giá trị Hợp đồng",
+        "title": "Thời hạn hoàn trả sản phẩm mẫu (ngày)",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
+        "key": "word/document.xml:p144:cell",
+        "part": "word/document.xml",
+        "paragraph": 144,
+        "label": "Tổng giá trị (VNĐ - Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có)",
+        "context": "Tổng giá trị (VNĐ - Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có) · …",
+        "required": false,
+        "start": 0,
+        "end": 1,
+        "title": "Tổng giá trị",
         "group": "MONEY",
         "kind": "money",
         "source": "grossTotal"
       },
       {
-        "key": "word/document.xml:p79:64",
+        "key": "word/document.xml:p148:64",
         "part": "word/document.xml",
-        "paragraph": 79,
+        "paragraph": 148,
         "start": 64,
         "end": 65,
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
@@ -49094,9 +50313,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p80:65",
+        "key": "word/document.xml:p149:65",
         "part": "word/document.xml",
-        "paragraph": 80,
+        "paragraph": 149,
         "start": 65,
         "end": 66,
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
@@ -49107,9 +50326,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p91:29",
+        "key": "word/document.xml:p160:29",
         "part": "word/document.xml",
-        "paragraph": 91,
+        "paragraph": 160,
         "start": 29,
         "end": 30,
         "label": "Lần 1: Bên A tạm ứng số tiền  [điền]  trong vòng … ngày làm vi",
@@ -49121,9 +50340,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "advanceAmount"
       },
       {
-        "key": "word/document.xml:p91:42",
+        "key": "word/document.xml:p160:42",
         "part": "word/document.xml",
-        "paragraph": 91,
+        "paragraph": 160,
         "start": 42,
         "end": 43,
         "label": "Bên A tạm ứng số tiền … trong vòng  [điền]  ngày làm việc (không bao",
@@ -49134,9 +50353,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p94:56",
+        "key": "word/document.xml:p163:56",
         "part": "word/document.xml",
-        "paragraph": 94,
+        "paragraph": 163,
         "start": 56,
         "end": 57,
         "label": "án phần giá trị còn lại trong vòng  [điền]  ngày làm việc (không bao",
@@ -49149,7 +50368,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tên chủ tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 100,
+        "paragraph": 169,
         "start": 19,
         "end": 19,
         "label": "Tên chủ tài khoản",
@@ -49163,7 +50382,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Số tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 101,
+        "paragraph": 170,
         "start": 14,
         "end": 14,
         "label": "Số tài khoản",
@@ -49177,7 +50396,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tại Ngân hàng]",
         "part": "word/document.xml",
-        "paragraph": 102,
+        "paragraph": 171,
         "start": 15,
         "end": 15,
         "label": "Tại Ngân hàng",
@@ -49189,9 +50408,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "bankName"
       },
       {
-        "key": "word/document.xml:p111:cell",
+        "key": "word/document.xml:p180:cell",
         "part": "word/document.xml",
-        "paragraph": 111,
+        "paragraph": 180,
         "label": "Điều …",
         "context": "Điều … · Nội dung review sửa đổi",
         "required": false,
@@ -49202,9 +50421,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "long"
       },
       {
-        "key": "word/document.xml:p113:cell",
+        "key": "word/document.xml:p182:cell",
         "part": "word/document.xml",
-        "paragraph": 113,
+        "paragraph": 182,
         "label": "Điều …",
         "context": "Điều … · Nội dung review sửa đổi",
         "required": false,
@@ -49216,7 +50435,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       },
       {
         "key": "token:[dd.mm.yy]",
-        "part": "word/footer1.xml",
+        "part": "word/footer2.xml",
         "paragraph": 1,
         "start": 0,
         "end": 6,
@@ -49230,7 +50449,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       },
       {
         "key": "token:[BRAND]",
-        "part": "word/footer1.xml",
+        "part": "word/footer2.xml",
         "paragraph": 1,
         "start": 18,
         "end": 23,
@@ -49244,7 +50463,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       },
       {
         "key": "token:[ID KOC]",
-        "part": "word/footer1.xml",
+        "part": "word/footer2.xml",
         "paragraph": 1,
         "start": 24,
         "end": 30,
@@ -49315,25 +50534,94 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "Điều 1: Phạm vi và phí dịch vụ",
       "Phạm vi công việc và phí dịch vụ",
-      "STT",
-      "Dịch vụ Bên B cung ứng cho Bên A ",
-      "Thành tiền",
-      "1",
-      "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-      "Thời gian đăng tải (air video): ….",
-      "Video có gắn giỏ hàng sản phẩm (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
+      "Nhóm hạng mục",
+      "Nội dung chi tiết/",
+      "Phí dịch vụ (VNĐ)",
+      "Hạng mục video",
+      "Sản xuất và đăng tải video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng cho sản phẩm.",
+      "…",
       "",
-      "2",
-      "Cấp mã code để chạy quảng cáo video trong vòng … ngày (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
+      "Sản phẩm được quảng cáo: … (tên sản phẩm + nhãn hiệu)",
       "",
-      "3",
-      "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
-      "Sử dụng hình ảnh: Bên A được sử dụng hình ảnh của Bên B (hình ảnh chụp riêng, không trích xuất từ video hoặc hình ảnh từ video) để gắn với sản phẩm trên listing gian hàng, phiên livestream, website, sàn TMĐT, landing page và các kênh truyền thông số khác, sau khi Bên B xác nhận cụ thể hình ảnh được phép sử dụng, phục vụ dự án truyền thông sản phẩm.",
-      "Sử dụng video: Bên A được chủ động chỉnh sửa, cắt ghép, chuyển thể, lồng ghép, biên tập, tái sử dụng và đăng tải lại video do Bên B thực hiện trên website, landing page, sàn TMĐT, Facebook, TikTok, Instagram, YouTube và các kênh khác; đồng thời được cho phép KOC/KOL/người dùng duet, stitch, chia sẻ hoặc tái sử dụng video để phục vụ hoạt động truyền thông, quảng cáo, PR, livestream, affiliate và chiến dịch TMĐT của sản phẩm.",
       "",
-      "Tổng giá trị Hợp đồng",
-      "(Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có)",
+      "Số lượng video  …",
       "",
+      "",
+      "Thời lượng video …s",
+      "",
+      "",
+      "Hình thức sản xuất video",
+      "",
+      "",
+      "Sản xuất nội dung mới",
+      "Bên B xây dựng ý tưởng, kịch bản và sản xuất video mới trên cơ sở Brief/Kịch bản do Bên A cung cấp hoặc được Hai Bên thống nhất trước khi thực hiện.",
+      "",
+      "",
+      "Chuyển thể nội dung (Adapt)",
+      "Bên B sử dụng nội dung, hình ảnh, video hoặc tài liệu nguồn do Bên A cung cấp hoặc được Hai Bên thống nhất để biên tập, điều chỉnh hoặc chuyển thể thành video phù hợp với yêu cầu kỹ thuật, định dạng và đặc điểm của nền tảng đăng tải.",
+      "",
+      "",
+      "Đăng chéo/ Đăng lại (Cross-post/Repost)",
+      "Bên B đăng tải lại video đã được sản xuất và phê duyệt trên một hoặc nhiều nền tảng khác. Bên B được thực hiện các điều chỉnh kỹ thuật cần thiết về kích thước, tỷ lệ khung hình, thời lượng, phụ đề hoặc định dạng để phù hợp với từng nền tảng nhưng không làm thay đổi nội dung, thông điệp chính đã được phê duyệt.",
+      "",
+      "",
+      "Chỉ đăng tải (Post-only)",
+      "Bên A/Brand cung cấp nội dung hoàn chỉnh; Bên B chỉ thực hiện đăng tải trên kênh của Bên B. Nội dung được cung cấp: …;",
+      "",
+      "",
+      "Chỉ sản xuất (Production-only)",
+      "Bên B sản xuất video và bàn giao cho Bên A/Brand, không đăng tải trên kênh của Bên B. Định dạng file bàn giao: …; ",
+      "Thời hạn bàn giao: …",
+      "",
+      "",
+      "Cắt ngắn/ Biên tập lại (Cut-down/Re-edit)",
+      "Bên B tạo các phiên bản rút gọn hoặc phiên bản mới từ video gốc theo yêu cầu đã thống nhất.",
+      "Số lượng phiên bản: …;",
+      "Thời lượng từng phiên bản: …",
+      "",
+      "",
+      "Số vòng chỉnh sửa video",
+      "Bên A được yêu cầu chỉnh sửa tối đa … vòng.",
+      "Mỗi vòng được tính từ khi Bên A gửi một lần tổng hợp ý kiến đến khi Bên B hoàn thành toàn bộ ý kiến đó.",
+      "",
+      "",
+      "Nền tảng",
+      "đăng tải",
+      "TikTok: Link",
+      "Shopee: Link",
+      "Facebook: Link",
+      "Instagram: Link",
+      "YouTube: Link",
+      "Threads/nền tảng khác: Link",
+      "",
+      "Hạng mục thương mại",
+      "Gắn giỏ hàng/ Link Affiliate",
+      "Gắn giỏ hàng sản phẩm được quảng cáo và/hoặc gắn, chèn Link Affiliate tại video, bài đăng, showcase và các vị trí khác được nền tảng hỗ trợ. Hình thức, vị trí và thời điểm bắt đầu thực hiện được Hai Bên thống nhất qua email/tin nhắn.",
+      "…",
+      "Hạng mục Quảng cáo",
+      "Cấp mã code để chạy quảng cáo video trong vòng … ngày.",
+      "Thời hạn chạy quảng cáo tính thời điểm bàn giao mã code quảng cáo.",
+      "Thời điểm bắt đầu chạy quảng cáo được hai bên thống nhất qua email/tin nhắn.",
+      "Brand, Bên A và/hoặc agency được Brand hoặc Bên A ủy quyền được sử dụng video và mã quảng cáo để chạy Ads trong phạm vi, thời hạn đã thỏa thuận.",
+      "…",
+      "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất",
+      "Quyền sử dụng hình ảnh: Bên A được sử dụng hình ảnh của: (i) Bên B, nếu Bên B trực tiếp thực hiện Dịch vụ với tư cách KOL/KOC/Creator; và/hoặc (ii) KOL/KOC/Creator thực hiện Dịch vụ (do Bên B quản lý, đại diện), bao gồm ảnh chụp riêng, hình ảnh trích xuất từ video và/hoặc tài sản khác theo thỏa thuận, để gắn với sản phẩm trên listing/PDP/SIS, banner, cover, sàn TMĐT, website, landing page, livestream, mạng xã hội và các hoạt động quảng cáo, PR, truyền thông online. Bên A được crop, resize, điều chỉnh bố cục, chèn chữ hoặc nhận diện thương hiệu nhưng không được làm sai lệch hình ảnh của Bên B và/hoặc KOL/KOC/Creator Bên B.",
+      "",
+      "Quyền sử dụng video: Bên A được sử dụng video của Bên B và/hoặc KOL/KOC/Creator Bên B để đăng lại trên kênh của nhãn hàng, chạy quảng cáo trả phí, sử dụng trên sàn TMĐT, livestream, website, landing page và phục vụ hoạt động PR, truyền thông online. Bên A được crop, resize, thêm phụ đề, cắt ghép, biên tập, chuyển thể, lồng ghép, đăng lại và cho phép duet, stitch, chia sẻ hoặc tái sử dụng video cho hoạt động quảng cáo, affiliate và chiến dịch TMĐT, với điều kiện không làm sai lệch nội dung hoặc gây ảnh hưởng tiêu cực đến hình ảnh, uy tín của Bên B và/hoặc KOL/KOC/Creator Bên B.",
+      "Bên được sử dụng: Bên A, Brand và agency/đối tác được Bên A hoặc Brand ủy quyền.",
+      "Thời hạn sử dụng: … ngày kể từ ngày video được đăng tải.",
+      "…",
+      "Hạng mục Thông tin thực hiện",
+      "Bên A gửi sản phẩm mẫu cho Bên B để phục vụ việc quay, sản xuất nội dung trong thời hạn … ngày kể từ ngày Bên B nhận sản phẩm. Khi hết thời hạn nêu trên hoặc hoàn tất việc quay, tùy thời điểm nào đến trước, Bên B có trách nhiệm hoàn trả sản phẩm cho Bên A hoặc phối hợp để Bên A đến nhận lại. Trường hợp sản phẩm bị mất hoặc hư hỏng do lỗi của Bên B, Bên B có trách nhiệm bồi thường theo giá trị thực tế của sản phẩm tại thời điểm bàn giao, trừ hao hụt hoặc hư hỏng hợp lý phát sinh từ việc sử dụng sản phẩm đúng mục đích đã thống nhất.",
+      "-",
+      "",
+      "Báo cáo hiệu suất video:",
+      "Thời điểm báo cáo: T+7, T+14 và T+30, tính từ ngày bài đăng được đăng tải.",
+      "Chỉ số cần báo cáo: lượt xem/tiếp cận, lượt tương tác, lượt thích, bình luận, chia sẻ, lưu bài, lượt nhấp liên kết và các chỉ số khác tùy theo từng nền tảng, định dạng bài đăng. Báo cáo được cung cấp dưới hình thức ảnh chụp màn hình insight hoặc dữ liệu trích xuất từ nền tảng.",
+      "-",
+      "Tổng giá trị ",
+      "(VNĐ - Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có)",
+      "…",
       "",
       " Hoa hồng Affiliate ",
       "Hoa hồng affiliate gồm hai loại như sau:",
@@ -49381,19 +50669,29 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "",
       "",
+      "",
       "ddmmyy/SOW/UPBASE-BRAND-ID KOC",
       "http://www.upbase.asia",
       "Trang 1 ",
       "",
       "",
       "",
-      "BM.HĐ.VID.HKD.Ver072026",
+      "",
+      "",
+      "BM.HĐ.VID.HKD.Ver092026",
+      "",
       ""
     ],
     "blocks": [
       {
-        "kind": "table",
+        "kind": "p",
         "part": "word/header1.xml",
+        "paragraph": 0,
+        "text": ""
+      },
+      {
+        "kind": "table",
+        "part": "word/header2.xml",
         "variant": "grid",
         "rows": [
           [
@@ -49401,7 +50699,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               "blocks": [
                 {
                   "kind": "p",
-                  "part": "word/header1.xml",
+                  "part": "word/header2.xml",
                   "paragraph": 0,
                   "text": ""
                 }
@@ -49411,9 +50709,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               "blocks": [
                 {
                   "kind": "p",
-                  "part": "word/header1.xml",
+                  "part": "word/header2.xml",
                   "paragraph": 1,
-                  "text": "BM.HĐ.VID.HKD.Ver072026",
+                  "text": "BM.HĐ.VID.HKD.Ver092026",
                   "align": "right"
                 }
               ]
@@ -49423,8 +50721,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       },
       {
         "kind": "p",
-        "part": "word/header1.xml",
+        "part": "word/header2.xml",
         "paragraph": 2,
+        "text": ""
+      },
+      {
+        "kind": "p",
+        "part": "word/header3.xml",
+        "paragraph": 0,
         "text": ""
       },
       {
@@ -49832,8 +51136,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 35,
                   "text": "MST hộ kinh doanh",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ]
             }
@@ -49870,8 +51173,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 38,
                   "text": "Địa chỉ hộ kinh doanh",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ]
             }
@@ -49946,8 +51248,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 44,
                   "text": "Số… cấp ngày … tại…",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ]
             }
@@ -50098,7 +51399,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 57,
-                  "text": "STT",
+                  "text": "Nhóm hạng mục",
                   "align": "center",
                   "bold": true
                 }
@@ -50110,11 +51411,12 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 58,
-                  "text": "Dịch vụ Bên B cung ứng cho Bên A ",
+                  "text": "Nội dung chi tiết/",
                   "align": "center",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -50122,7 +51424,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 59,
-                  "text": "Thành tiền",
+                  "text": "Phí dịch vụ (VNĐ)",
                   "align": "center",
                   "bold": true
                 }
@@ -50136,11 +51438,12 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 60,
-                  "text": "1",
-                  "align": "center",
+                  "text": "Hạng mục video",
+                  "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "vMerge": "restart"
             },
             {
               "blocks": [
@@ -50148,148 +51451,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 61,
-                  "text": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-                  "align": "justify",
-                  "bold": true
-                },
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 62,
-                  "text": "Thời gian đăng tải (air video): ….",
-                  "align": "justify",
-                  "bold": true
-                },
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 63,
-                  "text": "Video có gắn giỏ hàng sản phẩm (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
-                  "align": "justify",
-                  "boldPrefix": 31
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 64,
-                  "text": "",
-                  "align": "right"
-                }
-              ]
-            }
-          ],
-          [
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 65,
-                  "text": "2",
-                  "align": "center",
-                  "bold": true
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 66,
-                  "text": "Cấp mã code để chạy quảng cáo video trong vòng … ngày (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
-                  "align": "justify",
-                  "boldPrefix": 54
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 67,
-                  "text": "",
-                  "align": "right"
-                }
-              ]
-            }
-          ],
-          [
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 68,
-                  "text": "3",
-                  "align": "center",
-                  "bold": true
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 69,
-                  "text": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
-                  "align": "justify",
-                  "bold": true
-                },
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 70,
-                  "text": "Sử dụng hình ảnh: Bên A được sử dụng hình ảnh của Bên B (hình ảnh chụp riêng, không trích xuất từ video hoặc hình ảnh từ video) để gắn với sản phẩm trên listing gian hàng, phiên livestream, website, sàn TMĐT, landing page và các kênh truyền thông số khác, sau khi Bên B xác nhận cụ thể hình ảnh được phép sử dụng, phục vụ dự án truyền thông sản phẩm.",
-                  "align": "justify",
-                  "boldPrefix": 17
-                },
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 71,
-                  "text": "Sử dụng video: Bên A được chủ động chỉnh sửa, cắt ghép, chuyển thể, lồng ghép, biên tập, tái sử dụng và đăng tải lại video do Bên B thực hiện trên website, landing page, sàn TMĐT, Facebook, TikTok, Instagram, YouTube và các kênh khác; đồng thời được cho phép KOC/KOL/người dùng duet, stitch, chia sẻ hoặc tái sử dụng video để phục vụ hoạt động truyền thông, quảng cáo, PR, livestream, affiliate và chiến dịch TMĐT của sản phẩm.",
-                  "align": "justify",
-                  "boldPrefix": 14
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 72,
-                  "text": "",
-                  "align": "right"
-                }
-              ]
-            }
-          ],
-          [
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 73,
-                  "text": "Tổng giá trị Hợp đồng",
-                  "bold": true
-                },
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 74,
-                  "text": "(Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có)",
-                  "align": "justify",
-                  "bold": true,
-                  "italic": true
+                  "text": "Sản xuất và đăng tải video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng cho sản phẩm.",
+                  "align": "justify"
                 }
               ],
               "colSpan": 2
@@ -50299,9 +51462,923 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
+                  "paragraph": 62,
+                  "text": "…",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "restart"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 63,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 64,
+                  "text": "Sản phẩm được quảng cáo: … (tên sản phẩm + nhãn hiệu)",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 65,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 66,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 67,
+                  "text": "Số lượng video  …",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 68,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 69,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 70,
+                  "text": "Thời lượng video …s",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 71,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 72,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 73,
+                  "text": "Hình thức sản xuất video",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 74,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
                   "paragraph": 75,
                   "text": "",
-                  "align": "right"
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 76,
+                  "text": "Sản xuất nội dung mới",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 77,
+                  "text": "Bên B xây dựng ý tưởng, kịch bản và sản xuất video mới trên cơ sở Brief/Kịch bản do Bên A cung cấp hoặc được Hai Bên thống nhất trước khi thực hiện.",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 78,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 79,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 80,
+                  "text": "Chuyển thể nội dung (Adapt)",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 81,
+                  "text": "Bên B sử dụng nội dung, hình ảnh, video hoặc tài liệu nguồn do Bên A cung cấp hoặc được Hai Bên thống nhất để biên tập, điều chỉnh hoặc chuyển thể thành video phù hợp với yêu cầu kỹ thuật, định dạng và đặc điểm của nền tảng đăng tải.",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 82,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 83,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 84,
+                  "text": "Đăng chéo/ Đăng lại (Cross-post/Repost)",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 85,
+                  "text": "Bên B đăng tải lại video đã được sản xuất và phê duyệt trên một hoặc nhiều nền tảng khác. Bên B được thực hiện các điều chỉnh kỹ thuật cần thiết về kích thước, tỷ lệ khung hình, thời lượng, phụ đề hoặc định dạng để phù hợp với từng nền tảng nhưng không làm thay đổi nội dung, thông điệp chính đã được phê duyệt.",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 86,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 87,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 88,
+                  "text": "Chỉ đăng tải (Post-only)",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 89,
+                  "text": "Bên A/Brand cung cấp nội dung hoàn chỉnh; Bên B chỉ thực hiện đăng tải trên kênh của Bên B. Nội dung được cung cấp: …;",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 90,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 91,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 92,
+                  "text": "Chỉ sản xuất (Production-only)",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 93,
+                  "text": "Bên B sản xuất video và bàn giao cho Bên A/Brand, không đăng tải trên kênh của Bên B. Định dạng file bàn giao: …; ",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 94,
+                  "text": "Thời hạn bàn giao: …",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 95,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 96,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 97,
+                  "text": "Cắt ngắn/ Biên tập lại (Cut-down/Re-edit)",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 98,
+                  "text": "Bên B tạo các phiên bản rút gọn hoặc phiên bản mới từ video gốc theo yêu cầu đã thống nhất.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 99,
+                  "text": "Số lượng phiên bản: …;",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 100,
+                  "text": "Thời lượng từng phiên bản: …",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 101,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 102,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 103,
+                  "text": "Số vòng chỉnh sửa video",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 104,
+                  "text": "Bên A được yêu cầu chỉnh sửa tối đa … vòng.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 105,
+                  "text": "Mỗi vòng được tính từ khi Bên A gửi một lần tổng hợp ý kiến đến khi Bên B hoàn thành toàn bộ ý kiến đó.",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 106,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 107,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 108,
+                  "text": "Nền tảng",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 109,
+                  "text": "đăng tải",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 110,
+                  "text": "TikTok: Link",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 111,
+                  "text": "Shopee: Link",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 112,
+                  "text": "Facebook: Link",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 113,
+                  "text": "Instagram: Link",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 114,
+                  "text": "YouTube: Link",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 115,
+                  "text": "Threads/nền tảng khác: Link",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 116,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 117,
+                  "text": "Hạng mục thương mại",
+                  "align": "justify",
+                  "bold": true
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 118,
+                  "text": "Gắn giỏ hàng/ Link Affiliate",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 119,
+                  "text": "Gắn giỏ hàng sản phẩm được quảng cáo và/hoặc gắn, chèn Link Affiliate tại video, bài đăng, showcase và các vị trí khác được nền tảng hỗ trợ. Hình thức, vị trí và thời điểm bắt đầu thực hiện được Hai Bên thống nhất qua email/tin nhắn.",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 120,
+                  "text": "…",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 121,
+                  "text": "Hạng mục Quảng cáo",
+                  "align": "justify",
+                  "bold": true
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 122,
+                  "text": "Cấp mã code để chạy quảng cáo video trong vòng … ngày.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 123,
+                  "text": "Thời hạn chạy quảng cáo tính thời điểm bàn giao mã code quảng cáo.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 124,
+                  "text": "Thời điểm bắt đầu chạy quảng cáo được hai bên thống nhất qua email/tin nhắn.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 125,
+                  "text": "Brand, Bên A và/hoặc agency được Brand hoặc Bên A ủy quyền được sử dụng video và mã quảng cáo để chạy Ads trong phạm vi, thời hạn đã thỏa thuận.",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 126,
+                  "text": "…",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 127,
+                  "text": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất",
+                  "align": "justify",
+                  "bold": true
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 128,
+                  "text": "Quyền sử dụng hình ảnh: Bên A được sử dụng hình ảnh của: (i) Bên B, nếu Bên B trực tiếp thực hiện Dịch vụ với tư cách KOL/KOC/Creator; và/hoặc (ii) KOL/KOC/Creator thực hiện Dịch vụ (do Bên B quản lý, đại diện), bao gồm ảnh chụp riêng, hình ảnh trích xuất từ video và/hoặc tài sản khác theo thỏa thuận, để gắn với sản phẩm trên listing/PDP/SIS, banner, cover, sàn TMĐT, website, landing page, livestream, mạng xã hội và các hoạt động quảng cáo, PR, truyền thông online. Bên A được crop, resize, điều chỉnh bố cục, chèn chữ hoặc nhận diện thương hiệu nhưng không được làm sai lệch hình ảnh của Bên B và/hoặc KOL/KOC/Creator Bên B.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 129,
+                  "text": "",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 130,
+                  "text": "Quyền sử dụng video: Bên A được sử dụng video của Bên B và/hoặc KOL/KOC/Creator Bên B để đăng lại trên kênh của nhãn hàng, chạy quảng cáo trả phí, sử dụng trên sàn TMĐT, livestream, website, landing page và phục vụ hoạt động PR, truyền thông online. Bên A được crop, resize, thêm phụ đề, cắt ghép, biên tập, chuyển thể, lồng ghép, đăng lại và cho phép duet, stitch, chia sẻ hoặc tái sử dụng video cho hoạt động quảng cáo, affiliate và chiến dịch TMĐT, với điều kiện không làm sai lệch nội dung hoặc gây ảnh hưởng tiêu cực đến hình ảnh, uy tín của Bên B và/hoặc KOL/KOC/Creator Bên B.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 131,
+                  "text": "Bên được sử dụng: Bên A, Brand và agency/đối tác được Bên A hoặc Brand ủy quyền.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 132,
+                  "text": "Thời hạn sử dụng: … ngày kể từ ngày video được đăng tải.",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 133,
+                  "text": "…",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 134,
+                  "text": "Hạng mục Thông tin thực hiện",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "restart"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 135,
+                  "text": "Bên A gửi sản phẩm mẫu cho Bên B để phục vụ việc quay, sản xuất nội dung trong thời hạn … ngày kể từ ngày Bên B nhận sản phẩm. Khi hết thời hạn nêu trên hoặc hoàn tất việc quay, tùy thời điểm nào đến trước, Bên B có trách nhiệm hoàn trả sản phẩm cho Bên A hoặc phối hợp để Bên A đến nhận lại. Trường hợp sản phẩm bị mất hoặc hư hỏng do lỗi của Bên B, Bên B có trách nhiệm bồi thường theo giá trị thực tế của sản phẩm tại thời điểm bàn giao, trừ hao hụt hoặc hư hỏng hợp lý phát sinh từ việc sử dụng sản phẩm đúng mục đích đã thống nhất.",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 136,
+                  "text": "-",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 137,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 138,
+                  "text": "Báo cáo hiệu suất video:",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 139,
+                  "text": "Thời điểm báo cáo: T+7, T+14 và T+30, tính từ ngày bài đăng được đăng tải.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 140,
+                  "text": "Chỉ số cần báo cáo: lượt xem/tiếp cận, lượt tương tác, lượt thích, bình luận, chia sẻ, lưu bài, lượt nhấp liên kết và các chỉ số khác tùy theo từng nền tảng, định dạng bài đăng. Báo cáo được cung cấp dưới hình thức ảnh chụp màn hình insight hoặc dữ liệu trích xuất từ nền tảng.",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 141,
+                  "text": "-",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 142,
+                  "text": "Tổng giá trị ",
+                  "align": "justify",
+                  "bold": true
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 143,
+                  "text": "(VNĐ - Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có)",
+                  "align": "justify",
+                  "bold": true,
+                  "italic": true
+                }
+              ],
+              "colSpan": 3
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 144,
+                  "text": "…",
+                  "align": "center"
                 }
               ]
             }
@@ -50311,7 +52388,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 76,
+        "paragraph": 145,
         "text": "",
         "align": "justify",
         "bold": true
@@ -50319,7 +52396,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 77,
+        "paragraph": 146,
         "text": " Hoa hồng Affiliate ",
         "align": "justify",
         "bold": true
@@ -50327,14 +52404,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 78,
+        "paragraph": 147,
         "text": "Hoa hồng affiliate gồm hai loại như sau:",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 79,
+        "paragraph": 148,
         "text": "Hoa hồng organic: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh tự nhiên từ video, được ghi nhận thông qua link/mã theo dõi của Bên B và không bao gồm doanh thu phát sinh từ ngân sách quảng cáo do Bên A hoặc bên thứ ba chi trả. ",
         "align": "justify",
         "boldPrefix": 17
@@ -50342,7 +52419,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 80,
+        "paragraph": 149,
         "text": "Hoa hồng chạy ads: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ video được sử dụng để chạy quảng cáo, với điều kiện doanh thu đó được ghi nhận thông qua link/mã theo dõi của Bên B và được Bên A xác nhận trong báo cáo đối soát.",
         "align": "justify",
         "boldPrefix": 18
@@ -50350,14 +52427,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 81,
+        "paragraph": 150,
         "text": "Hoa hồng affiliate do nền tảng chi trả trực tiếp cho Bên B. Bên B tự chịu trách nhiệm kê khai, khấu trừ và nộp các loại thuế, phí liên quan đến khoản thu nhập từ hoa hồng affiliate theo quy định pháp luật.     ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 82,
+        "paragraph": 151,
         "text": "",
         "align": "justify",
         "bold": true
@@ -50365,7 +52442,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 83,
+        "paragraph": 152,
         "text": "Thanh toán phí dịch vụ",
         "align": "justify",
         "bold": true
@@ -50381,7 +52458,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 84,
+                  "paragraph": 153,
                   "text": "Thanh toán 1 lần",
                   "align": "center",
                   "bold": true
@@ -50393,28 +52470,28 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 85,
+                  "paragraph": 154,
                   "text": "Phí dịch vụ được thanh toán 01 (một) lần trong vòng 07 - 10 ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau:",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 86,
+                  "paragraph": 155,
                   "text": "Bên B đã hoàn thành dịch vụ theo Hợp đồng; ",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 87,
+                  "paragraph": 156,
                   "text": "Bên A đã nhận được Biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo quy định tại Hợp đồng); ",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 88,
+                  "paragraph": 157,
                   "text": "Bên B đã cung cấp hóa đơn hộ kinh doanh hợp lệ (toàn bộ giá trị Hợp đồng) cho Bên A.",
                   "align": "justify"
                 }
@@ -50427,7 +52504,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 89,
+                  "paragraph": 158,
                   "text": "Thanh toán 2 lần",
                   "align": "center",
                   "bold": true
@@ -50439,13 +52516,13 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 90,
+                  "paragraph": 159,
                   "text": "Phí dịch vụ được thanh toán thành 02 (hai) lần như sau:"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 91,
+                  "paragraph": 160,
                   "text": "Lần 1: Bên A tạm ứng số tiền … trong vòng … ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau: ",
                   "align": "justify",
                   "boldPrefix": 6
@@ -50453,21 +52530,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 92,
+                  "paragraph": 161,
                   "text": "Hai Bên đã hoàn tất ký kết Hợp đồng và Bên A đã nhận được Hợp đồng có đầy đủ chữ ký của hai Bên; ",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 93,
+                  "paragraph": 162,
                   "text": "Bên B đã cung cấp hóa đơn hộ kinh doanh hợp lệ tương ứng với giá trị thanh toán đợt 1 cho Bên A.",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 94,
+                  "paragraph": 163,
                   "text": "Lần 2: Bên A thanh toán phần giá trị còn lại trong vòng … ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau: ",
                   "align": "justify",
                   "boldPrefix": 6
@@ -50475,21 +52552,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 95,
+                  "paragraph": 164,
                   "text": "Bên B đã hoàn thành dịch vụ theo Hợp đồng; ",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 96,
+                  "paragraph": 165,
                   "text": "Bên A đã nhận được Biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo quy định tại Hợp đồng); ",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 97,
+                  "paragraph": 166,
                   "text": "Bên B đã cung cấp hóa đơn hộ kinh doanh hợp lệ (toàn bộ giá trị Hợp đồng) cho Bên A.",
                   "align": "justify"
                 }
@@ -50501,7 +52578,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 98,
+        "paragraph": 167,
         "text": "",
         "align": "justify",
         "bold": true
@@ -50509,35 +52586,35 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 99,
+        "paragraph": 168,
         "text": "Bên A thanh toán bằng hình thức chuyển khoản ngân hàng vào tài khoản của Bên B theo thông tin như sau:",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 100,
+        "paragraph": 169,
         "text": "Tên chủ tài khoản: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 101,
+        "paragraph": 170,
         "text": "Số tài khoản: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 102,
+        "paragraph": 171,
         "text": "Tại Ngân hàng: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 103,
+        "paragraph": 172,
         "text": "",
         "align": "justify",
         "bold": true
@@ -50545,7 +52622,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 104,
+        "paragraph": 173,
         "text": "Điều 2: Hiệu lực ",
         "align": "justify",
         "bold": true
@@ -50553,7 +52630,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 105,
+        "paragraph": 174,
         "text": "Hiệu lực áp dụng: Phụ lục này có hiệu lực kể từ ngày ký cho đến khi các Bên hoàn thành toàn bộ nghĩa vụ theo SOW này, trừ khi bị chấm dứt theo quy định tại Hợp đồng.",
         "align": "justify",
         "boldPrefix": 18
@@ -50561,7 +52638,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 106,
+        "paragraph": 175,
         "text": "Nguyên tắc ưu tiên áp dụng: Trong trường hợp có bất kỳ mâu thuẫn, khác biệt hoặc không thống nhất nào giữa nội dung của SOW này và Hợp đồng, thì nội dung tại SOW này sẽ được ưu tiên áp dụng đối với phạm vi công việc được quy định tại SOW này.",
         "align": "justify",
         "boldPrefix": 28
@@ -50569,7 +52646,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 107,
+        "paragraph": 176,
         "text": "Cơ chế ngoại lệ: Các Bên thống nhất rằng SOW này có thể quy định các nội dung khác với Hợp đồng (“Ngoại lệ”). Các Ngoại lệ này có hiệu lực ràng buộc và thay thế cho các điều khoản tương ứng tại Hợp đồng, nhưng chỉ áp dụng riêng cho SOW này, bao gồm: ",
         "align": "justify",
         "boldPrefix": 17
@@ -50585,7 +52662,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 108,
+                  "paragraph": 177,
                   "text": "Điều khoản tại Hợp đồng",
                   "align": "justify",
                   "bold": true
@@ -50597,7 +52674,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 109,
+                  "paragraph": 178,
                   "text": "Nội dung điều chỉnh/áp dụng theo SOW",
                   "align": "justify",
                   "bold": true
@@ -50611,7 +52688,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 110,
+                  "paragraph": 179,
                   "text": "Điều …",
                   "align": "justify"
                 }
@@ -50622,7 +52699,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 111,
+                  "paragraph": 180,
                   "text": "Nội dung review sửa đổi",
                   "align": "justify"
                 }
@@ -50635,7 +52712,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 112,
+                  "paragraph": 181,
                   "text": "Điều …",
                   "align": "justify"
                 }
@@ -50646,7 +52723,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 113,
+                  "paragraph": 182,
                   "text": "Nội dung review sửa đổi",
                   "align": "justify"
                 }
@@ -50658,21 +52735,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 114,
+        "paragraph": 183,
         "text": "",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 115,
+        "paragraph": 184,
         "text": "Phụ lục này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi Bên giữ 01 (một) bản để thực hiện.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 116,
+        "paragraph": 185,
         "text": "",
         "align": "justify"
       },
@@ -50687,7 +52764,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 117,
+                  "paragraph": 186,
                   "text": "ĐẠI DIỆN BÊN A",
                   "align": "center",
                   "bold": true
@@ -50695,7 +52772,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 118,
+                  "paragraph": 187,
                   "text": "",
                   "align": "center"
                 }
@@ -50706,7 +52783,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 119,
+                  "paragraph": 188,
                   "text": "ĐẠI DIỆN BÊN B ",
                   "align": "center",
                   "bold": true
@@ -50714,7 +52791,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 120,
+                  "paragraph": 189,
                   "text": "",
                   "align": "center"
                 }
@@ -50726,7 +52803,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 121,
+        "paragraph": 190,
         "text": "",
         "align": "center",
         "bold": true
@@ -50738,8 +52815,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "text": ""
       },
       {
+        "kind": "p",
+        "part": "word/footer2.xml",
+        "paragraph": 0,
+        "text": ""
+      },
+      {
         "kind": "table",
-        "part": "word/footer1.xml",
+        "part": "word/footer2.xml",
         "variant": "grid",
         "rows": [
           [
@@ -50747,7 +52830,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               "blocks": [
                 {
                   "kind": "p",
-                  "part": "word/footer1.xml",
+                  "part": "word/footer2.xml",
                   "paragraph": 1,
                   "text": "ddmmyy/SOW/UPBASE-BRAND-ID KOC"
                 }
@@ -50757,7 +52840,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               "blocks": [
                 {
                   "kind": "p",
-                  "part": "word/footer1.xml",
+                  "part": "word/footer2.xml",
                   "paragraph": 2,
                   "text": "http://www.upbase.asia",
                   "align": "center"
@@ -50768,14 +52851,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               "blocks": [
                 {
                   "kind": "p",
-                  "part": "word/footer1.xml",
+                  "part": "word/footer2.xml",
                   "paragraph": 3,
                   "text": "Trang 1 ",
                   "align": "right"
                 },
                 {
                   "kind": "p",
-                  "part": "word/footer1.xml",
+                  "part": "word/footer2.xml",
                   "paragraph": 4,
                   "text": ""
                 }
@@ -50786,43 +52869,26 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       },
       {
         "kind": "p",
-        "part": "word/footer1.xml",
+        "part": "word/footer2.xml",
         "paragraph": 5,
         "text": ""
-      }
-    ],
-    "category": "LIVESTREAM_APPENDIX",
-    "description": "Phụ lục SOW của booking video (mỗi job hoặc mỗi tháng một phụ lục) đi kèm hợp đồng nguyên tắc, áp dụng cho đối tác là hộ kinh doanh.",
-    "active": true,
-    "defaultReviewRoles": [
-      "LEGAL",
-      "FINANCE"
-    ],
-    "exemptLegalReview": true,
-    "scope": "GLOBAL",
-    "updatedAt": "2026-05-01T08:00:00.000Z",
-    "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 37,
-    "requiredFieldCount": 19,
-    "history": [
+      },
       {
-        "version": "Ver052026",
-        "hash": "44f62e4335242060b08971540df5a28d2e82ccf9337074a84aacd1d792286231",
-        "filename": "2. SOW HKD booking Video.docx",
-        "updatedAt": "2026-05-01T08:00:00.000Z",
-        "updatedBy": "Phòng Pháp chế",
-        "note": "Phiên bản chuẩn ban hành bởi Pháp chế"
+        "kind": "p",
+        "part": "word/footer3.xml",
+        "paragraph": 0,
+        "text": ""
       }
     ]
   },
   "HKD-VID-BBNT": {
     "id": "HKD-VID-BBNT",
     "name": "Nghiệm thu video (bản mới) · Hộ kinh doanh",
-    "filename": "3. BBNT HKD booking Video.docx",
+    "filename": "3.3 BBNT HKD booking Video.docx",
     "subject": "Hộ kinh doanh",
     "kind": "ACCEPTANCE",
-    "version": "Ver052026",
-    "hash": "1a4c42c345b568de51c9174c716ab2d341b8c46b7c98508a00282b8761174849",
+    "version": "Ver092026",
+    "hash": "fc727e0afb66af35b079613c92e90c9b5c81f3bb7c79df42f1b892179e9e962f",
     "fields": [
       {
         "key": "token:[dd.mm.yy]",
@@ -51105,113 +53171,95 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "kocId"
       },
       {
-        "key": "word/document.xml:p62:109",
-        "part": "word/document.xml",
-        "paragraph": 62,
-        "start": 109,
-        "end": 110,
-        "label": "đẩy doanh số bán hàng với sản phẩm  [điền] . Nhãn hiệu ….",
-        "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-        "required": false,
-        "title": "Sản phẩm",
-        "group": "SCOPE",
-        "kind": "text",
-        "source": "product"
-      },
-      {
-        "key": "word/document.xml:p62:122",
-        "part": "word/document.xml",
-        "paragraph": 62,
-        "start": 122,
-        "end": 123,
-        "label": "bán hàng với sản phẩm …. Nhãn hiệu  [điền] .",
-        "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-        "required": false,
-        "title": "Nhãn hiệu",
-        "group": "SCOPE",
-        "kind": "text",
-        "source": "brand"
-      },
-      {
-        "key": "word/document.xml:p63:27",
+        "key": "word/document.xml:p63:11",
         "part": "word/document.xml",
         "paragraph": 63,
-        "start": 27,
-        "end": 28,
-        "label": "Ngày đăng tải (air video):  [điền] ",
-        "context": "Ngày đăng tải (air video): …",
+        "start": 11,
+        "end": 14,
+        "label": "link video  [điền] ",
+        "context": "link video ...",
         "required": false,
-        "title": "Thời gian đăng tải (air video)",
+        "title": "Link video nghiệm thu (Link Air)",
         "group": "SCOPE",
-        "kind": "date",
-        "source": "airDate"
+        "kind": "text"
       },
       {
-        "key": "word/document.xml:p66:cell",
+        "key": "word/document.xml:p65:cell",
         "part": "word/document.xml",
-        "paragraph": 66,
-        "label": "Sản xuất và đăng tải Video review · Thành tiền",
-        "context": "1 · Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….Ngày đăng tải (air video): …Video có gắn giỏ hàng sản phẩm · Hoàn thành",
+        "paragraph": 65,
+        "label": "Hạng mục video · Thành tiền",
+        "context": "1 · Hạng mục video:link video ... · Hoàn thành",
         "required": false,
-        "title": "Sản xuất và đăng tải Video review · Thành tiền",
+        "title": "Hạng mục video · Thành tiền",
         "group": "SCOPE",
         "kind": "money",
         "source": "lineTotal"
       },
       {
-        "key": "word/document.xml:p68:47",
+        "key": "word/document.xml:p69:cell",
         "part": "word/document.xml",
-        "paragraph": 68,
-        "start": 47,
-        "end": 48,
-        "label": "để chạy quảng cáo video trong vòng  [điền]  ngày ",
-        "context": "Cấp mã code để chạy quảng cáo video trong vòng … ngày ",
+        "paragraph": 69,
+        "label": "Hạng mục thương mại · Thành tiền",
+        "context": "2 · Hạng mục thương mại (gắn giỏ hàng/ Link Affiliate) · Hoàn thành",
+        "required": false,
+        "title": "Hạng mục thương mại · Thành tiền",
+        "group": "SCOPE",
+        "kind": "money"
+      },
+      {
+        "key": "word/document.xml:p71:44",
+        "part": "word/document.xml",
+        "paragraph": 71,
+        "start": 44,
+        "end": 45,
+        "label": "Quảng cáo (cấp code chạy ad) trong  [điền]  ngày tính từ ngày cấp mã",
+        "context": "Hạng mục Quảng cáo (cấp code chạy ad) trong … ngày tính từ ngày cấp mã code",
         "required": false,
         "title": "Số ngày cấp mã quảng cáo",
         "group": "SCOPE",
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p70:cell",
+        "key": "word/document.xml:p73:cell",
         "part": "word/document.xml",
-        "paragraph": 70,
-        "label": "Cấp mã code để chạy quảng cáo video trong vòng · Thành tiền",
-        "context": "2 · Cấp mã code để chạy quảng cáo video trong vòng … ngày · Hoàn thành",
+        "paragraph": 73,
+        "label": "Hạng mục Quảng cáo · Thành tiền",
+        "context": "3 · Hạng mục Quảng cáo (cấp code chạy ad) trong … ngày tính từ ngày cấp mã code · Hoàn thành",
         "required": false,
-        "title": "Cấp mã code để chạy quảng cáo video trong vòng · Thành tiền",
+        "title": "Hạng mục Quảng cáo · Thành tiền",
         "group": "SCOPE",
         "kind": "money"
       },
       {
-        "key": "word/document.xml:p72:32",
+        "key": "word/document.xml:p75:59",
         "part": "word/document.xml",
-        "paragraph": 72,
-        "start": 32,
-        "end": 33,
-        "label": "Sử dụng hình ảnh và video trong  [điền]  ngày kể từ ngày đăng tải",
-        "context": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
+        "paragraph": 75,
+        "start": 59,
+        "end": 60,
+        "label": "ình ảnh và nội dung sản xuất trong  [điền]  ngày tính từ đăng tải vi",
+        "context": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong … ngày tính từ đăng tải video",
         "required": false,
         "title": "Số ngày sử dụng hình ảnh và video",
         "group": "SCOPE",
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p74:cell",
+        "key": "word/document.xml:p77:cell",
         "part": "word/document.xml",
-        "paragraph": 74,
-        "label": "Sử dụng hình ảnh và video trong · Thành tiền",
-        "context": "3 · Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video · Hoàn thành",
+        "paragraph": 77,
+        "label": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong · Thành tiền",
+        "context": "4 · Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong … ngày tính từ đăng tải video · Hoàn thành",
         "required": false,
-        "title": "Sử dụng hình ảnh và video trong · Thành tiền",
+        "title": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong · Thành tiền",
         "group": "SCOPE",
         "kind": "money"
       },
       {
-        "key": "word/document.xml:p77:cell",
+        "key": "word/document.xml:p80:cell",
         "part": "word/document.xml",
-        "paragraph": 77,
-        "label": "Tổng giá trị Hợp đồng(Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có)",
-        "context": "Tổng giá trị Hợp đồng(Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có)",
+        "paragraph": 80,
+        "label": "Tổng giá trị Hợp đồng(VNĐ - Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có)",
+        "context": "Tổng giá trị Hợp đồng(VNĐ - Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có)",
         "required": false,
         "title": "Tổng giá trị Hợp đồng",
         "group": "MONEY",
@@ -51219,9 +53267,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "grossTotal"
       },
       {
-        "key": "word/document.xml:p89:cell",
+        "key": "word/document.xml:p92:cell",
         "part": "word/document.xml",
-        "paragraph": 89,
+        "paragraph": 92,
         "label": "Tổng giá trị nghiệm thu · Thành tiền",
         "context": "1 · Tổng giá trị nghiệm thu",
         "required": false,
@@ -51231,9 +53279,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "netTotal"
       },
       {
-        "key": "word/document.xml:p92:cell",
+        "key": "word/document.xml:p95:cell",
         "part": "word/document.xml",
-        "paragraph": 92,
+        "paragraph": 95,
         "label": "Giá trị đã tạm ứng/thanh toán · Thành tiền",
         "context": "2 · Giá trị đã tạm ứng/thanh toán (nếu có)",
         "required": false,
@@ -51243,9 +53291,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "advanceAmount"
       },
       {
-        "key": "word/document.xml:p95:cell",
+        "key": "word/document.xml:p98:cell",
         "part": "word/document.xml",
-        "paragraph": 95,
+        "paragraph": 98,
         "label": "Chi phí phát sinh tăng/giảm · Thành tiền",
         "context": "3 · Chi phí phát sinh tăng/giảm (nếu có)",
         "required": false,
@@ -51255,11 +53303,11 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "adjustmentAmount"
       },
       {
-        "key": "word/document.xml:p98:cell",
+        "key": "word/document.xml:p101:cell",
         "part": "word/document.xml",
-        "paragraph": 98,
+        "paragraph": 101,
         "label": "Giá trị Bên A còn phải thanh toán cho Bên B · Thành tiền",
-        "context": "4 · Giá trị Bên A còn phải thanh toán cho Bên B",
+        "context": "4 · Giá trị Bên A còn phải thanh toán cho Bên B (VNĐ)",
         "required": false,
         "title": "Giá trị Bên A còn phải thanh toán cho Bên B",
         "group": "MONEY",
@@ -51269,7 +53317,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tên chủ tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 108,
+        "paragraph": 111,
         "start": 19,
         "end": 19,
         "label": "Tên chủ tài khoản",
@@ -51283,7 +53331,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Số tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 109,
+        "paragraph": 112,
         "start": 14,
         "end": 14,
         "label": "Số tài khoản",
@@ -51297,7 +53345,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tại Ngân hàng]",
         "part": "word/document.xml",
-        "paragraph": 110,
+        "paragraph": 113,
         "start": 15,
         "end": 15,
         "label": "Tại Ngân hàng",
@@ -51410,25 +53458,28 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Điều 1: Nghiệm thu phạm vi và phí dịch vụ",
       " Nghiệm thu phí dịch vụ",
       "STT",
-      "Dịch vụ Bên B cung ứng cho Bên A ",
+      "Dịch vụ Bên B cung ứng cho Bên A",
       "Nghiệm thu",
       "Thành tiền",
       "1",
-      "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-      "Ngày đăng tải (air video): …",
-      "Video có gắn giỏ hàng sản phẩm ",
+      "Hạng mục video:",
+      "link video ...",
       "Hoàn thành",
       "",
       "2",
-      "Cấp mã code để chạy quảng cáo video trong vòng … ngày ",
+      "Hạng mục thương mại (gắn giỏ hàng/ Link Affiliate)",
       "Hoàn thành",
       "",
       "3",
-      "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
+      "Hạng mục Quảng cáo (cấp code chạy ad) trong … ngày tính từ ngày cấp mã code",
+      "Hoàn thành",
+      "",
+      "4",
+      "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong … ngày tính từ đăng tải video",
       "Hoàn thành",
       "",
       "Tổng giá trị Hợp đồng",
-      "(Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có)",
+      "(VNĐ - Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có)",
       "",
       "",
       "Hình ảnh nghiệm thu dịch vụ",
@@ -51449,7 +53500,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Chi phí phát sinh tăng/giảm (nếu có)",
       "",
       "4",
-      "Giá trị Bên A còn phải thanh toán cho Bên B",
+      "Giá trị Bên A còn phải thanh toán cho Bên B (VNĐ)",
       "",
       " ",
       "Thời hạn thanh toán:",
@@ -51466,6 +53517,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "Điều 3: Hiệu lực ",
       "Biên bản này được lập và có hiệu lực từ ngày ký.",
+      "Trường hợp tại thời điểm ký Biên bản này, thời hạn sử dụng hình ảnh và/hoặc cấp quyền chạy quảng cáo (nếu có) theo thỏa thuận giữa Các Bên vẫn còn, Các Bên tiếp tục thực hiện đầy đủ các quyền và nghĩa vụ liên quan cho đến hết thời hạn đã thỏa thuận.",
       "Biên bản này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi Bên giữ 01 (một) bản để thực hiện.",
       "",
       "ĐẠI DIỆN BÊN A",
@@ -51482,7 +53534,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "",
       "",
-      "BM.BBNTVID.IND.Ver072026",
+      "BM.BBNTVID.IND.Ver102026",
       ""
     ],
     "blocks": [
@@ -51508,7 +53560,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/header1.xml",
                   "paragraph": 1,
-                  "text": "BM.BBNTVID.IND.Ver072026",
+                  "text": "BM.BBNTVID.IND.Ver102026",
                   "align": "right"
                 }
               ]
@@ -51871,8 +53923,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 30,
                   "text": ":",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ]
             },
@@ -51911,8 +53962,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 33,
                   "text": ":",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ]
             },
@@ -51923,8 +53973,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 34,
                   "text": "MST hộ kinh doanh",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ],
               "colSpan": 3
@@ -51951,8 +54000,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 36,
                   "text": ":",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ]
             },
@@ -51963,8 +54011,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 37,
                   "text": "Địa chỉ hộ kinh doanh",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ],
               "colSpan": 3
@@ -51991,8 +54038,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 39,
                   "text": ":",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ]
             },
@@ -52031,8 +54077,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 42,
                   "text": ":",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ]
             },
@@ -52043,8 +54088,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 43,
                   "text": "Số… cấp ngày … tại…",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ],
               "colSpan": 3
@@ -52071,8 +54115,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 45,
                   "text": ":",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ]
             },
@@ -52112,8 +54155,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 48,
                   "text": ":",
-                  "align": "justify",
-                  "bold": true
+                  "align": "justify"
                 }
               ]
             },
@@ -52220,7 +54262,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 58,
-                  "text": "Dịch vụ Bên B cung ứng cho Bên A ",
+                  "text": "Dịch vụ Bên B cung ứng cho Bên A",
                   "align": "center",
                   "bold": true
                 }
@@ -52270,7 +54312,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 62,
-                  "text": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
+                  "text": "Hạng mục video:",
                   "align": "justify",
                   "bold": true
                 },
@@ -52278,17 +54320,19 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 63,
-                  "text": "Ngày đăng tải (air video): …",
-                  "align": "justify",
-                  "bold": true
-                },
+                  "text": "link video ...",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 64,
-                  "text": "Video có gắn giỏ hàng sản phẩm ",
-                  "align": "justify",
-                  "bold": true
+                  "text": "Hoàn thành",
+                  "align": "right"
                 }
               ]
             },
@@ -52298,17 +54342,6 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 65,
-                  "text": "Hoàn thành",
-                  "align": "center"
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 66,
                   "text": "",
                   "align": "right"
                 }
@@ -52321,7 +54354,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 67,
+                  "paragraph": 66,
                   "text": "2",
                   "align": "center",
                   "bold": true
@@ -52333,10 +54366,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 68,
-                  "text": "Cấp mã code để chạy quảng cáo video trong vòng … ngày ",
+                  "paragraph": 67,
+                  "text": "Hạng mục thương mại (gắn giỏ hàng/ Link Affiliate)",
                   "align": "justify",
-                  "bold": true
+                  "boldPrefix": 20
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 68,
+                  "text": "Hoàn thành",
+                  "align": "right"
                 }
               ]
             },
@@ -52346,17 +54390,6 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 69,
-                  "text": "Hoàn thành",
-                  "align": "center"
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 70,
                   "text": "",
                   "align": "right"
                 }
@@ -52369,7 +54402,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 71,
+                  "paragraph": 70,
                   "text": "3",
                   "align": "center",
                   "bold": true
@@ -52381,8 +54414,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 72,
-                  "text": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
+                  "paragraph": 71,
+                  "text": "Hạng mục Quảng cáo (cấp code chạy ad) trong … ngày tính từ ngày cấp mã code",
                   "align": "justify",
                   "bold": true
                 }
@@ -52393,9 +54426,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 73,
+                  "paragraph": 72,
                   "text": "Hoàn thành",
-                  "align": "center"
+                  "align": "right"
                 }
               ]
             },
@@ -52404,7 +54437,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 74,
+                  "paragraph": 73,
                   "text": "",
                   "align": "right"
                 }
@@ -52417,22 +54450,35 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
+                  "paragraph": 74,
+                  "text": "4",
+                  "align": "center",
+                  "bold": true
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
                   "paragraph": 75,
-                  "text": "Tổng giá trị Hợp đồng",
+                  "text": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong … ngày tính từ đăng tải video",
                   "align": "justify",
                   "bold": true
-                },
+                }
+              ]
+            },
+            {
+              "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 76,
-                  "text": "(Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có)",
-                  "align": "justify",
-                  "bold": true,
-                  "italic": true
+                  "text": "Hoàn thành",
+                  "align": "right"
                 }
-              ],
-              "colSpan": 3
+              ]
             },
             {
               "blocks": [
@@ -52445,32 +54491,43 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 }
               ]
             }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 78,
+                  "text": "Tổng giá trị Hợp đồng",
+                  "align": "justify",
+                  "bold": true
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 79,
+                  "text": "(VNĐ - Đã bao gồm toàn bộ các khoản thuế, phí và nghĩa vụ tài chính mà Hộ kinh doanh phải kê khai, nộp theo quy định pháp luật, bao gồm chính sách giảm thuế tại thời điểm xuất hóa đơn – nếu có)",
+                  "align": "justify",
+                  "italic": true
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 80,
+                  "text": "",
+                  "align": "right"
+                }
+              ],
+              "colSpan": 2
+            }
           ]
         ]
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 78,
-        "text": "",
-        "align": "justify",
-        "bold": true
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 79,
-        "text": "Hình ảnh nghiệm thu dịch vụ",
-        "align": "justify",
-        "bold": true
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 80,
-        "text": "",
-        "align": "justify",
-        "bold": true
       },
       {
         "kind": "p",
@@ -52484,7 +54541,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 82,
-        "text": "Điều 2: Thanh toán phí dịch vụ",
+        "text": "Hình ảnh nghiệm thu dịch vụ",
         "align": "justify",
         "bold": true
       },
@@ -52492,6 +54549,30 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 83,
+        "text": "",
+        "align": "justify",
+        "bold": true
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 84,
+        "text": "",
+        "align": "justify",
+        "bold": true
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 85,
+        "text": "Điều 2: Thanh toán phí dịch vụ",
+        "align": "justify",
+        "bold": true
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 86,
         "text": "Phí dịch vụ Bên A phải thanh toán cho Bên B là:",
         "align": "justify",
         "bold": true
@@ -52507,7 +54588,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 84,
+                  "paragraph": 87,
                   "text": "STT",
                   "align": "center",
                   "bold": true
@@ -52519,7 +54600,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 85,
+                  "paragraph": 88,
                   "text": "Nội dung",
                   "align": "center",
                   "bold": true
@@ -52531,7 +54612,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 86,
+                  "paragraph": 89,
                   "text": "Thành tiền (VNĐ)",
                   "align": "center",
                   "bold": true
@@ -52545,7 +54626,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 87,
+                  "paragraph": 90,
                   "text": "1",
                   "bold": true
                 }
@@ -52556,43 +54637,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 88,
-                  "text": "Tổng giá trị nghiệm thu",
-                  "bold": true
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 89,
-                  "text": "",
-                  "bold": true
-                }
-              ]
-            }
-          ],
-          [
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 90,
-                  "text": "2",
-                  "bold": true
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
                   "paragraph": 91,
-                  "text": "Giá trị đã tạm ứng/thanh toán (nếu có)",
+                  "text": "Tổng giá trị nghiệm thu",
                   "bold": true
                 }
               ]
@@ -52616,7 +54662,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 93,
-                  "text": "3",
+                  "text": "2",
                   "bold": true
                 }
               ]
@@ -52627,7 +54673,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 94,
-                  "text": "Chi phí phát sinh tăng/giảm (nếu có)",
+                  "text": "Giá trị đã tạm ứng/thanh toán (nếu có)",
                   "bold": true
                 }
               ]
@@ -52651,7 +54697,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 96,
-                  "text": "4",
+                  "text": "3",
                   "bold": true
                 }
               ]
@@ -52662,7 +54708,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 97,
-                  "text": "Giá trị Bên A còn phải thanh toán cho Bên B",
+                  "text": "Chi phí phát sinh tăng/giảm (nếu có)",
                   "bold": true
                 }
               ]
@@ -52678,13 +54724,48 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 }
               ]
             }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 99,
+                  "text": "4",
+                  "bold": true
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 100,
+                  "text": "Giá trị Bên A còn phải thanh toán cho Bên B (VNĐ)",
+                  "bold": true
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 101,
+                  "text": "",
+                  "bold": true
+                }
+              ]
+            }
           ]
         ]
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 99,
+        "paragraph": 102,
         "text": " ",
         "align": "justify",
         "bold": true
@@ -52692,7 +54773,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 100,
+        "paragraph": 103,
         "text": "Thời hạn thanh toán:",
         "align": "justify",
         "bold": true
@@ -52708,7 +54789,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 101,
+                  "paragraph": 104,
                   "text": "Thanh toán ",
                   "align": "center",
                   "bold": true
@@ -52720,28 +54801,28 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 102,
+                  "paragraph": 105,
                   "text": "Phí dịch vụ được thanh toán trong vòng 7 - 10 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau: ",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 103,
+                  "paragraph": 106,
                   "text": "Bên B đã hoàn thành dịch vụ theo Hợp đồng; ",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 104,
+                  "paragraph": 107,
                   "text": "Bên A đã nhận được Biên bản nghiệm thu có chữ ký hai bên;",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 105,
+                  "paragraph": 108,
                   "text": "Bên B đã cung cấp hóa đơn hộ kinh doanh hợp lệ (toàn bộ giá trị Hợp đồng) cho Bên A.",
                   "align": "justify"
                 }
@@ -52753,67 +54834,43 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 106,
-        "text": "",
-        "align": "justify"
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 107,
-        "text": "Bên A thanh toán bằng hình thức chuyển khoản ngân hàng vào tài khoản của Bên B theo thông tin như sau:",
-        "align": "justify"
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 108,
-        "text": "Tên chủ tài khoản: ",
-        "align": "justify"
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
         "paragraph": 109,
-        "text": "Số tài khoản: ",
+        "text": "",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 110,
-        "text": "Tại Ngân hàng: ",
+        "text": "Bên A thanh toán bằng hình thức chuyển khoản ngân hàng vào tài khoản của Bên B theo thông tin như sau:",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 111,
-        "text": "",
-        "align": "justify",
-        "bold": true
+        "text": "Tên chủ tài khoản: ",
+        "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 112,
-        "text": "Điều 3: Hiệu lực ",
-        "align": "justify",
-        "bold": true
+        "text": "Số tài khoản: ",
+        "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 113,
-        "text": "Biên bản này được lập và có hiệu lực từ ngày ký.",
-        "align": "justify",
-        "bold": true
+        "text": "Tại Ngân hàng: ",
+        "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 114,
-        "text": "Biên bản này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi Bên giữ 01 (một) bản để thực hiện.",
+        "text": "",
         "align": "justify",
         "bold": true
       },
@@ -52821,6 +54878,37 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 115,
+        "text": "Điều 3: Hiệu lực ",
+        "align": "justify",
+        "bold": true
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 116,
+        "text": "Biên bản này được lập và có hiệu lực từ ngày ký.",
+        "align": "justify",
+        "bold": true
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 117,
+        "text": "Trường hợp tại thời điểm ký Biên bản này, thời hạn sử dụng hình ảnh và/hoặc cấp quyền chạy quảng cáo (nếu có) theo thỏa thuận giữa Các Bên vẫn còn, Các Bên tiếp tục thực hiện đầy đủ các quyền và nghĩa vụ liên quan cho đến hết thời hạn đã thỏa thuận.",
+        "align": "justify"
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 118,
+        "text": "Biên bản này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi Bên giữ 01 (một) bản để thực hiện.",
+        "align": "justify",
+        "bold": true
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 119,
         "text": "",
         "align": "justify"
       },
@@ -52835,7 +54923,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 116,
+                  "paragraph": 120,
                   "text": "ĐẠI DIỆN BÊN A",
                   "align": "center",
                   "bold": true
@@ -52843,7 +54931,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 117,
+                  "paragraph": 121,
                   "text": "",
                   "align": "center"
                 }
@@ -52854,7 +54942,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 118,
+                  "paragraph": 122,
                   "text": "ĐẠI DIỆN BÊN B ",
                   "align": "center",
                   "bold": true
@@ -52862,7 +54950,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 119,
+                  "paragraph": 123,
                   "text": "",
                   "align": "center"
                 }
@@ -52874,7 +54962,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 120,
+        "paragraph": 124,
         "text": "",
         "align": "center",
         "bold": true
@@ -52882,7 +54970,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 121,
+        "paragraph": 125,
         "text": "",
         "align": "center",
         "bold": true
@@ -52952,39 +55040,16 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "paragraph": 6,
         "text": ""
       }
-    ],
-    "category": "ACCEPTANCE_SETTLEMENT",
-    "description": "Biên bản nghiệm thu link bài đăng, mã Spark Ads và giá trị thanh toán thực tế cho đối tác hộ kinh doanh.",
-    "active": true,
-    "defaultReviewRoles": [
-      "FINANCE",
-      "LEAD"
-    ],
-    "exemptLegalReview": true,
-    "scope": "GLOBAL",
-    "updatedAt": "2026-05-01T08:00:00.000Z",
-    "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 39,
-    "requiredFieldCount": 24,
-    "history": [
-      {
-        "version": "Ver052026",
-        "hash": "1a4c42c345b568de51c9174c716ab2d341b8c46b7c98508a00282b8761174849",
-        "filename": "3. BBNT HKD booking Video.docx",
-        "updatedAt": "2026-05-01T08:00:00.000Z",
-        "updatedBy": "Phòng Pháp chế",
-        "note": "Phiên bản chuẩn ban hành bởi Pháp chế"
-      }
     ]
   },
   "COM-HDNT": {
     "id": "COM-HDNT",
     "name": "Hợp đồng nguyên tắc video · Công ty",
-    "filename": "1. HĐNT Công ty booking Video.docx",
+    "filename": "1.2 HĐNT công ty booking Video.docx",
     "subject": "Công ty",
     "kind": "CONTRACT",
-    "version": "Ver052026",
-    "hash": "6c8250b8db960def921e326a32284189136c1a0a269f12b58053afa1c60176a9",
+    "version": "Ver092026",
+    "hash": "32fd999a20d2a17e238d0a7a1b23676b5e4d817f73eea231040fdae0e6ff37ec",
     "fields": [
       {
         "key": "token:[dd.mm.yy]",
@@ -53190,9 +55255,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "ownerName"
       },
       {
-        "key": "word/document.xml:p75:34",
+        "key": "word/document.xml:p74:34",
         "part": "word/document.xml",
-        "paragraph": 75,
+        "paragraph": 74,
         "start": 34,
         "end": 35,
         "label": "Là tài khoản mạng xã hội có link:  [điền] ",
@@ -53206,7 +55271,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tên chủ tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 155,
+        "paragraph": 154,
         "start": 19,
         "end": 19,
         "label": "Tên chủ tài khoản",
@@ -53220,7 +55285,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Số tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 156,
+        "paragraph": 155,
         "start": 14,
         "end": 14,
         "label": "Số tài khoản",
@@ -53234,7 +55299,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tại Ngân hàng]",
         "part": "word/document.xml",
-        "paragraph": 157,
+        "paragraph": 156,
         "start": 15,
         "end": 15,
         "label": "Tại Ngân hàng",
@@ -53246,9 +55311,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "bankName"
       },
       {
-        "key": "word/document.xml:p163:14",
+        "key": "word/document.xml:p162:14",
         "part": "word/document.xml",
-        "paragraph": 163,
+        "paragraph": 162,
         "start": 14,
         "end": 15,
         "label": "Lần 1 tạm ứng  [điền]  trong vòng … ngày làm vi",
@@ -53260,9 +55325,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "advanceAmount"
       },
       {
-        "key": "word/document.xml:p163:27",
+        "key": "word/document.xml:p162:27",
         "part": "word/document.xml",
-        "paragraph": 163,
+        "paragraph": 162,
         "start": 27,
         "end": 28,
         "label": "Lần 1 tạm ứng … trong vòng  [điền]  ngày làm việc (trừ thứ b",
@@ -53273,13 +55338,13 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p164:44",
+        "key": "word/document.xml:p163:44",
         "part": "word/document.xml",
-        "paragraph": 164,
+        "paragraph": 163,
         "start": 44,
         "end": 45,
         "label": "nh toán số tiền còn lại trong vòng  [điền]  ngày làm việc (trừ thứ b",
-        "context": "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây). ",
+        "context": "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ theo Phụ lục SOW và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây). ",
         "required": false,
         "title": "Hạn thanh toán lần 2 (ngày làm việc)",
         "group": "MONEY",
@@ -53330,7 +55395,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Luật sửa đổi, bổ sung một số điều của Luật Quảng cáo số 75/2025/QH15, có hiệu lực từ ngày 01/01/2026;",
       "Luật Sở hữu Trí tuệ số 50/2005/QH11, có hiệu lực từ ngày 01/07/2006;",
       "Luật Sửa đổi bổ sung một số điều của Luật Sở hữu Trí tuệ số 131/2025/QH15, có hiệu lực từ ngày 01/04/2026;",
-      "Luật Bảo vệ người tiêu dùng số 19/2023/QH15, có hiệu lực từ ngày 01/07/2024;",
+      "Luật Bảo vệ quyền lợi người tiêu dùng số 19/2023/QH15, có hiệu lực từ ngày 01/07/2024;",
       "Nhu cầu và khả năng của hai Bên.",
       "",
       "Hôm nay, ngày … tháng … năm 202…, tại trụ sở chính của Công Ty Cổ Phần Công Nghệ UpBase - Nhà J03.LO21, Khu Đô thị Nam Cường, đường Tố Hữu, Phường Dương Nội, TP Hà Nội, Việt Nam. Chúng tôi gồm các bên có tên dưới đây cùng ký kết Hợp Đồng cung ứng Dịch vụ (“Hợp Đồng”):",
@@ -53382,7 +55447,6 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       ":",
       "",
       "Sau đây gọi tắt là “Bên B”",
-      "",
       "Bên A có nhu cầu triển khai các hoạt động quảng bá và tiếp thị sản phẩm thông qua các KOL/KOC/Talent trên các nền tảng truyền thông và/hoặc thương mại điện tử. Bên B là đơn vị quản lý và đại diện cho các KOL/KOC/Talent, có năng lực kết nối, điều phối và sắp xếp các KOL/KOC tham gia các hoạt động quảng bá theo yêu cầu của Bên A.",
       "Trên cơ sở đó, hai Bên thống nhất ký kết Hợp đồng dịch vụ này nhằm thiết lập các điều khoản và điều kiện chung cho việc cung cấp dịch vụ quảng cáo, tiếp thị và thúc đẩy doanh số thông qua KOL/KOC.",
       "",
@@ -53440,7 +55504,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "7",
       "Duyệt video",
       "Bên A xem xét, phản hồi và yêu cầu chỉnh sửa (nếu có). ",
-      "Tối đa 01 vòng chỉnh sửa trước khi duyệt cuối cùng, trừ khi SOW quy định khác.",
+      "Theo quy định chi tiết tại SOW.",
       "8",
       "Đăng tải video",
       "Bên B đăng tải theo đúng nội dung đã duyệt, đúng tài khoản và timeline.",
@@ -53475,11 +55539,11 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Tại Ngân hàng: ",
       " Thời hạn thanh toán",
       "Thanh toán 1 lần",
-      "Phí dịch vụ được thanh toán 1 lần trong vòng 7 - 10 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây).",
+      "Phí dịch vụ được thanh toán 1 lần trong vòng 7 - 10 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ theo Phụ lục SOW và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây).",
       "Thanh toán 2 lần",
       "Phí dịch vụ được thanh toán làm 2 lần:",
       "Lần 1 tạm ứng … trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm hai bên ký kết Phụ lục SOW.",
-      "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây). ",
+      "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ theo Phụ lục SOW và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây). ",
       "Thanh toán theo SOW",
       "Thời hạn thanh toán được xác định cụ thể theo từng SOW tương ứng với từng chiến dịch hoặc công việc cụ thể.",
       " Hồ sơ nghiệm thu thanh toán (Giá trị tại khoản này là giá trị của SOW đã bao gồm VAT)",
@@ -53499,7 +55563,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Nghĩa vụ của Bên A",
       "Thanh toán đầy đủ và đúng hạn Phí Booking cho Bên B theo Hợp đồng;",
       "Cung cấp đầy đủ, kịp thời các thông tin, tài liệu, sản phẩm mẫu và phối hợp với Bên B để triển khai dịch vụ theo Hợp đồng;",
-      "Không sử dụng hình ảnh, nội dung của Bên B theo cách gây ảnh hưởng tiêu cực đến uy tín hoặc hình ảnh cá nhân của Bên B.",
+      "Không sử dụng hình ảnh, nội dung của KOL/KOC/Talent Bên B theo cách gây ảnh hưởng tiêu cực đến uy tín hoặc hình ảnh cá nhân của KOL/KOC/Talent Bên B.",
       "",
       "ĐIỀU 5: QUYỀN VÀ NGHĨA VỤ CỦA BÊN B",
       "Quyền của Bên B",
@@ -53510,7 +55574,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Nghĩa vụ thực hiện dịch vụ: Thực hiện công việc đúng nội dung, chất lượng, số lượng, thời hạn, nền tảng theo Hợp đồng đã ký kết; không được chuyển giao, ủy quyền cho bên thứ ba thực hiện công việc; chủ động thông báo kịp thời cho Bên A về bất kỳ sự kiện nào có thể ảnh hưởng đến việc thực hiện dịch vụ.",
       "Nghĩa vụ duy trì nội dung đã đăng tải:",
       "Bên B không được tự ý xóa, ẩn hoặc hạn chế hiển thị đối với video đã đăng tải theo Hợp đồng và Phụ lục SOW liên quan. Trong trường hợp nội dung phát sinh lỗi kỹ thuật do nền tảng, bao gồm nhưng không giới hạn mất tiếng, lỗi hình ảnh, lỗi hiển thị hoặc các sự cố tương tự, Bên B có nghĩa vụ phối hợp với Bên A để khắc phục và đăng tải lại nội dung trong thời gian sớm nhất theo yêu cầu của Bên A. Trường hợp không thể khắc phục hoặc đăng tải lại, Bên B bàn giao video hoàn chỉnh cho Bên A để Bên A đăng tải trên kênh chính thức của nhãn hàng trong thời hạn ít nhất 03 (ba) tháng.",
-      "Trừ trường hợp sản phẩm hoặc nhãn hiệu của sản phẩm bị cơ quan nhà nước có thẩm quyền xử phạt hoặc phát sinh khủng hoảng, tranh cãi truyền thông có khả năng ảnh hưởng đến hình ảnh, uy tín của Bên B, Bên B được quyền chủ động ẩn video sau khi thông báo cho Bên A. Sau khi vụ việc được làm rõ hoặc giải quyết, tùy từng trường hợp, Hai Bên sẽ thỏa thuận về việc hiển thị lại nội dung.",
+      "Trường hợp sản phẩm hoặc nhãn hiệu của sản phẩm bị cơ quan nhà nước có thẩm quyền xử phạt hoặc phát sinh khủng hoảng, tranh cãi truyền thông có khả năng ảnh hưởng đến hình ảnh, uy tín của Bên B, Bên B được quyền chủ động ẩn video sau khi thông báo cho Bên A. Sau khi vụ việc được làm rõ hoặc giải quyết, tùy từng trường hợp, Hai Bên sẽ thỏa thuận về việc hiển thị lại nội dung.",
       "Nghĩa vụ về nội dung và trách nhiệm quảng cáo: Bên B có trách nhiệm quản lý, điều phối và đảm bảo KOL/KOC/Talent tuân thủ đầy đủ các quy định pháp luật có liên quan, bao gồm nhưng không giới hạn Luật Quảng cáo, Luật Bảo vệ quyền lợi người tiêu dùng, cũng như các quy định, chính sách của các nền tảng thương mại điện tử và/hoặc mạng xã hội. Bên B chịu trách nhiệm rà soát, nhắc nhở và kiểm soát nội dung do các KOL/KOC thực hiện nhằm hạn chế tối đa các hành vi quảng cáo sai sự thật, gây nhầm lẫn hoặc vi phạm pháp luật.",
       "Nghĩa vụ bảo vệ hình ảnh và uy tín nhãn hiệu: Bên B có trách nhiệm quản lý và đảm bảo KOL/KOC/Talent không thực hiện bất kỳ hành vi, phát ngôn hoặc đăng tải nội dung nào có thể gây ảnh hưởng tiêu cực, gây hiểu nhầm, chưa được kiểm chứng hoặc làm tổn hại đến hình ảnh, uy tín của Bên A hoặc sản phẩm/dịch vụ của Bên A. Bên B đồng thời có nghĩa vụ kiểm soát việc sử dụng ngôn từ, hình ảnh của các KOL/KOC nhằm đảm bảo không vi phạm pháp luật, không trái với thuần phong mỹ tục và phù hợp với định vị thương hiệu của Bên A. Nghĩa vụ này áp dụng trong suốt thời gian thực hiện Hợp đồng và kéo dài tối thiểu 06 (sáu) tháng kể từ ngày chấm dứt hợp tác đối với các nội dung liên quan đến chiến dịch.",
       "Nghĩa vụ bảo vệ hình ảnh và uy tín cá nhân: Bên B có trách nhiệm quản lý và giám sát danh tiếng của các KOL/KOC/Talent để KOL/KOC/Talent không thực hiện các hành vi, phát ngôn hoặc tham gia các sự kiện có thể dẫn đến scandal, tranh cãi hoặc gây ảnh hưởng tiêu cực trực tiếp hoặc gián tiếp đến uy tín, hình ảnh của Bên A. Trong trường hợp phát sinh hoặc có nguy cơ phát sinh sự kiện ảnh hưởng tiêu cực, Bên B phải thông báo kịp thời cho Bên A và chủ động phối hợp với Bên A để xử lý, bao gồm nhưng không giới hạn việc gỡ bỏ nội dung, đính chính thông tin.",
@@ -53520,7 +55584,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Vi phạm của Bên B",
       "Vi phạm tiến độ thực hiện: Trường hợp Bên B không thực hiện đúng tiến độ theo Hợp đồng mà không do lỗi của Bên A hoặc yếu tố khách quan, Bên A sẽ gia hạn để Bên B khắc phục kịp thời theo tiến độ của dự án. Nếu Bên B không khắc phục trong vòng 3 – 5 ngày hoặc xong trước deadline cuối của dự án, Bên B phải chịu phạt tương đương 1% giá trị phí dịch vụ của hạng mục công việc bị vi phạm cho mỗi ngày chậm, tổng mức phạt không vượt quá 8% giá trị hạng mục vi phạm.",
       "Vi phạm nghĩa vụ về nội dung và trách nhiệm quảng cáo: Bên A có quyền yêu cầu Bên B gỡ bỏ, chỉnh sửa nội dung và chịu mọi trách nhiệm phát sinh; đồng thời Bên A có quyền giảm trừ hoặc không thanh toán phần Phí Dịch vụ liên quan đến nội dung vi phạm pháp luật hoặc đơn phương chấm dứt Hợp đồng tùy theo mức độ nghiêm trọng của sự việc. ",
-      "Vi phạm nghĩa vụ bảo vệ hình ảnh, uy tín và danh tiếng thương hiệu và danh tiếng cá nhân của Bên B: Bên A có quyền đơn phương chấm dứt Hợp đồng, từ chối thanh toán phần phí dịch vụ chưa thực hiện và yêu cầu Bên B thực hiện các biện pháp khắc phục (bao gồm đính chính, gỡ bỏ nội dung nếu có).",
+      "Vi phạm nghĩa vụ bảo vệ hình ảnh, uy tín và danh tiếng thương hiệu và danh tiếng cá nhân của KOL/KOC/Talent Bên B: Bên A có quyền đơn phương chấm dứt Hợp đồng, từ chối thanh toán phần phí dịch vụ chưa thực hiện và yêu cầu Bên B thực hiện các biện pháp khắc phục (bao gồm đính chính, gỡ bỏ nội dung nếu có). ",
       "Bồi thường thiệt hại: Bên nào vi phạm nghĩa vụ theo Hợp đồng gây thiệt hại cho Bên còn lại thì phải bồi thường toàn bộ thiệt hại thực tế, trực tiếp phát sinh theo quy định của pháp luật.",
       "",
       "ĐIỀU 7: HIỆU LỰC VÀ CHẤM DỨT HỢP ĐỒNG ",
@@ -53559,7 +55623,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "",
       "",
-      "BM.HĐ.VID.COM.Ver072026",
+      "BM.HĐ.VID.COM.Ver092026",
       "",
       ""
     ],
@@ -53598,7 +55662,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/header2.xml",
                   "paragraph": 2,
-                  "text": "BM.HĐ.VID.COM.Ver072026",
+                  "text": "BM.HĐ.VID.COM.Ver092026",
                   "align": "right"
                 }
               ]
@@ -53742,7 +55806,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 15,
-        "text": "Luật Bảo vệ người tiêu dùng số 19/2023/QH15, có hiệu lực từ ngày 01/07/2024;",
+        "text": "Luật Bảo vệ quyền lợi người tiêu dùng số 19/2023/QH15, có hiệu lực từ ngày 01/07/2024;",
         "align": "justify",
         "italic": true
       },
@@ -54361,27 +56425,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 67,
-        "text": "",
-        "align": "justify"
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 68,
         "text": "Bên A có nhu cầu triển khai các hoạt động quảng bá và tiếp thị sản phẩm thông qua các KOL/KOC/Talent trên các nền tảng truyền thông và/hoặc thương mại điện tử. Bên B là đơn vị quản lý và đại diện cho các KOL/KOC/Talent, có năng lực kết nối, điều phối và sắp xếp các KOL/KOC tham gia các hoạt động quảng bá theo yêu cầu của Bên A.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 69,
+        "paragraph": 68,
         "text": "Trên cơ sở đó, hai Bên thống nhất ký kết Hợp đồng dịch vụ này nhằm thiết lập các điều khoản và điều kiện chung cho việc cung cấp dịch vụ quảng cáo, tiếp thị và thúc đẩy doanh số thông qua KOL/KOC.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 70,
+        "paragraph": 69,
         "text": "",
         "align": "justify",
         "bold": true
@@ -54389,7 +56446,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 71,
+        "paragraph": 70,
         "text": "ĐIỀU 1: ĐỊNH NGHĨA",
         "align": "justify",
         "bold": true
@@ -54405,7 +56462,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 72,
+                  "paragraph": 71,
                   "text": "Khái niệm",
                   "align": "center",
                   "bold": true
@@ -54417,7 +56474,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 73,
+                  "paragraph": 72,
                   "text": "Định nghĩa",
                   "align": "center",
                   "bold": true
@@ -54431,7 +56488,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 74,
+                  "paragraph": 73,
                   "text": "Tài khoản mạng xã hội",
                   "align": "center",
                   "bold": true
@@ -54443,13 +56500,13 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 75,
+                  "paragraph": 74,
                   "text": "Là tài khoản mạng xã hội có link: …"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 76,
+                  "paragraph": 75,
                   "text": "Bên B là chủ sở hữu hợp pháp và có toàn quyền quản lý, vận hành tài khoản mạng xã hội trong suốt thời gian thực hiện Hợp đồng. ",
                   "align": "justify"
                 }
@@ -54462,7 +56519,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 77,
+                  "paragraph": 76,
                   "text": "Hợp đồng dịch vụ khung",
                   "align": "center",
                   "bold": true
@@ -54470,7 +56527,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 78,
+                  "paragraph": 77,
                   "text": "(Hợp đồng)",
                   "align": "center",
                   "bold": true
@@ -54482,14 +56539,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 79,
+                  "paragraph": 78,
                   "text": "Là Hợp đồng này và quy định nguyên tắc hợp tác tổng thể giữa các Bên.",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 80,
+                  "paragraph": 79,
                   "text": "Trường hợp có mâu thuẫn giữa Hợp đồng và Phụ lục phạm vi công việc (SOW): ưu tiên áp dụng theo thứ tự (i) SOW, (ii) Hợp đồng, trừ khi có quy định khác trong SOW.",
                   "align": "justify"
                 }
@@ -54502,7 +56559,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 81,
+                  "paragraph": 80,
                   "text": "Phụ lục phạm vi công việc",
                   "align": "center",
                   "bold": true
@@ -54510,7 +56567,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 82,
+                  "paragraph": 81,
                   "text": "(SOW)",
                   "align": "center",
                   "bold": true
@@ -54522,7 +56579,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 83,
+                  "paragraph": 82,
                   "text": "Là phụ lục của Hợp đồng do hai bên cùng xác nhận, quy định chi tiết nội dung công việc, số lượng, thời gian, phí booking, hoa hồng (nếu có) và các yêu cầu, các dịch vụ đi kèm liên quan. SOW được hai bên xác nhận dưới dạng bản cứng hoặc bản ký điện tử.",
                   "align": "justify"
                 }
@@ -54535,7 +56592,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 84,
+                  "paragraph": 83,
                   "text": "Tiếp thị ",
                   "align": "center",
                   "bold": true
@@ -54543,7 +56600,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 85,
+                  "paragraph": 84,
                   "text": "liên kết ",
                   "align": "center",
                   "bold": true
@@ -54551,7 +56608,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 86,
+                  "paragraph": 85,
                   "text": "(Affiliate)",
                   "align": "center",
                   "bold": true
@@ -54563,7 +56620,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 87,
+                  "paragraph": 86,
                   "text": "Là việc Bên B quảng bá sản phẩm/dịch vụ thông qua cơ chế của nền tảng thương mại điện tử (sàn TMĐT) (bao gồm link, mã, giỏ hàng hoặc công cụ tương đương), trong đó doanh thu chỉ được ghi nhận khi được hệ thống nền tảng xác nhận. Hoa hồng và doanh thu được xác định theo dữ liệu cuối cùng từ nền tảng và có thể bị điều chỉnh trong trường hợp hoàn đơn, gian lận hoặc vi phạm chính sách.",
                   "align": "justify"
                 }
@@ -54576,7 +56633,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 88,
+                  "paragraph": 87,
                   "text": "Booking video",
                   "align": "center",
                   "bold": true
@@ -54588,7 +56645,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 89,
+                  "paragraph": 88,
                   "text": "Booking video là việc Bên A thuê Bên B sản xuất và đăng tải Video theo các yêu cầu cụ thể của Bên A, có nội dung review, đánh giá, giới thiệu, quảng bá sản phẩm và thúc đẩy doanh số bán hàng (có thể bao gồm các cơ chế như gắn link, mã, giỏ hàng hoặc kêu gọi hành động theo chi tiết tại SOW nếu có). ",
                   "align": "justify"
                 }
@@ -54601,7 +56658,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 90,
+                  "paragraph": 89,
                   "text": "Phí dịch vụ booking",
                   "align": "center",
                   "bold": true
@@ -54613,7 +56670,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 91,
+                  "paragraph": 90,
                   "text": "Phí dịch vụ booking là khoản phí cố định Bên A thanh toán cho Bên B theo Hợp đồng.",
                   "align": "justify"
                 }
@@ -54626,7 +56683,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 92,
+                  "paragraph": 91,
                   "text": "Hoa hồng",
                   "align": "center",
                   "bold": true
@@ -54638,7 +56695,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 93,
+                  "paragraph": 92,
                   "text": "Là khoản thu nhập của Bên B dựa trên doanh thu Affiliate hợp lệ được nền tảng thương mại điện tử chi trả. Bên B tự chịu trách nhiệm kê khai, nộp thuế và các nghĩa vụ tài chính liên quan đến khoản hoa hồng này theo quy định pháp luật (nếu áp dụng).",
                   "align": "justify"
                 }
@@ -54650,7 +56707,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 94,
+        "paragraph": 93,
         "text": "",
         "align": "justify",
         "bold": true
@@ -54658,7 +56715,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 95,
+        "paragraph": 94,
         "text": "ĐIỀU 2: PHẠM VI CÔNG VIỆC",
         "align": "justify",
         "bold": true
@@ -54666,7 +56723,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 96,
+        "paragraph": 95,
         "text": " Phạm vi công việc cần thực hiện",
         "align": "justify",
         "bold": true
@@ -54674,14 +56731,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 97,
+        "paragraph": 96,
         "text": "Bên B thực hiện sản xuất và đăng tải video theo yêu cầu đặt hàng của Bên A. Phạm vi công việc, nội dung, số lượng video, kịch bản, hình thức thể hiện, kênh đăng tải, tiến độ thực hiện và các yêu cầu cụ thể khác của từng đợt đặt hàng sẽ được Hai Bên thỏa thuận tại từng SOW.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 98,
+        "paragraph": 97,
         "text": "Quy trình cung ứng dịch vụ",
         "align": "justify",
         "bold": true
@@ -54697,7 +56754,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 99,
+                  "paragraph": 98,
                   "text": "Bước",
                   "align": "center",
                   "bold": true
@@ -54709,7 +56766,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 100,
+                  "paragraph": 99,
                   "text": "Tên bước",
                   "align": "center",
                   "bold": true
@@ -54721,7 +56778,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 101,
+                  "paragraph": 100,
                   "text": "Mô tả công việc",
                   "align": "center",
                   "bold": true
@@ -54735,7 +56792,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 102,
+                  "paragraph": 101,
                   "text": "1",
                   "align": "center",
                   "bold": true
@@ -54747,7 +56804,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 103,
+                  "paragraph": 102,
                   "text": "Ký Hợp đồng ",
                   "align": "center",
                   "bold": true
@@ -54755,7 +56812,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 104,
+                  "paragraph": 103,
                   "text": "dịch vụ khung",
                   "align": "center",
                   "bold": true
@@ -54767,7 +56824,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 105,
+                  "paragraph": 104,
                   "text": "Hai Bên ký Hợp đồng dịch vụ khung làm cơ sở pháp lý điều chỉnh toàn bộ hoạt động hợp tác.",
                   "align": "justify"
                 }
@@ -54780,7 +56837,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 106,
+                  "paragraph": 105,
                   "text": "2",
                   "align": "center",
                   "bold": true
@@ -54792,7 +56849,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 107,
+                  "paragraph": 106,
                   "text": "Yêu cầu dịch vụ",
                   "align": "center",
                   "bold": true
@@ -54804,7 +56861,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 108,
+                  "paragraph": 107,
                   "text": "Bên A gửi brief/yêu cầu cung ứng dịch vụ, bao gồm: thông tin chiến dịch, sản phẩm/dịch vụ, nội dung quảng bá, nền tảng triển khai, timeline và các yêu cầu liên quan.",
                   "align": "justify"
                 }
@@ -54817,7 +56874,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 109,
+                  "paragraph": 108,
                   "text": "3",
                   "align": "center",
                   "bold": true
@@ -54829,7 +56886,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 110,
+                  "paragraph": 109,
                   "text": "Xác nhận SOW",
                   "align": "center",
                   "bold": true
@@ -54841,7 +56898,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 111,
+                  "paragraph": 110,
                   "text": "Hai bên thống nhất SOW qua các hình thức ký bản cứng/ký điện tử.",
                   "align": "justify"
                 }
@@ -54854,7 +56911,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 112,
+                  "paragraph": 111,
                   "text": "4",
                   "align": "center",
                   "bold": true
@@ -54866,7 +56923,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 113,
+                  "paragraph": 112,
                   "text": "Dựng kịch bản",
                   "align": "center",
                   "bold": true
@@ -54878,7 +56935,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 114,
+                  "paragraph": 113,
                   "text": "Bên B xây dựng kịch bản và nội dung video dựa trên brief của Bên A và gửi Bên A phê duyệt trước khi sản xuất.",
                   "align": "justify"
                 }
@@ -54891,7 +56948,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 115,
+                  "paragraph": 114,
                   "text": "5",
                   "align": "center",
                   "bold": true
@@ -54903,7 +56960,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 116,
+                  "paragraph": 115,
                   "text": "Duyệt kịch bản",
                   "align": "center",
                   "bold": true
@@ -54915,14 +56972,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 117,
+                  "paragraph": 116,
                   "text": "Bên A xem xét, phản hồi và yêu cầu chỉnh sửa (nếu có).",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 118,
+                  "paragraph": 117,
                   "text": "Tối đa 01 vòng chỉnh sửa trước khi duyệt cuối cùng, trừ khi SOW quy định khác.",
                   "align": "justify"
                 }
@@ -54935,7 +56992,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 119,
+                  "paragraph": 118,
                   "text": "6",
                   "align": "center",
                   "bold": true
@@ -54947,7 +57004,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 120,
+                  "paragraph": 119,
                   "text": "Sản xuất video",
                   "align": "center",
                   "bold": true
@@ -54959,7 +57016,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 121,
+                  "paragraph": 120,
                   "text": "Bên B tiến hành quay dựng, chỉnh lý, biên tập, hậu kỳ video theo kịch bản đã thống nhất.",
                   "align": "justify"
                 }
@@ -54972,7 +57029,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 122,
+                  "paragraph": 121,
                   "text": "7",
                   "align": "center",
                   "bold": true
@@ -54984,7 +57041,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 123,
+                  "paragraph": 122,
                   "text": "Duyệt video",
                   "align": "center",
                   "bold": true
@@ -54996,15 +57053,15 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 124,
+                  "paragraph": 123,
                   "text": "Bên A xem xét, phản hồi và yêu cầu chỉnh sửa (nếu có). ",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 125,
-                  "text": "Tối đa 01 vòng chỉnh sửa trước khi duyệt cuối cùng, trừ khi SOW quy định khác.",
+                  "paragraph": 124,
+                  "text": "Theo quy định chi tiết tại SOW.",
                   "align": "justify"
                 }
               ]
@@ -55016,7 +57073,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 126,
+                  "paragraph": 125,
                   "text": "8",
                   "align": "center",
                   "bold": true
@@ -55028,7 +57085,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 127,
+                  "paragraph": 126,
                   "text": "Đăng tải video",
                   "align": "center",
                   "bold": true
@@ -55040,7 +57097,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 128,
+                  "paragraph": 127,
                   "text": "Bên B đăng tải theo đúng nội dung đã duyệt, đúng tài khoản và timeline.",
                   "align": "justify"
                 }
@@ -55053,7 +57110,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 129,
+                  "paragraph": 128,
                   "text": "9",
                   "align": "center",
                   "bold": true
@@ -55065,7 +57122,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 130,
+                  "paragraph": 129,
                   "text": "Nghiệm thu",
                   "align": "center",
                   "bold": true
@@ -55077,7 +57134,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 131,
+                  "paragraph": 130,
                   "text": "Bên A kiểm tra việc thực hiện dịch vụ theo SOW.",
                   "align": "justify"
                 }
@@ -55090,7 +57147,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 132,
+                  "paragraph": 131,
                   "text": "10",
                   "align": "center",
                   "bold": true
@@ -55102,7 +57159,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 133,
+                  "paragraph": 132,
                   "text": "Thanh toán phí Booking",
                   "align": "center",
                   "bold": true
@@ -55114,7 +57171,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 134,
+                  "paragraph": 133,
                   "text": "Bên A thực hiện thanh toán phí booking theo SOW và Biên bản nghiệm thu (nếu có)",
                   "align": "justify"
                 }
@@ -55126,7 +57183,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 135,
+        "paragraph": 134,
         "text": "",
         "align": "justify",
         "bold": true
@@ -55134,7 +57191,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 136,
+        "paragraph": 135,
         "text": "Tiêu chuẩn nghiệm thu dịch vụ ",
         "align": "justify",
         "bold": true
@@ -55142,7 +57199,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 137,
+        "paragraph": 136,
         "text": "Tiêu chuẩn về nội dung và đăng tải",
         "align": "justify",
         "bold": true
@@ -55150,28 +57207,28 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 138,
+        "paragraph": 137,
         "text": "Video phải tuân thủ đầy đủ kịch bản, thông điệp và guideline do Bên A cung cấp; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 139,
+        "paragraph": 138,
         "text": "Chỉ được đăng tải sau khi có phê duyệt nội dung từ Bên A; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 140,
+        "paragraph": 139,
         "text": "Không vi phạm pháp luật, chính sách nền tảng hoặc gây ảnh hưởng tiêu cực đến hình ảnh thương hiệu. ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 141,
+        "paragraph": 140,
         "text": "Tiêu chuẩn về kịch bản và sản xuất",
         "align": "justify",
         "bold": true
@@ -55179,35 +57236,35 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 142,
+        "paragraph": 141,
         "text": "Kịch bản phải được Bên A phê duyệt bằng email/tin nhắn/văn bản trước khi quay dựng; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 143,
+        "paragraph": 142,
         "text": "Mọi chi phí phát sinh do sản xuất khi chưa có phê duyệt hợp lệ do Bên B tự chi trả; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 144,
+        "paragraph": 143,
         "text": "Cảnh quay, bố cục và thông điệp phải phù hợp với kịch bản đã duyệt; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 145,
+        "paragraph": 144,
         "text": "Trường hợp sai lệch, Bên A có quyền từ chối nghiệm thu và yêu cầu chỉnh sửa hoặc quay lại mà không phát sinh chi phí. ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 146,
+        "paragraph": 145,
         "text": "Tiêu chuẩn về chất lượng và hậu kỳ: Video phải được dựng và hoàn thiện theo tiêu chuẩn đã thống nhất (video mẫu, guideline thương hiệu).",
         "align": "justify",
         "bold": true
@@ -55215,7 +57272,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 147,
+        "paragraph": 146,
         "text": "Tiêu chuẩn về hình ảnh và nhận diện: Bên B phải kiểm soát trang phục, bối cảnh, nhận diện cá nhân và các yếu tố hình ảnh khác nhằm không được gây trùng lặp, xung đột hoặc ảnh hưởng tiêu cực đến hiệu quả truyền thông của Bên A;",
         "align": "justify",
         "bold": true
@@ -55223,7 +57280,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 148,
+        "paragraph": 147,
         "text": "Áp dụng đối với dịch vụ khác: tiêu chuẩn nghiệm thu được áp dụng theo quy định cụ thể tại Phụ lục (nếu có).",
         "align": "justify",
         "bold": true
@@ -55231,7 +57288,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 149,
+        "paragraph": 148,
         "text": "",
         "align": "justify",
         "bold": true
@@ -55239,7 +57296,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 150,
+        "paragraph": 149,
         "text": "ĐIỀU 3: PHÍ DỊCH VỤ VÀ THANH TOÁN",
         "align": "justify",
         "bold": true
@@ -55247,7 +57304,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 151,
+        "paragraph": 150,
         "text": "Phí dịch vụ booking và hoa hồng",
         "align": "justify",
         "bold": true
@@ -55255,14 +57312,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 152,
+        "paragraph": 151,
         "text": "Phí dịch vụ booking và hoa hồng được xác định cụ thể theo từng SOW tương ứng với từng chiến dịch hoặc công việc. Bên A có nghĩa vụ thanh toán đối với phần công việc đã được nghiệm thu hợp lệ theo tiêu chí quy định tại Hợp đồng khung và SOW. ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 153,
+        "paragraph": 152,
         "text": "Hình thức thanh toán",
         "align": "justify",
         "bold": true
@@ -55270,35 +57327,35 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 154,
+        "paragraph": 153,
         "text": "Bên A thanh toán bằng hình thức chuyển khoản ngân hàng vào tài khoản của Bên B theo thông tin như sau:",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 155,
+        "paragraph": 154,
         "text": "Tên chủ tài khoản: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 156,
+        "paragraph": 155,
         "text": "Số tài khoản: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 157,
+        "paragraph": 156,
         "text": "Tại Ngân hàng: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 158,
+        "paragraph": 157,
         "text": " Thời hạn thanh toán",
         "align": "justify",
         "bold": true
@@ -55314,7 +57371,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 159,
+                  "paragraph": 158,
                   "text": "Thanh toán 1 lần",
                   "align": "center",
                   "bold": true
@@ -55326,8 +57383,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 160,
-                  "text": "Phí dịch vụ được thanh toán 1 lần trong vòng 7 - 10 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây).",
+                  "paragraph": 159,
+                  "text": "Phí dịch vụ được thanh toán 1 lần trong vòng 7 - 10 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ theo Phụ lục SOW và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây).",
                   "align": "justify"
                 }
               ]
@@ -55339,7 +57396,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 161,
+                  "paragraph": 160,
                   "text": "Thanh toán 2 lần",
                   "align": "center",
                   "bold": true
@@ -55351,22 +57408,22 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 162,
+                  "paragraph": 161,
                   "text": "Phí dịch vụ được thanh toán làm 2 lần:",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 163,
+                  "paragraph": 162,
                   "text": "Lần 1 tạm ứng … trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm hai bên ký kết Phụ lục SOW.",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 164,
-                  "text": "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây). ",
+                  "paragraph": 163,
+                  "text": "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ theo Phụ lục SOW và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo Khoản 3.4 dưới đây). ",
                   "align": "justify"
                 }
               ]
@@ -55378,7 +57435,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 165,
+                  "paragraph": 164,
                   "text": "Thanh toán theo SOW",
                   "align": "center",
                   "bold": true
@@ -55390,7 +57447,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 166,
+                  "paragraph": 165,
                   "text": "Thời hạn thanh toán được xác định cụ thể theo từng SOW tương ứng với từng chiến dịch hoặc công việc cụ thể.",
                   "align": "justify"
                 }
@@ -55402,7 +57459,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 167,
+        "paragraph": 166,
         "text": " Hồ sơ nghiệm thu thanh toán (Giá trị tại khoản này là giá trị của SOW đã bao gồm VAT)",
         "align": "justify",
         "bold": true
@@ -55410,56 +57467,56 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 168,
+        "paragraph": 167,
         "text": "Hai Bên bắt buộc ký Biên bản nghiệm thu Phụ lục SOW trong các trường hợp sau:",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 169,
+        "paragraph": 168,
         "text": "Giá trị nghiệm thu hoặc thanh toán thực tế từ 20.000.000 đồng trở lên; hoặc",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 170,
+        "paragraph": 169,
         "text": "Giá trị nghiệm thu/thanh toán thực tế dưới 20.000.000 đồng nhưng khác với giá trị Phụ lục SOW đã ký kết.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 171,
+        "paragraph": 170,
         "text": "Phụ lục SOW được tự động nghiệm thu và thanh lý mà không cần ký Biên bản nghiệm thu khi đồng thời đáp ứng đầy đủ các điều kiện sau:",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 172,
+        "paragraph": 171,
         "text": "Giá trị Phụ lục SOW dưới 20.000.000 đồng;",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 173,
+        "paragraph": 172,
         "text": "Giá trị nghiệm thu thực tế và giá trị thanh toán thực tế đúng bằng giá trị Phụ lục SOW;",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 174,
+        "paragraph": 173,
         "text": "Hai Bên đã hoàn tất toàn bộ quyền và nghĩa vụ theo Phụ lục SOW.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 175,
+        "paragraph": 174,
         "text": "",
         "align": "justify",
         "bold": true
@@ -55467,7 +57524,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 176,
+        "paragraph": 175,
         "text": "ĐIỀU 4: QUYỀN VÀ NGHĨA VỤ CỦA BÊN A",
         "align": "justify",
         "bold": true
@@ -55475,7 +57532,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 177,
+        "paragraph": 176,
         "text": "Quyền của Bên A",
         "align": "justify",
         "bold": true
@@ -55483,7 +57540,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 178,
+        "paragraph": 177,
         "text": "Quyền kiểm tra, giám sát: Bên A có quyền kiểm tra và giám sát Bên B thực hiện công việc đúng nội dung, chất lượng, tiến độ theo Hợp đồng; có quyền phê duyệt hoặc đưa ra ý kiến trong thời gian hợp lý đối với các nội dung, đề xuất của Bên B.",
         "align": "justify",
         "boldPrefix": 25
@@ -55491,7 +57548,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 179,
+        "paragraph": 178,
         "text": "Quyền chỉnh sửa kịch bản: Bên A có quyền kiểm tra và yêu cầu Bên B chỉnh sửa nội dung kịch bản trước khi sản xuất/trước khi đăng tải trong trường hợp nội dung chưa phù hợp với yêu cầu đã thống nhất.",
         "align": "justify",
         "boldPrefix": 25
@@ -55499,7 +57556,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 180,
+        "paragraph": 179,
         "text": "Quyền chỉnh sửa sản phẩm: Trường hợp nội dung video/bài đăng do Bên B đăng tải không đúng với nội dung đã được hai Bên thống nhất, Bên A có quyền yêu cầu Bên B chỉnh sửa, gỡ bỏ hoặc thay thế ngay nội dung đã đăng tải sai.",
         "align": "justify",
         "bold": true
@@ -55507,7 +57564,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 181,
+        "paragraph": 180,
         "text": "Nghĩa vụ của Bên A",
         "align": "justify",
         "bold": true
@@ -55515,7 +57572,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 182,
+        "paragraph": 181,
         "text": "Thanh toán đầy đủ và đúng hạn Phí Booking cho Bên B theo Hợp đồng;",
         "align": "justify",
         "bold": true
@@ -55523,7 +57580,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 183,
+        "paragraph": 182,
         "text": "Cung cấp đầy đủ, kịp thời các thông tin, tài liệu, sản phẩm mẫu và phối hợp với Bên B để triển khai dịch vụ theo Hợp đồng;",
         "align": "justify",
         "bold": true
@@ -55531,8 +57588,15 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
+        "paragraph": 183,
+        "text": "Không sử dụng hình ảnh, nội dung của KOL/KOC/Talent Bên B theo cách gây ảnh hưởng tiêu cực đến uy tín hoặc hình ảnh cá nhân của KOL/KOC/Talent Bên B.",
+        "align": "justify"
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
         "paragraph": 184,
-        "text": "Không sử dụng hình ảnh, nội dung của Bên B theo cách gây ảnh hưởng tiêu cực đến uy tín hoặc hình ảnh cá nhân của Bên B.",
+        "text": "",
         "align": "justify",
         "bold": true
       },
@@ -55540,14 +57604,6 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "p",
         "part": "word/document.xml",
         "paragraph": 185,
-        "text": "",
-        "align": "justify",
-        "bold": true
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 186,
         "text": "ĐIỀU 5: QUYỀN VÀ NGHĨA VỤ CỦA BÊN B",
         "align": "justify",
         "bold": true
@@ -55555,7 +57611,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 187,
+        "paragraph": 186,
         "text": "Quyền của Bên B",
         "align": "justify",
         "bold": true
@@ -55563,28 +57619,28 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 188,
+        "paragraph": 187,
         "text": "Yêu cầu Bên A cung cấp đầy đủ thông tin, tài liệu, sản phẩm mẫu, guideline, chính sách thương hiệu và các dữ liệu cần thiết để thực hiện dịch vụ; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 189,
+        "paragraph": 188,
         "text": "Yêu cầu Bên A phối hợp phản hồi, xác nhận nội dung, kế hoạch triển khai; ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 190,
+        "paragraph": 189,
         "text": "Được sử dụng tên thương mại, nhãn hiệu, hình ảnh sản phẩm của Bên A trong phạm vi cần thiết để thực hiện dịch vụ theo Hợp đồng.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 191,
+        "paragraph": 190,
         "text": " Nghĩa vụ của Bên B",
         "align": "justify",
         "bold": true
@@ -55592,7 +57648,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 192,
+        "paragraph": 191,
         "text": "Nghĩa vụ thực hiện dịch vụ: Thực hiện công việc đúng nội dung, chất lượng, số lượng, thời hạn, nền tảng theo Hợp đồng đã ký kết; không được chuyển giao, ủy quyền cho bên thứ ba thực hiện công việc; chủ động thông báo kịp thời cho Bên A về bất kỳ sự kiện nào có thể ảnh hưởng đến việc thực hiện dịch vụ.",
         "align": "justify",
         "bold": true
@@ -55600,7 +57656,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 193,
+        "paragraph": 192,
         "text": "Nghĩa vụ duy trì nội dung đã đăng tải:",
         "align": "justify",
         "bold": true
@@ -55608,21 +57664,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 194,
+        "paragraph": 193,
         "text": "Bên B không được tự ý xóa, ẩn hoặc hạn chế hiển thị đối với video đã đăng tải theo Hợp đồng và Phụ lục SOW liên quan. Trong trường hợp nội dung phát sinh lỗi kỹ thuật do nền tảng, bao gồm nhưng không giới hạn mất tiếng, lỗi hình ảnh, lỗi hiển thị hoặc các sự cố tương tự, Bên B có nghĩa vụ phối hợp với Bên A để khắc phục và đăng tải lại nội dung trong thời gian sớm nhất theo yêu cầu của Bên A. Trường hợp không thể khắc phục hoặc đăng tải lại, Bên B bàn giao video hoàn chỉnh cho Bên A để Bên A đăng tải trên kênh chính thức của nhãn hàng trong thời hạn ít nhất 03 (ba) tháng.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 195,
-        "text": "Trừ trường hợp sản phẩm hoặc nhãn hiệu của sản phẩm bị cơ quan nhà nước có thẩm quyền xử phạt hoặc phát sinh khủng hoảng, tranh cãi truyền thông có khả năng ảnh hưởng đến hình ảnh, uy tín của Bên B, Bên B được quyền chủ động ẩn video sau khi thông báo cho Bên A. Sau khi vụ việc được làm rõ hoặc giải quyết, tùy từng trường hợp, Hai Bên sẽ thỏa thuận về việc hiển thị lại nội dung.",
+        "paragraph": 194,
+        "text": "Trường hợp sản phẩm hoặc nhãn hiệu của sản phẩm bị cơ quan nhà nước có thẩm quyền xử phạt hoặc phát sinh khủng hoảng, tranh cãi truyền thông có khả năng ảnh hưởng đến hình ảnh, uy tín của Bên B, Bên B được quyền chủ động ẩn video sau khi thông báo cho Bên A. Sau khi vụ việc được làm rõ hoặc giải quyết, tùy từng trường hợp, Hai Bên sẽ thỏa thuận về việc hiển thị lại nội dung.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 196,
+        "paragraph": 195,
         "text": "Nghĩa vụ về nội dung và trách nhiệm quảng cáo: Bên B có trách nhiệm quản lý, điều phối và đảm bảo KOL/KOC/Talent tuân thủ đầy đủ các quy định pháp luật có liên quan, bao gồm nhưng không giới hạn Luật Quảng cáo, Luật Bảo vệ quyền lợi người tiêu dùng, cũng như các quy định, chính sách của các nền tảng thương mại điện tử và/hoặc mạng xã hội. Bên B chịu trách nhiệm rà soát, nhắc nhở và kiểm soát nội dung do các KOL/KOC thực hiện nhằm hạn chế tối đa các hành vi quảng cáo sai sự thật, gây nhầm lẫn hoặc vi phạm pháp luật.",
         "align": "justify",
         "boldPrefix": 47
@@ -55630,7 +57686,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 197,
+        "paragraph": 196,
         "text": "Nghĩa vụ bảo vệ hình ảnh và uy tín nhãn hiệu: Bên B có trách nhiệm quản lý và đảm bảo KOL/KOC/Talent không thực hiện bất kỳ hành vi, phát ngôn hoặc đăng tải nội dung nào có thể gây ảnh hưởng tiêu cực, gây hiểu nhầm, chưa được kiểm chứng hoặc làm tổn hại đến hình ảnh, uy tín của Bên A hoặc sản phẩm/dịch vụ của Bên A. Bên B đồng thời có nghĩa vụ kiểm soát việc sử dụng ngôn từ, hình ảnh của các KOL/KOC nhằm đảm bảo không vi phạm pháp luật, không trái với thuần phong mỹ tục và phù hợp với định vị thương hiệu của Bên A. Nghĩa vụ này áp dụng trong suốt thời gian thực hiện Hợp đồng và kéo dài tối thiểu 06 (sáu) tháng kể từ ngày chấm dứt hợp tác đối với các nội dung liên quan đến chiến dịch.",
         "align": "justify",
         "boldPrefix": 46
@@ -55638,7 +57694,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 198,
+        "paragraph": 197,
         "text": "Nghĩa vụ bảo vệ hình ảnh và uy tín cá nhân: Bên B có trách nhiệm quản lý và giám sát danh tiếng của các KOL/KOC/Talent để KOL/KOC/Talent không thực hiện các hành vi, phát ngôn hoặc tham gia các sự kiện có thể dẫn đến scandal, tranh cãi hoặc gây ảnh hưởng tiêu cực trực tiếp hoặc gián tiếp đến uy tín, hình ảnh của Bên A. Trong trường hợp phát sinh hoặc có nguy cơ phát sinh sự kiện ảnh hưởng tiêu cực, Bên B phải thông báo kịp thời cho Bên A và chủ động phối hợp với Bên A để xử lý, bao gồm nhưng không giới hạn việc gỡ bỏ nội dung, đính chính thông tin.",
         "align": "justify",
         "boldPrefix": 44
@@ -55646,7 +57702,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 199,
+        "paragraph": 198,
         "text": "ĐIỀU 6: PHẠT VI PHẠM, BỒI THƯỜNG THIỆT HẠI",
         "align": "justify",
         "bold": true
@@ -55654,7 +57710,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 200,
+        "paragraph": 199,
         "text": "Vi phạm của Bên A",
         "align": "justify",
         "bold": true
@@ -55662,7 +57718,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 201,
+        "paragraph": 200,
         "text": "Chậm thanh toán: Trừ trường hợp bất khả kháng hoặc do lỗi của Bên B, nếu Bên A chậm thanh toán quá 30 (ba mươi) ngày so với thời hạn đã thỏa thuận (thời hạn thanh toán được tính từ thời điểm Bên B hoàn tất chứng từ thanh toán), Bên A phải trả lãi chậm thanh toán với mức lãi suất 8%/năm trên số tiền chậm trả, tính theo số ngày chậm thanh toán.",
         "align": "justify",
         "bold": true
@@ -55670,7 +57726,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 202,
+        "paragraph": 201,
         "text": "Vi phạm của Bên B",
         "align": "justify",
         "bold": true
@@ -55678,7 +57734,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 203,
+        "paragraph": 202,
         "text": "Vi phạm tiến độ thực hiện: Trường hợp Bên B không thực hiện đúng tiến độ theo Hợp đồng mà không do lỗi của Bên A hoặc yếu tố khách quan, Bên A sẽ gia hạn để Bên B khắc phục kịp thời theo tiến độ của dự án. Nếu Bên B không khắc phục trong vòng 3 – 5 ngày hoặc xong trước deadline cuối của dự án, Bên B phải chịu phạt tương đương 1% giá trị phí dịch vụ của hạng mục công việc bị vi phạm cho mỗi ngày chậm, tổng mức phạt không vượt quá 8% giá trị hạng mục vi phạm.",
         "align": "justify",
         "boldPrefix": 27
@@ -55686,7 +57742,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 204,
+        "paragraph": 203,
         "text": "Vi phạm nghĩa vụ về nội dung và trách nhiệm quảng cáo: Bên A có quyền yêu cầu Bên B gỡ bỏ, chỉnh sửa nội dung và chịu mọi trách nhiệm phát sinh; đồng thời Bên A có quyền giảm trừ hoặc không thanh toán phần Phí Dịch vụ liên quan đến nội dung vi phạm pháp luật hoặc đơn phương chấm dứt Hợp đồng tùy theo mức độ nghiêm trọng của sự việc. ",
         "align": "justify",
         "boldPrefix": 55
@@ -55694,15 +57750,15 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 205,
-        "text": "Vi phạm nghĩa vụ bảo vệ hình ảnh, uy tín và danh tiếng thương hiệu và danh tiếng cá nhân của Bên B: Bên A có quyền đơn phương chấm dứt Hợp đồng, từ chối thanh toán phần phí dịch vụ chưa thực hiện và yêu cầu Bên B thực hiện các biện pháp khắc phục (bao gồm đính chính, gỡ bỏ nội dung nếu có).",
+        "paragraph": 204,
+        "text": "Vi phạm nghĩa vụ bảo vệ hình ảnh, uy tín và danh tiếng thương hiệu và danh tiếng cá nhân của KOL/KOC/Talent Bên B: Bên A có quyền đơn phương chấm dứt Hợp đồng, từ chối thanh toán phần phí dịch vụ chưa thực hiện và yêu cầu Bên B thực hiện các biện pháp khắc phục (bao gồm đính chính, gỡ bỏ nội dung nếu có). ",
         "align": "justify",
-        "boldPrefix": 100
+        "boldPrefix": 115
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 206,
+        "paragraph": 205,
         "text": "Bồi thường thiệt hại: Bên nào vi phạm nghĩa vụ theo Hợp đồng gây thiệt hại cho Bên còn lại thì phải bồi thường toàn bộ thiệt hại thực tế, trực tiếp phát sinh theo quy định của pháp luật.",
         "align": "justify",
         "bold": true
@@ -55710,7 +57766,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 207,
+        "paragraph": 206,
         "text": "",
         "align": "justify",
         "bold": true
@@ -55718,7 +57774,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 208,
+        "paragraph": 207,
         "text": "ĐIỀU 7: HIỆU LỰC VÀ CHẤM DỨT HỢP ĐỒNG ",
         "align": "justify",
         "bold": true
@@ -55726,7 +57782,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 209,
+        "paragraph": 208,
         "text": "Hiệu lực: Hợp Đồng có hiệu lực kể từ ngày ký và tiếp tục duy trì hiệu lực cho đến khi một trong Hai Bên đơn phương chấm dứt Hợp đồng hoặc Hai bên có thỏa thuận cùng chấm dứt bằng văn bản.",
         "align": "justify",
         "bold": true
@@ -55734,7 +57790,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 210,
+        "paragraph": 209,
         "text": "Các trường hợp chấm dứt hợp đồng",
         "align": "justify",
         "bold": true
@@ -55742,49 +57798,49 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 211,
+        "paragraph": 210,
         "text": "Một Bên thông báo bằng văn bản cho Bên còn lại ít nhất 30 (ba mươi) ngày trước ngày dự kiến chấm dứt;",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 212,
+        "paragraph": 211,
         "text": "Hai bên cùng thỏa thuận chấm dứt Hợp đồng bằng văn bản;",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 213,
+        "paragraph": 212,
         "text": "Bên A bị giải thể, phá sản, chấm dứt hoạt động hoặc thuộc trường hợp không còn khả năng tiếp tục thực hiện Hợp đồng;",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 214,
+        "paragraph": 213,
         "text": "Các trường hợp khác theo quy định của pháp luật.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 215,
+        "paragraph": 214,
         "text": "Việc chấm dứt Hợp đồng không làm ảnh hưởng đến các quyền, nghĩa vụ và trách nhiệm đã phát sinh trước ngày chấm dứt. Hai bên có trách nhiệm hoàn tất việc nghiệm thu, đối soát và thanh toán các khoản còn tồn đọng theo các Phụ lục SOW đã ký kết.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 216,
+        "paragraph": 215,
         "text": "",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 217,
+        "paragraph": 216,
         "text": "ĐIỀU 8: BẢO MẬT THÔNG TIN",
         "align": "justify",
         "bold": true
@@ -55792,7 +57848,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 218,
+        "paragraph": 217,
         "text": "Trong quá trình thực hiện Hợp đồng và sau khi Hợp đồng chấm dứt, mỗi Bên (sau đây gọi là “Bên Nhận Thông Tin”) có nghĩa vụ bảo mật tuyệt đối đối với mọi thông tin, tài liệu do Bên còn lại (“Bên Tiết Lộ”) cung cấp hoặc phát sinh liên quan đến việc thực hiện Hợp đồng, bao gồm nhưng không giới hạn các điều khoản Hợp đồng, dữ liệu, tài liệu, kế hoạch kinh doanh, thông tin tài chính, chiến lược marketing, bí mật kinh doanh và các thông tin có tính chất bảo mật khác (“Thông Tin Mật”); theo đó, Bên Nhận Thông Tin không được tiết lộ, công bố hoặc sử dụng Thông Tin Mật cho bất kỳ mục đích nào ngoài mục đích thực hiện Hợp đồng nếu không có sự chấp thuận trước bằng văn bản của Bên Tiết Lộ.",
         "align": "justify",
         "bold": true
@@ -55800,7 +57856,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 219,
+        "paragraph": 218,
         "text": "Bên vi phạm phải chịu trách nhiệm bồi thường toàn bộ thiệt hại phát sinh cho Bên còn lại và các bên liên quan (nếu có).",
         "align": "justify",
         "bold": true
@@ -55808,7 +57864,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 220,
+        "paragraph": 219,
         "text": "Thời hạn bảo mật: Nghĩa vụ bảo mật tiếp tục có hiệu lực sau khi Hợp Đồng chấm dứt hoặc hết hạn, cho đến khi Thông Tin Bảo Mật trở thành thông tin công khai hợp pháp.",
         "align": "justify",
         "bold": true
@@ -55816,7 +57872,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 221,
+        "paragraph": 220,
         "text": "",
         "align": "justify",
         "bold": true
@@ -55824,7 +57880,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 222,
+        "paragraph": 221,
         "text": "ĐIỀU 9: BẤT KHẢ KHÁNG",
         "align": "justify",
         "bold": true
@@ -55832,21 +57888,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 223,
+        "paragraph": 222,
         "text": "Một Bên sẽ không bị xem là vi phạm Hợp Đồng nếu việc chậm trễ hoặc không thực hiện nghĩa vụ do sự kiện khách quan, không thể lường trước và không thể khắc phục mặc dù đã áp dụng mọi biện pháp cần thiết (“Sự Kiện Bất Khả Kháng”), bao gồm nhưng không giới hạn: thiên tai, hỏa hoạn, chiến tranh, bạo loạn, đình công, dịch bệnh, hoặc các quyết định, hạn chế của cơ quan nhà nước có thẩm quyền. Bên bị ảnh hưởng phải thông báo bằng văn bản cho Bên còn lại trong vòng 03 ngày làm việc kể từ khi xảy ra sự kiện, nêu rõ bản chất sự kiện, phạm vi ảnh hưởng và thời gian dự kiến khắc phục.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 224,
+        "paragraph": 223,
         "text": "",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 225,
+        "paragraph": 224,
         "text": "ĐIỀU 10: ĐIỀU KHOẢN CHUNG",
         "align": "justify",
         "bold": true
@@ -55854,21 +57910,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 226,
+        "paragraph": 225,
         "text": "Luật áp dụng: Hợp Đồng này được điều chỉnh và giải thích theo pháp luật Việt Nam.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 227,
+        "paragraph": 226,
         "text": "Giải quyết tranh chấp: Mọi tranh chấp phát sinh từ hoặc liên quan đến Hợp Đồng sẽ được ưu tiên giải quyết thông qua thương lượng, hòa giải giữa các Bên. Nếu tranh chấp không được giải quyết trong vòng 30 ngày kể từ ngày một Bên thông báo bằng văn bản về tranh chấp, tranh chấp sẽ được đưa ra Tòa án có thẩm quyền tại Việt Nam để giải quyết.",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 228,
+        "paragraph": 227,
         "text": "Hợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản, có giá trị pháp lý như nhau.",
         "align": "justify",
         "bold": true
@@ -55876,7 +57932,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 229,
+        "paragraph": 228,
         "text": "",
         "align": "justify"
       },
@@ -55891,7 +57947,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 230,
+                  "paragraph": 229,
                   "text": "ĐẠI DIỆN BÊN A",
                   "align": "center",
                   "bold": true
@@ -55903,7 +57959,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 231,
+                  "paragraph": 230,
                   "text": "ĐẠI DIỆN BÊN B",
                   "align": "center",
                   "bold": true
@@ -55916,7 +57972,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 232,
+        "paragraph": 231,
         "text": "",
         "align": "justify",
         "bold": true
@@ -55992,39 +58048,16 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "paragraph": 0,
         "text": ""
       }
-    ],
-    "category": "BOOKING_VIDEO",
-    "description": "Hợp đồng nguyên tắc booking video (ký một lần khi bắt đầu hợp tác) dành cho đối tác là công ty.",
-    "active": true,
-    "defaultReviewRoles": [
-      "LEGAL",
-      "FINANCE"
-    ],
-    "exemptLegalReview": true,
-    "scope": "GLOBAL",
-    "updatedAt": "2026-05-01T08:00:00.000Z",
-    "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 24,
-    "requiredFieldCount": 14,
-    "history": [
-      {
-        "version": "Ver052026",
-        "hash": "6c8250b8db960def921e326a32284189136c1a0a269f12b58053afa1c60176a9",
-        "filename": "1. HĐNT Công ty booking Video.docx",
-        "updatedAt": "2026-05-01T08:00:00.000Z",
-        "updatedBy": "Phòng Pháp chế",
-        "note": "Phiên bản chuẩn ban hành bởi Pháp chế"
-      }
     ]
   },
   "COM-SOW": {
     "id": "COM-SOW",
     "name": "SOW booking video · Công ty",
-    "filename": "2. SOW Công ty booking Video.docx",
+    "filename": "2.2 SOW công ty booking Video.docx",
     "subject": "Công ty",
     "kind": "CONTRACT",
-    "version": "Ver052026",
-    "hash": "db1a25a31010b23bc451b6fa0d9497f19e672fec65f4ed0ddd0a9a741b48391f",
+    "version": "Ver092026",
+    "hash": "a2898791f3fe4300ac75f59f07beab4b177901ca048bfacf1c0f4d6f7fd790a0",
     "fields": [
       {
         "key": "token:[dd.mm.yy]",
@@ -56139,9 +58172,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "signYearDigit"
       },
       {
-        "key": "word/document.xml:p32:cell",
+        "key": "word/document.xml:p31:cell",
         "part": "word/document.xml",
-        "paragraph": 32,
+        "paragraph": 31,
         "label": "BÊN B",
         "context": "BÊN B · Tên Công ty",
         "required": true,
@@ -56153,9 +58186,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "partyName"
       },
       {
-        "key": "word/document.xml:p35:cell",
+        "key": "word/document.xml:p34:cell",
         "part": "word/document.xml",
-        "paragraph": 35,
+        "paragraph": 34,
         "label": "Mã số thuế",
         "context": "Mã số thuế · MST công ty",
         "required": true,
@@ -56167,9 +58200,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "taxCode"
       },
       {
-        "key": "word/document.xml:p38:cell",
+        "key": "word/document.xml:p37:cell",
         "part": "word/document.xml",
-        "paragraph": 38,
+        "paragraph": 37,
         "label": "Địa chỉ",
         "context": "Địa chỉ · Địa chỉ công ty",
         "required": true,
@@ -56181,9 +58214,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "address"
       },
       {
-        "key": "word/document.xml:p41:cell",
+        "key": "word/document.xml:p40:cell",
         "part": "word/document.xml",
-        "paragraph": 41,
+        "paragraph": 40,
         "label": "Người đại diện",
         "context": "Người đại diện",
         "required": true,
@@ -56193,9 +58226,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "representative"
       },
       {
-        "key": "word/document.xml:p44:cell",
+        "key": "word/document.xml:p43:cell",
         "part": "word/document.xml",
-        "paragraph": 44,
+        "paragraph": 43,
         "label": "Chức vụ",
         "context": "Chức vụ · ….Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
         "required": false,
@@ -56206,9 +58239,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "text"
       },
       {
-        "key": "word/document.xml:p45:17",
+        "key": "word/document.xml:p44:17",
         "part": "word/document.xml",
-        "paragraph": 45,
+        "paragraph": 44,
         "start": 17,
         "end": 18,
         "label": "Theo ủy quyền số  [điền]  ngày… - cần ủy quyền từ ",
@@ -56219,9 +58252,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "text"
       },
       {
-        "key": "word/document.xml:p45:23",
+        "key": "word/document.xml:p44:23",
         "part": "word/document.xml",
-        "paragraph": 45,
+        "paragraph": 44,
         "start": 23,
         "end": 24,
         "label": "Theo ủy quyền số … ngày [điền]  - cần ủy quyền từ người ",
@@ -56232,9 +58265,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "date"
       },
       {
-        "key": "word/document.xml:p48:cell",
+        "key": "word/document.xml:p47:cell",
         "part": "word/document.xml",
-        "paragraph": 48,
+        "paragraph": 47,
         "label": "Số điện thoại",
         "context": "Số điện thoại · Nếu có",
         "required": false,
@@ -56246,9 +58279,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "phone"
       },
       {
-        "key": "word/document.xml:p51:cell",
+        "key": "word/document.xml:p50:cell",
         "part": "word/document.xml",
-        "paragraph": 51,
+        "paragraph": 50,
         "label": "Email",
         "context": "Email · Nếu có",
         "required": false,
@@ -56260,9 +58293,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "email"
       },
       {
-        "key": "word/document.xml:p55:cell",
+        "key": "word/document.xml:p54:cell",
         "part": "word/document.xml",
-        "paragraph": 55,
+        "paragraph": 54,
         "label": "Tên/Nghệ danhKOL/KOC/Talent",
         "context": "Tên/Nghệ danhKOL/KOC/Talent",
         "required": false,
@@ -56272,147 +58305,342 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "ownerName"
       },
       {
-        "key": "word/document.xml:p66:109",
+        "key": "word/document.xml:p66:cell",
         "part": "word/document.xml",
         "paragraph": 66,
-        "start": 109,
-        "end": 110,
-        "label": "đẩy doanh số bán hàng với sản phẩm  [điền] . Nhãn hiệu ….",
-        "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
+        "label": "Sản xuất và đăng tải video review · Phí dịch vụ",
+        "context": "Hạng mục video · Sản xuất và đăng tải video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng cho sản phẩm. · …",
         "required": false,
-        "title": "Sản phẩm",
-        "group": "SCOPE",
-        "kind": "text",
-        "source": "product"
-      },
-      {
-        "key": "word/document.xml:p66:122",
-        "part": "word/document.xml",
-        "paragraph": 66,
-        "start": 122,
-        "end": 123,
-        "label": "bán hàng với sản phẩm …. Nhãn hiệu  [điền] .",
-        "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-        "required": false,
-        "title": "Nhãn hiệu",
-        "group": "SCOPE",
-        "kind": "text",
-        "source": "brand"
-      },
-      {
-        "key": "word/document.xml:p67:32",
-        "part": "word/document.xml",
-        "paragraph": 67,
-        "start": 32,
-        "end": 33,
-        "label": "Thời gian đăng tải (air video):  [điền] .",
-        "context": "Thời gian đăng tải (air video): ….",
-        "required": false,
-        "title": "Thời gian đăng tải (air video)",
-        "group": "SCOPE",
-        "kind": "date",
-        "source": "airDate"
-      },
-      {
-        "key": "word/document.xml:p69:cell",
-        "part": "word/document.xml",
-        "paragraph": 69,
-        "label": "Sản xuất và đăng tải Video review · Thành tiền",
-        "context": "1 · Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….Thời gian đăng tải (air video): ….Video có gắn giỏ hàng sản phẩm (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
-        "required": false,
-        "title": "Sản xuất và đăng tải Video review · Thành tiền",
+        "start": 0,
+        "end": 1,
+        "title": "Sản xuất và đăng tải video review · Phí dịch vụ",
         "group": "SCOPE",
         "kind": "money",
         "source": "lineTotal"
       },
       {
-        "key": "word/document.xml:p71:47",
+        "key": "word/document.xml:p68:25",
+        "part": "word/document.xml",
+        "paragraph": 68,
+        "start": 25,
+        "end": 26,
+        "label": "Sản phẩm được quảng cáo:  [điền]  (tên sản phẩm + nhãn hiệ",
+        "context": "Sản phẩm được quảng cáo: … (tên sản phẩm + nhãn hiệu)",
+        "required": false,
+        "title": "Sản phẩm được quảng cáo (tên sản phẩm + nhãn hiệu)",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "product"
+      },
+      {
+        "key": "word/document.xml:p71:16",
         "part": "word/document.xml",
         "paragraph": 71,
+        "start": 16,
+        "end": 17,
+        "label": "Số lượng video   [điền] ",
+        "context": "Số lượng video  …",
+        "required": false,
+        "title": "Số lượng video",
+        "group": "SCOPE",
+        "kind": "number",
+        "source": "quantity"
+      },
+      {
+        "key": "word/document.xml:p74:17",
+        "part": "word/document.xml",
+        "paragraph": 74,
+        "start": 17,
+        "end": 18,
+        "label": "Thời lượng video  [điền] s",
+        "context": "Thời lượng video …s",
+        "required": false,
+        "title": "Thời lượng video (giây)",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
+        "key": "word/document.xml:p93:116",
+        "part": "word/document.xml",
+        "paragraph": 93,
+        "start": 116,
+        "end": 117,
+        "label": "của Bên B. Nội dung được cung cấp:  [điền] ;",
+        "context": "Bên A/Brand cung cấp nội dung hoàn chỉnh; Bên B chỉ thực hiện đăng tải trên kênh của Bên B. Nội dung được cung cấp: …;",
+        "required": false,
+        "title": "Nội dung cung cấp (Post-only, nếu có)",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p97:111",
+        "part": "word/document.xml",
+        "paragraph": 97,
+        "start": 111,
+        "end": 112,
+        "label": "ủa Bên B. Định dạng file bàn giao:  [điền] ; ",
+        "context": "Bên B sản xuất video và bàn giao cho Bên A/Brand, không đăng tải trên kênh của Bên B. Định dạng file bàn giao: …; ",
+        "required": false,
+        "title": "Định dạng file bàn giao (Production-only, nếu có)",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p98:19",
+        "part": "word/document.xml",
+        "paragraph": 98,
+        "start": 19,
+        "end": 20,
+        "label": "Thời hạn bàn giao:  [điền] ",
+        "context": "Thời hạn bàn giao: …",
+        "required": false,
+        "title": "Thời gian đăng tải / bàn giao video (air video)",
+        "group": "SCOPE",
+        "kind": "date",
+        "source": "airDate"
+      },
+      {
+        "key": "word/document.xml:p103:20",
+        "part": "word/document.xml",
+        "paragraph": 103,
+        "start": 20,
+        "end": 21,
+        "label": "Số lượng phiên bản:  [điền] ;",
+        "context": "Số lượng phiên bản: …;",
+        "required": false,
+        "title": "Số lượng phiên bản cắt ngắn (nếu có)",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
+        "key": "word/document.xml:p104:27",
+        "part": "word/document.xml",
+        "paragraph": 104,
+        "start": 27,
+        "end": 28,
+        "label": "Thời lượng từng phiên bản:  [điền] ",
+        "context": "Thời lượng từng phiên bản: …",
+        "required": false,
+        "title": "Thời lượng từng phiên bản cắt ngắn (nếu có)",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p108:36",
+        "part": "word/document.xml",
+        "paragraph": 108,
+        "start": 36,
+        "end": 37,
+        "label": "ên A được yêu cầu chỉnh sửa tối đa  [điền]  vòng.",
+        "context": "Bên A được yêu cầu chỉnh sửa tối đa … vòng.",
+        "required": false,
+        "title": "Số vòng chỉnh sửa video tối đa",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
+        "key": "word/document.xml:p114:8",
+        "part": "word/document.xml",
+        "paragraph": 114,
+        "start": 8,
+        "end": 12,
+        "label": "Link kênh TikTok đăng tải",
+        "context": "TikTok: Link",
+        "required": false,
+        "title": "Link kênh TikTok đăng tải",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
+        "key": "word/document.xml:p115:8",
+        "part": "word/document.xml",
+        "paragraph": 115,
+        "start": 8,
+        "end": 12,
+        "label": "Link kênh Shopee đăng tải",
+        "context": "Shopee: Link",
+        "required": false,
+        "title": "Link kênh Shopee đăng tải",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p116:10",
+        "part": "word/document.xml",
+        "paragraph": 116,
+        "start": 10,
+        "end": 14,
+        "label": "Link kênh Facebook đăng tải",
+        "context": "Facebook: Link",
+        "required": false,
+        "title": "Link kênh Facebook đăng tải",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p117:11",
+        "part": "word/document.xml",
+        "paragraph": 117,
+        "start": 11,
+        "end": 15,
+        "label": "Link kênh Instagram đăng tải",
+        "context": "Instagram: Link",
+        "required": false,
+        "title": "Link kênh Instagram đăng tải",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p118:9",
+        "part": "word/document.xml",
+        "paragraph": 118,
+        "start": 9,
+        "end": 13,
+        "label": "Link kênh YouTube đăng tải",
+        "context": "YouTube: Link",
+        "required": false,
+        "title": "Link kênh YouTube đăng tải",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p119:23",
+        "part": "word/document.xml",
+        "paragraph": 119,
+        "start": 23,
+        "end": 27,
+        "label": "Link kênh Threads/nền tảng khác đăng tải",
+        "context": "Threads/nền tảng khác: Link",
+        "required": false,
+        "title": "Link kênh Threads/nền tảng khác đăng tải",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p124:cell",
+        "part": "word/document.xml",
+        "paragraph": 124,
+        "label": "Hạng mục thương mại · Gắn giỏ hàng/ Link Affiliate · Phí dịch vụ",
+        "context": "Hạng mục thương mại · Gắn giỏ hàng/ Link Affiliate · Gắn giỏ hàng sản phẩm được quảng cáo và/hoặc gắn, chèn Link Affiliate tại video, bài đăng, showcase và các vị trí khác được nền tảng hỗ trợ. Hình thức, vị trí và thời điểm bắt đầu thực hiện được Hai Bên thống nhất qua email/tin nhắn. · …",
+        "required": false,
+        "start": 0,
+        "end": 1,
+        "title": "Hạng mục thương mại · Gắn giỏ hàng/ Link Affiliate · Phí dịch vụ",
+        "group": "SCOPE",
+        "kind": "money"
+      },
+      {
+        "key": "word/document.xml:p126:47",
+        "part": "word/document.xml",
+        "paragraph": 126,
         "start": 47,
         "end": 48,
-        "label": "để chạy quảng cáo video trong vòng  [điền]  ngày (thời gian bắt đầu ",
-        "context": "Cấp mã code để chạy quảng cáo video trong vòng … ngày (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
+        "label": "để chạy quảng cáo video trong vòng  [điền]  ngày.",
+        "context": "Cấp mã code để chạy quảng cáo video trong vòng … ngày.",
         "required": false,
         "title": "Số ngày cấp mã quảng cáo",
         "group": "SCOPE",
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p72:cell",
+        "key": "word/document.xml:p130:cell",
         "part": "word/document.xml",
-        "paragraph": 72,
-        "label": "Cấp mã code để chạy quảng cáo video trong vòng · Thành tiền",
-        "context": "2 · Cấp mã code để chạy quảng cáo video trong vòng … ngày (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
+        "paragraph": 130,
+        "label": "Cấp mã code để chạy quảng cáo video trong vòng · Phí dịch vụ",
+        "context": "Hạng mục Quảng cáo · Cấp mã code để chạy quảng cáo video trong vòng … ngày.Thời hạn chạy quảng cáo tính thời điểm bàn giao mã code quảng cáo.Thời điểm bắt đầu chạy quảng cáo được hai bên thống nhất qua email/tin nhắn.Brand, Bên A và/hoặc agency được Brand hoặc Bên A ủy quyền được sử dụng video và mã quảng cáo để chạy Ads trong phạm vi, thời hạn đã thỏa thuận. · …",
         "required": false,
-        "title": "Cấp mã code để chạy quảng cáo video trong vòng · Thành tiền",
+        "start": 0,
+        "end": 1,
+        "title": "Cấp mã code để chạy quảng cáo video trong vòng · Phí dịch vụ",
         "group": "SCOPE",
         "kind": "money"
       },
       {
-        "key": "word/document.xml:p74:32",
+        "key": "word/document.xml:p136:18",
         "part": "word/document.xml",
-        "paragraph": 74,
-        "start": 32,
-        "end": 33,
-        "label": "Sử dụng hình ảnh và video trong  [điền]  ngày kể từ ngày đăng tải",
-        "context": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
+        "paragraph": 136,
+        "start": 18,
+        "end": 19,
+        "label": "Thời hạn sử dụng:  [điền]  ngày kể từ ngày video đư",
+        "context": "Thời hạn sử dụng: … ngày kể từ ngày video được đăng tải.",
         "required": false,
         "title": "Số ngày sử dụng hình ảnh và video",
         "group": "SCOPE",
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p77:cell",
+        "key": "word/document.xml:p138:cell",
         "part": "word/document.xml",
-        "paragraph": 77,
-        "label": "Sử dụng hình ảnh và video trong · Thành tiền",
-        "context": "3 · Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải videoSử dụng hình ảnh: Bên A được sử dụng hình ảnh của KOL/KOC/Talent (hình ảnh chụp riêng, không trích xuất từ video hoặc hình ảnh từ video) để gắn với sản phẩm trên listing gian hàng, phiên livestream, website, sàn TMĐT, landing page và các kênh truyền thông số khác, sau khi Bên B xác nhận cụ thể hình ảnh được phép sử dụng, phục vụ dự án truyền thông sản phẩm.Sử dụng video: Bên A được chủ động chỉnh sửa, cắt ghép, chuyển thể, lồng ghép, biên tập, tái sử dụng và đăng tải lại video do Bên B thực hiện trên website, landing page, sàn TMĐT, Facebook, TikTok, Instagram, YouTube và các kênh khác; đồng thời được cho phép KOC/KOL/người dùng duet, stitch, chia sẻ hoặc tái sử dụng video để phục vụ hoạt động truyền thông, quảng cáo, PR, livestream, affiliate và chiến dịch TMĐT của sản phẩm.",
+        "paragraph": 138,
+        "label": "Quyền sử dụng hình ảnh · Phí dịch vụ",
+        "context": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất · Quyền sử dụng hình ảnh: Bên A được sử dụng các hình ảnh của KOL/KOC/Creator thực hiện Dịch vụ theo Phụ lục này (do Bên B đại diện), bao gồm ảnh chụp riêng, hình ảnh trích xuất từ video và/hoặc tài sản khác theo thỏa thuận, để gắn với sản phẩm trên listing/PDP/SIS, banner, cover, sàn TMĐT, website, landing page, livestream, mạng xã hội và các hoạt động quảng cáo, PR, truyền thông online. Bên A được crop, resize, điều chỉnh bố cục, chèn chữ hoặc nhận diện thương hiệu nhưng không được làm sai lệch hình ảnh của KOL/KOC/Creator.Quyền sử dụng video: Bên A được sử dụng video của KOL/KOC/Creator đã được Hai Bên xác nhận để đăng lại trên kênh của nhãn hàng, chạy quảng cáo trả phí, sử dụng trên sàn TMĐT, livestream, website, landing page và phục vụ hoạt động PR, truyền thông online. Bên A được crop, resize, thêm phụ đề, cắt ghép, biên tập, chu",
         "required": false,
-        "title": "Sử dụng hình ảnh và video trong · Thành tiền",
+        "start": 0,
+        "end": 1,
+        "title": "Quyền sử dụng hình ảnh · Phí dịch vụ",
         "group": "SCOPE",
         "kind": "money"
       },
       {
-        "key": "word/document.xml:p79:cell",
+        "key": "word/document.xml:p140:88",
         "part": "word/document.xml",
-        "paragraph": 79,
+        "paragraph": 140,
+        "start": 88,
+        "end": 89,
+        "label": ", sản xuất nội dung trong thời hạn  [điền]  ngày kể từ ngày Bên B nh",
+        "context": "Bên A gửi sản phẩm mẫu cho Bên B để phục vụ việc quay, sản xuất nội dung trong thời hạn … ngày kể từ ngày Bên B nhận sản phẩm. Khi hết thời hạn nêu trên hoặc hoàn tất việc quay, tùy thời điểm nào đến trước, Bên B có trách nhiệm hoàn trả sản phẩm cho Bên A hoặc phối hợp để Bên A đến nhận lại. Trường hợp sản phẩm bị mất hoặc hư hỏng do lỗi của Bên B, Bên B có trách nhiệm bồi thường theo giá trị thực tế của sản phẩm tại thời điểm bàn giao, trừ hao hụt hoặc hư hỏng hợp lý phát sinh từ việc sử dụng sản phẩm đúng mục đích đã thống nhất.",
+        "required": false,
+        "title": "Thời hạn hoàn trả sản phẩm mẫu (ngày)",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
+        "key": "word/document.xml:p148:cell",
+        "part": "word/document.xml",
+        "paragraph": 148,
         "label": "Tổng giá trị chưa bao gồm thuế VAT",
-        "context": "Tổng giá trị chưa bao gồm thuế VAT",
+        "context": "Tổng giá trị chưa bao gồm thuế VAT · …",
         "required": true,
+        "start": 0,
+        "end": 1,
         "title": "Tổng giá trị chưa bao gồm thuế VAT",
         "group": "MONEY",
         "kind": "money",
         "source": "lineTotal"
       },
       {
-        "key": "word/document.xml:p81:cell",
+        "key": "word/document.xml:p150:cell",
         "part": "word/document.xml",
-        "paragraph": 81,
+        "paragraph": 150,
         "label": "Thuế VAT",
-        "context": "Thuế VAT",
+        "context": "Thuế VAT · …",
         "required": false,
+        "start": 0,
+        "end": 1,
         "title": "Thuế VAT",
         "group": "MONEY",
         "kind": "money",
         "source": "vatAmount"
       },
       {
-        "key": "word/document.xml:p83:cell",
+        "key": "word/document.xml:p152:cell",
         "part": "word/document.xml",
-        "paragraph": 83,
-        "label": "Tổng giá trị đã bao gồm thuế VAT",
-        "context": "Tổng giá trị đã bao gồm thuế VAT",
+        "paragraph": 152,
+        "label": "Tổng giá trị đã bao gồm thuế VAT (VNĐ)",
+        "context": "Tổng giá trị đã bao gồm thuế VAT (VNĐ) · …",
         "required": false,
-        "title": "Tổng giá trị đã bao gồm thuế VAT",
+        "start": 0,
+        "end": 1,
+        "title": "Tổng giá trị đã bao gồm thuế VAT (VNĐ)",
         "group": "MONEY",
         "kind": "money",
         "source": "grossTotal"
       },
       {
-        "key": "word/document.xml:p87:64",
+        "key": "word/document.xml:p156:64",
         "part": "word/document.xml",
-        "paragraph": 87,
+        "paragraph": 156,
         "start": 64,
         "end": 65,
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
@@ -56423,9 +58651,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p88:65",
+        "key": "word/document.xml:p157:65",
         "part": "word/document.xml",
-        "paragraph": 88,
+        "paragraph": 157,
         "start": 65,
         "end": 66,
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
@@ -56436,13 +58664,13 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p96:14",
+        "key": "word/document.xml:p168:29",
         "part": "word/document.xml",
-        "paragraph": 96,
-        "start": 14,
-        "end": 15,
-        "label": "Lần 1 tạm ứng  [điền]  trong vòng … ngày làm vi",
-        "context": "Lần 1 tạm ứng … trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm hai bên ký kết Phụ lục SOW.",
+        "paragraph": 168,
+        "start": 29,
+        "end": 30,
+        "label": "Lần 1: Bên A tạm ứng số tiền  [điền]  trong vòng … ngày làm vi",
+        "context": "Lần 1: Bên A tạm ứng số tiền … trong vòng … ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau: ",
         "required": false,
         "title": "Số tiền tạm ứng lần 1",
         "group": "MONEY",
@@ -56450,26 +58678,26 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "advanceAmount"
       },
       {
-        "key": "word/document.xml:p96:27",
+        "key": "word/document.xml:p168:42",
         "part": "word/document.xml",
-        "paragraph": 96,
-        "start": 27,
-        "end": 28,
-        "label": "Lần 1 tạm ứng … trong vòng  [điền]  ngày làm việc (trừ thứ b",
-        "context": "Lần 1 tạm ứng … trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm hai bên ký kết Phụ lục SOW.",
+        "paragraph": 168,
+        "start": 42,
+        "end": 43,
+        "label": "Bên A tạm ứng số tiền … trong vòng  [điền]  ngày làm việc (không bao",
+        "context": "Lần 1: Bên A tạm ứng số tiền … trong vòng … ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau: ",
         "required": false,
         "title": "Hạn tạm ứng (ngày làm việc)",
         "group": "MONEY",
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p97:44",
+        "key": "word/document.xml:p171:56",
         "part": "word/document.xml",
-        "paragraph": 97,
-        "start": 44,
-        "end": 45,
-        "label": "nh toán số tiền còn lại trong vòng  [điền]  ngày làm việc (trừ thứ b",
-        "context": "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên (nếu cần theo quy định tại Hợp đồng).  ",
+        "paragraph": 171,
+        "start": 56,
+        "end": 57,
+        "label": "án phần giá trị còn lại trong vòng  [điền]  ngày làm việc (không bao",
+        "context": "Lần 2: Bên A thanh toán phần giá trị còn lại trong vòng … ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau: ",
         "required": false,
         "title": "Hạn thanh toán lần 2 (ngày làm việc)",
         "group": "MONEY",
@@ -56478,7 +58706,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tên chủ tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 99,
+        "paragraph": 176,
         "start": 19,
         "end": 19,
         "label": "Tên chủ tài khoản",
@@ -56492,7 +58720,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Số tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 100,
+        "paragraph": 177,
         "start": 14,
         "end": 14,
         "label": "Số tài khoản",
@@ -56506,7 +58734,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tại Ngân hàng]",
         "part": "word/document.xml",
-        "paragraph": 101,
+        "paragraph": 178,
         "start": 15,
         "end": 15,
         "label": "Tại Ngân hàng",
@@ -56518,9 +58746,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "bankName"
       },
       {
-        "key": "word/document.xml:p110:cell",
+        "key": "word/document.xml:p187:cell",
         "part": "word/document.xml",
-        "paragraph": 110,
+        "paragraph": 187,
         "label": "Điều …",
         "context": "Điều … · Nội dung review sửa đổi",
         "required": false,
@@ -56531,9 +58759,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "long"
       },
       {
-        "key": "word/document.xml:p112:cell",
+        "key": "word/document.xml:p189:cell",
         "part": "word/document.xml",
-        "paragraph": 112,
+        "paragraph": 189,
         "label": "Điều …",
         "context": "Điều … · Nội dung review sửa đổi",
         "required": false,
@@ -56615,7 +58843,6 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Giám đốc",
       "Sau đây gọi tắt là “Bên A”",
       "",
-      "",
       "BÊN CUNG ỨNG DỊCH VỤ ",
       "BÊN B",
       ":",
@@ -56649,28 +58876,98 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "Điều 1: Phạm vi và phí dịch vụ",
       "Phạm vi công việc và phí dịch vụ",
-      "STT",
-      "Dịch vụ Bên B cung ứng cho Bên A",
-      "Thành tiền",
-      "1",
-      "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-      "Thời gian đăng tải (air video): ….",
-      "Video có gắn giỏ hàng sản phẩm (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
+      "Nhóm hạng mục",
+      "Nội dung chi tiết/",
+      "Phí dịch vụ (VNĐ)",
+      "Hạng mục video",
+      "Sản xuất và đăng tải video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng cho sản phẩm.",
+      "…",
       "",
-      "2",
-      "Cấp mã code để chạy quảng cáo video trong vòng … ngày (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
+      "Sản phẩm được quảng cáo: … (tên sản phẩm + nhãn hiệu)",
       "",
-      "3",
-      "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
-      "Sử dụng hình ảnh: Bên A được sử dụng hình ảnh của KOL/KOC/Talent (hình ảnh chụp riêng, không trích xuất từ video hoặc hình ảnh từ video) để gắn với sản phẩm trên listing gian hàng, phiên livestream, website, sàn TMĐT, landing page và các kênh truyền thông số khác, sau khi Bên B xác nhận cụ thể hình ảnh được phép sử dụng, phục vụ dự án truyền thông sản phẩm.",
-      "Sử dụng video: Bên A được chủ động chỉnh sửa, cắt ghép, chuyển thể, lồng ghép, biên tập, tái sử dụng và đăng tải lại video do Bên B thực hiện trên website, landing page, sàn TMĐT, Facebook, TikTok, Instagram, YouTube và các kênh khác; đồng thời được cho phép KOC/KOL/người dùng duet, stitch, chia sẻ hoặc tái sử dụng video để phục vụ hoạt động truyền thông, quảng cáo, PR, livestream, affiliate và chiến dịch TMĐT của sản phẩm.",
       "",
+      "Số lượng video  …",
+      "",
+      "",
+      "Thời lượng video …s",
+      "",
+      "",
+      "Hình thức sản xuất video",
+      "",
+      "",
+      "Sản xuất nội dung mới",
+      "Bên B xây dựng ý tưởng, kịch bản và sản xuất video mới trên cơ sở Brief/Kịch bản do Bên A cung cấp hoặc được Hai Bên thống nhất trước khi thực hiện.",
+      "",
+      "",
+      "Chuyển thể nội dung (Adapt)",
+      "Bên B sử dụng nội dung, hình ảnh, video hoặc tài liệu nguồn do Bên A cung cấp hoặc được Hai Bên thống nhất để biên tập, điều chỉnh hoặc chuyển thể thành video phù hợp với yêu cầu kỹ thuật, định dạng và đặc điểm của nền tảng đăng tải.",
+      "",
+      "",
+      "Đăng chéo/ Đăng lại (Cross-post/Repost)",
+      "Bên B đăng tải lại video đã được sản xuất và phê duyệt trên một hoặc nhiều nền tảng khác. Bên B được thực hiện các điều chỉnh kỹ thuật cần thiết về kích thước, tỷ lệ khung hình, thời lượng, phụ đề hoặc định dạng để phù hợp với từng nền tảng nhưng không làm thay đổi nội dung, thông điệp chính đã được phê duyệt.",
+      "",
+      "",
+      "Chỉ đăng tải (Post-only)",
+      "Bên A/Brand cung cấp nội dung hoàn chỉnh; Bên B chỉ thực hiện đăng tải trên kênh của Bên B. Nội dung được cung cấp: …;",
+      "",
+      "",
+      "Chỉ sản xuất (Production-only)",
+      "Bên B sản xuất video và bàn giao cho Bên A/Brand, không đăng tải trên kênh của Bên B. Định dạng file bàn giao: …; ",
+      "Thời hạn bàn giao: …",
+      "",
+      "",
+      "Cắt ngắn/ Biên tập lại (Cut-down/Re-edit)",
+      "Bên B tạo các phiên bản rút gọn hoặc phiên bản mới từ video gốc theo yêu cầu đã thống nhất.",
+      "Số lượng phiên bản: …;",
+      "Thời lượng từng phiên bản: …",
+      "",
+      "",
+      "Số vòng chỉnh sửa video",
+      "Bên A được yêu cầu chỉnh sửa tối đa … vòng.",
+      "Mỗi vòng được tính từ khi Bên A gửi một lần tổng hợp ý kiến đến khi Bên B hoàn thành toàn bộ ý kiến đó.",
+      "",
+      "",
+      "Nền tảng",
+      "đăng tải",
+      "TikTok: Link",
+      "Shopee: Link",
+      "Facebook: Link",
+      "Instagram: Link",
+      "YouTube: Link",
+      "Threads/nền tảng khác: Link",
+      "",
+      "Hạng mục thương mại",
+      "Gắn giỏ hàng/ Link Affiliate",
+      "Gắn giỏ hàng sản phẩm được quảng cáo và/hoặc gắn, chèn Link Affiliate tại video, bài đăng, showcase và các vị trí khác được nền tảng hỗ trợ. Hình thức, vị trí và thời điểm bắt đầu thực hiện được Hai Bên thống nhất qua email/tin nhắn.",
+      "…",
+      "Hạng mục Quảng cáo",
+      "Cấp mã code để chạy quảng cáo video trong vòng … ngày.",
+      "Thời hạn chạy quảng cáo tính thời điểm bàn giao mã code quảng cáo.",
+      "Thời điểm bắt đầu chạy quảng cáo được hai bên thống nhất qua email/tin nhắn.",
+      "Brand, Bên A và/hoặc agency được Brand hoặc Bên A ủy quyền được sử dụng video và mã quảng cáo để chạy Ads trong phạm vi, thời hạn đã thỏa thuận.",
+      "…",
+      "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất",
+      "Quyền sử dụng hình ảnh: Bên A được sử dụng các hình ảnh của KOL/KOC/Creator thực hiện Dịch vụ theo Phụ lục này (do Bên B đại diện), bao gồm ảnh chụp riêng, hình ảnh trích xuất từ video và/hoặc tài sản khác theo thỏa thuận, để gắn với sản phẩm trên listing/PDP/SIS, banner, cover, sàn TMĐT, website, landing page, livestream, mạng xã hội và các hoạt động quảng cáo, PR, truyền thông online. Bên A được crop, resize, điều chỉnh bố cục, chèn chữ hoặc nhận diện thương hiệu nhưng không được làm sai lệch hình ảnh của KOL/KOC/Creator.",
+      "",
+      "Quyền sử dụng video: Bên A được sử dụng video của KOL/KOC/Creator đã được Hai Bên xác nhận để đăng lại trên kênh của nhãn hàng, chạy quảng cáo trả phí, sử dụng trên sàn TMĐT, livestream, website, landing page và phục vụ hoạt động PR, truyền thông online. Bên A được crop, resize, thêm phụ đề, cắt ghép, biên tập, chuyển thể, lồng ghép, đăng lại và cho phép duet, stitch, chia sẻ hoặc tái sử dụng video cho hoạt động quảng cáo, affiliate và chiến dịch TMĐT, với điều kiện không làm sai lệch nội dung hoặc gây ảnh hưởng tiêu cực đến hình ảnh, uy tín của KOL/KOC/Creator. ",
+      "Bên được sử dụng: Bên A, Brand và agency/đối tác được Bên A hoặc Brand ủy quyền.",
+      "Thời hạn sử dụng: … ngày kể từ ngày video được đăng tải.",
+      "",
+      "…",
+      "Hạng mục Thông tin thực hiện",
+      "Bên A gửi sản phẩm mẫu cho Bên B để phục vụ việc quay, sản xuất nội dung trong thời hạn … ngày kể từ ngày Bên B nhận sản phẩm. Khi hết thời hạn nêu trên hoặc hoàn tất việc quay, tùy thời điểm nào đến trước, Bên B có trách nhiệm hoàn trả sản phẩm cho Bên A hoặc phối hợp để Bên A đến nhận lại. Trường hợp sản phẩm bị mất hoặc hư hỏng do lỗi của Bên B, Bên B có trách nhiệm bồi thường theo giá trị thực tế của sản phẩm tại thời điểm bàn giao, trừ hao hụt hoặc hư hỏng hợp lý phát sinh từ việc sử dụng sản phẩm đúng mục đích đã thống nhất.",
+      "-",
+      "",
+      "Báo cáo hiệu suất video:",
+      "Thời điểm báo cáo: T+7, T+14 và T+30, tính từ ngày bài đăng được đăng tải.",
+      "Chỉ số cần báo cáo: lượt xem/tiếp cận, lượt tương tác, lượt thích, bình luận, chia sẻ, lưu bài, lượt nhấp liên kết và các chỉ số khác tùy theo từng nền tảng, định dạng bài đăng. Báo cáo được cung cấp dưới hình thức ảnh chụp màn hình insight hoặc dữ liệu trích xuất từ nền tảng.",
+      "-",
       "Tổng giá trị chưa bao gồm thuế VAT",
-      "",
+      "…",
       "Thuế VAT",
-      "",
-      "Tổng giá trị đã bao gồm thuế VAT",
-      "",
+      "…",
+      "Tổng giá trị đã bao gồm thuế VAT (VNĐ)",
+      "…",
       "",
       " Hoa hồng Affiliate ",
       "Hoa hồng affiliate gồm hai loại như sau:",
@@ -56680,11 +58977,19 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "Thanh toán phí dịch vụ",
       "Thanh toán 1 lần",
-      "Phí dịch vụ được thanh toán 1 lần trong vòng 7 - 10 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên (nếu cần theo quy định tại Hợp đồng).",
+      "Phí dịch vụ được thanh toán 01 (một) lần trong vòng 07 - 10 ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau:",
+      "Bên B đã hoàn thành dịch vụ theo phụ lục SOW; ",
+      "Bên A đã nhận được Biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo quy định tại Hợp đồng); ",
+      "Bên B đã cung cấp hóa đơn hợp lệ (toàn bộ giá trị phụ lục SOW) cho Bên A.",
       "Thanh toán 2 lần",
-      "Phí dịch vụ được thanh toán làm 2 lần:",
-      "Lần 1 tạm ứng … trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm hai bên ký kết Phụ lục SOW.",
-      "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên (nếu cần theo quy định tại Hợp đồng).  ",
+      "Phí dịch vụ được thanh toán thành 02 (hai) lần như sau:",
+      "Lần 1: Bên A tạm ứng số tiền … trong vòng … ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau: ",
+      "Hai Bên đã hoàn tất ký kết phụ lục SOW và Bên A đã nhận được Hợp đồng có đầy đủ chữ ký của hai Bên; ",
+      "Bên B đã cung cấp hóa đơn hợp lệ tương ứng với giá trị thanh toán đợt 1 cho Bên A.",
+      "Lần 2: Bên A thanh toán phần giá trị còn lại trong vòng … ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau: ",
+      "Bên B đã hoàn thành dịch vụ theo phụ lục SOW;  ",
+      "Bên A đã nhận được Biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo quy định tại Hợp đồng); ",
+      "Bên B đã cung cấp hóa đơn hợp lệ (toàn bộ giá trị Hợp đồng) cho Bên A.",
       "Bên A thanh toán bằng hình thức chuyển khoản ngân hàng vào tài khoản của Bên B theo thông tin như sau:",
       "Tên chủ tài khoản: ",
       "Số tài khoản: ",
@@ -56702,7 +59007,6 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Nội dung review sửa đổi",
       "",
       "Phụ lục này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi Bên giữ 01 (một) bản để thực hiện.",
-      "",
       "ĐẠI DIỆN BÊN A",
       "",
       "ĐẠI DIỆN BÊN B ",
@@ -56718,7 +59022,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "",
       "",
-      "BM.HĐ.VID.COM.Ver072026",
+      "BM.HĐ.VID.COM.Ver092026",
       "",
       ""
     ],
@@ -56751,7 +59055,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/header2.xml",
                   "paragraph": 1,
-                  "text": "BM.HĐ.VID.COM.Ver072026",
+                  "text": "BM.HĐ.VID.COM.Ver092026",
                   "align": "right"
                 }
               ]
@@ -56868,7 +59172,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "bold": true
                 }
               ],
-              "colSpan": 3
+              "colSpan": 5
             }
           ],
           [
@@ -56882,7 +59186,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -56905,7 +59210,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
             }
           ],
           [
@@ -56919,7 +59225,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -56941,7 +59248,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "text": "0109361325",
                   "align": "justify"
                 }
-              ]
+              ],
+              "colSpan": 2
             }
           ],
           [
@@ -56955,7 +59263,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -56977,7 +59286,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "text": "Nhà J03.LO21, Khu Đô thị Nam Cường, đường Tố Hữu, Phường Dương Nội, TP Hà Nội, Việt Nam",
                   "align": "justify"
                 }
-              ]
+              ],
+              "colSpan": 2
             }
           ],
           [
@@ -56991,7 +59301,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -57013,8 +59324,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "text": "Ông Đỗ Văn Giang   ",
                   "align": "justify"
                 }
-              ],
-              "colSpan": 2
+              ]
             }
           ],
           [
@@ -57028,7 +59338,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -57050,8 +59361,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "text": "Giám đốc",
                   "align": "justify"
                 }
-              ],
-              "colSpan": 2
+              ]
             }
           ],
           [
@@ -57076,28 +59386,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
               ],
               "colSpan": 4
             }
-          ]
-        ]
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 28,
-        "text": "",
-        "align": "justify"
-      },
-      {
-        "kind": "table",
-        "part": "word/document.xml",
-        "variant": "party",
-        "rows": [
+          ],
           [
             {
               "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 29,
+                  "paragraph": 28,
                   "text": "BÊN CUNG ỨNG DỊCH VỤ ",
                   "align": "justify",
                   "bold": true
@@ -57112,7 +59408,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 30,
+                  "paragraph": 29,
                   "text": "BÊN B",
                   "align": "justify",
                   "bold": true
@@ -57124,7 +59420,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 31,
+                  "paragraph": 30,
                   "text": ":",
                   "align": "justify"
                 }
@@ -57135,7 +59431,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 32,
+                  "paragraph": 31,
                   "text": "Tên Công ty",
                   "align": "justify",
                   "bold": true
@@ -57149,7 +59445,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 33,
+                  "paragraph": 32,
                   "text": "Mã số thuế",
                   "align": "justify",
                   "bold": true
@@ -57161,7 +59457,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 34,
+                  "paragraph": 33,
                   "text": ":",
                   "align": "justify"
                 }
@@ -57172,7 +59468,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 35,
+                  "paragraph": 34,
                   "text": "MST công ty",
                   "align": "justify"
                 }
@@ -57185,7 +59481,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 36,
+                  "paragraph": 35,
                   "text": "Địa chỉ",
                   "align": "justify",
                   "bold": true
@@ -57197,7 +59493,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 37,
+                  "paragraph": 36,
                   "text": ":",
                   "align": "justify"
                 }
@@ -57208,7 +59504,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 38,
+                  "paragraph": 37,
                   "text": "Địa chỉ công ty",
                   "align": "justify"
                 }
@@ -57221,7 +59517,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 39,
+                  "paragraph": 38,
                   "text": "Người đại diện",
                   "align": "justify",
                   "bold": true
@@ -57233,7 +59529,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 40,
+                  "paragraph": 39,
                   "text": ":",
                   "align": "justify"
                 }
@@ -57244,7 +59540,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 41,
+                  "paragraph": 40,
                   "text": "",
                   "align": "justify"
                 }
@@ -57257,7 +59553,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 42,
+                  "paragraph": 41,
                   "text": "Chức vụ",
                   "align": "justify",
                   "bold": true
@@ -57269,7 +59565,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 43,
+                  "paragraph": 42,
                   "text": ":",
                   "align": "justify"
                 }
@@ -57280,14 +59576,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 44,
+                  "paragraph": 43,
                   "text": "….",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 45,
+                  "paragraph": 44,
                   "text": "Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
                   "align": "justify"
                 }
@@ -57300,7 +59596,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 46,
+                  "paragraph": 45,
                   "text": "Số điện thoại",
                   "align": "justify",
                   "bold": true
@@ -57312,7 +59608,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 47,
+                  "paragraph": 46,
                   "text": ":",
                   "align": "justify"
                 }
@@ -57323,7 +59619,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 48,
+                  "paragraph": 47,
                   "text": "Nếu có",
                   "align": "justify",
                   "italic": true
@@ -57337,7 +59633,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 49,
+                  "paragraph": 48,
                   "text": "Email",
                   "align": "justify",
                   "bold": true
@@ -57349,7 +59645,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 50,
+                  "paragraph": 49,
                   "text": ":",
                   "align": "justify"
                 }
@@ -57360,7 +59656,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 51,
+                  "paragraph": 50,
                   "text": "Nếu có",
                   "align": "justify",
                   "italic": true
@@ -57374,7 +59670,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 52,
+                  "paragraph": 51,
                   "text": "Tên/Nghệ danh",
                   "align": "justify",
                   "bold": true
@@ -57382,7 +59678,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 53,
+                  "paragraph": 52,
                   "text": "KOL/KOC/Talent",
                   "align": "justify",
                   "bold": true
@@ -57394,7 +59690,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 54,
+                  "paragraph": 53,
                   "text": ":",
                   "align": "justify"
                 }
@@ -57405,7 +59701,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 55,
+                  "paragraph": 54,
                   "text": "",
                   "align": "justify"
                 }
@@ -57418,7 +59714,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 56,
+                  "paragraph": 55,
                   "text": "Sau đây gọi tắt là “Bên B”",
                   "align": "justify",
                   "bold": true,
@@ -57433,14 +59729,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 57,
+        "paragraph": 56,
         "text": "",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 58,
+        "paragraph": 57,
         "text": "Hai bên thống nhất ký kết Phụ lục Phạm vi công việc (SOW) này để quy định chi tiết nội dung công việc, điều kiện thực hiện, tiêu chuẩn nghiệm thu và cơ chế thanh toán cho chiến dịch cụ thể như sau:",
         "align": "justify",
         "italic": true
@@ -57448,14 +59744,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 59,
+        "paragraph": 58,
         "text": "",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 60,
+        "paragraph": 59,
         "text": "Điều 1: Phạm vi và phí dịch vụ",
         "align": "justify",
         "bold": true
@@ -57463,7 +59759,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 61,
+        "paragraph": 60,
         "text": "Phạm vi công việc và phí dịch vụ",
         "align": "justify",
         "bold": true
@@ -57479,12 +59775,25 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 62,
-                  "text": "STT",
+                  "paragraph": 61,
+                  "text": "Nhóm hạng mục",
                   "align": "center",
                   "bold": true
                 }
               ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 62,
+                  "text": "Nội dung chi tiết/",
+                  "align": "center",
+                  "bold": true
+                }
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -57492,19 +59801,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 63,
-                  "text": "Dịch vụ Bên B cung ứng cho Bên A",
-                  "align": "center",
-                  "bold": true
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 64,
-                  "text": "Thành tiền",
+                  "text": "Phí dịch vụ (VNĐ)",
                   "align": "center",
                   "bold": true
                 }
@@ -57517,12 +59814,25 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 65,
-                  "text": "1",
-                  "align": "center",
+                  "paragraph": 64,
+                  "text": "Hạng mục video",
+                  "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "vMerge": "restart"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 65,
+                  "text": "Sản xuất và đăng tải video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng cho sản phẩm.",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -57530,27 +59840,38 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 66,
-                  "text": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-                  "align": "justify",
-                  "bold": true
-                },
+                  "text": "…",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "restart"
+            }
+          ],
+          [
+            {
+              "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 67,
-                  "text": "Thời gian đăng tải (air video): ….",
+                  "text": "",
                   "align": "justify",
                   "bold": true
-                },
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 68,
-                  "text": "Video có gắn giỏ hàng sản phẩm (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
-                  "align": "justify",
-                  "boldPrefix": 31
+                  "text": "Sản phẩm được quảng cáo: … (tên sản phẩm + nhãn hiệu)",
+                  "align": "justify"
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -57559,9 +59880,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 69,
                   "text": "",
-                  "align": "right"
+                  "align": "center"
                 }
-              ]
+              ],
+              "vMerge": "continue"
             }
           ],
           [
@@ -57571,11 +59893,12 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 70,
-                  "text": "2",
-                  "align": "center",
+                  "text": "",
+                  "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "vMerge": "continue"
             },
             {
               "blocks": [
@@ -57583,11 +59906,11 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 71,
-                  "text": "Cấp mã code để chạy quảng cáo video trong vòng … ngày (thời gian bắt đầu do hai bên thống nhất bằng email hoặc tin nhắn)",
-                  "align": "justify",
-                  "boldPrefix": 54
+                  "text": "Số lượng video  …",
+                  "align": "justify"
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -57596,9 +59919,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 72,
                   "text": "",
-                  "align": "right"
+                  "align": "center"
                 }
-              ]
+              ],
+              "vMerge": "continue"
             }
           ],
           [
@@ -57608,11 +59932,12 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 73,
-                  "text": "3",
-                  "align": "center",
+                  "text": "",
+                  "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "vMerge": "continue"
             },
             {
               "blocks": [
@@ -57620,27 +59945,38 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 74,
-                  "text": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
-                  "align": "justify",
-                  "bold": true
-                },
+                  "text": "Thời lượng video …s",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 75,
-                  "text": "Sử dụng hình ảnh: Bên A được sử dụng hình ảnh của KOL/KOC/Talent (hình ảnh chụp riêng, không trích xuất từ video hoặc hình ảnh từ video) để gắn với sản phẩm trên listing gian hàng, phiên livestream, website, sàn TMĐT, landing page và các kênh truyền thông số khác, sau khi Bên B xác nhận cụ thể hình ảnh được phép sử dụng, phục vụ dự án truyền thông sản phẩm.",
-                  "align": "justify",
-                  "boldPrefix": 17
-                },
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 76,
-                  "text": "Sử dụng video: Bên A được chủ động chỉnh sửa, cắt ghép, chuyển thể, lồng ghép, biên tập, tái sử dụng và đăng tải lại video do Bên B thực hiện trên website, landing page, sàn TMĐT, Facebook, TikTok, Instagram, YouTube và các kênh khác; đồng thời được cho phép KOC/KOL/người dùng duet, stitch, chia sẻ hoặc tái sử dụng video để phục vụ hoạt động truyền thông, quảng cáo, PR, livestream, affiliate và chiến dịch TMĐT của sản phẩm.",
+                  "text": "",
                   "align": "justify",
-                  "boldPrefix": 14
+                  "bold": true
                 }
-              ]
+              ],
+              "vMerge": "continue"
             },
             {
               "blocks": [
@@ -57648,26 +59984,26 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 77,
-                  "text": "",
-                  "align": "right"
+                  "text": "Hình thức sản xuất video",
+                  "align": "justify"
                 }
-              ]
-            }
-          ],
-          [
+              ],
+              "colSpan": 2
+            },
             {
               "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 78,
-                  "text": "Tổng giá trị chưa bao gồm thuế VAT",
-                  "align": "justify",
-                  "bold": true
+                  "text": "",
+                  "align": "center"
                 }
               ],
-              "colSpan": 2
-            },
+              "vMerge": "continue"
+            }
+          ],
+          [
             {
               "blocks": [
                 {
@@ -57675,24 +60011,22 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "part": "word/document.xml",
                   "paragraph": 79,
                   "text": "",
-                  "align": "right"
+                  "align": "justify",
+                  "bold": true
                 }
-              ]
-            }
-          ],
-          [
+              ],
+              "vMerge": "continue"
+            },
             {
               "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 80,
-                  "text": "Thuế VAT",
-                  "align": "justify",
-                  "bold": true
+                  "text": "Sản xuất nội dung mới",
+                  "align": "justify"
                 }
-              ],
-              "colSpan": 2
+              ]
             },
             {
               "blocks": [
@@ -57700,8 +60034,480 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 81,
+                  "text": "Bên B xây dựng ý tưởng, kịch bản và sản xuất video mới trên cơ sở Brief/Kịch bản do Bên A cung cấp hoặc được Hai Bên thống nhất trước khi thực hiện.",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 82,
                   "text": "",
-                  "align": "right"
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 83,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 84,
+                  "text": "Chuyển thể nội dung (Adapt)",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 85,
+                  "text": "Bên B sử dụng nội dung, hình ảnh, video hoặc tài liệu nguồn do Bên A cung cấp hoặc được Hai Bên thống nhất để biên tập, điều chỉnh hoặc chuyển thể thành video phù hợp với yêu cầu kỹ thuật, định dạng và đặc điểm của nền tảng đăng tải.",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 86,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 87,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 88,
+                  "text": "Đăng chéo/ Đăng lại (Cross-post/Repost)",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 89,
+                  "text": "Bên B đăng tải lại video đã được sản xuất và phê duyệt trên một hoặc nhiều nền tảng khác. Bên B được thực hiện các điều chỉnh kỹ thuật cần thiết về kích thước, tỷ lệ khung hình, thời lượng, phụ đề hoặc định dạng để phù hợp với từng nền tảng nhưng không làm thay đổi nội dung, thông điệp chính đã được phê duyệt.",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 90,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 91,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 92,
+                  "text": "Chỉ đăng tải (Post-only)",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 93,
+                  "text": "Bên A/Brand cung cấp nội dung hoàn chỉnh; Bên B chỉ thực hiện đăng tải trên kênh của Bên B. Nội dung được cung cấp: …;",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 94,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 95,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 96,
+                  "text": "Chỉ sản xuất (Production-only)",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 97,
+                  "text": "Bên B sản xuất video và bàn giao cho Bên A/Brand, không đăng tải trên kênh của Bên B. Định dạng file bàn giao: …; ",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 98,
+                  "text": "Thời hạn bàn giao: …",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 99,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 100,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 101,
+                  "text": "Cắt ngắn/ Biên tập lại (Cut-down/Re-edit)",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 102,
+                  "text": "Bên B tạo các phiên bản rút gọn hoặc phiên bản mới từ video gốc theo yêu cầu đã thống nhất.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 103,
+                  "text": "Số lượng phiên bản: …;",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 104,
+                  "text": "Thời lượng từng phiên bản: …",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 105,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 106,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 107,
+                  "text": "Số vòng chỉnh sửa video",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 108,
+                  "text": "Bên A được yêu cầu chỉnh sửa tối đa … vòng.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 109,
+                  "text": "Mỗi vòng được tính từ khi Bên A gửi một lần tổng hợp ý kiến đến khi Bên B hoàn thành toàn bộ ý kiến đó.",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 110,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 111,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 112,
+                  "text": "Nền tảng",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 113,
+                  "text": "đăng tải",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 114,
+                  "text": "TikTok: Link",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 115,
+                  "text": "Shopee: Link",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 116,
+                  "text": "Facebook: Link",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 117,
+                  "text": "Instagram: Link",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 118,
+                  "text": "YouTube: Link",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 119,
+                  "text": "Threads/nền tảng khác: Link",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 120,
+                  "text": "",
+                  "align": "center"
+                }
+              ],
+              "vMerge": "continue"
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 121,
+                  "text": "Hạng mục thương mại",
+                  "align": "justify",
+                  "bold": true
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 122,
+                  "text": "Gắn giỏ hàng/ Link Affiliate",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 123,
+                  "text": "Gắn giỏ hàng sản phẩm được quảng cáo và/hoặc gắn, chèn Link Affiliate tại video, bài đăng, showcase và các vị trí khác được nền tảng hỗ trợ. Hình thức, vị trí và thời điểm bắt đầu thực hiện được Hai Bên thống nhất qua email/tin nhắn.",
+                  "align": "justify"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 124,
+                  "text": "…",
+                  "align": "center"
                 }
               ]
             }
@@ -57712,10 +60518,42 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 82,
-                  "text": "Tổng giá trị đã bao gồm thuế VAT",
+                  "paragraph": 125,
+                  "text": "Hạng mục Quảng cáo",
                   "align": "justify",
                   "bold": true
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 126,
+                  "text": "Cấp mã code để chạy quảng cáo video trong vòng … ngày.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 127,
+                  "text": "Thời hạn chạy quảng cáo tính thời điểm bàn giao mã code quảng cáo.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 128,
+                  "text": "Thời điểm bắt đầu chạy quảng cáo được hai bên thống nhất qua email/tin nhắn.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 129,
+                  "text": "Brand, Bên A và/hoặc agency được Brand hoặc Bên A ủy quyền được sử dụng video và mã quảng cáo để chạy Ads trong phạm vi, thời hạn đã thỏa thuận.",
+                  "align": "justify"
                 }
               ],
               "colSpan": 2
@@ -57725,9 +60563,249 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 83,
+                  "paragraph": 130,
+                  "text": "…",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 131,
+                  "text": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất",
+                  "align": "justify",
+                  "bold": true
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 132,
+                  "text": "Quyền sử dụng hình ảnh: Bên A được sử dụng các hình ảnh của KOL/KOC/Creator thực hiện Dịch vụ theo Phụ lục này (do Bên B đại diện), bao gồm ảnh chụp riêng, hình ảnh trích xuất từ video và/hoặc tài sản khác theo thỏa thuận, để gắn với sản phẩm trên listing/PDP/SIS, banner, cover, sàn TMĐT, website, landing page, livestream, mạng xã hội và các hoạt động quảng cáo, PR, truyền thông online. Bên A được crop, resize, điều chỉnh bố cục, chèn chữ hoặc nhận diện thương hiệu nhưng không được làm sai lệch hình ảnh của KOL/KOC/Creator.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 133,
                   "text": "",
-                  "align": "right"
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 134,
+                  "text": "Quyền sử dụng video: Bên A được sử dụng video của KOL/KOC/Creator đã được Hai Bên xác nhận để đăng lại trên kênh của nhãn hàng, chạy quảng cáo trả phí, sử dụng trên sàn TMĐT, livestream, website, landing page và phục vụ hoạt động PR, truyền thông online. Bên A được crop, resize, thêm phụ đề, cắt ghép, biên tập, chuyển thể, lồng ghép, đăng lại và cho phép duet, stitch, chia sẻ hoặc tái sử dụng video cho hoạt động quảng cáo, affiliate và chiến dịch TMĐT, với điều kiện không làm sai lệch nội dung hoặc gây ảnh hưởng tiêu cực đến hình ảnh, uy tín của KOL/KOC/Creator. ",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 135,
+                  "text": "Bên được sử dụng: Bên A, Brand và agency/đối tác được Bên A hoặc Brand ủy quyền.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 136,
+                  "text": "Thời hạn sử dụng: … ngày kể từ ngày video được đăng tải.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 137,
+                  "text": "",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 138,
+                  "text": "…",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 139,
+                  "text": "Hạng mục Thông tin thực hiện",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "restart"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 140,
+                  "text": "Bên A gửi sản phẩm mẫu cho Bên B để phục vụ việc quay, sản xuất nội dung trong thời hạn … ngày kể từ ngày Bên B nhận sản phẩm. Khi hết thời hạn nêu trên hoặc hoàn tất việc quay, tùy thời điểm nào đến trước, Bên B có trách nhiệm hoàn trả sản phẩm cho Bên A hoặc phối hợp để Bên A đến nhận lại. Trường hợp sản phẩm bị mất hoặc hư hỏng do lỗi của Bên B, Bên B có trách nhiệm bồi thường theo giá trị thực tế của sản phẩm tại thời điểm bàn giao, trừ hao hụt hoặc hư hỏng hợp lý phát sinh từ việc sử dụng sản phẩm đúng mục đích đã thống nhất.",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 141,
+                  "text": "-",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 142,
+                  "text": "",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "vMerge": "continue"
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 143,
+                  "text": "Báo cáo hiệu suất video:",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 144,
+                  "text": "Thời điểm báo cáo: T+7, T+14 và T+30, tính từ ngày bài đăng được đăng tải.",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 145,
+                  "text": "Chỉ số cần báo cáo: lượt xem/tiếp cận, lượt tương tác, lượt thích, bình luận, chia sẻ, lưu bài, lượt nhấp liên kết và các chỉ số khác tùy theo từng nền tảng, định dạng bài đăng. Báo cáo được cung cấp dưới hình thức ảnh chụp màn hình insight hoặc dữ liệu trích xuất từ nền tảng.",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 146,
+                  "text": "-",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 147,
+                  "text": "Tổng giá trị chưa bao gồm thuế VAT",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "colSpan": 3
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 148,
+                  "text": "…",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 149,
+                  "text": "Thuế VAT",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "colSpan": 3
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 150,
+                  "text": "…",
+                  "align": "center"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 151,
+                  "text": "Tổng giá trị đã bao gồm thuế VAT (VNĐ)",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "colSpan": 3
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 152,
+                  "text": "…",
+                  "align": "center"
                 }
               ]
             }
@@ -57737,7 +60815,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 84,
+        "paragraph": 153,
         "text": "",
         "align": "justify",
         "bold": true
@@ -57745,7 +60823,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 85,
+        "paragraph": 154,
         "text": " Hoa hồng Affiliate ",
         "align": "justify",
         "bold": true
@@ -57753,14 +60831,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 86,
+        "paragraph": 155,
         "text": "Hoa hồng affiliate gồm hai loại như sau:",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 87,
+        "paragraph": 156,
         "text": "Hoa hồng organic: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh tự nhiên từ video, được ghi nhận thông qua link/mã theo dõi của Bên B và không bao gồm doanh thu phát sinh từ ngân sách quảng cáo do Bên A hoặc bên thứ ba chi trả. ",
         "align": "justify",
         "boldPrefix": 17
@@ -57768,7 +60846,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 88,
+        "paragraph": 157,
         "text": "Hoa hồng chạy ads: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ video được sử dụng để chạy quảng cáo, với điều kiện doanh thu đó được ghi nhận thông qua link/mã theo dõi của Bên B và được Bên A xác nhận trong báo cáo đối soát.",
         "align": "justify",
         "boldPrefix": 18
@@ -57776,14 +60854,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 89,
+        "paragraph": 158,
         "text": "Hoa hồng affiliate do nền tảng chi trả trực tiếp cho Bên B. Bên B tự chịu trách nhiệm kê khai, khấu trừ và nộp các loại thuế, phí liên quan đến khoản thu nhập từ hoa hồng affiliate theo quy định pháp luật.     ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 90,
+        "paragraph": 159,
         "text": "",
         "align": "justify",
         "bold": true
@@ -57791,7 +60869,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 91,
+        "paragraph": 160,
         "text": "Thanh toán phí dịch vụ",
         "align": "justify",
         "bold": true
@@ -57807,7 +60885,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 92,
+                  "paragraph": 161,
                   "text": "Thanh toán 1 lần",
                   "align": "center",
                   "bold": true
@@ -57819,8 +60897,29 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 93,
-                  "text": "Phí dịch vụ được thanh toán 1 lần trong vòng 7 - 10 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên (nếu cần theo quy định tại Hợp đồng).",
+                  "paragraph": 162,
+                  "text": "Phí dịch vụ được thanh toán 01 (một) lần trong vòng 07 - 10 ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau:",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 163,
+                  "text": "Bên B đã hoàn thành dịch vụ theo phụ lục SOW; ",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 164,
+                  "text": "Bên A đã nhận được Biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo quy định tại Hợp đồng); ",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 165,
+                  "text": "Bên B đã cung cấp hóa đơn hợp lệ (toàn bộ giá trị phụ lục SOW) cho Bên A.",
                   "align": "justify"
                 }
               ]
@@ -57832,7 +60931,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 94,
+                  "paragraph": 166,
                   "text": "Thanh toán 2 lần",
                   "align": "center",
                   "bold": true
@@ -57844,22 +60943,58 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 95,
-                  "text": "Phí dịch vụ được thanh toán làm 2 lần:",
+                  "paragraph": 167,
+                  "text": "Phí dịch vụ được thanh toán thành 02 (hai) lần như sau:"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 168,
+                  "text": "Lần 1: Bên A tạm ứng số tiền … trong vòng … ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau: ",
+                  "align": "justify",
+                  "boldPrefix": 6
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 169,
+                  "text": "Hai Bên đã hoàn tất ký kết phụ lục SOW và Bên A đã nhận được Hợp đồng có đầy đủ chữ ký của hai Bên; ",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 96,
-                  "text": "Lần 1 tạm ứng … trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm hai bên ký kết Phụ lục SOW.",
+                  "paragraph": 170,
+                  "text": "Bên B đã cung cấp hóa đơn hợp lệ tương ứng với giá trị thanh toán đợt 1 cho Bên A.",
                   "align": "justify"
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 97,
-                  "text": "Lần 2 thanh toán số tiền còn lại trong vòng … ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên (nếu cần theo quy định tại Hợp đồng).  ",
+                  "paragraph": 171,
+                  "text": "Lần 2: Bên A thanh toán phần giá trị còn lại trong vòng … ngày làm việc (không bao gồm thứ Bảy, Chủ nhật và ngày nghỉ lễ) kể từ thời điểm đáp ứng đầy đủ các điều kiện sau: ",
+                  "align": "justify",
+                  "boldPrefix": 6
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 172,
+                  "text": "Bên B đã hoàn thành dịch vụ theo phụ lục SOW;  ",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 173,
+                  "text": "Bên A đã nhận được Biên bản nghiệm thu có chữ ký hai bên (nếu cần BBNT theo quy định tại Hợp đồng); ",
+                  "align": "justify"
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 174,
+                  "text": "Bên B đã cung cấp hóa đơn hợp lệ (toàn bộ giá trị Hợp đồng) cho Bên A.",
                   "align": "justify"
                 }
               ]
@@ -57870,35 +61005,35 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 98,
+        "paragraph": 175,
         "text": "Bên A thanh toán bằng hình thức chuyển khoản ngân hàng vào tài khoản của Bên B theo thông tin như sau:",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 99,
+        "paragraph": 176,
         "text": "Tên chủ tài khoản: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 100,
+        "paragraph": 177,
         "text": "Số tài khoản: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 101,
+        "paragraph": 178,
         "text": "Tại Ngân hàng: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 102,
+        "paragraph": 179,
         "text": "",
         "align": "justify",
         "bold": true
@@ -57906,7 +61041,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 103,
+        "paragraph": 180,
         "text": "Điều 2: Hiệu lực ",
         "align": "justify",
         "bold": true
@@ -57914,7 +61049,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 104,
+        "paragraph": 181,
         "text": "Hiệu lực áp dụng: Phụ lục này có hiệu lực kể từ ngày ký cho đến khi các Bên hoàn thành toàn bộ nghĩa vụ theo SOW này, trừ khi bị chấm dứt theo quy định tại Hợp đồng.",
         "align": "justify",
         "boldPrefix": 18
@@ -57922,7 +61057,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 105,
+        "paragraph": 182,
         "text": "Nguyên tắc ưu tiên áp dụng: Trong trường hợp có bất kỳ mâu thuẫn, khác biệt hoặc không thống nhất nào giữa nội dung của SOW này và Hợp đồng, thì nội dung tại SOW này sẽ được ưu tiên áp dụng đối với phạm vi công việc được quy định tại SOW này.",
         "align": "justify",
         "boldPrefix": 28
@@ -57930,7 +61065,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 106,
+        "paragraph": 183,
         "text": "Cơ chế ngoại lệ: Các Bên thống nhất rằng SOW này có thể quy định các nội dung khác với Hợp đồng (“Ngoại lệ”). Các Ngoại lệ này có hiệu lực ràng buộc và thay thế cho các điều khoản tương ứng tại Hợp đồng, nhưng chỉ áp dụng riêng cho SOW này, bao gồm: ",
         "align": "justify",
         "boldPrefix": 17
@@ -57946,7 +61081,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 107,
+                  "paragraph": 184,
                   "text": "Điều khoản tại Hợp đồng",
                   "align": "justify",
                   "bold": true
@@ -57958,7 +61093,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 108,
+                  "paragraph": 185,
                   "text": "Nội dung điều chỉnh/áp dụng theo SOW",
                   "align": "justify",
                   "bold": true
@@ -57972,7 +61107,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 109,
+                  "paragraph": 186,
                   "text": "Điều …",
                   "align": "justify"
                 }
@@ -57983,7 +61118,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 110,
+                  "paragraph": 187,
                   "text": "Nội dung review sửa đổi",
                   "align": "justify"
                 }
@@ -57996,7 +61131,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 111,
+                  "paragraph": 188,
                   "text": "Điều …",
                   "align": "justify"
                 }
@@ -58007,7 +61142,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 112,
+                  "paragraph": 189,
                   "text": "Nội dung review sửa đổi",
                   "align": "justify"
                 }
@@ -58019,22 +61154,15 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 113,
+        "paragraph": 190,
         "text": "",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 114,
+        "paragraph": 191,
         "text": "Phụ lục này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi Bên giữ 01 (một) bản để thực hiện.",
-        "align": "justify"
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 115,
-        "text": "",
         "align": "justify"
       },
       {
@@ -58048,7 +61176,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 116,
+                  "paragraph": 192,
                   "text": "ĐẠI DIỆN BÊN A",
                   "align": "center",
                   "bold": true
@@ -58056,7 +61184,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 117,
+                  "paragraph": 193,
                   "text": "",
                   "align": "center"
                 }
@@ -58067,7 +61195,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 118,
+                  "paragraph": 194,
                   "text": "ĐẠI DIỆN BÊN B ",
                   "align": "center",
                   "bold": true
@@ -58075,7 +61203,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 119,
+                  "paragraph": 195,
                   "text": "",
                   "align": "center"
                 }
@@ -58087,7 +61215,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 120,
+        "paragraph": 196,
         "text": "",
         "align": "center",
         "bold": true
@@ -58163,39 +61291,16 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "paragraph": 0,
         "text": ""
       }
-    ],
-    "category": "LIVESTREAM_APPENDIX",
-    "description": "Phụ lục SOW của booking video (mỗi job hoặc mỗi tháng một phụ lục) đi kèm hợp đồng nguyên tắc, áp dụng cho đối tác là công ty.",
-    "active": true,
-    "defaultReviewRoles": [
-      "LEGAL",
-      "FINANCE"
-    ],
-    "exemptLegalReview": true,
-    "scope": "GLOBAL",
-    "updatedAt": "2026-05-01T08:00:00.000Z",
-    "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 42,
-    "requiredFieldCount": 19,
-    "history": [
-      {
-        "version": "Ver052026",
-        "hash": "db1a25a31010b23bc451b6fa0d9497f19e672fec65f4ed0ddd0a9a741b48391f",
-        "filename": "2. SOW Công ty booking Video.docx",
-        "updatedAt": "2026-05-01T08:00:00.000Z",
-        "updatedBy": "Phòng Pháp chế",
-        "note": "Phiên bản chuẩn ban hành bởi Pháp chế"
-      }
     ]
   },
   "COM-VID-BBNT": {
     "id": "COM-VID-BBNT",
     "name": "Nghiệm thu video (bản mới) · Công ty",
-    "filename": "3. BBNT Công ty booking Video.docx",
+    "filename": "3.2 BBNT công ty booking Video.docx",
     "subject": "Công ty",
     "kind": "ACCEPTANCE",
-    "version": "Ver052026",
-    "hash": "d4ee2ca879fd169bae2f6c561cd0d1bbdd71fce1f645ea02518295e3671d7507",
+    "version": "Ver092026",
+    "hash": "ef96953fb65a6d4991143eb41325a982eabe38e27e90f1c1e8ebdcb8f7ddd0fd",
     "fields": [
       {
         "key": "token:[dd.mm.yy]",
@@ -58310,47 +61415,102 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "signYearDigit"
       },
       {
-        "key": "word/document.xml:p32:cell",
+        "key": "word/document.xml:p31:cell",
         "part": "word/document.xml",
-        "paragraph": 32,
+        "paragraph": 31,
         "label": "BÊN B",
-        "context": "BÊN B",
+        "context": "BÊN B · Tên Công ty",
         "required": true,
+        "start": 0,
+        "end": 11,
         "title": "Tên công ty",
         "group": "PARTY",
         "kind": "text",
         "source": "partyName"
       },
       {
-        "key": "word/document.xml:p35:cell",
+        "key": "word/document.xml:p34:cell",
         "part": "word/document.xml",
-        "paragraph": 35,
-        "label": "CCCD",
-        "context": "CCCD · Số… cấp ngày … tại…",
+        "paragraph": 34,
+        "label": "Mã số thuế",
+        "context": "Mã số thuế · MST công ty",
         "required": true,
         "start": 0,
-        "end": 19,
-        "title": "Mã số thuế / Số ĐKKD",
+        "end": 11,
+        "title": "Mã số thuế",
         "group": "PARTY",
         "kind": "text",
-        "source": "cccd"
+        "source": "taxCode"
       },
       {
-        "key": "word/document.xml:p38:cell",
+        "key": "word/document.xml:p37:cell",
         "part": "word/document.xml",
-        "paragraph": 38,
+        "paragraph": 37,
         "label": "Địa chỉ",
-        "context": "Địa chỉ",
+        "context": "Địa chỉ · Địa chỉ công ty",
         "required": true,
+        "start": 0,
+        "end": 15,
         "title": "Địa chỉ",
         "group": "PARTY",
         "kind": "long",
         "source": "address"
       },
       {
-        "key": "word/document.xml:p41:cell",
+        "key": "word/document.xml:p40:cell",
         "part": "word/document.xml",
-        "paragraph": 41,
+        "paragraph": 40,
+        "label": "Người đại diện",
+        "context": "Người đại diện",
+        "required": true,
+        "title": "Người đại diện",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "representative"
+      },
+      {
+        "key": "word/document.xml:p43:cell",
+        "part": "word/document.xml",
+        "paragraph": 43,
+        "label": "Chức vụ",
+        "context": "Chức vụ · ….Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
+        "required": false,
+        "start": 0,
+        "end": 2,
+        "title": "Chức vụ người đại diện",
+        "group": "PARTY",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p44:17",
+        "part": "word/document.xml",
+        "paragraph": 44,
+        "start": 17,
+        "end": 18,
+        "label": "Theo ủy quyền số  [điền]  ngày… - cần ủy quyền từ ",
+        "context": "Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
+        "required": false,
+        "title": "Số văn bản ủy quyền (nếu có)",
+        "group": "PARTY",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p44:23",
+        "part": "word/document.xml",
+        "paragraph": 44,
+        "start": 23,
+        "end": 24,
+        "label": "Theo ủy quyền số … ngày [điền]  - cần ủy quyền từ người ",
+        "context": "Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
+        "required": false,
+        "title": "Ngày ủy quyền",
+        "group": "PARTY",
+        "kind": "date"
+      },
+      {
+        "key": "word/document.xml:p47:cell",
+        "part": "word/document.xml",
+        "paragraph": 47,
         "label": "Số điện thoại",
         "context": "Số điện thoại · Nếu có",
         "required": false,
@@ -58362,9 +61522,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "phone"
       },
       {
-        "key": "word/document.xml:p44:cell",
+        "key": "word/document.xml:p50:cell",
         "part": "word/document.xml",
-        "paragraph": 44,
+        "paragraph": 50,
         "label": "Email",
         "context": "Email · Nếu có",
         "required": false,
@@ -58376,9 +61536,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "email"
       },
       {
+        "key": "word/document.xml:p54:cell",
+        "part": "word/document.xml",
+        "paragraph": 54,
+        "label": "Tên/Nghệ danhKOL/KOC/Talent",
+        "context": "Tên/Nghệ danhKOL/KOC/Talent",
+        "required": false,
+        "title": "Tên/Nghệ danh KOL/KOC/Talent",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "ownerName"
+      },
+      {
         "key": "token:[Ngày HĐNT]",
         "part": "word/document.xml",
-        "paragraph": 48,
+        "paragraph": 58,
         "start": 30,
         "end": 36,
         "label": "Ngày HĐNT",
@@ -58392,7 +61564,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[ID KOC]",
         "part": "word/document.xml",
-        "paragraph": 48,
+        "paragraph": 58,
         "start": 49,
         "end": 55,
         "label": "ID KOC",
@@ -58406,7 +61578,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Ngày SOW]",
         "part": "word/document.xml",
-        "paragraph": 48,
+        "paragraph": 58,
         "start": 86,
         "end": 92,
         "label": "Ngày SOW",
@@ -58420,7 +61592,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[BRAND]",
         "part": "word/document.xml",
-        "paragraph": 48,
+        "paragraph": 58,
         "start": 104,
         "end": 109,
         "label": "BRAND",
@@ -58434,7 +61606,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[ID KOC]",
         "part": "word/document.xml",
-        "paragraph": 48,
+        "paragraph": 58,
         "start": 110,
         "end": 116,
         "label": "ID KOC",
@@ -58446,123 +61618,105 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "kocId"
       },
       {
-        "key": "word/document.xml:p58:109",
+        "key": "word/document.xml:p69:11",
         "part": "word/document.xml",
-        "paragraph": 58,
-        "start": 109,
-        "end": 110,
-        "label": "đẩy doanh số bán hàng với sản phẩm  [điền] . Nhãn hiệu ….",
-        "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
+        "paragraph": 69,
+        "start": 11,
+        "end": 14,
+        "label": "link video  [điền] ",
+        "context": "link video ...",
         "required": false,
-        "title": "Sản phẩm",
+        "title": "Link video nghiệm thu (Link Air)",
         "group": "SCOPE",
-        "kind": "text",
-        "source": "product"
+        "kind": "text"
       },
       {
-        "key": "word/document.xml:p58:122",
+        "key": "word/document.xml:p71:cell",
         "part": "word/document.xml",
-        "paragraph": 58,
-        "start": 122,
-        "end": 123,
-        "label": "bán hàng với sản phẩm …. Nhãn hiệu  [điền] .",
-        "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
+        "paragraph": 71,
+        "label": "Hạng mục video · Thành tiền",
+        "context": "1 · Hạng mục video:link video ... · Hoàn thành",
         "required": false,
-        "title": "Nhãn hiệu",
-        "group": "SCOPE",
-        "kind": "text",
-        "source": "brand"
-      },
-      {
-        "key": "word/document.xml:p59:27",
-        "part": "word/document.xml",
-        "paragraph": 59,
-        "start": 27,
-        "end": 28,
-        "label": "Ngày đăng tải (air video):  [điền] ",
-        "context": "Ngày đăng tải (air video): …",
-        "required": false,
-        "title": "Thời gian đăng tải (air video)",
-        "group": "SCOPE",
-        "kind": "date",
-        "source": "airDate"
-      },
-      {
-        "key": "word/document.xml:p62:cell",
-        "part": "word/document.xml",
-        "paragraph": 62,
-        "label": "Sản xuất và đăng tải Video review · Thành tiền",
-        "context": "1 · Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….Ngày đăng tải (air video): …Video có gắn giỏ hàng sản phẩm · Hoàn thành",
-        "required": false,
-        "title": "Sản xuất và đăng tải Video review · Thành tiền",
+        "title": "Hạng mục video · Thành tiền",
         "group": "SCOPE",
         "kind": "money",
         "source": "lineTotal"
       },
       {
-        "key": "word/document.xml:p64:47",
+        "key": "word/document.xml:p75:cell",
         "part": "word/document.xml",
-        "paragraph": 64,
-        "start": 47,
-        "end": 48,
-        "label": "để chạy quảng cáo video trong vòng  [điền]  ngày ",
-        "context": "Cấp mã code để chạy quảng cáo video trong vòng … ngày ",
+        "paragraph": 75,
+        "label": "Hạng mục thương mại · Thành tiền",
+        "context": "2 · Hạng mục thương mại (gắn Gắn giỏ hàng/ Link Affiliate) · Hoàn thành",
+        "required": false,
+        "title": "Hạng mục thương mại · Thành tiền",
+        "group": "SCOPE",
+        "kind": "money"
+      },
+      {
+        "key": "word/document.xml:p77:44",
+        "part": "word/document.xml",
+        "paragraph": 77,
+        "start": 44,
+        "end": 45,
+        "label": "Quảng cáo (cấp code chạy ad) trong  [điền]  ngày tính từ ngày cấp mã",
+        "context": "Hạng mục Quảng cáo (cấp code chạy ad) trong … ngày tính từ ngày cấp mã code",
         "required": false,
         "title": "Số ngày cấp mã quảng cáo",
         "group": "SCOPE",
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p66:cell",
+        "key": "word/document.xml:p79:cell",
         "part": "word/document.xml",
-        "paragraph": 66,
-        "label": "Cấp mã code để chạy quảng cáo video trong vòng · Thành tiền",
-        "context": "2 · Cấp mã code để chạy quảng cáo video trong vòng … ngày · Hoàn thành",
+        "paragraph": 79,
+        "label": "Hạng mục Quảng cáo · Thành tiền",
+        "context": "3 · Hạng mục Quảng cáo (cấp code chạy ad) trong … ngày tính từ ngày cấp mã code · Hoàn thành",
         "required": false,
-        "title": "Cấp mã code để chạy quảng cáo video trong vòng · Thành tiền",
+        "title": "Hạng mục Quảng cáo · Thành tiền",
         "group": "SCOPE",
         "kind": "money"
       },
       {
-        "key": "word/document.xml:p68:32",
+        "key": "word/document.xml:p81:59",
         "part": "word/document.xml",
-        "paragraph": 68,
-        "start": 32,
-        "end": 33,
-        "label": "Sử dụng hình ảnh và video trong  [điền]  ngày kể từ ngày đăng tải",
-        "context": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
+        "paragraph": 81,
+        "start": 59,
+        "end": 60,
+        "label": "ình ảnh và nội dung sản xuất trong  [điền]  ngày tính từ đăng tải vi",
+        "context": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong … ngày tính từ đăng tải video",
         "required": false,
         "title": "Số ngày sử dụng hình ảnh và video",
         "group": "SCOPE",
         "kind": "number"
       },
       {
-        "key": "word/document.xml:p70:cell",
+        "key": "word/document.xml:p83:cell",
         "part": "word/document.xml",
-        "paragraph": 70,
-        "label": "Sử dụng hình ảnh và video trong · Thành tiền",
-        "context": "3 · Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video · Hoàn thành",
+        "paragraph": 83,
+        "label": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong · Thành tiền",
+        "context": "4 · Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong … ngày tính từ đăng tải video · Hoàn thành",
         "required": false,
-        "title": "Sử dụng hình ảnh và video trong · Thành tiền",
+        "title": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong · Thành tiền",
         "group": "SCOPE",
         "kind": "money"
       },
       {
-        "key": "word/document.xml:p72:cell",
+        "key": "word/document.xml:p85:cell",
         "part": "word/document.xml",
-        "paragraph": 72,
-        "label": "Tổng giá trị chưa bao gồm thuế VAT",
-        "context": "Tổng giá trị chưa bao gồm thuế VAT",
+        "paragraph": 85,
+        "label": "Tổng giá trị nghiệm thu chưa bao gồm thuế VAT",
+        "context": "Tổng giá trị nghiệm thu chưa bao gồm thuế VAT",
         "required": true,
-        "title": "Tổng giá trị chưa bao gồm thuế VAT",
+        "title": "Tổng giá trị nghiệm thu chưa bao gồm thuế VAT",
         "group": "MONEY",
         "kind": "money",
         "source": "lineTotal"
       },
       {
-        "key": "word/document.xml:p74:cell",
+        "key": "word/document.xml:p87:cell",
         "part": "word/document.xml",
-        "paragraph": 74,
+        "paragraph": 87,
         "label": "Thuế VAT",
         "context": "Thuế VAT",
         "required": false,
@@ -58572,61 +61726,61 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "vatAmount"
       },
       {
-        "key": "word/document.xml:p76:cell",
-        "part": "word/document.xml",
-        "paragraph": 76,
-        "label": "Tổng giá trị đã bao gồm thuế VAT",
-        "context": "Tổng giá trị đã bao gồm thuế VAT",
-        "required": false,
-        "title": "Tổng giá trị đã bao gồm thuế VAT",
-        "group": "MONEY",
-        "kind": "money",
-        "source": "grossTotal"
-      },
-      {
         "key": "word/document.xml:p89:cell",
         "part": "word/document.xml",
         "paragraph": 89,
-        "label": "Tổng giá trị nghiệm thu · Thành tiền (VNĐ)(đã bao gồm VAT)",
-        "context": "1 · Tổng giá trị nghiệm thu",
+        "label": "Tổng giá trị nghiệm thu đã bao gồm thuế VAT (VNĐ)",
+        "context": "Tổng giá trị nghiệm thu đã bao gồm thuế VAT (VNĐ)",
         "required": false,
-        "title": "Tổng giá trị nghiệm thu · Thành tiền (VNĐ)(đã bao gồm VAT)",
+        "title": "Tổng giá trị nghiệm thu đã bao gồm thuế VAT (VNĐ)",
         "group": "MONEY",
         "kind": "money",
         "source": "grossTotal"
       },
       {
-        "key": "word/document.xml:p92:cell",
+        "key": "word/document.xml:p102:cell",
         "part": "word/document.xml",
-        "paragraph": 92,
+        "paragraph": 102,
+        "label": "Tổng giá trị nghiệm thu · Thành tiền (VNĐ)(đã bao gồm VAT)",
+        "context": "1 · Tổng giá trị nghiệm thu",
+        "required": false,
+        "title": "Tổng giá trị nghiệm thu",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "grossTotal"
+      },
+      {
+        "key": "word/document.xml:p105:cell",
+        "part": "word/document.xml",
+        "paragraph": 105,
         "label": "Giá trị đã tạm ứng/thanh toán · Thành tiền (VNĐ)(đã bao gồm VAT)",
         "context": "2 · Giá trị đã tạm ứng/thanh toán (nếu có)",
         "required": false,
-        "title": "Giá trị đã tạm ứng/thanh toán · Thành tiền (VNĐ)(đã bao gồm VAT)",
+        "title": "Giá trị đã tạm ứng/thanh toán",
         "group": "MONEY",
         "kind": "money",
         "source": "advanceAmount"
       },
       {
-        "key": "word/document.xml:p95:cell",
+        "key": "word/document.xml:p108:cell",
         "part": "word/document.xml",
-        "paragraph": 95,
+        "paragraph": 108,
         "label": "Chi phí phát sinh tăng/giảm · Thành tiền (VNĐ)(đã bao gồm VAT)",
         "context": "3 · Chi phí phát sinh tăng/giảm (nếu có)",
         "required": false,
-        "title": "Chi phí phát sinh tăng/giảm · Thành tiền (VNĐ)(đã bao gồm VAT)",
+        "title": "Chi phí phát sinh tăng/giảm",
         "group": "MONEY",
         "kind": "money",
         "source": "adjustmentAmount"
       },
       {
-        "key": "word/document.xml:p98:cell",
+        "key": "word/document.xml:p111:cell",
         "part": "word/document.xml",
-        "paragraph": 98,
+        "paragraph": 111,
         "label": "Giá trị Bên A còn phải thanh toán cho Bên B · Thành tiền (VNĐ)(đã bao gồm VAT)",
         "context": "4 · Giá trị Bên A còn phải thanh toán cho Bên B",
         "required": false,
-        "title": "Giá trị Bên A còn phải thanh toán cho Bên B · Thành tiền",
+        "title": "Giá trị Bên A còn phải thanh toán cho Bên B",
         "group": "MONEY",
         "kind": "money",
         "source": "remainingAmount"
@@ -58634,7 +61788,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tên chủ tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 105,
+        "paragraph": 118,
         "start": 19,
         "end": 19,
         "label": "Tên chủ tài khoản",
@@ -58648,7 +61802,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Số tài khoản]",
         "part": "word/document.xml",
-        "paragraph": 106,
+        "paragraph": 119,
         "start": 14,
         "end": 14,
         "label": "Số tài khoản",
@@ -58662,7 +61816,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "key": "token:[Tại Ngân hàng]",
         "part": "word/document.xml",
-        "paragraph": 107,
+        "paragraph": 120,
         "start": 15,
         "end": 15,
         "label": "Tại Ngân hàng",
@@ -58745,23 +61899,33 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Giám đốc",
       "Sau đây gọi tắt là “Bên A”",
       "",
-      "",
       "BÊN CUNG ỨNG DỊCH VỤ ",
       "BÊN B",
       ":",
-      "",
-      "CCCD",
+      "Tên Công ty",
+      "Mã số thuế",
       ":",
-      "Số… cấp ngày … tại…",
+      "MST công ty",
       "Địa chỉ",
       ":",
+      "Địa chỉ công ty",
+      "Người đại diện",
+      ":",
       "",
+      "Chức vụ",
+      ":",
+      "….",
+      "Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
       "Số điện thoại",
       ":",
       "Nếu có",
       "Email",
       ":",
       "Nếu có",
+      "Tên/Nghệ danh",
+      "KOL/KOC/Talent",
+      ":",
+      "",
       "Sau đây gọi tắt là “Bên B”",
       "",
       "",
@@ -58771,28 +61935,31 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "Điều 1: Nghiệm thu phạm vi và phí dịch vụ",
       " Nghiệm thu phí dịch vụ",
       "STT",
-      "Dịch vụ Bên B cung ứng cho Bên A ",
+      "Dịch vụ Bên B cung ứng cho Bên A",
       "Nghiệm thu",
       "Thành tiền",
       "1",
-      "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
-      "Ngày đăng tải (air video): …",
-      "Video có gắn giỏ hàng sản phẩm ",
+      "Hạng mục video:",
+      "link video ...",
       "Hoàn thành",
       "",
       "2",
-      "Cấp mã code để chạy quảng cáo video trong vòng … ngày ",
+      "Hạng mục thương mại (gắn Gắn giỏ hàng/ Link Affiliate)",
       "Hoàn thành",
       "",
       "3",
-      "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
+      "Hạng mục Quảng cáo (cấp code chạy ad) trong … ngày tính từ ngày cấp mã code",
       "Hoàn thành",
       "",
-      "Tổng giá trị chưa bao gồm thuế VAT",
+      "4",
+      "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong … ngày tính từ đăng tải video",
+      "Hoàn thành",
+      "",
+      "Tổng giá trị nghiệm thu chưa bao gồm thuế VAT",
       "",
       "Thuế VAT",
       "",
-      "Tổng giá trị đã bao gồm thuế VAT",
+      "Tổng giá trị nghiệm thu đã bao gồm thuế VAT (VNĐ)",
       "",
       "",
       "Hình ảnh nghiệm thu dịch vụ",
@@ -58828,6 +61995,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "Điều 3: Hiệu lực ",
       "Biên bản này được lập và có hiệu lực từ ngày ký.",
+      "Trường hợp tại thời điểm ký Biên bản này, thời hạn sử dụng hình ảnh và/hoặc cấp quyền chạy quảng cáo (nếu có) theo thỏa thuận giữa Các Bên vẫn còn, Các Bên tiếp tục thực hiện đầy đủ các quyền và nghĩa vụ liên quan cho đến hết thời hạn đã thỏa thuận.",
       "Biên bản này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi Bên giữ 01 (một) bản để thực hiện.",
       "",
       "ĐẠI DIỆN BÊN A",
@@ -58844,7 +62012,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       "",
       "",
       "",
-      "BM.BBNTVID.COM.Ver072026",
+      "BM.BBNTVID.COM.Ver102026",
       ""
     ],
     "blocks": [
@@ -58870,7 +62038,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/header1.xml",
                   "paragraph": 1,
-                  "text": "BM.BBNTVID.COM.Ver072026",
+                  "text": "BM.BBNTVID.COM.Ver102026",
                   "align": "right"
                 }
               ]
@@ -58980,7 +62148,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "bold": true
                 }
               ],
-              "colSpan": 3
+              "colSpan": 5
             }
           ],
           [
@@ -58994,7 +62162,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59005,7 +62174,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "text": ":",
                   "align": "justify"
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59031,7 +62201,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59042,7 +62213,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "text": ":",
                   "align": "justify"
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59067,7 +62239,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59078,7 +62251,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "text": ":",
                   "align": "justify"
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59103,7 +62277,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59114,7 +62289,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "text": ":",
                   "align": "justify"
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59140,7 +62316,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59151,7 +62328,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "text": ":",
                   "align": "justify"
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59186,23 +62364,24 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "align": "justify"
                 }
               ],
-              "colSpan": 4
+              "colSpan": 6
             }
-          ]
-        ]
-      },
-      {
-        "kind": "p",
-        "part": "word/document.xml",
-        "paragraph": 28,
-        "text": "",
-        "align": "justify"
-      },
-      {
-        "kind": "table",
-        "part": "word/document.xml",
-        "variant": "party",
-        "rows": [
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 28,
+                  "text": "BÊN CUNG ỨNG DỊCH VỤ ",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "colSpan": 7
+            }
+          ],
           [
             {
               "blocks": [
@@ -59210,26 +62389,24 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 29,
-                  "text": "BÊN CUNG ỨNG DỊCH VỤ ",
+                  "text": "BÊN B",
                   "align": "justify",
                   "bold": true
                 }
               ],
-              "colSpan": 4
-            }
-          ],
-          [
+              "colSpan": 2
+            },
             {
               "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 30,
-                  "text": "BÊN B",
-                  "align": "justify",
-                  "bold": true
+                  "text": ":",
+                  "align": "justify"
                 }
-              ]
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59237,23 +62414,12 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 31,
-                  "text": ":",
-                  "align": "justify"
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 32,
-                  "text": "",
+                  "text": "Tên Công ty",
                   "align": "justify",
                   "bold": true
                 }
               ],
-              "colSpan": 2
+              "colSpan": 3
             }
           ],
           [
@@ -59262,12 +62428,25 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 33,
-                  "text": "CCCD",
+                  "paragraph": 32,
+                  "text": "Mã số thuế",
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 33,
+                  "text": ":",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59275,22 +62454,11 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 34,
-                  "text": ":",
-                  "align": "justify"
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 35,
-                  "text": "Số… cấp ngày … tại…",
+                  "text": "MST công ty",
                   "align": "justify"
                 }
               ],
-              "colSpan": 2
+              "colSpan": 3
             }
           ],
           [
@@ -59299,12 +62467,25 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 36,
+                  "paragraph": 35,
                   "text": "Địa chỉ",
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 36,
+                  "text": ":",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59312,22 +62493,11 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 37,
-                  "text": ":",
-                  "align": "justify"
-                }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 38,
-                  "text": "",
+                  "text": "Địa chỉ công ty",
                   "align": "justify"
                 }
               ],
-              "colSpan": 2
+              "colSpan": 3
             }
           ],
           [
@@ -59336,12 +62506,25 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 39,
-                  "text": "Số điện thoại",
+                  "paragraph": 38,
+                  "text": "Người đại diện",
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 39,
+                  "text": ":",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59349,23 +62532,11 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 40,
-                  "text": ":",
+                  "text": "",
                   "align": "justify"
                 }
-              ]
-            },
-            {
-              "blocks": [
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 41,
-                  "text": "Nếu có",
-                  "align": "justify",
-                  "italic": true
-                }
               ],
-              "colSpan": 2
+              "colSpan": 3
             }
           ],
           [
@@ -59374,12 +62545,25 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 42,
-                  "text": "Email",
+                  "paragraph": 41,
+                  "text": "Chức vụ",
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 42,
+                  "text": ":",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59387,23 +62571,18 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 43,
-                  "text": ":",
+                  "text": "….",
                   "align": "justify"
-                }
-              ]
-            },
-            {
-              "blocks": [
+                },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 44,
-                  "text": "Nếu có",
-                  "align": "justify",
-                  "italic": true
+                  "text": "Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
+                  "align": "justify"
                 }
               ],
-              "colSpan": 2
+              "colSpan": 3
             }
           ],
           [
@@ -59413,13 +62592,12 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 45,
-                  "text": "Sau đây gọi tắt là “Bên B”",
+                  "text": "Số điện thoại",
                   "align": "justify",
-                  "bold": true,
-                  "italic": true
+                  "bold": true
                 }
               ],
-              "colSpan": 3
+              "colSpan": 2
             },
             {
               "blocks": [
@@ -59427,11 +62605,127 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                   "kind": "p",
                   "part": "word/document.xml",
                   "paragraph": 46,
-                  "text": "",
+                  "text": ":",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 47,
+                  "text": "Nếu có",
+                  "align": "justify",
+                  "italic": true
+                }
+              ],
+              "colSpan": 3
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 48,
+                  "text": "Email",
                   "align": "justify",
                   "bold": true
                 }
-              ]
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 49,
+                  "text": ":",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 50,
+                  "text": "Nếu có",
+                  "align": "justify",
+                  "italic": true
+                }
+              ],
+              "colSpan": 3
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 51,
+                  "text": "Tên/Nghệ danh",
+                  "align": "justify",
+                  "bold": true
+                },
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 52,
+                  "text": "KOL/KOC/Talent",
+                  "align": "justify",
+                  "bold": true
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 53,
+                  "text": ":",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 2
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 54,
+                  "text": "",
+                  "align": "justify"
+                }
+              ],
+              "colSpan": 3
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 55,
+                  "text": "Sau đây gọi tắt là “Bên B”",
+                  "align": "justify",
+                  "bold": true,
+                  "italic": true
+                }
+              ],
+              "colSpan": 7
             }
           ]
         ]
@@ -59439,14 +62733,21 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 47,
+        "paragraph": 56,
         "text": "",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 48,
+        "paragraph": 57,
+        "text": "",
+        "align": "justify"
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 58,
         "text": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
         "align": "justify",
         "italic": true
@@ -59454,7 +62755,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 49,
+        "paragraph": 59,
         "text": "Hai Bên tiến hành nghiệm thu các hạng mục công việc do Bên B thực hiện theo Hợp đồng nêu trên làm cơ sở xác nhận hoàn thành nghĩa vụ và thanh toán theo thỏa thuận.",
         "align": "justify",
         "italic": true
@@ -59462,14 +62763,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 50,
+        "paragraph": 60,
         "text": "",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 51,
+        "paragraph": 61,
         "text": "Điều 1: Nghiệm thu phạm vi và phí dịch vụ",
         "align": "justify",
         "bold": true
@@ -59477,7 +62778,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 52,
+        "paragraph": 62,
         "text": " Nghiệm thu phí dịch vụ",
         "align": "justify",
         "bold": true
@@ -59493,7 +62794,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 53,
+                  "paragraph": 63,
                   "text": "STT",
                   "align": "center",
                   "bold": true
@@ -59505,8 +62806,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 54,
-                  "text": "Dịch vụ Bên B cung ứng cho Bên A ",
+                  "paragraph": 64,
+                  "text": "Dịch vụ Bên B cung ứng cho Bên A",
                   "align": "center",
                   "bold": true
                 }
@@ -59517,7 +62818,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 55,
+                  "paragraph": 65,
                   "text": "Nghiệm thu",
                   "align": "center",
                   "bold": true
@@ -59529,7 +62830,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 56,
+                  "paragraph": 66,
                   "text": "Thành tiền",
                   "align": "center",
                   "bold": true
@@ -59543,7 +62844,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 57,
+                  "paragraph": 67,
                   "text": "1",
                   "align": "center",
                   "bold": true
@@ -59555,26 +62856,17 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 58,
-                  "text": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
+                  "paragraph": 68,
+                  "text": "Hạng mục video:",
                   "align": "justify",
                   "bold": true
                 },
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 59,
-                  "text": "Ngày đăng tải (air video): …",
-                  "align": "justify",
-                  "bold": true
-                },
-                {
-                  "kind": "p",
-                  "part": "word/document.xml",
-                  "paragraph": 60,
-                  "text": "Video có gắn giỏ hàng sản phẩm ",
-                  "align": "justify",
-                  "bold": true
+                  "paragraph": 69,
+                  "text": "link video ...",
+                  "align": "justify"
                 }
               ]
             },
@@ -59583,9 +62875,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 61,
+                  "paragraph": 70,
                   "text": "Hoàn thành",
-                  "align": "center"
+                  "align": "right"
                 }
               ]
             },
@@ -59594,7 +62886,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 62,
+                  "paragraph": 71,
                   "text": "",
                   "align": "right"
                 }
@@ -59607,7 +62899,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 63,
+                  "paragraph": 72,
                   "text": "2",
                   "align": "center",
                   "bold": true
@@ -59619,10 +62911,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 64,
-                  "text": "Cấp mã code để chạy quảng cáo video trong vòng … ngày ",
+                  "paragraph": 73,
+                  "text": "Hạng mục thương mại (gắn Gắn giỏ hàng/ Link Affiliate)",
                   "align": "justify",
-                  "bold": true
+                  "boldPrefix": 20
                 }
               ]
             },
@@ -59631,9 +62923,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 65,
+                  "paragraph": 74,
                   "text": "Hoàn thành",
-                  "align": "center"
+                  "align": "right"
                 }
               ]
             },
@@ -59642,7 +62934,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 66,
+                  "paragraph": 75,
                   "text": "",
                   "align": "right"
                 }
@@ -59655,7 +62947,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 67,
+                  "paragraph": 76,
                   "text": "3",
                   "align": "center",
                   "bold": true
@@ -59667,8 +62959,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 68,
-                  "text": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
+                  "paragraph": 77,
+                  "text": "Hạng mục Quảng cáo (cấp code chạy ad) trong … ngày tính từ ngày cấp mã code",
                   "align": "justify",
                   "bold": true
                 }
@@ -59679,9 +62971,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 69,
+                  "paragraph": 78,
                   "text": "Hoàn thành",
-                  "align": "center"
+                  "align": "right"
                 }
               ]
             },
@@ -59690,7 +62982,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 70,
+                  "paragraph": 79,
                   "text": "",
                   "align": "right"
                 }
@@ -59703,23 +62995,73 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 71,
-                  "text": "Tổng giá trị chưa bao gồm thuế VAT",
+                  "paragraph": 80,
+                  "text": "4",
+                  "align": "center",
+                  "bold": true
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 81,
+                  "text": "Hạng mục Quyền sử dụng hình ảnh và nội dung sản xuất trong … ngày tính từ đăng tải video",
+                  "align": "justify",
+                  "bold": true
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 82,
+                  "text": "Hoàn thành",
+                  "align": "right"
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 83,
+                  "text": "",
+                  "align": "right"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "blocks": [
+                {
+                  "kind": "p",
+                  "part": "word/document.xml",
+                  "paragraph": 84,
+                  "text": "Tổng giá trị nghiệm thu chưa bao gồm thuế VAT",
+                  "align": "justify",
                   "bold": true
                 }
               ],
-              "colSpan": 3
+              "colSpan": 2
             },
             {
               "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 72,
+                  "paragraph": 85,
                   "text": "",
                   "align": "right"
                 }
-              ]
+              ],
+              "colSpan": 2
             }
           ],
           [
@@ -59728,23 +63070,25 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 73,
+                  "paragraph": 86,
                   "text": "Thuế VAT",
+                  "align": "justify",
                   "bold": true
                 }
               ],
-              "colSpan": 3
+              "colSpan": 2
             },
             {
               "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 74,
+                  "paragraph": 87,
                   "text": "",
                   "align": "right"
                 }
-              ]
+              ],
+              "colSpan": 2
             }
           ],
           [
@@ -59753,23 +63097,25 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 75,
-                  "text": "Tổng giá trị đã bao gồm thuế VAT",
+                  "paragraph": 88,
+                  "text": "Tổng giá trị nghiệm thu đã bao gồm thuế VAT (VNĐ)",
+                  "align": "justify",
                   "bold": true
                 }
               ],
-              "colSpan": 3
+              "colSpan": 2
             },
             {
               "blocks": [
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 76,
+                  "paragraph": 89,
                   "text": "",
                   "align": "right"
                 }
-              ]
+              ],
+              "colSpan": 2
             }
           ]
         ]
@@ -59777,7 +63123,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 77,
+        "paragraph": 90,
         "text": "",
         "align": "justify",
         "bold": true
@@ -59785,7 +63131,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 78,
+        "paragraph": 91,
         "text": "Hình ảnh nghiệm thu dịch vụ",
         "align": "justify",
         "bold": true
@@ -59793,7 +63139,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 79,
+        "paragraph": 92,
         "text": "",
         "align": "justify",
         "bold": true
@@ -59801,7 +63147,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 80,
+        "paragraph": 93,
         "text": "",
         "align": "justify",
         "bold": true
@@ -59809,7 +63155,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 81,
+        "paragraph": 94,
         "text": "Điều 2: Thanh toán phí dịch vụ",
         "align": "justify",
         "bold": true
@@ -59817,7 +63163,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 82,
+        "paragraph": 95,
         "text": "Phí dịch vụ Bên A phải thanh toán cho Bên B là:",
         "align": "justify",
         "bold": true
@@ -59833,7 +63179,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 83,
+                  "paragraph": 96,
                   "text": "STT",
                   "align": "center",
                   "bold": true
@@ -59845,7 +63191,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 84,
+                  "paragraph": 97,
                   "text": "Nội dung",
                   "align": "center",
                   "bold": true
@@ -59857,7 +63203,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 85,
+                  "paragraph": 98,
                   "text": "Thành tiền (VNĐ)",
                   "align": "center",
                   "bold": true
@@ -59865,7 +63211,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 86,
+                  "paragraph": 99,
                   "text": "(đã bao gồm VAT)",
                   "align": "center",
                   "bold": true
@@ -59879,7 +63225,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 87,
+                  "paragraph": 100,
                   "text": "1",
                   "bold": true
                 }
@@ -59890,7 +63236,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 88,
+                  "paragraph": 101,
                   "text": "Tổng giá trị nghiệm thu",
                   "bold": true
                 }
@@ -59901,7 +63247,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 89,
+                  "paragraph": 102,
                   "text": "",
                   "bold": true
                 }
@@ -59914,7 +63260,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 90,
+                  "paragraph": 103,
                   "text": "2",
                   "bold": true
                 }
@@ -59925,7 +63271,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 91,
+                  "paragraph": 104,
                   "text": "Giá trị đã tạm ứng/thanh toán (nếu có)",
                   "bold": true
                 }
@@ -59936,7 +63282,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 92,
+                  "paragraph": 105,
                   "text": "",
                   "bold": true
                 }
@@ -59949,7 +63295,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 93,
+                  "paragraph": 106,
                   "text": "3",
                   "bold": true
                 }
@@ -59960,7 +63306,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 94,
+                  "paragraph": 107,
                   "text": "Chi phí phát sinh tăng/giảm (nếu có)",
                   "bold": true
                 }
@@ -59971,7 +63317,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 95,
+                  "paragraph": 108,
                   "text": "",
                   "bold": true
                 }
@@ -59984,7 +63330,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 96,
+                  "paragraph": 109,
                   "text": "4",
                   "bold": true
                 }
@@ -59995,7 +63341,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 97,
+                  "paragraph": 110,
                   "text": "Giá trị Bên A còn phải thanh toán cho Bên B",
                   "bold": true
                 }
@@ -60006,7 +63352,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 98,
+                  "paragraph": 111,
                   "text": "",
                   "bold": true
                 }
@@ -60018,7 +63364,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 99,
+        "paragraph": 112,
         "text": " ",
         "align": "justify",
         "bold": true
@@ -60026,7 +63372,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 100,
+        "paragraph": 113,
         "text": "Thời hạn thanh toán:",
         "align": "justify",
         "bold": true
@@ -60042,7 +63388,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 101,
+                  "paragraph": 114,
                   "text": "Thanh toán ",
                   "align": "center",
                   "bold": true
@@ -60054,7 +63400,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 102,
+                  "paragraph": 115,
                   "text": "Phí dịch vụ được thanh toán trong vòng 7 - 10 ngày làm việc (trừ thứ bảy, chủ nhật, ngày nghỉ lễ) kể từ thời điểm Bên B hoàn thành dịch vụ và Bên A đã nhận được hóa đơn hợp lệ, biên bản nghiệm thu có chữ ký hai bên.",
                   "align": "justify"
                 }
@@ -60066,42 +63412,42 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 103,
+        "paragraph": 116,
         "text": "",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 104,
+        "paragraph": 117,
         "text": "Bên A thanh toán bằng hình thức chuyển khoản ngân hàng vào tài khoản của Bên B theo thông tin như sau:",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 105,
+        "paragraph": 118,
         "text": "Tên chủ tài khoản: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 106,
+        "paragraph": 119,
         "text": "Số tài khoản: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 107,
+        "paragraph": 120,
         "text": "Tại Ngân hàng: ",
         "align": "justify"
       },
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 108,
+        "paragraph": 121,
         "text": "",
         "align": "justify",
         "bold": true
@@ -60109,7 +63455,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 109,
+        "paragraph": 122,
         "text": "Điều 3: Hiệu lực ",
         "align": "justify",
         "bold": true
@@ -60117,7 +63463,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 110,
+        "paragraph": 123,
         "text": "Biên bản này được lập và có hiệu lực từ ngày ký.",
         "align": "justify",
         "bold": true
@@ -60125,7 +63471,14 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 111,
+        "paragraph": 124,
+        "text": "Trường hợp tại thời điểm ký Biên bản này, thời hạn sử dụng hình ảnh và/hoặc cấp quyền chạy quảng cáo (nếu có) theo thỏa thuận giữa Các Bên vẫn còn, Các Bên tiếp tục thực hiện đầy đủ các quyền và nghĩa vụ liên quan cho đến hết thời hạn đã thỏa thuận.",
+        "align": "justify"
+      },
+      {
+        "kind": "p",
+        "part": "word/document.xml",
+        "paragraph": 125,
         "text": "Biên bản này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi Bên giữ 01 (một) bản để thực hiện.",
         "align": "justify",
         "bold": true
@@ -60133,7 +63486,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 112,
+        "paragraph": 126,
         "text": "",
         "align": "justify"
       },
@@ -60148,7 +63501,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 113,
+                  "paragraph": 127,
                   "text": "ĐẠI DIỆN BÊN A",
                   "align": "center",
                   "bold": true
@@ -60156,7 +63509,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 114,
+                  "paragraph": 128,
                   "text": "",
                   "align": "center"
                 }
@@ -60167,7 +63520,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 115,
+                  "paragraph": 129,
                   "text": "ĐẠI DIỆN BÊN B ",
                   "align": "center",
                   "bold": true
@@ -60175,7 +63528,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
                 {
                   "kind": "p",
                   "part": "word/document.xml",
-                  "paragraph": 116,
+                  "paragraph": 130,
                   "text": "",
                   "align": "center"
                 }
@@ -60187,7 +63540,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 117,
+        "paragraph": 131,
         "text": "",
         "align": "center",
         "bold": true
@@ -60195,7 +63548,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       {
         "kind": "p",
         "part": "word/document.xml",
-        "paragraph": 118,
+        "paragraph": 132,
         "text": "",
         "align": "center",
         "bold": true
@@ -60264,29 +63617,6 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "part": "word/footer1.xml",
         "paragraph": 6,
         "text": ""
-      }
-    ],
-    "category": "ACCEPTANCE_SETTLEMENT",
-    "description": "Biên bản nghiệm thu link bài đăng, mã Spark Ads và giá trị thanh toán thực tế cho đối tác công ty.",
-    "active": true,
-    "defaultReviewRoles": [
-      "FINANCE",
-      "LEAD"
-    ],
-    "exemptLegalReview": true,
-    "scope": "GLOBAL",
-    "updatedAt": "2026-05-01T08:00:00.000Z",
-    "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 39,
-    "requiredFieldCount": 23,
-    "history": [
-      {
-        "version": "Ver052026",
-        "hash": "d4ee2ca879fd169bae2f6c561cd0d1bbdd71fce1f645ea02518295e3671d7507",
-        "filename": "3. BBNT Công ty booking Video.docx",
-        "updatedAt": "2026-05-01T08:00:00.000Z",
-        "updatedBy": "Phòng Pháp chế",
-        "note": "Phiên bản chuẩn ban hành bởi Pháp chế"
       }
     ]
   },

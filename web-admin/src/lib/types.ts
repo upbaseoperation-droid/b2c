@@ -66,7 +66,6 @@ export type TabKey =
   | 'tiktok-crawler'
   | 'market-research'
   | 'store-air-plan-report'
-  | 'work-toolkit'
   | 'zalo-bot';
 
 export interface UserProfile {

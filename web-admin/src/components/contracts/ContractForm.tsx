@@ -524,11 +524,32 @@ export function ContractForm({
     () => GROUP_ORDER.map(g => ({ ...g, fields: fields.filter(f => (f.group || 'OTHER') === g.key) })).filter(g => g.fields.length),
     [fields],
   );
+  const isSecondaryOptionalField = (f: ContractField) => {
+    if (f.required) return false;
+    const t = (f.title || f.label || '').toLowerCase();
+    return (
+      t.includes('link kênh shopee') ||
+      t.includes('link kênh facebook') ||
+      t.includes('link kênh instagram') ||
+      t.includes('link kênh youtube') ||
+      t.includes('link kênh threads') ||
+      t.includes('post-only') ||
+      t.includes('production-only') ||
+      t.includes('phiên bản cắt ngắn') ||
+      t.includes('điều khoản điều chỉnh')
+    );
+  };
+  const isFieldNeedsAttention = (f: ContractField) => {
+    const hasVal = Boolean(values[f.key]?.trim());
+    if (hasVal && !prefilled.has(f.key)) return true;
+    if (!hasVal && !isSecondaryOptionalField(f)) return true;
+    return false;
+  };
   const required = fields.filter(f => f.required);
   const requiredDone = required.filter(f => values[f.key]?.trim()).length;
   const filledTotalCount = fields.filter(f => values[f.key]?.trim()).length;
   const missingTotalCount = fields.length - filledTotalCount;
-  const needsAttentionCount = fields.filter(f => !values[f.key]?.trim() || !prefilled.has(f.key)).length;
+  const needsAttentionCount = fields.filter(isFieldNeedsAttention).length;
 
   const refreshSystemPrefill = () => {
     if (!fields.length) return;
@@ -1979,7 +2000,7 @@ export function ContractForm({
                         </div>
                       )}
                     </div>
-                    <Field label={isKocOwnForm ? 'Phân loại pháp nhân / Mẫu đối chiếu' : 'Mẫu pháp chế (Bộ 11 mẫu chuẩn)'} htmlFor="ct-template">
+                    <Field label={isKocOwnForm ? 'Phân loại pháp nhân / Mẫu đối chiếu' : 'Mẫu pháp chế (Bộ mẫu chuẩn Ver092026)'} htmlFor="ct-template">
                       <Select
                         id="ct-template"
                         required
@@ -2013,7 +2034,7 @@ export function ContractForm({
                             ))}
                           </optgroup>
                         )}
-                        <optgroup label="Bộ 11 mẫu chuẩn Upbase (Ver072026)">
+                        <optgroup label="Bộ mẫu chuẩn Upbase (Ver092026)">
                           {(editing ? data.templates : templates)
                             .filter(t => !kocTemplates.some(kt => kt.id === t.id))
                             .map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -2320,69 +2341,6 @@ export function ContractForm({
                   </Button>
                   <Button
                     size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      const nextList = draftAddons.map(a => ({ ...a, includedInSow: false }));
-                      applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                    }}
-                  >
-                    Chỉ 1 Task (Chỉ Video)
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      const nextList = draftAddons.map(a => ({
-                        ...a,
-                        includedInSow: a.termType === 'ADS_CODE',
-                      }));
-                      applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                    }}
-                  >
-                    2 Task (Video + Mã Ads)
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      const nextList = draftAddons.map(a => ({
-                        ...a,
-                        includedInSow: a.termType === 'ADS_CODE' || a.termType === 'IMAGE_USAGE' || Boolean(a.includedInSow),
-                      }));
-                      applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                    }}
-                  >
-                    Đủ 3 Task SOW
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      const activeJob = draftJobTables[activeJobTableIdx];
-                      const activeJobCode = activeJob?.jobCode || jobAcceptanceBreakdown.jobCode;
-                      const info = SOW_TASK_DELIVERABLE_INFO.CROSS_POST_REUP;
-                      const nextList: JobAcceptanceAddonRow[] = [
-                        ...draftAddons,
-                        {
-                          id: `addon-${Date.now()}`,
-                          taskCode: `${activeJobCode}-T0${draftAddons.length + 2}`,
-                          termType: 'CROSS_POST_REUP',
-                          termLabel: info.taskTitle,
-                          includedInSow: true,
-                          deliverableLabel: info.deliverableLabel,
-                          durationDays: info.defaultDays,
-                          evidenceCodeOrUrl: '',
-                          allocatedCostVnd: 0,
-                          acceptanceStatus: 'VERIFIED',
-                        },
-                      ];
-                      applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                    }}
-                  >
-                    + Thêm Task vào Job này
-                  </Button>
-                  <Button
-                    size="sm"
                     variant="primary"
                     onClick={() => applyJobBreakdownToDraftValues(draftVideoFee, draftAddons)}
                   >
@@ -2643,7 +2601,7 @@ export function ContractForm({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-semibold text-ink">
-                        Các Task đi kèm trong Phụ lục SOW ({draftAddons.filter(a => a.includedInSow !== false).length}/{draftAddons.length} Task áp dụng cho Job này)
+                        Các hạng mục đi kèm trong Phụ lục SOW ({draftAddons.filter(a => a.includedInSow !== false).length}/{draftAddons.length} nhóm áp dụng cho Job này)
                       </span>
                       {kind === 'ACCEPTANCE' && draftAddons.some(a => a.includedInSow === false) && (
                         <button
@@ -2657,8 +2615,79 @@ export function ContractForm({
                         </button>
                       )}
                     </div>
-                    <span className="text-2xs font-code text-ink-2">
-                      Phí Task đi kèm đạt nghiệm thu: {formatNumber(jobAcceptanceBreakdown.financials.activeAddonsNet)}đ
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          const nextList = draftAddons.map(a => ({ ...a, includedInSow: false }));
+                          applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                        }}
+                      >
+                        Chỉ Video
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          const nextList = draftAddons.map(a => ({
+                            ...a,
+                            includedInSow: a.termType === 'LINK_BIO_CART' || a.termType === 'ADS_CODE',
+                          }));
+                          applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                        }}
+                      >
+                        Video + Giỏ hàng + Mã Ads
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          const nextList = draftAddons.map(a => ({
+                            ...a,
+                            includedInSow:
+                              a.termType === 'LINK_BIO_CART' ||
+                              a.termType === 'ADS_CODE' ||
+                              a.termType === 'IMAGE_USAGE' ||
+                              Boolean(a.includedInSow),
+                          }));
+                          applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                        }}
+                      >
+                        Đủ 4 nhóm SOW chuẩn
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          const activeJob = draftJobTables[activeJobTableIdx];
+                          const activeJobCode = activeJob?.jobCode || jobAcceptanceBreakdown.jobCode;
+                          const info = SOW_TASK_DELIVERABLE_INFO.CROSS_POST_REUP;
+                          const nextList: JobAcceptanceAddonRow[] = [
+                            ...draftAddons,
+                            {
+                              id: `addon-${Date.now()}`,
+                              taskCode: `${activeJobCode}-T0${draftAddons.length + 2}`,
+                              termType: 'CROSS_POST_REUP',
+                              termLabel: info.taskTitle,
+                              includedInSow: true,
+                              deliverableLabel: info.deliverableLabel,
+                              durationDays: info.defaultDays,
+                              evidenceCodeOrUrl: '',
+                              allocatedCostVnd: 0,
+                              acceptanceStatus: 'VERIFIED',
+                            },
+                          ];
+                          applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                        }}
+                      >
+                        + Thêm hạng mục
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end text-2xs font-code text-ink-2">
+                    <span>
+                      Phí hạng mục đi kèm đạt nghiệm thu: {formatNumber(jobAcceptanceBreakdown.financials.activeAddonsNet)}đ
                       {jobAcceptanceBreakdown.financials.droppedDeduction > 0
                         ? ` · Khấu trừ hủy Task: -${formatNumber(jobAcceptanceBreakdown.financials.droppedDeduction)}đ`
                         : ''}
@@ -2923,7 +2952,7 @@ export function ContractForm({
           {!isKocOwnForm && template && groups.map(g => {
             const visibleFields =
               fieldFilterMode === 'NEEDS_ATTENTION'
-                ? g.fields.filter(f => !values[f.key]?.trim() || !prefilled.has(f.key))
+                ? g.fields.filter(isFieldNeedsAttention)
                 : g.fields;
             if (visibleFields.length === 0) return null;
             return (

@@ -23,15 +23,15 @@ const SOURCES = [
   ['HKD-LIVE-BBNT', 'Nghiệm thu livestream · Hộ kinh doanh', 'Hộ kinh doanh', 'ACCEPTANCE', '2. BBNT booking Livestream HKD.docx'],
   ['COM-LIVE-HD', 'Hợp đồng livestream · Công ty', 'Công ty', 'CONTRACT', '1. Hợp đồng booking Livestream công ty.docx'],
   ['COM-LIVE-BBNT', 'Nghiệm thu livestream · Công ty', 'Công ty', 'ACCEPTANCE', '2. BBNT booking Livestream công ty.docx'],
-  ['IND-HDNT', 'Hợp đồng nguyên tắc video · Cá nhân', 'Cá nhân', 'CONTRACT', '1. HĐNT cá nhân booking Video.docx'],
-  ['IND-SOW', 'SOW booking video · Cá nhân', 'Cá nhân', 'CONTRACT', '2. SOW cá nhân booking Video.docx'],
-  ['IND-VID-BBNT', 'Nghiệm thu video (bản mới) · Cá nhân', 'Cá nhân', 'ACCEPTANCE', '3. BBNT cá nhân booking Video.docx'],
-  ['HKD-HDNT', 'Hợp đồng nguyên tắc video · Hộ kinh doanh', 'Hộ kinh doanh', 'CONTRACT', '1. HĐNT HKD booking Video.docx'],
-  ['HKD-SOW', 'SOW booking video · Hộ kinh doanh', 'Hộ kinh doanh', 'CONTRACT', '2. SOW HKD booking Video.docx'],
-  ['HKD-VID-BBNT', 'Nghiệm thu video (bản mới) · Hộ kinh doanh', 'Hộ kinh doanh', 'ACCEPTANCE', '3. BBNT HKD booking Video.docx'],
-  ['COM-HDNT', 'Hợp đồng nguyên tắc video · Công ty', 'Công ty', 'CONTRACT', '1. HĐNT Công ty booking Video.docx'],
-  ['COM-SOW', 'SOW booking video · Công ty', 'Công ty', 'CONTRACT', '2. SOW Công ty booking Video.docx'],
-  ['COM-VID-BBNT', 'Nghiệm thu video (bản mới) · Công ty', 'Công ty', 'ACCEPTANCE', '3. BBNT Công ty booking Video.docx'],
+  ['IND-HDNT', 'Hợp đồng nguyên tắc video · Cá nhân', 'Cá nhân', 'CONTRACT', '1.1 HĐNT cá nhân booking Video.docx'],
+  ['IND-SOW', 'SOW booking video · Cá nhân', 'Cá nhân', 'CONTRACT', '2.1 SOW cá nhân booking Video.docx'],
+  ['IND-VID-BBNT', 'Nghiệm thu video (bản mới) · Cá nhân', 'Cá nhân', 'ACCEPTANCE', '3.1 BBNT cá nhân booking Video.docx'],
+  ['HKD-HDNT', 'Hợp đồng nguyên tắc video · Hộ kinh doanh', 'Hộ kinh doanh', 'CONTRACT', '1.3 HĐNT HKD booking Video.docx'],
+  ['HKD-SOW', 'SOW booking video · Hộ kinh doanh', 'Hộ kinh doanh', 'CONTRACT', '2.3 SOW HKD booking Video.docx'],
+  ['HKD-VID-BBNT', 'Nghiệm thu video (bản mới) · Hộ kinh doanh', 'Hộ kinh doanh', 'ACCEPTANCE', '3.3 BBNT HKD booking Video.docx'],
+  ['COM-HDNT', 'Hợp đồng nguyên tắc video · Công ty', 'Công ty', 'CONTRACT', '1.2 HĐNT công ty booking Video.docx'],
+  ['COM-SOW', 'SOW booking video · Công ty', 'Công ty', 'CONTRACT', '2.2 SOW công ty booking Video.docx'],
+  ['COM-VID-BBNT', 'Nghiệm thu video (bản mới) · Công ty', 'Công ty', 'ACCEPTANCE', '3.2 BBNT công ty booking Video.docx'],
   ['CTV-HDNT', 'Hợp đồng nguyên tắc CTV kênh (bản mới)', 'CTV tháng', 'CONTRACT', '1. HĐNT booking video CTV Kênh.docx'],
   ['CTV-VID-BBNT', 'Nghiệm thu CTV kênh theo tháng (bản mới)', 'CTV tháng', 'ACCEPTANCE', '2. BBNT booking video CTV Kênh.docx'],
 ] as const;
@@ -66,21 +66,26 @@ function extractFields(xml: string, part: string): ContractField[] {
   const firstParagraph = (offset: number, length: number) => ps.findIndex(p => p.index! >= offset && p.index! < offset + length);
   for (const table of xml.matchAll(/<w:tbl>[\s\S]*?<\/w:tbl>/g)) {
     const rows = [...table[0].matchAll(/<w:tr\b[^>]*>[\s\S]*?<\/w:tr>/g)].map(row => ({
-      cells: [...row[0].matchAll(/<w:tc\b[^>]*>[\s\S]*?<\/w:tc>/g)].map(c => ({ xml: c[0], offset: table.index! + row.index! + c.index!, text: paragraphText(c[0]).trim() })),
+      cells: [...row[0].matchAll(/<w:tc\b[^>]*>[\s\S]*?<\/w:tc>/g)].map(c => ({
+        xml: c[0],
+        offset: table.index! + row.index! + c.index!,
+        text: paragraphText(c[0]).trim(),
+        vMergeContinue: /<w:vMerge\b(?![^>]*w:val="restart")/i.test(c[0]),
+      })),
     }));
     // Bảng có hàng tiêu đề (STT | Hạng mục | Đơn giá…): nhãn ô = tên dòng · tên cột.
-    const header = rows[0] && rows[0].cells.filter(c => c.text).length >= 3 ? rows[0].cells.map(c => c.text.replace(/\s*\((VNĐ|VND)\)\s*$/i, '').trim()) : null;
+    const header = rows[0] && rows[0].cells.filter(c => c.text).length >= 3 ? rows[0].cells.map(c => c.text.replace(/\s*\((VNĐ|VND)\)\s*$/i, '').replace(/\/+$/, '').trim()) : null;
     rows.forEach(({ cells }, r) => {
       const filled = cells.filter(c => c.text);
-      const context = filled.map(c => c.text).filter(t => t !== ':').join(' · ');
-      if (!context || context.length > 950) return;
+      const context = filled.map(c => c.text).filter(t => t !== ':').join(' · ').slice(0, 900);
+      if (!context) return;
       if (filled.length === 1 && /^Sau đây gọi tắt là/.test(filled[0].text)) return;
       const add = (cellIndex: number, title: string, required: boolean) => {
         const cell = cells[cellIndex]; const first = firstParagraph(cell.offset, cell.xml.length); if (first < 0) return;
         const placeholder = !!cell.text;
         cellFields.set(first, { label: title, context, required, ...(placeholder ? { start: 0, end: paragraphText(ps[first][0]).length } : {}) });
       };
-      const fillable = (c: { text: string }) => !c.text || PLACEHOLDER.test(c.text);
+      const fillable = (c: { text: string; vMergeContinue?: boolean }) => !c.vMergeContinue && (!c.text || PLACEHOLDER.test(c.text));
       if (cells.length >= 3 && cells[1].text === ':') {
         const isOptionalHint = /^\(?Nếu có\)?$/i.test(cells[2].text);
         if (fillable(cells[2])) add(2, cells[0].text, PARTY_REQUIRED.test(cells[0].text) && !isOptionalHint);
@@ -94,7 +99,8 @@ function extractFields(xml: string, part: string): ContractField[] {
       if (cells.length >= 2 && cells[0].text && cells.slice(1).every(fillable)) {
         add(cells.length - 1, cells[0].text, /chưa bao gồm thuế|thực nhận|còn lại/i.test(cells[0].text));
       } else if (cells.length >= 3 && cells[1].text && fillable(cells[cells.length - 1])) {
-        add(cells.length - 1, `${cells[0].text ? `${cells[0].text} · ` : ''}${cells[1].text}`, /chưa bao gồm thuế|thực nhận|còn lại/i.test(cells[1].text));
+        const colSuffix = header && /Phí dịch vụ|Thành tiền/i.test(header[header.length - 1]) ? ` · ${header[header.length - 1]}` : '';
+        add(cells.length - 1, `${cells[0].text ? `${cells[0].text} · ` : ''}${shortName(cells[1].text)}${colSuffix}`, /chưa bao gồm thuế|thực nhận|còn lại/i.test(cells[1].text));
       }
     });
   }
@@ -110,6 +116,21 @@ function extractFields(xml: string, part: string): ContractField[] {
       } else if (/Ngân hàng/i.test(text)) {
         pFields.push({ key: 'token:[Tại Ngân hàng]', part, paragraph: index, start: text.length, end: text.length, label: 'Tại Ngân hàng', context: text, required: true });
       }
+    }
+    const platformLinkMatch = !cell && text.match(/^(TikTok|Shopee|Facebook|Instagram|YouTube|Threads\/nền tảng khác)\s*:\s*(Link)\s*$/i);
+    if (platformLinkMatch) {
+      const linkStart = text.lastIndexOf(platformLinkMatch[2]);
+      const platformName = platformLinkMatch[1];
+      pFields.push({
+        key: `${part}:p${index}:${linkStart}`,
+        part,
+        paragraph: index,
+        start: linkStart,
+        end: linkStart + platformLinkMatch[2].length,
+        label: `Link kênh ${platformName} đăng tải`,
+        context: text,
+        required: false,
+      });
     }
     if (!cell && /\/(?:HĐNT|HĐDV|SOW|BBNT)\/UPBASE-/i.test(text)) {
       const isRefLine = /Kèm theo|Căn cứ/i.test(text);
@@ -135,7 +156,7 @@ function extractFields(xml: string, part: string): ContractField[] {
     }
     // Các token rõ ràng và chỗ trống thuộc dòng khai báo; không coi dấu … trong văn xuôi là trường.
     const pattern = /\[[^\]\r\n]{1,60}\]|\.{3,}|_{3,}|…+/g;
-    if (!cell && /\[|Hôm nay|tháng.*\/202|điền|trong.{0,12}ngày|ngày.{0,12}tháng|tạm ứng|thanh toán|hoa hồng|mã code|Sản xuất và đăng tải|gắn link\/giỏ hàng|Sử dụng hình ảnh|Tham dự sự kiện|Đăng 1 post|Là tài khoản mạng xã hội|Thời gian đăng tải|Ngày đăng tải|Thực hiện phiên livestream|Triển khai trên nền tảng|Cho phép Bên A sử dụng hình ảnh|Theo ủy quyền số/i.test(text)) {
+    if (!cell && /\[|Hôm nay|tháng.*\/202|điền|trong.{0,12}ngày|ngày.{0,12}tháng|tạm ứng|thanh toán|hoa hồng|mã code|Sản xuất và đăng tải|gắn link\/giỏ hàng|Sử dụng hình ảnh|Tham dự sự kiện|Đăng 1 post|Là tài khoản mạng xã hội|Thời gian đăng tải|Ngày đăng tải|Thực hiện phiên livestream|Triển khai trên nền tảng|Cho phép Bên A sử dụng hình ảnh|Theo ủy quyền số|Sản phẩm được quảng cáo|Số lượng video|Thời lượng video|Nội dung được cung cấp|Định dạng file bàn giao|Thời hạn bàn giao|Số lượng phiên bản|Thời lượng từng phiên bản|chỉnh sửa tối đa|Thời hạn sử dụng|phục vụ việc quay|link video|cấp code chạy ad|nội dung sản xuất trong/i.test(text)) {
       for (const match of text.matchAll(pattern)) {
         const token = match[0]; const start = match.index!;
         const key = token.startsWith('[') ? `token:${token}` : `${part}:p${index}:${start}`;
@@ -173,9 +194,20 @@ const PROSE: ProseRule[] = [
   [/Theo ủy quyền số/i, ['Số văn bản ủy quyền (nếu có)', 'Ngày ủy quyền'], 'PARTY', ['text', 'date'], []],
   [/^(?:Thời gian|Ngày) đăng tải \(air video\)/i, ['Thời gian đăng tải (air video)'], 'SCOPE', ['date'], ['airDate']],
   [/đẩy doanh số bán hàng với sản phẩm/, ['Sản phẩm', 'Nhãn hiệu', 'Thời gian đăng tải (air video)'], 'SCOPE', ['text', 'text', 'date'], ['product', 'brand', 'airDate']],
+  [/Sản phẩm được quảng cáo/i, ['Sản phẩm được quảng cáo (tên sản phẩm + nhãn hiệu)'], 'SCOPE', ['text'], ['product']],
+  [/^Số lượng video/i, ['Số lượng video'], 'SCOPE', ['number'], ['quantity']],
+  [/^Thời lượng video/i, ['Thời lượng video (giây)'], 'SCOPE', ['number'], []],
+  [/Nội dung được cung cấp/i, ['Nội dung cung cấp (Post-only, nếu có)'], 'SCOPE', ['text'], []],
+  [/Định dạng file bàn giao/i, ['Định dạng file bàn giao (Production-only, nếu có)'], 'SCOPE', ['text'], []],
+  [/^Thời hạn bàn giao/i, ['Thời gian đăng tải / bàn giao video (air video)'], 'SCOPE', ['date'], ['airDate']],
+  [/^Số lượng phiên bản/i, ['Số lượng phiên bản cắt ngắn (nếu có)'], 'SCOPE', ['number'], []],
+  [/^Thời lượng từng phiên bản/i, ['Thời lượng từng phiên bản cắt ngắn (nếu có)'], 'SCOPE', ['text'], []],
+  [/chỉnh sửa tối đa/i, ['Số vòng chỉnh sửa video tối đa'], 'SCOPE', ['number'], []],
+  [/phục vụ việc quay, sản xuất nội dung trong thời hạn/i, ['Thời hạn hoàn trả sản phẩm mẫu (ngày)'], 'SCOPE', ['number'], []],
+  [/^link video/i, ['Link video nghiệm thu (Link Air)'], 'SCOPE', ['text'], []],
   [/gắn link\/giỏ hàng sản phẩm/, ['Sản phẩm gắn giỏ hàng'], 'SCOPE', ['text'], ['product']],
-  [/mã code để chạy quảng cáo/, ['Số ngày cấp mã quảng cáo'], 'SCOPE', ['number'], []],
-  [/Sử dụng hình ảnh và video trong/i, ['Số ngày sử dụng hình ảnh và video'], 'SCOPE', ['number'], []],
+  [/mã code để chạy quảng cáo|cấp code chạy ad/i, ['Số ngày cấp mã quảng cáo'], 'SCOPE', ['number'], []],
+  [/Sử dụng hình ảnh và video trong|Thời hạn sử dụng:\s*…\s*ngày|Quyền sử dụng hình ảnh và nội dung sản xuất trong/i, ['Số ngày sử dụng hình ảnh và video'], 'SCOPE', ['number'], []],
   [/Sử dụng hình ảnh trong/, ['Số ngày sử dụng hình ảnh', 'Ngày bắt đầu sử dụng hình ảnh'], 'SCOPE', ['number', 'date'], []],
   [/Thực hiện phiên livestream/i, ['Sản phẩm livestream', 'Nhãn hiệu', 'Nền tảng livestream', 'Kênh livestream', 'Khung giờ livestream', 'Ngày phát sóng livestream', 'Thời lượng lên hình tối thiểu (phút)'], 'SCOPE', ['text', 'text', 'text', 'text', 'text', 'date', 'number'], ['product', 'brand', undefined, 'channelLink', undefined, 'airDate', undefined]],
   [/Triển khai trên nền tảng/i, ['Nền tảng livestream', 'Kênh livestream', 'Khung giờ livestream', 'Ngày phát sóng livestream', 'Thời lượng lên hình tối thiểu (phút)'], 'SCOPE', ['text', 'text', 'text', 'date', 'number'], [undefined, 'channelLink', undefined, 'airDate', undefined]],
@@ -212,6 +244,10 @@ function describeEach(fields: ContractField[], subject: string): ContractField[]
     if (f.key === 'token:[Tên chủ tài khoản]') return { ...f, title: 'Tên chủ tài khoản ngân hàng', group: 'PARTY', kind: 'text', source: 'bankAccountName' };
     if (f.key === 'token:[Số tài khoản]') return { ...f, title: 'Số tài khoản ngân hàng', group: 'PARTY', kind: 'text', source: 'bankAccountNumber' };
     if (f.key === 'token:[Tại Ngân hàng]') return { ...f, title: 'Tại Ngân hàng', group: 'PARTY', kind: 'text', source: 'bankName' };
+    if (/^Link kênh .* đăng tải$/i.test(f.label)) {
+      const isTiktok = /TikTok/i.test(f.label);
+      return { ...f, title: f.label, group: 'SCOPE', kind: 'text', ...(isTiktok ? { source: 'channelLink' } : {}) };
+    }
     if (f.key.endsWith(':cell')) {
       const party = !f.label.includes(' · ') && PARTY_TITLES.find(([re]) => re.test(f.label));
       if (party) return { ...f, title: party[1](subject), group: 'PARTY', kind: party[3], source: party[2] };
@@ -220,8 +256,8 @@ function describeEach(fields: ContractField[], subject: string): ContractField[]
       }
       const isSettlementRow = /^(Tổng giá trị|Thuế TNCN|Thuế VAT|Giá trị đã tạm ứng|Chi phí phát sinh|Giá trị Bên A còn phải thanh toán)/i.test(f.label);
       if (isSettlementRow) {
-        const title = f.label.replace(/^\d+(\.\d+)? · /, '').replace(/ · (Chi phí|Nội dung|Thành tiền)$/i, '');
-        const net = (/chưa bao gồm thuế|thực nhận|^Tổng giá trị nghiệm thu$/i.test(title)) && !/VAT/i.test(title);
+        const title = f.label.replace(/^\d+(\.\d+)? · /, '').replace(/ · (Chi phí|Nội dung|Thành tiền.*|Phí dịch vụ.*)$/i, '');
+        const net = (/chưa bao gồm thuế|thực nhận|^Tổng giá trị nghiệm thu$/i.test(title)) && !/VAT/i.test(f.label);
         const source: FieldSource | undefined =
           /^Thuế TNCN/i.test(title) ? 'pitAmount'
           : /^Thuế VAT/i.test(title) ? 'vatAmount'
@@ -230,15 +266,15 @@ function describeEach(fields: ContractField[], subject: string): ContractField[]
           : /^Giá trị Bên A còn phải thanh toán/i.test(title) ? 'remainingAmount'
           : net ? 'netTotal'
           : /chưa bao gồm thuế VAT/i.test(title) ? 'lineTotal'
-          : /đã bao gồm (?:thuế|VAT)|Tổng giá trị Hợp đồng/i.test(title) ? 'grossTotal'
+          : /đã bao gồm (?:thuế|VAT|toàn bộ các khoản thuế)|Tổng giá trị Hợp đồng/i.test(f.label) ? 'grossTotal'
           : undefined;
         return { ...f, title, group: 'MONEY', kind: 'money', source };
       }
       const column = f.label.includes(' · ') ? f.label.split(' · ').pop()! : '';
-      const firstRow = /^(Sản xuất và đăng tải|Thực hiện phiên livestream|Link video|Dòng 1 )/.test(f.label);
+      const firstRow = /^(Hạng mục video|Sản xuất và đăng tải|Thực hiện phiên livestream|Link video|Dòng 1 )/i.test(f.label);
       if (/Đơn giá|Mức giá/i.test(column)) return { ...f, title: f.label, group: 'SCOPE', kind: 'money', source: firstRow ? 'unitPrice' : undefined };
       if (/Số lượng/i.test(column)) return { ...f, title: f.label, group: 'SCOPE', kind: 'number', source: firstRow ? 'quantity' : undefined };
-      if (/Thành tiền/i.test(column)) return { ...f, title: f.label, group: 'SCOPE', kind: 'money', source: firstRow ? 'lineTotal' : undefined };
+      if (/Thành tiền|Phí dịch vụ/i.test(column)) return { ...f, title: f.label, group: 'SCOPE', kind: 'money', source: firstRow ? 'lineTotal' : undefined };
       if (column && !/Chi phí|Nội dung/i.test(column)) return { ...f, title: f.label, group: 'SCOPE', kind: 'text' };
       const title = f.label.replace(/^\d+(\.\d+)? · /, '').replace(/ · (Chi phí|Nội dung)$/, '');
       const net = /chưa bao gồm thuế|thực nhận/i.test(title) && !/Phụ lục|VAT/.test(title);
@@ -485,6 +521,10 @@ export function extractBlocks(xml: string, part: string): DocBlock[] {
       const top = stack.at(-1);
       const span = token.match(/<w:gridSpan\b[^>]*w:val="(\d+)"/i);
       if (top?.cell && span && Number(span[1]) > 1) top.cell.colSpan = Number(span[1]);
+      const vm = token.match(/<w:vMerge\b([^>]*)\/?>/i);
+      if (top?.cell && vm) {
+        top.cell.vMerge = /w:val="restart"/i.test(vm[1] || '') ? 'restart' : 'continue';
+      }
     } else if (token.startsWith('<w:tc')) {
       const top = stack.at(-1);
       if (top?.row) {
@@ -513,7 +553,14 @@ function renderDocBlocksToXml(blocks: DocBlock[]): string {
         .map(row => {
           const cellsXml = row
             .map(cell => {
-              const tcPr = cell.colSpan && cell.colSpan > 1 ? `<w:tcPr><w:gridSpan w:val="${cell.colSpan}"/></w:tcPr>` : '';
+              const spanXml = cell.colSpan && cell.colSpan > 1 ? `<w:gridSpan w:val="${cell.colSpan}"/>` : '';
+              const vmXml =
+                cell.vMerge === 'restart'
+                  ? '<w:vMerge w:val="restart"/>'
+                  : cell.vMerge === 'continue'
+                    ? '<w:vMerge/>'
+                    : '';
+              const tcPr = spanXml || vmXml ? `<w:tcPr>${spanXml}${vmXml}</w:tcPr>` : '';
               return `<w:tc>${tcPr}${renderDocBlocksToXml(cell.blocks)}</w:tc>`;
             })
             .join('');

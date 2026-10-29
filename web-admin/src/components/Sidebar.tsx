@@ -28,7 +28,6 @@ import {
   Clapperboard,
   Contact,
   Cloud,
-  Wrench,
   Bot,
   MessageSquare,
   type LucideIcon,
@@ -100,12 +99,10 @@ const NAV = {
   partnerAccess: { key: 'partner-access', label: 'Phân quyền & Nhân sự', icon: KeyRound },
   cloudflareAdmin: { key: 'cloudflare-admin', label: 'Quản lý Cloudflare R2', icon: Cloud },
   apiSettings: { key: 'api-settings', label: 'Tích hợp & Kết nối API', icon: Sliders },
-  workToolkit: { key: 'work-toolkit', label: 'Bộ công cụ tiện ích', icon: Wrench },
 } satisfies Record<string, NavItem>;
 
 /** Màn đặt ở chân menu (cạnh tài khoản) thay vì chiếm một dòng trong danh sách. */
 const FOOTER_ITEMS: NavItem[] = [
-  { key: 'work-toolkit', label: 'Bộ công cụ tiện ích', icon: Wrench },
   { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
   { key: 'api-settings', label: 'Tích hợp & Cấu hình API', icon: Sliders },
 ];
@@ -162,7 +159,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
       : NAV.contracts;
 
   return [
-    { items: [NAV.cockpit, NAV.dashboard, NAV.workToolkit] },
+    { items: [NAV.cockpit, NAV.dashboard] },
     {
       title: 'Kế hoạch & Điều phối',
       items: [NAV.inputPlan, NAV.content, NAV.delegation, NAV.campaigns],

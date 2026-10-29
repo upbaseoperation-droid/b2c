@@ -2529,7 +2529,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2.5">
         <Tabs
           items={[
-            { key: 'STORE_GOVERNANCE', label: 'Ma trận gian hàng', count: governanceStats.totalB2cManaged },
+            { key: 'STORE_GOVERNANCE', label: 'Kế hoạch gian hàng', count: governanceStats.totalB2cManaged },
             { key: 'BRAND_PLANS', label: 'Kế hoạch theo Brand', count: filteredBrandMonthlyPlans.length },
           ]}
           value={activeHubTab}
