@@ -15,6 +15,7 @@ import type { LinkAirResult } from '../linkAirCheck';
 import { getSharedCrawlerStore, inspectLiveTikTokVideoPage } from '../tiktokOpenSourceEngines';
 import { REAL_B2C_69_STORES } from '../realB2cPlanData';
 import { readRecord, upsertRecord } from './sharedRecords';
+import { SNAPSHOT_TIKTOK_FRAMES } from '../tiktokFrameSnapshots';
 import { handleCtvZaloMessage } from './zaloCtvCommands';
 import {
   executeMobileTikTokListingFromZalo,
@@ -2575,8 +2576,15 @@ export async function captureTikTokProductFrameBuffer(params: {
       let bridgeState = await getVnCartBridgeState();
       let bridgeItem = bridgeState.items?.[vidFromUrl];
 
-      // Nếu chưa có frame từ cầu nối và đang chạy serverless (không có ffmpeg nội bộ)
-      if (!bridgeItem?.frameJpegBase64 && isFfmpegUnavailable) {
+      const isFrameSecMatching =
+        !bridgeItem?.captureSec ||
+        !params.captureSec ||
+        Math.abs(Number(bridgeItem.captureSec) - Number(params.captureSec)) <= 1.5;
+
+      const hasValidFrame = Boolean(bridgeItem?.frameJpegBase64 && isFrameSecMatching);
+
+      // Nếu chưa có frame chuẩn từ cầu nối và đang chạy serverless (không có ffmpeg nội bộ)
+      if (!hasValidFrame && isFfmpegUnavailable) {
         await upsertRecord<VnCartBridgeState>(
           TIKTOK_VN_CART_CACHE_KEY,
           DEFAULT_VN_CART_BRIDGE_STATE,
@@ -2602,14 +2610,33 @@ export async function captureTikTokProductFrameBuffer(params: {
           await new Promise((r) => setTimeout(r, 450));
           bridgeState = await getVnCartBridgeState();
           bridgeItem = bridgeState.items?.[vidFromUrl];
-          if (bridgeItem?.frameJpegBase64) break;
+          const matchingNow =
+            !bridgeItem?.captureSec ||
+            !params.captureSec ||
+            Math.abs(Number(bridgeItem.captureSec) - Number(params.captureSec)) <= 1.5;
+          if (bridgeItem?.frameJpegBase64 && matchingNow) break;
         }
       }
 
       if (bridgeItem?.frameJpegBase64) {
-        const buf = Buffer.from(bridgeItem.frameJpegBase64, 'base64');
-        if (buf.length > 1000 && isJpegOrPngBuffer(buf)) {
-          rawBuffer = buf;
+        const secMatches =
+          !bridgeItem?.captureSec ||
+          !params.captureSec ||
+          Math.abs(Number(bridgeItem.captureSec) - Number(params.captureSec)) <= 1.5;
+        if (secMatches) {
+          const buf = Buffer.from(bridgeItem.frameJpegBase64, 'base64');
+          if (buf.length > 1000 && isJpegOrPngBuffer(buf)) {
+            rawBuffer = buf;
+            rawSource = 'FFMPEG_FRAME';
+          }
+        }
+      }
+
+      // Snapshot dự phòng trực tiếp nếu có cấu hình sẵn
+      if (!rawBuffer && vidFromUrl && SNAPSHOT_TIKTOK_FRAMES[vidFromUrl]) {
+        const snapBuf = Buffer.from(SNAPSHOT_TIKTOK_FRAMES[vidFromUrl], 'base64');
+        if (snapBuf.length > 1000 && isJpegOrPngBuffer(snapBuf)) {
+          rawBuffer = snapBuf;
           rawSource = 'FFMPEG_FRAME';
         }
       }
@@ -5113,11 +5140,12 @@ export async function processZaloWebhookEvent(
           airedAt: airedAtText,
           mentionSec: firstMentionSec !== null ? String(firstMentionSec) : '—',
           firstMentionSec: firstMentionSec !== null ? `Giây ${firstMentionSec}s` : '—',
-          productTitle: primaryProd?.title || 'Sản phẩm chiến dịch',
+          productTitle: primaryProd?.title || checkResult.productTitle || 'Sản phẩm chiến dịch',
           holdingQuote: holdingQuote ? holdingQuote.slice(0, 90) : '—',
         });
-        if (primaryProd?.productUrl && !photoCaption.includes(primaryProd.productUrl)) {
-          photoCaption = `${photoCaption}\n🔗 Link SP: ${primaryProd.productUrl}`;
+        const finalProdUrl = primaryProd?.productUrl || checkResult.productUrl;
+        if (finalProdUrl && !photoCaption.includes(finalProdUrl)) {
+          photoCaption = `${photoCaption}\n🔗 Link SP: ${finalProdUrl}`;
         }
 
         await sendZaloPhoto(

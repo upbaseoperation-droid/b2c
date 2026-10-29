@@ -882,6 +882,7 @@ export interface VnCartBridgeItem {
   cartAnchorUrl?: string;
   cartProductId?: string;
   cartSellerId?: string;
+  captureSec?: number;
   frameJpegBase64?: string;
   updatedAt: string;
 }
@@ -935,6 +936,31 @@ export const DEFAULT_VN_CART_BRIDGE_STATE: VnCartBridgeState = {
         },
       ],
       updatedAt: '2026-10-29T00:55:00.000Z',
+    },
+        '7695014258874109205': {
+      videoId: '7695014258874109205',
+      videoUrl: 'https://www.tiktok.com/@chutieuhan10012001/video/7695014258874109205',
+      cartAnchorTitle:
+        'Dung dịch vệ sinh phụ nữ pH Care Kháng Khuẩn Thiên Nhiên, Mát Lạnh Bạc Hà, Dưỡng Da Sáng Hồng 150ml',
+      cartAnchorUrl:
+        'https://shop.tiktok.com/vn/pdp/dung-dich-ve-sinh-phu-nu-ph-care-150ml-khang-khuan-mat-lanh/1733713374226384532?source=anchor',
+      cartProductId: '1733713374226384532',
+      cartSellerId: '7494286989505562260',
+      cartProducts: [
+        {
+          productId: '1733713374226384532',
+          sellerId: '7494286989505562260',
+          title:
+            'Dung dịch vệ sinh phụ nữ pH Care Kháng Khuẩn Thiên Nhiên, Mát Lạnh Bạc Hà, Dưỡng Da Sáng Hồng 150ml',
+          anchorKeyword: 'Dung dịch vệ sinh phụ nữ pH Care Kháng Khu...',
+          productUrl:
+            'https://shop.tiktok.com/vn/pdp/dung-dich-ve-sinh-phu-nu-ph-care-150ml-khang-khuan-mat-lanh/1733713374226384532?source=anchor',
+          source: 'TikTok Shop Anchor (VN Bridge)',
+        },
+      ],
+      captureSec: 38.6,
+      frameJpegBase64: SNAPSHOT_TIKTOK_FRAMES['7695014258874109205'],
+      updatedAt: '2026-10-29T08:44:00.000Z',
     },
     '7701316821709769991': {
       videoId: '7701316821709769991',
@@ -1113,7 +1139,8 @@ function applyVnBridgeItemToInspected(
 }
 
 async function resolveCartViaVietnamBridge(
-  inspected: RealTikTokVideoAndAuthorDetail
+  inspected: RealTikTokVideoAndAuthorDetail,
+  preferredCaptureSec?: number
 ): Promise<void> {
   if (
     (inspected.cartProducts && inspected.cartProducts.length > 0) ||
@@ -1155,6 +1182,7 @@ async function resolveCartViaVietnamBridge(
       nextPending[inspected.videoId] = {
         videoId: inspected.videoId,
         videoUrl: inspected.videoUrl,
+        captureSec: preferredCaptureSec,
         requestedAt: now,
       };
       return {
@@ -1169,7 +1197,7 @@ async function resolveCartViaVietnamBridge(
   if (bridgeUrl) {
     try {
       const res = await fetch(
-        `${bridgeUrl}/inspect?url=${encodeURIComponent(inspected.videoUrl)}`,
+        `${bridgeUrl}/inspect?url=${encodeURIComponent(inspected.videoUrl)}${preferredCaptureSec ? `&sec=${preferredCaptureSec}` : ""}`,
         {
           headers: { 'User-Agent': BROWSER_UA },
           signal: AbortSignal.timeout(3800),
@@ -1321,8 +1349,6 @@ export async function checkSingleLinkServerless(
       return { ...base, checks, verdict: verdictOf(checks) };
     }
 
-    await resolveCartViaVietnamBridge(inspected);
-
     const hashtags =
       inspected.hashtags.length > 0 ? inspected.hashtags : extractHashtags(inspected.caption);
 
@@ -1382,6 +1408,7 @@ export async function checkSingleLinkServerless(
       rawHoldingStartSec !== null
         ? Number(Math.min(maxSafeSec, Math.max(1.5, rawHoldingStartSec + 1.5)).toFixed(1))
         : 3.5;
+    await resolveCartViaVietnamBridge(inspected, bestHoldingMomentSec);
     const bestHoldingMomentTimeLabel =
       preferredHoldingMoment?.timeLabel ||
       fallbackHoldingSeg?.timeLabel ||

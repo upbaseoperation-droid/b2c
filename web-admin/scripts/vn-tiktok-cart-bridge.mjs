@@ -313,6 +313,7 @@ async function pollOnce() {
       });
 
       if (fastInspected && fastInspected.cartProducts.length > 0) {
+        fastInspected.captureSec = targetSec;
         console.log(
           `[VN-Bridge] Fast-resolved ${fastInspected.cartProducts.length} product(s) for ${item.videoId}: ${fastInspected.cartAnchorTitle}`
         );
@@ -325,6 +326,7 @@ async function pollOnce() {
         targetSec
       ).catch(() => undefined);
       if (frameBase64 && fastInspected) {
+        fastInspected.captureSec = targetSec;
         fastInspected.frameJpegBase64 = frameBase64;
         fastInspected.updatedAt = new Date().toISOString();
         await pushResolvedItemsToWebhook([fastInspected]);
@@ -335,6 +337,7 @@ async function pollOnce() {
             videoId: item.videoId,
             videoUrl: item.videoUrl,
             cartProducts: fastInspected?.cartProducts || [],
+            captureSec: targetSec,
             frameJpegBase64: frameBase64,
             updatedAt: new Date().toISOString(),
           },
@@ -370,6 +373,13 @@ async function bootstrap() {
     6.9
   ).catch(() => null);
   if (seed3) seeds.push(seed3);
+
+  const seed4 = await inspectTikTokCartFromVietnam(
+    'https://www.tiktok.com/@chutieuhan10012001/video/7695014258874109205',
+    '7695014258874109205',
+    38.6
+  ).catch(() => null);
+  if (seed4) seeds.push(seed4);
 
   if (seeds.length > 0) {
     console.log(`[VN-Bridge] Seeded ${seeds.length} videos with cart products + ffmpeg frames`);
