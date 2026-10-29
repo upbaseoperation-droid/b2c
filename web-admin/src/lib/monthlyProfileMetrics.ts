@@ -26,6 +26,18 @@ export interface ProfileMonthOption {
   periodTag: string;
 }
 
+/** Kỳ của ngân sách, chỉ tiêu, thực chi ghi trên gian hàng trong Dữ liệu gốc. */
+const STORE_MASTER_MONTH = '2026/10';
+/** File 3.2 (video đã book) và số liệu TikTok Seller Ads hiện có đều thuộc tháng 10/2026. */
+const FILE32_MONTH = '2026/10';
+const ADS_MONTH = '2026/10';
+
+/** Tháng plan của deal sinh từ kế hoạch (campaignCode PLAN-YYYYMM). Deal không gắn plan thì không thuộc tháng nào. */
+export function dealPlanMonth(d: Pick<BookingDealItem, 'campaignCode'>): string | undefined {
+  const m = /^PLAN-(\d{4})(\d{2})$/.exec(d.campaignCode || '');
+  return m ? `${m[1]}/${m[2]}` : undefined;
+}
+
 export const PROFILE_MONTH_OPTIONS: ProfileMonthOption[] = [
   {
     value: '2026/10',
@@ -130,6 +142,8 @@ export interface StoreMonthlyPlanReport {
   budgetBurnPct: number;
   isOverbudget: boolean;
   isUnbudgetedSpend: boolean;
+  /** Tháng có plan hoặc số liệu thực tế; false thì màn hình để trống. */
+  hasData: boolean;
   reportBookedVideos: number;
   reportBookedCount: number;
   reportAiredVideos: number;
@@ -155,6 +169,7 @@ export interface BrandMonthlyPlanReport {
   storeCount: number;
   platforms: string[];
   planStatusLabel: string;
+  hasData: boolean;
   overbudgetStoresCount: number;
   unbudgetedStoresCount: number;
   // Tổng hợp Plan cấp Thương hiệu
@@ -490,55 +505,35 @@ export function buildStoreMonthlyPlanReport(
   const sNameNorm = norm(store.storeName);
   const bNameNorm = norm(store.brandName);
 
-  // Tìm Plan trực tiếp của tháng đó hoặc suy dẫn từ Plan gốc tháng 10/2026
+  // Plan của đúng tháng đang xem. Tháng không có plan và không có số liệu thì để trống, không suy diễn.
   const directPlan = matchStorePlan(store, month, allPlans);
-  const octBaselinePlan =
-    month === '2026/10' ? directPlan : matchStorePlan(store, '2026/10', allPlans);
+  // Ngân sách, chỉ tiêu và thực chi ghi trên gian hàng (Dữ liệu gốc) chỉ thuộc kỳ hiện hành.
+  const isStoreMasterMonth = month === STORE_MASTER_MONTH;
+  const activePlan = directPlan;
 
-  // Hệ số theo kỳ tháng nếu gian hàng chưa có bản ghi riêng trong tháng 08, 09, 11
-  const monthRatio =
-    month === '2026/10'
-      ? 1
-      : month === '2026/09'
-        ? 0.92
-        : month === '2026/08'
-          ? 0.85
-          : 1.1; // 2026/11 Mega Sale 11.11
-
-  const activePlan = directPlan || octBaselinePlan;
-
-  // Các chỉ số Plan gốc ở tháng 10 (từ Plan 4.1 hoặc từ bản ghi tháng 10)
   const baseBudgetNet =
     directPlan?.totalTargetBudget ??
-    Math.round((store.budgetNet ?? store.monthlyBudget ?? octBaselinePlan?.totalTargetBudget ?? 0) * monthRatio);
+    (isStoreMasterMonth ? store.budgetNet ?? store.monthlyBudget ?? 0 : 0);
   const baseBudgetGross =
-    store.budgetGross && month === '2026/10'
+    store.budgetGross && isStoreMasterMonth && !directPlan
       ? store.budgetGross
       : Math.round(baseBudgetNet * GROSS_MULTIPLIER);
 
   const baseAffBudgetNet =
     directPlan?.budgetAffiliate ??
-    Math.round(
-      (store.budgetAffiliateNet ?? store.budgetAffiliate ?? octBaselinePlan?.budgetAffiliate ?? baseBudgetNet * 0.8) *
-        monthRatio
-    );
+    (isStoreMasterMonth ? store.budgetAffiliateNet ?? store.budgetAffiliate ?? Math.round(baseBudgetNet * 0.8) : 0);
   const baseSelfBudgetNet =
     directPlan?.budgetSelfChannel ??
-    Math.round(
-      (store.budgetSelfChannelNet ?? store.budgetSelfChannel ?? octBaselinePlan?.budgetSelfChannel ?? Math.max(0, baseBudgetNet - baseAffBudgetNet)) *
-        monthRatio
-    );
-  const baseAdsBudget =
-    directPlan?.budgetAdsTotal ??
-    Math.round((octBaselinePlan?.budgetAdsTotal ?? baseBudgetNet * 0.2) * monthRatio);
+    (isStoreMasterMonth
+      ? store.budgetSelfChannelNet ?? store.budgetSelfChannel ?? Math.max(0, baseBudgetNet - baseAffBudgetNet)
+      : 0);
+  const baseAdsBudget = directPlan?.budgetAdsTotal ?? Math.round(baseBudgetNet * 0.2);
 
   const baseAffVideos =
-    directPlan?.targetAffiliateContents ??
-    Math.round((store.targetAffiliateContents ?? octBaselinePlan?.targetAffiliateContents ?? 0) * monthRatio);
+    directPlan?.targetAffiliateContents ?? (isStoreMasterMonth ? store.targetAffiliateContents ?? 0 : 0);
   const baseSelfVideos =
-    directPlan?.targetSelfChannelContents ??
-    Math.round((store.targetSelfChannelContents ?? octBaselinePlan?.targetSelfChannelContents ?? 0) * monthRatio);
-  const baseFocVideos = Math.round((store.targetFocVideos ?? 0) * monthRatio);
+    directPlan?.targetSelfChannelContents ?? (isStoreMasterMonth ? store.targetSelfChannelContents ?? 0 : 0);
+  const baseFocVideos = isStoreMasterMonth ? store.targetFocVideos ?? 0 : 0;
   const sumVideos = baseAffVideos + baseSelfVideos + baseFocVideos;
   const planTotalVideos =
     directPlan?.totalTargetContents && directPlan.totalTargetContents > sumVideos
@@ -548,12 +543,11 @@ export function buildStoreMonthlyPlanReport(
   // Mục tiêu NMV của tháng (nếu file 4.1 để 0 nhưng có ngân sách hoặc có sản lượng video, tính NMV mục tiêu theo định mức sàn)
   const rawPlanNmv =
     directPlan?.targetGmv ||
-    (month === '2026/10' ? store.monthlyTargetGmv : 0) ||
-    octBaselinePlan?.targetGmv ||
+    (isStoreMasterMonth ? store.monthlyTargetGmv : 0) ||
     0;
   const planNmv =
     rawPlanNmv > 0
-      ? Math.round(rawPlanNmv * (directPlan ? 1 : monthRatio))
+      ? rawPlanNmv
       : baseBudgetNet > 0
         ? Math.round(baseBudgetNet * 4.5)
         : 0;
@@ -581,45 +575,19 @@ export function buildStoreMonthlyPlanReport(
     }
   }
 
-  const octBookings: StoreMonthlyBookingRecord[] =
-    matchedAppDeals.length === 0
-      ? matchedFile32Bookings
+  // Deal sinh từ kế hoạch tính vào tháng của plan; File 3.2 là booking thực tế tháng 10/2026.
+  const monthAppDeals = matchedAppDeals.filter(d => dealPlanMonth(d) === month);
+  const monthFile32Bookings = month === FILE32_MONTH ? matchedFile32Bookings : [];
+  const bookings: StoreMonthlyBookingRecord[] =
+    monthAppDeals.length === 0
+      ? monthFile32Bookings
       : (() => {
-          const appDealCodes = new Set(matchedAppDeals.map(d => d.dealCode));
+          const appDealCodes = new Set(monthAppDeals.map(d => d.dealCode));
           return [
-            ...matchedAppDeals.map(d => convertDealToMonthlyBooking(d, '2026/10')),
-            ...matchedFile32Bookings.filter(b => !appDealCodes.has(b.dealCode)),
+            ...monthAppDeals.map(d => convertDealToMonthlyBooking(d, month)),
+            ...monthFile32Bookings.filter(b => !appDealCodes.has(b.dealCode)),
           ];
         })();
-
-  // Với các tháng 08, 09, 11: tạo danh sách booking theo đúng kỳ tháng
-  const bookings: StoreMonthlyBookingRecord[] =
-    month === '2026/10'
-      ? octBookings
-      : month === '2026/11'
-        ? []
-        : octBookings.map((b, idx) => {
-            const monthNum = month.split('/')[1] || '09';
-            const day = String(((idx * 3 + 5) % 25) + 2).padStart(2, '0');
-            const costScaled = Math.round(b.costNet * monthRatio);
-            const gmvScaled = Math.round(b.gmv * (month === '2026/09' ? 0.96 : 0.88));
-            return {
-              ...b,
-              id: `${b.id}-${month}`,
-              dealCode: `${b.dealCode.slice(0, 4)}${monthNum}${b.dealCode.slice(-5)}`,
-              month,
-              airDate: `2026-${monthNum}-${day}`,
-              weekLabel: month === '2026/09' ? `W3${(idx % 4) + 6}` : `W3${(idx % 4) + 2}`,
-              costNet: costScaled,
-              gmv: gmvScaled,
-              views: Math.round(b.views * monthRatio),
-              orders: Math.round(b.orders * monthRatio),
-              roas: costScaled > 0 ? Number((gmvScaled / costScaled).toFixed(2)) : b.roas,
-              pipeline: 'Đã nghiệm thu',
-              paymentStatus: 'Đã tất toán',
-              slaWarning: 'Đúng hạn',
-            };
-          });
 
   // Chiến dịch TikTok Seller Ads của gian hàng
   const adsByStore = ADS_CAMPAIGNS_BY_STORE.byStore.get(sNameNorm) || [];
@@ -627,60 +595,32 @@ export function buildStoreMonthlyPlanReport(
   const adsCampaigns = adsByBrand.length === 0
     ? adsByStore
     : Array.from(new Set([...adsByStore, ...adsByBrand]));
-  const adsCost =
-    month === '2026/10'
-      ? adsCampaigns.reduce((s, c) => s + c.cost, 0)
-      : month === '2026/11'
-        ? 0
-        : Math.round(adsCampaigns.reduce((s, c) => s + c.cost, 0) * monthRatio);
-  const adsGmv =
-    month === '2026/10'
-      ? adsCampaigns.reduce((s, c) => s + c.gmv, 0)
-      : month === '2026/11'
-        ? 0
-        : Math.round(adsCampaigns.reduce((s, c) => s + c.gmv, 0) * monthRatio);
+  // Số liệu Ads hiện có là của tháng 10/2026.
+  const monthAdsCampaigns = month === ADS_MONTH ? adsCampaigns : [];
+  const adsCost = monthAdsCampaigns.reduce((s, c) => s + c.cost, 0);
+  const adsGmv = monthAdsCampaigns.reduce((s, c) => s + c.gmv, 0);
 
   // Tính chỉ số Report (Báo cáo thực tế trong tháng)
   const spentFromBookings = bookings.reduce((s, b) => s + b.costNet, 0);
-  const reportSpentNet =
-    month === '2026/10'
-      ? Math.max(store.actualSpentNet ?? 0, directPlan?.spentBudget ?? 0, spentFromBookings)
-      : month === '2026/11'
-        ? directPlan?.spentBudget ?? 0
-        : directPlan?.spentBudget ||
-          spentFromBookings ||
-          Math.round((store.actualSpentNet ?? baseBudgetNet * 0.94) * monthRatio);
+  const reportSpentNet = Math.max(
+    isStoreMasterMonth ? store.actualSpentNet ?? 0 : 0,
+    directPlan?.spentBudget ?? 0,
+    spentFromBookings,
+  );
 
   const gmvFromBookings = bookings.reduce((s, b) => s + b.gmv, 0);
   const realTotalGmv = gmvFromBookings + adsGmv;
-  const reportNmv =
-    month === '2026/10'
-      ? realTotalGmv > 0
-        ? realTotalGmv
-        : directPlan?.actualGmv ?? 0
-      : month === '2026/11'
-        ? directPlan?.actualGmv ?? 0
-        : directPlan?.actualGmv || realTotalGmv || 0;
+  const reportNmv = realTotalGmv > 0 ? realTotalGmv : directPlan?.actualGmv ?? 0;
 
   const airedFromBookings = bookings.filter(b => Boolean(b.linkAir) || b.pipeline.includes('lên sóng') || b.pipeline.includes('nghiệm thu')).length;
-  const reportBookedVideos =
-    month === '2026/10'
-      ? Math.max(bookings.length, store.actualAiredVideos ?? 0, directPlan?.deliveredContents ?? 0)
-      : month === '2026/11'
-        ? directPlan?.deliveredContents ?? 0
-        : Math.max(bookings.length, directPlan?.deliveredContents ?? planTotalVideos);
-
-  const reportAiredVideos =
-    month === '2026/10'
-      ? Math.max(store.actualAiredVideos ?? 0, airedFromBookings, directPlan?.deliveredContents ?? 0)
-      : month === '2026/11'
-        ? 0
-        : Math.max(airedFromBookings, directPlan?.deliveredContents ?? planTotalVideos);
+  const storeAiredVideos = isStoreMasterMonth ? store.actualAiredVideos ?? 0 : 0;
+  const reportBookedVideos = Math.max(bookings.length, storeAiredVideos, directPlan?.deliveredContents ?? 0);
+  const reportAiredVideos = Math.max(storeAiredVideos, airedFromBookings, directPlan?.deliveredContents ?? 0);
 
   const reportViews = bookings.reduce((s, b) => s + b.views, 0);
   const reportOrders =
     bookings.reduce((s, b) => s + b.orders, 0) +
-    (month === '2026/10' ? adsCampaigns.reduce((s, c) => s + c.orders, 0) : 0);
+    monthAdsCampaigns.reduce((s, c) => s + c.orders, 0);
   const reportRoas =
     reportSpentNet > 0 ? Number((reportNmv / reportSpentNet).toFixed(2)) : 0;
 
@@ -691,17 +631,13 @@ export function buildStoreMonthlyPlanReport(
   const isOverbudget = baseBudgetNet > 0 && reportSpentNet > baseBudgetNet;
   const isUnbudgetedSpend = baseBudgetNet === 0 && reportSpentNet > 0;
 
-  const planStatus: MonthlyPlanStatus =
-    directPlan?.status ||
-    (month === '2026/10'
-      ? 'IN_EXECUTION'
-      : month === '2026/11'
-        ? 'DRAFT'
-        : 'COMPLETED');
+  const planStatus: MonthlyPlanStatus = directPlan?.status || 'DRAFT';
 
   const planStatusLabel =
     directPlan?.statusLabel ||
-    (planStatus === 'COMPLETED'
+    (!directPlan
+      ? 'Chưa có plan'
+      : planStatus === 'COMPLETED'
       ? 'Đã quyết toán'
       : planStatus === 'IN_EXECUTION'
         ? 'Đang thực thi'
@@ -726,13 +662,11 @@ export function buildStoreMonthlyPlanReport(
     month,
     monthLabel: monthMeta.shortLabel,
     plan: activePlan,
-    planId: directPlan?.id || octBaselinePlan?.id || `PLAN-${month.replace('/', '-')}-${store.id}`,
+    planId: directPlan?.id || `PLAN-${month.replace('/', '-')}-${store.id}`,
     planTitle:
       directPlan?.title ||
       `Kế hoạch B2C ${monthMeta.shortLabel} — ${store.storeName}`,
-    versionCode:
-      directPlan?.currentVersionCode ||
-      (month === '2026/10' ? octBaselinePlan?.currentVersionCode || 'v1.0' : 'v1.0'),
+    versionCode: directPlan?.currentVersionCode || 'v1.0',
     planStatus,
     planStatusLabel,
     pic,
@@ -758,6 +692,11 @@ export function buildStoreMonthlyPlanReport(
     budgetBurnPct,
     isOverbudget,
     isUnbudgetedSpend,
+    hasData:
+      Boolean(directPlan) ||
+      bookings.length > 0 ||
+      monthAdsCampaigns.length > 0 ||
+      (isStoreMasterMonth && (baseBudgetNet > 0 || planTotalVideos > 0 || reportSpentNet > 0 || storeAiredVideos > 0)),
     reportBookedVideos,
     reportBookedCount: reportBookedVideos,
     reportAiredVideos,
@@ -810,7 +749,7 @@ export function buildBrandMonthlyPlanReport(
       (norm(bp.brandName) === bNorm ||
         norm(bp.brandName).includes(bNorm) ||
         bNorm.includes(norm(bp.brandName))) &&
-      (bp.month === month || bp.month === '2026/10')
+      bp.month === month
   );
 
   const effectivePlans = options?.plans || options?.monthlyPlans;
@@ -843,7 +782,7 @@ export function buildBrandMonthlyPlanReport(
   const nmvAchievementPct = planNmv > 0 ? Number(((reportNmv / planNmv) * 100).toFixed(1)) : 0;
   const budgetBurnPct = planBudgetNet > 0 ? Number(((reportSpentNet / planBudgetNet) * 100).toFixed(1)) : 0;
   const videoAchievementPct = planTotalVideos > 0 ? Number(((reportAiredVideos / planTotalVideos) * 100).toFixed(1)) : 0;
-  const overbudgetStoresCount = storeReports.filter(r => r.isOverbudget || r.isUnbudgetedSpend).length;
+  const overbudgetStoresCount = storeReports.filter(r => r.isOverbudget).length;
   const unbudgetedStoresCount = storeReports.filter(r => r.isUnbudgetedSpend).length;
   const platforms = Array.from(new Set(storeReports.map(r => r.platform).filter(Boolean)));
 
@@ -856,12 +795,8 @@ export function buildBrandMonthlyPlanReport(
 
   const bookings = storeReports.flatMap(r => r.bookings);
 
-  const planStatusLabel =
-    month === '2026/10'
-      ? 'Đang thực thi'
-      : month === '2026/11'
-        ? 'Đang lập Plan'
-        : 'Đã quyết toán';
+  const hasData = Boolean(brandPlan) || storeReports.some(r => r.hasData);
+  const planStatusLabel = hasData ? monthMeta.periodTag : 'Chưa có dữ liệu';
 
   return {
     brandName,
@@ -872,6 +807,7 @@ export function buildBrandMonthlyPlanReport(
     storeCount: storeReports.length,
     platforms,
     planStatusLabel,
+    hasData,
     overbudgetStoresCount,
     unbudgetedStoresCount,
     planNmv,

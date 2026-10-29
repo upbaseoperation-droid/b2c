@@ -386,8 +386,8 @@ export function BrandProfileDetail({
   const [showLedgerTable, setShowLedgerTable] = useState<boolean>(false);
   const BOOKING_PAGE_SIZE = 25;
 
-  const isOverbudget = currentBrandReport.overbudgetStoresCount > 0 || (currentBrandReport.planBudgetNet > 0 && currentBrandReport.reportSpentNet > currentBrandReport.planBudgetNet);
-  const isUnbudgetedSpend = currentBrandReport.unbudgetedStoresCount > 0 || (currentBrandReport.planBudgetNet === 0 && currentBrandReport.reportSpentNet > 0);
+  const isOverbudget = currentBrandReport.isOverbudget;
+  const isUnbudgetedSpend = currentBrandReport.isUnbudgetedSpend;
   const expiredLegalCount = p.legal.filter(l => l.validUntil && isExpired(l.validUntil)).length;
   const r2FilesCount = p.documents.filter(d => d.fileKey || d.storage === 'R2' || d.storage === 'LOCAL').length;
 
@@ -1025,6 +1025,7 @@ export function BrandProfileDetail({
 
           {/* Cột phải: 4 chỉ số cốt lõi dạng dải ngang siêu gọn */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 xl:gap-3 pt-2 xl:pt-0 border-t xl:border-t-0 xl:border-l border-line xl:pl-3.5 shrink-0">
+            {currentBrandReport.hasData ? (<>
             {/* Chỉ số 1: NMV */}
             <div className="min-w-[130px] space-y-0.5">
               <div className="flex items-center justify-between gap-1 text-2xs text-ink-3">
@@ -1081,6 +1082,13 @@ export function BrandProfileDetail({
                 {formatNumber(currentBrandReport.reportTotalViews)} xem · {formatNumber(currentBrandReport.reportTotalOrders)} đơn
               </div>
             </div>
+
+            </>) : (
+              <div className="col-span-2 sm:col-span-3 min-w-[260px] flex flex-col justify-center text-2xs text-ink-3">
+                <span className="font-medium text-ink-2">Chưa có dữ liệu {activeMonth}</span>
+                <span>Chưa có plan, booking hay số liệu thực tế cho tháng này.</span>
+              </div>
+            )}
 
             {/* Chỉ số 4: Hồ sơ tĩnh */}
             <div className="min-w-[125px] space-y-0.5 sm:border-l sm:border-line sm:pl-2.5">
