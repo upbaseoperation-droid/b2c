@@ -983,7 +983,7 @@ export const DEFAULT_VN_CART_BRIDGE_STATE: VnCartBridgeState = {
           source: 'TikTok Shop Anchor (VN Bridge)',
         },
       ],
-      captureSec: 25.0,
+      captureSec: 9.8,
       frameJpegBase64: SNAPSHOT_TIKTOK_FRAMES['7683000790654536980'],
       updatedAt: '2026-10-29T10:25:00.000Z',
     },

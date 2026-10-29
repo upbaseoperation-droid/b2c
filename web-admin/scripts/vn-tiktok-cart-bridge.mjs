@@ -383,8 +383,7 @@ async function bootstrap() {
 
   const seed5 = await inspectTikTokCartFromVietnam(
     'https://www.tiktok.com/@tuinetamne/video/7683000790654536980',
-    '7683000790654536980',
-    25.0
+    '7683000790654536980', 9.8
   ).catch(() => null);
   if (seed5) {
     if (!seed5.products || seed5.products.length === 0) {
