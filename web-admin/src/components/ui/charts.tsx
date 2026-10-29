@@ -7,6 +7,8 @@
 
 import React from 'react';
 
+const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ');
+
 /** Đo chiều rộng khung chứa để SVG vẽ đúng điểm ảnh, chữ không bị kéo giãn. */
 function useWidth<T extends HTMLElement>() {
   const ref = React.useRef<T>(null);
@@ -454,10 +456,15 @@ export interface BarItem {
   /** Màu thanh, mặc định token critical (màu nhấn biểu đồ). */
   color?: string;
   onClick?: () => void;
+  /** Dòng đang được chọn làm bộ lọc. */
+  active?: boolean;
 }
 
-/** Xếp hạng bằng thanh ngang: nhãn trái, thanh giữa, số phải. Thay cho bảng 2 cột. */
-export function BarList({ items, max }: { items: BarItem[]; max?: number }) {
+/**
+ * Xếp hạng bằng thanh ngang: nhãn trái, thanh giữa, số phải. Thay cho bảng 2 cột.
+ * `narrow`: nhãn và số hẹp hơn, dùng trong cột phải (~300px).
+ */
+export function BarList({ items, max, narrow = false }: { items: BarItem[]; max?: number; narrow?: boolean }) {
   const top = max ?? Math.max(1, ...items.map((i) => i.value));
   return (
     <ul className="space-y-1.5">
@@ -465,20 +472,20 @@ export function BarList({ items, max }: { items: BarItem[]; max?: number }) {
         const pct = Math.max(0, Math.min(100, (it.value / top) * 100));
         const body = (
           <>
-            <span className="w-32 sm:w-40 shrink-0 truncate text-left text-xs text-ink">{it.label}</span>
+            <span className={cx('shrink-0 truncate text-left text-xs', narrow ? 'w-28' : 'w-32 sm:w-40', it.active ? 'font-semibold text-ink' : 'text-ink')}>{it.label}</span>
             <span className="relative h-5 flex-1 rounded bg-canvas overflow-hidden">
               <span
                 className="data-bar absolute inset-y-0 left-0 rounded"
                 style={{ width: `${pct}%`, background: it.color ?? 'color-mix(in srgb, var(--color-critical) 70%, var(--color-surface))' }}
               />
             </span>
-            <span className="w-20 shrink-0 text-right text-xs tabular-nums text-ink">{it.display ?? it.value}</span>
+            <span className={cx('shrink-0 text-right text-xs tabular-nums text-ink font-figure', narrow ? 'w-12' : 'w-20')}>{it.display ?? it.value}</span>
           </>
         );
         return (
           <li key={it.key}>
             {it.onClick ? (
-              <button type="button" onClick={it.onClick} className="flex w-full items-center gap-2.5 rounded hover:bg-canvas">
+              <button type="button" onClick={it.onClick} aria-pressed={it.active} className={cx('flex w-full items-center gap-2.5 rounded px-1 -mx-1 hover:bg-canvas', it.active && 'bg-canvas ring-1 ring-line-strong')}>
                 {body}
               </button>
             ) : (

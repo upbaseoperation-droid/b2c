@@ -10,6 +10,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Award,
+  ListChecks,
+  Scale,
+  X,
   Building2,
   Check,
   CheckCircle2,
@@ -38,7 +41,7 @@ import type {
   UserProfile,
 } from '../../lib/types';
 import { INITIAL_DEALS, INITIAL_KOCS, INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
-import { formatNumber, formatVndShort } from '../../lib/format';
+import { formatNumber, formatPercent, formatVndShort } from '../../lib/format';
 import {
   KOC_MASTER_CONTACT_SYNCED_EVENT,
   syncKocContactToStaffSheets,
@@ -88,9 +91,10 @@ import {
 import {
   ActionMenu,
   Avatar,
+  BarList,
   Button,
-  Chips,
   DataTable,
+  Density,
   EmptyState,
   FacebookLogo,
   Field,
@@ -106,6 +110,7 @@ import {
   Stat,
   StatRow,
   Status,
+  Tabs,
   Textarea,
   ThreadsLogo,
   TikTokLogo,
@@ -139,13 +144,20 @@ interface KocMasterDataViewProps {
 
 type DatasetTab = 'COOPERATED' | 'NEW' | 'UPAFFILIATE_HUB';
 type LegalFilter = 'ALL' | LegalType | 'MULTI_LEGAL';
-type IssueFilter = '' | 'MISSING' | 'NO_CONTACT' | 'DUPLICATE' | 'SUITABLE' | 'NOT_SUITABLE';
+type IssueFilter = '' | 'MISSING' | 'NO_CONTACT' | 'DUPLICATE' | 'SHARED_OWNER' | 'SUITABLE' | 'NOT_SUITABLE';
 type ReadinessFilter = 'ALL' | KocBookingReadiness;
 type NewIssueFilter = '' | 'CONTACTED' | 'NOT_CONTACTED' | 'HAS_PHONE' | 'SUITABLE' | 'NOT_SUITABLE';
 type PlatformFilter = 'ALL' | 'tiktok' | 'shopee' | 'facebook' | 'instagram' | 'threads';
 
 const ALL = 'ALL';
 const typeOf = (k: KocItem): LegalType | null => (hasLegalId(k) ? legalTypeOf(k) : null);
+const firstPic = (k: KocItem) => (k.bookingPic || '').split('\n')[0].trim();
+const median = (values: number[]) => {
+  if (!values.length) return 0;
+  const s = [...values].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+};
 const uniqSorted = (values: Array<string | undefined>) =>
   [...new Set(values.filter((v): v is string => !!v && !!v.trim()).map((v) => v.trim()))].sort(
     (a, b) => a.localeCompare(b, 'vi', { numeric: true }),
@@ -318,6 +330,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const [pageSize, setPageSize] = useState(20);
 
   const duplicates = useMemo(() => findDuplicates(localKocs), [localKocs]);
+  // Trùng thật = cùng @handle. Cùng CCCD / MST / SĐT / Email là một chủ hoặc một MCN quản lý nhiều kênh
+  // (vd. 1 MST công ty cho hơn 100 kênh), là dữ liệu đúng theo mô hình 1 KOC → N hồ sơ, không phải lỗi.
+  const isChannelDuplicate = (k: KocItem) => Boolean(duplicates.get(k.id)?.some((m) => m.fields.includes('kênh')));
+  const isSharedOwner = (k: KocItem) => duplicates.has(k.id) && !isChannelDuplicate(k);
 
   // Phân tách 2 tập dữ liệu gốc: Bảng 1 (KOC Cũ kèm lịch sử) & Bảng 2 (KOC Mới / Tiềm năng)
   const { cooperatedKocs, newKocs } = useMemo(() => {
@@ -338,9 +354,20 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   // Chỉ số KPI cho Bảng 1 (KOC Cũ kèm lịch sử) và Bảng 2 (KOC Mới / Tiềm năng)
   const datasetStats = useMemo(() => {
     const coopWithDocs = cooperatedKocs.filter((k) => hasLegalId(k) && Boolean(k.bankAccount)).length;
-    const coopMultiLegal = cooperatedKocs.filter((k) => getKocLegalProfiles(k).length > 1).length;
-    const coopTotalGmv = cooperatedKocs.reduce((s, k) => s + (k.totalPastGmv || 0), 0);
+    const coopSigned = cooperatedKocs.filter((k) => {
+      const ps = getKocLegalProfiles(k);
+      return (ps.find((p) => p.isDefault) || ps[0])?.frameworkContractStatus === 'ĐÃ_KÝ';
+    }).length;
+    // totalPastGmv là GMV cả kênh trên TikTok Shop (trùng recentRevenue), không phải GMV từ booking Upbase,
+    // nên không cộng thành "GMV lịch sử" và không chia cho chi phí booking để ra ROI.
     const coopTotalCost = cooperatedKocs.reduce((s, k) => s + (k.totalPastCost || 0), 0);
+    const coopPaidVideos = cooperatedKocs.reduce((s, k) => s + (k.totalPaidVideos || 0), 0);
+    const coopFocVideos = cooperatedKocs.reduce((s, k) => s + (k.totalFocVideos || 0), 0);
+    const rated = cooperatedKocs.map((k) => k.rateCardVideo).filter((v) => v > 1);
+    const coopMedianRate = median(rated);
+    const coopRatedCount = rated.length;
+    const coopPicCount = new Set(cooperatedKocs.map(firstPic).filter(Boolean)).size;
+    const newWithQuote = newKocs.filter((k) => k.rateCardVideo > 0).length;
 
     const newReady = newKocs.filter((k) => k.bookingReadiness === 'SẴN_SÀNG_BOOKING').length;
     const newWithContact = newKocs.filter((k) => Boolean(k.phone?.trim() || k.email?.trim())).length;
@@ -349,9 +376,14 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
     return {
       coopWithDocs,
-      coopMultiLegal,
-      coopTotalGmv,
+      coopSigned,
       coopTotalCost,
+      coopPaidVideos,
+      coopFocVideos,
+      coopMedianRate,
+      coopRatedCount,
+      coopPicCount,
+      newWithQuote,
       newReady,
       newWithContact,
       newContacted,
@@ -364,7 +396,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       category: uniqSorted(activeDataset.map((k) => k.kocCategory)),
       tepKenh: uniqSorted(activeDataset.map((k) => k.tepKenh || k.creatorCategory)),
       salaryGrade: uniqSorted(activeDataset.map((k) => k.salaryGrade)),
-      pic: uniqSorted(activeDataset.map((k) => k.bookingPic?.split('\n')[0])),
+      pic: uniqSorted(activeDataset.map(firstPic)),
     }),
     [activeDataset],
   );
@@ -405,7 +437,8 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       if (category !== ALL && k.kocCategory !== category) return false;
       if (tepKenh !== ALL && (k.tepKenh || k.creatorCategory) !== tepKenh) return false;
       if (salaryGrade !== ALL && k.salaryGrade !== salaryGrade) return false;
-      if (picFilter !== ALL && !(k.bookingPic || '').includes(picFilter)) return false;
+      // So khớp đúng tên PIC chính: includes() khiến "Trần Phương Thảo" khớp cả tên dài hơn chứa nó
+      if (picFilter !== ALL && firstPic(k) !== picFilter) return false;
       if (platform !== ALL && !hasKocPlatform(k, platform)) return false;
       return true;
     });
@@ -435,7 +468,8 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     if (f === '') return true;
     if (f === 'MISSING') return !hasLegalId(k);
     if (f === 'NO_CONTACT') return !hasContactInfo(k);
-    if (f === 'DUPLICATE') return duplicates.has(k.id);
+    if (f === 'DUPLICATE') return isChannelDuplicate(k);
+    if (f === 'SHARED_OWNER') return isSharedOwner(k);
     if (f === 'SUITABLE') return isKocMarkedSuitable(k);
     if (f === 'NOT_SUITABLE') return isKocMarkedNotSuitable(k);
     return true;
@@ -470,7 +504,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       { key: 'INDIVIDUAL', label: 'Cá nhân' },
       { key: 'HOUSEHOLD', label: 'Hộ kinh doanh' },
       { key: 'COMPANY', label: 'Công ty / MCN' },
-      { key: 'MULTI_LEGAL', label: 'Đa pháp nhân (≥2 hồ sơ)' },
+      { key: 'MULTI_LEGAL', label: 'Từ 2 hồ sơ' },
     ] as const
   ).map((item) => ({
     key: item.key,
@@ -482,7 +516,8 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const issueChips = [
     { key: 'MISSING' as const, label: 'Thiếu giấy tờ', count: issueBase.filter((k) => !hasLegalId(k)).length },
     { key: 'NO_CONTACT' as const, label: 'Thiếu Email/SĐT', count: issueBase.filter((k) => !hasContactInfo(k)).length },
-    { key: 'DUPLICATE' as const, label: 'Nghi trùng', count: issueBase.filter((k) => duplicates.has(k.id)).length },
+    { key: 'DUPLICATE' as const, label: 'Trùng kênh', count: issueBase.filter(isChannelDuplicate).length },
+    { key: 'SHARED_OWNER' as const, label: 'Chung chủ / MCN', count: issueBase.filter(isSharedOwner).length },
     {
       key: 'SUITABLE' as const,
       label: 'Phù hợp',
@@ -500,8 +535,8 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     [
       { key: 'ALL', label: 'Tất cả' },
       { key: 'SẴN_SÀNG_BOOKING', label: 'Sẵn sàng booking' },
-      { key: 'TIẾP_CẬN_BỔ_SUNG_PHÁP_LÝ', label: 'Có liên hệ · Bổ sung pháp lý' },
-      { key: 'CẦN_XIN_LIÊN_HỆ', label: 'Cần xin SĐT/Zalo' },
+      { key: 'TIẾP_CẬN_BỔ_SUNG_PHÁP_LÝ', label: 'Bổ sung pháp lý' },
+      { key: 'CẦN_XIN_LIÊN_HỆ', label: 'Cần xin SĐT' },
       { key: 'CHỜ_TIẾP_CẬN', label: 'Chờ tiếp cận' },
     ] as const
   ).map((item) => ({
@@ -556,6 +591,20 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     salaryGrade !== ALL ||
     picFilter !== ALL ||
     platform !== ALL;
+
+  // Bộ lọc chọn từ cột phải hiện thành thẻ trên bảng để người xem biết bảng đang lọc gì
+  const activeFilterTags: Array<{ key: string; label: string; clear: () => void }> = [];
+  if (datasetTab === 'COOPERATED') {
+    const l = legalChips.find((c) => c.key === legal && c.key !== ALL);
+    if (l) activeFilterTags.push({ key: 'legal', label: `Hồ sơ: ${l.label}`, clear: () => setLegal(ALL) });
+    const i = issueChips.find((c) => c.key === issue);
+    if (i) activeFilterTags.push({ key: 'issue', label: i.label, clear: () => setIssue('') });
+  } else {
+    const r = readinessChips.find((c) => c.key === readiness && c.key !== ALL);
+    if (r) activeFilterTags.push({ key: 'readiness', label: r.label, clear: () => setReadiness(ALL) });
+    const n = newIssueChips.find((c) => c.key === newIssue);
+    if (n) activeFilterTags.push({ key: 'newIssue', label: n.label, clear: () => setNewIssue('') });
+  }
 
   const resetFilters = () => {
     setSearch('');
@@ -865,19 +914,22 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       header: 'Lịch sử hợp tác & PIC',
       width: 215,
       render: (k) => {
-        const totalDeals = k.totalPastDeals || 1;
-        const paid = k.totalPaidVideos ?? totalDeals;
+        // Không tự điền "1 đợt book" khi thiếu số: hiện đúng dữ liệu, thiếu thì để "—"
+        const totalDeals = k.totalPastDeals || 0;
+        const paid = k.totalPaidVideos;
         const foc = k.totalFocVideos ?? 0;
-        const pic = (k.bookingPic || '').split('\n')[0];
+        const pic = firstPic(k);
         return (
           <div className="leading-tight min-w-0 max-w-[215px] space-y-0.5">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-semibold text-ink text-xs tabular-nums">
-                {totalDeals} đợt book
+                {totalDeals > 0 ? `${formatNumber(totalDeals)} đợt book` : '—'}
               </span>
-              <span className="text-2xs text-ink-3 tabular-nums">
-                ({paid} Paid{foc > 0 ? ` · ${foc} FOC` : ''})
-              </span>
+              {(paid !== undefined || foc > 0) && (
+                <span className="text-2xs text-ink-3 tabular-nums">
+                  ({[paid !== undefined ? `${paid} Paid` : '', foc > 0 ? `${foc} FOC` : ''].filter(Boolean).join(' · ')})
+                </span>
+              )}
             </div>
             <div className="text-2xs text-ink-2 truncate">
               {k.brandName ? <b className="text-ink">{k.brandName}</b> : 'Đa nhãn hàng'}
@@ -894,34 +946,30 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     },
     {
       key: 'rateAndGmv',
-      header: 'Đơn giá & Hiệu quả',
+      header: 'Đơn giá & GMV kênh',
       align: 'right',
       width: 155,
       render: (k) => {
-        const gmv = k.totalPastGmv || k.gmvBestCase || 0;
-        const roi =
-          k.historicalRoi ||
-          (k.totalPastCost && k.totalPastCost > 0 ? gmv / k.totalPastCost : 0);
+        // GMV kênh = doanh thu cả kênh trên TikTok Shop (không phải GMV từ booking Upbase), nên không tính ROI.
+        // Không lấy gmvBestCase (số ước tính) thay cho số thật.
+        const channelGmv = k.recentRevenue || k.totalPastGmv || 0;
         const hasRange =
           k.minRate && k.maxRate && k.minRate > 0 && k.maxRate > k.minRate;
-        const tooltip = hasRange
-          ? `Biên độ giá: ${formatVndShort(k.minRate!)} – ${formatVndShort(k.maxRate!)}`
-          : undefined;
+        const onlyFoc = !(k.rateCardVideo > 1) && (k.totalFocVideos || 0) > 0 && !(k.totalPaidVideos || 0);
+        const tooltip = [
+          hasRange ? `Biên độ giá: ${formatVndShort(k.minRate!)} – ${formatVndShort(k.maxRate!)}` : '',
+          channelGmv > 0 ? 'GMV kênh: doanh thu cả kênh trên TikTok Shop, không riêng booking Upbase' : '',
+        ]
+          .filter(Boolean)
+          .join('\n');
 
         return (
-          <div className="leading-tight text-right space-y-0.5" title={tooltip}>
-            <div className="text-xs font-semibold text-ink tabular-nums">
-              {k.rateCardVideo > 1 ? formatVndShort(k.rateCardVideo) : 'FOC / Hoa hồng'}
+          <div className="leading-tight text-right space-y-0.5" title={tooltip || undefined}>
+            <div className="text-xs font-semibold text-ink tabular-nums font-figure">
+              {k.rateCardVideo > 1 ? formatVndShort(k.rateCardVideo) : onlyFoc ? 'Chỉ FOC' : '—'}
             </div>
-            <div className="text-2xs tabular-nums">
-              {gmv > 0 ? (
-                <span className="text-positive font-medium">
-                  GMV {formatVndShort(gmv)}
-                  {roi > 0 ? ` · ROI ${roi.toFixed(1)}x` : ''}
-                </span>
-              ) : (
-                <span className="text-ink-3">—</span>
-              )}
+            <div className="text-2xs tabular-nums text-ink-3">
+              {channelGmv > 0 ? `GMV kênh ${formatVndShort(channelGmv)}` : '—'}
             </div>
           </div>
         );
@@ -933,7 +981,9 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       width: 175,
       render: (k) => {
         const profiles = getKocLegalProfiles(k);
-        const dup = duplicates.get(k.id);
+        const dupAll = duplicates.get(k.id);
+        const dup = isChannelDuplicate(k) ? dupAll?.filter((d) => d.fields.includes('kênh')) : undefined;
+        const sharedWith = !dup && dupAll ? dupAll.length : 0;
         const def = profiles.find((p) => p.isDefault) || profiles[0];
         const readiness = def ? evaluateLegalProfileContractReadiness(def, k) : null;
         const isSigned = def?.frameworkContractStatus === 'ĐÃ_KÝ';
@@ -945,7 +995,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                 <Status tone="warning">Chưa có hồ sơ</Status>
               ) : dup ? (
                 <span title={`Trùng: ${dup.map((d) => `${d.stageName} (${d.fields.join(', ')})`).join('; ')}`}>
-                  <Status tone="warning">Nghi trùng</Status>
+                  <Status tone="warning">Trùng kênh</Status>
                 </span>
               ) : isSigned ? (
                 <Status tone="positive">Đã ký HĐNT</Status>
@@ -966,6 +1016,14 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                 {profiles.length > 1 && (
                   <span className="text-ink-3 ml-1">+{profiles.length - 1} HS</span>
                 )}
+              </div>
+            )}
+            {sharedWith > 0 && (
+              <div
+                className="text-2xs text-ink-3 truncate"
+                title={`Cùng chủ / MCN với: ${dupAll!.map((d) => `${d.stageName} (${d.fields.join(', ')})`).join('; ')}`}
+              >
+                Chung chủ với {sharedWith} kênh
               </div>
             )}
           </div>
@@ -1031,20 +1089,13 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       key: 'actions',
       header: '',
       align: 'right',
-      width: 165,
+      width: 48,
+      // "Thêm vào Sheet" là mục đầu tiên trong menu; bỏ nút riêng để bảng vừa khung, không phải cuộn ngang
       render: (k) => (
         <div
           className="flex items-center justify-end gap-1.5"
           onClick={(e) => e.stopPropagation()}
         >
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={FileSpreadsheet}
-            onClick={() => setSheetTargetKocs([k])}
-          >
-            Thêm vào Sheet
-          </Button>
           <ActionMenu items={rowActions(k)} />
         </div>
       ),
@@ -1056,10 +1107,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const columnsNew: Column<KocItem>[] = [
     {
       key: 'koc',
-      header: 'Kênh KOC Mới & Nguồn',
-      width: 225,
+      header: 'KOC & nguồn',
+      width: 200,
       render: (k) => (
-        <div className="flex items-center gap-2.5 min-w-0 max-w-[235px]">
+        <div className="flex items-center gap-2.5 min-w-0 max-w-[190px]">
           <span {...sharedFrom('koc-avatar', k.id)} className="shrink-0 inline-flex">
             <Avatar name={k.stageName} src={k.avatarUrl} size={32} />
           </span>
@@ -1081,16 +1132,16 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     },
     {
       key: 'channelMetrics',
-      header: 'Chỉ số Kênh',
+      header: 'Chỉ số kênh',
       align: 'right',
-      width: 170,
+      width: 150,
       render: (k) => (
-        <div className="leading-tight text-right space-y-0.5">
-          <div className="text-xs font-semibold text-ink tabular-nums">
+        <div className="leading-tight text-right space-y-0.5 max-w-[150px] ml-auto">
+          <div className="text-xs font-semibold text-ink tabular-nums truncate">
             {formatFollowers(k.followers)} flw · {formatFollowers(k.avgViews)} view TB
           </div>
-          <div className="text-2xs text-positive font-medium tabular-nums">
-            GMV 30d: {k.recentRevenue ? formatVndShort(k.recentRevenue) : '—'}
+          <div className="text-2xs text-ink-3 tabular-nums truncate" title={k.gpm ? `GPM ${formatVndShort(k.gpm)}` : undefined}>
+            GMV 30 ngày {k.recentRevenue ? formatVndShort(k.recentRevenue) : '—'}
             {k.gpm ? ` · GPM ${formatVndShort(k.gpm)}` : ''}
           </div>
         </div>
@@ -1098,15 +1149,15 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     },
     {
       key: 'classificationAndQuote',
-      header: 'Phân loại & Báo giá dự kiến',
-      width: 175,
+      header: 'Phân loại & báo giá',
+      width: 160,
       render: (k) => (
-        <div className="leading-tight min-w-0 space-y-0.5">
+        <div className="leading-tight min-w-0 max-w-[160px] space-y-0.5">
           <span className="block truncate font-medium text-ink text-xs">
-            {k.kocCategory || 'Chưa phân ngành'} · {k.tepKenh || 'Review Nữ'}
+            {[k.kocCategory || 'Chưa phân ngành', k.tepKenh || k.creatorCategory].filter(Boolean).join(' · ')}
           </span>
           <span className="block truncate text-2xs text-ink-2">
-            Khung dự kiến: <b>{k.salaryGrade}</b>
+            Khung dự kiến: <b>{k.salaryGrade || '—'}</b>
           </span>
           <span className="block truncate text-2xs font-semibold text-ink tabular-nums">
             {k.rateCardVideo > 0 ? `Báo giá: ${formatVndShort(k.rateCardVideo)}` : 'Chưa có báo giá'}
@@ -1116,10 +1167,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     },
     {
       key: 'proposedStores',
-      header: 'Gian hàng đề xuất & PIC',
-      width: 205,
+      header: 'Gian hàng & PIC',
+      width: 180,
       render: (k) => (
-        <div className="leading-tight min-w-0 max-w-[205px] space-y-0.5">
+        <div className="leading-tight min-w-0 max-w-[165px] space-y-0.5">
           <span
             className="block truncate text-xs font-medium text-ink"
             title={k.proposedStores || k.brandName}
@@ -1139,15 +1190,15 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     },
     {
       key: 'readinessAndContact',
-      header: 'Độ sẵn sàng & Liên hệ',
-      width: 200,
+      header: 'Sẵn sàng & liên hệ',
+      width: 170,
       render: (k) => {
         const rKey = k.bookingReadiness || 'CHỜ_TIẾP_CẬN';
         const rInfo = READINESS_LABEL[rKey];
         const isContacted =
           k.contactStatus === 'ĐÃ_LIÊN_HỆ' || k.contactStatus === 'ĐANG_THƯƠNG_LƯỢNG';
         return (
-          <div className="grid gap-1 justify-items-start min-w-0 max-w-[200px]">
+          <div className="grid gap-1 justify-items-start min-w-0 max-w-[170px]">
             <div className="flex flex-wrap items-center gap-1">
               <Status tone={rInfo.tone}>{rInfo.label}</Status>
               <span
@@ -1181,7 +1232,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       key: 'actions',
       header: '',
       align: 'right',
-      width: 195,
+      width: 120,
       render: (k) => (
         <div
           className="flex items-center justify-end gap-1.5"
@@ -1194,14 +1245,6 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
             onClick={() => setOutreachTarget(k)}
           >
             Liên hệ
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={FileSpreadsheet}
-            onClick={() => setSheetTargetKocs([k])}
-          >
-            Sheet
           </Button>
           <ActionMenu items={rowActions(k)} />
         </div>
@@ -1278,7 +1321,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           onCreateContractForKoc={onCreateContractForKoc}
         />
       ) : (
-        <>
+        <Density className="space-y-4">
           <PageActions>
             {onReturnToSource && returnToSourceLabel && (
               <Button size="sm" variant="secondary" icon={ArrowLeft} onClick={onReturnToSource}>
@@ -1324,105 +1367,57 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
             </Button>
           </PageActions>
 
-          {/* Thanh chuyển đổi 2 Bảng dữ liệu KOC + Trạng thái kết nối UpAffiliate trên cùng 1 hàng */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
-            <div className="inline-flex items-center p-0.5 rounded-lg bg-sunken border border-line gap-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setDatasetTab('COOPERATED');
-                  resetFilters();
-                }}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
-                  datasetTab === 'COOPERATED'
-                    ? 'bg-surface text-ink shadow-2xs border border-line'
-                    : 'text-ink-2 hover:text-ink'
-                }`}
-              >
-                <Users className="w-3.5 h-3.5 text-accent" />
-                <span>Bảng KOC Cũ kèm lịch sử</span>
-                <span className="px-1.5 py-0.5 rounded bg-accent-soft text-accent text-2xs font-semibold tabular-nums">
-                  {formatNumber(cooperatedKocs.length)}
+          {/* Hai bảng dữ liệu KOC + trang đồng bộ UpAffiliate; trạng thái kết nối nằm cùng hàng */}
+          <Tabs<DatasetTab>
+            items={[
+              { key: 'COOPERATED', label: 'KOC đã hợp tác', count: formatNumber(cooperatedKocs.length) },
+              { key: 'NEW', label: 'KOC mới / tiềm năng', count: formatNumber(newKocs.length) },
+              {
+                key: 'UPAFFILIATE_HUB',
+                label: 'Đồng bộ UpAffiliate',
+                count: stagingPendingCount > 0 ? formatNumber(stagingPendingCount) : undefined,
+              },
+            ]}
+            value={datasetTab}
+            onChange={(key) => {
+              setDatasetTab(key);
+              if (key !== 'UPAFFILIATE_HUB') resetFilters();
+            }}
+            actions={
+              <>
+                <Status tone={upaffiliateConfig.enabled ? 'positive' : 'neutral'}>
+                  {upaffiliateConfig.enabled ? 'UpAffiliate đã kết nối' : 'UpAffiliate tạm dừng'}
+                </Status>
+                <span className="text-2xs text-ink-3 hidden xl:inline">
+                  Gần nhất <span className="font-figure text-ink-2">{formatSyncDateTime(upaffiliateConfig.lastSyncedAt)}</span>
                 </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setDatasetTab('NEW');
-                  resetFilters();
-                }}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
-                  datasetTab === 'NEW'
-                    ? 'bg-surface text-ink shadow-2xs border border-line'
-                    : 'text-ink-2 hover:text-ink'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-positive" />
-                <span>Bảng KOC Mới / Tiềm năng</span>
-                <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive text-2xs font-semibold tabular-nums">
-                  {formatNumber(newKocs.length)}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setDatasetTab('UPAFFILIATE_HUB');
-                }}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
-                  datasetTab === 'UPAFFILIATE_HUB'
-                    ? 'bg-surface text-ink shadow-2xs border border-line'
-                    : 'text-ink-2 hover:text-ink'
-                }`}
-              >
-                <RefreshCw className="w-3.5 h-3.5 text-accent" />
-                <span>Quản lý Dữ liệu & Đồng bộ UpAffiliate</span>
                 {stagingPendingCount > 0 && (
-                  <span className="px-1.5 py-0.5 rounded bg-warning-soft text-warning text-2xs font-semibold tabular-nums">
-                    {formatNumber(stagingPendingCount)}
-                  </span>
+                  <Button size="sm" variant="secondary" onClick={() => void openStagingQueueModal()}>
+                    Bảng tạm ({stagingPendingCount})
+                  </Button>
                 )}
-              </button>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <Status tone={upaffiliateConfig.enabled ? 'positive' : 'neutral'}>
-                {upaffiliateConfig.enabled ? 'UpAffiliate: Đã kết nối' : 'UpAffiliate: Tạm dừng'}
-              </Status>
-              <span className="text-ink-3 hidden xl:inline">
-                Gần nhất: <span className="font-code text-ink-2">{formatSyncDateTime(upaffiliateConfig.lastSyncedAt)}</span>
-              </span>
-              {stagingPendingCount > 0 && (
                 <Button
                   size="sm"
                   variant="secondary"
-                  onClick={() => void openStagingQueueModal()}
+                  icon={RefreshCw}
+                  disabled={isUpaffiliateSyncing}
+                  onClick={() => void triggerUpaffiliateSync('INCREMENTAL', 'MANUAL_TRIGGER')}
                 >
-                  Bảng tạm ({stagingPendingCount})
+                  {isUpaffiliateSyncing ? 'Đang đồng bộ...' : 'Đồng bộ ngay'}
                 </Button>
-              )}
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={RefreshCw}
-                disabled={isUpaffiliateSyncing}
-                onClick={() => void triggerUpaffiliateSync('INCREMENTAL', 'MANUAL_TRIGGER')}
-              >
-                {isUpaffiliateSyncing ? 'Đang đồng bộ...' : 'Đồng bộ ngay'}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  void reloadUpaffiliateState();
-                  setUpaffiliateSyncOpen(true);
-                }}
-              >
-                Cấu hình
-              </Button>
-            </div>
-          </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    void reloadUpaffiliateState();
+                    setUpaffiliateSyncOpen(true);
+                  }}
+                >
+                  Cấu hình
+                </Button>
+              </>
+            }
+          />
 
           {datasetTab === 'UPAFFILIATE_HUB' ? (
             <UpaffiliateDataManagementPanel
@@ -1444,226 +1439,296 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
             />
           ) : (
             <>
-              {/* Thanh KPI chuyên biệt theo từng Bảng dữ liệu KOC */}
               {datasetTab === 'COOPERATED' ? (
-                <StatRow>
+                <StatRow key="coop">
                   <Stat
-                    label="Tổng KOC Đã hợp tác (Master)"
-                    value={`${formatNumber(cooperatedKocs.length)} KOC`}
-                    note="Có lịch sử BO / Nghiệm thu thực tế tại Upbase"
-                    tone="positive"
+                    label="KOC đã hợp tác"
+                    value={formatNumber(cooperatedKocs.length)}
+                    numeric={cooperatedKocs.length}
+                    note="Có BO hoặc nghiệm thu tại Upbase"
                   />
                   <Stat
-                    label="Đủ hồ sơ pháp lý & Tài khoản"
-                    value={`${formatNumber(datasetStats.coopWithDocs)} KOC`}
-                    note="Đủ CCCD/MST & STK để ký HĐNT và thanh toán"
+                    label="Đã ký HĐ nguyên tắc"
+                    value={formatNumber(datasetStats.coopSigned)}
+                    numeric={datasetStats.coopSigned}
+                    progress={{ value: datasetStats.coopSigned, max: Math.max(1, cooperatedKocs.length) }}
+                    note={`${formatPercent(datasetStats.coopSigned / Math.max(1, cooperatedKocs.length))} số KOC`}
                   />
                   <Stat
-                    label="KOC có >1 Hồ sơ pháp lý"
-                    value={`${formatNumber(datasetStats.coopMultiLegal)} KOC`}
-                    note="Chuyển đổi Cá nhân ↔ HKD ↔ Công ty/MCN"
-                    tone="warning"
+                    label="Có CCCD/MST + STK"
+                    value={formatNumber(datasetStats.coopWithDocs)}
+                    numeric={datasetStats.coopWithDocs}
+                    note="Đủ số để thanh toán"
                   />
                   <Stat
-                    label="Tổng GMV lịch sử tích lũy"
-                    value={formatVndShort(datasetStats.coopTotalGmv)}
-                    note={`Tổng chi phí Cast: ${formatVndShort(datasetStats.coopTotalCost)}`}
-                    tone="positive"
+                    label="Video Paid đã book"
+                    value={formatNumber(datasetStats.coopPaidVideos)}
+                    numeric={datasetStats.coopPaidVideos}
+                    note={`${formatNumber(datasetStats.coopFocVideos)} video FOC`}
+                  />
+                  <Stat
+                    label="Chi phí booking lịch sử"
+                    value={formatVndShort(datasetStats.coopTotalCost)}
+                    numeric={datasetStats.coopTotalCost}
+                    note="Tổng tiền cast đã trả"
+                  />
+                  <Stat
+                    label="Đơn giá trung vị"
+                    value={datasetStats.coopRatedCount ? formatVndShort(datasetStats.coopMedianRate) : '—'}
+                    note={`${formatNumber(datasetStats.coopRatedCount)} KOC có đơn giá`}
+                  />
+                  <Stat
+                    label="PIC từng phụ trách"
+                    value={formatNumber(datasetStats.coopPicCount)}
+                    numeric={datasetStats.coopPicCount}
+                    note="Theo PIC chính của KOC"
+                  />
+                  <Stat
+                    label="Thiếu giấy tờ"
+                    value={formatNumber(issueChips[0].count)}
+                    numeric={issueChips[0].count}
+                    invert
+                    tone={issueChips[0].count > 0 ? 'critical' : undefined}
+                    note="Chưa có CCCD / MST"
                   />
                 </StatRow>
               ) : (
-                <StatRow>
+                <StatRow key="new">
                   <Stat
-                    label="Tổng KOC Mới / Tiềm năng"
-                    value={`${formatNumber(newKocs.length)} KOC`}
-                    note="KOC chưa từng hợp tác (0 job hoàn thành)"
-                    tone="positive"
+                    label="KOC mới / tiềm năng"
+                    value={formatNumber(newKocs.length)}
+                    numeric={newKocs.length}
+                    note="Chưa có đợt book hoàn thành"
                   />
                   <Stat
-                    label="Sẵn sàng Booking ngay"
-                    value={`${formatNumber(datasetStats.newReady)} KOC`}
-                    note="Đã có sẵn định danh pháp lý & báo giá đề xuất"
-                    tone="positive"
+                    label="Sẵn sàng booking"
+                    value={formatNumber(datasetStats.newReady)}
+                    numeric={datasetStats.newReady}
+                    progress={{ value: datasetStats.newReady, max: Math.max(1, newKocs.length) }}
+                    note="Đã có định danh và báo giá"
                   />
                   <Stat
-                    label="Đã có SĐT / Zalo / Email"
-                    value={`${formatNumber(datasetStats.newWithContact)} KOC`}
-                    note={`Đã liên hệ tiếp cận: ${formatNumber(datasetStats.newContacted)} KOC`}
+                    label="Có SĐT / Email"
+                    value={formatNumber(datasetStats.newWithContact)}
+                    numeric={datasetStats.newWithContact}
                   />
                   <Stat
-                    label="Kênh tiềm năng traffic tốt"
-                    value={`${formatNumber(datasetStats.newHighTraffic)} KOC`}
-                    note="View TB ≥ 15.000 hoặc Follower ≥ 100K"
+                    label="Đã liên hệ"
+                    value={formatNumber(datasetStats.newContacted)}
+                    numeric={datasetStats.newContacted}
+                    note="Gồm đang thương lượng"
+                  />
+                  <Stat
+                    label="Có báo giá"
+                    value={formatNumber(datasetStats.newWithQuote)}
+                    numeric={datasetStats.newWithQuote}
+                  />
+                  <Stat
+                    label="Traffic tốt"
+                    value={formatNumber(datasetStats.newHighTraffic)}
+                    numeric={datasetStats.newHighTraffic}
+                    note="View TB ≥ 15.000 hoặc ≥ 100K follower"
                   />
                 </StatRow>
               )}
 
-              <Panel flush>
-                <div className="p-4 border-b border-line grid gap-2.5">
-                  <FilterBar
-                    search={{
-                      value: search,
-                      onChange: setSearch,
-                      placeholder:
-                        datasetTab === 'COOPERATED'
-                          ? 'Tên kênh, @handle, Chủ TK, CCCD, MST, Mã BO, Brand...'
-                          : 'Tên kênh mới, @handle, Gian hàng đề xuất, SĐT, Email...',
-                    }}
-                    filters={
-                      <>
-                        <Select
-                          value={category}
-                          onChange={(e) => setCategory(e.target.value)}
-                          aria-label="Ngành hàng"
-                          className="w-auto"
-                        >
-                          <option value={ALL}>Mọi ngành hàng</option>
-                          {options.category.map((v) => (
-                            <option key={v} value={v}>
-                              {v}
-                            </option>
-                          ))}
-                        </Select>
-                        <Select
-                          value={tepKenh}
-                          onChange={(e) => setTepKenh(e.target.value)}
-                          aria-label="Tệp kênh"
-                          className="w-auto"
-                        >
-                          <option value={ALL}>Mọi tệp kênh</option>
-                          {options.tepKenh.map((v) => (
-                            <option key={v} value={v}>
-                              {v}
-                            </option>
-                          ))}
-                        </Select>
-                        <Select
-                          value={salaryGrade}
-                          onChange={(e) => setSalaryGrade(e.target.value)}
-                          aria-label="Khung lương"
-                          className="w-auto"
-                        >
-                          <option value={ALL}>Mọi khung lương</option>
-                          {options.salaryGrade.map((v) => (
-                            <option key={v} value={v}>
-                              {v}
-                            </option>
-                          ))}
-                        </Select>
-                        <Select
-                          value={picFilter}
-                          onChange={(e) => setPicFilter(e.target.value)}
-                          aria-label="PIC phụ trách"
-                          className="w-auto"
-                        >
-                          <option value={ALL}>Mọi PIC phụ trách</option>
-                          {options.pic.map((v) => (
-                            <option key={v} value={v}>
-                              {v}
-                            </option>
-                          ))}
-                        </Select>
-                        {datasetTab === 'COOPERATED' && (
-                          <Select
-                            value={platform}
-                            onChange={(e) => setPlatform(e.target.value as PlatformFilter)}
-                            aria-label="Nền tảng"
-                            className="w-auto"
-                          >
-                            <option value={ALL}>Mọi nền tảng</option>
-                            <option value="tiktok">Có TikTok</option>
-                            <option value="shopee">Có Shopee</option>
-                            <option value="facebook">Có Facebook</option>
-                            <option value="instagram">Có Instagram</option>
-                            <option value="threads">Có Threads</option>
+              <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
+                {/* Bảng KOC */}
+                <Panel
+                  flush
+                  icon={datasetTab === 'COOPERATED' ? Users : Sparkles}
+                  title={datasetTab === 'COOPERATED' ? 'KOC đã hợp tác' : 'KOC mới / tiềm năng'}
+                  meta={`${formatNumber(filtered.length)} / ${formatNumber(activeDataset.length)} KOC${isFiltered ? ' khớp bộ lọc' : ''} · ${
+                    datasetTab === 'COOPERATED' ? 'Danh bạ Master KOC B2C 2026' : 'Sheet KOC_Tiem_Nang, TikTok Seller, Kalodata'
+                  }`}
+                  className="min-w-0"
+                >
+                  <div className="px-4 pb-3 border-b border-line">
+                    <FilterBar
+                      search={{
+                        value: search,
+                        onChange: setSearch,
+                        placeholder:
+                          datasetTab === 'COOPERATED'
+                            ? 'Tên kênh, @handle, chủ TK, CCCD, MST, mã BO, Brand'
+                            : 'Tên kênh, @handle, gian hàng đề xuất, SĐT, Email',
+                      }}
+                      filters={
+                        <>
+                          <Select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Ngành hàng" className="w-auto">
+                            <option value={ALL}>Mọi ngành hàng</option>
+                            {options.category.map((v) => (
+                              <option key={v} value={v}>
+                                {v}
+                              </option>
+                            ))}
                           </Select>
-                        )}
-                        {isFiltered && (
-                          <Button variant="ghost" onClick={resetFilters}>
-                            Xóa bộ lọc
-                          </Button>
-                        )}
-                      </>
-                    }
-                    resultCount={isFiltered ? filtered.length : undefined}
-                    chips={
-                      datasetTab === 'COOPERATED' ? (
-                        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-                          <Chips
-                            label="Hồ sơ pháp lý (1–N)"
-                            items={legalChips}
-                            value={legal}
-                            onChange={setLegal}
-                          />
-                          <Chips<IssueFilter>
-                            label="Cần xử lý"
-                            items={issueChips}
-                            value={issue}
-                            onChange={(k) => setIssue((cur) => (cur === k ? '' : k))}
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-                          <Chips
-                            label="Độ sẵn sàng Booking"
-                            items={readinessChips}
-                            value={readiness}
-                            onChange={setReadiness}
-                          />
-                          <Chips<NewIssueFilter>
-                            label="Tiếp cận & Đánh giá"
-                            items={newIssueChips}
-                            value={newIssue}
-                            onChange={(k) => setNewIssue((cur) => (cur === k ? '' : k))}
-                          />
-                        </div>
-                      )
-                    }
-                  />
-                </div>
-
-                <DataTable
-                  columns={datasetTab === 'COOPERATED' ? columnsCooperated : columnsNew}
-                  rows={rows}
-                  rowKey={(k) => k.id}
-                  onRowClick={(k) => openFromList(k.id)}
-                  compact
-                  stickyLast
-                  empty={
-                    <EmptyState
-                      title={
-                        activeDataset.length === 0
-                          ? 'Chưa có KOC nào trong bảng này'
-                          : 'Không có KOC khớp bộ lọc'
+                          <Select value={tepKenh} onChange={(e) => setTepKenh(e.target.value)} aria-label="Tệp kênh" className="w-auto">
+                            <option value={ALL}>Mọi tệp kênh</option>
+                            {options.tepKenh.map((v) => (
+                              <option key={v} value={v}>
+                                {v}
+                              </option>
+                            ))}
+                          </Select>
+                          <Select value={salaryGrade} onChange={(e) => setSalaryGrade(e.target.value)} aria-label="Khung lương" className="w-auto">
+                            <option value={ALL}>Mọi khung lương</option>
+                            {options.salaryGrade.map((v) => (
+                              <option key={v} value={v}>
+                                {v}
+                              </option>
+                            ))}
+                          </Select>
+                          <Select value={picFilter} onChange={(e) => setPicFilter(e.target.value)} aria-label="PIC phụ trách" className="w-auto">
+                            <option value={ALL}>Mọi PIC</option>
+                            {options.pic.map((v) => (
+                              <option key={v} value={v}>
+                                {v}
+                              </option>
+                            ))}
+                          </Select>
+                          {datasetTab === 'COOPERATED' && (
+                            <Select
+                              value={platform}
+                              onChange={(e) => setPlatform(e.target.value as PlatformFilter)}
+                              aria-label="Nền tảng"
+                              className="w-auto"
+                            >
+                              <option value={ALL}>Mọi nền tảng</option>
+                              <option value="tiktok">Có TikTok</option>
+                              <option value="shopee">Có Shopee</option>
+                              <option value="facebook">Có Facebook</option>
+                              <option value="instagram">Có Instagram</option>
+                              <option value="threads">Có Threads</option>
+                            </Select>
+                          )}
+                        </>
                       }
-                      description={
-                        activeDataset.length === 0
-                          ? 'Thêm KOC mới hoặc lấy dữ liệu từ TikTok để bắt đầu.'
-                          : 'Bỏ bớt điều kiện lọc hoặc tìm bằng từ khóa khác.'
-                      }
-                      action={
-                        activeDataset.length === 0 ? (
-                          <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
-                            Thêm KOC
-                          </Button>
-                        ) : (
-                          <Button onClick={resetFilters}>Xóa bộ lọc</Button>
-                        )
+                      chips={
+                        activeFilterTags.length > 0 || isFiltered ? (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {activeFilterTags.map((t) => (
+                              <Button key={t.key} size="sm" variant="secondary" onClick={t.clear}>
+                                {t.label} <X className="w-3 h-3" />
+                              </Button>
+                            ))}
+                            {isFiltered && (
+                              <Button size="sm" variant="ghost" onClick={resetFilters}>
+                                Xóa bộ lọc
+                              </Button>
+                            )}
+                          </div>
+                        ) : undefined
                       }
                     />
-                  }
-                />
-                <Pagination
-                  page={page}
-                  pageSize={pageSize}
-                  total={filtered.length}
-                  onPageChange={setPage}
-                  onPageSizeChange={setPageSize}
-                />
-              </Panel>
+                  </div>
+
+                  <DataTable
+                    columns={datasetTab === 'COOPERATED' ? columnsCooperated : columnsNew}
+                    rows={rows}
+                    rowKey={(k) => k.id}
+                    onRowClick={(k) => openFromList(k.id)}
+                    compact
+                    stickyLast
+                    empty={
+                      <EmptyState
+                        title={activeDataset.length === 0 ? 'Chưa có KOC nào trong bảng này' : 'Không có KOC khớp bộ lọc'}
+                        description={
+                          activeDataset.length === 0
+                            ? 'Thêm KOC mới hoặc lấy dữ liệu từ TikTok để bắt đầu.'
+                            : 'Bỏ bớt điều kiện lọc hoặc tìm bằng từ khóa khác.'
+                        }
+                        action={
+                          activeDataset.length === 0 ? (
+                            <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
+                              Thêm KOC
+                            </Button>
+                          ) : (
+                            <Button onClick={resetFilters}>Xóa bộ lọc</Button>
+                          )
+                        }
+                      />
+                    }
+                  />
+                  <Pagination
+                    page={page}
+                    pageSize={pageSize}
+                    total={filtered.length}
+                    onPageChange={setPage}
+                    onPageSizeChange={setPageSize}
+                  />
+                </Panel>
+
+                {/* Cột phải: phân bổ và việc cần xử lý, bấm để lọc bảng */}
+                <div className="order-first 2xl:order-none grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-1 gap-4">
+                  {datasetTab === 'COOPERATED' ? (
+                    <>
+                      <Panel icon={Scale} title="Hồ sơ pháp lý" meta="1 KOC có thể có nhiều hồ sơ · bấm để lọc">
+                        <BarList
+                          narrow
+                          items={legalChips
+                            .filter((c) => c.key !== ALL)
+                            .map((c) => ({
+                              key: c.key,
+                              label: c.label,
+                              value: c.count,
+                              display: formatNumber(c.count),
+                              active: legal === c.key,
+                              onClick: () => setLegal((cur) => (cur === c.key ? ALL : c.key)),
+                            }))}
+                        />
+                      </Panel>
+                      <Panel icon={ListChecks} title="Cần xử lý" meta="Chung chủ / MCN là thông tin, không phải lỗi">
+                        <BarList
+                          narrow
+                          items={issueChips.map((c) => ({
+                            key: c.key,
+                            label: c.label,
+                            value: c.count,
+                            display: formatNumber(c.count),
+                            active: issue === c.key,
+                            onClick: () => setIssue((cur) => (cur === c.key ? '' : c.key)),
+                          }))}
+                        />
+                      </Panel>
+                    </>
+                  ) : (
+                    <>
+                      <Panel icon={Scale} title="Độ sẵn sàng booking" meta="Bấm để lọc">
+                        <BarList
+                          narrow
+                          items={readinessChips
+                            .filter((c) => c.key !== ALL)
+                            .map((c) => ({
+                              key: c.key,
+                              label: c.label,
+                              value: c.count,
+                              display: formatNumber(c.count),
+                              active: readiness === c.key,
+                              onClick: () => setReadiness((cur) => (cur === c.key ? ALL : c.key)),
+                            }))}
+                        />
+                      </Panel>
+                      <Panel icon={ListChecks} title="Tiếp cận & đánh giá" meta="Bấm để lọc">
+                        <BarList
+                          narrow
+                          items={newIssueChips.map((c) => ({
+                            key: c.key,
+                            label: c.label,
+                            value: c.count,
+                            display: formatNumber(c.count),
+                            active: newIssue === c.key,
+                            onClick: () => setNewIssue((cur) => (cur === c.key ? '' : c.key)),
+                          }))}
+                        />
+                      </Panel>
+                    </>
+                  )}
+                </div>
+              </div>
             </>
           )}
-        </>
+        </Density>
       )}
 
       {/* Hộp thoại Ghi nhận liên hệ & Chuyển trạng thái cho KOC Mới */}

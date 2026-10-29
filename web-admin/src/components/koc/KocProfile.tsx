@@ -12,7 +12,6 @@ import React, { useMemo, useState } from 'react';
 import {
   AlertTriangle,
   ArrowLeft,
-  Award,
   Calendar,
   Check,
   CheckCircle2,
@@ -23,7 +22,6 @@ import {
   ExternalLink,
   FileScan,
   FileText,
-  Filter,
   History,
   MessageSquare,
   Music,
@@ -48,12 +46,15 @@ import {
 } from '../../lib/upaffiliateKocSyncService';
 import { KocChannelReviewBadge, KocChannelReviewModal } from './KocChannelReviewModal';
 import {
+  ActionMenu,
   Avatar,
   Button,
   CHANNELS,
   DataTable,
+  Density,
   EmptyState,
   FacebookLogo,
+  FilterBar,
   Field,
   Input,
   InstagramLogo,
@@ -61,6 +62,7 @@ import {
   Panel,
   Person,
   SectionHeader,
+  Select,
   ShopeeLogo,
   Stat,
   StatRow,
@@ -77,14 +79,18 @@ import {
   READINESS_LABEL,
   calculateKocPerformanceStats,
   canRevealSensitive,
+  dealPostOnTimeOf,
+  dealRatingOf,
   dealStatusOf,
   dealStepOf,
+  dealViewsOf,
   dealsOfKoc,
   formatFollowers,
   getKocLegalProfiles,
   hasLegalId,
   isCooperatedKoc,
   isDealOpen,
+  isMasterSummaryDeal,
   legalIdOf,
   legalTypeOf,
   mask,
@@ -199,16 +205,31 @@ export function KocProfile({
   const handle = koc.channelId.replace(/^@/, '');
   const openCount = stats.runningDeals;
   const totalHistoryCount = Math.max(kocDeals.length, koc.totalPastDeals || 0);
+  // Trùng thật = cùng @handle. Cùng CCCD / MST / SĐT / Email là một chủ hoặc MCN quản lý nhiều kênh, chỉ là thông tin.
+  const channelDuplicates = duplicates.filter((d) => d.fields.includes('kênh'));
+  const sharedOwners = duplicates.filter((d) => !d.fields.includes('kênh'));
+  const syncStatus = getUpaffiliateSyncStatus(koc);
 
   const tabItems: TabItem<MainTabKey>[] = [
-    { key: 'HISTORY', label: 'Lịch sử & Hiệu quả hợp tác', count: totalHistoryCount },
-    { key: 'LEGAL_PROFILES', label: 'Hồ sơ pháp lý & Thụ hưởng (1–N)', count: legalProfiles.length },
-    { key: 'METRICS', label: 'Chỉ số kênh & TikTok Seller' },
+    { key: 'HISTORY', label: 'Lịch sử hợp tác', count: totalHistoryCount },
+    { key: 'LEGAL_PROFILES', label: 'Hồ sơ pháp lý', count: legalProfiles.length },
+    { key: 'METRICS', label: 'Chỉ số kênh' },
     { key: 'ACTIVE_DEALS', label: 'Booking đang chạy', count: openCount > 0 ? openCount : undefined },
   ];
 
+  const moreActions = [
+    { label: 'Đánh giá phù hợp', icon: CheckCircle2, onSelect: () => openChannelReviewWithVerdict('SUITABLE') },
+    { label: 'Đánh giá không phù hợp', icon: XCircle, onSelect: () => openChannelReviewWithVerdict('NOT_SUITABLE') },
+    ...(channelReviewSummary && channelReviewSummary.totalReviews > 0
+      ? [{ label: `Lịch sử đánh giá (${channelReviewSummary.totalReviews})`, icon: History, onSelect: () => openChannelReviewWithVerdict() }]
+      : []),
+    { label: 'Đánh giá lịch sử & rủi ro', icon: FileText, onSelect: () => setHistoryEvalModalOpen(true) },
+    ...(onSearchSocialChannels ? [{ label: 'Tìm kênh MXH', icon: Search, onSelect: () => onSearchSocialChannels(koc) }] : []),
+    ...(koc.bankAccount ? [{ label: 'Mã QR VietQR', icon: QrCode, onSelect: () => setVietQrDeal(koc) }] : []),
+  ];
+
   return (
-    <div className="space-y-6">
+    <Density className="space-y-4">
       {isPage && nav && (
         <div className="flex items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -230,8 +251,8 @@ export function KocProfile({
           {(nav.onPrev || nav.onNext) && (
             <div className="flex items-center gap-1.5 text-2xs text-ink-3">
               {nav.position && nav.total ? (
-                <span className="tabular-nums mr-1">
-                  {nav.position} / {nav.total}
+                <span className="tabular-nums font-figure mr-1">
+                  {formatNumber(nav.position)} / {formatNumber(nav.total)}
                 </span>
               ) : null}
               <IconButton label="KOC trước" onClick={nav.onPrev}>
@@ -245,59 +266,29 @@ export function KocProfile({
         </div>
       )}
 
-      {/* Đầu hồ sơ */}
+      {/* Đầu hồ sơ: tên, nhãn trạng thái, một dòng phân loại; thao tác chính bên phải, còn lại trong menu */}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3 min-w-0">
-          {/* Tên chuyển cảnh khớp với hàng trong KocMasterDataView (chỉ ở dạng trang) */}
-          {isPage && <span className="shrink-0 inline-flex" style={sharedTo('koc-avatar')}><Avatar name={koc.stageName} src={koc.avatarUrl} size={52} /></span>}
+          {isPage && <span className="shrink-0 inline-flex" style={sharedTo('koc-avatar')}><Avatar name={koc.stageName} src={koc.avatarUrl} size={44} /></span>}
           <div className="min-w-0 grid gap-1">
             {isPage && (
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-semibold text-ink" style={isPage ? sharedTo('koc-title') : undefined}>{koc.stageName}</h2>
+                <h2 className="text-lg font-semibold text-ink" style={sharedTo('koc-title')}>{koc.stageName}</h2>
                 {koc.realName && koc.realName !== koc.stageName && (
-                  <span className="text-sm text-ink-3 font-normal">({koc.realName})</span>
+                  <span className="text-sm text-ink-3">{koc.realName}</span>
                 )}
-                <KocChannelReviewBadge
-                  summary={channelReviewSummary}
-                  onClick={() => setChannelReviewModalOpen(true)}
-                />
+                <KocChannelReviewBadge summary={channelReviewSummary} onClick={() => setChannelReviewModalOpen(true)} />
                 <Status tone={isCooperated ? 'positive' : 'info'}>
-                  {isCooperated ? `KOC Đã hợp tác (${totalHistoryCount} deal)` : 'KOC Mới / Tiềm năng'}
+                  {isCooperated ? `Đã hợp tác · ${formatNumber(totalHistoryCount)} đợt` : 'KOC mới / tiềm năng'}
                 </Status>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-line bg-sunken text-ink-2 text-2xs font-code">
-                  <span>{getUpaffiliateCreatorId(koc)}</span>
-                  <span className="text-ink-3">·</span>
-                  <span
-                    className={
-                      getUpaffiliateSyncStatus(koc) === 'SYNCED'
-                        ? 'text-positive font-semibold'
-                        : 'text-warning font-semibold'
-                    }
-                  >
-                    {getUpaffiliateSyncStatus(koc) === 'SYNCED'
-                      ? 'UpAffiliate'
-                      : 'Chờ đồng bộ'}
-                  </span>
-                </span>
                 {!isCooperated && koc.bookingReadiness && (
-                  <Status tone={READINESS_LABEL[koc.bookingReadiness].tone}>
-                    {READINESS_LABEL[koc.bookingReadiness].label}
-                  </Status>
-                )}
-                {legalProfiles.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('LEGAL_PROFILES')}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-accent/30 bg-accent-soft text-accent text-2xs font-semibold hover:bg-accent-soft/80 cursor-pointer"
-                  >
-                    <span>{legalProfiles.length} Hồ sơ pháp lý</span>
-                  </button>
+                  <Status tone={READINESS_LABEL[koc.bookingReadiness].tone}>{READINESS_LABEL[koc.bookingReadiness].label}</Status>
                 )}
                 {missingDocs && <Status tone="warning">Thiếu giấy tờ</Status>}
-                {duplicates.length > 0 && <Status tone="warning">Nghi trùng</Status>}
+                {channelDuplicates.length > 0 && <Status tone="warning">Trùng kênh</Status>}
               </div>
             )}
-            <p className="text-[13px] text-ink-2">
+            <p className="text-ctl text-ink-2">
               <a
                 href={koc.channelLink || `https://www.tiktok.com/@${handle}`}
                 target="_blank"
@@ -309,53 +300,26 @@ export function KocProfile({
               </a>
               {isPage && <span className="text-ink-3"> · {classificationOf(koc)}</span>}
             </p>
-            {stats.avgRatingScore > 0 && (
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-2">
-                <span className="inline-flex items-center gap-1 text-2xs font-medium text-warning">
-                  <Star className="w-3 h-3 fill-current" />
-                  {stats.avgRatingScore} / 5.0
-                </span>
-              </div>
+            {isPage && (
+              <p className="text-2xs text-ink-3">
+                <span className="font-figure">{getUpaffiliateCreatorId(koc)}</span>
+                {' · '}
+                {syncStatus === 'SYNCED' ? 'Đã đồng bộ UpAffiliate' : 'Chờ đồng bộ UpAffiliate'}
+                {legalProfiles.length > 1 && (
+                  <>
+                    {' · '}
+                    <button type="button" onClick={() => setActiveTab('LEGAL_PROFILES')} className="text-accent hover:underline">
+                      {legalProfiles.length} hồ sơ pháp lý
+                    </button>
+                  </>
+                )}
+                {sharedOwners.length > 0 && ` · Chung chủ / MCN với ${formatNumber(sharedOwners.length)} kênh`}
+              </p>
             )}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="secondary"
-            icon={CheckCircle2}
-            onClick={() => openChannelReviewWithVerdict('SUITABLE')}
-          >
-            Đánh giá Phù hợp
-          </Button>
-          <Button
-            variant={channelReviewSummary?.latestReview.verdict === 'NOT_SUITABLE' ? 'danger' : 'secondary'}
-            icon={XCircle}
-            onClick={() => openChannelReviewWithVerdict('NOT_SUITABLE')}
-          >
-            Không phù hợp
-          </Button>
-          {channelReviewSummary && channelReviewSummary.totalReviews > 0 && (
-            <Button
-              variant="secondary"
-              icon={History}
-              onClick={() => openChannelReviewWithVerdict()}
-            >
-              Lịch sử ĐG ({channelReviewSummary.totalReviews})
-            </Button>
-          )}
-          <Button variant="secondary" icon={FileText} onClick={() => setHistoryEvalModalOpen(true)}>
-            Đánh giá lịch sử & rủi ro
-          </Button>
-          {onSearchSocialChannels && (
-            <Button variant="secondary" icon={Search} onClick={() => onSearchSocialChannels(koc)}>
-              Tìm kênh MXH
-            </Button>
-          )}
-          {koc.bankAccount && (
-            <Button variant="secondary" icon={QrCode} onClick={() => setVietQrDeal(koc)}>
-              Mã QR VietQR
-            </Button>
-          )}
+          <ActionMenu label="Thao tác khác" items={moreActions} />
           {onCreateContractForKoc && (
             <Button variant="secondary" icon={FileText} onClick={() => onCreateContractForKoc(koc)}>
               Ký hợp đồng
@@ -369,96 +333,13 @@ export function KocProfile({
         </div>
       </header>
 
-      {/* Cảnh báo / Lịch sử đánh giá kênh KOC từ nhân viên */}
-      {channelReviewSummary && channelReviewSummary.totalReviews > 0 && (
-        <div
-          className={cx(
-            'p-3.5 rounded-xl border text-xs space-y-2',
-            channelReviewSummary.latestReview.verdict === 'NOT_SUITABLE'
-              ? 'bg-critical-soft/40 border-critical/30'
-              : channelReviewSummary.latestReview.verdict === 'CAUTION'
-                ? 'bg-warning-soft/50 border-warning/30'
-                : 'bg-positive-soft/40 border-positive/30',
-          )}
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <KocChannelReviewBadge
-                summary={channelReviewSummary}
-                onClick={() => setChannelReviewModalOpen(true)}
-              />
-              <span className="font-semibold text-ink">
-                Kênh @{handle} có {channelReviewSummary.totalReviews} lượt đánh giá trong lịch sử
-              </span>
-              {channelReviewSummary.notSuitableCount > 0 && (
-                <span className="text-2xs font-medium text-critical">
-                  ({channelReviewSummary.notSuitableCount} lượt Không phù hợp)
-                </span>
-              )}
-            </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={History}
-              onClick={() => setChannelReviewModalOpen(true)}
-            >
-              Xem lịch sử & Thêm đánh giá
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {channelReviewSummary.reviews.slice(0, 2).map((rev) => (
-              <div key={rev.id} className="p-2.5 rounded-lg bg-surface border border-line text-2xs space-y-1">
-                <div className="flex flex-wrap items-center justify-between gap-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="font-semibold text-ink">
-                      {rev.reviewerName}
-                      {rev.reviewerRole ? <span className="font-normal text-ink-3"> ({rev.reviewerRole})</span> : null}
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded bg-surface-2 border border-line text-ink font-semibold text-3xs">
-                      Brand: {rev.brandScope || 'Toàn hệ thống B2C'}
-                    </span>
-                    <Status
-                      tone={
-                        rev.verdict === 'NOT_SUITABLE'
-                          ? 'critical'
-                          : rev.verdict === 'CAUTION'
-                            ? 'warning'
-                            : 'positive'
-                      }
-                    >
-                      {rev.verdictLabel}
-                    </Status>
-                  </div>
-                  <span className="text-ink-3 tabular-nums">
-                    {rev.dateLabel} · {rev.timeLabel}
-                  </span>
-                </div>
-                {rev.reasonTags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {rev.reasonTags.map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="px-1.5 py-0.5 rounded bg-sunken border border-line text-3xs font-medium text-ink-2"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {rev.note && <div className="text-ink-2">Ý kiến: &ldquo;{rev.note}&rdquo;</div>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Cảnh báo trùng lặp nếu có */}
-      {duplicates.length > 0 && (
-        <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-warning-soft text-[13px] text-ink">
+      {/* Trùng kênh thật (cùng @handle) mới cảnh báo */}
+      {channelDuplicates.length > 0 && (
+        <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl border border-line text-ctl text-ink">
           <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" strokeWidth={1.75} />
           <p>
-            Có thể trùng với{' '}
-            {duplicates.slice(0, 3).map((d, i) => (
+            Trùng kênh với{' '}
+            {channelDuplicates.slice(0, 3).map((d, i) => (
               <React.Fragment key={d.kocId}>
                 {i > 0 && ', '}
                 {onOpenKoc ? (
@@ -467,84 +348,103 @@ export function KocProfile({
                   </button>
                 ) : (
                   <span className="font-medium">{d.stageName}</span>
-                )}{' '}
-                <span className="text-ink-2">(cùng {d.fields.join(', ')})</span>
+                )}
               </React.Fragment>
             ))}
-            {duplicates.length > 3 && ` và ${duplicates.length - 3} hồ sơ khác`}. Kiểm tra trước khi tạo booking hoặc hợp đồng.
+            {channelDuplicates.length > 3 && ` và ${channelDuplicates.length - 3} hồ sơ khác`}. Gộp hồ sơ trước khi tạo booking hoặc hợp đồng.
           </p>
         </div>
       )}
 
-      {/* Bố cục 2 cột */}
-      <div className={cx('grid gap-6 items-start', isPage && 'lg:grid-cols-[minmax(0,1fr)_340px]')}>
-        {/* Cột chính (Trái) */}
-        <div className="grid gap-6 min-w-0">
-          {/* Thanh chuyển Tabs */}
-          <div className="bg-surface border border-line rounded-xl p-4 shadow-xs">
-            <Tabs items={tabItems} value={activeTab} onChange={setActiveTab} />
+      <div className={cx('grid gap-4 items-start', isPage && 'xl:grid-cols-[minmax(0,1fr)_320px]')}>
+        {/* Cột chính */}
+        <div className="grid gap-4 min-w-0">
+          <Tabs items={tabItems} value={activeTab} onChange={setActiveTab} />
 
-            <div className="pt-5">
-              {activeTab === 'HISTORY' && (
-                <CollaborationHistorySection
-                  koc={koc}
-                  deals={kocDeals}
-                  stats={stats}
-                  currentUser={currentUser}
-                  onViewDetail={setSelectedCollabDetail}
-                  onOpenHistoryEvaluation={() => setHistoryEvalModalOpen(true)}
-                />
-              )}
+          {activeTab === 'HISTORY' && (
+            <CollaborationHistorySection
+              koc={koc}
+              deals={kocDeals}
+              stats={stats}
+              currentUser={currentUser}
+              onViewDetail={setSelectedCollabDetail}
+              onOpenHistoryEvaluation={() => setHistoryEvalModalOpen(true)}
+            />
+          )}
 
-              {activeTab === 'LEGAL_PROFILES' && (
-                <KocLegalProfilesSection
-                  koc={koc}
-                  currentUser={currentUser}
-                  onUpdateKoc={onUpdateKoc}
-                  onScanDocs={onScanDocs}
-                  onCreateContractForProfile={
-                    onCreateContractForKoc
-                      ? (targetKoc, prof) => onCreateContractForKoc(targetKoc, prof.id)
-                      : undefined
-                  }
-                />
-              )}
+          {activeTab === 'LEGAL_PROFILES' && (
+            <KocLegalProfilesSection
+              koc={koc}
+              currentUser={currentUser}
+              onUpdateKoc={onUpdateKoc}
+              onScanDocs={onScanDocs}
+              onCreateContractForProfile={
+                onCreateContractForKoc ? (targetKoc, prof) => onCreateContractForKoc(targetKoc, prof.id) : undefined
+              }
+            />
+          )}
 
-              {activeTab === 'METRICS' && (
-                <TikTokSellerMetricsSection
-                  koc={koc}
-                  onUpdate={() => (onUpdateMetrics ? onUpdateMetrics(koc) : setSyncModalOpen(true))}
-                  onUpdateKoc={onUpdateKoc}
-                />
-              )}
+          {activeTab === 'METRICS' && (
+            <TikTokSellerMetricsSection
+              koc={koc}
+              onUpdate={() => (onUpdateMetrics ? onUpdateMetrics(koc) : setSyncModalOpen(true))}
+              onUpdateKoc={onUpdateKoc}
+            />
+          )}
 
-              {activeTab === 'ACTIVE_DEALS' && (
-                <ActiveDealsSection
-                  deals={kocDeals.filter(isDealOpen)}
-                  onViewDetail={setSelectedCollabDetail}
-                />
-              )}
-            </div>
-          </div>
+          {activeTab === 'ACTIVE_DEALS' && (
+            <ActiveDealsSection deals={kocDeals.filter(isDealOpen)} onViewDetail={setSelectedCollabDetail} />
+          )}
         </div>
 
-        {/* Cột tra cứu (Phải) */}
-        <aside className="bg-surface border border-line rounded-xl divide-y divide-line min-w-0 shadow-xs">
-          <ShippingAndContactPanel
-            koc={koc}
-            onSearchSocialChannels={onSearchSocialChannels}
-            onUpdateKoc={onUpdateKoc}
-          />
-          <LegalPaymentPanel
-            koc={koc}
-            currentUser={currentUser}
-            onScanDocs={onScanDocs}
-            onUpdateKoc={onUpdateKoc}
-            onOpenQr={() => setVietQrDeal(koc)}
-            onOpenLegalTab={() => setActiveTab('LEGAL_PROFILES')}
-            onCreateContractForKoc={onCreateContractForKoc}
-          />
-          <OperationalNotesPanel koc={koc} />
+        {/* Cột tra cứu */}
+        <aside className="grid gap-4 min-w-0">
+          {channelReviewSummary && channelReviewSummary.totalReviews > 0 && (
+            <Panel
+              icon={History}
+              title="Đánh giá kênh"
+              meta={`${formatNumber(channelReviewSummary.totalReviews)} lượt${
+                channelReviewSummary.notSuitableCount > 0 ? ` · ${channelReviewSummary.notSuitableCount} không phù hợp` : ''
+              }`}
+              actions={
+                <Button size="sm" variant="ghost" onClick={() => setChannelReviewModalOpen(true)}>
+                  Xem tất cả
+                </Button>
+              }
+            >
+              <ul className="divide-y divide-line">
+                {channelReviewSummary.reviews.slice(0, 3).map((rev) => (
+                  <li key={rev.id} className="py-2 first:pt-0 last:pb-0 grid gap-1 text-2xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <Status tone={rev.verdict === 'NOT_SUITABLE' ? 'critical' : rev.verdict === 'CAUTION' ? 'warning' : 'positive'}>
+                        {rev.verdictLabel}
+                      </Status>
+                      <span className="text-ink-3 tabular-nums">{rev.dateLabel}</span>
+                    </div>
+                    <span className="text-ink-2">
+                      {rev.reviewerName} · {rev.brandScope || 'Toàn hệ thống B2C'}
+                    </span>
+                    {(rev.note || rev.reasonTags.length > 0) && (
+                      <span className="text-ink-3 line-clamp-2">{rev.note || rev.reasonTags.join(', ')}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
+          <div className="bg-surface border border-line rounded-xl divide-y divide-line min-w-0">
+            <ShippingAndContactPanel koc={koc} onSearchSocialChannels={onSearchSocialChannels} onUpdateKoc={onUpdateKoc} />
+            <LegalPaymentPanel
+              koc={koc}
+              currentUser={currentUser}
+              onScanDocs={onScanDocs}
+              onUpdateKoc={onUpdateKoc}
+              onOpenQr={() => setVietQrDeal(koc)}
+              onOpenLegalTab={() => setActiveTab('LEGAL_PROFILES')}
+              onCreateContractForKoc={onCreateContractForKoc}
+            />
+            <OperationalNotesPanel koc={koc} />
+          </div>
         </aside>
       </div>
 
@@ -596,7 +496,7 @@ export function KocProfile({
         currentUserEmail={currentUser?.email}
         reviews={channelReviews}
       />
-    </div>
+    </Density>
   );
 }
 
@@ -1165,24 +1065,35 @@ function CollaborationHistorySection({
       key: 'campaign',
       header: 'Chiến dịch & Sản phẩm',
       width: 240,
-      render: (d) => (
-        <div className="min-w-0 max-w-[260px]">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="font-semibold text-ink text-[13px] hover:text-accent cursor-pointer truncate" onClick={() => onViewDetail(d)} title={d.campaignTitle}>
-              {d.campaignTitle || d.productName}
+      render: (d) =>
+        // Đợt dựng lại từ số tổng Master KOC: mã BO, brand, sản phẩm là suy đoán nên không hiện như deal thật
+        isMasterSummaryDeal(d) ? (
+          <div className="min-w-0 max-w-[260px]">
+            <span className="block font-medium text-ink-2 text-ctl">Đợt book theo Master KOC</span>
+            <span className="block text-2xs text-ink-3 mt-0.5">
+              Chưa có chi tiết trên hệ thống{d.bookingBatch ? ` · gần nhất ${d.bookingBatch}` : ''}
             </span>
           </div>
-          <div className="flex items-center gap-1 text-2xs text-ink-3 truncate mt-0.5">
-            <span className="font-medium text-ink-2">{d.brandName}</span>
-            <span>·</span>
-            <span className="truncate">{d.productName}</span>
+        ) : (
+          <div className="min-w-0 max-w-[260px]">
+            <span className="block font-semibold text-ink text-ctl hover:text-accent cursor-pointer truncate" onClick={() => onViewDetail(d)} title={d.campaignTitle}>
+              {d.campaignTitle || d.productName}
+            </span>
+            <div className="flex items-center gap-1 text-2xs text-ink-3 truncate mt-0.5">
+              <span className="font-medium text-ink-2">{d.brandName}</span>
+              {d.productName && (
+                <>
+                  <span>·</span>
+                  <span className="truncate">{d.productName}</span>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 mt-0.5 text-2xs text-ink-3">
+              <span className="font-figure">{d.dealCode}</span>
+              {d.bookingBatch && <span>· {d.bookingBatch}</span>}
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 mt-1 text-2xs text-ink-3">
-            <span className="font-code">{d.dealCode}</span>
-            {d.bookingBatch && <span>· {d.bookingBatch}</span>}
-          </div>
-        </div>
-      ),
+        ),
     },
     {
       key: 'format_time',
@@ -1226,48 +1137,43 @@ function CollaborationHistorySection({
       width: 120,
       render: (d) => (
         <div className="text-right">
-          <span className="font-semibold text-ink block text-[13px]">
-            {d.totalValue ? formatVndShort(d.totalValue) : <span className="text-positive font-medium">0đ (FOC)</span>}
+          <span className="font-semibold text-ink block text-ctl font-figure">
+            {d.totalValue ? formatVndShort(d.totalValue) : <span className="text-ink-2 font-medium">0đ (FOC)</span>}
           </span>
           {d.focSampleCost ? (
             <span className="text-2xs text-ink-3 block">Mẫu: {formatVndShort(d.focSampleCost)}</span>
           ) : null}
           {d.sparkAdsBudget ? (
-            <span className="text-2xs text-accent block">Ads: {formatVndShort(d.sparkAdsBudget)}</span>
+            <span className="text-2xs text-ink-3 block">Ads: {formatVndShort(d.sparkAdsBudget)}</span>
           ) : null}
         </div>
       ),
     },
     {
       key: 'outcomes',
-      header: 'Hiệu quả thực tế (GMV / Đơn)',
+      header: 'GMV · đơn · lượt xem',
       align: 'right',
-      width: 170,
+      width: 150,
       render: (d) => {
-        const gmv = d.gmv30 || d.affiliateGmv || 0;
-        const orders = d.ordersCount || (gmv > 0 ? Math.round(gmv / (koc.aov || 280000)) : 0);
-        const roi = d.roi || (d.totalValue && d.totalValue > 0 ? gmv / d.totalValue : 0);
+        // Chỉ số thật của deal: không ước tính đơn từ GMV / AOV; đợt tổng hợp từ Master không có số hiệu quả
+        const summary = isMasterSummaryDeal(d);
+        const gmv = summary ? 0 : d.gmv30 || d.affiliateGmv || 0;
+        const orders = summary ? 0 : d.ordersCount || 0;
+        const roi = gmv > 0 && d.totalValue && d.totalValue > 0 ? gmv / d.totalValue : 0;
+        const views = dealViewsOf(d);
         return (
           <div className="text-right">
-            <span className="font-semibold text-ink block text-[13.5px]">
+            <span className="font-semibold text-ink block text-ctl font-figure">
               {gmv > 0 ? formatVndShort(gmv) : <span className="text-ink-3 font-normal">—</span>}
             </span>
-            <div className="flex items-center justify-end gap-1.5 mt-0.5">
-              {orders > 0 && <span className="text-2xs text-ink-2 font-medium">{formatNumber(orders)} đơn</span>}
-              {roi > 0 && (
-                <span
-                  className={cx(
-                    'text-2xs font-medium tabular-nums',
-                    roi >= 4 ? 'text-positive' : roi >= 2 ? 'text-accent' : 'text-warning',
-                  )}
-                >
-                  · ROI {roi.toFixed(1)}x
-                </span>
-              )}
-            </div>
-            {d.viewsCount > 0 && (
-              <span className="text-2xs text-ink-3 block mt-0.5">{formatNumber(d.viewsCount)} views</span>
+            {(orders > 0 || roi > 0) && (
+              <span className="block text-2xs text-ink-2 tabular-nums mt-0.5">
+                {[orders > 0 ? `${formatNumber(orders)} đơn` : '', roi > 0 ? `ROI ${roi.toFixed(1)}x` : ''].filter(Boolean).join(' · ')}
+              </span>
             )}
+            <span className="text-2xs text-ink-3 block mt-0.5 tabular-nums">
+              {views > 0 ? `${formatNumber(views)} lượt xem` : 'Chưa có lượt xem'}
+            </span>
           </div>
         );
       },
@@ -1275,10 +1181,11 @@ function CollaborationHistorySection({
     {
       key: 'quality',
       header: 'Tiến độ & Đánh giá',
-      width: 150,
+      width: 130,
       render: (d) => {
-        const onTime = d.isPostOnTime;
-        const rating = d.ratingScore;
+        // Deal đồng bộ từ Sheet mang điểm 4 và "đúng hạn" mặc định: coi như chưa có đánh giá
+        const onTime = dealPostOnTimeOf(d);
+        const rating = dealRatingOf(d);
         return (
           <div className="grid gap-1">
             <div className="flex items-center gap-1 text-2xs">
@@ -1299,7 +1206,7 @@ function CollaborationHistorySection({
                 <span className="text-ink-3">Chưa xác nhận</span>
               )}
             </div>
-            {d.adsCodeStatus === 'ĐÃ_NGHIỆM_THU' && (
+            {d.adsCodeStatus === 'ĐÃ_NGHIỆM_THU' && !isMasterSummaryDeal(d) && (
               <span className="text-2xs text-accent inline-block w-fit">
                 Mã Ads hợp lệ
               </span>
@@ -1344,122 +1251,87 @@ function CollaborationHistorySection({
     },
   ];
 
+  const summaryDeals = deals.filter(isMasterSummaryDeal).length;
+
   return (
-    <div className="space-y-6">
-      {/* KHỐI TỔNG HỢP HIỆU QUẢ HỢP TÁC TÍCH LŨY */}
-      <div>
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <SectionHeader
-            title="Tổng hợp hiệu quả hợp tác tích lũy"
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            {stats.overallRoi >= 3 && (
-              <span className="text-xs font-medium text-positive flex items-center gap-1">
-                <Award className="w-3.5 h-3.5" /> Hiệu suất sinh lời cao ({stats.overallRoi.toFixed(1)}x)
-              </span>
-            )}
-            {onOpenHistoryEvaluation && (
-              <Button size="sm" variant="secondary" icon={FileText} onClick={onOpenHistoryEvaluation}>
-                Báo cáo đánh giá lịch sử & rủi ro
-              </Button>
-            )}
-          </div>
-        </div>
+    <div className="space-y-4">
+      {/* Hiệu quả hợp tác tích lũy: chỉ cộng số thật của từng deal */}
+      <StatRow>
+        <Stat
+          label="GMV từ booking"
+          value={stats.totalGmv > 0 ? formatVndShort(stats.totalGmv) : '—'}
+          note={`${formatNumber(stats.completedDeals)} xong · ${formatNumber(stats.runningDeals)} đang chạy`}
+        />
+        <Stat
+          label="ROI"
+          value={stats.overallRoi > 0 ? `${stats.overallRoi.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}x` : '—'}
+          note="GMV ÷ chi phí Net"
+        />
+        <Stat label="Chi phí Net" value={formatVndShort(stats.totalSpentNet)} note={`${formatNumber(stats.paidDealsCount)} Paid · ${formatNumber(stats.focDealsCount)} FOC`} />
+        <Stat
+          label="Đơn hàng"
+          value={stats.totalOrders > 0 ? formatNumber(stats.totalOrders) : '—'}
+          note={stats.avgCpo > 0 ? `${formatVndShort(stats.avgCpo)}/đơn` : 'Chưa có số đơn'}
+        />
+        <Stat
+          label="Lượt xem video"
+          value={stats.totalCollabViews > 0 ? formatNumber(stats.totalCollabViews) : '—'}
+          note={`${formatNumber(stats.viewsDealsCount)} video có số`}
+        />
+        <Stat
+          label="Lượt xem TB / video"
+          value={stats.avgViewsPerCollab > 0 ? formatNumber(stats.avgViewsPerCollab) : '—'}
+        />
+        <Stat
+          label="Đánh giá TB"
+          value={stats.ratedDealsCount > 0 ? `${stats.avgRatingScore.toLocaleString('vi-VN')} / 5` : '—'}
+          note={`${formatNumber(stats.ratedDealsCount)} deal có điểm`}
+        />
+        <Stat
+          label="Đăng đúng hạn"
+          value={stats.postCheckedDealsCount > 0 ? `${stats.onTimePostRate}%` : '—'}
+          note={`${formatNumber(stats.postCheckedDealsCount)} deal có xác nhận`}
+        />
+      </StatRow>
 
-        <StatRow>
-          <Stat
-            label="Tổng GMV mang về"
-            value={formatVndShort(stats.totalGmv)}
-            note={`${stats.completedDeals} chiến dịch hoàn tất · ${stats.runningDeals} đang chạy`}
-            tone="positive"
-          />
-          <Stat
-            label="Tỷ suất sinh lời (ROI)"
-            value={`${stats.overallRoi.toFixed(2)}x`}
-            note={`Chi phí Net: ${formatVndShort(stats.totalSpentNet)}`}
-            tone={stats.overallRoi >= 3 ? 'positive' : 'warning'}
-          />
-          <Stat
-            label="Đơn hàng & Giá vốn đơn (CPO)"
-            value={`${formatNumber(stats.totalOrders)} đơn`}
-            note={`Giá vốn: ${formatVndShort(stats.avgCpo)}/đơn`}
-          />
-          <Stat
-            label="Chất lượng & Tuân thủ SLA"
-            value={`${stats.avgRatingScore} / 5.0`}
-            note={`Đúng hạn kịch bản ${stats.onTimeScriptRate}% · Video ${stats.onTimePostRate}%`}
-          />
-        </StatRow>
-
-        {/* Thước phụ giải thích thêm */}
-        <div className="mt-3 p-3 rounded-lg border border-line bg-sunken/40 flex flex-wrap items-center justify-between gap-y-2 gap-x-4 text-xs text-ink-2">
-          <div className="flex items-center gap-4 flex-wrap">
-            <span>
-              Suất mẫu FOC: <b className="text-ink">{formatVndShort(stats.totalFocCost)}</b>
-            </span>
-            <span>
-              Ngân sách Ads Spark: <b className="text-ink">{formatVndShort(stats.totalAdsBudget)}</b>
-            </span>
-            <span>
-              Tổng lượt xem video hợp tác: <b className="text-ink">{formatNumber(stats.totalCollabViews)} views</b> (TB{' '}
-              {formatNumber(stats.avgViewsPerCollab)}/video)
-            </span>
-          </div>
-          <div className="text-ink-3 text-2xs">
-            Brand đã book: <span className="font-medium text-ink-2">{stats.uniqueBrands.join(', ') || 'Chưa có'}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* THANH LỌC VÀ TÌM KIẾM CHI TIẾT */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-ink-3 flex items-center gap-1">
-            <Filter className="w-3.5 h-3.5" /> Lọc:
-          </span>
-
-          {/* Lọc Brand */}
-          <select
-            value={selectedBrandFilter}
-            onChange={(e) => setSelectedBrandFilter(e.target.value)}
-            className="h-8 px-2.5 rounded-md border border-line text-xs bg-surface text-ink focus:border-accent"
-          >
-            <option value="ALL">Tất cả nhãn hàng ({brandList.length})</option>
-            {brandList.map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
-            ))}
-          </select>
-
-          {/* Lọc Hình thức */}
-          <select
-            value={selectedFormatFilter}
-            onChange={(e) => setSelectedFormatFilter(e.target.value)}
-            className="h-8 px-2.5 rounded-md border border-line text-xs bg-surface text-ink focus:border-accent"
-          >
-            <option value="ALL">Tất cả hình thức</option>
-            <option value="PAID">Video trả phí (Paid)</option>
-            <option value="FOC">Suất gửi mẫu FOC (0đ)</option>
-            <option value="LIVE">Livestream KOC</option>
-          </select>
-        </div>
-
-        {/* Tìm kiếm */}
-        <div className="relative w-full sm:w-auto sm:min-w-[220px]">
-          <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-2.5" />
-          <input
-            type="text"
-            placeholder="Tìm theo sản phẩm, mã BO..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-8 pl-8 pr-3 w-full rounded-md border border-line text-xs bg-surface text-ink focus:border-accent"
+      <Panel
+        flush
+        icon={History}
+        title="Các đợt hợp tác"
+        meta={`${formatNumber(filteredDeals.length)} / ${formatNumber(deals.length)} đợt${
+          summaryDeals > 0 ? ` · ${formatNumber(summaryDeals)} đợt chỉ có số tổng từ Master KOC` : ''
+        }${stats.uniqueBrands.length ? ` · ${stats.uniqueBrands.join(', ')}` : ''}`}
+        actions={
+          onOpenHistoryEvaluation && (
+            <Button size="sm" variant="ghost" icon={FileText} onClick={onOpenHistoryEvaluation}>
+              Đánh giá lịch sử & rủi ro
+            </Button>
+          )
+        }
+      >
+        <div className="px-4 pb-3 border-b border-line">
+          <FilterBar
+            search={{ value: searchQuery, onChange: setSearchQuery, placeholder: 'Sản phẩm, mã BO, chiến dịch' }}
+            filters={
+              <>
+                <Select value={selectedBrandFilter} onChange={(e) => setSelectedBrandFilter(e.target.value)} aria-label="Nhãn hàng" className="w-auto">
+                  <option value="ALL">Mọi nhãn hàng ({brandList.length})</option>
+                  {brandList.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </Select>
+                <Select value={selectedFormatFilter} onChange={(e) => setSelectedFormatFilter(e.target.value)} aria-label="Hình thức" className="w-auto">
+                  <option value="ALL">Mọi hình thức</option>
+                  <option value="PAID">Video trả phí</option>
+                  <option value="FOC">Gửi mẫu FOC</option>
+                  <option value="LIVE">Livestream</option>
+                </Select>
+              </>
+            }
           />
         </div>
-      </div>
-
-      {/* BẢNG LỊCH SỬ HỢP TÁC CHI TIẾT */}
-      <Panel title={`Danh sách chiến dịch đã hợp tác (${filteredDeals.length})`} flush>
         <DataTable
           columns={columns}
           rows={filteredDeals}
@@ -1508,7 +1380,7 @@ function ActiveDealsSection({
       width: 220,
       render: (d) => (
         <div className="min-w-0 max-w-[240px]">
-          <span className="block truncate font-semibold text-ink text-[13px]" title={d.campaignTitle || d.productName}>
+          <span className="block truncate font-semibold text-ink text-ctl" title={d.campaignTitle || d.productName}>
             {d.campaignTitle || d.brandName}
           </span>
           <span className="block truncate text-2xs text-ink-2">{d.productName}</span>
@@ -1931,7 +1803,7 @@ function ShippingAndContactPanel({
             <div className="my-2 border-t border-line" />
 
             {/* Hậu cần nhận mẫu */}
-            <div className="flex items-center gap-1.5 text-ink font-semibold text-[12.5px]">
+            <div className="flex items-center gap-1.5 text-ink font-semibold text-ctl-sm">
               <Truck className="w-3.5 h-3.5 text-accent" />
               <span>Thông tin giao nhận hàng mẫu</span>
             </div>
@@ -2335,7 +2207,7 @@ function CollaborationDetailModal({
                 href={deal.tiktokVideoUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="h-[34px] px-3.5 rounded-md font-medium text-[13.5px] border border-line-strong hover:bg-sunken text-ink inline-flex items-center gap-1.5"
+                className="h-[34px] px-3.5 rounded-md font-medium text-ctl-md border border-line-strong hover:bg-sunken text-ink inline-flex items-center gap-1.5"
               >
                 <ExternalLink className="w-4 h-4 text-ink-3" />
                 Xem video trên TikTok
@@ -2782,7 +2654,7 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
   return (
     <div className="grid gap-0.5">
       <dt className="text-2xs text-ink-3">{label}</dt>
-      <dd className="text-[13px] text-ink break-words">{children || <span className="text-ink-3">—</span>}</dd>
+      <dd className="text-ctl text-ink break-words">{children || <span className="text-ink-3">—</span>}</dd>
     </div>
   );
 }

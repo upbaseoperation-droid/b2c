@@ -878,6 +878,10 @@ export interface KocPerformanceSummary {
   avgCpo: number;
   totalCollabViews: number;
   avgViewsPerCollab: number;
+  /** Số deal có lượt xem thật / có điểm đánh giá thật / có xác nhận đúng hạn — mẫu số của các chỉ số tương ứng. */
+  viewsDealsCount: number;
+  ratedDealsCount: number;
+  postCheckedDealsCount: number;
   avgCtr: number;
   avgCvr: number;
   onTimeScriptRate: number;
@@ -887,6 +891,32 @@ export interface KocPerformanceSummary {
   uniqueBrands: string[];
   uniqueStores: string[];
 }
+
+/**
+ * Deal đồng bộ từ Sheet booking (`deal-real-*`) được script tạo dữ liệu gán sẵn mặc định:
+ * ratingScore 4 / 4.5 (suy từ mức GMV, không phải điểm chất lượng), isScriptOnTime / isPostOnTime luôn true,
+ * viewsCount 12.000 khi chưa có số. Không dùng các trường này như số đo thật.
+ */
+export const isSheetSyncedDeal = (d: BookingDealItem) => d.id.startsWith('deal-real-');
+
+/**
+ * Deal do buildHistoricalDealsFromKocSummary dựng lại từ số tổng của Master KOC: mã BO, brand, PIC tự suy,
+ * GMV là GMV cả kênh chia đều, số đơn ước tính. Chỉ dùng để đếm số đợt và chi phí, không dùng làm số hiệu quả.
+ */
+export const isMasterSummaryDeal = (d: BookingDealItem) => d.id.startsWith('deal-hist-master-');
+const SYNC_PLACEHOLDER_VIEWS = 12000;
+
+/** Lượt xem thật của deal; 0 nếu chưa có hoặc là số mặc định lúc đồng bộ. */
+export const dealViewsOf = (d: BookingDealItem) =>
+  !isMasterSummaryDeal(d) && d.viewsCount && d.viewsCount !== SYNC_PLACEHOLDER_VIEWS ? d.viewsCount : 0;
+
+/** Điểm đánh giá thật của deal (bỏ điểm mặc định của deal đồng bộ). */
+export const dealRatingOf = (d: BookingDealItem) =>
+  !isSheetSyncedDeal(d) && typeof d.ratingScore === 'number' && d.ratingScore > 0 ? d.ratingScore : undefined;
+
+/** Đúng hạn đăng video: chỉ khi có xác nhận thật. */
+export const dealPostOnTimeOf = (d: BookingDealItem) =>
+  !isSheetSyncedDeal(d) && typeof d.isPostOnTime === 'boolean' ? d.isPostOnTime : undefined;
 
 export function calculateKocPerformanceStats(deals: BookingDealItem[], koc: KocItem): KocPerformanceSummary {
   const kocDeals = dealsOfKoc(deals, koc);
@@ -906,42 +936,45 @@ export function calculateKocPerformanceStats(deals: BookingDealItem[], koc: KocI
   const totalAdsBudget = validDeals.reduce((s, d) => s + (d.sparkAdsBudget || 0), 0);
   const totalInvestment = totalSpentNet + totalFocCost + totalAdsBudget;
 
-  const dealsGmv = validDeals.reduce((s, d) => s + (d.gmv30 || d.affiliateGmv || 0), 0);
-  const totalGmv = Math.max(dealsGmv, koc.totalPastGmv || 0);
-  const overallRoi = totalSpentNet > 0 ? totalGmv / totalSpentNet : (koc.historicalRoi || 0);
+  // GMV chỉ cộng từ các deal. koc.totalPastGmv là GMV cả kênh trên TikTok Shop, không phải GMV từ booking,
+  // nên không dùng làm sàn (trước đây làm ROI lên hàng nghìn lần với kênh lớn).
+  const measuredDeals = validDeals.filter((d) => !isMasterSummaryDeal(d));
+  const totalGmv = measuredDeals.reduce((s, d) => s + (d.gmv30 || d.affiliateGmv || 0), 0);
+  const overallRoi = totalSpentNet > 0 ? totalGmv / totalSpentNet : 0;
 
-  const dealsOrders = validDeals.reduce((s, d) => s + (d.ordersCount || (d.gmv30 ? Math.round(d.gmv30 / (koc.aov || 250000)) : 0)), 0);
-  const totalOrders = Math.max(dealsOrders, koc.itemsSold || 0);
+  // Đơn chỉ lấy số thật của deal: không ước tính từ GMV / AOV, không lấy itemsSold (số bán cả kênh)
+  const totalOrders = measuredDeals.reduce((s, d) => s + (d.ordersCount || 0), 0);
   const avgCpo = totalOrders > 0 ? Math.round(totalSpentNet / totalOrders) : 0;
 
-  const totalCollabViews = validDeals.reduce((s, d) => s + (d.viewsCount || 0), 0);
-  const avgViewsPerCollab = validDeals.length > 0 ? Math.round(totalCollabViews / validDeals.length) : (koc.avgViews || 0);
+  const dealsWithViews = measuredDeals.filter((d) => dealViewsOf(d) > 0);
+  const totalCollabViews = dealsWithViews.reduce((s, d) => s + dealViewsOf(d), 0);
+  const avgViewsPerCollab = dealsWithViews.length > 0 ? Math.round(totalCollabViews / dealsWithViews.length) : 0;
 
-  // Tỷ lệ CTR / CVR trung bình
+  // Tỷ lệ CTR / CVR trung bình của video hợp tác (không thay bằng CTR / CVR cả kênh)
   const dealsWithCtr = validDeals.filter((d) => typeof d.ctr === 'number');
-  const avgCtr = dealsWithCtr.length > 0 ? dealsWithCtr.reduce((s, d) => s + (d.ctr || 0), 0) / dealsWithCtr.length : (koc.tiktokAvgCtr || 0);
+  const avgCtr = dealsWithCtr.length > 0 ? dealsWithCtr.reduce((s, d) => s + (d.ctr || 0), 0) / dealsWithCtr.length : 0;
 
   const dealsWithCvr = validDeals.filter((d) => typeof d.cvr === 'number');
-  const avgCvr = dealsWithCvr.length > 0 ? dealsWithCvr.reduce((s, d) => s + (d.cvr || 0), 0) / dealsWithCvr.length : (koc.tiktokAvgCvr || 0);
+  const avgCvr = dealsWithCvr.length > 0 ? dealsWithCvr.reduce((s, d) => s + (d.cvr || 0), 0) / dealsWithCvr.length : 0;
 
   // Tiến độ & Tuân thủ (RULE-DATA-01: Không sinh chỉ số giả khi chưa có deal thực tế)
-  const dealsWithScriptStatus = validDeals.filter((d) => typeof d.isScriptOnTime === 'boolean');
+  const dealsWithScriptStatus = validDeals.filter((d) => !isSheetSyncedDeal(d) && typeof d.isScriptOnTime === 'boolean');
   const onTimeScriptRate = dealsWithScriptStatus.length > 0
     ? Math.round((dealsWithScriptStatus.filter((d) => d.isScriptOnTime).length / dealsWithScriptStatus.length) * 100)
     : 0;
 
-  const dealsWithPostStatus = validDeals.filter((d) => typeof d.isPostOnTime === 'boolean');
+  const dealsWithPostStatus = validDeals.filter((d) => dealPostOnTimeOf(d) !== undefined);
   const onTimePostRate = dealsWithPostStatus.length > 0
     ? Math.round((dealsWithPostStatus.filter((d) => d.isPostOnTime).length / dealsWithPostStatus.length) * 100)
     : 0;
 
-  const sparkComplianceRate = validDeals.length > 0
-    ? Math.round((validDeals.filter((d) => d.adsCodeStatus === 'ĐÃ_NGHIỆM_THU').length / validDeals.length) * 100)
+  const sparkComplianceRate = measuredDeals.length > 0
+    ? Math.round((measuredDeals.filter((d) => d.adsCodeStatus === 'ĐÃ_NGHIỆM_THU').length / measuredDeals.length) * 100)
     : 0;
 
-  const dealsWithRating = validDeals.filter((d) => typeof d.ratingScore === 'number' && d.ratingScore > 0);
+  const dealsWithRating = validDeals.filter((d) => dealRatingOf(d) !== undefined);
   const avgRatingScore = dealsWithRating.length > 0
-    ? Number((dealsWithRating.reduce((s, d) => s + (d.ratingScore || 0), 0) / dealsWithRating.length).toFixed(1))
+    ? Number((dealsWithRating.reduce((s, d) => s + (dealRatingOf(d) || 0), 0) / dealsWithRating.length).toFixed(1))
     : 0;
 
   const uniqueBrands = Array.from(new Set([...validDeals.map((d) => d.brandName), koc.brandName].filter((x): x is string => Boolean(x))));
@@ -967,6 +1000,9 @@ export function calculateKocPerformanceStats(deals: BookingDealItem[], koc: KocI
     avgCpo,
     totalCollabViews,
     avgViewsPerCollab,
+    viewsDealsCount: dealsWithViews.length,
+    ratedDealsCount: dealsWithRating.length,
+    postCheckedDealsCount: dealsWithPostStatus.length,
     avgCtr,
     avgCvr,
     onTimeScriptRate,
