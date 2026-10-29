@@ -962,6 +962,31 @@ export const DEFAULT_VN_CART_BRIDGE_STATE: VnCartBridgeState = {
       frameJpegBase64: SNAPSHOT_TIKTOK_FRAMES['7695014258874109205'],
       updatedAt: '2026-10-29T08:44:00.000Z',
     },
+    '7683000790654536980': {
+      videoId: '7683000790654536980',
+      videoUrl: 'https://www.tiktok.com/@tuinetamne/video/7683000790654536980',
+      cartAnchorTitle:
+        'Dung dịch vệ sinh phụ nữ pH Care Kháng Khuẩn Thiên Nhiên, Mát Lạnh Bạc Hà, Dưỡng Da Sáng Hồng 150ml',
+      cartAnchorUrl:
+        'https://shop.tiktok.com/vn/pdp/dung-dich-ve-sinh-phu-nu-ph-care-150ml-khang-khuan-mat-lanh/1733713374226384532?source=anchor',
+      cartProductId: '1733713374226384532',
+      cartSellerId: '7494286989505562260',
+      cartProducts: [
+        {
+          productId: '1733713374226384532',
+          sellerId: '7494286989505562260',
+          title:
+            'Dung dịch vệ sinh phụ nữ pH Care Kháng Khuẩn Thiên Nhiên, Mát Lạnh Bạc Hà, Dưỡng Da Sáng Hồng 150ml',
+          anchorKeyword: 'Dung dịch vệ sinh phụ nữ pH Care Kháng Khu...',
+          productUrl:
+            'https://shop.tiktok.com/vn/pdp/dung-dich-ve-sinh-phu-nu-ph-care-150ml-khang-khuan-mat-lanh/1733713374226384532?source=anchor',
+          source: 'TikTok Shop Anchor (VN Bridge)',
+        },
+      ],
+      captureSec: 25.0,
+      frameJpegBase64: SNAPSHOT_TIKTOK_FRAMES['7683000790654536980'],
+      updatedAt: '2026-10-29T10:25:00.000Z',
+    },
     '7701316821709769991': {
       videoId: '7701316821709769991',
       videoUrl: 'https://www.tiktok.com/@ctofficial_/video/7701316821709769991',
@@ -1387,10 +1412,16 @@ export async function checkSingleLinkServerless(
     });
 
     const holdingRegex =
-      /(?:cầm|về tay|trên tay|cả bộ|cây đèn|chai này|chai màu|lọ này|tuýp này|hộp này|em này|như thế này|như này|đây này|phiên bản mới|phiên bản này|ở nắp|xịt lên|bôi|thoa|test)/i;
-    const preferredHoldingMoment =
-      mentionDetection.productMentionMoments.find((m) => holdingRegex.test(m.quote)) ||
-      mentionDetection.productMentionMoments[0];
+      /(?:cầm|về tay|trên tay|cả bộ|cây đèn|chai này|chai màu|chai dung dịch|chai|lọ này|lọ|tuýp này|tuýp|hộp này|hộp|em này|như thế này|như này|đây này|đây chính là|đây là|mình có|chồng mua cho|mua cho|phiên bản mới|phiên bản này|ở nắp|xịt lên|bôi|thoa|test|trải nghiệm|dùng thử)/i;
+    let preferredHoldingMoment =
+      mentionDetection.productMentionMoments.find((m) => holdingRegex.test(m.quote));
+
+    if (!preferredHoldingMoment && mentionDetection.productMentionMoments.length > 0) {
+      preferredHoldingMoment =
+        mentionDetection.productMentionMoments.find((m) => m.startSec > 3) ||
+        mentionDetection.productMentionMoments[0];
+    }
+
     const fallbackHoldingSeg =
       !preferredHoldingMoment && subtitleSegments.length > 0
         ? subtitleSegments.find((s) => holdingRegex.test(s.text)) || subtitleSegments[0]
@@ -1406,7 +1437,7 @@ export async function checkSingleLinkServerless(
         : 30;
     const bestHoldingMomentSec =
       rawHoldingStartSec !== null
-        ? Number(Math.min(maxSafeSec, Math.max(1.5, rawHoldingStartSec + 1.5)).toFixed(1))
+        ? Number(Math.min(maxSafeSec, Math.max(1.5, rawHoldingStartSec + 1.0)).toFixed(1))
         : 3.5;
     await resolveCartViaVietnamBridge(inspected, bestHoldingMomentSec);
     const bestHoldingMomentTimeLabel =

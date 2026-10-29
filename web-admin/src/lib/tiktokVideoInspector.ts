@@ -588,6 +588,11 @@ const GENERIC_TITLE_STOPWORDS = new Set([
   'tuyp',
   'super',
   'white',
+  'dung',
+  'dich',
+  'rua',
+  've',
+  'sinh',
   'ultra',
   'extra',
   'plus',
@@ -920,14 +925,24 @@ export function detectProductMentionMoments(params: {
         const phrase2 = `${words[i]} ${words[i + 1]}`;
         const f2 = foldForMatch(phrase2);
         const sl2 = f2.replace(/\s+/g, '');
-        if (sl2.length >= 7 && foldedTags.some((tag) => tag.includes(sl2))) {
+        const w2 = f2.split(/\s+/);
+        if (
+          sl2.length >= 7 &&
+          w2.some((w) => !GENERIC_TITLE_STOPWORDS.has(w)) &&
+          foldedTags.some((tag) => tag.includes(sl2))
+        ) {
           addCandidate(phrase2, 2);
         }
         if (i + 2 < words.length) {
           const phrase3 = `${words[i]} ${words[i + 1]} ${words[i + 2]}`;
           const f3 = foldForMatch(phrase3);
           const sl3 = f3.replace(/\s+/g, '');
-          if (sl3.length >= 9 && foldedTags.some((tag) => tag.includes(sl3))) {
+          const w3 = f3.split(/\s+/);
+          if (
+            sl3.length >= 9 &&
+            w3.some((w) => !GENERIC_TITLE_STOPWORDS.has(w)) &&
+            foldedTags.some((tag) => tag.includes(sl3))
+          ) {
             addCandidate(phrase3, 2);
           }
         }
@@ -972,7 +987,17 @@ export function detectProductMentionMoments(params: {
     }
   }
 
-  const first = moments[0];
+  // Ưu tiên khoảnh khắc nhắc đích danh Tên thương hiệu / Mã sản phẩm / Cụm từ cụ thể (Priority 1)
+  // Nếu có khoảnh khắc nhắc cụ thể sau giây thứ 3, không để câu hook mở đầu (0-3s) chỉ chứa từ loại sản phẩm làm sai lệch mốc nhắc sản phẩm thực tế
+  const brandOrSpecificMoment = moments.find((m) => {
+    const cand = candidateTerms.find((c) => c.label === m.matchedTerm);
+    return cand && cand.priority === 1;
+  });
+
+  const first =
+    brandOrSpecificMoment && moments[0] && moments[0].startSec <= 3 && brandOrSpecificMoment.startSec > 3
+      ? brandOrSpecificMoment
+      : moments[0];
   return {
     firstProductAppearanceSec: first ? first.startSec : null,
     firstProductMentionTimeLabel: first?.timeLabel,

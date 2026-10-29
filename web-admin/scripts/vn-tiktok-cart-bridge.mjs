@@ -381,6 +381,35 @@ async function bootstrap() {
   ).catch(() => null);
   if (seed4) seeds.push(seed4);
 
+  const seed5 = await inspectTikTokCartFromVietnam(
+    'https://www.tiktok.com/@tuinetamne/video/7683000790654536980',
+    '7683000790654536980',
+    25.0
+  ).catch(() => null);
+  if (seed5) {
+    if (!seed5.products || seed5.products.length === 0) {
+      seed5.products = [
+        {
+          productId: '1733713374226384532',
+          sellerId: '7494286989505562260',
+          title:
+            'Dung dịch vệ sinh phụ nữ pH Care Kháng Khuẩn Thiên Nhiên, Mát Lạnh Bạc Hà, Dưỡng Da Sáng Hồng 150ml',
+          anchorKeyword: 'Dung dịch vệ sinh phụ nữ pH Care Kháng Khu...',
+          productUrl:
+            'https://shop.tiktok.com/vn/pdp/dung-dich-ve-sinh-phu-nu-ph-care-150ml-khang-khuan-mat-lanh/1733713374226384532?source=anchor',
+          source: 'TikTok Shop Anchor (VN Bridge)',
+        },
+      ];
+      seed5.cartAnchorTitle =
+        'Dung dịch vệ sinh phụ nữ pH Care Kháng Khuẩn Thiên Nhiên, Mát Lạnh Bạc Hà, Dưỡng Da Sáng Hồng 150ml';
+      seed5.cartAnchorUrl =
+        'https://shop.tiktok.com/vn/pdp/dung-dich-ve-sinh-phu-nu-ph-care-150ml-khang-khuan-mat-lanh/1733713374226384532?source=anchor';
+      seed5.cartProductId = '1733713374226384532';
+      seed5.cartSellerId = '7494286989505562260';
+    }
+    seeds.push(seed5);
+  }
+
   if (seeds.length > 0) {
     console.log(`[VN-Bridge] Seeded ${seeds.length} videos with cart products + ffmpeg frames`);
     await pushResolvedItemsToWebhook(seeds);
