@@ -88,7 +88,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         badge: pendingTasksCount > 0 ? pendingTasksCount : undefined,
       },
       { key: 'input-plan', label: 'Kế hoạch', icon: Calendar },
-      { key: 'booking', label: 'Booking', icon: Users },
+      { key: 'koc-listing', label: 'Listing & Deal', icon: Users },
       { key: 'content', label: 'Kịch bản & Air', icon: FileText },
     ];
     return internalItems.filter(item => allowedTabs.includes(item.key));
