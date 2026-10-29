@@ -65,26 +65,37 @@ import {
   API_USAGE_LOGGED_EVENT,
 } from '../../lib/apiKeyConfig';
 import { getVietnamDateYmd } from '../../lib/format';
-import { UserProfile } from '../../lib/types';
-import { USERS } from '../../lib/mockData';
+import { UserProfile, StorePortfolioItem } from '../../lib/types';
+import { USERS, INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
 import { CloudflareR2SetupPanel } from '../brands/CloudflareR2SetupPanel';
 import { ZaloBotManagerView } from './ZaloBotManagerView';
-import { GoogleSheetsSetupPanel } from './integrations/GoogleSheetsSetupPanel';
+import { StoreStaffSheetSetupView, type StoreSheetSetupTabKey } from './StoreStaffSheetSetupView';
 
 interface ApiKeySetupViewProps {
   currentUser?: UserProfile;
+  stores?: StorePortfolioItem[];
   initialTab?: SetupMainTab;
+  initialSheetSubTab?: StoreSheetSetupTabKey;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+  onSelectStoreForListing?: (storeName: string) => void;
 }
 
-export type SetupMainTab =
-  | 'providers'
-  | 'zalo-bot'
-  | 'google-sheets'
-  | 'storage'
-  | 'routing'
-  | 'metrics'
-  | 'playground';
+export type SetupCategory = 'ai-llm' | 'zalo-bot' | 'google-sheets' | 'storage';
+export type AiSubTab = 'providers' | 'routing' | 'metrics' | 'playground';
+export type SetupMainTab = SetupCategory | AiSubTab;
+
+function resolveSetupTabs(tab?: SetupMainTab): { category: SetupCategory; aiSubTab: AiSubTab } {
+  if (!tab || tab === 'ai-llm' || tab === 'providers') {
+    return { category: 'ai-llm', aiSubTab: 'providers' };
+  }
+  if (tab === 'routing' || tab === 'metrics' || tab === 'playground') {
+    return { category: 'ai-llm', aiSubTab: tab };
+  }
+  if (tab === 'zalo-bot' || tab === 'google-sheets' || tab === 'storage') {
+    return { category: tab, aiSubTab: 'providers' };
+  }
+  return { category: 'ai-llm', aiSubTab: 'providers' };
+}
 
 const PURPOSE_ICONS: Record<OperationalApiPurposeId, React.ComponentType<{ className?: string }>> = {
   LEGAL_OCR: ShieldCheck,
@@ -111,14 +122,36 @@ const DEPT_SCOPE_LABELS: Record<SavedNamedApiKey['departmentScope'], string> = {
   ACCOUNTING_LEGAL: 'Bộ phận Hợp đồng & Kế toán',
 };
 
-export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ currentUser, initialTab, onNotify }) => {
-  const [activeTab, setActiveTab] = useState<SetupMainTab>(initialTab || 'providers');
+export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({
+  currentUser,
+  stores = INITIAL_STORE_PORTFOLIOS,
+  initialTab,
+  initialSheetSubTab,
+  onNotify,
+  onSelectStoreForListing,
+}) => {
+  const [category, setCategory] = useState<SetupCategory>(() => resolveSetupTabs(initialTab).category);
+  const [aiSubTab, setAiSubTab] = useState<AiSubTab>(() => resolveSetupTabs(initialTab).aiSubTab);
 
   useEffect(() => {
     if (initialTab) {
-      setActiveTab(initialTab);
+      const resolved = resolveSetupTabs(initialTab);
+      setCategory(resolved.category);
+      setAiSubTab(resolved.aiSubTab);
     }
   }, [initialTab]);
+
+  useEffect(() => {
+    if (initialSheetSubTab) {
+      setCategory('google-sheets');
+    }
+  }, [initialSheetSubTab]);
+
+  const navigateToTab = (tab: SetupMainTab) => {
+    const resolved = resolveSetupTabs(tab);
+    setCategory(resolved.category);
+    setAiSubTab(resolved.aiSubTab);
+  };
   const [config, setConfig] = useState<ApiWorkspaceConfigState>(() => loadApiWorkspaceConfig());
 
   // State ẩn/hiện khóa API cho 3 nhà cung cấp chính
@@ -433,7 +466,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ currentUser, i
     setOverrideTestProvider('ROUTE_DEFAULT');
     setTestInputText(route.sampleInputText);
     setTestResult(null);
-    setActiveTab('playground');
+    navigateToTab('playground');
   };
 
   // Chạy thử nghiệm ở Tab 3
@@ -541,26 +574,23 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ currentUser, i
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-150">
       {/* ===================================================================== */}
-      {/* 1. THANH CHUYỂN TAB TỔNG HỢP CÁC KÊNH TÍCH HỢP & KẾT NỐI             */}
+      {/* 1. THANH CHUYỂN DANH MỤC TÍCH HỢP & KẾT NỐI (4 HỆ THỐNG CHÍNH)        */}
       {/* ===================================================================== */}
       <Tabs
         items={[
-          { key: 'providers', label: 'Khóa API & Nhà Cung Cấp', count: 3 },
+          { key: 'ai-llm', label: 'Mô hình AI & LLM', count: 3 },
           { key: 'zalo-bot', label: 'Trợ lý Zalo Bot & Webhook' },
-          { key: 'google-sheets', label: 'Google Sheets & Apps Script' },
+          { key: 'google-sheets', label: 'Thiết lập Google Sheet & Phân quyền', count: stores?.length || 69 },
           { key: 'storage', label: 'Kho Lưu Trữ Cloudflare R2' },
-          { key: 'routing', label: 'Phân Bổ Nghiệp Vụ', count: purposeList.length },
-          { key: 'metrics', label: 'Đo Lường & Chi Phí', count: usageLogs.length },
-          { key: 'playground', label: 'Chạy Thử Nghiệp Vụ' },
         ]}
-        value={activeTab}
-        onChange={k => setActiveTab(k as SetupMainTab)}
+        value={category}
+        onChange={k => setCategory(k as SetupCategory)}
       />
 
       {/* ===================================================================== */}
-      {/* TAB: TRỢ LÝ ZALO BOT & WEBHOOK NHÓM CHAT                              */}
+      {/* DANH MỤC: TRỢ LÝ ZALO BOT & WEBHOOK NHÓM CHAT                         */}
       {/* ===================================================================== */}
-      {activeTab === 'zalo-bot' && (
+      {category === 'zalo-bot' && (
         <div className="animate-in fade-in duration-150">
           <ZaloBotManagerView
             currentUser={currentUser || USERS[0]}
@@ -570,27 +600,49 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ currentUser, i
       )}
 
       {/* ===================================================================== */}
-      {/* TAB: GOOGLE SHEETS & APPS SCRIPT AUTOMATION                           */}
+      {/* DANH MỤC: GOOGLE SHEETS & PHÂN QUYỀN GIAN HÀNG (4 TAB CHUYÊN SÂU)     */}
       {/* ===================================================================== */}
-      {activeTab === 'google-sheets' && (
+      {category === 'google-sheets' && (
         <div className="animate-in fade-in duration-150">
-          <GoogleSheetsSetupPanel onNotify={onNotify} />
+          <StoreStaffSheetSetupView
+            stores={stores}
+            initialTab={initialSheetSubTab || 'TABLE'}
+            onNotify={onNotify}
+            onSelectStoreForListing={onSelectStoreForListing}
+          />
         </div>
       )}
 
       {/* ===================================================================== */}
-      {/* TAB: KHO LƯU TRỮ CLOUDFLARE R2                                         */}
+      {/* DANH MỤC: KHO LƯU TRỮ CLOUDFLARE R2                                    */}
       {/* ===================================================================== */}
-      {activeTab === 'storage' && (
+      {category === 'storage' && (
         <div className="animate-in fade-in duration-150">
           <CloudflareR2SetupPanel onNotify={onNotify} />
         </div>
       )}
 
       {/* ===================================================================== */}
-      {/* BANNER TỔNG QUAN & TRẠNG THÁI CHO CÁC TAB KHÓA API & ĐIỀU PHỐI MÔ HÌNH */}
+      {/* DANH MỤC: MÔ HÌNH AI & LLM                                             */}
       {/* ===================================================================== */}
-      {(['providers', 'routing', 'metrics', 'playground'] as SetupMainTab[]).includes(activeTab) && (
+      {category === 'ai-llm' && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          {/* Sub-tab phân cấp 4 khâu vận hành */}
+          <Tabs
+            items={[
+              { key: 'providers', label: '1. Khóa API & Nhà Cung Cấp', count: 3 },
+              { key: 'routing', label: '2. Phân Bổ 13 Nghiệp Vụ', count: purposeList.length },
+              { key: 'metrics', label: '3. Đo Lường & Chi Phí Token', count: usageLogs.length },
+              { key: 'playground', label: '4. Chạy Thử Nghiệp Vụ' },
+            ]}
+            value={aiSubTab}
+            onChange={k => setAiSubTab(k as AiSubTab)}
+          />
+
+      {/* SUB-TAB 1: THIẾT LẬP KHÓA API & NHÀ CUNG CẤP */}
+      {aiSubTab === 'providers' && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+
         <div className="bg-surface border border-line rounded-xl p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
@@ -648,7 +700,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ currentUser, i
               return (
                 <div
                   key={pid}
-                  onClick={() => setActiveTab('providers')}
+                  onClick={() => setAiSubTab('providers')}
                   className="p-3.5 rounded-xl bg-surface-subtle border border-line hover:border-line-strong transition cursor-pointer space-y-2"
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -691,7 +743,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ currentUser, i
             })}
 
             <div
-              onClick={() => setActiveTab('routing')}
+              onClick={() => setAiSubTab('routing')}
               className="p-3.5 rounded-xl bg-surface-subtle border border-line hover:border-line-strong transition cursor-pointer space-y-2"
             >
               <div className="flex items-center justify-between gap-2">
@@ -709,13 +761,12 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ currentUser, i
             </div>
           </div>
         </div>
-      )}
 
       {/* ===================================================================== */}
       {/* TAB 1: THIẾT LẬP KHÓA API (GOOGLE GEMINI · OPENAI CHATGPT · CLAUDE)   */}
       {/* ===================================================================== */}
-      {activeTab === 'providers' && (
-        <div className="space-y-6 animate-in fade-in duration-150">
+
+
           {/* 3 Card cấu hình cho Google, ChatGPT, Claude */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
             {(['GOOGLE', 'OPENAI', 'CLAUDE'] as const).map(pid => {
@@ -1011,7 +1062,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ currentUser, i
                         <span>Mục đích nghiệp vụ đang gán ({assignedPurposes.length}):</span>
                         <button
                           type="button"
-                          onClick={() => setActiveTab('routing')}
+                          onClick={() => setAiSubTab('routing')}
                           className="text-accent hover:underline font-medium cursor-pointer"
                         >
                           Đổi phân bổ →
@@ -1313,12 +1364,44 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ currentUser, i
       {/* ===================================================================== */}
       {/* TAB 2: PHÂN BỔ API THEO MỤC ĐÍCH NGHIỆP VỤ (6 MỤC ĐÍCH B2C)           */}
       {/* ===================================================================== */}
-      {activeTab === 'routing' && (
+      {/* SUB-TAB 2: BẢNG PHÂN BỔ 13 NGHIỆP VỤ */}
+      {aiSubTab === 'routing' && (
         <div className="space-y-4 animate-in fade-in duration-150">
-          <div className="bg-surface border border-line rounded-xl p-4 flex items-center justify-between gap-3">
-            <h3 className="text-sm font-semibold text-ink">
-              Bảng Phân Bổ Công Cụ (Google · ChatGPT · Claude) Cho Từng Nghiệp Vụ
-            </h3>
+          <div className="bg-surface border border-line rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-accent-soft border border-line text-accent flex items-center justify-center shrink-0">
+                <Sliders className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-ink">
+                  Bảng Phân Bổ Mô Hình Cho 13 Nghiệp Vụ Vận Hành B2C
+                </h3>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsConfirmResetOpen(true)}
+                className="px-3 py-2 rounded-lg text-xs font-medium bg-surface hover:bg-sunken text-ink-2 border border-line transition flex items-center gap-1.5 cursor-pointer"
+                title="Khôi phục bảng phân bổ về mặc định"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-ink-3" />
+                <span>Mặc định</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  saveApiWorkspaceConfig(config);
+                  onNotify?.('Đã lưu cấu hình phân bổ 13 nghiệp vụ!', 'success');
+                }}
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-positive hover:bg-positive text-white transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>Lưu cấu hình</span>
+              </button>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -1787,7 +1870,8 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ currentUser, i
       {/* ===================================================================== */}
       {/* TAB 3: ĐO LƯỜNG TOKEN & CHI PHÍ API (METRICS & BILLING)               */}
       {/* ===================================================================== */}
-      {activeTab === 'metrics' && (
+      {/* SUB-TAB 3: ĐO LƯỜNG & CHI PHÍ TOKEN */}
+      {aiSubTab === 'metrics' && (
         <div className="space-y-6 animate-in fade-in duration-150">
           {/* Header Báo cáo Đo lường */}
           <div className="bg-surface border border-line rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -2334,7 +2418,8 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ currentUser, i
       {/* ===================================================================== */}
       {/* TAB 4: CHẠY THỬ & KIỂM TRA THEO MỤC ĐÍCH (SANDBOX PLAYGROUND)          */}
       {/* ===================================================================== */}
-      {activeTab === 'playground' && (
+      {/* SUB-TAB 4: CHẠY THỬ NGHIỆP VỤ */}
+      {aiSubTab === 'playground' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 animate-in fade-in duration-150">
           {/* Cột trái: Chọn mục đích + Dữ liệu đầu vào */}
           <div className="lg:col-span-5 bg-surface border border-line rounded-xl p-5 space-y-4">
@@ -2591,14 +2676,16 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ currentUser, i
             <div className="pt-3 border-t border-line flex items-center justify-end text-2xs text-ink-3">
               <button
                 type="button"
-                onClick={() => setActiveTab('routing')}
+                onClick={() => setAiSubTab('routing')}
                 className="text-accent font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
               >
-                <span>Quay lại bảng phân bổ 6 mục đích</span>
+                <span>Quay lại bảng phân bổ 13 nghiệp vụ</span>
                 <ArrowRight className="w-3 h-3" />
               </button>
             </div>
           </div>
+        </div>
+      )}
         </div>
       )}
 

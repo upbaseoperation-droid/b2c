@@ -25,7 +25,7 @@ import { StaffBrandListingSheetWorkspace } from '../shortlist/StaffBrandListingS
 import { KocQuickViewModal } from '../shortlist/KocQuickViewModal';
 import { PlanListingBoard } from './PlanListingBoard';
 import { PlanDealBoard } from './PlanDealBoard';
-import { StoreStaffSheetSetupView, type StoreSheetSetupTabKey } from './StoreStaffSheetSetupView';
+import type { StoreSheetSetupTabKey } from './StoreStaffSheetSetupView';
 import { ApprovedBookingListView } from './ApprovedBookingListView';
 import type { ContractDocument } from '../../lib/planDealLink';
 import {
@@ -85,6 +85,7 @@ interface KocListingBatchHubViewProps {
   activePlanContext?: ListingPlanContext | null;
   onOpenPlanStudio?: (plan: InputPlanBreakdownState) => void;
   onOpenContractForPlanDeal?: (deal: BookingDealItem, document: ContractDocument) => void;
+  onNavigateTab?: (targetTab: string, context?: { subTab?: string; sheetTab?: StoreSheetSetupTabKey; storeName?: string; monthKey?: string }) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
@@ -120,6 +121,7 @@ export function KocListingBatchHubView({
   activePlanContext,
   onOpenPlanStudio,
   onOpenContractForPlanDeal,
+  onNavigateTab,
   onNotify,
 }: KocListingBatchHubViewProps) {
   const listings = useMemo(() => {
@@ -157,11 +159,9 @@ export function KocListingBatchHubView({
     | 'APPROVED_DEAL_BOARD'
     | 'SELF_CHANNEL_BOARD'
     | 'STAFF_BRAND_SHEET'
-    | 'SHEET_STAFF_SETUP'
     | 'LISTING_APPROVAL'
     | 'AIR_TRACKER'
   >('STAFF_BRAND_SHEET');
-  const [sheetSetupInitialTab, setSheetSetupInitialTab] = useState<StoreSheetSetupTabKey>('TABLE');
 
   // Filters
   const defaultInitialStore = useMemo(() => {
@@ -1085,27 +1085,17 @@ export function KocListingBatchHubView({
           value={
             activeSubTab === 'APPROVED_DEAL_BOARD'
               ? 'APPROVED_DEAL_BOARD'
-              : isAdmin && activeSubTab === 'SHEET_STAFF_SETUP'
-                ? 'SHEET_STAFF_SETUP'
-                : 'STAFF_BRAND_SHEET'
+              : 'STAFF_BRAND_SHEET'
           }
-          onChange={setActiveSubTab}
+          onChange={(val) => setActiveSubTab(val as 'STAFF_BRAND_SHEET' | 'APPROVED_DEAL_BOARD')}
           items={[
             { key: 'STAFF_BRAND_SHEET', label: 'Bảng Listing KOC' },
             { key: 'APPROVED_DEAL_BOARD', label: 'Quản lý Deal & Booking' },
-            ...(isAdmin
-              ? [
-                  {
-                    key: 'SHEET_STAFF_SETUP' as const,
-                    label: 'Thiết lập Sheet & Phân quyền',
-                  },
-                ]
-              : []),
           ]}
         />
       </PageHeaderNav>
 
-      {(activeSubTab === 'STAFF_BRAND_SHEET' || (!isAdmin && activeSubTab === 'SHEET_STAFF_SETUP')) && (
+      {activeSubTab === 'STAFF_BRAND_SHEET' && (
         <StaffBrandListingSheetWorkspace
           kocs={kocs}
           stores={stores}
@@ -1125,12 +1115,13 @@ export function KocListingBatchHubView({
           }}
           onOpenShortlistFilterModal={() => setShowShortlistModal(true)}
           onOpenSheetSetupScreen={
-            isAdmin
-              ? (tab?: StoreSheetSetupTabKey) => {
-                  setSheetSetupInitialTab(tab || 'TABLE');
-                  setActiveSubTab('SHEET_STAFF_SETUP');
-                }
-              : undefined
+            (tab?: StoreSheetSetupTabKey) => {
+              if (onNavigateTab) {
+                onNavigateTab('api-settings', { subTab: 'google-sheets', sheetTab: tab || 'TABLE' });
+              } else {
+                onNotify?.('Vui lòng mở menu "Tích hợp & Kết nối API" để cấu hình Google Sheet.', 'info');
+              }
+            }
           }
           onNotify={onNotify}
         />
@@ -1169,12 +1160,13 @@ export function KocListingBatchHubView({
           onNotify={onNotify}
           isAdmin={isAdmin}
           onOpenSheetSetupScreen={
-            isAdmin
-              ? () => {
-                  setSheetSetupInitialTab('TABLE');
-                  setActiveSubTab('SHEET_STAFF_SETUP');
-                }
-              : undefined
+            () => {
+              if (onNavigateTab) {
+                onNavigateTab('api-settings', { subTab: 'google-sheets', sheetTab: 'TABLE' });
+              } else {
+                onNotify?.('Vui lòng mở menu "Tích hợp & Kết nối API" để cấu hình Google Sheet.', 'info');
+              }
+            }
           }
           onCreateDeal={(planId, listingItemId) => {
             setDealFocus({ planId, listingItemId, nonce: Date.now() });
@@ -1182,23 +1174,12 @@ export function KocListingBatchHubView({
           }}
         />
       )}
-      {isAdmin && activeSubTab === 'SHEET_STAFF_SETUP' && (
-        <StoreStaffSheetSetupView
-          stores={stores}
-          initialTab={sheetSetupInitialTab}
-          onNotify={onNotify}
-          onSelectStoreForListing={(storeName) => {
-            setSelectedStore(storeName);
-            setActiveSubTab('STAFF_BRAND_SHEET');
-          }}
-        />
-      )}
+
       {activeSubTab === 'DEAL_BOARD' && <PlanDealBoard kocs={kocs} currentUserName={currentUserName} onNotify={onNotify} onOpenContract={onOpenContractForPlanDeal} focus={dealFocus} />}
 
       {activeSubTab !== 'STAFF_BRAND_SHEET' &&
         activeSubTab !== 'APPROVED_DEAL_BOARD' &&
         activeSubTab !== 'PLAN_BOARD' &&
-        activeSubTab !== 'SHEET_STAFF_SETUP' &&
         activeSubTab !== 'DEAL_BOARD' &&
         activeSubTab !== 'SELF_CHANNEL_BOARD' && (
         <>

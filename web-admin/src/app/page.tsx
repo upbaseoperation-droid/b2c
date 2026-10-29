@@ -17,6 +17,7 @@ import dynamic from 'next/dynamic';
 import type { ContractIntent } from '../components/views/ContractManagementView';
 import type { ContractDocument } from '../lib/planDealLink';
 import type { ListingPlanContext } from '../components/views/KocListingBatchHubView';
+import type { StoreSheetSetupTabKey } from '../components/views/StoreStaffSheetSetupView';
 
 /** Khung giữ chỗ khi màn đang tải gói: đúng hình dạng màn (thanh lọc → hàng chỉ số → bảng), DESIGN_SYSTEM.md §9. */
 function ViewLoading() {
@@ -427,6 +428,7 @@ export default function App() {
   const [selectedStoreContext, setSelectedStoreContext] = useState<string>('');
   const [selectedCtvContext, setSelectedCtvContext] = useState<string | null>(null);
   const [selectedKocContext, setSelectedKocContext] = useState<string | null>(null);
+  const [apiSettingsSheetSubTab, setApiSettingsSheetSubTab] = useState<StoreSheetSetupTabKey>('TABLE');
 
   // Notifications Toast (Enhanced with Type & Dismiss)
   // Thông báo xếp chồng: nhiều thông báo liên tiếp không đè nhau, rê chuột để xem và dừng đếm giờ.
@@ -1811,6 +1813,14 @@ export default function App() {
               activePlanContext={listingPlanContext}
               onOpenPlanStudio={() => setActiveTab('input-plan')}
               onOpenContractForPlanDeal={openContractForPlanDeal}
+              onNavigateTab={(tab, ctx) => {
+                if (tab === 'api-settings') {
+                  if (ctx?.sheetTab) {
+                    setApiSettingsSheetSubTab(ctx.sheetTab);
+                  }
+                  setActiveTab('api-settings');
+                }
+              }}
               onNotify={showToast}
             />
           </KeepAliveTab>
@@ -2335,7 +2345,13 @@ export default function App() {
           <KeepAliveTab tabKey="api-settings" currentTab={activeTab}>
             <ApiKeySetupView
               currentUser={currentUser}
+              stores={scopedStores}
+              initialSheetSubTab={apiSettingsSheetSubTab}
               onNotify={showToast}
+              onSelectStoreForListing={(storeName) => {
+                setSelectedStoreContext(storeName);
+                setActiveTab('koc-listing');
+              }}
             />
           </KeepAliveTab>
 
