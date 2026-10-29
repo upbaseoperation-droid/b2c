@@ -1912,7 +1912,7 @@ function LegalPaymentPanel({
             </button>
           )}
         </div>
-        {readiness && !readiness.ready && (
+        {readiness && !readiness.ready && !isSigned && (
           <p className="text-2xs text-ink-3">
             Thiếu: {readiness.missingFields.slice(0, 3).join(', ')}
             {readiness.missingFields.length > 3 ? ` và ${readiness.missingFields.length - 3} mục khác` : ''}
