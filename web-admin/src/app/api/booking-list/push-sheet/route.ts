@@ -161,6 +161,7 @@ export async function PATCH(request: NextRequest) {
       customHiddenColumns?: string[];
       sortBy?: SheetSortMode;
       installFilterViews?: boolean;
+      standardizeFormatting?: boolean;
     };
     const spreadsheetId = parseSpreadsheetId(body.sheetUrl || '');
     if (!spreadsheetId) {
@@ -189,6 +190,7 @@ export async function PATCH(request: NextRequest) {
       customHiddenColumns: body.customHiddenColumns,
       sortBy: body.sortBy,
       installFilterViews: body.installFilterViews,
+      standardizeFormatting: body.standardizeFormatting,
     });
 
     return NextResponse.json(result);

@@ -3073,6 +3073,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       columnPreset?: 'BRAND_REVIEW' | 'AIR_ACCEPTANCE' | 'FULL_TEMPLATE';
       sortBy?: 'PRODUCT' | 'STAFF' | 'BATCH' | 'BRAND_DECISION';
       installFilterViews?: boolean;
+      standardizeFormatting?: boolean;
     },
     successMessage: string
   ) => {
@@ -6600,9 +6601,24 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             </div>
           </div>
 
-          {/* MỤC 3: SẮP XẾP VÀ BỘ LỌC */}
+          {/* MỤC 3: SẮP XẾP, BỘ LỌC VÀ CHUẨN HÓA FONT */}
           <div className="border border-line rounded-lg p-3 space-y-2.5">
-            <span className="font-semibold text-ink">3. Sắp xếp &amp; Bộ lọc trên Sheet</span>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-semibold text-ink">3. Sắp xếp &amp; Định dạng</span>
+              <Button
+                size="sm"
+                variant="primary"
+                disabled={sheetTemplateBusy}
+                onClick={() =>
+                  void runSheetTemplatePatch(
+                    { standardizeFormatting: true },
+                    'Đã chuẩn hóa toàn bộ font chữ, viền ô và định dạng tiền tệ đồng nhất trên Google Sheet!'
+                  )
+                }
+              >
+                {sheetTemplateBusy ? 'Đang chuẩn hóa…' : 'Chuẩn hóa Font & Viền ô'}
+              </Button>
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"

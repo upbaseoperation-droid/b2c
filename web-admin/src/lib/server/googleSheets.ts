@@ -1121,6 +1121,7 @@ export async function configureSpreadsheetTemplate(opts: {
   customHiddenColumns?: string[];
   sortBy?: SheetSortMode;
   installFilterViews?: boolean;
+  standardizeFormatting?: boolean;
 }): Promise<{
   ok: boolean;
   updatedTabsCount: number;
@@ -1142,6 +1143,7 @@ export async function configureSpreadsheetTemplate(opts: {
     customHiddenColumns,
     sortBy,
     installFilterViews,
+    standardizeFormatting,
   } = opts;
 
   const meta = (await sheetsFetch(
@@ -1585,6 +1587,150 @@ export async function configureSpreadsheetTemplate(opts: {
         }
 
         filterViewsInstalled = true;
+      }
+
+      // 5. Chuẩn hóa toàn bộ Font chữ, Cỡ chữ, Căn lề, Viền ô & Định dạng số tiền đồng nhất
+      if (standardizeFormatting && header.length > 0) {
+        const totalCols = Math.max(header.length, 58);
+
+        // a. Font chữ & Căn dọc đồng nhất toàn bảng (Arial 10pt)
+        requests.push({
+          repeatCell: {
+            range: { sheetId, startRowIndex: 1, endRowIndex: 500, startColumnIndex: 0, endColumnIndex: totalCols },
+            cell: {
+              userEnteredFormat: {
+                textFormat: { fontFamily: 'Arial', fontSize: 10, foregroundColor: { red: 0.13, green: 0.13, blue: 0.13 } },
+                verticalAlignment: 'MIDDLE',
+                wrapStrategy: 'CLIP',
+              },
+            },
+            fields: 'userEnteredFormat(textFormat,verticalAlignment,wrapStrategy)',
+          },
+        });
+
+        // b. Header Dòng 1: Nền Navy, chữ trắng in đậm
+        requests.push({
+          repeatCell: {
+            range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: totalCols },
+            cell: {
+              userEnteredFormat: {
+                backgroundColor: { red: 0.1, green: 0.22, blue: 0.42 },
+                textFormat: { fontFamily: 'Arial', fontSize: 10, bold: true, foregroundColor: { red: 1, green: 1, blue: 1 } },
+                horizontalAlignment: 'CENTER',
+                verticalAlignment: 'MIDDLE',
+                wrapStrategy: 'WRAP',
+              },
+            },
+            fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,wrapStrategy)',
+          },
+        });
+
+        // c. Chiều cao dòng: Header 32px, Dữ liệu 28px
+        requests.push({
+          updateDimensionProperties: {
+            range: { sheetId, dimension: 'ROWS', startIndex: 0, endIndex: 1 },
+            properties: { pixelSize: 32 },
+            fields: 'pixelSize',
+          },
+        });
+        requests.push({
+          updateDimensionProperties: {
+            range: { sheetId, dimension: 'ROWS', startIndex: 1, endIndex: 200 },
+            properties: { pixelSize: 28 },
+            fields: 'pixelSize',
+          },
+        });
+
+        // d. Viền ô mờ xám nhạt
+        requests.push({
+          updateBorders: {
+            range: { sheetId, startRowIndex: 0, endRowIndex: 200, startColumnIndex: 0, endColumnIndex: totalCols },
+            top: { style: 'SOLID', color: { red: 0.85, green: 0.87, blue: 0.9 } },
+            bottom: { style: 'SOLID', color: { red: 0.85, green: 0.87, blue: 0.9 } },
+            left: { style: 'SOLID', color: { red: 0.85, green: 0.87, blue: 0.9 } },
+            right: { style: 'SOLID', color: { red: 0.85, green: 0.87, blue: 0.9 } },
+            innerHorizontal: { style: 'SOLID', color: { red: 0.88, green: 0.9, blue: 0.92 } },
+            innerVertical: { style: 'SOLID', color: { red: 0.88, green: 0.9, blue: 0.92 } },
+          },
+        });
+
+        // e. Căn lề và Number Format
+        header.forEach((h, colIdx) => {
+          const norm = normHeaderToken(h);
+          if (/gia|phi|doanh so|gpm|aov|follower|view|cost|gmv target|so mon/i.test(norm)) {
+            requests.push({
+              repeatCell: {
+                range: { sheetId, startRowIndex: 1, endRowIndex: 500, startColumnIndex: colIdx, endColumnIndex: colIdx + 1 },
+                cell: {
+                  userEnteredFormat: {
+                    horizontalAlignment: 'RIGHT',
+                    numberFormat: { type: 'NUMBER', pattern: '#,##0' },
+                  },
+                },
+                fields: 'userEnteredFormat(horizontalAlignment,numberFormat)',
+              },
+            });
+          } else if (/ngay|thang|dot|tep booking|trang thai|de xuat|brand chon|rowid|ma dong/i.test(norm)) {
+            requests.push({
+              repeatCell: {
+                range: { sheetId, startRowIndex: 1, endRowIndex: 500, startColumnIndex: colIdx, endColumnIndex: colIdx + 1 },
+                cell: {
+                  userEnteredFormat: { horizontalAlignment: 'CENTER' },
+                },
+                fields: 'userEnteredFormat.horizontalAlignment',
+              },
+            });
+          }
+        });
+
+        // f. Conditional formatting cho Cột Brand chọn
+        if (brandColIdx >= 0) {
+          requests.push({
+            addConditionalFormatRule: {
+              rule: {
+                ranges: [{ sheetId, startRowIndex: 1, endRowIndex: 500, startColumnIndex: brandColIdx, endColumnIndex: brandColIdx + 1 }],
+                booleanRule: {
+                  condition: { type: 'TEXT_EQ', values: [{ userEnteredValue: 'Yes' }] },
+                  format: {
+                    backgroundColor: { red: 0.85, green: 0.93, blue: 0.83 },
+                    textFormat: { foregroundColor: { red: 0.15, green: 0.38, blue: 0.15 }, bold: true },
+                  },
+                },
+              },
+              index: 0,
+            },
+          });
+          requests.push({
+            addConditionalFormatRule: {
+              rule: {
+                ranges: [{ sheetId, startRowIndex: 1, endRowIndex: 500, startColumnIndex: brandColIdx, endColumnIndex: brandColIdx + 1 }],
+                booleanRule: {
+                  condition: { type: 'TEXT_EQ', values: [{ userEnteredValue: 'No' }] },
+                  format: {
+                    backgroundColor: { red: 0.96, green: 0.8, blue: 0.8 },
+                    textFormat: { foregroundColor: { red: 0.6, green: 0.1, blue: 0.1 }, bold: true },
+                  },
+                },
+              },
+              index: 1,
+            },
+          });
+          requests.push({
+            addConditionalFormatRule: {
+              rule: {
+                ranges: [{ sheetId, startRowIndex: 1, endRowIndex: 500, startColumnIndex: brandColIdx, endColumnIndex: brandColIdx + 1 }],
+                booleanRule: {
+                  condition: { type: 'TEXT_EQ', values: [{ userEnteredValue: 'Cân nhắc' }] },
+                  format: {
+                    backgroundColor: { red: 1, green: 0.95, blue: 0.8 },
+                    textFormat: { foregroundColor: { red: 0.5, green: 0.38, blue: 0 }, bold: true },
+                  },
+                },
+              },
+              index: 2,
+            },
+          });
+        }
       }
     }
   }
