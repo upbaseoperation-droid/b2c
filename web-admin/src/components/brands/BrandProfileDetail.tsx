@@ -77,7 +77,6 @@ import {
   WorkflowRulesDialog,
   type ItemField,
 } from './BrandEditors';
-import { StoreEditDialog } from '../stores/StoreEditDialog';
 import { ContentAngleSetupView } from '../views/ContentAngleSetupView';
 import { ProductCatalogView } from '../views/ProductCatalogView';
 import { INITIAL_MASTER_PRODUCTS } from '../../lib/masterCatalog';
@@ -719,11 +718,7 @@ export function BrandProfileDetail({
                 Hồ sơ gian
               </Button>
             )}
-            {storeObj && onUpdateStore && (can.WORKFLOW_RULES || can.POSITIONING) && (
-              <Button size="sm" variant="ghost" icon={Pencil} onClick={() => setEditingStore(storeObj)}>
-                Sửa
-              </Button>
-            )}
+            
           </div>
         );
       },
@@ -2772,29 +2767,7 @@ export function BrandProfileDetail({
         );
       })()}
 
-      {editingStore && onUpdateStore && (
-        <StoreEditDialog
-          open={!!editingStore}
-          store={editingStore}
-          onClose={() => setEditingStore(null)}
-          onOpenMonthlyPlan={
-            onDrilldownToPlan
-              ? () =>
-                  onDrilldownToPlan({
-                    storeId: editingStore.id,
-                    storeName: editingStore.storeName,
-                    brandName: row.name,
-                    month: activeMonth,
-                  })
-              : undefined
-          }
-          onSave={updated => {
-            onUpdateStore(updated);
-            setEditingStore(null);
-            onNotify?.(`Đã cập nhật thông số tĩnh của gian hàng "${updated.storeName}" — đồng bộ toàn hệ thống.`, 'success');
-          }}
-        />
-      )}
+      
 
       <ConfirmDialog
         open={!!removing}

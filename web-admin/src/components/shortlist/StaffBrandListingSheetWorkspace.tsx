@@ -955,7 +955,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   const [sheetColumnPresetMode, setSheetColumnPresetMode] = useState<'BRAND_REVIEW' | 'AIR_ACCEPTANCE' | 'FULL_TEMPLATE'>('BRAND_REVIEW');
   const [sheetTemplateBusy, setSheetTemplateBusy] = useState(false);
   // Thu gọn các tháng cũ theo Cột Tháng (Cột B) trên Bảng App & trên Google Sheet
-  const [showOldMonthsInTable, setShowOldMonthsInTable] = useState(true);
+  const [showOldMonthsInTable, setShowOldMonthsInTable] = useState(false);
   const [expandedOldMonths, setExpandedOldMonths] = useState<string[]>([]);
   const [sheetCollapsedMonthsDraft, setSheetCollapsedMonthsDraft] = useState<string[]>(() =>
     MONTH_OPTIONS.filter((m) => m < activeMonth)
@@ -4024,9 +4024,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       <tr className="bg-sunken/80 hover:bg-sunken transition-colors">
                         <td
                           colSpan={visibleColumns.length + 2}
-                          className="px-3 py-1.5 border-b border-line"
+                          className="p-0 border-b border-line bg-sunken/80"
                         >
-                          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                          <div className="sticky left-0 max-w-[calc(100vw-360px)] px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
@@ -4132,9 +4132,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 <tr className="bg-accent-soft/25">
                   <td
                     colSpan={visibleColumns.length + 2}
-                    className="px-3 py-1.5 border-b border-line"
+                    className="p-0 border-b border-line bg-accent-soft/25"
                   >
-                    <div className="flex items-center justify-between gap-2 text-xs">
+                    <div className="sticky left-0 max-w-[calc(100vw-360px)] px-3 py-1.5 flex items-center justify-between gap-2 text-xs">
                       <div className="flex items-center gap-2">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-accent text-white font-semibold">
                           <span>[-] Cột Tháng (B): {activeMonth}</span>

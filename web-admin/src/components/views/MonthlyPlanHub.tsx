@@ -355,6 +355,380 @@ interface MonthlyPlanHubProps {
   onPlanOrderUploaded?: () => void;
 }
 
+const getShortStaffName = (fullName: string) => {
+  const parts = fullName.trim().split(/\s+/);
+  return parts.length >= 2 ? parts.slice(-2).join(' ') : fullName;
+};
+
+const getStatusBadge = (status?: MonthlyPlanStatus) => {
+  switch (status) {
+    case 'PENDING_PRE_APPROVAL':
+      return <Status tone="warning">Chờ sơ duyệt</Status>;
+    case 'PRE_APPROVED':
+      return <Status tone="positive">Sơ duyệt đạt</Status>;
+    case 'REVISION_REQUESTED':
+      return <Status tone="critical">Cần sửa</Status>;
+    case 'PENDING_APPROVAL':
+      return <Status tone="warning">Chờ duyệt Lead</Status>;
+    case 'LEAD_APPROVED':
+    case 'BRAND_APPROVED':
+    case 'APPROVED':
+      return <Status tone="positive">Đã duyệt</Status>;
+    case 'IN_EXECUTION':
+      return <Status tone="info">Đang chạy</Status>;
+    case 'COMPLETED':
+      return <Status tone="positive">Hoàn tất</Status>;
+    case 'DRAFT':
+    default:
+      return <Status tone="neutral">Nháp</Status>;
+  }
+};
+
+interface StoreGovernanceTableRowProps {
+  item: StoreGovernanceItem;
+  isCampaignActive: boolean;
+  onSelectPlan: (plan: InputPlanBreakdownState, options?: { focusStaffName?: string; focusWorkstream?: B2cWorkstreamType }) => void;
+  openVersionModal: (planId: string, tab?: 'VERSION_HISTORY' | 'APPROVAL_FLOW' | 'DISCUSSION') => void;
+  currentUser?: UserProfile;
+  onUpdatePlan?: (planId: string, updated: Partial<InputPlanBreakdownState>) => void;
+  onOpenListingForPlan?: (plan: InputPlanBreakdownState) => void;
+  handleCreatePlanForStore: (store: StorePortfolioItem, e: React.MouseEvent) => void;
+  notify: (msg: string) => void;
+}
+
+const StoreGovernanceTableRow = React.memo(function StoreGovernanceTableRow({
+  item,
+  isCampaignActive,
+  onSelectPlan,
+  openVersionModal,
+  currentUser,
+  onUpdatePlan,
+  onOpenListingForPlan,
+  handleCreatePlanForStore,
+  notify,
+}: StoreGovernanceTableRowProps) {
+  const store = item.store;
+  const plan = item.plan;
+  const isB2c = item.isB2c;
+  const bd = item.breakdown;
+  const ws = item.workstreamSummary;
+  const versionSnapshots = plan ? getPlanVersionSnapshots(plan) : [];
+  const versionCount = versionSnapshots.length;
+  const activeVersionCode = plan?.currentVersionCode || 'v1.0';
+  const baselineSnapshot = versionSnapshots[0];
+  const budgetDelta =
+    plan && baselineSnapshot && versionCount > 1
+      ? (plan.totalTargetBudget || bd.totalBudget) - (baselineSnapshot.totalTargetBudget || 0)
+      : 0;
+  const hasLeader = Boolean(plan?.hasBookingLeader ?? store.hasBookingLeader);
+
+  return (
+    <tr
+      data-flip={store.id}
+      className={cx(
+        'group hover:bg-canvas transition-colors',
+        !isB2c && 'bg-sunken/30 text-ink-3'
+      )}
+    >
+      {/* 1. GIAN HÀNG & PHIÊN BẢN */}
+      <td className="py-2.5 px-3 align-middle">
+        <div className="flex items-center justify-between gap-1.5 min-w-0">
+          <span className="font-semibold text-ink text-xs truncate" title={store.storeName}>
+            {store.storeName}
+          </span>
+          {plan && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                openVersionModal(plan.id, 'VERSION_HISTORY');
+              }}
+              className="inline-flex items-center gap-1 text-2xs font-mono text-ink-3 hover:text-accent hover:underline cursor-pointer shrink-0"
+              title="Quản lý & so sánh các phiên bản kế hoạch trong tháng"
+            >
+              <Layers className="w-2.5 h-2.5" />
+              <span>{activeVersionCode}</span>
+              {versionCount > 1 && <span>({versionCount})</span>}
+            </button>
+          )}
+        </div>
+        <div
+          className="flex items-center gap-1.5 mt-1 text-2xs text-ink-3 min-w-0"
+          title={`${store.storeName} (${store.brandName}) · ${
+            isCampaignActive ? `Campaign: ${plan?.campaignCode || 'Có'}` : 'Duy trì'
+          } · Hệ số: ${normalizeStoreCoefficient(store.difficultyTier, store.difficultyMultiplier).label}`}
+        >
+          <ChannelTag channel={store.platform} className="text-2xs px-1 py-0" />
+          <span className="truncate">{store.brandName}</span>
+          {budgetDelta !== 0 && (
+            <span
+              className={cx(
+                'text-2xs font-semibold tabular-nums shrink-0',
+                budgetDelta > 0 ? 'text-positive' : 'text-warning'
+              )}
+            >
+              · {budgetDelta > 0 ? `+${formatVndShort(budgetDelta)}` : formatVndShort(budgetDelta)}
+            </span>
+          )}
+        </div>
+      </td>
+
+      {/* 2. ĐẦU MỐI GIAN HÀNG & TỔ ĐỘI PHỐI HỢP */}
+      <td className="py-2.5 px-2.5 align-middle">
+        <div className="flex items-center gap-1 min-w-0">
+          <span
+            className="font-medium text-ink text-xs truncate"
+            title={store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa phân công'}
+          >
+            {store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa gán'}
+          </span>
+          {ws.allStaffNames.length > 1 && (
+            <span
+              className="text-2xs text-ink-3 shrink-0"
+              title={`Gian hàng có ${ws.allStaffNames.length} nhân sự phối hợp: ${ws.allStaffNames.join(', ')}`}
+            >
+              · {ws.allStaffNames.length} người
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1 mt-0.5 text-2xs text-ink-3" onClick={(e) => e.stopPropagation()}>
+          <span className="truncate">{hasLeader ? 'Leader: Ngọc Tâm' : 'Duyệt trực tiếp'}</span>
+        </div>
+      </td>
+
+      {/* 3. HẠN MỨC NET B2C */}
+      <td className="py-2.5 px-2 text-right tabular-nums align-middle bg-sunken/25">
+        <div className="font-semibold text-ink text-xs">{formatVndShort(bd.totalBudget)}</div>
+        <div className="text-2xs font-medium text-accent">{bd.totalVideos} video</div>
+      </td>
+
+      {/* 4. ĐẦU VIỆC 1: VIDEO AFFILIATE TRẢ PHÍ (HIỂN THỊ 1–3 PIC BOOKING) */}
+      <td className="py-2 px-2 text-right tabular-nums align-middle">
+        {bd.affPaidQty > 0 || bd.affPaidBudget > 0 ? (
+          <div>
+            <div className="font-semibold text-ink text-xs">
+              {bd.affPaidQty} video · <span className="text-ink-2 font-medium">{formatVndShort(bd.affPaidBudget)}</span>
+            </div>
+            {ws.affiliatePaid.assignees.length > 0 && (
+              <div className="flex flex-wrap justify-end gap-1.5 mt-1" onClick={(e) => e.stopPropagation()}>
+                {ws.affiliatePaid.assignees.map((s) => (
+                  <button
+                    key={s.staffName}
+                    type="button"
+                    onClick={() =>
+                      plan && onSelectPlan(plan, { focusStaffName: s.staffName, focusWorkstream: 'AFFILIATE_PAID' })
+                    }
+                    className="text-2xs text-ink-2 hover:text-accent hover:underline transition-colors cursor-pointer"
+                    title={`Mở phần việc KOC trả phí của ${s.staffName}: ${s.qty} video (${formatVndShort(s.budget)})`}
+                  >
+                    {getShortStaffName(s.staffName)} ({s.qty})
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <span className="text-ink-3 text-2xs">—</span>
+        )}
+      </td>
+
+      {/* 5. ĐẦU VIỆC 2: FOC (0Đ) */}
+      <td className="py-2 px-2 text-center tabular-nums align-middle">
+        {bd.focQty > 0 ? (
+          <div>
+            <div className="font-medium text-ink text-xs">{bd.focQty} mẫu</div>
+            {ws.focSample.assignees.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-1 mt-1" onClick={(e) => e.stopPropagation()}>
+                {ws.focSample.assignees.map((s) => (
+                  <button
+                    key={s.staffName}
+                    type="button"
+                    onClick={() =>
+                      plan && onSelectPlan(plan, { focusStaffName: s.staffName, focusWorkstream: 'FOC_SAMPLE' })
+                    }
+                    className="text-2xs text-ink-2 hover:text-accent hover:underline cursor-pointer"
+                    title={`Mở phần việc Gửi mẫu FOC của ${s.staffName}: ${s.qty} mẫu`}
+                  >
+                    {getShortStaffName(s.staffName)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <span className="text-ink-3 text-2xs">—</span>
+        )}
+      </td>
+
+      {/* 6. ĐẦU VIỆC 3: SELF-CHANNEL (HIỂN THỊ 1–2 PIC CONTENT DƯỚI VIỆT HOÀNG) */}
+      <td className="py-2 px-2 text-right tabular-nums align-middle">
+        {bd.selfQty > 0 || bd.selfBudget > 0 ? (
+          <div>
+            <div className="font-semibold text-ink text-xs">
+              {bd.selfQty} video · <span className="text-ink-2 font-medium">{formatVndShort(bd.selfBudget)}</span>
+            </div>
+            {ws.selfChannel.assignees.length > 0 && (
+              <div className="flex flex-wrap justify-end gap-1.5 mt-1" onClick={(e) => e.stopPropagation()}>
+                {ws.selfChannel.assignees.map((s) => (
+                  <button
+                    key={s.staffName}
+                    type="button"
+                    onClick={() =>
+                      plan && onSelectPlan(plan, { focusStaffName: s.staffName, focusWorkstream: 'SELF_CHANNEL' })
+                    }
+                    className="text-2xs text-ink-2 hover:text-accent hover:underline transition-colors cursor-pointer"
+                    title={`Mở kế hoạch Self-Channel của ${s.staffName} (Leader Partnership: Việt Hoàng): ${s.qty} video`}
+                  >
+                    {getShortStaffName(s.staffName)} ({s.qty})
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <span className="text-ink-3 text-2xs">—</span>
+        )}
+      </td>
+
+      {/* 7. ĐẦU VIỆC 4: KÊNH KHÁC */}
+      <td className="py-2 px-2 text-right tabular-nums align-middle">
+        {bd.otherQty > 0 || bd.otherBudget > 0 ? (
+          <div>
+            <div className="font-semibold text-ink text-xs">{bd.otherQty} video</div>
+            <div className="text-2xs text-ink-3">{formatVndShort(bd.otherBudget)}</div>
+            {ws.multiPlatform.assignees.length > 0 && (
+              <div className="flex flex-wrap justify-end gap-1 mt-0.5" onClick={(e) => e.stopPropagation()}>
+                {ws.multiPlatform.assignees.map((s) => (
+                  <button
+                    key={s.staffName}
+                    type="button"
+                    onClick={() =>
+                      plan && onSelectPlan(plan, { focusStaffName: s.staffName, focusWorkstream: 'MULTI_PLATFORM' })
+                    }
+                    className="text-2xs text-ink-2 hover:text-accent hover:underline cursor-pointer"
+                    title={`Mở phần việc Đa sàn của ${s.staffName}: ${s.qty} video`}
+                  >
+                    {getShortStaffName(s.staffName)} ({s.qty})
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <span className="text-ink-3 text-2xs">—</span>
+        )}
+      </td>
+
+      {/* 8. KIỂM ĐỊNH 4.1 VS 4.1.1 */}
+      <td className="py-2 px-2.5 text-center align-middle">
+        {!isB2c ? (
+          <span className="text-2xs text-ink-3">—</span>
+        ) : plan ? (
+          <span className="inline-flex justify-center" title={item.validity.shortDetail}>
+            <Status tone={item.validity.badgeTone}>{item.validity.badgeLabel}</Status>
+          </span>
+        ) : (
+          <span className="text-2xs text-ink-3">Chưa có 4.1</span>
+        )}
+      </td>
+
+      {/* 9. TRẠNG THÁI DUYỆT & THAO TÁC */}
+      <td className="py-2 px-3 text-right align-middle">
+        <div className="flex flex-col items-end gap-1">
+          {!isB2c ? (
+            <Status tone="neutral">Ngoài B2C</Status>
+          ) : plan ? (
+            <>
+              <div className="flex items-center justify-end gap-1 flex-wrap">{getStatusBadge(plan.status)}</div>
+              <div className="flex items-center justify-end gap-1 flex-wrap">
+                {plan.pendingReference41 && currentUser && isStaffGlobalAdminOrManager(currentUser) && onUpdatePlan && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextRef = plan.pendingReference41!;
+                      const nextBudget = nextRef.affCostNet + nextRef.selfCostNet + nextRef.liveCostNet;
+                      const nextContents = nextRef.cast + nextRef.foc + nextRef.selfVideos + nextRef.liveSessions;
+                      const actorName = currentUser.name || 'Giám đốc Marketing B2C';
+                      const unlockMsg: PlanDiscussionMessage = {
+                        id: `DISC-UNLOCK41-${Date.now()}`,
+                        authorName: actorName,
+                        authorRole: 'LEAD',
+                        authorTitle: 'Quản lý B2C',
+                        content: `Quản lý (${actorName}) đã mở khóa kế hoạch đã duyệt và cập nhật theo số liệu Bảng 4.1 mới (Tổng Net: ${formatVndShort(
+                          nextBudget
+                        )}, Tổng nội dung: ${nextContents} video). Chuyển về trạng thái Cần sửa để chuyên viên điều chỉnh phân rã tuần.`,
+                        type: 'REVISION_REQUEST',
+                        timestamp: new Date().toISOString(),
+                        tags: ['Cập nhật 4.1 mới', 'Mở khóa'],
+                      };
+                      onUpdatePlan(plan.id, {
+                        reference41: nextRef,
+                        pendingReference41: undefined,
+                        totalTargetBudget: nextBudget,
+                        totalTargetContents: nextContents,
+                        budgetAffiliate: nextRef.affCostNet,
+                        budgetSelfChannel: nextRef.selfCostNet,
+                        isVersionLocked: false,
+                        status: 'REVISION_REQUESTED',
+                        revisionNotes: 'Mở khóa cập nhật theo Bảng 4.1 Plan order tổng mới',
+                        discussions: [unlockMsg, ...(plan.discussions || [])],
+                      });
+                      notify(`Đã mở khóa và cập nhật mốc 4.1 mới cho gian hàng "${store.storeName}".`);
+                    }}
+                    className="h-6 px-2 rounded bg-rose-600 hover:bg-rose-700 text-white text-2xs font-semibold shrink-0 whitespace-nowrap transition cursor-pointer"
+                    title="Mở khóa kế hoạch đã duyệt và áp dụng số liệu 4.1 mới"
+                  >
+                    Mở khóa 4.1
+                  </button>
+                )}
+                {onOpenListingForPlan && (bd.affPaidQty > 0 || bd.focQty > 0) && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenListingForPlan(plan)}
+                    className="h-6 px-2 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold shrink-0 whitespace-nowrap transition cursor-pointer"
+                    title="Triển khai Listing KOC theo Plan Final (KL1–KL7)"
+                  >
+                    Listing KOC
+                  </button>
+                )}
+                {plan.status === 'PENDING_APPROVAL' ? (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => onSelectPlan(plan)}
+                    className="h-6 px-2 text-2xs font-medium shrink-0"
+                  >
+                    Duyệt
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => onSelectPlan(plan)}
+                    className="h-6 px-2 text-2xs font-medium shrink-0"
+                  >
+                    Mở
+                  </Button>
+                )}
+              </div>
+            </>
+          ) : (
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={Plus}
+              onClick={(e) => handleCreatePlanForStore(store, e)}
+              className="h-6 px-2 text-2xs font-medium"
+            >
+              Lập plan
+            </Button>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+});
+
 export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   plans,
   storePortfolios,
@@ -397,6 +771,18 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   }, [planMonths]);
   const [pickedMonth, setSelectedMonth] = useState<string | null>(null);
   const selectedMonth = pickedMonth ?? defaultMonth;
+
+  // Cache danh sách brand có campaign active trong tháng để O(1) lookup trên bảng gian hàng
+  const activeCampaignBrandNames = useMemo(() => {
+    const targetMonth = selectedMonth === 'ALL' ? '2026/10' : selectedMonth;
+    const set = new Set<string>();
+    for (const c of effectiveCampaigns) {
+      if (isCampaignActiveInMonth(c, targetMonth)) {
+        set.add((c.brand || '').toLowerCase().trim());
+      }
+    }
+    return set;
+  }, [effectiveCampaigns, selectedMonth]);
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedPic, setSelectedPic] = useState<string>('ALL');
@@ -1566,30 +1952,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       notify('Lỗi kết nối khi kéo kế hoạch từ Larkbase.');
     } finally {
       setIsPullingLarkbase(false);
-    }
-  };
-
-  const getStatusBadge = (status?: MonthlyPlanStatus) => {
-    switch (status) {
-      case 'PENDING_PRE_APPROVAL':
-        return <Status tone="warning">Chờ sơ duyệt</Status>;
-      case 'PRE_APPROVED':
-        return <Status tone="positive">Sơ duyệt đạt</Status>;
-      case 'REVISION_REQUESTED':
-        return <Status tone="critical">Cần sửa</Status>;
-      case 'PENDING_APPROVAL':
-        return <Status tone="warning">Chờ duyệt Lead</Status>;
-      case 'LEAD_APPROVED':
-      case 'BRAND_APPROVED':
-      case 'APPROVED':
-        return <Status tone="positive">Đã duyệt</Status>;
-      case 'IN_EXECUTION':
-        return <Status tone="info">Đang chạy</Status>;
-      case 'COMPLETED':
-        return <Status tone="positive">Hoàn tất</Status>;
-      case 'DRAFT':
-      default:
-        return <Status tone="neutral">Nháp</Status>;
     }
   };
 
@@ -2981,338 +3343,21 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     </tr>
                   ) : (
                     paginatedStoreGovernance.map((item: StoreGovernanceItem) => {
-                      const store = item.store;
-                      const plan = item.plan;
-                      const isB2c = item.isB2c;
-                      const bd = item.breakdown;
-                      const ws = item.workstreamSummary;
-                      const versionSnapshots = plan ? getPlanVersionSnapshots(plan) : [];
-                      const versionCount = versionSnapshots.length;
-                      const activeVersionCode = plan?.currentVersionCode || 'v1.0';
-                      const baselineSnapshot = versionSnapshots[0];
-                      const budgetDelta = plan && baselineSnapshot && versionCount > 1
-                        ? (plan.totalTargetBudget || bd.totalBudget) - (baselineSnapshot.totalTargetBudget || 0)
-                        : 0;
-                      const hasLeader = Boolean(plan?.hasBookingLeader ?? store.hasBookingLeader);
-                      const shortName = (fullName: string) => {
-                        const parts = fullName.trim().split(/\s+/);
-                        return parts.length >= 2 ? parts.slice(-2).join(' ') : fullName;
-                      };
-
+                      const brandLower = (item.store.brandName || '').toLowerCase().trim();
+                      const isCampaignActive = Boolean(item.plan?.hasCampaign ?? (brandLower && activeCampaignBrandNames.has(brandLower)));
                       return (
-                        <React.Fragment key={store.id}>
-                        <tr
-                          data-flip={store.id}
-                          className={cx(
-                            'group hover:bg-canvas transition-colors',
-                            !isB2c && 'bg-sunken/30 text-ink-3'
-                          )}
-                        >
-                          {/* 1. GIAN HÀNG & PHIÊN BẢN */}
-                          <td className="py-2.5 px-3 align-middle">
-                            <div className="flex items-center justify-between gap-1.5 min-w-0">
-                              <span className="font-semibold text-ink text-xs truncate" title={store.storeName}>
-                                {store.storeName}
-                              </span>
-                              {plan && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openVersionModal(plan.id, 'VERSION_HISTORY');
-                                  }}
-                                  className="inline-flex items-center gap-1 text-2xs font-mono text-ink-3 hover:text-accent hover:underline cursor-pointer shrink-0"
-                                  title="Quản lý & so sánh các phiên bản kế hoạch trong tháng"
-                                >
-                                  <Layers className="w-2.5 h-2.5" />
-                                  <span>{activeVersionCode}</span>
-                                  {versionCount > 1 && <span>({versionCount})</span>}
-                                </button>
-                              )}
-                            </div>
-                            <div
-                              className="flex items-center gap-1.5 mt-1 text-2xs text-ink-3 min-w-0"
-                              title={`${store.storeName} (${store.brandName}) · ${
-                                (plan?.hasCampaign ?? effectiveCampaigns.some(c => isCampaignActiveInMonth(c, selectedMonth === 'ALL' ? '2026/10' : selectedMonth) && c.brand.toLowerCase().includes((store.brandName || '').toLowerCase())))
-                                  ? `Campaign: ${plan?.campaignCode || 'Có'}`
-                                  : 'Duy trì'
-                              } · Hệ số: ${normalizeStoreCoefficient(store.difficultyTier, store.difficultyMultiplier).label}`}
-                            >
-                              <ChannelTag channel={store.platform} className="text-2xs px-1 py-0" />
-                              <span className="truncate">{store.brandName}</span>
-                              {budgetDelta !== 0 && (
-                                <span
-                                  className={cx(
-                                    'text-2xs font-semibold tabular-nums shrink-0',
-                                    budgetDelta > 0 ? 'text-positive' : 'text-warning'
-                                  )}
-                                >
-                                  · {budgetDelta > 0 ? `+${formatVndShort(budgetDelta)}` : formatVndShort(budgetDelta)}
-                                </span>
-                              )}
-                              
-                            </div>
-                          </td>
-
-                          {/* 2. ĐẦU MỐI GIAN HÀNG & TỔ ĐỘI PHỐI HỢP */}
-                          <td className="py-2.5 px-2.5 align-middle">
-                            <div className="flex items-center gap-1 min-w-0">
-                              <span className="font-medium text-ink text-xs truncate" title={store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa phân công'}>
-                                {store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa gán'}
-                              </span>
-                              {ws.allStaffNames.length > 1 && (
-                                <span
-                                  className="text-2xs text-ink-3 shrink-0"
-                                  title={`Gian hàng có ${ws.allStaffNames.length} nhân sự phối hợp: ${ws.allStaffNames.join(', ')}`}
-                                >
-                                  · {ws.allStaffNames.length} người
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1 mt-0.5 text-2xs text-ink-3" onClick={(e) => e.stopPropagation()}>
-                              <span className="truncate">
-                                {hasLeader ? 'Leader: Ngọc Tâm' : 'Duyệt trực tiếp'}
-                              </span>
-                              
-                            </div>
-                          </td>
-
-                          {/* 3. HẠN MỨC NET B2C */}
-                          <td className="py-2.5 px-2 text-right tabular-nums align-middle bg-sunken/25">
-                            <div className="font-semibold text-ink text-xs">
-                              {formatVndShort(bd.totalBudget)}
-                            </div>
-                            <div className="text-2xs font-medium text-accent">
-                              {bd.totalVideos} video
-                            </div>
-                          </td>
-
-                          {/* 4. ĐẦU VIỆC 1: VIDEO AFFILIATE TRẢ PHÍ (HIỂN THỊ 1–3 PIC BOOKING) */}
-                          <td className="py-2 px-2 text-right tabular-nums align-middle">
-                            {bd.affPaidQty > 0 || bd.affPaidBudget > 0 ? (
-                              <div>
-                                <div className="font-semibold text-ink text-xs">
-                                  {bd.affPaidQty} video · <span className="text-ink-2 font-medium">{formatVndShort(bd.affPaidBudget)}</span>
-                                </div>
-                                {ws.affiliatePaid.assignees.length > 0 && (
-                                  <div className="flex flex-wrap justify-end gap-1.5 mt-1" onClick={(e) => e.stopPropagation()}>
-                                    {ws.affiliatePaid.assignees.map(s => (
-                                      <button
-                                        key={s.staffName}
-                                        type="button"
-                                        onClick={() => plan && onSelectPlan(plan, { focusStaffName: s.staffName, focusWorkstream: 'AFFILIATE_PAID' })}
-                                        className="text-2xs text-ink-2 hover:text-accent hover:underline transition-colors cursor-pointer"
-                                        title={`Mở phần việc KOC trả phí của ${s.staffName}: ${s.qty} video (${formatVndShort(s.budget)})`}
-                                      >
-                                        {shortName(s.staffName)} ({s.qty})
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-ink-3 text-2xs">—</span>
-                            )}
-                          </td>
-
-                          {/* 5. ĐẦU VIỆC 2: FOC (0Đ) */}
-                          <td className="py-2 px-2 text-center tabular-nums align-middle">
-                            {bd.focQty > 0 ? (
-                              <div>
-                                <div className="font-medium text-ink text-xs">
-                                  {bd.focQty} mẫu
-                                </div>
-                                {ws.focSample.assignees.length > 0 && (
-                                  <div className="flex flex-wrap justify-center gap-1 mt-1" onClick={(e) => e.stopPropagation()}>
-                                    {ws.focSample.assignees.map(s => (
-                                      <button
-                                        key={s.staffName}
-                                        type="button"
-                                        onClick={() => plan && onSelectPlan(plan, { focusStaffName: s.staffName, focusWorkstream: 'FOC_SAMPLE' })}
-                                        className="text-2xs text-ink-2 hover:text-accent hover:underline cursor-pointer"
-                                        title={`Mở phần việc Gửi mẫu FOC của ${s.staffName}: ${s.qty} mẫu`}
-                                      >
-                                        {shortName(s.staffName)}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-ink-3 text-2xs">—</span>
-                            )}
-                          </td>
-
-                          {/* 6. ĐẦU VIỆC 3: SELF-CHANNEL (HIỂN THỊ 1–2 PIC CONTENT DƯỚI VIỆT HOÀNG) */}
-                          <td className="py-2 px-2 text-right tabular-nums align-middle">
-                            {bd.selfQty > 0 || bd.selfBudget > 0 ? (
-                              <div>
-                                <div className="font-semibold text-ink text-xs">
-                                  {bd.selfQty} video · <span className="text-ink-2 font-medium">{formatVndShort(bd.selfBudget)}</span>
-                                </div>
-                                {ws.selfChannel.assignees.length > 0 && (
-                                  <div className="flex flex-wrap justify-end gap-1.5 mt-1" onClick={(e) => e.stopPropagation()}>
-                                    {ws.selfChannel.assignees.map(s => (
-                                      <button
-                                        key={s.staffName}
-                                        type="button"
-                                        onClick={() => plan && onSelectPlan(plan, { focusStaffName: s.staffName, focusWorkstream: 'SELF_CHANNEL' })}
-                                        className="text-2xs text-ink-2 hover:text-accent hover:underline transition-colors cursor-pointer"
-                                        title={`Mở kế hoạch Self-Channel của ${s.staffName} (Leader Partnership: Việt Hoàng): ${s.qty} video`}
-                                      >
-                                        {shortName(s.staffName)} ({s.qty})
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-ink-3 text-2xs">—</span>
-                            )}
-                          </td>
-
-                          {/* 7. ĐẦU VIỆC 4: KÊNH KHÁC */}
-                          <td className="py-2 px-2 text-right tabular-nums align-middle">
-                            {bd.otherQty > 0 || bd.otherBudget > 0 ? (
-                              <div>
-                                <div className="font-semibold text-ink text-xs">
-                                  {bd.otherQty} video
-                                </div>
-                                <div className="text-2xs text-ink-3">
-                                  {formatVndShort(bd.otherBudget)}
-                                </div>
-                                {ws.multiPlatform.assignees.length > 0 && (
-                                  <div className="flex flex-wrap justify-end gap-1 mt-0.5" onClick={(e) => e.stopPropagation()}>
-                                    {ws.multiPlatform.assignees.map(s => (
-                                      <button
-                                        key={s.staffName}
-                                        type="button"
-                                        onClick={() => plan && onSelectPlan(plan, { focusStaffName: s.staffName, focusWorkstream: 'MULTI_PLATFORM' })}
-                                        className="text-2xs text-ink-2 hover:text-accent hover:underline cursor-pointer"
-                                        title={`Mở phần việc Đa sàn của ${s.staffName}: ${s.qty} video`}
-                                      >
-                                        {shortName(s.staffName)} ({s.qty})
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-ink-3 text-2xs">—</span>
-                            )}
-                          </td>
-
-                          {/* 8. KIỂM ĐỊNH 4.1 VS 4.1.1 */}
-                          <td className="py-2 px-2.5 text-center align-middle">
-                            {!isB2c ? (
-                              <span className="text-2xs text-ink-3">—</span>
-                            ) : plan ? (
-                              <span className="inline-flex justify-center" title={item.validity.shortDetail}>
-                                <Status tone={item.validity.badgeTone}>{item.validity.badgeLabel}</Status>
-                              </span>
-                            ) : (
-                              <span className="text-2xs text-ink-3">Chưa có 4.1</span>
-                            )}
-                          </td>
-
-                          {/* 9. TRẠNG THÁI DUYỆT & THAO TÁC */}
-                          <td className="py-2 px-3 text-right align-middle">
-                            <div className="flex flex-col items-end gap-1">
-                              {!isB2c ? (
-                                <Status tone="neutral">Ngoài B2C</Status>
-                              ) : plan ? (
-                                <>
-                                  <div className="flex items-center justify-end gap-1 flex-wrap">
-                                    {getStatusBadge(plan.status)}
-                                  </div>
-                                  <div className="flex items-center justify-end gap-1 flex-wrap">
-                                    {plan.pendingReference41 &&
-                                      currentUser &&
-                                      isStaffGlobalAdminOrManager(currentUser) &&
-                                      onUpdatePlan && (
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const nextRef = plan.pendingReference41!;
-                                            const nextBudget = nextRef.affCostNet + nextRef.selfCostNet + nextRef.liveCostNet;
-                                            const nextContents = nextRef.cast + nextRef.foc + nextRef.selfVideos + nextRef.liveSessions;
-                                            const actorName = currentUser.name || 'Giám đốc Marketing B2C';
-                                            const unlockMsg: PlanDiscussionMessage = {
-                                              id: `DISC-UNLOCK41-${Date.now()}`,
-                                              authorName: actorName,
-                                              authorRole: 'LEAD',
-                                              authorTitle: 'Quản lý B2C',
-                                              content: `Quản lý (${actorName}) đã mở khóa kế hoạch đã duyệt và cập nhật theo số liệu Bảng 4.1 mới (Tổng Net: ${formatVndShort(nextBudget)}, Tổng nội dung: ${nextContents} video). Chuyển về trạng thái Cần sửa để chuyên viên điều chỉnh phân rã tuần.`,
-                                              type: 'REVISION_REQUEST',
-                                              timestamp: new Date().toISOString(),
-                                              tags: ['Cập nhật 4.1 mới', 'Mở khóa'],
-                                            };
-                                            onUpdatePlan(plan.id, {
-                                              reference41: nextRef,
-                                              pendingReference41: undefined,
-                                              totalTargetBudget: nextBudget,
-                                              totalTargetContents: nextContents,
-                                              budgetAffiliate: nextRef.affCostNet,
-                                              budgetSelfChannel: nextRef.selfCostNet,
-                                              isVersionLocked: false,
-                                              status: 'REVISION_REQUESTED',
-                                              revisionNotes: 'Mở khóa cập nhật theo Bảng 4.1 Plan order tổng mới',
-                                              discussions: [unlockMsg, ...(plan.discussions || [])],
-                                            });
-                                            notify(`Đã mở khóa và cập nhật mốc 4.1 mới cho gian hàng "${store.storeName}".`);
-                                          }}
-                                          className="h-6 px-2 rounded bg-rose-600 hover:bg-rose-700 text-white text-2xs font-semibold shrink-0 whitespace-nowrap transition cursor-pointer"
-                                          title="Mở khóa kế hoạch đã duyệt và áp dụng số liệu 4.1 mới"
-                                        >
-                                          Mở khóa 4.1
-                                        </button>
-                                      )}
-                                    {onOpenListingForPlan && (bd.affPaidQty > 0 || bd.focQty > 0) && (
-                                      <button
-                                        type="button"
-                                        onClick={() => onOpenListingForPlan(plan)}
-                                        className="h-6 px-2 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold shrink-0 whitespace-nowrap transition cursor-pointer"
-                                        title="Triển khai Listing KOC theo Plan Final (KL1–KL7)"
-                                      >
-                                        Listing KOC
-                                      </button>
-                                    )}
-                                    {plan.status === 'PENDING_APPROVAL' ? (
-                                      <Button
-                                        size="sm"
-                                        variant="primary"
-                                        onClick={() => onSelectPlan(plan)}
-                                        className="h-6 px-2 text-2xs font-medium shrink-0"
-                                      >
-                                        Duyệt
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        onClick={() => onSelectPlan(plan)}
-                                        className="h-6 px-2 text-2xs font-medium shrink-0"
-                                      >
-                                        Mở
-                                      </Button>
-                                    )}
-                                  </div>
-                                </>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  icon={Plus}
-                                  onClick={(e) => handleCreatePlanForStore(store, e)}
-                                  className="h-6 px-2 text-2xs font-medium"
-                                >
-                                  Lập plan
-                                </Button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                        </React.Fragment>
+                        <StoreGovernanceTableRow
+                          key={item.store.id}
+                          item={item}
+                          isCampaignActive={isCampaignActive}
+                          onSelectPlan={onSelectPlan}
+                          openVersionModal={openVersionModal}
+                          currentUser={currentUser}
+                          onUpdatePlan={onUpdatePlan}
+                          onOpenListingForPlan={onOpenListingForPlan}
+                          handleCreatePlanForStore={handleCreatePlanForStore}
+                          notify={notify}
+                        />
                       );
                     })
                   )}

@@ -677,56 +677,19 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
                         {/* Chọn trực tiếp Hệ số gian hàng */}
                         <td className="py-2.5 px-3">
-                          <select
-                            value={coef.tier}
-                            onChange={(e) => {
-                              const nextTier = e.target.value as StoreDifficultyTier;
-                              const nextMultiplier = getStoreCoefficientByTier(nextTier);
-                              onUpdateStore({
-                                ...store,
-                                difficultyTier: nextTier,
-                                difficultyMultiplier: nextMultiplier,
-                                updatedAt: new Date().toISOString(),
-                              });
-                              notify(
-                                `Đã cập nhật hệ số gian "${store.storeName}" sang ${nextTier} (×${nextMultiplier
-                                  .toFixed(2)
-                                  .replace('.', ',')})`
-                              );
-                            }}
-                            className="w-full text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold bg-sunken text-ink border border-line"
+                            title="Hệ số quy mô gian hàng chuẩn theo định mức B2C"
                           >
-                            {STORE_COEFFICIENT_TABLE_2.rows.map((rule) => (
-                              <option key={rule.tier} value={rule.tier}>
-                                {rule.tier} (×{rule.multiplierLabel})
-                              </option>
-                            ))}
-                          </select>
+                            {coef.tier} (×{coef.multiplier.toFixed(1).replace('.', ',')})
+                          </span>
                         </td>
 
                         {/* Chọn Cấp sơ duyệt (Leader) */}
                         <td className="py-2.5 px-3">
-                          <select
-                            value={currentLeaderVal}
-                            onChange={(e) => {
-                              const isNone = e.target.value === 'NONE';
-                              const newLeader = isNone ? undefined : 'Nguyễn Thị Ngọc Tâm';
-                              onUpdateStore({
-                                ...store,
-                                bookingLeader: newLeader,
-                                hasBookingLeader: !isNone,
-                              });
-                              notify(
-                                isNone
-                                  ? `Gian "${store.storeName}" chuyển sang: Duyệt thẳng Trưởng phòng Đặng Thị Yến Nhi`
-                                  : `Đã gán Trưởng nhóm Nguyễn Thị Ngọc Tâm sơ duyệt gian "${store.storeName}"`
-                              );
-                            }}
-                            className="w-full text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
-                          >
-                            <option value="NONE">Duyệt thẳng Trưởng phòng</option>
-                            <option value="Nguyễn Thị Ngọc Tâm">Nguyễn Thị Ngọc Tâm (Leader)</option>
-                          </select>
+                          <span className="text-xs text-ink-2 font-medium">
+                            {hasLeader ? 'Leader: Ngọc Tâm' : 'Duyệt trực tiếp'}
+                          </span>
                         </td>
 
                         {/* Chọn Nhân viên chính (PIC) */}

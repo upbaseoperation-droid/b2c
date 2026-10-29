@@ -51,7 +51,6 @@ import {
 } from '../brands/brandUi';
 import { brandKey, type BrandSection } from '../../lib/brands/types';
 import { StoreProfile } from '../stores/StoreProfile';
-import { StoreEditDialog } from '../stores/StoreEditDialog';
 
 export interface BrandHubViewProps {
   currentUser?: UserProfile;
@@ -1359,7 +1358,6 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                 setInspectingStore(null);
                 setActiveTab('BRAND_PROFILE');
               }}
-              onOpenEdit={(st) => setEditingStore(st)}
             />
           ) : (
             <>
@@ -2290,23 +2288,6 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
         })()}
       </Modal>
         </div>
-      )}
-
-      {/* Hộp thoại chỉnh sửa thông số Gian hàng trực tiếp từ Cổng Đối Tác Brand */}
-      {editingStore && (
-        <StoreEditDialog
-          open={!!editingStore}
-          store={editingStore}
-          onClose={() => setEditingStore(null)}
-          onSave={(updated) => {
-            onUpdateStore?.(updated);
-            if (inspectingStore?.id === updated.id) {
-              setInspectingStore(updated);
-            }
-            setEditingStore(null);
-            onNotify?.(`Đã cập nhật thông số gian hàng "${updated.storeName}" — đồng bộ toàn hệ thống.`, 'success');
-          }}
-        />
       )}
     </div>
   );

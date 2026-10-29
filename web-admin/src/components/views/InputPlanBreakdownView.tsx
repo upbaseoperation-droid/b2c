@@ -1454,6 +1454,16 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     return base.sort((a, b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
   }, [planState]);
 
+  const revisionChatCount = useMemo(() => {
+    return unifiedChatMessages.filter(m => m.type === 'REVISION_REQUEST').length;
+  }, [unifiedChatMessages]);
+
+  const filteredChatMessages = useMemo(() => {
+    return chatFilter === 'REVISION_REQUEST'
+      ? unifiedChatMessages.filter(m => m.type === 'REVISION_REQUEST')
+      : unifiedChatMessages;
+  }, [unifiedChatMessages, chatFilter]);
+
   const handleFocusChatForRevision = () => {
     if (activeTab !== 'OVERVIEW') {
       setActiveTab('OVERVIEW');
@@ -3307,11 +3317,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
               {/* Khung 2: Khung Chat Trao đổi, Thống nhất & Yêu cầu sửa */}
               {(() => {
-                const revisionCount = unifiedChatMessages.filter(m => m.type === 'REVISION_REQUEST').length;
-                const filteredMessages =
-                  chatFilter === 'REVISION_REQUEST'
-                    ? unifiedChatMessages.filter(m => m.type === 'REVISION_REQUEST')
-                    : unifiedChatMessages;
+                const revisionCount = revisionChatCount;
+                const filteredMessages = filteredChatMessages;
                 const quickChips =
                   chatMode === 'REVISION_REQUEST'
                     ? [

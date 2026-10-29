@@ -383,7 +383,7 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
       open={open}
       onClose={onClose}
       title={`Hồ sơ, Hiệu suất & Lịch sử KOC — @${cleanHandle}`}
-      size="xl"
+      size="2xl"
       footer={
         <div className="flex items-center justify-between w-full gap-2">
           <div className="flex items-center gap-2 text-xs text-ink-3">
@@ -424,7 +424,7 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
               <Avatar
                 name={resolvedKoc.stageName}
                 src={resolvedKoc.avatarUrl}
-                size={44}
+                size={48}
               />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -491,7 +491,7 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
 
           <StatRow>
             <Stat
-              label="Follower & View TB 30d"
+              label="Follower (30 ngày)"
               value={formatNumber(resolvedKoc.followers || 0)}
               note={`View TB: ${formatNumber(resolvedKoc.avgViews || 0)} / video`}
             />
@@ -505,13 +505,13 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
               )}`}
             />
             <Stat
-              label="Tỷ lệ Brand duyệt trên Sheet"
+              label="Tỷ lệ Brand duyệt Sheet"
               value={`${sheetSummary.approvedCount}/${sheetSummary.totalListed} lần (${sheetSummary.approvalRatePct}%)`}
               tone={sheetSummary.approvedCount > 0 ? 'positive' : undefined}
               note={`${sheetSummary.uniqueStoresCount} gian hàng · Từ chối: ${sheetSummary.rejectedCount} · Chờ: ${sheetSummary.pendingCount}`}
             />
             <Stat
-              label="Khung Giá Net & GMV Nghiệm thu"
+              label="Giá Net & Doanh số"
               value={
                 sheetSummary.minFee === sheetSummary.maxFee
                   ? formatVndShort(sheetSummary.maxFee)
@@ -528,120 +528,118 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
 
         {/* Khối 2: Bảng Lịch sử Listing & Phê duyệt Brand xuyên suốt các Gian hàng B2C */}
         {showSheetHistoryTable && (
-          <div className="border border-line rounded-xl overflow-hidden bg-surface">
-            <div className="px-3.5 py-2 bg-sunken border-b border-line flex flex-wrap items-center justify-between gap-2">
+<div className="border border-line rounded-xl overflow-hidden bg-surface">
+            <div className="px-3.5 py-2.5 bg-sunken border-b border-line flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-semibold text-ink">
                 <History className="w-4 h-4 text-accent" />
                 <span>
-                  Lịch sử Listing, Kết quả Brand duyệt &amp; Nghiệm thu trên các Sheet Gian hàng ({crossSheetHistory.length} đợt)
+                  Lịch sử Listing & Phê duyệt trên Sheet ({crossSheetHistory.length} đợt)
                 </span>
-              </div>
-              <div className="text-2xs text-ink-3">
-                Đối chiếu nhanh giá đề xuất, phản hồi Brand và hiệu quả các đợt đã book
               </div>
             </div>
 
             {crossSheetHistory.length === 0 ? (
-              <div className="py-6 text-center text-xs text-ink-3">
-                Chưa có lịch sử dòng Listing nào của KOC này trên các Sheet Gian hàng.
+              <div className="py-8 text-center text-xs text-ink-3">
+                Chưa có lịch sử đề xuất nào của KOC này trên các Sheet Gian hàng.
               </div>
             ) : (
-              <div className="max-h-56 overflow-y-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead className="sticky top-0 bg-sunken/80 border-b border-line text-2xs font-semibold text-ink-2">
+              <div className="max-h-64 overflow-y-auto overflow-x-hidden">
+                <table className="w-full table-fixed text-left text-xs border-collapse">
+                  <thead className="sticky top-0 bg-sunken border-b border-line text-2xs font-semibold text-ink-2">
                     <tr>
-                      <th className="py-2 px-2.5">Tháng / Đợt</th>
-                      <th className="py-2 px-2.5">Gian hàng (Store)</th>
-                      <th className="py-2 px-2.5">Sản phẩm (Cột K)</th>
-                      <th className="py-2 px-2.5 text-right">Giá Net / Chốt</th>
-                      <th className="py-2 px-2.5">Brand chọn &amp; Phản hồi</th>
-                      <th className="py-2 px-2.5">TG Duyệt &amp; SLA</th>
-                      <th className="py-2 px-2.5">Mã Deal / Air</th>
-                      <th className="py-2 px-2.5 text-right">Views · GMV · ROI</th>
+                      <th className="py-2.5 px-3 w-[15%]">Tháng / Đợt</th>
+                      <th className="py-2.5 px-3 w-[22%]">Gian hàng</th>
+                      <th className="py-2.5 px-3 w-[21%]">Sản phẩm</th>
+                      <th className="py-2.5 px-3 w-[14%] text-right">Giá Net</th>
+                      <th className="py-2.5 px-3 w-[14%]">Brand chọn</th>
+                      <th className="py-2.5 px-3 w-[14%] text-right">SLA & Air</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
                     {crossSheetHistory.map((item) => (
-                      <tr key={`${item.monthKey}-${item.storeName}-${item.rowId}`} className="hover:bg-sunken/40">
-                        <td className="py-2 px-2.5 whitespace-nowrap">
-                          <div className="font-mono font-semibold text-ink">{item.monthKey}</div>
-                          <div className="text-2xs text-ink-3">
-                            {item.dot} · PIC: {item.nhanSuDien}
+                      <tr key={`${item.monthKey}-${item.storeName}-${item.rowId}`} className="hover:bg-sunken/40 transition-colors">
+                        <td className="py-2.5 px-3 align-top">
+                          <div className="font-mono font-semibold text-ink text-xs">{item.monthKey}</div>
+                          <div className="text-2xs text-ink-3 mt-0.5 truncate">
+                            {item.dot || 'Đợt 1'}{item.nhanSuDien ? ` · ${item.nhanSuDien}` : ''}
                           </div>
                         </td>
-                        <td className="py-2 px-2.5">
-                          <div className="font-medium text-ink truncate max-w-[160px]" title={item.storeName}>
+                        <td className="py-2.5 px-3 align-top">
+                          <div className="font-medium text-ink truncate text-xs" title={item.storeName}>
                             {item.storeName}
                           </div>
-                          <div className="text-2xs text-ink-3">{item.contentTag}</div>
+                          {item.contentTag && (
+                            <div className="text-2xs text-ink-3 mt-0.5 truncate">{item.contentTag}</div>
+                          )}
                         </td>
-                        <td className="py-2 px-2.5">
-                          <div className="text-ink truncate max-w-[180px]" title={item.sanPham}>
-                            {item.sanPham}
+                        <td className="py-2.5 px-3 align-top">
+                          <div className="text-ink text-xs truncate" title={item.sanPham || '—'}>
+                            {item.sanPham || '—'}
                           </div>
                         </td>
-                        <td className="py-2 px-2.5 text-right font-mono tabular-nums whitespace-nowrap">
-                          <div className="font-semibold text-ink">
+                        <td className="py-2.5 px-3 text-right font-mono tabular-nums align-top">
+                          <div className="font-semibold text-ink text-xs">
                             {formatVnd(item.giaChotCuoi || item.giaNetVideo)}
                           </div>
                           {item.giaChotCuoi > 0 && item.giaChotCuoi !== item.giaNetVideo && (
-                            <div className="text-2xs text-ink-3">
+                            <div className="text-2xs text-ink-3 mt-0.5">
                               Đề xuất: {formatVndShort(item.giaNetVideo)}
                             </div>
                           )}
                         </td>
-                        <td className="py-2 px-2.5">
-                          <div className="flex items-center gap-1.5">
-                            <Status
-                              tone={
-                                item.brandChon === 'Yes'
-                                  ? 'positive'
-                                  : item.brandChon === 'No'
-                                    ? 'critical'
-                                    : item.brandChon === 'Cân nhắc'
-                                      ? 'warning'
-                                      : 'neutral'
-                              }
-                            >
-                              {item.brandChon === 'Yes'
-                                ? 'Brand duyệt (Yes)'
+                        <td className="py-2.5 px-3 align-top">
+                          <Status
+                            tone={
+                              item.brandChon === 'Yes'
+                                ? 'positive'
                                 : item.brandChon === 'No'
-                                  ? 'Từ chối (No)'
+                                  ? 'critical'
                                   : item.brandChon === 'Cân nhắc'
-                                    ? 'Cân nhắc'
-                                    : 'Chờ duyệt'}
-                            </Status>
-                          </div>
+                                    ? 'warning'
+                                    : 'neutral'
+                            }
+                          >
+                            {item.brandChon === 'Yes'
+                              ? 'Brand duyệt'
+                              : item.brandChon === 'No'
+                                ? 'Từ chối'
+                                : item.brandChon === 'Cân nhắc'
+                                  ? 'Cân nhắc'
+                                  : 'Chờ duyệt'}
+                          </Status>
                           {item.lyDoTuChoi && (
                             <div
-                              className="text-2xs text-ink-2 mt-0.5 truncate max-w-[170px]"
+                              className="text-2xs text-critical mt-1 truncate"
                               title={item.lyDoTuChoi}
                             >
                               {item.lyDoTuChoi}
                             </div>
                           )}
                         </td>
-                        <td className="py-2 px-2.5 font-mono text-2xs tabular-nums whitespace-nowrap">
-                          <div className="text-ink">
-                            {item.ngayBrandDuyet ? `Duyệt: ${item.ngayBrandDuyet}` : `Listing: ${item.ngayDien}`}
+                        <td className="py-2.5 px-3 text-right align-top">
+                          <div className="text-2xs font-mono tabular-nums text-ink-2">
+                            {item.slaLabel ? (
+                              <span
+                                className={
+                                  item.slaStatus === 'OVERDUE' || item.slaStatus === 'WAITING_OVERDUE'
+                                    ? 'text-critical font-medium'
+                                    : 'text-positive font-medium'
+                                }
+                              >
+                                {item.slaLabel}
+                              </span>
+                            ) : item.ngayBrandDuyet ? (
+                              item.ngayBrandDuyet
+                            ) : (
+                              item.ngayDien || '—'
+                            )}
                           </div>
-                          <div
-                            className={
-                              item.slaStatus === 'OVERDUE' || item.slaStatus === 'WAITING_OVERDUE'
-                                ? 'text-critical font-semibold'
-                                : 'text-positive'
-                            }
-                          >
-                            {item.slaLabel}
-                          </div>
-                        </td>
-                        <td className="py-2 px-2.5 whitespace-nowrap">
-                          {item.maBooking ? (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-2xs font-semibold text-emerald-800">
-                              {item.maBooking}
-                            </span>
-                          ) : (
-                            <span className="text-2xs text-ink-3">—</span>
+                          {item.maBooking && (
+                            <div className="mt-1">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-2xs font-semibold text-emerald-800">
+                                {item.maBooking}
+                              </span>
+                            </div>
                           )}
                           {item.linkAirNghiemThu && (
                             <div className="mt-0.5">
@@ -651,25 +649,15 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
                                 rel="noopener noreferrer"
                                 className="text-2xs text-accent hover:underline inline-flex items-center gap-0.5"
                               >
-                                <span>Video Air</span>
+                                <span>Link Air</span>
                                 <ExternalLink className="w-2.5 h-2.5" />
                               </a>
                             </div>
                           )}
-                        </td>
-                        <td className="py-2 px-2.5 text-right font-mono text-2xs tabular-nums whitespace-nowrap">
-                          {item.gmvNghiemThu > 0 || item.viewsNghiemThu > 0 ? (
-                            <>
-                              <div className="font-semibold text-ink">
-                                GMV: {formatVndShort(item.gmvNghiemThu)}
-                              </div>
-                              <div className="text-ink-3">
-                                {formatNumber(item.viewsNghiemThu)} views · ROI{' '}
-                                {item.roiNghiemThu > 0 ? `${item.roiNghiemThu.toFixed(2)}x` : '—'}
-                              </div>
-                            </>
-                          ) : (
-                            <span className="text-ink-3">Chưa nghiệm thu</span>
+                          {(item.gmvNghiemThu > 0 || item.viewsNghiemThu > 0) && (
+                            <div className="text-2xs font-mono text-ink-3 mt-0.5">
+                              GMV: {formatVndShort(item.gmvNghiemThu)}
+                            </div>
                           )}
                         </td>
                       </tr>
