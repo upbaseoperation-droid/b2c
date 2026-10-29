@@ -1,7 +1,7 @@
 // Dữ liệu gốc thật dùng làm giá trị khởi tạo phía client: KOC, brand, gian hàng, tổ đội booking và lịch sử hợp tác KOC.
 import { KocItem, BookingDealItem, BrandDetail, StorePortfolioItem, BookingTeamGroup, StaffMasterMember } from './types';
 import { UPBASE_FULL_KOC_MASTER } from './kocMasterDataset';
-import { REAL_KOC_COOPERATION_DEALS } from './realKocMasterData';
+import { REAL_KOC_COOPERATION_DEALS } from './realKocDealsData';
 import { REAL_B2C_69_STORES, REAL_BOOKING_TEAMS_STRUCTURE } from './realB2cPlanData';
 import { REAL_B2C_42_BRANDS } from './realB2cBrandsData';
 import { UPBASE_STAFF_MASTER } from './importedMasterData';

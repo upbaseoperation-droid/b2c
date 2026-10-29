@@ -173,6 +173,8 @@ interface B2cWorkloadBreakdown {
   otherBudget: number;
 }
 
+const b2cPlanBreakdownCache = new WeakMap<InputPlanBreakdownState, B2cWorkloadBreakdown>();
+
 function getB2cPlanBreakdown(plan: InputPlanBreakdownState | null, store?: StorePortfolioItem): B2cWorkloadBreakdown {
   if (!plan) {
     return {
@@ -188,6 +190,9 @@ function getB2cPlanBreakdown(plan: InputPlanBreakdownState | null, store?: Store
       otherBudget: 0,
     };
   }
+
+  const cached = b2cPlanBreakdownCache.get(plan);
+  if (cached) return cached;
 
   if (plan.reference41) {
     const ref = plan.reference41;
@@ -219,7 +224,7 @@ function getB2cPlanBreakdown(plan: InputPlanBreakdownState | null, store?: Store
     const allocatedBudget = affPaidBudget + selfBudget + otherBudget + (ref.liveCostNet || 0);
     const totalVideos = plan.totalTargetContents || (affPaidQty + focQty + selfQty + otherQty + (ref.liveSessions || 0));
 
-    return {
+    const res: B2cWorkloadBreakdown = {
       totalBudget,
       allocatedBudget,
       totalVideos,
@@ -231,6 +236,8 @@ function getB2cPlanBreakdown(plan: InputPlanBreakdownState | null, store?: Store
       otherQty,
       otherBudget,
     };
+    b2cPlanBreakdownCache.set(plan, res);
+    return res;
   }
 
   const items = plan?.items || [];
@@ -278,7 +285,7 @@ function getB2cPlanBreakdown(plan: InputPlanBreakdownState | null, store?: Store
   const sumVideos = affPaidQty + focQty + selfQty + otherQty;
   const totalVideos = sumVideos > 0 ? sumVideos : (plan?.totalTargetContents || 0);
 
-  return {
+  const res: B2cWorkloadBreakdown = {
     totalBudget,
     allocatedBudget,
     totalVideos,
@@ -290,6 +297,8 @@ function getB2cPlanBreakdown(plan: InputPlanBreakdownState | null, store?: Store
     otherQty,
     otherBudget,
   };
+  b2cPlanBreakdownCache.set(plan, res);
+  return res;
 }
 
 interface StoreGovernanceItem {
@@ -301,6 +310,7 @@ interface StoreGovernanceItem {
   breakdown: B2cWorkloadBreakdown;
   workstreamSummary: StorePlanWorkstreamSummary;
   validity: PlanValidityEvaluation;
+  searchKey?: string;
 }
 
 /** Tình trạng bảng phân rã tuần của kế hoạch so với số bảng 4.1. */
@@ -766,7 +776,16 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     | 'HAS_ERRORS'
     | 'PRICE_WARNING'
   >('B2C_ONLY');
+  const [storeSearchInput, setStoreSearchInput] = useState<string>('');
   const [storeSearchQuery, setStoreSearchQuery] = useState<string>('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setStoreSearchQuery(storeSearchInput);
+      setGovernancePage(1);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [storeSearchInput]);
   const [governanceRouteFilter, setGovernanceRouteFilter] = useState<'ALL' | 'WITH_LEADER' | 'DIRECT_HEAD'>('ALL');
   const [governancePlatformFilter, setGovernancePlatformFilter] = useState<'ALL' | 'TikTok Shop' | 'Shopee Mall'>('ALL');
   const [governancePicFilter, setGovernancePicFilter] = useState<string>('ALL');
@@ -841,6 +860,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               isB2cManaged: true,
               requiresB2cPlan: true,
             };
+        const sNameLower = (store.storeName || '').toLowerCase();
+        const bNameLower = (store.brandName || '').toLowerCase();
+        const pOwnerLower = (store.b2cOwners?.[0] || store.b2cOwnerName || store.primaryPic || plan?.pic || '').toLowerCase();
+        const pPlatformLower = (store.platform || '').toLowerCase();
+        const searchKey = `${sNameLower} ${bNameLower} ${pOwnerLower} ${pPlatformLower}`;
         return {
           store,
           isB2c: true,
@@ -850,6 +874,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           breakdown: getB2cPlanBreakdown(plan, store),
           workstreamSummary: getStorePlanWorkstreamSummary(plan),
           validity: evaluatePlanValiditySummary(plan),
+          searchKey,
         };
       });
     }
@@ -858,6 +883,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     return activeStores.map((store: StorePortfolioItem) => {
       const isB2c = store.isB2cManaged !== false && store.requiresB2cPlan !== false;
       const plan = lookupPlan(store);
+      const sNameLower = (store.storeName || '').toLowerCase();
+      const bNameLower = (store.brandName || '').toLowerCase();
+      const pOwnerLower = (store.b2cOwners?.[0] || store.b2cOwnerName || store.primaryPic || plan?.pic || '').toLowerCase();
+      const pPlatformLower = (store.platform || '').toLowerCase();
+      const searchKey = `${sNameLower} ${bNameLower} ${pOwnerLower} ${pPlatformLower}`;
       return {
         store,
         isB2c,
@@ -867,6 +897,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         breakdown: getB2cPlanBreakdown(plan, store),
         workstreamSummary: getStorePlanWorkstreamSummary(plan),
         validity: evaluatePlanValiditySummary(plan),
+        searchKey,
       };
     });
   }, [activeStores, selectedMonth, scopedPlans]);
@@ -1099,26 +1130,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   }, [filteredStoreGovernance, governancePage]);
   const governanceBodyRef = useRef<HTMLTableSectionElement>(null);
   useFlipList(governanceBodyRef, paginatedStoreGovernance.map(i => i.store.id).join('|'));
-
-  // Bật/tắt B2C phụ trách
-  const handleToggleB2cManaged = (store: StorePortfolioItem, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const currentVal = store.isB2cManaged !== false && store.requiresB2cPlan !== false;
-    const nextVal = !currentVal;
-    const updatedStore: StorePortfolioItem = {
-      ...store,
-      isB2cManaged: nextVal,
-      requiresB2cPlan: nextVal
-    };
-    if (onUpdateStore) {
-      onUpdateStore(updatedStore);
-    }
-    notify(
-      nextVal
-        ? `Đã chuyển gian hàng "${store.storeName}" sang diện Marketing B2C phụ trách & cần làm kế hoạch.`
-        : `Đã chuyển gian hàng "${store.storeName}" sang diện miễn trừ kế hoạch B2C.`
-    );
-  };
 
   // Phê duyệt nhanh
   const handleQuickApprovePlan = (planId: string, storeName: string) => {
@@ -2812,7 +2823,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
                         <div className="flex flex-col items-end gap-1 shrink-0">
                           {!isB2c ? (
-                            <Status tone="neutral">Miễn trừ</Status>
+                            <Status tone="neutral">Ngoài B2C</Status>
                           ) : plan ? (
                             <>
                               {getStatusBadge(plan.status)}
@@ -2980,22 +2991,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                   · {budgetDelta > 0 ? `+${formatVndShort(budgetDelta)}` : formatVndShort(budgetDelta)}
                                 </span>
                               )}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleToggleB2cManaged(store, e);
-                                }}
-                                className={cx(
-                                  'ml-auto text-2xs text-ink-3 hover:text-ink hover:underline transition-opacity shrink-0 cursor-pointer',
-                                  isB2c
-                                    ? 'opacity-0 group-hover:opacity-100'
-                                    : 'opacity-100'
-                                )}
-                                title={isB2c ? 'Bấm để chuyển sang miễn trừ B2C' : 'Đang miễn trừ. Bấm để bật B2C phụ trách'}
-                              >
-                                {isB2c ? 'Miễn trừ?' : 'Miễn trừ'}
-                              </button>
+                              
                             </div>
                           </td>
 
@@ -3018,38 +3014,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                               <span className="truncate">
                                 {hasLeader ? 'Leader: Ngọc Tâm' : 'Duyệt trực tiếp'}
                               </span>
-                              {(currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN') && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const nextHas = !hasLeader;
-                                    const newLeader = nextHas ? (plan?.bookingLeader || store.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : undefined;
-                                    if (plan && onUpdatePlan) {
-                                      onUpdatePlan(plan.id, {
-                                        hasBookingLeader: nextHas,
-                                        bookingLeader: newLeader,
-                                        leaderApprovalStatus: nextHas ? 'CHƯA_DUYỆT' : 'KHÔNG_ÁP_DỤNG'
-                                      });
-                                    }
-                                    if (onUpdateStore) {
-                                      onUpdateStore({
-                                        ...store,
-                                        hasBookingLeader: nextHas,
-                                        bookingLeader: newLeader
-                                      });
-                                    }
-                                    if (onNotify) {
-                                      onNotify(nextHas
-                                        ? `Đã bật yêu cầu Trưởng nhóm sơ duyệt cho ${store.storeName}.`
-                                        : `Đã chuyển ${store.storeName} sang duyệt trực tiếp.`);
-                                    }
-                                  }}
-                                  className="opacity-0 group-hover:opacity-100 text-2xs text-accent hover:underline font-medium cursor-pointer shrink-0"
-                                >
-                                  Đổi
-                                </button>
-                              )}
+                              
                             </div>
                           </td>
 
@@ -3195,7 +3160,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           <td className="py-2 px-3 text-right align-middle">
                             <div className="flex flex-col items-end gap-1">
                               {!isB2c ? (
-                                <Status tone="neutral">Miễn trừ</Status>
+                                <Status tone="neutral">Ngoài B2C</Status>
                               ) : plan ? (
                                 <>
                                   <div className="flex items-center justify-end gap-1 flex-wrap">

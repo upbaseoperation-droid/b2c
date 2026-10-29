@@ -117,7 +117,6 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           { key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink },
           NAV.kocListing,
           NAV.content,
-          NAV.campaigns,
           NAV.dashboard,
         ],
       },
@@ -162,7 +161,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     { items: [NAV.cockpit, NAV.dashboard] },
     {
       title: 'Kế hoạch & Điều phối',
-      items: [NAV.inputPlan, NAV.content, NAV.delegation, NAV.campaigns],
+      items: [NAV.inputPlan, NAV.content, NAV.delegation],
     },
     {
       title: 'Booking & Thực thi',

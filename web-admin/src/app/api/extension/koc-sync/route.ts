@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { BookingDealItem, KocItem, KocTier, TikTokVideoItem } from '@/lib/types';
 import { getSalaryGradeFromRate, getSegmentFromSalaryGrade } from '@/lib/types';
 import { UPBASE_FULL_KOC_MASTER } from '@/lib/kocMasterDataset';
-import { REAL_KOC_COOPERATION_DEALS } from '@/lib/realKocMasterData';
+import { REAL_KOC_COOPERATION_DEALS } from '@/lib/realKocDealsData';
 import { REAL_B2C_69_STORES } from '@/lib/realB2cPlanData';
 import { USERS } from '@/lib/mockData';
 import { requestActor } from '@/lib/server/requestActor';
