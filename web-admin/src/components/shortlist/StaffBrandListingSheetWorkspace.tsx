@@ -6371,12 +6371,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         </div>
       </Modal>
 
-      {/* Modal 3: Thiết lập Hiển thị & Sắp xếp File Google Sheet (Ẩn tháng, Ẩn cột Template, Sort SP/NV & Filter Views) */}
+      {/* Modal 3: Thiết lập Hiển thị & Sắp xếp File Google Sheet */}
       <Modal
         open={isSheetTemplateModalOpen}
         onClose={() => setIsSheetTemplateModalOpen(false)}
-        title={`Thiết lập Hiển thị & Sắp xếp File Google Sheet — "${activeStoreName}"`}
-        size="xl"
+        title={`Thiết lập Google Sheet — ${activeStoreName}`}
+        size="lg"
         footer={
           <Button variant="ghost" onClick={() => setIsSheetTemplateModalOpen(false)}>
             Đóng
@@ -6384,35 +6384,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         }
       >
         <div className="space-y-4 text-xs">
-          {/* Thông tin cơ chế Row ID bảo vệ đồng bộ */}
-          <div className="rounded-lg border border-line bg-sunken p-3 flex flex-wrap items-center justify-between gap-2">
-            <div className="space-y-0.5">
-              <div className="font-semibold text-ink flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-accent shrink-0" />
-                <span>Cơ chế nhận diện dòng bằng Mã dòng (Row ID) tự động</span>
-              </div>
-              <div className="text-2xs text-ink-2">
-                Mỗi dòng KOC đẩy lên Google Sheet đều gắn sẵn một <strong>Mã dòng (Row ID)</strong> duy nhất (được tự động ẩn trên Google Sheet). Nhờ đó, dù bạn có <strong>Sort (Sắp xếp)</strong> file Google Sheet theo Sản phẩm hay theo Nhân sự điền, hoặc 1 KOC book nhiều sản phẩm, hệ thống vẫn nhận diện chính xác 100% từng dòng khi Đẩy/Kéo.
-              </div>
-            </div>
-            {currentGoogleSheetUrl && (
-              <a
-                href={currentGoogleSheetUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-surface border border-line-strong text-accent font-semibold hover:bg-sunken shrink-0"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>Mở File Google Sheet</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-          </div>
-
-          {/* Chọn Tab đang thao tác cho mục Ẩn cột & Sort */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-            <div className="md:col-span-8">
-              <Field label="Chọn Tab (Tháng / Đợt) trên Google Sheet để điều khiển Cột & Sắp xếp">
+          {/* Thanh Tab & Link mở nhanh */}
+          <div className="flex flex-wrap items-end justify-between gap-3 pb-1 border-b border-line">
+            <div className="w-full sm:w-72">
+              <Field label="Tab trang tính">
                 <Select
                   value={sheetTemplateActiveTab}
                   onChange={(e) => setSheetTemplateActiveTab(e.target.value)}
@@ -6429,7 +6404,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 </Select>
               </Field>
             </div>
-            <div className="md:col-span-4">
+            <div className="flex items-center gap-2">
               <Button
                 variant="secondary"
                 size="sm"
@@ -6443,22 +6418,27 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   )
                 }
               >
-                {loadingSheetTabs ? 'Đang tải danh sách Tab…' : 'Làm mới danh sách Tab'}
+                {loadingSheetTabs ? 'Đang tải…' : 'Làm mới Tab'}
               </Button>
+              {currentGoogleSheetUrl && (
+                <a
+                  href={currentGoogleSheetUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface border border-line text-ink font-semibold hover:bg-sunken shrink-0 text-xs"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-positive" />
+                  <span>Mở Sheet</span>
+                  <ExternalLink className="w-3 h-3 text-ink-3" />
+                </a>
+              )}
             </div>
           </div>
 
-          {/* MỤC 1: THU GỌN CÁC THÁNG CŨ THEO CỘT THÁNG (CỘT B) TRÊN FILE GOOGLE SHEET */}
-          <div className="border border-line rounded-lg p-3.5 space-y-2.5">
+          {/* MỤC 1: THU GỌN THÁNG CŨ */}
+          <div className="border border-line rounded-lg p-3 space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <div className="font-semibold text-ink">
-                  1. Thu gọn các Tháng cũ theo Cột Tháng (Cột B) trên File Google Sheet
-                </div>
-                <div className="text-2xs text-ink-3">
-                  Trên Google Sheet, các tháng nằm chung trong bảng và phân biệt ở <strong>Cột B (Tháng)</strong>. Chọn các tháng cũ bên dưới để <strong>thu gọn dòng (Collapse Rows)</strong> trên Google Sheet, chỉ mở rộng tháng đang làm việc ({activeMonth}).
-                </div>
-              </div>
+              <span className="font-semibold text-ink">1. Thu gọn tháng cũ</span>
               <div className="flex flex-wrap items-center gap-1.5">
                 <Button
                   size="sm"
@@ -6466,7 +6446,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   disabled={sheetTemplateBusy}
                   onClick={handleSelectOldMonthsToCollapseDraft}
                 >
-                  Chọn thu gọn tháng cũ (&lt; {activeMonth})
+                  Chọn tháng cũ
                 </Button>
                 <Button
                   size="sm"
@@ -6476,11 +6456,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                     setSheetCollapsedMonthsDraft([]);
                     void runSheetTemplatePatch(
                       { expandAllMonths: true },
-                      'Đã mở rộng lại toàn bộ các dòng của mọi tháng ở Cột Tháng (Cột B) trên Google Sheet.'
+                      'Đã mở rộng toàn bộ các tháng trên Google Sheet.'
                     );
                   }}
                 >
-                  Mở rộng tất cả tháng
+                  Hiện tất cả
                 </Button>
                 <Button
                   size="sm"
@@ -6492,17 +6472,17 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         collapsedMonths: sheetCollapsedMonthsDraft,
                       },
                       sheetCollapsedMonthsDraft.length > 0
-                        ? `Đã thu gọn các dòng thuộc tháng cũ (${sheetCollapsedMonthsDraft.join(', ')}) theo Cột Tháng (Cột B) trên Google Sheet.`
-                        : 'Đã mở rộng toàn bộ các tháng theo Cột Tháng (Cột B) trên Google Sheet.'
+                        ? `Đã thu gọn các tháng cũ (${sheetCollapsedMonthsDraft.join(', ')}) trên Sheet.`
+                        : 'Đã mở rộng toàn bộ các tháng trên Google Sheet.'
                     )
                   }
                 >
-                  {sheetTemplateBusy ? 'Đang áp dụng…' : 'Áp dụng thu gọn Cột Tháng lên Sheet'}
+                  {sheetTemplateBusy ? 'Đang lưu…' : 'Áp dụng'}
                 </Button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 pt-1">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-0.5">
               {Array.from(
                 new Set([
                   ...MONTH_OPTIONS,
@@ -6516,32 +6496,24 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   const appCount =
                     (collection.sheets[makeSheetKey(m, activeStoreName)] || []).length;
                   const sheetStat = sheetMonthColumnStats.find((s) => s.month === m);
-                  const rowCountLabel =
-                    sheetStat !== undefined
-                      ? `${sheetStat.rowCount} dòng trên Sheet`
-                      : `${appCount} dòng trên App`;
+                  const countDisplay = sheetStat !== undefined ? `${sheetStat.rowCount} dòng` : `${appCount} dòng`;
 
                   return (
                     <label
                       key={m}
-                      className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md border cursor-pointer select-none transition-colors ${
+                      className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border cursor-pointer select-none transition-colors ${
                         isCollapsed
-                          ? 'bg-sunken border-line text-ink-2'
+                          ? 'bg-sunken border-line text-ink-3'
                           : 'bg-surface border-line-strong text-ink font-semibold'
                       }`}
                     >
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <span className="font-mono">
-                            {isCollapsed ? '[+]' : '[-]'} Cột B: {m}
-                          </span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-mono text-xs">{m}</span>
                           {isCurrentMonth && <Status tone="positive">Hiện tại</Status>}
                         </div>
                         <div className="text-2xs text-ink-3">
-                          {rowCountLabel} ·{' '}
-                          <strong className={isCollapsed ? 'text-warning' : 'text-positive'}>
-                            {isCollapsed ? 'Thu gọn dòng' : 'Mở rộng dòng'}
-                          </strong>
+                          {countDisplay} · {isCollapsed ? 'Đã thu gọn' : 'Đang mở'}
                         </div>
                       </div>
                       <input
@@ -6549,7 +6521,6 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         checked={isCollapsed}
                         onChange={() => handleToggleCollapseMonthDraft(m)}
                         className="rounded border-line shrink-0"
-                        title="Tích chọn để thu gọn các dòng có Cột B (Tháng) là tháng này"
                       />
                     </label>
                   );
@@ -6557,20 +6528,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             </div>
           </div>
 
-          {/* MỤC 2: ẨN / HIỆN CÁC NHÓM CỘT TRÊN FILE GOOGLE SHEET (VÌ DÙNG CHUNG 1 TEMPLATE) */}
-          <div className="border border-line rounded-lg p-3.5 space-y-2.5">
+          {/* MỤC 2: CHẾ ĐỘ HIỂN THỊ CỘT */}
+          <div className="border border-line rounded-lg p-3 space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <div className="font-semibold text-ink">
-                  2. Ẩn / Hiện các Cột trên File Google Sheet (Template chung 42 cột)
-                </div>
-                <div className="text-2xs text-ink-3">
-                  Vì dùng chung 1 Template cho cả Listing, Đi Air và Nghiệm thu, bạn có thể chọn chế độ để ẩn các cột chưa dùng tới hoặc cột nội bộ (Zalo, STK, CCCD, RowID) ngay trên file Google Sheet.
-                </div>
-              </div>
+              <span className="font-semibold text-ink">2. Chế độ hiển thị cột</span>
               <Button
                 size="sm"
-                variant="secondary"
+                variant="primary"
                 disabled={sheetTemplateBusy}
                 onClick={() =>
                   void runSheetTemplatePatch(
@@ -6581,16 +6545,16 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   )
                 }
               >
-                {sheetTemplateBusy ? 'Đang áp dụng…' : 'Áp dụng ẩn/hiện Cột lên Sheet'}
+                {sheetTemplateBusy ? 'Đang lưu…' : 'Áp dụng'}
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <label
-                className={`p-2.5 rounded-md border cursor-pointer flex items-start gap-2 ${
+                className={`p-2.5 rounded-md border cursor-pointer flex items-center gap-2.5 select-none transition-colors ${
                   sheetColumnPresetMode === 'BRAND_REVIEW'
-                    ? 'border-ink bg-accent-soft/20'
-                    : 'border-line bg-surface'
+                    ? 'border-ink bg-sunken font-semibold text-ink'
+                    : 'border-line bg-surface text-ink-2 hover:bg-sunken/50'
                 }`}
               >
                 <input
@@ -6598,23 +6562,15 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   name="sheetColPreset"
                   checked={sheetColumnPresetMode === 'BRAND_REVIEW'}
                   onChange={() => setSheetColumnPresetMode('BRAND_REVIEW')}
-                  className="mt-0.5"
                 />
-                <div>
-                  <div className="font-semibold text-ink">
-                    1. Gửi Brand duyệt Listing
-                  </div>
-                  <div className="text-2xs text-ink-3">
-                    Hiện các cột KOC, Chỉ số kênh, Sản phẩm, Giá, Brand chọn; tự động <strong>ẩn</strong> cột Liên hệ/STK/CCCD, cột Nghiệm thu và cột RowID.
-                  </div>
-                </div>
+                <span>Trình Brand duyệt (15 cột)</span>
               </label>
 
               <label
-                className={`p-2.5 rounded-md border cursor-pointer flex items-start gap-2 ${
+                className={`p-2.5 rounded-md border cursor-pointer flex items-center gap-2.5 select-none transition-colors ${
                   sheetColumnPresetMode === 'AIR_ACCEPTANCE'
-                    ? 'border-ink bg-accent-soft/20'
-                    : 'border-line bg-surface'
+                    ? 'border-ink bg-sunken font-semibold text-ink'
+                    : 'border-line bg-surface text-ink-2 hover:bg-sunken/50'
                 }`}
               >
                 <input
@@ -6622,23 +6578,15 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   name="sheetColPreset"
                   checked={sheetColumnPresetMode === 'AIR_ACCEPTANCE'}
                   onChange={() => setSheetColumnPresetMode('AIR_ACCEPTANCE')}
-                  className="mt-0.5"
                 />
-                <div>
-                  <div className="font-semibold text-ink">
-                    2. Theo dõi Đi Air &amp; Nghiệm thu
-                  </div>
-                  <div className="text-2xs text-ink-3">
-                    Mở hiển thị thêm các cột Link Air, Ngày Air thực tế, Views/GMV nghiệm thu 30 ngày; vẫn <strong>ẩn</strong> cột Liên hệ/STK/CCCD và RowID.
-                  </div>
-                </div>
+                <span>Đi Air &amp; Nghiệm thu</span>
               </label>
 
               <label
-                className={`p-2.5 rounded-md border cursor-pointer flex items-start gap-2 ${
+                className={`p-2.5 rounded-md border cursor-pointer flex items-center gap-2.5 select-none transition-colors ${
                   sheetColumnPresetMode === 'FULL_TEMPLATE'
-                    ? 'border-ink bg-accent-soft/20'
-                    : 'border-line bg-surface'
+                    ? 'border-ink bg-sunken font-semibold text-ink'
+                    : 'border-line bg-surface text-ink-2 hover:bg-sunken/50'
                 }`}
               >
                 <input
@@ -6646,31 +6594,16 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   name="sheetColPreset"
                   checked={sheetColumnPresetMode === 'FULL_TEMPLATE'}
                   onChange={() => setSheetColumnPresetMode('FULL_TEMPLATE')}
-                  className="mt-0.5"
                 />
-                <div>
-                  <div className="font-semibold text-ink">
-                    3. Mở toàn bộ cột Template
-                  </div>
-                  <div className="text-2xs text-ink-3">
-                    Hiện toàn bộ 42 cột dữ liệu trên file Google Sheet (chỉ ẩn gọn cột kỹ thuật Mã dòng RowID).
-                  </div>
-                </div>
+                <span>Toàn bộ 57 cột</span>
               </label>
             </div>
           </div>
 
-          {/* MỤC 3: NÚT SORT THEO SẢN PHẨM / NHÂN SỰ & GẮN BỘ LỌC TRÊN FILE GOOGLE SHEET */}
-          <div className="border border-line rounded-lg p-3.5 space-y-2.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <div className="font-semibold text-ink">
-                  3. Sắp xếp (Sort) theo Sản phẩm / Nhân sự &amp; Gắn Nút Lọc trên File Google Sheet
-                </div>
-                <div className="text-2xs text-ink-3">
-                  Bấm để sắp xếp trực tiếp các dòng trên file Google Sheet hoặc cài sẵn nút phễu lọc + 4 Chế độ xem nhanh (Filter Views) vào menu <em>Dữ liệu → Chế độ xem bộ lọc</em> của Google Sheet.
-                </div>
-              </div>
+          {/* MỤC 3: SẮP XẾP VÀ BỘ LỌC */}
+          <div className="border border-line rounded-lg p-3 space-y-2.5">
+            <span className="font-semibold text-ink">3. Sắp xếp &amp; Bộ lọc trên Sheet</span>
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
                 variant="secondary"
@@ -6678,69 +6611,67 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 onClick={() =>
                   void runSheetTemplatePatch(
                     { installFilterViews: true },
-                    'Đã bật nút Lọc ở dòng tiêu đề và tạo sẵn 4 Chế độ xem (Filter Views: Theo Sản phẩm, Theo Nhân sự, Theo Đợt, Brand chọn Yes) trên Google Sheet!'
+                    'Đã cài đặt Filter Views trên Google Sheet.'
                   )
                 }
               >
-                Gắn Nút Lọc &amp; 4 Filter Views vào Google Sheet
+                Tạo Filter Views
               </Button>
-            </div>
 
-            <div className="flex flex-wrap items-center gap-2 pt-1">
               <Button
                 size="sm"
-                variant="secondary"
+                variant="ghost"
                 disabled={sheetTemplateBusy}
                 onClick={() =>
                   void runSheetTemplatePatch(
                     { sortBy: 'PRODUCT', installFilterViews: true },
-                    'Đã sắp xếp file Google Sheet theo Sản phẩm (A → Z)!'
+                    'Đã sắp xếp theo Sản phẩm (A → Z).'
                   )
                 }
               >
-                Sort Google Sheet theo Sản phẩm (A → Z)
+                Theo Sản phẩm
               </Button>
 
               <Button
                 size="sm"
-                variant="secondary"
+                variant="ghost"
                 disabled={sheetTemplateBusy}
                 onClick={() =>
                   void runSheetTemplatePatch(
                     { sortBy: 'STAFF', installFilterViews: true },
-                    'Đã sắp xếp file Google Sheet theo Nhân sự điền (A → Z)!'
+                    'Đã sắp xếp theo Nhân sự.'
                   )
                 }
               >
-                Sort Google Sheet theo Nhân sự điền (A → Z)
+                Theo Nhân sự
               </Button>
 
               <Button
                 size="sm"
-                variant="secondary"
+                variant="ghost"
                 disabled={sheetTemplateBusy}
                 onClick={() =>
                   void runSheetTemplatePatch(
                     { sortBy: 'BATCH', installFilterViews: true },
-                    'Đã sắp xếp file Google Sheet theo Đợt Listing!'
+                    'Đã sắp xếp theo Đợt Listing.'
                   )
                 }
               >
-                Sort Google Sheet theo Đợt Listing
+                Theo Đợt
               </Button>
 
               <Button
                 size="sm"
-                variant="secondary"
+                variant="ghost"
                 disabled={sheetTemplateBusy}
                 onClick={() =>
                   void runSheetTemplatePatch(
                     { sortBy: 'BRAND_DECISION', installFilterViews: true },
-                    'Đã gom các dòng KOC Brand chọn (Yes) lên đầu file Google Sheet!'
+                    'Đã gom KOC Brand chọn (Yes) lên đầu.'
                   )
                 }
               >
-                Gom KOC Brand chọn (Yes) lên đầu Sheet
+                Đưa 'Yes' lên đầu
               </Button>
             </div>
           </div>
