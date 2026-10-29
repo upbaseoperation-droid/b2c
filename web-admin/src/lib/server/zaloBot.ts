@@ -4328,7 +4328,32 @@ export async function processZaloWebhookEvent(
       ''
   ).trim();
 
-  const rawText = String(message?.text || body?.text || '').trim();
+  // Thu thập toàn bộ nội dung văn bản và URL từ message, attachments, link, href, preview
+  const textCandidates: string[] = [];
+  if (message?.text) textCandidates.push(String(message.text));
+  if (body?.text && body.text !== message?.text) textCandidates.push(String(body.text));
+  if (message?.link) textCandidates.push(String(message.link));
+  if (message?.url) textCandidates.push(String(message.url));
+  if (message?.href) textCandidates.push(String(message.href));
+  if (body?.link) textCandidates.push(String(body.link));
+  if (body?.url) textCandidates.push(String(body.url));
+  if (message?.caption) textCandidates.push(String(message.caption));
+  if (body?.caption) textCandidates.push(String(body.caption));
+
+  const attachments = Array.isArray(message?.attachments)
+    ? message.attachments
+    : Array.isArray(body?.attachments)
+      ? body.attachments
+      : [];
+  for (const att of attachments) {
+    if (att?.payload?.url) textCandidates.push(String(att.payload.url));
+    if (att?.url) textCandidates.push(String(att.url));
+    if (att?.href) textCandidates.push(String(att.href));
+    if (att?.payload?.title) textCandidates.push(String(att.payload.title));
+    if (att?.payload?.description) textCandidates.push(String(att.payload.description));
+  }
+
+  const rawText = textCandidates.join(' ').trim();
   const senderId = String(
     message?.from?.id ||
       body?.result?.message?.from?.id ||
@@ -4350,8 +4375,11 @@ export async function processZaloWebhookEvent(
   const shouldSend = !options?.skipSendToZalo;
   let discoveredSender: ZaloDiscoveredSender | undefined;
 
-  // Bỏ các mention (@Bot...) ở đầu câu để lấy câu lệnh chuẩn
-  const cleanText = rawText.replace(/@[^\s]+/g, '').trim();
+  // Bỏ các mention (@Bot, @Bot tttttttupbase, tttttttupbase...) ở đầu câu để lấy câu lệnh chuẩn
+  const cleanText = rawText
+    .replace(/@(?:Bot\s+)?([\w\d_-]+)/gi, '')
+    .replace(/\b(?:Bot\s+)?tttttttupbase\b/gi, '')
+    .trim();
   const lowerClean = cleanText.toLowerCase();
 
   await hydrateZaloBotStateFromDb();
@@ -6014,7 +6042,19 @@ export async function processZaloWebhookEvent(
     return { handled: true, reply: statusMsg, extractedChatId: chatId };
   }
 
-  // 14. LỆNH TRỢ GIÚP /start, /help HOẶC CHÀO HỎI
+  // 14. LỆNH TRỢ GIÚP /start, /help, /menu HOẶC CHÀO HỎI TƯỜNG MINH
+  const isExplicitHelp =
+    /^\/?(?:help|start|menu|trogiup|trợ\s*giúp|hdsd|huongdan|hướng\s*dẫn)(?:\s+|$)/i.test(lowerClean) ||
+    /^(?:bot\s*ơi|alo\s*bot|hi\s*bot|hello\s*bot)\b/i.test(lowerClean) ||
+    lowerClean === 'bot' ||
+    lowerClean === '@bot' ||
+    lowerClean === 'tttttttupbase';
+
+  if (!isExplicitHelp) {
+    // Không phải lệnh trợ giúp tường minh và không chứa link TikTok -> Bỏ qua không trả lời để tránh làm phiền nhóm
+    return { handled: false, extractedChatId: chatId };
+  }
+
   const isInternalOrBod = effectiveRole === 'INTERNAL_OPS' || effectiveRole === 'BOD_EXECUTIVE';
   const isBrandPartner = effectiveRole === 'BRAND_PARTNER';
   const helpMsg = [
