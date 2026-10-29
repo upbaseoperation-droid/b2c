@@ -911,6 +911,30 @@ const DEFAULT_VN_CART_BRIDGE_STATE: VnCartBridgeState = {
       ],
       updatedAt: '2026-10-28T18:10:00.000Z',
     },
+    '7701192255171775762': {
+      videoId: '7701192255171775762',
+      videoUrl: 'https://www.tiktok.com/@xbarbershoptrauquy/video/7701192255171775762',
+      cartAnchorTitle:
+        'Miếng Tẩy Cặn Canxi Kính Đa Năng YUJIAO – Chà Kính Nhà Tắm, Gương, Gạch Men, Tẩy Vết Nước & Cặn Bẩn Thần Kỳ',
+      cartAnchorUrl: 'https://shop.tiktok.com/vn/pdp/1737446289758061936?source=anchor',
+      cartProductId: '1737446289758061936',
+      cartSellerId: '7494481510722143600',
+      cartProducts: [
+        {
+          productId: '1737446289758061936',
+          sellerId: '7494481510722143600',
+          title:
+            'Miếng Tẩy Cặn Canxi Kính Đa Năng YUJIAO – Chà Kính Nhà Tắm, Gương, Gạch Men, Tẩy Vết Nước & Cặn Bẩn Thần Kỳ',
+          anchorKeyword: 'Xem sản phẩm ở đây',
+          productUrl: 'https://shop.tiktok.com/vn/pdp/1737446289758061936?source=anchor',
+          coverUrl:
+            'https://p16-oec-sg.ibyteimg.com/tos-alisg-i-aphluv4xwc-sg/aee8d0a7c1814fbfa10c03eba3fd1a01~tplv-aphluv4xwc-resize-jpeg:800:800.jpeg?dr=15584&t=555f072d&ps=933b5bde&shp=615b9c44&shcp=57d7afb6&idc=my2&from=1633393732',
+          categoryName: 'Miếng bọt biển & miếng cọ rửa',
+          source: 'TikTok Shop Anchor (VN Bridge)',
+        },
+      ],
+      updatedAt: '2026-10-29T00:55:00.000Z',
+    },
   },
   pending: {},
 };
@@ -1001,12 +1025,27 @@ function applyVnBridgeItemToInspected(
   if (!item || !Array.isArray(item.cartProducts) || item.cartProducts.length === 0) {
     return false;
   }
+  const validProducts = item.cartProducts.filter(
+    (p) => p && !p.productUrl?.includes('tiktok.com/search') && p.productId !== inspected.videoId
+  );
+  if (validProducts.length === 0) {
+    return false;
+  }
   inspected.hasCartAnchor = true;
-  inspected.cartProducts = item.cartProducts;
-  inspected.cartAnchorTitle = item.cartAnchorTitle || item.cartProducts[0]?.title || inspected.cartAnchorTitle;
-  inspected.cartAnchorUrl = item.cartAnchorUrl || item.cartProducts[0]?.productUrl || inspected.cartAnchorUrl;
-  inspected.cartProductId = item.cartProductId || item.cartProducts[0]?.productId || inspected.cartProductId;
-  inspected.cartSellerId = item.cartSellerId || item.cartProducts[0]?.sellerId || inspected.cartSellerId;
+  inspected.cartProducts = validProducts;
+  inspected.cartAnchorTitle =
+    (!item.cartAnchorTitle?.includes('[Quảng cáo TikTok Shop Ads]') ? item.cartAnchorTitle : undefined) ||
+    validProducts[0]?.title ||
+    inspected.cartAnchorTitle;
+  inspected.cartAnchorUrl =
+    (!item.cartAnchorUrl?.includes('tiktok.com/search') ? item.cartAnchorUrl : undefined) ||
+    validProducts[0]?.productUrl ||
+    inspected.cartAnchorUrl;
+  inspected.cartProductId =
+    (item.cartProductId && item.cartProductId !== inspected.videoId ? item.cartProductId : undefined) ||
+    validProducts[0]?.productId ||
+    inspected.cartProductId;
+  inspected.cartSellerId = item.cartSellerId || validProducts[0]?.sellerId || inspected.cartSellerId;
   inspected.cartDebug = `${inspected.cartDebug || ''}|${tag}`;
   injectExtensionCapturedVideoToCache({
     videoId: inspected.videoId,

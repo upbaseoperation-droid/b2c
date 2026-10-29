@@ -873,19 +873,64 @@ export function detectProductMentionMoments(params: {
     }
   }
 
-  // Tự động trích xuất cụm danh từ đầu (2 từ đầu / 3 từ đầu) của tên sản phẩm giỏ hàng (VD: "Ốp lưng", "Đèn Pin", "Kem dưỡng")
+  // Tự động trích xuất cụm danh từ (2 từ / 3 từ liên tiếp) của tên sản phẩm giỏ hàng (VD: "Ốp lưng", "Đèn Pin", "Cặn Canxi", "Tẩy Cặn Canxi")
   const primaryTitleSource = (cartAnchorTitle || productName || cartProducts[0]?.title || '').trim();
   if (primaryTitleSource) {
     const cleanHead = primaryTitleSource
       .replace(/^\[[^\]]*\]\s*/, '')
       .replace(/^\([^)]*\)\s*/, '')
+      .split(/\s*[–—\-|•]\s*/)[0]
       .trim();
-    const headWords = cleanHead.split(/\s+/).filter(Boolean);
-    if (headWords.length >= 2) {
-      const twoWordHead = `${headWords[0]} ${headWords[1]}`;
-      const foldedTwo = foldForMatch(twoWordHead);
-      if (foldedTwo.length >= 5 && !GENERIC_TITLE_STOPWORDS.has(foldedTwo)) {
-        addCandidate(twoWordHead, 2);
+    const headWords = cleanHead
+      .split(/[\s,.;:/()[\]+&]+/)
+      .map((w) => w.trim())
+      .filter(Boolean);
+    for (let i = 0; i < Math.min(headWords.length, 8); i++) {
+      if (i + 2 < headWords.length) {
+        const threeWord = `${headWords[i]} ${headWords[i + 1]} ${headWords[i + 2]}`;
+        const f3 = foldForMatch(threeWord);
+        const w3 = f3.split(/\s+/);
+        if (f3.length >= 8 && w3.some((w) => !GENERIC_TITLE_STOPWORDS.has(w))) {
+          addCandidate(threeWord, 2);
+        }
+      }
+      if (i + 1 < headWords.length) {
+        const twoWord = `${headWords[i]} ${headWords[i + 1]}`;
+        const f2 = foldForMatch(twoWord);
+        const w2 = f2.split(/\s+/);
+        if (
+          f2.length >= 6 &&
+          !GENERIC_TITLE_STOPWORDS.has(f2) &&
+          w2.some((w) => !GENERIC_TITLE_STOPWORDS.has(w))
+        ) {
+          addCandidate(twoWord, 2);
+        }
+      }
+    }
+  }
+
+  // Khớp cụm 2-3 từ trong phụ đề nằm trong hashtag viết liền (VD: #taycancanxi -> "cặn canxi", "tẩy cặn canxi")
+  const foldedTags = hashtags
+    .map((h) => foldForMatch(h.replace(/^#+/, '')).replace(/\s+/g, ''))
+    .filter((t) => t.length >= 6);
+  if (foldedTags.length > 0) {
+    for (const seg of segments) {
+      const words = seg.text.split(/\s+/).filter(Boolean);
+      for (let i = 0; i < words.length - 1; i++) {
+        const phrase2 = `${words[i]} ${words[i + 1]}`;
+        const f2 = foldForMatch(phrase2);
+        const sl2 = f2.replace(/\s+/g, '');
+        if (sl2.length >= 7 && foldedTags.some((tag) => tag.includes(sl2))) {
+          addCandidate(phrase2, 2);
+        }
+        if (i + 2 < words.length) {
+          const phrase3 = `${words[i]} ${words[i + 1]} ${words[i + 2]}`;
+          const f3 = foldForMatch(phrase3);
+          const sl3 = f3.replace(/\s+/g, '');
+          if (sl3.length >= 9 && foldedTags.some((tag) => tag.includes(sl3))) {
+            addCandidate(phrase3, 2);
+          }
+        }
       }
     }
   }

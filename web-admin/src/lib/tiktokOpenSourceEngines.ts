@@ -855,38 +855,6 @@ export function extractTikTokShopAnchorInfo(itemStruct: Record<string, unknown>)
     }
   }
 
-  // Dự phòng cho Video Quảng Cáo Thương Mại TikTok Ads (isAd: true + ec_global_verdict: 1) khi TikTok gắn thẻ mua hàng qua tầng Ads
-  if (cartProducts.length === 0 && isCommercialAdVideo) {
-    const suggestedList = Array.isArray(itemStruct.suggestedWords)
-      ? (itemStruct.suggestedWords as unknown[])
-          .map((w) => String(w || '').trim())
-          .filter(Boolean)
-      : [];
-    const primarySuggested = suggestedList[0] || '';
-    const formattedSuggested = primarySuggested
-      ? primarySuggested
-          .split(/\s+/)
-          .map((w, i) => (i === 0 || w.length >= 4 ? w.charAt(0).toUpperCase() + w.slice(1) : w))
-          .join(' ')
-      : '';
-    const rawDesc = typeof itemStruct.desc === 'string' ? itemStruct.desc.trim() : '';
-    const adTitle = formattedSuggested
-      ? `${formattedSuggested} [Quảng cáo TikTok Shop Ads]`
-      : rawDesc
-      ? `${rawDesc.slice(0, 56)} [Quảng cáo TikTok Shop Ads]`
-      : 'Sản phẩm Quảng cáo TikTok Shop (TikTok Ads)';
-    const searchKeyword = primarySuggested || rawDesc.slice(0, 40) || 'TikTok Shop';
-    const adSearchUrl = `https://www.tiktok.com/search?q=${encodeURIComponent(searchKeyword)}`;
-    cartAnchorTitle = adTitle;
-    pushProduct({
-      productId: String(itemStruct.id || ''),
-      title: adTitle,
-      anchorKeyword: primarySuggested || undefined,
-      productUrl: adSearchUrl,
-      source: 'TikTok Shop Ads',
-    });
-  }
-
   const primary = cartProducts[0];
 
   const rawAnchorTypes = Array.isArray(itemStruct.AnchorTypes)
@@ -1702,9 +1670,10 @@ export async function inspectLiveTikTokVideoPage(
   const now = Date.now();
   const cached = store.videoDetailCache.get(normalizedKey);
   const isStaleCartCache =
-    cached?.data?.hasCartAnchor &&
-    (!cached.data.cartProducts || cached.data.cartProducts.length === 0) &&
-    !cached.data.cartAnchorUrl;
+    (cached?.data?.hasCartAnchor &&
+      (!cached.data.cartProducts || cached.data.cartProducts.length === 0) &&
+      !cached.data.cartAnchorUrl) ||
+    Boolean(cached?.data?.cartAnchorUrl?.includes('tiktok.com/search'));
   if (cached && cached.expiresAt > now && !isStaleCartCache) {
     return cached.data;
   }

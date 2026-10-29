@@ -1428,7 +1428,13 @@ async function storeCapturedFrameBuffer(frameId: string, buffer: Buffer): Promis
           createdAt: now,
         };
         const entries = Object.entries(next)
-          .filter(([, v]) => v && typeof v.base64 === 'string' && now - (v.createdAt || 0) < 30 * 60 * 1000)
+          .filter(
+            ([k, v]) =>
+              k.startsWith('FRMV2-') &&
+              v &&
+              typeof v.base64 === 'string' &&
+              now - (v.createdAt || 0) < 30 * 60 * 1000
+          )
           .sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0))
           .slice(0, 10);
         return Object.fromEntries(entries);
@@ -1617,6 +1623,40 @@ function formatTikTokCompactCount(val?: number | string | null, fallback = '0'):
   return String(Math.round(n));
 }
 
+function cleanOverlayText(val?: string | null): string {
+  if (!val) return '';
+  let cur = String(val).trim();
+  for (let i = 0; i < 3 && /%[0-9A-Fa-f]{2}/.test(cur); i++) {
+    try {
+      const next = decodeURIComponent(cur.replace(/\+/g, ' '));
+      if (next === cur) break;
+      cur = next;
+    } catch {
+      break;
+    }
+  }
+  return cur
+    .normalize('NFKC')
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function cleanUrlParam(val?: string | null): string | null {
+  if (!val) return null;
+  let cur = String(val).trim();
+  for (let i = 0; i < 3 && /^https?%[0-9A-Fa-f]{2}/i.test(cur); i++) {
+    try {
+      const next = decodeURIComponent(cur);
+      if (next === cur) break;
+      cur = next;
+    } catch {
+      break;
+    }
+  }
+  return cur || null;
+}
+
 async function stampTikTokAcceptanceOverlay(
   rawFrameBuf: Buffer | null,
   captureSec: number,
@@ -1655,24 +1695,26 @@ async function stampTikTokAcceptanceOverlay(
       }
     }
 
-    const cleanHandle = String(meta.kocHandle || 'koc').replace(/^@+/, '');
+    const cleanHandle = cleanOverlayText(meta.kocHandle || 'koc').replace(/^@+/, '') || 'koc';
+    const cleanedName = cleanOverlayText(meta.kocName);
     const displayName =
-      meta.kocName && meta.kocName.trim() && meta.kocName !== cleanHandle
-        ? meta.kocName.trim()
+      cleanedName && cleanedName !== cleanHandle
+        ? cleanedName
         : cleanHandle;
-    const rawProdTitle = (meta.productTitle || '').trim();
+    const rawProdTitle = cleanOverlayText(meta.productTitle);
     const shortProdTitle =
       rawProdTitle.length > 44 ? `${rawProdTitle.slice(0, 42)}...` : rawProdTitle;
 
     // Ngày đăng dạng ngắn chuẩn TikTok (VD: 24-10)
+    const cleanedAiredAt = cleanOverlayText(meta.airedAt);
     let shortDateStr = '';
-    if (meta.airedAt && meta.airedAt !== 'Chưa xác định') {
-      const m = meta.airedAt.match(/^(\d{2})\/(\d{2})/);
-      shortDateStr = m ? `${m[1]}-${m[2]}` : meta.airedAt.split(' ')[0] || '';
+    if (cleanedAiredAt && cleanedAiredAt !== 'Chưa xác định') {
+      const m = cleanedAiredAt.match(/^(\d{2})\/(\d{2})/);
+      shortDateStr = m ? `${m[1]}-${m[2]}` : cleanedAiredAt.split(' ')[0] || '';
     }
 
-    const rawCaption = (meta.caption || '').trim();
-    const rawHashtags = (meta.hashtags || '').trim();
+    const rawCaption = cleanOverlayText(meta.caption);
+    const rawHashtags = cleanOverlayText(meta.hashtags);
     const combinedCaption =
       rawCaption && rawHashtags && !rawCaption.includes('#')
         ? `${rawCaption} ${rawHashtags}`
@@ -2362,8 +2404,9 @@ export async function captureTikTokProductFrameBuffer(params: {
     }
   }
 
-  let streamUrl = params.playableUrl || null;
-  let coverUrl = params.coverUrl || null;
+  const targetVideoUrl = cleanUrlParam(params.videoUrl) || params.videoUrl;
+  let streamUrl = cleanUrlParam(params.playableUrl) || null;
+  let coverUrl = cleanUrlParam(params.coverUrl) || null;
   let tikwmJpegCoverUrl: string | null = null;
   const isWebpCoverUrl = (u?: string | null) => Boolean(u && /\.webp(?:[?#]|$)/i.test(u));
   const mergedMeta: TikTokFrameOverlayMeta = { ...(params.overlayMeta || {}) };
@@ -2377,7 +2420,7 @@ export async function captureTikTokProductFrameBuffer(params: {
     !mergedMeta.avatarUrl
   ) {
     try {
-      const inspected = await inspectLiveTikTokVideoPage(params.videoUrl);
+      const inspected = await inspectLiveTikTokVideoPage(targetVideoUrl);
       if (inspected) {
         if (!streamUrl && inspected.playableUrl) streamUrl = inspected.playableUrl;
         if ((!coverUrl || isWebpCoverUrl(coverUrl)) && inspected.coverUrl && !isWebpCoverUrl(inspected.coverUrl)) {
@@ -2440,7 +2483,7 @@ export async function captureTikTokProductFrameBuffer(params: {
   if (!streamUrl || !coverUrl || isWebpCoverUrl(coverUrl)) {
     try {
       const tikwmRes = await fetch(
-        `https://www.tikwm.com/api/?url=${encodeURIComponent(params.videoUrl)}&hd=1`,
+        `https://www.tikwm.com/api/?url=${encodeURIComponent(targetVideoUrl)}&hd=1`,
         {
           headers: {
             'User-Agent': FRAME_CAPTURE_UA,
@@ -2494,8 +2537,8 @@ export async function captureTikTokProductFrameBuffer(params: {
 
   // 0. Kiểm tra nếu Cầu nối IP Việt Nam (vn-tiktok-cart-bridge) đã trích xuất sẵn khung hình ffmpeg tại mốc giây KOC cầm sản phẩm
   const vidFromUrl =
-    params.videoUrl.match(/\/video\/(\d{15,22})/)?.[1] ||
-    params.frameId?.match(/FRM-(\d{15,22})/)?.[1];
+    targetVideoUrl.match(/\/video\/(\d{15,22})/)?.[1] ||
+    params.frameId?.match(/FRM(?:V2)?-(\d{15,22})/)?.[1];
   if (vidFromUrl) {
     try {
       const bridgeState = await getVnCartBridgeState();
@@ -2582,10 +2625,10 @@ export async function captureTikTokProductFrameBuffer(params: {
   }
 
   // Nếu coverUrl ban đầu trả về WebP và chưa gọi TikWM lấy data.cover JPEG, gọi bổ sung để lấy đúng JPEG
-  if (!rawBuffer && !tikwmJpegCoverUrl && params.videoUrl) {
+  if (!rawBuffer && !tikwmJpegCoverUrl && targetVideoUrl) {
     try {
       const tikwmFallback = await fetch(
-        `https://www.tikwm.com/api/?url=${encodeURIComponent(params.videoUrl)}&hd=1`,
+        `https://www.tikwm.com/api/?url=${encodeURIComponent(targetVideoUrl)}&hd=1`,
         {
           headers: { 'User-Agent': FRAME_CAPTURE_UA, Accept: 'application/json' },
           signal: AbortSignal.timeout(4000),
@@ -2621,10 +2664,10 @@ export async function captureTikTokProductFrameBuffer(params: {
     }
   }
 
-  // Luôn kết xuất thành ảnh PNG 540x960 chuẩn giao diện TikTok Mobile qua next/og (kể cả khi rawBuffer = null)
+  // Luôn kết xuất thành ảnh PNG 540x960 chuẩn giao diện TikTok Mobile qua next/og (chỉ lưu cache khi có ảnh nền khung hình hợp lệ)
   const finalBuf = await stampTikTokAcceptanceOverlay(rawBuffer, params.captureSec, mergedMeta);
   if (finalBuf && finalBuf.length > 500) {
-    if (params.frameId) {
+    if (params.frameId && rawBuffer && rawBuffer.length > 400) {
       await storeCapturedFrameBuffer(params.frameId, finalBuf);
     }
     return {
@@ -2645,19 +2688,52 @@ export function buildPublicZaloFrameUrl(params: {
   overlayMeta?: TikTokFrameOverlayMeta;
   relativeOnly?: boolean;
 }): string {
+  if (!params.relativeOnly) {
+    // Mã hóa toàn bộ tham số vào chuỗi base64url (không chứa ký tự '%') để máy chủ Zalo sendPhoto không bao giờ mã hóa kép %25
+    const b64Payload = Buffer.from(
+      JSON.stringify({
+        v: params.videoUrl,
+        c: params.coverUrl || undefined,
+        s: params.captureSec,
+        m: params.overlayMeta
+          ? {
+              kocHandle: params.overlayMeta.kocHandle,
+              kocName: params.overlayMeta.kocName?.slice(0, 40),
+              caption: params.overlayMeta.caption?.slice(0, 95),
+              airedAt: params.overlayMeta.airedAt,
+              likes: params.overlayMeta.likes,
+              comments: params.overlayMeta.comments,
+              shares: params.overlayMeta.shares,
+              saves: params.overlayMeta.saves,
+              durationSeconds: params.overlayMeta.durationSeconds,
+              productTitle: params.overlayMeta.productTitle?.slice(0, 60),
+              productId: params.overlayMeta.productId,
+              hashtags: params.overlayMeta.hashtags?.slice(0, 70),
+            }
+          : undefined,
+      }),
+      'utf8'
+    ).toString('base64url');
+    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://b2c-theta.vercel.app').replace(
+      /\/+$/,
+      ''
+    );
+    return `${baseUrl}/api/integrations/zalo-bot/webhook?frame=1&frameId=${encodeURIComponent(params.frameId)}&b64=${b64Payload}&ext=.png`;
+  }
+
   const qs = new URLSearchParams({
     frame: '1',
     frameId: params.frameId,
     videoUrl: params.videoUrl,
     sec: String(params.captureSec),
   });
-  if (params.relativeOnly && params.coverUrl) {
+  if (params.coverUrl) {
     qs.set('coverUrl', params.coverUrl);
   }
   if (params.overlayMeta?.kocHandle) qs.set('handle', params.overlayMeta.kocHandle);
   if (params.overlayMeta?.kocName) qs.set('name', params.overlayMeta.kocName.slice(0, 36));
   if (params.overlayMeta?.caption) {
-    qs.set('cap', params.overlayMeta.caption.slice(0, params.relativeOnly ? 95 : 55));
+    qs.set('cap', params.overlayMeta.caption.slice(0, 95));
   }
   if (params.overlayMeta?.airedAt) qs.set('air', params.overlayMeta.airedAt);
   if (params.overlayMeta?.likes !== undefined && params.overlayMeta?.likes !== null) {
@@ -2679,26 +2755,16 @@ export function buildPublicZaloFrameUrl(params: {
     qs.set('title', params.overlayMeta.productTitle.slice(0, 50));
   }
   if (params.overlayMeta?.productId) qs.set('pid', params.overlayMeta.productId);
-  if (params.relativeOnly) {
-    if (params.overlayMeta?.timeLabel) qs.set('tl', params.overlayMeta.timeLabel);
-    if (params.overlayMeta?.views !== undefined && params.overlayMeta?.views !== null) {
-      qs.set('views', String(params.overlayMeta.views));
-    }
-    if (params.overlayMeta?.hashtags) qs.set('tags', params.overlayMeta.hashtags.slice(0, 70));
-    if (params.overlayMeta?.quote) qs.set('quote', params.overlayMeta.quote.slice(0, 85));
-    if (params.overlayMeta?.mentionSec !== undefined && params.overlayMeta?.mentionSec !== null) {
-      qs.set('msec', String(params.overlayMeta.mentionSec));
-    }
-  } else {
-    qs.set('ext', '.png');
+  if (params.overlayMeta?.timeLabel) qs.set('tl', params.overlayMeta.timeLabel);
+  if (params.overlayMeta?.views !== undefined && params.overlayMeta?.views !== null) {
+    qs.set('views', String(params.overlayMeta.views));
   }
-  const pathWithQuery = `/api/integrations/zalo-bot/webhook?${qs.toString()}`;
-  if (params.relativeOnly) return pathWithQuery;
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://b2c-theta.vercel.app').replace(
-    /\/+$/,
-    ''
-  );
-  return `${baseUrl}${pathWithQuery}`;
+  if (params.overlayMeta?.hashtags) qs.set('tags', params.overlayMeta.hashtags.slice(0, 70));
+  if (params.overlayMeta?.quote) qs.set('quote', params.overlayMeta.quote.slice(0, 85));
+  if (params.overlayMeta?.mentionSec !== undefined && params.overlayMeta?.mentionSec !== null) {
+    qs.set('msec', String(params.overlayMeta.mentionSec));
+  }
+  return `/api/integrations/zalo-bot/webhook?${qs.toString()}`;
 }
 
 /**
@@ -4718,7 +4784,7 @@ export async function processZaloWebhookEvent(
           ? '⚠️ CẦN RÀ SOÁT (REVIEW)'
           : '❌ KHÔNG ĐẠT (FAIL)';
 
-      const normalizedCartProducts =
+      const rawCartCandidates =
         checkResult.cartProducts && checkResult.cartProducts.length > 0
           ? checkResult.cartProducts.map((p) => ({
               productId: p.productId || '',
@@ -4742,6 +4808,9 @@ export async function processZaloWebhookEvent(
                 },
               ]
             : [];
+      const normalizedCartProducts = rawCartCandidates.filter(
+        (p) => !p.productUrl.includes('tiktok.com/search') && p.productId !== checkResult.contentId
+      );
 
       const primaryProd = normalizedCartProducts[0];
       const cartText = checkResult.hasProductLink
@@ -4779,7 +4848,7 @@ export async function processZaloWebhookEvent(
       const holdingQuote =
         checkResult.bestHoldingMomentQuote || checkResult.firstProductMentionQuote || null;
       const targetCanonicalVideoUrl = checkResult.canonicalUrl || videoUrl;
-      const frameId = `FRM-${checkResult.contentId || Date.now()}-${Math.round(captureSec * 10)}`;
+      const frameId = `FRMV2-${checkResult.contentId || Date.now()}-${Math.round(captureSec * 10)}`;
       const initialCoverUrl = checkResult.coverUrl || undefined;
 
       // Cập nhật trạng thái Deal nếu nhóm đã liên kết và kết quả PASS

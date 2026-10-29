@@ -157,7 +157,7 @@ export async function updateRecord<T>(key: string, fallback: T, expected: number
     catch (e) { if ((e as NodeJS.ErrnoException).code === 'EEXIST') throw new RecordError('Dữ liệu đang được lưu. Vui lòng thử lại.', 409); throw e; }
     try {
       const current = await readRecord(key, fallback);
-      if (current.revision !== expected) throw new RecordError('Dữ liệu đã thay đổi. Tải lại trước khi lưu.', 409);
+      if (current.revision !== expected) { pgRecordCache.delete(key); throw new RecordError('Dữ liệu đã thay đổi. Tải lại trước khi lưu.', 409); }
       const next = { revision: expected + 1, data: await transform(current.data) };
       const temporary = `${filePath}.${randomUUID()}.tmp`;
       await writeFile(temporary, JSON.stringify(next), 'utf8');
@@ -173,7 +173,7 @@ export async function updateRecord<T>(key: string, fallback: T, expected: number
   }
   const rows = await prisma.$queryRaw<Array<SharedRecord<T>>>`SELECT revision, data FROM "AppSharedRecord" WHERE key = ${key}`;
   const current = rows[0] || { revision: 0, data: fallback };
-  if (current.revision !== expected) throw new RecordError('Dữ liệu đã thay đổi. Tải lại trước khi lưu.', 409);
+  if (current.revision !== expected) { pgRecordCache.delete(key); throw new RecordError('Dữ liệu đã thay đổi. Tải lại trước khi lưu.', 409); }
   const nextData = await transform(current.data);
   const nextRevision = expected + 1;
   const serializedNext = JSON.stringify(nextData);
@@ -209,7 +209,7 @@ export async function upsertRecord<T>(
 ): Promise<SharedRecord<T>> {
   let lastErr: unknown;
   for (let attempt = 0; attempt < 4; attempt++) {
-    const current = await readRecord<T>(key, fallback);
+    const current = await readRecord<T>(key, fallback, { skipCache: attempt > 0 });
     try {
       return await updateRecord<T>(key, fallback, current.revision, transform);
     } catch (err) {

@@ -30,20 +30,37 @@ function extractCookies(res) {
     .filter(Boolean);
 }
 
-function solveSlardarWaf(cs, cStr) {
-  const b = JSON.parse(Buffer.from(cStr, 'base64').toString('utf8'));
-  const prefix = Buffer.from(b.v.a, 'base64');
-  const targetHex = Buffer.from(b.v.c, 'base64').toString('hex');
-  for (let i = 0; i <= 1_000_000; i++) {
-    const hash = crypto
-      .createHash('sha256')
-      .update(prefix)
-      .update(String(i))
-      .digest('hex');
-    if (hash === targetHex) {
-      b.d = Buffer.from(String(i)).toString('base64');
-      return `${cs}=${Buffer.from(JSON.stringify(b)).toString('base64')}`;
+function solveTikTokWafHtml(html) {
+  const wciMatch =
+    html.match(/<p id="wci" class="([^"]*)"/) || html.match(/id="cs"\s+value="([^"]+)"/);
+  const csMatch =
+    html.match(/<p id="cs" class="([^"]*)"/) || html.match(/id="c"\s+value="([^"]+)"/);
+  if (!wciMatch || !csMatch || !csMatch[1]) return null;
+
+  try {
+    const wci = wciMatch[1] || '_wafchallengeid';
+    const cs = csMatch[1];
+    const rci = html.match(/<p id="rci" class="([^"]*)"/)?.[1] || '';
+    const rs = html.match(/<p id="rs" class="([^"]*)"/)?.[1] || '';
+    const rsId = html.match(/<p id="rs_id" class="([^"]*)"/)?.[1] || '';
+
+    const c = JSON.parse(Buffer.from(cs, 'base64').toString('utf8'));
+    const prefix = Buffer.from(c.v.a, 'base64');
+    const expectHex = Buffer.from(c.v.c, 'base64').toString('hex');
+
+    for (let i = 0; i <= 1_000_000; i++) {
+      const hashHex = crypto.createHash('sha256').update(prefix).update(String(i)).digest('hex');
+      if (hashHex === expectHex) {
+        c.d = Buffer.from(String(i), 'utf8').toString('base64');
+        const jsv = Buffer.from(JSON.stringify(c), 'utf8').toString('base64');
+        const cookies = [`${wci}=${jsv}`];
+        if (rci && rs) cookies.push(`${rci}=${rs}`);
+        if (rsId) cookies.push(`waforigin_id=${rsId}`);
+        return cookies.join('; ');
+      }
     }
+  } catch {
+    return null;
   }
   return null;
 }
@@ -69,22 +86,32 @@ function parseCartProductsFromItemStruct(itemStruct) {
 
     for (const entry of entries) {
       let inner = {};
-      if (typeof entry?.extra === 'string') {
+      const rawEntryExtra = typeof entry?.extra === 'string' ? entry.extra : '';
+      if (rawEntryExtra) {
         try {
-          inner = JSON.parse(entry.extra);
+          inner = JSON.parse(rawEntryExtra);
         } catch {}
       } else if (entry?.extra && typeof entry.extra === 'object') {
         inner = entry.extra;
       }
+      const regexProductId =
+        (rawEntryExtra
+          ? rawEntryExtra.match(/"product_id"\s*:\s*"?(\d{15,22})"?/)?.[1] ||
+            rawEntryExtra.match(/"material_id"\s*:\s*"?(\d{15,22})"?/)?.[1]
+          : '') || '';
+      const regexSellerId =
+        (rawEntryExtra ? rawEntryExtra.match(/"seller_id"\s*:\s*"?(\d{15,22})"?/)?.[1] : '') ||
+        '';
       const productId = String(
-        inner?.product_id || entry?.product_id || entry?.id || ''
+        regexProductId || entry?.id || entry?.product_id || inner?.product_id || ''
       ).trim();
       if (!/^\d{15,22}$/.test(productId) || seenIds.has(productId)) continue;
       seenIds.add(productId);
       const title = String(
         inner?.title || entry?.title || entry?.keyword || rawKeyword || `Sản phẩm #${productId}`
       ).trim();
-      const sellerId = String(inner?.seller_id || inner?.kol_id || '').trim() || undefined;
+      const sellerId =
+        String(regexSellerId || inner?.seller_id || inner?.kol_id || '').trim() || undefined;
       const seoUrl = String(inner?.seo_url || entry?.seo_url || '').trim();
       const productUrl =
         seoUrl && /^https?:\/\//i.test(seoUrl)
@@ -116,29 +143,10 @@ function parseCartProductsFromItemStruct(itemStruct) {
     }
   }
 
-  // Dự phòng cho Video Quảng cáo Thương mại TikTok Ads (isAd: true + ec_global_verdict: 1)
-  if (
-    products.length === 0 &&
-    itemStruct?.isAd &&
-    (itemStruct?.penaltyContext?.ec_global_verdict === 1 || itemStruct?.music?.is_commerce_music)
-  ) {
-    const suggested = Array.isArray(itemStruct?.suggestedWords) ? itemStruct.suggestedWords : [];
-    const primaryKw = String(suggested[0] || '').trim();
-    const formattedKw = primaryKw
-      ? primaryKw.charAt(0).toUpperCase() + primaryKw.slice(1)
-      : String(itemStruct?.desc || 'Sản phẩm TikTok Shop Ads').slice(0, 56);
-    products.push({
-      productId: String(itemStruct?.id || ''),
-      title: `${formattedKw} [Quảng cáo TikTok Shop Ads]`,
-      productUrl: `https://www.tiktok.com/search?q=${encodeURIComponent(primaryKw || formattedKw)}`,
-      source: 'TikTok Shop Ads (VN Bridge)',
-    });
-  }
-
   return products;
 }
 
-async function extractFfmpegFrameBase64(videoUrl, sec = 4.2) {
+async function extractFfmpegFrameBase64(videoUrl, sec = 3.5) {
   try {
     const tikwmRes = await fetch(
       `https://www.tikwm.com/api/?url=${encodeURIComponent(videoUrl)}&hd=1`,
@@ -148,7 +156,10 @@ async function extractFfmpegFrameBase64(videoUrl, sec = 4.2) {
     const j = await tikwmRes.json();
     const playUrl = j?.data?.play || j?.data?.wmplay;
     if (!playUrl || !playUrl.startsWith('http')) return undefined;
-    const tmpFile = path.join(os.tmpdir(), `tt_bridge_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`);
+    const tmpFile = path.join(
+      os.tmpdir(),
+      `tt_bridge_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
+    );
     await execFileAsync(
       'ffmpeg',
       [
@@ -185,14 +196,20 @@ async function extractFfmpegFrameBase64(videoUrl, sec = 4.2) {
   return undefined;
 }
 
-export async function inspectTikTokCartFromVietnam(videoUrl, fallbackVideoId, captureSec = 4.2) {
+export async function inspectTikTokCartFromVietnam(
+  videoUrl,
+  fallbackVideoId,
+  captureSec = 3.5,
+  options = { includeFrame: true }
+) {
+  const baseVnCookie =
+    'store-country-code=vn; store-country-code-src=uid; tt-target-idc=alisg; tiktok_webapp_theme=light; ttwid=1%7C15aHll9t7AZRwvrCsSx2d3XrbTNJaMExICHWcNaR9pc%7C1793208695%7Cde66e96e64ad0a808b69318737111a0003e074067cb4c1a67a054344e7c0988c';
   let cookieHeader =
-    Date.now() < wafCookieExpireAt && wafCookieCache
-      ? wafCookieCache
-      : 'store-country-code=vn; store-country-code-src=uid; tt-target-idc=alisg';
+    Date.now() < wafCookieExpireAt && wafCookieCache ? wafCookieCache : baseVnCookie;
 
   for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await fetch(videoUrl, {
+    const targetUrl = videoUrl.includes('?') ? videoUrl : `${videoUrl}?lang=vi-VN`;
+    const res = await fetch(targetUrl, {
       headers: {
         'User-Agent': BROWSER_UA,
         'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
@@ -204,22 +221,12 @@ export async function inspectTikTokCartFromVietnam(videoUrl, fallbackVideoId, ca
     const html = await res.text();
     const cookies = extractCookies(res);
 
-    const csMatch = html.match(/id="cs"\s+value="([^"]+)"/);
-    const cMatch = html.match(/id="c"\s+value="([^"]+)"/);
-    if (csMatch && cMatch) {
-      const solved = solveSlardarWaf(csMatch[1], cMatch[1]);
-      if (solved) {
-        cookieHeader = [
-          ...cookies,
-          solved,
-          'store-country-code=vn',
-          'store-country-code-src=uid',
-          'tt-target-idc=alisg',
-        ].join('; ');
-        wafCookieCache = cookieHeader;
-        wafCookieExpireAt = Date.now() + 15 * 60 * 1000;
-        continue;
-      }
+    const solved = solveTikTokWafHtml(html);
+    if (solved) {
+      cookieHeader = [baseVnCookie, ...cookies, solved].filter(Boolean).join('; ');
+      wafCookieCache = cookieHeader;
+      wafCookieExpireAt = Date.now() + 15 * 60 * 1000;
+      continue;
     }
 
     const scriptMatch = html.match(
@@ -228,17 +235,22 @@ export async function inspectTikTokCartFromVietnam(videoUrl, fallbackVideoId, ca
     if (!scriptMatch) break;
 
     const json = JSON.parse(scriptMatch[1]);
+    const scope = json?.__DEFAULT_SCOPE__ || {};
     const itemStruct =
-      json?.__DEFAULT_SCOPE__?.['webapp.video-detail']?.itemInfo?.itemStruct;
+      (scope['webapp.video-detail'] || scope['webapp.reflow.video.detail'])?.itemInfo
+        ?.itemStruct;
     if (!itemStruct) break;
 
     const videoId = String(itemStruct.id || fallbackVideoId || '').trim();
     const cartProducts = parseCartProductsFromItemStruct(itemStruct);
     const first = cartProducts[0];
-    const frameJpegBase64 = await extractFfmpegFrameBase64(res.url || videoUrl, captureSec);
+    const resolvedUrl = res.url ? res.url.split('?')[0] : videoUrl;
+    const frameJpegBase64 = options?.includeFrame
+      ? await extractFfmpegFrameBase64(resolvedUrl, captureSec)
+      : undefined;
     return {
       videoId,
-      videoUrl: res.url || videoUrl,
+      videoUrl: resolvedUrl,
       cartProducts,
       cartAnchorTitle: first?.title,
       cartAnchorUrl: first?.productUrl,
@@ -249,6 +261,22 @@ export async function inspectTikTokCartFromVietnam(videoUrl, fallbackVideoId, ca
     };
   }
   return null;
+}
+
+async function pushResolvedItemsToWebhook(items) {
+  if (!Array.isArray(items) || items.length === 0) return;
+  await fetch(WEBHOOK_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-bot-api-secret-token': SECRET_TOKEN,
+    },
+    body: JSON.stringify({
+      vnBridgeResolve: true,
+      items,
+    }),
+    signal: AbortSignal.timeout(8000),
+  }).catch(() => {});
 }
 
 async function pollOnce() {
@@ -264,37 +292,38 @@ async function pollOnce() {
     const pendingList = Array.isArray(data?.pending) ? data.pending : [];
     if (pendingList.length === 0) return;
 
-    const resolvedItems = [];
     for (const item of pendingList) {
       if (!item?.videoUrl || !item?.videoId) continue;
       console.log(`[VN-Bridge] Inspecting pending TikTok video ${item.videoId}: ${item.videoUrl}`);
-      const inspected = await inspectTikTokCartFromVietnam(item.videoUrl, item.videoId).catch(
-        (err) => {
-          console.error(`[VN-Bridge] Error inspecting ${item.videoId}:`, err?.message || err);
-          return null;
-        }
-      );
-      if (inspected && (inspected.cartProducts.length > 0 || inspected.frameJpegBase64)) {
-        console.log(
-          `[VN-Bridge] Resolved ${inspected.cartProducts.length} product(s) & frame=${Boolean(inspected.frameJpegBase64)} for ${item.videoId}`
-        );
-        resolvedItems.push(inspected);
-      }
-    }
-
-    if (resolvedItems.length > 0) {
-      await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-bot-api-secret-token': SECRET_TOKEN,
-        },
-        body: JSON.stringify({
-          vnBridgeResolve: true,
-          items: resolvedItems,
-        }),
-        signal: AbortSignal.timeout(8000),
+      // Bước 1: Giải mã nhanh giỏ hàng (<500ms) và đẩy ngay lên Vercel để kịp thời gian chờ 4.5s
+      const fastInspected = await inspectTikTokCartFromVietnam(
+        item.videoUrl,
+        item.videoId,
+        3.5,
+        { includeFrame: false }
+      ).catch((err) => {
+        console.error(`[VN-Bridge] Error inspecting ${item.videoId}:`, err?.message || err);
+        return null;
       });
+
+      if (fastInspected && fastInspected.cartProducts.length > 0) {
+        console.log(
+          `[VN-Bridge] Fast-resolved ${fastInspected.cartProducts.length} product(s) for ${item.videoId}: ${fastInspected.cartAnchorTitle}`
+        );
+        await pushResolvedItemsToWebhook([fastInspected]);
+      }
+
+      // Bước 2: Cắt khung hình ffmpeg chất lượng cao và cập nhật bổ sung
+      const frameBase64 = await extractFfmpegFrameBase64(
+        fastInspected?.videoUrl || item.videoUrl,
+        3.5
+      ).catch(() => undefined);
+      if (frameBase64 && fastInspected) {
+        fastInspected.frameJpegBase64 = frameBase64;
+        fastInspected.updatedAt = new Date().toISOString();
+        await pushResolvedItemsToWebhook([fastInspected]);
+        console.log(`[VN-Bridge] Uploaded ffmpeg frame for ${item.videoId}`);
+      }
     }
   } catch {
     // Ignore transient network errors
@@ -312,26 +341,15 @@ async function bootstrap() {
   if (seed1) seeds.push(seed1);
 
   const seed2 = await inspectTikTokCartFromVietnam(
-    'https://www.tiktok.com/@user1877211117511/video/7699036513912376582',
-    '7699036513912376582',
-    4.2
+    'https://www.tiktok.com/@xbarbershoptrauquy/video/7701192255171775762',
+    '7701192255171775762',
+    3.7
   ).catch(() => null);
   if (seed2) seeds.push(seed2);
 
   if (seeds.length > 0) {
     console.log(`[VN-Bridge] Seeded ${seeds.length} videos with cart products + ffmpeg frames`);
-    await fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-bot-api-secret-token': SECRET_TOKEN,
-      },
-      body: JSON.stringify({
-        vnBridgeResolve: true,
-        items: seeds,
-      }),
-      signal: AbortSignal.timeout(8000),
-    }).catch(() => {});
+    await pushResolvedItemsToWebhook(seeds);
   }
 
   while (true) {
@@ -340,6 +358,6 @@ async function bootstrap() {
   }
 }
 
-if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
+if (process.argv[1] && import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
   bootstrap();
 }

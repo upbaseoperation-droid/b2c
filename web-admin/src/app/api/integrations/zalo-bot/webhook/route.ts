@@ -40,30 +40,60 @@ export async function GET(req: NextRequest) {
   const isFrameRequest = req.nextUrl.searchParams.get('frame') === '1';
   if (isFrameRequest) {
     const sp = req.nextUrl.searchParams;
-    const frameId = sp.get('frameId') || undefined;
-    const videoUrl = sp.get('videoUrl') || '';
-    const sec = Number(sp.get('sec') || 3.5);
-    const coverUrl = sp.get('coverUrl') || undefined;
+    const decodeParam = (raw: string | null): string | undefined => {
+      if (!raw) return undefined;
+      let cur = raw.trim();
+      for (let i = 0; i < 3 && /%[0-9A-Fa-f]{2}/.test(cur); i++) {
+        try {
+          const next = decodeURIComponent(cur);
+          if (next === cur) break;
+          cur = next;
+        } catch {
+          break;
+        }
+      }
+      return cur || undefined;
+    };
+
+    let b64Data: {
+      v?: string;
+      c?: string;
+      s?: number;
+      m?: Record<string, any>;
+    } | null = null;
+    const rawB64 = sp.get('b64');
+    if (rawB64) {
+      try {
+        b64Data = JSON.parse(Buffer.from(rawB64, 'base64url').toString('utf8'));
+      } catch {
+        b64Data = null;
+      }
+    }
+
+    const frameId = decodeParam(sp.get('frameId'));
+    const videoUrl = b64Data?.v || decodeParam(sp.get('videoUrl')) || '';
+    const sec = Number(b64Data?.s ?? sp.get('sec') ?? 3.5);
+    const coverUrl = b64Data?.c || decodeParam(sp.get('coverUrl'));
     const viewsRaw = sp.get('views');
     const msecRaw = sp.get('msec');
-    const tagsRaw = sp.get('tags');
+    const tagsRaw = decodeParam(sp.get('tags'));
 
     const overlayMeta = {
-      kocHandle: sp.get('handle') || undefined,
-      kocName: sp.get('name') || undefined,
-      caption: sp.get('cap') || undefined,
-      timeLabel: sp.get('tl') || undefined,
-      airedAt: sp.get('air') || undefined,
+      kocHandle: b64Data?.m?.kocHandle || decodeParam(sp.get('handle')),
+      kocName: b64Data?.m?.kocName || decodeParam(sp.get('name')),
+      caption: b64Data?.m?.caption || decodeParam(sp.get('cap')),
+      timeLabel: decodeParam(sp.get('tl')),
+      airedAt: b64Data?.m?.airedAt || decodeParam(sp.get('air')),
       views: viewsRaw ? Number(viewsRaw) : null,
-      likes: sp.get('likes') ? Number(sp.get('likes')) : null,
-      comments: sp.get('cmt') ? Number(sp.get('cmt')) : null,
-      shares: sp.get('shr') ? Number(sp.get('shr')) : null,
-      saves: sp.get('sav') ? Number(sp.get('sav')) : null,
-      durationSeconds: sp.get('dur') ? Number(sp.get('dur')) : null,
-      productTitle: sp.get('title') || undefined,
-      productId: sp.get('pid') || undefined,
-      hashtags: tagsRaw || undefined,
-      quote: sp.get('quote') || undefined,
+      likes: b64Data?.m?.likes ?? (sp.get('likes') ? Number(sp.get('likes')) : null),
+      comments: b64Data?.m?.comments ?? (sp.get('cmt') ? Number(sp.get('cmt')) : null),
+      shares: b64Data?.m?.shares ?? (sp.get('shr') ? Number(sp.get('shr')) : null),
+      saves: b64Data?.m?.saves ?? (sp.get('sav') ? Number(sp.get('sav')) : null),
+      durationSeconds: b64Data?.m?.durationSeconds ?? (sp.get('dur') ? Number(sp.get('dur')) : null),
+      productTitle: b64Data?.m?.productTitle || decodeParam(sp.get('title')),
+      productId: b64Data?.m?.productId || decodeParam(sp.get('pid')),
+      hashtags: b64Data?.m?.hashtags || tagsRaw,
+      quote: decodeParam(sp.get('quote')),
       mentionSec: msecRaw ? Number(msecRaw) : null,
     };
 
