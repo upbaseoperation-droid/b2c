@@ -32,7 +32,6 @@ import {
 } from 'lucide-react';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
 import { CampaignCreateModal } from '../CampaignCreateModal';
-import { INITIAL_CAMPAIGNS } from '../../lib/mockData';
 import { 
   InputPlanBreakdownState, 
   InputPlanRowItem, 
@@ -231,7 +230,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   initialShowStudio = false,
   planDrilldownIntent,
 }) => {
-  const [localCampaigns, setLocalCampaigns] = useState<CampaignItem[]>(INITIAL_CAMPAIGNS);
+  const [localCampaigns, setLocalCampaigns] = useState<CampaignItem[]>([]);
   const effectiveCampaigns = externalCampaigns ?? localCampaigns;
   const updateCampaigns: React.Dispatch<React.SetStateAction<CampaignItem[]>> = onCampaignsChange ?? setLocalCampaigns;
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState<boolean>(false);

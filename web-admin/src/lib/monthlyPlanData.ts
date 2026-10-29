@@ -9,13 +9,12 @@ import { DEFAULT_CONTENT_PILLARS } from './selfChannelData';
 import { REAL_MONTHLY_PLANS_OCT_2026 } from './realB2cPlanData';
 import { REAL_MONTHLY_PLANS_NOV_2026 } from './realLarkPlans202611';
 import { REAL_B2C_42_BRANDS } from './realB2cBrandsData';
-import { INITIAL_CAMPAIGNS } from './mockData';
 
 /** Tìm chiến dịch (Campaign) đang chạy của một Thương hiệu trong chu kỳ tháng ('YYYY/MM') */
 export function findActiveCampaignForBrandInMonth(
   brandName: string,
   month: string,
-  campaigns: CampaignItem[] = INITIAL_CAMPAIGNS
+  campaigns: CampaignItem[] = []
 ): CampaignItem | undefined {
   if (!brandName) return undefined;
   const normBrand = brandName.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -830,7 +829,7 @@ export function buildInitialBrandMonthlyPlans(
     const kvPic = b.keyVisualSisPic || 'Vũ Hoài Lâm';
     const budget = b.planBudget || b.monthlyBudget || 0;
     const isApproved = budget > 0 || idx % 3 !== 2;
-    const activeCamp = findActiveCampaignForBrandInMonth(b.name, month, INITIAL_CAMPAIGNS);
+    const activeCamp = findActiveCampaignForBrandInMonth(b.name, month);
 
     return {
       id: `BRAND-PLAN-${month.replace('/', '-')}-${b.code}`,
@@ -1098,9 +1097,7 @@ export function enrichPlanWithVersions(rawPlan: InputPlanBreakdownState, idx: nu
   if (cached) return cached;
   const resolvedLeader = resolveStoreBookingLeader(rawPlan.storeName || rawPlan.brandName, rawPlan.bookingLeader);
   if (rawPlan.reference41) {
-    const matchedCamp41 = rawPlan.campaignId
-      ? INITIAL_CAMPAIGNS.find(c => c.id === rawPlan.campaignId)
-      : findActiveCampaignForBrandInMonth(rawPlan.brandName, rawPlan.month, INITIAL_CAMPAIGNS);
+    const matchedCamp41 = rawPlan.campaignId ? undefined : findActiveCampaignForBrandInMonth(rawPlan.brandName, rawPlan.month);
     const matchedPhase41 = matchedCamp41 ? getCampaignPhaseForMonth(matchedCamp41, rawPlan.month) : undefined;
     const out41: InputPlanBreakdownState = {
       ...rawPlan,
@@ -1117,9 +1114,7 @@ export function enrichPlanWithVersions(rawPlan: InputPlanBreakdownState, idx: nu
     return out41;
   }
   const basePlan = enrichPlanWithMultiStaffWorkstreams({ ...rawPlan, hasBookingLeader: Boolean(resolvedLeader), bookingLeader: resolvedLeader }, idx);
-  const matchedCamp = basePlan.campaignId
-    ? INITIAL_CAMPAIGNS.find(c => c.id === basePlan.campaignId)
-    : findActiveCampaignForBrandInMonth(basePlan.brandName, basePlan.month, INITIAL_CAMPAIGNS);
+  const matchedCamp = basePlan.campaignId ? undefined : findActiveCampaignForBrandInMonth(basePlan.brandName, basePlan.month);
   const matchedPhase = matchedCamp ? getCampaignPhaseForMonth(matchedCamp, basePlan.month) : undefined;
   const plan: InputPlanBreakdownState = {
     ...basePlan,
