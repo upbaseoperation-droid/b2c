@@ -232,7 +232,12 @@ export async function inspectTikTokCartFromVietnam(
     const scriptMatch = html.match(
       /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
     );
-    if (!scriptMatch) break;
+    if (!scriptMatch) {
+      wafCookieCache = '';
+      wafCookieExpireAt = 0;
+      cookieHeader = baseVnCookie;
+      continue;
+    }
 
     const json = JSON.parse(scriptMatch[1]);
     const scope = json?.__DEFAULT_SCOPE__ || {};
