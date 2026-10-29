@@ -4271,6 +4271,17 @@ export async function processZaloWebhookEvent(
     if (att?.payload?.description) textCandidates.push(String(att.payload.description));
   }
 
+    // Quét sâu toàn bộ JSON payload để bắt URL TikTok dù Zalo bọc trong attachment, card preview hay object con
+  try {
+    const fullBodyStr = typeof body === 'object' ? JSON.stringify(body) : String(body);
+    const deepMatches = extractAllTikTokUrls(fullBodyStr);
+    for (const u of deepMatches) {
+      if (!textCandidates.some(c => c.includes(u))) {
+        textCandidates.push(u);
+      }
+    }
+  } catch {}
+
   const rawText = textCandidates.join(' ').trim();
   const senderId = String(
     message?.from?.id ||
@@ -4560,6 +4571,18 @@ export async function processZaloWebhookEvent(
       ).catch(() => false);
     }
 
+    let isBatchCompleted = false;
+    const batchSlowReminder = shouldSend
+      ? setTimeout(() => {
+          if (!isBatchCompleted) {
+            sendZaloMessage(
+              chatId,
+              `⏳ Danh sách ${allTikTokUrls.length} video đang được phân tích chuyên sâu song song, bạn vui lòng đợi thêm chút để bot tổng hợp báo cáo nhé...`
+            ).catch(() => false);
+          }
+        }, 7000)
+      : null;
+
     try {
       const batchResults = await Promise.all(
         allTikTokUrls.map(async (url) => {
@@ -4714,6 +4737,9 @@ export async function processZaloWebhookEvent(
       const errMsg = `❌ Lỗi khi quét nghiệm thu hàng loạt: ${err?.message || 'Lỗi kết nối'}.`;
       await replyToChat(errMsg);
       return { handled: true, reply: errMsg, extractedChatId: chatId };
+    } finally {
+      isBatchCompleted = true;
+      if (batchSlowReminder) clearTimeout(batchSlowReminder);
     }
   }
 
@@ -4767,6 +4793,19 @@ export async function processZaloWebhookEvent(
             `⏳ Đang quét dữ liệu nghiệm thu video TikTok: ${videoUrl}\nVui lòng chờ trong giây lát...`
           ).catch(() => false)
         : Promise.resolve(true);
+
+    let isCheckCompleted = false;
+    const slowReminderTimeout =
+      shouldSend && !hasFreshCache
+        ? setTimeout(() => {
+            if (!isCheckCompleted) {
+              sendZaloMessage(
+                chatId,
+                '⏳ Video đang được giải mã chuyên sâu (vượt tường lửa, bóc tách giỏ hàng & phụ đề), hệ thống đang xử lý, bạn vui lòng đợi thêm chút nhé...'
+              ).catch(() => false);
+            }
+          }, 7000)
+        : null;
 
     try {
       const checkResult: LinkAirResult = hasFreshCache
@@ -5115,6 +5154,9 @@ export async function processZaloWebhookEvent(
       const errMsg = `❌ Không thể quét dữ liệu video: ${err?.message || 'Lỗi kết nối'}. Vui lòng kiểm tra lại đường dẫn TikTok.`;
       await replyToChat(errMsg);
       return { handled: true, reply: errMsg, extractedChatId: chatId };
+    } finally {
+      isCheckCompleted = true;
+      if (slowReminderTimeout) clearTimeout(slowReminderTimeout);
     }
   }
 

@@ -538,11 +538,15 @@ export function recalculateApprovedBookingItem(
   const klGrade = mapTepBookingToSalaryGrade(finalNet);
   const tamUng = Math.max(0, Number(item.soTienTamUngTruoc) || 0);
 
-  const hasAir = Boolean(
-    item.linkAir?.trim() ||
-      item.actualAirDate?.trim() ||
-      (hasExplicitMultiJobs && normalizedDealJobs.every((j) => j.acceptanceStatus === 'DA_NGHIEM_THU'))
-  );
+  const hasAir =
+    hasExplicitMultiJobs && normalizedDealJobs.length > 1
+      ? normalizedDealJobs.every((j) => Boolean(j.linkAir?.trim() || j.actualAirDate?.trim()))
+      : Boolean(
+          item.linkAir?.trim() ||
+            item.actualAirDate?.trim() ||
+            (normalizedDealJobs.length > 0 &&
+              Boolean(normalizedDealJobs[0]?.linkAir?.trim() || normalizedDealJobs[0]?.actualAirDate?.trim()))
+        );
   const acceptanceStatus = hasAir ? 'DA_NGHIEM_THU' : 'CHUA_NGHIEM_THU';
   const extractedVideoMatch = (item.linkAir || '').match(/\/video\/(\d+)/i);
   const videoId = extractedVideoMatch ? extractedVideoMatch[1] : item.videoId || '';

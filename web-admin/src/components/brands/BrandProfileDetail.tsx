@@ -359,7 +359,7 @@ export function BrandProfileDetail({
       requiresSparkAds: st.requiresSparkAds,
       operationStatus: 'Live' as const,
       b2cOwnerName: m?.brandPicName || 'Lê Phương Thảo',
-      accountOwnerName: m?.accountPic,
+      accountOwnerName: '',
       budgetNet: Math.round((m?.planBudget || m?.monthlyBudget || 0) / Math.max(1, m?.stores?.length || 1)),
     })) as StorePortfolioItem[];
   }, [stores, row.name, m]);
@@ -404,7 +404,8 @@ export function BrandProfileDetail({
     ),
   );
   const primarySpecialist = specialistPics[0] || real(m?.brandPicName) || 'Lê Phương Thảo';
-  const accountPicName = real(m?.accountPic) || brandStores.find(s => s.accountOwnerName)?.accountOwnerName || '';
+  // Account theo gian hàng trong Dữ liệu gốc, không theo accountPic của thương hiệu (quyết định 30/10/2026).
+  const accountPics = Array.from(new Set(brandStores.map(s => real(s.accountOwnerName)).filter(n => n && !/^chưa/i.test(n))));
 
   const editBtn = (section: BrandSection, onClick: () => void, label = 'Sửa') =>
     can[section] && <Button size="sm" icon={Pencil} onClick={onClick}>{label}</Button>;
@@ -828,7 +829,9 @@ export function BrandProfileDetail({
           <dl className="flex flex-wrap items-center gap-x-5 gap-y-2 text-2xs">
             <div className="flex items-center gap-1.5">
               <dt className="text-ink-3">Account</dt>
-              <dd>{accountPicName ? <Person name={accountPicName} size={18} /> : <span className="text-ink-2">Chưa gán</span>}</dd>
+              <dd className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                {accountPics.length > 0 ? accountPics.map(n => <Person key={n} name={n} size={18} />) : <span className="text-ink-2">Chưa gán</span>}
+              </dd>
             </div>
             <div className="flex items-center gap-1.5">
               <dt className="text-ink-3">Booking</dt>
@@ -1127,9 +1130,11 @@ export function BrandProfileDetail({
                     ))}
                   </div>
                 </Info>
-                {accountPicName && (
-                  <Info label="Quản lý quan hệ nhãn hàng (Account PIC)">
-                    <Person name={accountPicName} size={20} />
+                {accountPics.length > 0 && (
+                  <Info label="Account (theo gian hàng)">
+                    <div className="grid gap-1.5">
+                      {accountPics.map(n => <Person key={n} name={n} size={20} />)}
+                    </div>
                   </Info>
                 )}
                 <Info label="Chuyên viên điều phối mẫu FOC">

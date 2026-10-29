@@ -159,12 +159,13 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   const [selectedStore, setSelectedStore] = useState<string>(initialStoreName || 'ALL');
   const [filterPipeline, setFilterPipeline] = useState<string>('ALL');
   const [filterAcceptance, setFilterAcceptance] = useState<string>('ALL');
-  const [stageChip, setStageChip] = useState<'ALL' | 'PENDING_DEAL' | 'PENDING_SOW' | 'PENDING_ACCEPTANCE' | 'ACCEPTED' | 'SETTLED'>('ALL');
+  const [stageChip, setStageChip] = useState<'ALL' | 'PENDING_DEAL' | 'PENDING_SOW' | 'PENDING_ACCEPTANCE' | 'PENDING_ADDONS' | 'ACCEPTED' | 'SETTLED'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewColumnMode, setViewColumnMode] = useState<'ALL_32' | 'BOOKING_FOCUS' | 'ACCEPTANCE_FOCUS'>('ALL_32');
   const [viewLayout, setViewLayout] = useState<'LIST_DRAWER' | 'LARK_GRID'>('LIST_DRAWER');
   const [selectedDrawerItemId, setSelectedDrawerItemId] = useState<string | null>(null);
+  const [drawerInitialTab, setDrawerInitialTab] = useState<'OVERVIEW' | 'CONTRACT' | 'ACCEPTANCE'>('OVERVIEW');
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(20);
@@ -384,8 +385,12 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     return items.find((i) => i.id === selectedDrawerItemId) || null;
   }, [items, selectedDrawerItemId]);
 
-  const openDrawerForItem = (item: ApprovedBookingListItem) => {
+  const openDrawerForItem = (
+    item: ApprovedBookingListItem,
+    initialTab: 'OVERVIEW' | 'CONTRACT' | 'ACCEPTANCE' = 'OVERVIEW'
+  ) => {
     setSelectedDrawerItemId(item.id);
+    setDrawerInitialTab(initialTab);
     setIsDrawerOpen(true);
   };
 
@@ -443,6 +448,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     let pendingDeal = 0;
     let pendingSow = 0;
     let pendingAcceptance = 0;
+    let pendingAddons = 0;
     let accepted = 0;
     let settled = 0;
     for (const it of scopedItems) {
@@ -452,10 +458,17 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       const isSettled =
         it.trangThaiPhieuThanhToan === 'Đã lập ĐNTT' ||
         it.trangThaiPhieuThanhToan === 'Đã thanh toán';
+      const isAwaitingAddons =
+        isAccepted && it.sequentialAcceptanceStage === '2_DA_NGHIEM_THU_VIDEO_CHO_PHAN_KHAC';
+      const isFullyAccepted =
+        it.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL' ||
+        (isAccepted && !it.sequentialAcceptanceStage);
+
       if (!hasBo) pendingDeal++;
       else if (!isSowSigned) pendingSow++;
       if (hasBo && !isAccepted) pendingAcceptance++;
-      if (isAccepted) accepted++;
+      if (isAwaitingAddons) pendingAddons++;
+      if (isFullyAccepted) accepted++;
       if (isSettled) settled++;
     }
     return {
@@ -463,6 +476,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       pendingDeal,
       pendingSow,
       pendingAcceptance,
+      pendingAddons,
       accepted,
       settled,
     };
@@ -481,7 +495,13 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       if (stageChip === 'PENDING_DEAL') return !hasBo;
       if (stageChip === 'PENDING_SOW') return hasBo && !isSowSigned;
       if (stageChip === 'PENDING_ACCEPTANCE') return hasBo && !isAccepted;
-      if (stageChip === 'ACCEPTED') return isAccepted;
+      if (stageChip === 'PENDING_ADDONS')
+        return isAccepted && it.sequentialAcceptanceStage === '2_DA_NGHIEM_THU_VIDEO_CHO_PHAN_KHAC';
+      if (stageChip === 'ACCEPTED')
+        return (
+          it.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL' ||
+          (isAccepted && it.sequentialAcceptanceStage !== '2_DA_NGHIEM_THU_VIDEO_CHO_PHAN_KHAC')
+        );
       if (stageChip === 'SETTLED') return isSettled;
       return true;
     });
@@ -1858,114 +1878,145 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       {
         key: 'deal',
         header: 'Mã Deal · HĐ / PL / BBNT & Link',
-        width: 245,
-        render: (item) => (
-          <div className="leading-tight space-y-1" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between gap-1.5">
-              <span className="font-code font-semibold text-ink">
-                {item.maBooking || 'Chưa cấp mã BO'}
-              </span>
-              {item.contractAppendixStatus === 'ĐÃ_KÝ' ? (
-                <span className="text-2xs px-1.5 py-0.5 rounded bg-positive-soft text-positive font-medium">
-                  PL đã ký
+        width: 255,
+        render: (item) => {
+          const jobs = ensureDealJobsForApprovedItem(item);
+          return (
+            <div className="leading-tight space-y-1" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="font-code font-semibold text-ink">
+                    {item.maBooking || 'Chưa cấp mã BO'}
+                  </span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded text-2xs font-code font-semibold ${
+                      jobs.length > 1
+                        ? 'bg-accent/15 text-accent border border-accent/30'
+                        : 'bg-sunken text-ink-3'
+                    }`}
+                    title={jobs
+                      .map(
+                        (j, i) =>
+                          `#${i + 1} (${j.jobCode}): ${j.productName} — Net ${formatVndShort(
+                            j.videoAssetNetCost
+                          )}`
+                      )
+                      .join('\n')}
+                  >
+                    {jobs.length} {jobs.length > 1 ? 'Jobs' : 'Job'}
+                  </span>
+                </div>
+                {item.contractAppendixStatus === 'ĐÃ_KÝ' ? (
+                  <span className="text-2xs px-1.5 py-0.5 rounded bg-positive-soft text-positive font-medium">
+                    PL đã ký
+                  </span>
+                ) : null}
+              </div>
+
+              {jobs.length > 1 && (
+                <div
+                  className="text-2xs font-code text-accent truncate max-w-[235px]"
+                  title={jobs.map((j) => `${j.jobCode}: ${j.productName}`).join(' · ')}
+                >
+                  {jobs.map((j) => `${j.jobCode.replace(/^.*-J/, 'J')}: ${j.productName}`).join(' · ')}
+                </div>
+              )}
+
+              {/* 1. HĐNT */}
+              <div className="flex items-center justify-between gap-1 text-2xs">
+                <span className="font-code text-ink-2 truncate max-w-[140px]" title={item.masterContractCode}>
+                  HĐ: {item.masterContractCode || 'Chưa gắn'}
                 </span>
-              ) : null}
-            </div>
+                <span className="inline-flex items-center gap-1.5 shrink-0">
+                  {item.masterContractGoogleDocsUrl && (
+                    <a
+                      href={item.masterContractGoogleDocsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-accent hover:underline font-medium"
+                      title="Mở Google Docs HĐNT"
+                    >
+                      GDocs↗
+                    </a>
+                  )}
+                  {item.masterContractSignedUrl && (
+                    <a
+                      href={item.masterContractSignedUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-positive hover:underline font-medium"
+                      title="Mở bản HĐNT đã ký"
+                    >
+                      Bản ký↗
+                    </a>
+                  )}
+                </span>
+              </div>
 
-            {/* 1. HĐNT */}
-            <div className="flex items-center justify-between gap-1 text-2xs">
-              <span className="font-code text-ink-2 truncate max-w-[140px]" title={item.masterContractCode}>
-                HĐ: {item.masterContractCode || 'Chưa gắn'}
-              </span>
-              <span className="inline-flex items-center gap-1.5 shrink-0">
-                {item.masterContractGoogleDocsUrl && (
-                  <a
-                    href={item.masterContractGoogleDocsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-accent hover:underline font-medium"
-                    title="Mở Google Docs HĐNT"
-                  >
-                    GDocs↗
-                  </a>
-                )}
-                {item.masterContractSignedUrl && (
-                  <a
-                    href={item.masterContractSignedUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-positive hover:underline font-medium"
-                    title="Mở bản HĐNT đã ký"
-                  >
-                    Bản ký↗
-                  </a>
-                )}
-              </span>
-            </div>
+              {/* 2. Phụ lục SOW (PL) */}
+              <div className="flex items-center justify-between gap-1 text-2xs">
+                <span className="font-code text-ink-2 truncate max-w-[140px]" title={item.contractAppendixCode}>
+                  PL: {item.contractAppendixCode || (item.maBooking ? `PL-${item.maBooking}-01` : 'Chưa lập')}
+                </span>
+                <span className="inline-flex items-center gap-1.5 shrink-0">
+                  {item.contractAppendixGoogleDocsUrl && (
+                    <a
+                      href={item.contractAppendixGoogleDocsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-accent hover:underline font-medium"
+                      title="Mở Google Docs Phụ lục SOW"
+                    >
+                      GDocs↗
+                    </a>
+                  )}
+                  {item.contractAppendixSignedUrl && (
+                    <a
+                      href={item.contractAppendixSignedUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-positive hover:underline font-medium"
+                      title="Mở bản Phụ lục SOW đã ký"
+                    >
+                      Bản ký↗
+                    </a>
+                  )}
+                </span>
+              </div>
 
-            {/* 2. Phụ lục SOW (PL) */}
-            <div className="flex items-center justify-between gap-1 text-2xs">
-              <span className="font-code text-ink-2 truncate max-w-[140px]" title={item.contractAppendixCode}>
-                PL: {item.contractAppendixCode || (item.maBooking ? `PL-${item.maBooking}-01` : 'Chưa lập')}
-              </span>
-              <span className="inline-flex items-center gap-1.5 shrink-0">
-                {item.contractAppendixGoogleDocsUrl && (
-                  <a
-                    href={item.contractAppendixGoogleDocsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-accent hover:underline font-medium"
-                    title="Mở Google Docs Phụ lục SOW"
-                  >
-                    GDocs↗
-                  </a>
-                )}
-                {item.contractAppendixSignedUrl && (
-                  <a
-                    href={item.contractAppendixSignedUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-positive hover:underline font-medium"
-                    title="Mở bản Phụ lục SOW đã ký"
-                  >
-                    Bản ký↗
-                  </a>
-                )}
-              </span>
+              {/* 3. BBNT */}
+              <div className="flex items-center justify-between gap-1 text-2xs">
+                <span className="font-code text-ink-3 truncate max-w-[140px]" title={item.bbntCode}>
+                  BBNT: {item.bbntCode || (item.acceptanceStatus === 'DA_NGHIEM_THU' && item.maBooking ? `BBNT-${item.maBooking}` : '—')}
+                </span>
+                <span className="inline-flex items-center gap-1.5 shrink-0">
+                  {item.bbntGoogleDocsUrl && (
+                    <a
+                      href={item.bbntGoogleDocsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-accent hover:underline font-medium"
+                      title="Mở Google Docs BBNT"
+                    >
+                      GDocs↗
+                    </a>
+                  )}
+                  {item.bbntSignedUrl && (
+                    <a
+                      href={item.bbntSignedUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-positive hover:underline font-medium"
+                      title="Mở bản BBNT đã ký"
+                    >
+                      Bản ký↗
+                    </a>
+                  )}
+                </span>
+              </div>
             </div>
-
-            {/* 3. BBNT */}
-            <div className="flex items-center justify-between gap-1 text-2xs">
-              <span className="font-code text-ink-3 truncate max-w-[140px]" title={item.bbntCode}>
-                BBNT: {item.bbntCode || (item.acceptanceStatus === 'DA_NGHIEM_THU' && item.maBooking ? `BBNT-${item.maBooking}` : '—')}
-              </span>
-              <span className="inline-flex items-center gap-1.5 shrink-0">
-                {item.bbntGoogleDocsUrl && (
-                  <a
-                    href={item.bbntGoogleDocsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-accent hover:underline font-medium"
-                    title="Mở Google Docs BBNT"
-                  >
-                    GDocs↗
-                  </a>
-                )}
-                {item.bbntSignedUrl && (
-                  <a
-                    href={item.bbntSignedUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-positive hover:underline font-medium"
-                    title="Mở bản BBNT đã ký"
-                  >
-                    Bản ký↗
-                  </a>
-                )}
-              </span>
-            </div>
-          </div>
-        ),
+          );
+        },
       },
       {
         key: 'store',
@@ -1989,41 +2040,101 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         key: 'cost',
         header: 'Chi phí Net / Gross',
         align: 'right',
-        width: 145,
-        render: (item) => (
-          <div className="leading-tight space-y-0.5 tabular-nums">
-            <div className="font-semibold text-ink">
-              {formatVnd(item.chiPhiBookingNetCuoi)}
+        width: 155,
+        render: (item) => {
+          const jobs = ensureDealJobsForApprovedItem(item);
+          return (
+            <div className="leading-tight space-y-0.5 tabular-nums">
+              <div className="font-semibold text-ink">
+                {formatVnd(item.chiPhiBookingNetCuoi)}
+              </div>
+              <div className="text-2xs text-ink-3">
+                Gross {formatVndShort(item.chiPhiGrossKemThue)}
+                {item.soTienTamUngTruoc > 0
+                  ? ` · Ứng ${formatVndShort(item.soTienTamUngTruoc)}`
+                  : ''}
+              </div>
+              {jobs.length > 1 && (
+                <div
+                  className="text-2xs text-ink-3 font-code truncate max-w-[150px]"
+                  title={jobs
+                    .map((j) => `${j.jobCode}: ${formatVndShort(j.videoAssetNetCost)}`)
+                    .join(' + ')}
+                >
+                  {jobs
+                    .map((j) => `${j.jobCode.replace(/^.*-J/, 'J')}: ${formatVndShort(j.videoAssetNetCost)}`)
+                    .join(' + ')}
+                </div>
+              )}
             </div>
-            <div className="text-2xs text-ink-3">
-              Gross {formatVndShort(item.chiPhiGrossKemThue)}
-              {item.soTienTamUngTruoc > 0
-                ? ` · Ứng ${formatVndShort(item.soTienTamUngTruoc)}`
-                : ''}
-            </div>
-          </div>
-        ),
+          );
+        },
       },
       {
         key: 'air',
         header: 'Lịch Air & Hiệu quả 30d',
-        width: 175,
-        render: (item) => (
-          <div className="leading-tight space-y-0.5 tabular-nums">
-            <div className="font-code text-ink">
-              {item.actualAirDate
-                ? formatDate(item.actualAirDate)
-                : item.plannedAirDate
-                ? `Dự kiến ${formatDate(item.plannedAirDate)}`
-                : 'Chưa chốt lịch'}
+        width: 185,
+        render: (item) => {
+          const jobs = ensureDealJobsForApprovedItem(item);
+          const hasMultipleJobs = jobs.length > 1;
+          const airedJobsCount = jobs.filter((j) =>
+            Boolean(j.linkAir?.trim() || j.actualAirDate?.trim())
+          ).length;
+
+          return (
+            <div className="leading-tight space-y-0.5 tabular-nums">
+              {hasMultipleJobs ? (
+                <>
+                  <div
+                    className="font-code text-xs text-ink truncate max-w-[175px]"
+                    title={jobs
+                      .map(
+                        (j) =>
+                          `${j.jobCode}: ${
+                            j.actualAirDate
+                              ? `Đã air ${formatDate(j.actualAirDate)}`
+                              : `Dự kiến ${j.plannedAirDate ? formatDate(j.plannedAirDate) : '—'}`
+                          }`
+                      )
+                      .join('\n')}
+                  >
+                    {jobs
+                      .map(
+                        (j) =>
+                          `${j.jobCode.replace(/^.*-J/, 'J')}: ${
+                            j.actualAirDate
+                              ? '✓'
+                              : j.plannedAirDate
+                              ? formatDate(j.plannedAirDate).slice(0, 5)
+                              : '—'
+                          }`
+                      )
+                      .join(' · ')}
+                  </div>
+                  <div className="text-2xs text-ink-3 truncate max-w-[175px]">
+                    {airedJobsCount}/{jobs.length} Job đã air
+                    {item.gmv30d > 0 ? ` · GMV ${formatVndShort(item.gmv30d)}` : ''}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="font-code text-ink">
+                    {item.actualAirDate
+                      ? formatDate(item.actualAirDate)
+                      : item.plannedAirDate
+                      ? `Dự kiến ${formatDate(item.plannedAirDate)}`
+                      : 'Chưa chốt lịch'}
+                  </div>
+                  <div className="text-2xs text-ink-3 truncate max-w-[175px]">
+                    {item.linkAir
+                      ? `GMV ${formatVndShort(item.gmv30d)} · ROI ${item.roi30d.toFixed(2)}x`
+                      : item.trangThaiSlaAir}
+                  </div>
+                </>
+              )}
             </div>
-            <div className="text-2xs text-ink-3 truncate max-w-[165px]">
-              {item.linkAir
-                ? `GMV ${formatVndShort(item.gmv30d)} · ROI ${item.roi30d.toFixed(2)}x`
-                : item.trangThaiSlaAir}
-            </div>
-          </div>
-        ),
+          );
+        },
       },
       {
         key: 'status',
@@ -2034,8 +2145,20 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
           const isSowSigned = item.contractAppendixStatus === 'ĐÃ_KÝ';
           const isAccepted = item.acceptanceStatus === 'DA_NGHIEM_THU';
           const isPaid = item.trangThaiPhieuThanhToan === 'Đã thanh toán';
+          const isAwaitingAddons =
+            isAccepted && item.sequentialAcceptanceStage === '2_DA_NGHIEM_THU_VIDEO_CHO_PHAN_KHAC';
+          const pendingAddonsCount = (item.addonServices || []).filter(
+            (a) => a.acceptanceStatus === 'PENDING_ACCEPTANCE'
+          ).length;
+
           const statusObj = isPaid
             ? { label: 'Đã thanh toán', tone: 'positive' as const, sub: item.larkSlipCode || 'Hoàn tất' }
+            : isAwaitingAddons
+            ? {
+                label: 'Chờ asset',
+                tone: 'warning' as const,
+                sub: `Đã air · Chờ ${pendingAddonsCount} asset`,
+              }
             : isAccepted
             ? { label: 'Đã nghiệm thu', tone: 'positive' as const, sub: item.trangThaiPhieuThanhToan }
             : isSowSigned
@@ -2109,6 +2232,14 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                 >
                   Nghiệm thu
                 </Button>
+              ) : item.sequentialAcceptanceStage === '2_DA_NGHIEM_THU_VIDEO_CHO_PHAN_KHAC' ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => openDrawerForItem(item, 'ACCEPTANCE')}
+                >
+                  Nghiệm thu Asset
+                </Button>
               ) : (
                 <Button
                   variant="secondary"
@@ -2125,6 +2256,16 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                     label: 'Xem hồ sơ Deal & SOW',
                     icon: Eye,
                     onSelect: () => openDrawerForItem(item),
+                  },
+                  {
+                    label: 'Nghiệm thu Video & Asset đi kèm',
+                    icon: Video,
+                    onSelect: () => openDrawerForItem(item, 'ACCEPTANCE'),
+                  },
+                  {
+                    label: `Quản lý ${ensureDealJobsForApprovedItem(item).length} Job trong Deal`,
+                    icon: Layers,
+                    onSelect: () => openDealBuilderModal(item),
                   },
                   {
                     label: 'Cấu hình điều khoản SOW',
@@ -2408,8 +2549,9 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                   { key: 'ALL', label: 'Tất cả', count: chipCounts.all },
                   { key: 'PENDING_DEAL', label: 'Chờ tạo deal', count: chipCounts.pendingDeal },
                   { key: 'PENDING_SOW', label: 'Chờ ký SOW', count: chipCounts.pendingSow },
-                  { key: 'PENDING_ACCEPTANCE', label: 'Chờ nghiệm thu', count: chipCounts.pendingAcceptance },
-                  { key: 'ACCEPTED', label: 'Đã nghiệm thu', count: chipCounts.accepted },
+                  { key: 'PENDING_ACCEPTANCE', label: 'Chờ video', count: chipCounts.pendingAcceptance },
+                  { key: 'PENDING_ADDONS', label: 'Chờ asset đi kèm', count: chipCounts.pendingAddons },
+                  { key: 'ACCEPTED', label: 'Đã nghiệm thu đủ', count: chipCounts.accepted },
                   { key: 'SETTLED', label: 'Đã lập ĐNTT', count: chipCounts.settled },
                 ]}
               />
@@ -3102,10 +3244,10 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                     </span>
                                     <button
                                       type="button"
-                                      onClick={() => openAcceptanceModalForRow(item)}
+                                      onClick={() => openDrawerForItem(item, 'ACCEPTANCE')}
                                       className="font-semibold text-accent hover:underline"
                                     >
-                                      Nghiệm thu B2
+                                      Nghiệm thu Asset →
                                     </button>
                                   </div>
                                 </div>
@@ -4832,6 +4974,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         deal={activeDrawerItem}
+        initialTab={drawerInitialTab}
         allDeals={filteredItems}
         kocs={kocs}
         contractRecords={contractRecords}

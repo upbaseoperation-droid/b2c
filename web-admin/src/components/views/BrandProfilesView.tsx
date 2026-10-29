@@ -160,6 +160,20 @@ export function BrandProfilesView({
   const baseBrands = brands !== undefined ? brands : UPBASE_BRANDS_MASTER;
   const rows = useMemo(() => buildRows(baseBrands, profiles || []), [baseBrands, profiles]);
 
+  // Account theo gian hàng trong Dữ liệu gốc, không theo accountPic của thương hiệu (quyết định 30/10/2026).
+  const accountsByKey = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const s of allStores) {
+      const name = real(s.accountOwnerName);
+      if (!name || /^chưa/i.test(name)) continue;
+      const k = brandKey(s.brandName || s.storeName?.split('_')[0] || '');
+      const list = map.get(k) || [];
+      if (!list.includes(name)) list.push(name);
+      map.set(k, list);
+    }
+    return map;
+  }, [allStores]);
+
   // Gom nhóm gian hàng theo brandKey và tổng hợp báo cáo Plan vs Report theo kỳ tháng đang chọn (selectedMonth)
   const monthlyReportByBrand = useMemo(() => {
     const storesByKey = new Map<string, StorePortfolioItem[]>();
@@ -203,8 +217,8 @@ export function BrandProfilesView({
   const searched = useMemo(() => rows.filter(r => {
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
-    return `${r.name} ${real(r.master?.code)} ${real(r.master?.category)} ${real(r.master?.accountPic)} ${real(r.master?.brandPicName)}`.toLowerCase().includes(q);
-  }), [rows, search]);
+    return `${r.name} ${real(r.master?.code)} ${real(r.master?.category)} ${(accountsByKey.get(r.key) || []).join(' ')} ${real(r.master?.brandPicName)}`.toLowerCase().includes(q);
+  }), [rows, search, accountsByKey]);
 
   const visible = useMemo(() => searched.filter(matches[filter]), [searched, matches, filter]);
   const [pagedKey, setPagedKey] = useState('');
@@ -314,7 +328,7 @@ export function BrandProfilesView({
       <BrandProfileDetail
         key={open.key}
         row={open}
-        can={permissionsOf(access, real(open.master?.accountPic), open.name, isStorePicOfBrand(currentUser, open.name, allStores))}
+        can={permissionsOf(access, (accountsByKey.get(open.key) || [])[0], open.name, isStorePicOfBrand(currentUser, open.name, allStores))}
         deals={deals}
         stores={allStores}
         monthlyPlans={monthlyPlans}
@@ -406,7 +420,7 @@ export function BrandProfilesView({
       width: 170,
       render: r => {
         const rep = monthlyReportByBrand.get(r.key);
-        const acc = real(r.master?.accountPic);
+        const acc = (accountsByKey.get(r.key) || []).join(', ');
         const contentMain = rep?.brandPlan?.contentBrandMainPic || real(r.master?.contentBrandMainPic) || real(r.master?.contentPic);
         const planStrat = rep?.brandPlan?.planStrategyPic || real(r.master?.planStrategyPic) || real(r.master?.brandPicName);
         const kvSis = rep?.brandPlan?.keyVisualSisPic || real(r.master?.keyVisualSisPic);

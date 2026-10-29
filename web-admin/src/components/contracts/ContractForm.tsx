@@ -1459,26 +1459,26 @@ export function ContractForm({
         </div>
       </div>
 
-      {/* Thanh lộ trình 3 bước pháp lý chuẩn của Deal */}
-      <div className="rounded-xl border border-line bg-surface px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+      {/* Thanh giai đoạn văn bản & Nguồn mẫu */}
+      <div className="rounded-xl border border-line bg-surface p-2.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
           {[
             {
               step: 'HDNT' as const,
               idx: 1,
-              label: '1. Hợp đồng nguyên tắc (HĐNT Khung)',
+              label: '1. Hợp đồng nguyên tắc',
               done: Boolean(parentId || activeLegalProfile?.frameworkContractCode?.trim() || deal?.masterContractCode?.trim()),
             },
             {
               step: 'SOW' as const,
               idx: 2,
-              label: '2. Phụ lục SOW (Chốt & Khóa cấu hình Deal)',
+              label: '2. Phụ lục SOW',
               done: deal?.contractAppendixStatus === 'ĐÃ_KÝ',
             },
             {
               step: 'BBNT' as const,
               idx: 3,
-              label: '3. Biên bản nghiệm thu (BBNT theo Link Air)',
+              label: '3. Biên bản nghiệm thu',
               done: false,
             },
           ].map((item, i) => {
@@ -1487,15 +1487,15 @@ export function ContractForm({
             const markState = isActive ? 'active' : item.done ? 'done' : 'idle';
             return (
               <React.Fragment key={item.step}>
-                {i > 0 && <span className="text-ink-3 text-xs">→</span>}
+                {i > 0 && <span className="text-ink-3 text-xs px-0.5">→</span>}
                 <button
                   type="button"
                   disabled={editing}
                   onClick={() => !editing && chooseDocStage(item.step)}
-                  className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border text-xs transition-colors ${
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors ${
                     isActive
-                      ? 'border-accent bg-accent-soft/30 text-ink font-semibold'
-                      : 'border-transparent hover:bg-sunken text-ink-2'
+                      ? 'bg-ink text-surface font-semibold shadow-xs'
+                      : 'text-ink-2 hover:bg-sunken hover:text-ink border border-transparent'
                   }`}
                 >
                   <StepMark done={markState !== 'idle'} label={item.idx} />
@@ -1505,11 +1505,16 @@ export function ContractForm({
             );
           })}
         </div>
-        {isSow && (
-          <Status tone="info">
-            Sau khi ký hoàn tất Phụ lục SOW, cấu hình Deal sẽ được khóa tự động
-          </Status>
-        )}
+        <div>
+          <Segmented
+            value={isKocOwnForm ? 'KOC_DOCX' : 'UPBASE_TEMPLATE'}
+            onChange={v => switchSourceMode(v === 'KOC_DOCX')}
+            items={[
+              { key: 'UPBASE_TEMPLATE', label: 'Soạn theo mẫu hệ thống' },
+              { key: 'KOC_DOCX', label: 'Tải lên file riêng KOC (.docx)' },
+            ]}
+          />
+        </div>
       </div>
 
       {ocrNotice && (
@@ -1569,755 +1574,383 @@ export function ContractForm({
           )}
 
           <Panel
-            title={
-              !isContextPickerExpanded && (koc || deal)
-                ? 'Chủ thể KOC, Pháp nhân & Deal gắn kết'
-                : 'Thông tin chung'
-            }
+            title="Thông tin hợp đồng"
             actions={
-              !isContextPickerExpanded && (koc || deal) ? (
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <Button size="sm" variant="secondary" icon={RefreshCw} onClick={refreshSystemPrefill}>
-                    Đồng bộ lại từ Deal
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setIsContextPickerExpanded(true)}
-                  >
-                    Đổi KOC / Pháp nhân / Deal
-                  </Button>
-                </div>
-              ) : isContextPickerExpanded && (koc || deal) ? (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setIsContextPickerExpanded(false)}
-                >
-                  Thu gọn khung chọn KOC &amp; Deal
+              koc ? (
+                <Button size="sm" variant="secondary" icon={RefreshCw} onClick={refreshSystemPrefill}>
+                  Đồng bộ lại từ hồ sơ
                 </Button>
               ) : undefined
             }
           >
             <div className="space-y-4">
-              {!isContextPickerExpanded && (koc || deal) ? (
-                <div className="space-y-3">
-                  <div className="rounded-xl border border-line bg-sunken/40 p-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-xs">
-                    <div className="space-y-1">
-                      <span className="text-2xs text-ink-3 block">Chủ thể KOC (Bên B)</span>
-                      <Person
-                        name={koc?.stageName || deal?.kocStageName || partner || 'KOC'}
-                        sub={koc?.channelId || deal?.kocChannelId || undefined}
-                        size={24}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-2xs text-ink-3 block">Pháp nhân ký kết</span>
-                      {activeLegalProfile ? (
-                        <div className="space-y-0.5">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <Status
-                              tone={
-                                activeLegalProfile.legalType === 'COMPANY'
-                                  ? 'info'
-                                  : activeLegalProfile.legalType === 'HOUSEHOLD'
-                                    ? 'warning'
-                                    : 'positive'
-                              }
-                            >
-                              {LEGAL_TYPE_LABEL[activeLegalProfile.legalType]}
-                            </Status>
-                            <span className="font-semibold text-ink truncate">
-                              {activeLegalProfile.holderName}
-                            </span>
-                          </div>
-                          <span className="text-2xs text-ink-2 font-code block truncate">
-                            {activeLegalProfile.taxCode
-                              ? `MST: ${activeLegalProfile.taxCode}`
-                              : activeLegalProfile.cccd
-                                ? `CCCD: ${activeLegalProfile.cccd}`
-                                : activeLegalProfile.taxAccountType}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="font-semibold text-ink block">{partner || 'Cá nhân'}</span>
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-2xs text-ink-3 block">Deal / Booking gắn kết</span>
-                      {deal ? (
-                        <div className="space-y-0.5">
-                          <span className="font-code font-semibold text-ink block">
-                            {deal.dealCode} · {brand || deal.brandName}
-                          </span>
-                          <span className="text-2xs text-ink-2 font-code block">
-                            Hạn mức Net: {formatNumber(deal.totalValue || 0)}đ
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-ink-2 block">Hồ sơ độc lập · {brand || 'UPBASE'}</span>
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-2xs text-ink-3 block">HĐNT gốc &amp; Biểu mẫu</span>
-                      <span className="font-code font-semibold text-accent block truncate">
-                        {parentRecord?.title ||
-                          activeLegalProfile?.frameworkContractCode ||
-                          deal?.masterContractCode ||
-                          templateId}
-                      </span>
-                      <span className="text-2xs text-ink-2 block truncate">
-                        {template?.name || templateId}
-                      </span>
-                    </div>
+              {/* 1. Chủ thể Bên B: KOC & Hồ sơ pháp lý */}
+              <div className="grid gap-3.5 sm:grid-cols-2">
+                <Field label="KOC / Nhà sáng tạo *" htmlFor="ct-koc">
+                  <div className="space-y-1.5">
+                    {!(editing && !!record?.kocId) && (
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <Input
+                          value={kocSearchQuery}
+                          onChange={e => setKocSearchQuery(e.target.value)}
+                          placeholder="Tìm theo tên KOC, kênh, CCCD, MST, SĐT..."
+                          className="pl-8 text-xs"
+                        />
+                      </div>
+                    )}
+                    <Select
+                      id="ct-koc"
+                      value={koc?.id || selectedKocId}
+                      onChange={e => chooseKocDirectly(e.target.value)}
+                      disabled={editing && !!record?.kocId}
+                    >
+                      <option value="">Chọn KOC ({filteredKocs.length} KOC)...</option>
+                      {filteredKocs.slice(0, 300).map(k => {
+                        const profCount = getKocLegalProfiles(k).length;
+                        return (
+                          <option key={k.id} value={k.id}>
+                            {k.stageName} ({k.channelId}) · {k.realName || k.companyName || 'Chưa rõ tên'}
+                            {profCount > 0 ? ` · [${profCount} hồ sơ]` : ''}
+                          </option>
+                        );
+                      })}
+                    </Select>
                   </div>
+                </Field>
 
-                  {koc && kocLegalProfiles.length > 1 && (
-                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-xs">
-                      <span className="text-ink-2 font-medium">
-                        {koc.stageName} có {kocLegalProfiles.length} pháp nhân — đổi nhanh pháp nhân ký Phụ lục:
-                      </span>
-                      <div className="w-full sm:w-auto sm:min-w-[280px]">
-                        <Select
-                          value={activeLegalProfile?.id || selectedLegalProfileId}
-                          onChange={e => chooseLegalProfile(e.target.value)}
-                        >
-                          {kocLegalProfiles.map(prof => (
+                <Field label="Hồ sơ pháp lý Bên B *" htmlFor="ct-legal-profile">
+                  <div className="space-y-1.5">
+                    <Select
+                      id="ct-legal-profile"
+                      value={activeLegalProfile?.id || selectedLegalProfileId}
+                      onChange={e => chooseLegalProfile(e.target.value)}
+                      disabled={!koc || kocLegalProfiles.length === 0}
+                    >
+                      {!koc ? (
+                        <option value="">Chọn KOC trước...</option>
+                      ) : kocLegalProfiles.length === 0 ? (
+                        <option value="">KOC chưa có hồ sơ pháp lý</option>
+                      ) : (
+                        kocLegalProfiles.map(prof => {
+                          const bankAcc = prof.bankAccount || prof.bankAccountNumber;
+                          return (
                             <option key={prof.id} value={prof.id}>
-                              [{prof.profileCode || 'HSPL'} · {LEGAL_TYPE_LABEL[prof.legalType]}] {prof.holderName}
+                              [{LEGAL_TYPE_LABEL[prof.legalType]}] {prof.holderName}
+                              {prof.taxCode ? ` · MST: ${prof.taxCode}` : prof.cccd ? ` · CCCD: ${prof.cccd}` : ''}
+                              {bankAcc ? ` · STK: ${bankAcc}` : ''}
                             </option>
-                          ))}
-                        </Select>
-                      </div>
-                    </div>
-                  )}
+                          );
+                        })
+                      )}
+                    </Select>
 
-                  {isSow && !parentId && !(activeLegalProfile?.frameworkContractCode?.trim() || deal?.masterContractCode?.trim()) && koc && (
-                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent-soft/20 px-3 py-2 text-2xs">
-                      <div className="flex items-center gap-1.5 text-ink">
-                        <ShieldCheck className="w-3.5 h-3.5 text-accent shrink-0" />
+                    {activeLegalProfile && (
+                      <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-2 bg-sunken/60 px-2.5 py-1.5 rounded-lg border border-line">
+                        <span className="font-semibold text-ink">{activeLegalProfile.holderName}</span>
+                        <span>·</span>
+                        <Status
+                          tone={
+                            activeLegalProfile.legalType === 'COMPANY'
+                              ? 'info'
+                              : activeLegalProfile.legalType === 'HOUSEHOLD'
+                                ? 'warning'
+                                : 'positive'
+                          }
+                        >
+                          {LEGAL_TYPE_LABEL[activeLegalProfile.legalType]}
+                        </Status>
+                        <span>·</span>
                         <span>
-                          KOC chưa có bản ghi Hợp đồng nguyên tắc (HĐNT). Bấm nút bên phải để khởi tạo nhanh HĐNT gốc và gắn vào Phụ lục SOW.
+                          {activeLegalProfile.taxCode ? `MST: ${activeLegalProfile.taxCode}` : `CCCD: ${activeLegalProfile.cccd || '—'}`}
                         </span>
+                        {(activeLegalProfile.bankAccount || activeLegalProfile.bankAccountNumber) && (
+                          <>
+                            <span>·</span>
+                            <span>
+                              STK: {activeLegalProfile.bankAccount || activeLegalProfile.bankAccountNumber} ({activeLegalProfile.bankName || 'Ngân hàng'})
+                            </span>
+                          </>
+                        )}
                       </div>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        disabled={creatingQuickFramework}
-                        onClick={() => void handleQuickCreateFrameworkForSow()}
-                      >
-                        {creatingQuickFramework
-                          ? 'Đang tạo HĐNT gốc...'
-                          : 'Khởi tạo nhanh HĐNT gốc & Gắn vào SOW'}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-line">
-                    <span className="text-xs font-medium text-ink-2">Nguồn hợp đồng</span>
-                    <Segmented
-                      value={isKocOwnForm ? 'KOC_DOCX' : 'UPBASE_TEMPLATE'}
-                      onChange={v => switchSourceMode(v === 'KOC_DOCX')}
-                      items={[
-                        { key: 'UPBASE_TEMPLATE', label: 'Soạn theo mẫu hệ thống' },
-                        { key: 'KOC_DOCX', label: 'Tải lên file hợp đồng riêng của KOC (.docx)' },
-                      ]}
-                    />
+                    )}
                   </div>
+                </Field>
+              </div>
 
-                  <div className="grid gap-3.5 md:grid-cols-2">
-                    <Field label="Giai đoạn hồ sơ (3 bước chuẩn)" className="md:col-span-2">
-                      <div>
-                        {editing ? (
-                          <span className="text-sm font-medium text-ink">
-                            {docStage === 'BBNT'
-                              ? '3. Biên bản nghiệm thu (Theo Job)'
-                              : docStage === 'SOW'
-                                ? '2. Phụ lục SOW (Theo Job)'
-                                : '1. Hợp đồng nguyên tắc (Theo KOC)'}
-                          </span>
-                        ) : (
-                          <Segmented
-                            items={[
-                              { key: 'HDNT', label: '1. HĐNT Khung (Theo KOC)' },
-                              { key: 'SOW', label: '2. Phụ lục SOW (Theo Job)' },
-                              { key: 'BBNT', label: '3. Nghiệm thu BBNT (Theo Job)' },
-                            ]}
-                            value={docStage === 'HD' ? 'HDNT' : docStage}
-                            onChange={v => chooseDocStage(v as ContractDocStage)}
-                          />
-                        )}
-                      </div>
-                    </Field>
-                    {/* Khối trung tâm: Chọn KOC + Chọn Hồ sơ pháp lý -> Tự động khóa Template & Điền thông tin Bên B */}
-                    <div className="md:col-span-2 rounded-xl border border-accent/30 bg-accent-soft/15 p-3.5 space-y-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink">
-                            <UserCheck className="w-4 h-4 text-accent" />
-                            Chọn KOC &amp; Hồ sơ pháp lý (Tự động gắn mẫu hợp đồng &amp; điền thông tin Bên B)
-                          </span>
-                          {koc && activeLegalProfile && (
-                            <Status
-                              tone={
-                                activeLegalProfile.legalType === 'COMPANY'
-                                  ? 'info'
-                                  : activeLegalProfile.legalType === 'HOUSEHOLD'
-                                    ? 'warning'
-                                    : 'positive'
-                              }
-                            >
-                              Nhãn pháp lý: {LEGAL_TYPE_LABEL[activeLegalProfile.legalType]} → Mẫu {templateId}
-                            </Status>
-                          )}
-                        </div>
-                        {koc && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            icon={RefreshCw}
-                            onClick={refreshSystemPrefill}
-                          >
-                            Đồng bộ lại từ Hồ sơ pháp lý
-                          </Button>
-                        )}
-                      </div>
-
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <Field label="1. Chọn KOC / Nhà sáng tạo từ danh bạ *" htmlFor="ct-koc">
-                          <div className="space-y-1.5">
-                            {!(editing && !!record?.kocId) && (
-                              <div className="relative">
-                                <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                <Input
-                                  value={kocSearchQuery}
-                                  onChange={e => setKocSearchQuery(e.target.value)}
-                                  placeholder="Tìm theo tên KOC, @channelId, tên thật/công ty, CCCD, MST, SĐT..."
-                                  className="pl-8 text-xs"
-                                />
-                              </div>
-                            )}
-                            <Select
-                              id="ct-koc"
-                              value={koc?.id || selectedKocId}
-                              onChange={e => chooseKocDirectly(e.target.value)}
-                              disabled={editing && !!record?.kocId}
-                            >
-                              <option value="">
-                                Chọn KOC từ danh bạ ({filteredKocs.length} KOC)...
+              {/* 2. Gắn kết Booking / Job & HĐNT gốc (cho SOW hoặc BBNT) */}
+              {(isSow || kind === 'ACCEPTANCE') && (
+                <div className="grid gap-3.5 sm:grid-cols-2">
+                  <Field label="Booking / Job thực thi *" htmlFor="ct-deal">
+                    <Select
+                      id="ct-deal"
+                      value={dealId}
+                      onChange={e => chooseDeal(e.target.value)}
+                      disabled={editing && !!record?.dealId}
+                    >
+                      <option value="">Chọn booking / job...</option>
+                      {koc && kocScopedDeals.length > 0 ? (
+                        <>
+                          <optgroup label={`Job của ${koc.stageName} (${kocScopedDeals.length})`}>
+                            {kocScopedDeals.map(d => (
+                              <option key={d.id} value={d.id}>
+                                {d.dealCode} · {d.brandName} ({formatNumber(d.totalValue || 0)}đ)
                               </option>
-                              {filteredKocs.slice(0, 300).map(k => {
-                                const profCount = getKocLegalProfiles(k).length;
-                                return (
-                                  <option key={k.id} value={k.id}>
-                                    {k.stageName} ({k.channelId}) · {k.realName || k.companyName || 'Chưa rõ tên thật'}
-                                    {profCount > 0 ? ` · [${profCount} hồ sơ pháp lý]` : ''}
-                                  </option>
-                                );
-                              })}
-                            </Select>
-                          </div>
-                        </Field>
-
-                        <Field label="2. Chọn Hồ sơ pháp lý của KOC (Cá nhân / HKD / Công ty) *" htmlFor="ct-legal-profile">
-                          <div className="space-y-1.5">
-                            {koc && kocLegalProfiles.length > 0 ? (
-                              <>
-                                <div className="text-2xs text-ink-2 flex items-center justify-between">
-                                  <span>
-                                    Đang có <span className="font-semibold text-ink">{kocLegalProfiles.length}</span> hồ sơ pháp lý của{' '}
-                                    <span className="font-semibold text-ink">{koc.stageName}</span>
-                                  </span>
-                                  {activeLegalProfile && (
-                                    <span className="font-code font-semibold text-accent">
-                                      Loại: {LEGAL_TYPE_LABEL[activeLegalProfile.legalType]}
-                                    </span>
-                                  )}
-                                </div>
-                                <Select
-                                  id="ct-legal-profile"
-                                  value={activeLegalProfile?.id || selectedLegalProfileId}
-                                  onChange={e => chooseLegalProfile(e.target.value)}
-                                >
-                                  {kocLegalProfiles.map(prof => {
-                                    const bankAcc = prof.bankAccount || prof.bankAccountNumber;
-                                    return (
-                                      <option key={prof.id} value={prof.id}>
-                                        [{LEGAL_TYPE_LABEL[prof.legalType]}] {prof.holderName}
-                                        {prof.taxCode ? ` · MST: ${prof.taxCode}` : ''}
-                                        {prof.cccd ? ` · CCCD: ${prof.cccd}` : ''}
-                                        {bankAcc ? ` · STK: ${bankAcc} (${prof.bankName || ''})` : ''}
-                                      </option>
-                                    );
-                                  })}
-                                </Select>
-                              </>
-                            ) : (
-                              <div className="rounded-lg border border-dashed border-line bg-surface px-3 py-2 text-xs text-ink-3">
-                                Vui lòng chọn KOC ở bước 1 để hiển thị danh sách Hồ sơ pháp lý (Cá nhân / Hộ kinh doanh / Công ty) của KOC đó.
-                              </div>
-                            )}
-                          </div>
-                        </Field>
-                      </div>
-
-                      {/* Bước 3 (nếu lập SOW / BBNT hoặc muốn gắn Deal): Chọn Booking / Job */}
-                      <Field label="3. Gắn Booking / Job thực thi (Bắt buộc khi lập Phụ lục SOW hoặc BBNT)" htmlFor="ct-deal">
-                        <div className="space-y-1.5">
-                          {koc && kocScopedDeals.length > 0 && !(editing && !!record?.dealId) && (
-                            <div className="text-2xs text-ink-2 flex items-center justify-between">
-                              <span>
-                                KOC <span className="font-semibold text-ink">{koc.stageName}</span> có{' '}
-                                <span className="font-semibold text-ink">{kocScopedDeals.length}</span> Booking/Job trong hệ thống
-                              </span>
-                              {dealId && (
-                                <button
-                                  type="button"
-                                  onClick={() => setDealId('')}
-                                  className="text-accent hover:underline font-medium"
-                                >
-                                  Bỏ gắn Job (Ký HĐNT khung độc lập)
-                                </button>
-                              )}
-                            </div>
-                          )}
-                          <Select id="ct-deal" value={dealId} onChange={e => chooseDeal(e.target.value)} disabled={editing && !!record?.dealId}>
-                            <option value="">{docStage === 'HDNT' ? 'Không gắn booking (Ký HĐNT khung cho KOC)' : 'Chọn booking / Job...'}</option>
-                            {koc && kocScopedDeals.length > 0 ? (
-                              <>
-                                <optgroup label={`Booking / Job của ${koc.stageName} (${kocScopedDeals.length})`}>
-                                  {kocScopedDeals.map(d => (
-                                    <option key={d.id} value={d.id}>
-                                      {d.dealCode} · {d.kocStageName} · {d.brandName} ({formatNumber(d.totalValue || 0)}đ)
-                                    </option>
-                                  ))}
-                                </optgroup>
-                                <optgroup label="Các Booking / Job khác">
-                                  {dealOptions
-                                    .filter(d => !kocScopedDeals.some(kd => kd.id === d.id))
-                                    .map(d => (
-                                      <option key={d.id} value={d.id}>
-                                        {d.dealCode} · {d.kocStageName} · {d.brandName}
-                                      </option>
-                                    ))}
-                                </optgroup>
-                              </>
-                            ) : (
-                              dealOptions.map(d => (
+                            ))}
+                          </optgroup>
+                          <optgroup label="Các Job khác">
+                            {dealOptions
+                              .filter(d => !kocScopedDeals.some(kd => kd.id === d.id))
+                              .map(d => (
                                 <option key={d.id} value={d.id}>
                                   {d.dealCode} · {d.kocStageName} · {d.brandName}
                                 </option>
-                              ))
-                            )}
-                          </Select>
-                        </div>
-                      </Field>
+                              ))}
+                          </optgroup>
+                        </>
+                      ) : (
+                        dealOptions.map(d => (
+                          <option key={d.id} value={d.id}>
+                            {d.dealCode} · {d.kocStageName} · {d.brandName}
+                          </option>
+                        ))
+                      )}
+                    </Select>
+                  </Field>
 
-                      {/* Thẻ hiển thị trực tiếp thông tin Bên B lấy từ Hồ sơ pháp lý đã chọn */}
-                      {activeLegalProfile && (
-                        <div className="pt-2.5 border-t border-line space-y-2">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <span className="text-xs font-semibold text-ink flex items-center gap-1.5">
-                              <Building2 className="w-3.5 h-3.5 text-accent" />
-                              Thông tin Đối tác Bên B &amp; Tài khoản Ngân hàng (Trích xuất tự động từ Hồ sơ pháp lý)
-                            </span>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-code text-2xs px-1.5 py-0.5 rounded bg-surface border border-line text-ink">
-                                {activeLegalProfile.profileCode || 'HSPL-01'}
-                              </span>
-                              <Status
-                                tone={
-                                  activeLegalProfile.legalType === 'COMPANY'
-                                    ? 'info'
-                                    : activeLegalProfile.legalType === 'HOUSEHOLD'
-                                      ? 'warning'
-                                      : 'positive'
-                                }
-                              >
-                                {LEGAL_TYPE_LABEL[activeLegalProfile.legalType]}
-                              </Status>
-                            </div>
-                          </div>
+                  <Field label={isSow ? 'Hợp đồng nguyên tắc gốc' : 'Phụ lục SOW gốc'} htmlFor="ct-parent">
+                    <div className="space-y-1.5">
+                      <Select
+                        id="ct-parent"
+                        value={parentId}
+                        onChange={e => {
+                          const nextParentId = e.target.value;
+                          setParentId(nextParentId);
+                          const pRec = data.records.find(r => r.id === nextParentId);
+                          if (pRec) {
+                            if (!brand.trim()) setBrand(pRec.brand);
+                            if (!partner.trim()) setPartner(pRec.partner);
+                            if (pRec.dealId && !dealId) chooseDeal(pRec.dealId);
+                            if (!title.trim()) setTitle(formatStageTitle(docStage, koc, deal, pRec.partner, pRec.brand));
+                            const freshJobs = buildDealSowJobTables(
+                              dealWithActiveProfile || deal,
+                              koc,
+                              pRec,
+                            );
+                            setDraftJobTables(freshJobs);
+                            setActiveJobTableIdx(0);
+                            if (freshJobs[0]) {
+                              setDraftVideoFee(freshJobs[0].videoFeeNetVnd);
+                              setDraftAddons(freshJobs[0].addonItems);
+                              setDraftProductName(freshJobs[0].productName);
+                              setDraftAirDate(freshJobs[0].airDate);
+                            }
+                            const inferredTpl = isSow ? '' : inferAcceptanceTemplate(pRec.templateId);
+                            if (inferredTpl && inferredTpl !== templateId) {
+                              setTemplate(null);
+                              setValues({});
+                              setTemplateId(inferredTpl);
+                            } else if (template) {
+                              const pTpl = data.templates.find(t => t.id === pRec.templateId);
+                              const result = prefill(fields, {}, {
+                                koc,
+                                deal: dealWithActiveProfile || deal,
+                                brand: brand || pRec.brand,
+                                existingRecords: data.records,
+                                parentRecord: pRec,
+                                parentFields: pTpl ? uniqueFields(pTpl) : [],
+                                legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
+                                ctvAcceptedDeals,
+                              });
+                              setValues(result.values);
+                              setPrefilled(new Set(result.filled));
+                            }
+                          }
+                        }}
+                      >
+                        <option value="">
+                          {isSow
+                            ? activeLegalProfile?.frameworkContractCode?.trim() || deal?.masterContractCode?.trim()
+                              ? `Kế thừa HĐNT (${activeLegalProfile?.frameworkContractCode || deal?.masterContractCode})`
+                              : 'Chọn hợp đồng nguyên tắc của KOC...'
+                            : 'Chọn Phụ lục SOW của Job...'}
+                        </option>
+                        {parents.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
+                      </Select>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 p-3 rounded-xl border border-line bg-surface text-xs">
-                            <div>
-                              <span className="text-2xs text-ink-3 block">Tên đối tác Bên B</span>
-                              <span className="font-semibold text-ink block">{activeLegalProfile.holderName || partner || '—'}</span>
-                              {activeLegalProfile.representativeName && (
-                                <span className="text-2xs text-ink-2 block">
-                                  Đại diện: {activeLegalProfile.representativeName}
-                                  {activeLegalProfile.representativeTitle ? ` (${activeLegalProfile.representativeTitle})` : ''}
-                                </span>
-                              )}
-                            </div>
-
-                            <div>
-                              <span className="text-2xs text-ink-3 block">Số CCCD / Mã số thuế (MST)</span>
-                              <span className="font-code font-semibold text-ink block">
-                                {activeLegalProfile.legalType === 'COMPANY'
-                                  ? `MST: ${activeLegalProfile.taxCode || 'Chưa cập nhật'}`
-                                  : activeLegalProfile.legalType === 'HOUSEHOLD'
-                                    ? `MST: ${activeLegalProfile.taxCode || '—'} · CCCD: ${activeLegalProfile.cccd || '—'}`
-                                    : `CCCD: ${activeLegalProfile.cccd || 'Chưa cập nhật'}`}
-                              </span>
-                              {(activeLegalProfile.cccdIssueDate || activeLegalProfile.cccdIssuePlace) && (
-                                <span className="text-2xs text-ink-2 block truncate">
-                                  Cấp: {activeLegalProfile.cccdIssueDate || '—'} tại {activeLegalProfile.cccdIssuePlace || '—'}
-                                </span>
-                              )}
-                            </div>
-
-                            <div>
-                              <span className="text-2xs text-ink-3 block">Tài khoản Ngân hàng thụ hưởng</span>
-                              <span className="font-code font-semibold text-ink block">
-                                {activeLegalProfile.bankAccount || activeLegalProfile.bankAccountNumber || 'Chưa có STK'}{' '}
-                                {activeLegalProfile.bankName ? `(${activeLegalProfile.bankName})` : ''}
-                              </span>
-                              <span className="text-2xs text-ink-2 block truncate">
-                                Chủ TK: {activeLegalProfile.bankHolderName || activeLegalProfile.holderName || '—'}
-                              </span>
-                            </div>
-
-                            <div className="sm:col-span-2 lg:col-span-3 pt-1.5 border-t border-line/60 flex flex-wrap items-center justify-between gap-2">
-                              <div>
-                                <span className="text-2xs text-ink-3">Địa chỉ đăng ký trên hợp đồng: </span>
-                                <span className="font-medium text-ink">
-                                  {activeLegalProfile.registeredAddress || koc?.permanentAddress || 'Chưa cập nhật địa chỉ trong hồ sơ pháp lý'}
-                                </span>
-                              </div>
-                              <div className="text-2xs font-code text-ink-2">
-                                SĐT: {activeLegalProfile.contactPhone || koc?.phone || '—'} · Email: {activeLegalProfile.contactEmail || koc?.email || '—'}
-                              </div>
-                            </div>
-                          </div>
+                      {isSow && !parentId && !(activeLegalProfile?.frameworkContractCode?.trim() || deal?.masterContractCode?.trim()) && koc && (
+                        <div className="flex items-center justify-between gap-2 text-2xs text-warning bg-warning-soft/30 px-2.5 py-1.5 rounded-lg border border-warning/30">
+                          <span>KOC chưa có HĐNT gốc trong danh sách</span>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={creatingQuickFramework}
+                            onClick={() => void handleQuickCreateFrameworkForSow()}
+                          >
+                            {creatingQuickFramework ? 'Đang tạo...' : 'Tạo nhanh HĐNT gốc'}
+                          </Button>
                         </div>
                       )}
                     </div>
+                  </Field>
+                </div>
+              )}
 
-                    <Field label="Mẫu pháp chế (Tự động khóa theo nhãn Hồ sơ pháp lý)" htmlFor="ct-template">
-                      <div
-                        id="ct-template"
-                        className="rounded-lg border border-line bg-sunken/70 px-3 py-2 flex items-center justify-between gap-2 text-xs"
-                      >
+              {/* 3. Mẫu hợp đồng & Tên hồ sơ */}
+              <div className="grid gap-3.5 sm:grid-cols-2">
+                <Field label="Mẫu hợp đồng" htmlFor="ct-template">
+                  <div
+                    id="ct-template"
+                    className="h-9 px-3 rounded-lg border border-line bg-sunken/70 flex items-center justify-between text-xs"
+                  >
+                    <span className="font-semibold text-ink truncate">
+                      {template?.name || templateId}
+                    </span>
+                    <span className="font-code text-2xs font-semibold text-accent px-1.5 py-0.5 rounded bg-surface border border-line shrink-0">
+                      {templateId}
+                    </span>
+                  </div>
+                </Field>
+
+                <Field label="Tên hồ sơ *" htmlFor="ct-title">
+                  <Input
+                    id="ct-title"
+                    required
+                    maxLength={180}
+                    value={title}
+                    onChange={e => setTitle(e.target.value)}
+                    placeholder="Nhập tên hồ sơ..."
+                  />
+                </Field>
+              </div>
+
+              {/* 4. Nhãn hàng & Đối tác Bên B */}
+              <div className="grid gap-3.5 sm:grid-cols-2">
+                <Field label="Nhãn hàng *" htmlFor="ct-brand">
+                  <Input
+                    id="ct-brand"
+                    required={!isHdnt}
+                    maxLength={120}
+                    list="ct-brands"
+                    value={brand}
+                    onChange={e => setBrand(e.target.value)}
+                    placeholder={isHdnt ? 'UPBASE' : 'Tên nhãn hàng'}
+                  />
+                  <datalist id="ct-brands">{data.actor.brands.map(b => <option key={b} value={b} />)}</datalist>
+                </Field>
+
+                <Field label="Đối tác Bên B" htmlFor="ct-partner">
+                  <Input
+                    id="ct-partner"
+                    required
+                    maxLength={180}
+                    value={partner}
+                    readOnly={Boolean(activeLegalProfile)}
+                    onChange={e => setPartner(e.target.value)}
+                    className={activeLegalProfile ? 'bg-sunken/60 font-semibold text-ink' : undefined}
+                    placeholder="Tên đối tác bên B"
+                  />
+                </Field>
+              </div>
+
+              {isKocOwnForm && (
+                <>
+                  <Field label="Tổng giá trị hợp đồng (VNĐ)" htmlFor="ct-koc-total">
+                    <Input
+                      id="ct-koc-total"
+                      inputMode="numeric"
+                      className="tabular-nums"
+                      value={customContractValue}
+                      onChange={e => setCustomContractValue(formatMoneyInput(e.target.value))}
+                      placeholder="Nhập giá trị ghi trên hợp đồng KOC..."
+                    />
+                  </Field>
+
+                  <div className="rounded-xl border-2 border-dashed border-accent/40 bg-accent-soft/20 p-4 space-y-2.5">
+                    <input
+                      ref={kocDocxInputRef}
+                      type="file"
+                      accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      onChange={handleKocDocxSelect}
+                      className="hidden"
+                    />
+                    {customFile ? (
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-surface border border-line px-3.5 py-2.5 text-xs">
                         <div className="min-w-0">
-                          <span className="font-semibold text-ink block truncate">
-                            {template?.name || templateId}
-                          </span>
-                          <span className="text-2xs text-ink-3 block truncate">
-                            Tự động gắn từ nhãn{' '}
-                            <span className="font-semibold text-ink-2">
-                              {activeLegalProfile ? LEGAL_TYPE_LABEL[activeLegalProfile.legalType] : 'Cá nhân'}
-                            </span>{' '}
-                            + Giai đoạn{' '}
-                            <span className="font-semibold text-ink-2">
-                              {docStage === 'BBNT' ? 'Nghiệm thu BBNT' : docStage === 'SOW' ? 'Phụ lục SOW' : 'HĐNT Khung'}
-                            </span>
+                          <span className="font-semibold text-ink block truncate">{customFile.filename}</span>
+                          <span className="text-2xs text-ink-3">
+                            Đã đọc {customFile.paragraphs.filter(p => p.trim()).length} đoạn văn bản · Xem trực tiếp bên phải
                           </span>
                         </div>
-                        <span className="px-2 py-0.5 rounded bg-surface border border-line font-code text-2xs font-semibold text-accent shrink-0">
-                          {templateId}
-                        </span>
+                        <Button size="sm" variant="secondary" icon={FileUp} onClick={() => kocDocxInputRef.current?.click()}>
+                          Đổi file .docx khác
+                        </Button>
                       </div>
-                    </Field>
-                    <Field label="Tên hồ sơ" htmlFor="ct-title">
-                      <Input id="ct-title" required maxLength={180} value={title} onChange={e => setTitle(e.target.value)} placeholder="Hợp đồng nguyên tắc / Phụ lục SOW · Tên KOC" />
-                    </Field>
-                    <Field label={isHdnt ? 'Phạm vi / Nhãn hàng (HĐNT dùng chung)' : 'Nhãn hàng'} htmlFor="ct-brand">
-                      <Input
-                        id="ct-brand"
-                        required={!isHdnt}
-                        maxLength={120}
-                        list="ct-brands"
-                        value={brand}
-                        onChange={e => setBrand(e.target.value)}
-                        placeholder={isHdnt ? 'UPBASE (Áp dụng cho mọi nhãn hàng)' : 'Chọn hoặc nhập tên nhãn hàng'}
-                      />
-                      <datalist id="ct-brands">{data.actor.brands.map(b => <option key={b} value={b} />)}</datalist>
-                    </Field>
-                    <Field label="Đối tác Bên B (Tự động lấy từ Hồ sơ pháp lý)" htmlFor="ct-partner">
-                      <Input
-                        id="ct-partner"
-                        required
-                        maxLength={180}
-                        value={partner}
-                        readOnly={Boolean(activeLegalProfile)}
-                        onChange={e => setPartner(e.target.value)}
-                        className={activeLegalProfile ? 'bg-sunken/60 font-semibold text-ink' : undefined}
-                      />
-                    </Field>
-                    {template && (() => {
-                      const enrichedTpl = enrichTemplateWithSignFlow(template);
-                      const previewCode = buildStableContractCode({
-                        id: record?.id || 'DRAFT',
-                        templateId: template.id,
-                        brand: brand || 'UPBASE',
-                        dealCode: deal?.dealCode || record?.dealCode,
-                        kocId: koc?.id || record?.kocId,
-                        values,
-                      });
-                      return (
-                        <div className="md:col-span-2 rounded-lg border border-line bg-sunken/70 px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-2xs">
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-ink-2">
-                            <span>
-                              Mã chống trùng (<span className="font-code font-semibold text-ink">contractCode</span>):{' '}
-                              <span className="font-code font-semibold text-accent">{previewCode}</span>
-                            </span>
-                            <span>·</span>
-                            <span>
-                              Khóa phiên bản mẫu:{' '}
-                              <span className="font-code font-semibold text-ink">{template.version}</span>
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-ink-3">
-                              {enrichedTpl.signingFlowConfig?.mode === 'PARALLEL' ? 'Ký song song' : 'Ký tuần tự'} ({enrichedTpl.signingFlowConfig?.deadlineDays || 7} ngày)
-                            </span>
-                            {(enrichedTpl.signTags || []).map(tag => (
-                              <span key={tag} className="font-code px-1.5 py-0.5 rounded bg-surface border border-line text-accent">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="text-xs">
+                          <span className="font-semibold text-ink block">Tải lên hợp đồng theo mẫu riêng của KOC / Agency (.docx)</span>
+                          <span className="text-2xs text-ink-3">
+                            Hệ thống hiển thị nguyên văn trên khung A4 để Pháp chế &amp; Kế toán rà soát.
+                          </span>
                         </div>
-                      );
-                    })()}
-                    {isKocOwnForm && (
-                      <Field label="Tổng giá trị hợp đồng (VNĐ)" htmlFor="ct-koc-total" className="md:col-span-2">
-                        <Input
-                          id="ct-koc-total"
-                          inputMode="numeric"
-                          className="tabular-nums"
-                          value={customContractValue}
-                          onChange={e => setCustomContractValue(formatMoneyInput(e.target.value))}
-                          placeholder="Nhập giá trị ghi trên hợp đồng KOC để đối soát..."
-                        />
-                      </Field>
-                    )}
-                    {(kind === 'ACCEPTANCE' || isSow) && (
-                      <Field label={isSow ? 'Hợp đồng nguyên tắc gốc của KOC' : 'Phụ lục SOW / Hợp đồng gốc của Job'} htmlFor="ct-parent" className="md:col-span-2">
-                        <div className="space-y-2">
-                          <Select
-                            id="ct-parent"
-                            value={parentId}
-                            onChange={e => {
-                              const nextParentId = e.target.value;
-                              setParentId(nextParentId);
-                              const pRec = data.records.find(r => r.id === nextParentId);
-                              if (pRec) {
-                                if (!brand.trim()) setBrand(pRec.brand);
-                                if (!partner.trim()) setPartner(pRec.partner);
-                                if (pRec.dealId && !dealId) chooseDeal(pRec.dealId);
-                                if (!title.trim()) setTitle(formatStageTitle(docStage, koc, deal, pRec.partner, pRec.brand));
-                                const freshJobs = buildDealSowJobTables(
-                                  dealWithActiveProfile || deal,
-                                  koc,
-                                  pRec,
-                                );
-                                setDraftJobTables(freshJobs);
-                                setActiveJobTableIdx(0);
-                                if (freshJobs[0]) {
-                                  setDraftVideoFee(freshJobs[0].videoFeeNetVnd);
-                                  setDraftAddons(freshJobs[0].addonItems);
-                                  setDraftProductName(freshJobs[0].productName);
-                                  setDraftAirDate(freshJobs[0].airDate);
-                                }
-                                const inferredTpl = isSow ? '' : inferAcceptanceTemplate(pRec.templateId);
-                                if (inferredTpl && inferredTpl !== templateId) {
-                                  setTemplate(null);
-                                  setValues({});
-                                  setTemplateId(inferredTpl);
-                                } else if (template) {
-                                  const pTpl = data.templates.find(t => t.id === pRec.templateId);
-                                  const result = prefill(fields, {}, {
-                                    koc,
-                                    deal: dealWithActiveProfile || deal,
-                                    brand: brand || pRec.brand,
-                                    existingRecords: data.records,
-                                    parentRecord: pRec,
-                                    parentFields: pTpl ? uniqueFields(pTpl) : [],
-                                    legalProfileId: selectedLegalProfileId || deal?.legalProfileId,
-                                    ctvAcceptedDeals,
-                                  });
-                                  setValues(result.values);
-                                  setPrefilled(new Set(result.filled));
-                                }
-                              }
-                            }}
-                          >
-                            <option value="">
-                              {isSow
-                                ? activeLegalProfile?.frameworkContractCode?.trim() || deal?.masterContractCode?.trim()
-                                  ? `Kế thừa HĐNT từ hồ sơ pháp lý (${activeLegalProfile?.frameworkContractCode || deal?.masterContractCode})`
-                                  : 'Chọn hợp đồng nguyên tắc của KOC...'
-                                : 'Chọn Phụ lục SOW / Hợp đồng của Job'}
-                            </option>
-                            {parents.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
-                          </Select>
-
-                          {isSow && !parentId && (
-                            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent-soft/20 px-3 py-2 text-2xs">
-                              <div className="flex items-center gap-1.5 text-ink">
-                                <ShieldCheck className="w-3.5 h-3.5 text-accent shrink-0" />
-                                {activeLegalProfile?.frameworkContractCode?.trim() || deal?.masterContractCode?.trim() ? (
-                                  <span>
-                                    Phụ lục SOW đang kế thừa số HĐNT{' '}
-                                    <span className="font-code font-semibold text-accent">
-                                      {activeLegalProfile?.frameworkContractCode || deal?.masterContractCode}
-                                    </span>{' '}
-                                    từ Hồ sơ pháp lý KOC (có thể lưu và trình ký ngay).
-                                  </span>
-                                ) : (
-                                  <span>
-                                    KOC chưa có bản ghi Hợp đồng nguyên tắc (HĐNT) trong danh sách hợp đồng. Bạn có thể khởi tạo nhanh HĐNT gốc ngay tại đây để gắn vào Phụ lục SOW.
-                                  </span>
-                                )}
-                              </div>
-                              {koc && (
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  disabled={creatingQuickFramework}
-                                  onClick={() => void handleQuickCreateFrameworkForSow()}
-                                >
-                                  {creatingQuickFramework
-                                    ? 'Đang tạo HĐNT gốc...'
-                                    : 'Khởi tạo nhanh HĐNT gốc & Gắn vào Phụ lục SOW'}
-                                </Button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </Field>
+                        <Button size="sm" variant="primary" icon={Upload} onClick={() => kocDocxInputRef.current?.click()}>
+                          Chọn file .docx của KOC
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </>
               )}
 
-              {isKocOwnForm && (
-                <div className="rounded-xl border-2 border-dashed border-accent/40 bg-accent-soft/20 p-4 space-y-2.5">
-                  <input
-                    ref={kocDocxInputRef}
-                    type="file"
-                    accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    onChange={handleKocDocxSelect}
-                    className="hidden"
-                  />
-                  {customFile ? (
-                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-surface border border-line px-3.5 py-2.5 text-xs">
-                      <div className="min-w-0">
-                        <span className="font-semibold text-ink block truncate">{customFile.filename}</span>
-                        <span className="text-2xs text-ink-3">
-                          Đã đọc {customFile.paragraphs.filter(p => p.trim()).length} đoạn văn bản · Xem trực tiếp bên phải
-                        </span>
-                      </div>
-                      <Button size="sm" variant="secondary" icon={FileUp} onClick={() => kocDocxInputRef.current?.click()}>
-                        Đổi file .docx khác
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="text-xs">
-                        <span className="font-semibold text-ink block">Tải lên hợp đồng theo mẫu riêng của KOC / Agency (.docx)</span>
-                        <span className="text-2xs text-ink-3">
-                          Hệ thống hiển thị nguyên văn trên khung A4 để Pháp chế &amp; Kế toán rà soát và lưu làm mẫu chuẩn của KOC.
-                        </span>
-                      </div>
-                      <Button size="sm" variant="primary" icon={Upload} onClick={() => kocDocxInputRef.current?.click()}>
-                        Chọn file .docx của KOC
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Tùy chọn rõ ràng: Có sửa hợp đồng hay không & Luồng duyệt Pháp chế */}
-              <div className="rounded-xl border border-line bg-sunken/40 p-3.5 space-y-3 text-xs">
+              {/* 5. Tùy chọn sửa đổi hợp đồng */}
+              <div className="rounded-xl border border-line bg-surface p-3.5 space-y-3 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold text-ink">
-                      Tùy chọn sửa đổi hợp đồng (Có sửa nội dung hợp đồng chuẩn hay không?)
-                    </span>
+                    <span className="font-semibold text-ink">Điều khoản hợp đồng</span>
                     <Status tone={hasCustomTerms || isKocOwnForm ? 'warning' : 'positive'}>
                       {hasCustomTerms || isKocOwnForm
                         ? 'Bắt buộc qua Pháp chế thẩm định'
                         : 'Miễn duyệt Pháp chế (BR-02)'}
                     </Status>
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-ink-2">
-                    <span>
-                      Luồng duyệt: <span className="text-accent font-semibold">{ruleEval.reviewStream.streamName}</span>
-                    </span>
-                    <span>·</span>
-                    <span>
-                      SLA: <span className="text-ink font-semibold">TCKT {ruleEval.reviewStream.slaHoursTckt}h · Pháp chế {ruleEval.reviewStream.slaHoursLegal}h</span>
-                    </span>
+                  <div className="text-2xs text-ink-2">
+                    Luồng duyệt: <span className="text-accent font-semibold">{ruleEval.reviewStream.streamName}</span>
                   </div>
                 </div>
 
                 {!isKocOwnForm && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setHasCustomTerms(false)}
-                      className={`text-left p-2.5 rounded-lg border transition-colors ${
-                        !hasCustomTerms
-                          ? 'border-accent bg-accent-soft/25 ring-1 ring-accent'
-                          : 'border-line bg-surface hover:bg-sunken/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-ink">
-                          Không sửa hợp đồng (Giữ nguyên mẫu chuẩn)
-                        </span>
-                        {!hasCustomTerms && <Status tone="positive">Đang chọn</Status>}
-                      </div>
-                      <p className="text-2xs text-ink-2 mt-1">
-                        Áp dụng nguyên vẹn điều khoản mẫu chuẩn Ver092026 — miễn bước duyệt Pháp chế, chuyển thẳng Kế toán / Trưởng nhóm duyệt nhanh.
-                      </p>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setHasCustomTerms(true)}
-                      className={`text-left p-2.5 rounded-lg border transition-colors ${
-                        hasCustomTerms
-                          ? 'border-warning bg-warning-soft/30 ring-1 ring-warning'
-                          : 'border-line bg-surface hover:bg-sunken/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-ink">
-                          Có sửa hợp đồng (Điều chỉnh / bổ sung điều khoản)
-                        </span>
-                        {hasCustomTerms && <Status tone="warning">Đang chọn</Status>}
-                      </div>
-                      <p className="text-2xs text-ink-2 mt-1">
-                        Có đề xuất sửa đổi câu chữ hoặc thêm ngoại lệ ngoài mẫu chuẩn — bắt buộc chuyển qua Phòng Pháp chế thẩm định trước khi ký.
-                      </p>
-                    </button>
-                  </div>
+                  <Segmented
+                    value={hasCustomTerms ? 'CUSTOM' : 'STANDARD'}
+                    onChange={v => setHasCustomTerms(v === 'CUSTOM')}
+                    items={[
+                      { key: 'STANDARD', label: 'Giữ nguyên mẫu chuẩn' },
+                      { key: 'CUSTOM', label: 'Có sửa đổi / bổ sung điều khoản' },
+                    ]}
+                  />
                 )}
 
                 {(hasCustomTerms || isKocOwnForm) && (
                   <div className="grid gap-3 md:grid-cols-2 pt-2 border-t border-line">
-                    <Field label={isKocOwnForm ? 'Điểm lưu ý chính trong mẫu riêng của KOC *' : 'Nội dung điều khoản sửa đổi / Thỏa thuận ngoại lệ *'} htmlFor="ct-custom-terms">
+                    <Field
+                      label={isKocOwnForm ? 'Điểm lưu ý trong mẫu KOC *' : 'Nội dung điều khoản sửa đổi / bổ sung *'}
+                      htmlFor="ct-custom-terms"
+                    >
                       <Textarea
                         id="ct-custom-terms"
                         rows={2}
                         value={customTermsSummary}
                         onChange={e => setCustomTermsSummary(e.target.value)}
-                        placeholder={isKocOwnForm ? 'Tóm tắt điều khoản thanh toán, phạt, bản quyền trong form của KOC...' : 'Ghi rõ điều khoản nào cần sửa / bổ sung để Pháp chế thẩm định...'}
+                        placeholder={isKocOwnForm ? 'Tóm tắt điều khoản thanh toán, phạt, bản quyền...' : 'Ghi rõ điều khoản cần sửa đổi hoặc bổ sung...'}
                       />
                     </Field>
-                    <Field label="Ghi chú nội bộ gửi Pháp chế & Kế toán" htmlFor="ct-notes">
+                    <Field label="Ghi chú nội bộ" htmlFor="ct-notes">
                       <Textarea
                         id="ct-notes"
                         rows={2}
                         value={internalNotes}
                         onChange={e => setInternalNotes(e.target.value)}
-                        placeholder="Ghi chú trao đổi với KOC / Quản lý..."
+                        placeholder="Ghi chú trao đổi nội bộ..."
                       />
                     </Field>
                   </div>

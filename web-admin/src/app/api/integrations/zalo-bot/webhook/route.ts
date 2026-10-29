@@ -15,6 +15,7 @@ import { readRecord, upsertRecord } from '@/lib/server/sharedRecords';
 
 export const dynamic = 'force-dynamic';
 export const preferredRegion = ['sin1', 'hkg1'];
+export const maxDuration = 60;
 
 /**
  * GET /api/integrations/zalo-bot/webhook
