@@ -7,6 +7,9 @@ import {
   checkSingleLinkServerless,
   formatVnDateTimeFromUnixSec,
   getVnCartBridgeState,
+  DEFAULT_VN_CART_BRIDGE_STATE,
+  TIKTOK_VN_CART_CACHE_KEY,
+  type VnCartBridgeState,
 } from '../linkAirCheckServer';
 import type { LinkAirResult } from '../linkAirCheck';
 import { getSharedCrawlerStore, inspectLiveTikTokVideoPage } from '../tiktokOpenSourceEngines';
@@ -207,7 +210,10 @@ const inMemoryMappings = new Map<string, ZaloGroupMapping>();
 const inMemoryAirHistory: ZaloAirCheckHistoryItem[] = [];
 const inMemoryPermissions = new Map<string, ZaloUserPermission>();
 const inMemoryDiscoveredSenders = new Map<string, ZaloDiscoveredSender>();
-const inMemoryCapturedFrames = new Map<string, { buffer: Buffer; createdAt: number }>();
+const inMemoryCapturedFrames = new Map<
+  string,
+  { buffer: Buffer; createdAt: number; source?: 'FFMPEG_FRAME' | 'TIKTOK_COVER' }
+>();
 const inMemoryAirCheckCache = new Map<string, { result: LinkAirResult; expiresAt: number }>();
 let inMemorySecurityPolicy: ZaloBotSecurityPolicy | null = null;
 let inMemoryReplyConfig: ZaloBotReplyConfig | null = null;
@@ -1385,7 +1391,12 @@ const FRAME_CAPTURE_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
 const ZALO_FRAMES_SHARED_KEY = 'zalo-frames-cache-v1';
-type SharedFrameCacheMap = Record<string, { base64: string; createdAt: number }>;
+export type SharedFrameCacheEntry = {
+  base64: string;
+  createdAt: number;
+  source?: 'FFMPEG_FRAME' | 'TIKTOK_COVER';
+};
+type SharedFrameCacheMap = Record<string, SharedFrameCacheEntry>;
 
 function isWebpBuffer(buf?: Buffer | null): boolean {
   if (!buf || buf.length < 12) return false;
@@ -1408,14 +1419,18 @@ function isJpegOrPngBuffer(buf?: Buffer | null): boolean {
   return isPng || isJpeg;
 }
 
-async function storeCapturedFrameBuffer(frameId: string, buffer: Buffer): Promise<void> {
+async function storeCapturedFrameBuffer(
+  frameId: string,
+  buffer: Buffer,
+  source: 'FFMPEG_FRAME' | 'TIKTOK_COVER' = 'FFMPEG_FRAME'
+): Promise<void> {
   if (!frameId || buffer.length < 300 || isWebpBuffer(buffer)) return;
   if (inMemoryCapturedFrames.size >= 40) {
     const oldestKey = inMemoryCapturedFrames.keys().next().value;
     if (oldestKey) inMemoryCapturedFrames.delete(oldestKey);
   }
   const now = Date.now();
-  inMemoryCapturedFrames.set(frameId, { buffer, createdAt: now });
+  inMemoryCapturedFrames.set(frameId, { buffer, createdAt: now, source });
 
   try {
     await upsertRecord<SharedFrameCacheMap>(
@@ -1426,6 +1441,7 @@ async function storeCapturedFrameBuffer(frameId: string, buffer: Buffer): Promis
         next[frameId] = {
           base64: buffer.toString('base64'),
           createdAt: now,
+          source,
         };
         const entries = Object.entries(next)
           .filter(
@@ -1445,7 +1461,9 @@ async function storeCapturedFrameBuffer(frameId: string, buffer: Buffer): Promis
   }
 }
 
-export async function getCachedFrameBuffer(frameId?: string | null): Promise<Buffer | null> {
+export async function getCachedFrameBuffer(
+  frameId?: string | null
+): Promise<{ buffer: Buffer; source: 'FFMPEG_FRAME' | 'TIKTOK_COVER' } | null> {
   if (!frameId) return null;
   const isPngBuf = (b: Buffer) => b.length > 1000 && b[0] === 0x89 && b[1] === 0x50;
   const hit = inMemoryCapturedFrames.get(frameId);
@@ -1453,7 +1471,7 @@ export async function getCachedFrameBuffer(frameId?: string | null): Promise<Buf
     if (Date.now() - hit.createdAt > 60 * 60 * 1000 || !isPngBuf(hit.buffer)) {
       inMemoryCapturedFrames.delete(frameId);
     } else {
-      return hit.buffer;
+      return { buffer: hit.buffer, source: hit.source || 'FFMPEG_FRAME' };
     }
   }
 
@@ -1467,8 +1485,13 @@ export async function getCachedFrameBuffer(frameId?: string | null): Promise<Buf
     if (entry?.base64 && Date.now() - (entry.createdAt || 0) < 60 * 60 * 1000) {
       const buf = Buffer.from(entry.base64, 'base64');
       if (isPngBuf(buf)) {
-        inMemoryCapturedFrames.set(frameId, { buffer: buf, createdAt: entry.createdAt || Date.now() });
-        return buf;
+        const source = entry.source || 'FFMPEG_FRAME';
+        inMemoryCapturedFrames.set(frameId, {
+          buffer: buf,
+          createdAt: entry.createdAt || Date.now(),
+          source,
+        });
+        return { buffer: buf, source };
       }
     }
   } catch {
@@ -2397,14 +2420,18 @@ export async function captureTikTokProductFrameBuffer(params: {
   source: 'FFMPEG_FRAME' | 'TIKTOK_COVER' | 'NONE';
   resolvedCoverUrl?: string;
 }> {
+  let fallbackCoverBuffer: Buffer | null = null;
   if (params.frameId) {
     const cached = await getCachedFrameBuffer(params.frameId);
     if (cached) {
-      return {
-        buffer: cached,
-        source: 'FFMPEG_FRAME',
-        resolvedCoverUrl: params.coverUrl || undefined,
-      };
+      if (cached.source === 'FFMPEG_FRAME') {
+        return {
+          buffer: cached.buffer,
+          source: 'FFMPEG_FRAME',
+          resolvedCoverUrl: params.coverUrl || undefined,
+        };
+      }
+      fallbackCoverBuffer = cached.buffer;
     }
   }
 
@@ -2545,8 +2572,40 @@ export async function captureTikTokProductFrameBuffer(params: {
     params.frameId?.match(/FRM(?:V[23])?-(\d{15,22})/)?.[1];
   if (vidFromUrl) {
     try {
-      const bridgeState = await getVnCartBridgeState();
-      const bridgeItem = bridgeState.items?.[vidFromUrl];
+      let bridgeState = await getVnCartBridgeState();
+      let bridgeItem = bridgeState.items?.[vidFromUrl];
+
+      // Nếu chưa có frame từ cầu nối và đang chạy serverless (không có ffmpeg nội bộ)
+      if (!bridgeItem?.frameJpegBase64 && isFfmpegUnavailable) {
+        await upsertRecord<VnCartBridgeState>(
+          TIKTOK_VN_CART_CACHE_KEY,
+          DEFAULT_VN_CART_BRIDGE_STATE,
+          (cur) => {
+            const nextPending = { ...(cur?.pending || {}) };
+            nextPending[vidFromUrl] = {
+              videoId: vidFromUrl,
+              videoUrl: targetVideoUrl,
+              captureSec: params.captureSec,
+              requestedAt: Date.now(),
+            };
+            return {
+              vnBridgeUrl: cur?.vnBridgeUrl,
+              items: { ...DEFAULT_VN_CART_BRIDGE_STATE.items, ...(cur?.items || {}) },
+              pending: nextPending,
+            };
+          }
+        ).catch(() => {});
+
+        // Đợi cầu nối xử lý và đẩy frame lên (chờ tối đa 3.5s)
+        const deadline = Date.now() + 3500;
+        while (Date.now() < deadline) {
+          await new Promise((r) => setTimeout(r, 450));
+          bridgeState = await getVnCartBridgeState();
+          bridgeItem = bridgeState.items?.[vidFromUrl];
+          if (bridgeItem?.frameJpegBase64) break;
+        }
+      }
+
       if (bridgeItem?.frameJpegBase64) {
         const buf = Buffer.from(bridgeItem.frameJpegBase64, 'base64');
         if (buf.length > 1000 && isJpegOrPngBuffer(buf)) {
@@ -2673,11 +2732,23 @@ export async function captureTikTokProductFrameBuffer(params: {
   if (finalBuf && finalBuf.length > 500) {
     const isStampedPng = finalBuf[0] === 0x89 && finalBuf[1] === 0x50;
     if (params.frameId && rawBuffer && rawBuffer.length > 400 && isStampedPng) {
-      await storeCapturedFrameBuffer(params.frameId, finalBuf);
+      await storeCapturedFrameBuffer(
+        params.frameId,
+        finalBuf,
+        rawSource !== 'NONE' ? rawSource : 'TIKTOK_COVER'
+      );
     }
     return {
       buffer: finalBuf,
       source: rawSource !== 'NONE' ? rawSource : 'TIKTOK_COVER',
+      resolvedCoverUrl: tikwmJpegCoverUrl || coverUrl || undefined,
+    };
+  }
+
+  if (fallbackCoverBuffer) {
+    return {
+      buffer: fallbackCoverBuffer,
+      source: 'TIKTOK_COVER',
       resolvedCoverUrl: tikwmJpegCoverUrl || coverUrl || undefined,
     };
   }

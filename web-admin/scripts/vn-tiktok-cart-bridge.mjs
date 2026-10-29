@@ -146,7 +146,7 @@ function parseCartProductsFromItemStruct(itemStruct) {
   return products;
 }
 
-async function extractFfmpegFrameBase64(videoUrl, sec = 3.5) {
+export async function extractFfmpegFrameBase64(videoUrl, sec = 3.5) {
   try {
     const tikwmRes = await fetch(
       `https://www.tikwm.com/api/?url=${encodeURIComponent(videoUrl)}&hd=1`,
@@ -299,12 +299,13 @@ async function pollOnce() {
 
     for (const item of pendingList) {
       if (!item?.videoUrl || !item?.videoId) continue;
-      console.log(`[VN-Bridge] Inspecting pending TikTok video ${item.videoId}: ${item.videoUrl}`);
+      const targetSec = Number(item.captureSec) > 0 ? Number(item.captureSec) : 3.5;
+      console.log(`[VN-Bridge] Inspecting pending TikTok video ${item.videoId}: ${item.videoUrl} (sec: ${targetSec})`);
       // Bước 1: Giải mã nhanh giỏ hàng (<500ms) và đẩy ngay lên Vercel để kịp thời gian chờ 4.5s
       const fastInspected = await inspectTikTokCartFromVietnam(
         item.videoUrl,
         item.videoId,
-        3.5,
+        targetSec,
         { includeFrame: false }
       ).catch((err) => {
         console.error(`[VN-Bridge] Error inspecting ${item.videoId}:`, err?.message || err);
@@ -318,16 +319,27 @@ async function pollOnce() {
         await pushResolvedItemsToWebhook([fastInspected]);
       }
 
-      // Bước 2: Cắt khung hình ffmpeg chất lượng cao và cập nhật bổ sung
+      // Bước 2: Cắt khung hình ffmpeg chất lượng cao tại targetSec và cập nhật bổ sung
       const frameBase64 = await extractFfmpegFrameBase64(
         fastInspected?.videoUrl || item.videoUrl,
-        3.5
+        targetSec
       ).catch(() => undefined);
       if (frameBase64 && fastInspected) {
         fastInspected.frameJpegBase64 = frameBase64;
         fastInspected.updatedAt = new Date().toISOString();
         await pushResolvedItemsToWebhook([fastInspected]);
-        console.log(`[VN-Bridge] Uploaded ffmpeg frame for ${item.videoId}`);
+        console.log(`[VN-Bridge] Uploaded ffmpeg frame for ${item.videoId} at sec ${targetSec}`);
+      } else if (frameBase64) {
+        await pushResolvedItemsToWebhook([
+          {
+            videoId: item.videoId,
+            videoUrl: item.videoUrl,
+            cartProducts: fastInspected?.cartProducts || [],
+            frameJpegBase64: frameBase64,
+            updatedAt: new Date().toISOString(),
+          },
+        ]);
+        console.log(`[VN-Bridge] Uploaded standalone ffmpeg frame for ${item.videoId} at sec ${targetSec}`);
       }
     }
   } catch {
@@ -351,6 +363,13 @@ async function bootstrap() {
     3.7
   ).catch(() => null);
   if (seed2) seeds.push(seed2);
+
+  const seed3 = await inspectTikTokCartFromVietnam(
+    'https://www.tiktok.com/@ctofficial_/video/7701316821709769991',
+    '7701316821709769991',
+    6.9
+  ).catch(() => null);
+  if (seed3) seeds.push(seed3);
 
   if (seeds.length > 0) {
     console.log(`[VN-Bridge] Seeded ${seeds.length} videos with cart products + ffmpeg frames`);

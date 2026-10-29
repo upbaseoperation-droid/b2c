@@ -15,6 +15,7 @@ import {
   type TikTokCartProductItem,
 } from './tiktokOpenSourceEngines';
 import { readRecord, upsertRecord } from './server/sharedRecords';
+import { SNAPSHOT_TIKTOK_FRAMES } from './tiktokFrameSnapshots';
 import {
   detectProductMentionMoments,
   parseWebVttToSegments,
@@ -888,10 +889,10 @@ export interface VnCartBridgeItem {
 export interface VnCartBridgeState {
   vnBridgeUrl?: string;
   items: Record<string, VnCartBridgeItem>;
-  pending: Record<string, { videoId: string; videoUrl: string; requestedAt: number }>;
+  pending: Record<string, { videoId: string; videoUrl: string; captureSec?: number; requestedAt: number }>;
 }
 
-const DEFAULT_VN_CART_BRIDGE_STATE: VnCartBridgeState = {
+export const DEFAULT_VN_CART_BRIDGE_STATE: VnCartBridgeState = {
   items: {
     '7700246764321803541': {
       videoId: '7700246764321803541',
@@ -934,6 +935,27 @@ const DEFAULT_VN_CART_BRIDGE_STATE: VnCartBridgeState = {
         },
       ],
       updatedAt: '2026-10-29T00:55:00.000Z',
+    },
+    '7701316821709769991': {
+      videoId: '7701316821709769991',
+      videoUrl: 'https://www.tiktok.com/@ctofficial_/video/7701316821709769991',
+      cartAnchorTitle:
+        'PHOTOOLEX Spotlight Nano 10W Đèn LED Mini 8400mAh Tạo Ánh Sáng Đẹp Cho TikTok Quay Video Chụp Ảnh Cầm Tay 4 Chế Độ Ánh Sáng RGB',
+      cartAnchorUrl:
+        'https://shop.tiktok.com/vn/pdp/den-led-photoolex-10w-8400mah-4-mau-sac-lai-di-dong/1731633429454095811?source=anchor',
+      cartProductId: '1731633429454095811',
+      cartProducts: [
+        {
+          productId: '1731633429454095811',
+          title:
+            'PHOTOOLEX Spotlight Nano 10W Đèn LED Mini 8400mAh Tạo Ánh Sáng Đẹp Cho TikTok Quay Video Chụp Ảnh Cầm Tay 4 Chế Độ Ánh Sáng RGB',
+          productUrl:
+            'https://shop.tiktok.com/vn/pdp/den-led-photoolex-10w-8400mah-4-mau-sac-lai-di-dong/1731633429454095811?source=anchor',
+          source: 'TikTok Shop Anchor (VN Bridge)',
+        },
+      ],
+      frameJpegBase64: SNAPSHOT_TIKTOK_FRAMES['7701316821709769991'],
+      updatedAt: '2026-10-29T06:50:00.000Z',
     },
   },
   pending: {},
@@ -1002,8 +1024,19 @@ export async function saveVnCartBridgeResolvedItems(
       }
       for (const item of resolvedItems) {
         if (!item?.videoId) continue;
+        const prev = nextItems[item.videoId];
         nextItems[item.videoId] = {
+          ...prev,
           ...item,
+          cartProducts:
+            Array.isArray(item.cartProducts) && item.cartProducts.length > 0
+              ? item.cartProducts
+              : prev?.cartProducts || [],
+          cartAnchorTitle: item.cartAnchorTitle || prev?.cartAnchorTitle,
+          cartAnchorUrl: item.cartAnchorUrl || prev?.cartAnchorUrl,
+          cartProductId: item.cartProductId || prev?.cartProductId,
+          cartSellerId: item.cartSellerId || prev?.cartSellerId,
+          frameJpegBase64: item.frameJpegBase64 || prev?.frameJpegBase64,
           updatedAt: item.updatedAt || new Date().toISOString(),
         };
         delete nextPending[item.videoId];
@@ -1015,6 +1048,25 @@ export async function saveVnCartBridgeResolvedItems(
       };
     }
   ).catch(() => {});
+
+  const videoIdsWithFrames = resolvedItems
+    .filter((i) => i.videoId && i.frameJpegBase64)
+    .map((i) => i.videoId);
+  if (videoIdsWithFrames.length > 0) {
+    await upsertRecord<Record<string, any>>(
+      'zalo-frames-cache-v1',
+      {},
+      (cur) => {
+        const next = { ...(cur || {}) };
+        for (const k of Object.keys(next)) {
+          if (videoIdsWithFrames.some((vid) => k.includes(vid))) {
+            delete next[k];
+          }
+        }
+        return next;
+      }
+    ).catch(() => {});
+  }
 }
 
 function applyVnBridgeItemToInspected(
