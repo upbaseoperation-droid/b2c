@@ -4320,10 +4320,16 @@ export async function processZaloWebhookEvent(
   const chatId = String(
     message?.chat?.id ||
       body?.result?.message?.chat?.id ||
-      body?.recipient?.id ||
+      body?.chat?.id ||
+      message?.group_id ||
+      body?.group_id ||
+      body?.groupId ||
+      message?.groupId ||
       body?.chat_id ||
       message?.chat_id ||
       body?.result?.chat?.id ||
+      message?.from?.id ||
+      body?.result?.message?.from?.id ||
       body?.sender?.id ||
       ''
   ).trim();

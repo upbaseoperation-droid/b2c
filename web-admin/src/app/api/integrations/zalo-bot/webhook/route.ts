@@ -11,7 +11,7 @@ import {
   saveVnCartBridgeResolvedItems,
   type VnCartBridgeItem,
 } from '@/lib/linkAirCheckServer';
-import { upsertRecord } from '@/lib/server/sharedRecords';
+import { readRecord, upsertRecord } from '@/lib/server/sharedRecords';
 
 export const dynamic = 'force-dynamic';
 export const preferredRegion = ['sin1', 'hkg1'];
@@ -136,13 +136,17 @@ export async function GET(req: NextRequest) {
 
   const isDebug = req.nextUrl.searchParams.get('debug') === 'true';
 
+  const persisted = isDebug
+    ? (await readRecord<any[]>('zalo-webhook-history-v1', []).catch(() => ({ data: [] }))).data
+    : [];
+
   return NextResponse.json({
     ok: true,
     status: 'online',
     service: 'Upbase B2C Zalo Bot Webhook',
     version: '1.2.0-frame-6.9s',
     timestamp: new Date().toISOString(),
-    ...(isDebug ? { recentEvents: getDebugEvents() } : {}),
+    ...(isDebug ? { recentEvents: getDebugEvents(), persistedEvents: persisted } : {}),
   });
 }
 
@@ -192,6 +196,19 @@ export async function POST(req: NextRequest) {
       await saveVnCartBridgeResolvedItems(items, body.vnBridgeUrl);
       return NextResponse.json({ ok: true, saved: items.length });
     }
+
+    // Ghi nhận lịch sử webhook vào Persistent Shared Records để chẩn đoán sự kiện nhóm Zalo
+    upsertRecord<any[]>('zalo-webhook-history-v1', [], (prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      const item = {
+        time: new Date().toISOString(),
+        chatId: body?.result?.message?.chat?.id || body?.message?.chat?.id || body?.chat_id || body?.chat?.id || body?.recipient?.id,
+        sender: body?.result?.message?.from?.display_name || body?.message?.from?.display_name || body?.sender?.display_name || body?.sender?.id,
+        text: (body?.result?.message?.text || body?.message?.text || body?.text || '').slice(0, 150),
+        keys: Object.keys(body),
+      };
+      return [item, ...list].slice(0, 30);
+    }).catch(() => null);
 
     // 3. Xử lý trực tiếp sự kiện để Vercel Serverless không đóng băng tiến trình trước khi quét xong giỏ hàng TikTok
     await processZaloWebhookEvent(body).catch((err) => {
