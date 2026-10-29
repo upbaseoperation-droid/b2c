@@ -1050,7 +1050,7 @@ export function ContractSetReconciliationView({
         />
       </StatRow>
 
-      <Panel title="Danh sách Bộ hồ sơ 3 giai đoạn (Hợp đồng nguyên tắc → Phụ lục SOW → Biên bản nghiệm thu)">
+      <Panel title="Bộ hồ sơ pháp lý liên kết">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <FilterBar

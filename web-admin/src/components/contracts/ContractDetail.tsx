@@ -345,7 +345,7 @@ export function ContractDetail({
           {[
             {
               idx: 1,
-              label: '1. Hợp đồng nguyên tắc (HĐNT Khung)',
+              label: '1. Hợp đồng nguyên tắc',
               sub: linkedFrameworkRecord?.title || 'Theo từng KOC',
               state: (isFrameworkWithSow
                 ? isFullySigned
@@ -362,7 +362,7 @@ export function ContractDetail({
             },
             {
               idx: 2,
-              label: '2. Phụ lục SOW (Chốt & Khóa cấu hình Deal)',
+              label: '2. Phụ lục SOW',
               sub: linkedSowRecord?.title || (onCreateSow ? 'Bấm để lập SOW' : 'Theo từng Deal'),
               state: (isSowDoc
                 ? isFullySigned
@@ -382,7 +382,7 @@ export function ContractDetail({
             },
             {
               idx: 3,
-              label: '3. Biên bản nghiệm thu (BBNT theo Link Air)',
+              label: '3. Biên bản nghiệm thu',
               sub: linkedAcceptanceRecord?.title || (!isAcceptanceDoc && isFullySigned ? 'Bấm để lập BBNT' : 'Quyết toán thanh toán'),
               state: (isAcceptanceDoc
                 ? isFullySigned
