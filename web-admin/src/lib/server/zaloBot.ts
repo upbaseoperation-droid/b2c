@@ -1430,7 +1430,7 @@ async function storeCapturedFrameBuffer(frameId: string, buffer: Buffer): Promis
         const entries = Object.entries(next)
           .filter(
             ([k, v]) =>
-              k.startsWith('FRMV2-') &&
+              k.startsWith('FRMV3-') &&
               v &&
               typeof v.base64 === 'string' &&
               now - (v.createdAt || 0) < 30 * 60 * 1000
@@ -1447,9 +1447,10 @@ async function storeCapturedFrameBuffer(frameId: string, buffer: Buffer): Promis
 
 export async function getCachedFrameBuffer(frameId?: string | null): Promise<Buffer | null> {
   if (!frameId) return null;
+  const isPngBuf = (b: Buffer) => b.length > 1000 && b[0] === 0x89 && b[1] === 0x50;
   const hit = inMemoryCapturedFrames.get(frameId);
   if (hit) {
-    if (Date.now() - hit.createdAt > 60 * 60 * 1000 || isWebpBuffer(hit.buffer)) {
+    if (Date.now() - hit.createdAt > 60 * 60 * 1000 || !isPngBuf(hit.buffer)) {
       inMemoryCapturedFrames.delete(frameId);
     } else {
       return hit.buffer;
@@ -1465,7 +1466,7 @@ export async function getCachedFrameBuffer(frameId?: string | null): Promise<Buf
     const entry = shared?.data?.[frameId];
     if (entry?.base64 && Date.now() - (entry.createdAt || 0) < 60 * 60 * 1000) {
       const buf = Buffer.from(entry.base64, 'base64');
-      if (buf.length > 300 && isJpegOrPngBuffer(buf)) {
+      if (isPngBuf(buf)) {
         inMemoryCapturedFrames.set(frameId, { buffer: buf, createdAt: entry.createdAt || Date.now() });
         return buf;
       }
@@ -1742,9 +1743,12 @@ async function stampTikTokAcceptanceOverlay(
           height: '960px',
           position: 'relative',
           backgroundColor: '#0f172a',
-          backgroundImage: bgDataUrl
-            ? undefined
-            : 'linear-gradient(160deg, #1e293b 0%, #0f172a 52%, #090d16 100%)',
+          ...(bgDataUrl
+            ? {}
+            : {
+                backgroundImage:
+                  'linear-gradient(160deg, #1e293b 0%, #0f172a 52%, #090d16 100%)',
+              }),
           color: '#ffffff',
           fontFamily: fontBuf ? 'BeVietnamPro' : 'sans-serif',
         },
@@ -2538,7 +2542,7 @@ export async function captureTikTokProductFrameBuffer(params: {
   // 0. Kiểm tra nếu Cầu nối IP Việt Nam (vn-tiktok-cart-bridge) đã trích xuất sẵn khung hình ffmpeg tại mốc giây KOC cầm sản phẩm
   const vidFromUrl =
     targetVideoUrl.match(/\/video\/(\d{15,22})/)?.[1] ||
-    params.frameId?.match(/FRM(?:V2)?-(\d{15,22})/)?.[1];
+    params.frameId?.match(/FRM(?:V[23])?-(\d{15,22})/)?.[1];
   if (vidFromUrl) {
     try {
       const bridgeState = await getVnCartBridgeState();
@@ -2664,10 +2668,11 @@ export async function captureTikTokProductFrameBuffer(params: {
     }
   }
 
-  // Luôn kết xuất thành ảnh PNG 540x960 chuẩn giao diện TikTok Mobile qua next/og (chỉ lưu cache khi có ảnh nền khung hình hợp lệ)
+  // Luôn kết xuất thành ảnh PNG 540x960 chuẩn giao diện TikTok Mobile qua next/og (chỉ lưu cache khi đã đóng dấu PNG thành công trên nền khung hình hợp lệ)
   const finalBuf = await stampTikTokAcceptanceOverlay(rawBuffer, params.captureSec, mergedMeta);
   if (finalBuf && finalBuf.length > 500) {
-    if (params.frameId && rawBuffer && rawBuffer.length > 400) {
+    const isStampedPng = finalBuf[0] === 0x89 && finalBuf[1] === 0x50;
+    if (params.frameId && rawBuffer && rawBuffer.length > 400 && isStampedPng) {
       await storeCapturedFrameBuffer(params.frameId, finalBuf);
     }
     return {
@@ -4848,7 +4853,7 @@ export async function processZaloWebhookEvent(
       const holdingQuote =
         checkResult.bestHoldingMomentQuote || checkResult.firstProductMentionQuote || null;
       const targetCanonicalVideoUrl = checkResult.canonicalUrl || videoUrl;
-      const frameId = `FRMV2-${checkResult.contentId || Date.now()}-${Math.round(captureSec * 10)}`;
+      const frameId = `FRMV3-${checkResult.contentId || Date.now()}-${Math.round(captureSec * 10)}`;
       const initialCoverUrl = checkResult.coverUrl || undefined;
 
       // Cập nhật trạng thái Deal nếu nhóm đã liên kết và kết quả PASS
