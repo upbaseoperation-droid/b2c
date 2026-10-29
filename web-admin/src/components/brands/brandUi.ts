@@ -98,18 +98,27 @@ const PLACEHOLDER = /^(Bộ quy chuẩn nội dung|Đại diện Nhãn hàng|Ch�
 export const real = (v?: string) => (v && !PLACEHOLDER.test(v.trim()) ? v.trim() : '');
 
 /** 8 mục làm nên một hồ sơ đủ để KOC và người duyệt dùng được. */
-export function completeness(p: BrandProfile) {
-  const checks = [
-    !!p.positioning?.slogan && !!p.positioning?.toneOfVoice,
-    !!p.entity?.companyName && !!p.entity?.taxCode,
-    !!p.workflowRules?.projectTier && !!p.workflowRules?.kocApprovalMode,
-    p.products.length > 0,
-    (p.contentRules?.banned.length || 0) > 0,
-    p.faqs.length > 0,
-    p.legal.length > 0,
-    p.ratecard.some(r => r.maxBudget),
+function completenessChecks(p: BrandProfile): Array<[label: string, ok: boolean]> {
+  return [
+    ['định vị', !!p.positioning?.slogan && !!p.positioning?.toneOfVoice],
+    ['pháp nhân, MST', !!p.entity?.companyName && !!p.entity?.taxCode],
+    ['quy tắc duyệt', !!p.workflowRules?.projectTier && !!p.workflowRules?.kocApprovalMode],
+    ['SKU', p.products.length > 0],
+    ['từ cấm', (p.contentRules?.banned.length || 0) > 0],
+    ['FAQ', p.faqs.length > 0],
+    ['pháp lý', p.legal.length > 0],
+    ['trần thù lao', p.ratecard.some(r => r.maxBudget)],
   ];
-  return { done: checks.filter(Boolean).length, total: checks.length };
+}
+
+export function completeness(p: BrandProfile) {
+  const checks = completenessChecks(p);
+  return { done: checks.filter(([, ok]) => ok).length, total: checks.length };
+}
+
+/** Tên các mục hồ sơ còn thiếu, theo thứ tự trên. */
+export function missingSections(p: BrandProfile): string[] {
+  return completenessChecks(p).filter(([, ok]) => !ok).map(([label]) => label);
 }
 
 export function buildRows(masters: BrandDetail[], profiles: BrandProfile[]): BrandRow[] {

@@ -617,7 +617,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
 
   // Bộ thực thi lệnh Bot (Command Simulator) & Broadcast
   const [simCommand, setSimCommand] = useState('/pnl');
-  const [simChatId, setSimChatId] = useState('zalo_grp_b2c_internal_ops');
+  const [simChatId, setSimChatId] = useState('');
   const [simGroupRole, setSimGroupRole] = useState<ZaloGroupRole>('INTERNAL_OPS');
   const [simSendToZalo, setSimSendToZalo] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
@@ -941,7 +941,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
         body: JSON.stringify({
           action: 'SIMULATE_COMMAND',
           command: testVideoUrl.trim(),
-          chatId: airCheckTargetChatId || 'zalo_grp_clubclio_potrann',
+          chatId: airCheckTargetChatId || mappings[0]?.groupId || '',
           groupRole: 'KOC_GROUP',
           sendToZalo: Boolean(airCheckTargetChatId),
         }),
@@ -984,7 +984,7 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
         body: JSON.stringify({
           action: 'SIMULATE_COMMAND',
           command: cmdToRun,
-          chatId: simChatId || 'zalo_grp_b2c_internal_ops',
+          chatId: simChatId || mappings[0]?.groupId || '',
           groupRole: roleToUse,
           sendToZalo: simSendToZalo,
         }),

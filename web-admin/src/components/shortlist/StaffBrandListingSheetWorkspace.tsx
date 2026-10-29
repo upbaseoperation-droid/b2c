@@ -362,6 +362,12 @@ export interface StaffBrandListingSheetWorkspaceProps {
     monthKey: string;
     createdDealCodes?: string[];
   }) => void;
+  onOpenCreateDealWorkspace?: (data: {
+    storeName: string;
+    monthKey: string;
+    drafts: CreateDealDraftRow[];
+    sourceRows: StaffListingSheetRow[];
+  }) => void;
   onOpenShortlistFilterModal?: () => void;
   onOpenSheetSetupScreen?: (tab?: 'TABLE' | 'FIELD_PERMISSIONS' | 'BULK_PASTE' | 'SERVICE_ACCOUNT') => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
@@ -437,11 +443,24 @@ export interface CreateDealDraftRow {
   sanPham: string;
   giaNetVideo: number;
   giaChotCuoi: number;
+  advanceAmount?: number;
   ngayAirChot: string;
   nhanSuDien: string;
   ngayDien: string;
   ngayBrandDuyet: string;
   slaBrandDuyet: string;
+  bookingFormat?: 'Booking Video KOC' | 'Booking Livestream KOC' | 'Affiliate Thuần';
+  contractType?: 'UPBASE_STANDARD' | 'KOC_CUSTOM';
+  recipientName?: string;
+  recipientPhone?: string;
+  shippingAddress?: string;
+  sampleCarrier?: string;
+  sampleTrackingCode?: string;
+  sparkAdsExpiryDays?: number;
+  contentAngle?: string;
+  notes?: string;
+  isDropped?: boolean;
+  dropReason?: string;
 }
 
 export interface SheetTabDetailItem {
@@ -487,6 +506,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   onSyncRowsToSystemListings,
   onCreateOrUpdateDeals,
   onOpenDealBoard,
+  onOpenCreateDealWorkspace,
   onOpenShortlistFilterModal,
   onOpenSheetSetupScreen,
   onNotify,
@@ -2794,6 +2814,15 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     });
 
     setDealDrafts(drafts);
+    if (onOpenCreateDealWorkspace) {
+      onOpenCreateDealWorkspace({
+        storeName: activeStoreName,
+        monthKey: activeMonth,
+        drafts,
+        sourceRows: approvedRows,
+      });
+      return;
+    }
     setIsCreateDealsModalOpen(true);
   };
 
@@ -6132,6 +6161,23 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             <Button variant="ghost" onClick={() => setIsCreateDealsModalOpen(false)}>
               Hủy
             </Button>
+            {onOpenCreateDealWorkspace && (
+              <Button
+                variant="secondary"
+                icon={ArrowRight}
+                onClick={() => {
+                  setIsCreateDealsModalOpen(false);
+                  onOpenCreateDealWorkspace({
+                    storeName: activeStoreName,
+                    monthKey: activeMonth,
+                    drafts: dealDrafts,
+                    sourceRows: rows.filter((r) => r.brandChon === 'Yes'),
+                  });
+                }}
+              >
+                Mở màn hình to để tạo deal →
+              </Button>
+            )}
             <Button
               variant="secondary"
               icon={Check}

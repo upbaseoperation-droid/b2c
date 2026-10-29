@@ -27,7 +27,7 @@ export interface ProfileMonthOption {
 }
 
 /** Kỳ của ngân sách, chỉ tiêu, thực chi ghi trên gian hàng trong Dữ liệu gốc. */
-const STORE_MASTER_MONTH = '2026/10';
+export const STORE_MASTER_MONTH = '2026/10';
 /** File 3.2 (video đã book) và số liệu TikTok Seller Ads hiện có đều thuộc tháng 10/2026. */
 const FILE32_MONTH = '2026/10';
 const ADS_MONTH = '2026/10';

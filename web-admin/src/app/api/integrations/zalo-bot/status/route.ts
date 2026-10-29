@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { readRecord } from '@/lib/server/sharedRecords';
 import {
   getZaloBotToken,
   getZaloBotSecretToken,
@@ -55,7 +56,36 @@ export async function GET(req: NextRequest) {
   const userPermissions = getAllUserPermissions();
   const discoveredSenders = getAllDiscoveredSenders();
   const airHistory = getAirCheckHistory();
-  const recentEvents = getDebugEvents();
+
+  // Đọc nhật ký sự kiện webhook từ bản ghi bền vững kết hợp bộ nhớ đệm
+  const persistedEventsRec = await readRecord<any[]>('zalo-webhook-history-v1', []).catch(() => ({ data: [] }));
+  const persistedEvents = Array.isArray(persistedEventsRec?.data) ? persistedEventsRec.data : [];
+  const inMemEvents = getDebugEvents();
+
+  const combinedMap = new Map<string, any>();
+  for (const ev of inMemEvents) {
+    const key = `${ev.time}-${ev.extractedChatId || ev.body?.result?.message?.chat?.id || ''}`;
+    combinedMap.set(key, ev);
+  }
+  for (const ev of persistedEvents) {
+    const key = `${ev.time}-${ev.chatId || ev.extractedChatId || ''}`;
+    if (!combinedMap.has(key)) {
+      combinedMap.set(key, {
+        time: ev.time || new Date().toISOString(),
+        body: ev.body || {
+          event_name: 'message.text.received',
+          message: { text: ev.text, chat: { id: ev.chatId }, from: { display_name: ev.sender } },
+        },
+        extractedChatId: ev.chatId || ev.extractedChatId,
+        replySent: ev.replySent ?? true,
+        replyText: ev.replyText || (ev.text ? `Đã tiếp nhận tin: "${ev.text.slice(0, 60)}..."` : ''),
+        error: ev.error,
+      });
+    }
+  }
+  const recentEvents = Array.from(combinedMap.values()).sort(
+    (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
+  ).slice(0, 50);
 
   return NextResponse.json({
     ok: true,

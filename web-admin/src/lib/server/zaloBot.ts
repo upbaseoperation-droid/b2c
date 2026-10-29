@@ -479,6 +479,20 @@ export function recordDebugEvent(event: {
   if (recentDebugEvents.length > 30) {
     recentDebugEvents.pop();
   }
+  // Đồng thời lưu vào persistent store để bảo toàn khi máy chủ/serverless khởi động lại
+  void upsertRecord<any[]>('zalo-webhook-history-v1', [], (prev) => {
+    const list = Array.isArray(prev) ? prev : [];
+    const item = {
+      time: event.time || new Date().toISOString(),
+      body: event.body,
+      extractedChatId: event.extractedChatId || event.body?.result?.message?.chat?.id || event.body?.chat_id,
+      replySent: event.replySent,
+      replyText: event.replyText,
+      replyPhotoUrl: event.replyPhotoUrl,
+      error: event.error,
+    };
+    return [item, ...list.filter(x => x.time !== item.time)].slice(0, 50);
+  }).catch(() => null);
 }
 
 export function getDebugEvents() {

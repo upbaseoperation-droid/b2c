@@ -21,6 +21,7 @@ import { ContractCatalogView, CATEGORY_LABELS } from '../contracts/ContractCatal
 import { ContractDetail } from '../contracts/ContractDetail';
 import { ContractDocumentViewer } from '../contracts/ContractDocumentViewer';
 import { ContractForm, type ContractFormInit, type ContractFormPayload } from '../contracts/ContractForm';
+import { ContractSetReconciliationView } from '../contracts/ContractSetReconciliationView';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
 import { detectSubjectKind } from '../../lib/contracts/contractRules';
 import { documentOfTemplate, type ContractDocument } from '../../lib/planDealLink';
@@ -39,6 +40,7 @@ export interface ContractIntent {
 
 type Screen =
   | { mode: 'list' }
+  | { mode: 'sets' }
   | { mode: 'catalog' }
   | { mode: 'detail'; id: string }
   | { mode: 'form'; editId?: string; init?: ContractFormInit };
@@ -670,7 +672,7 @@ export function ContractManagementView({
       const link = (e.target as HTMLElement).closest('a');
       if (link?.getAttribute('href')?.startsWith('/api/contracts/')) { e.preventDefault(); downloadBrowserDemo(link.getAttribute('href')!).catch(error => onNotify?.(error.message, 'error')); }
     }}>
-      {(screen.mode === 'list' || screen.mode === 'catalog') && (
+      {(screen.mode === 'list' || screen.mode === 'sets' || screen.mode === 'catalog') && (
         <>
           <PageActions>
             {data.records.some(r => r.signing.length > 0 && r.signing.at(-1)!.provider !== 'DEMO' && !['COMPLETED', 'CANCELLED', 'REJECTED'].includes(r.signing.at(-1)!.status)) && (
@@ -725,10 +727,25 @@ export function ContractManagementView({
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Segmented
-              value={screen.mode === 'catalog' ? 'CATALOG' : 'RECORDS'}
-              onChange={v => setScreen(v === 'CATALOG' ? { mode: 'catalog' } : { mode: 'list' })}
+              value={
+                screen.mode === 'catalog'
+                  ? 'CATALOG'
+                  : screen.mode === 'sets'
+                    ? 'SETS'
+                    : 'RECORDS'
+              }
+              onChange={v =>
+                setScreen(
+                  v === 'CATALOG'
+                    ? { mode: 'catalog' }
+                    : v === 'SETS'
+                      ? { mode: 'sets' }
+                      : { mode: 'list' },
+                )
+              }
               items={[
                 { key: 'RECORDS', label: `Hồ sơ hợp đồng (${data.records.length})` },
+                { key: 'SETS', label: 'Bộ hồ sơ & Chỉ số phụ thuộc (HĐNT ↔ SOW ↔ BBNT)' },
                 { key: 'CATALOG', label: `Bộ 11 biểu mẫu chuẩn (${data.templates.filter(t => t.scope === 'KOC_CUSTOM' || OFFICIAL_3STAGE_TEMPLATE_IDS.includes(t.id as never)).length})` },
               ]}
             />
@@ -744,6 +761,44 @@ export function ContractManagementView({
           onUseTemplate={(tpl: LegalTemplate) =>
             setScreen({ mode: 'form', init: { templateId: tpl.id, kind: tpl.kind } })
           }
+        />
+      ) : screen.mode === 'sets' ? (
+        <ContractSetReconciliationView
+          data={data}
+          deals={effectiveDeals}
+          kocs={kocs}
+          busy={busy}
+          onOpenRecord={id => setScreen({ mode: 'detail', id })}
+          onQuickViewRecord={rec => setQuickViewRecord(rec)}
+          onCreateStageDoc={init => setScreen({ mode: 'form', init })}
+          onSyncRecordValues={async (targetRecord, nextValues) => {
+            setBusy(true);
+            try {
+              await contractApi<{ record: ContractRecord }>('/api/contracts', {
+                id: targetRecord.id,
+                revision: targetRecord.revision,
+                action: 'EDIT',
+                title: targetRecord.title,
+                brand: targetRecord.brand,
+                partner: targetRecord.partner,
+                templateId: targetRecord.templateId,
+                values: nextValues,
+                kocId: targetRecord.kocId,
+                dealId: targetRecord.dealId,
+                dealCode: targetRecord.dealCode,
+                parentId: targetRecord.parentId,
+                hasCustomTerms: targetRecord.hasCustomTerms,
+                customTermsSummary: targetRecord.customTermsSummary,
+                acceptanceScreenshots: targetRecord.acceptanceScreenshots,
+              });
+              await refresh();
+              onNotify?.(`Đã đồng bộ chuẩn hóa chỉ số cho "${targetRecord.title}"`, 'success');
+            } catch (err) {
+              onNotify?.((err as Error).message, 'error');
+            } finally {
+              setBusy(false);
+            }
+          }}
         />
       ) : screen.mode === 'form' ? (
         <ContractForm

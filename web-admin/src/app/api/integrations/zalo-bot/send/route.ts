@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
     if (action === 'SIMULATE_COMMAND') {
       const commandText = String(body?.command || '').trim();
-      const chatId = String(body?.chatId || 'zalo_grp_b2c_internal_ops').trim();
+      const chatId = String(body?.chatId || 'sim_console').trim();
       const groupRole = (body?.groupRole || 'INTERNAL_OPS') as ZaloGroupRole;
       const sendToZalo = Boolean(body?.sendToZalo);
 
