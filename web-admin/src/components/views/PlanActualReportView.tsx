@@ -1,5 +1,6 @@
 'use client';
 
+import { ClipboardList } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DataTable, EmptyState, Modal, Panel, Person, Progress, Segmented, Select, Stat, StatRow, Status, STATUS, Toolbar, type Column } from '../ui';
 import { formatDate, formatNumber, formatVndShort } from '../../lib/format';
@@ -250,7 +251,7 @@ export const PlanActualReportView: React.FC<{
   const months = data?.months ?? [];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <Toolbar>
         <Select
           aria-label="Chọn tháng"
@@ -265,7 +266,6 @@ export const PlanActualReportView: React.FC<{
             </option>
           ))}
         </Select>
-        {data?.today && <span className="text-xs text-ink-3">Tính đến {formatDate(data.today)}</span>}
       </Toolbar>
 
       <StatRow size="sm">
@@ -300,7 +300,15 @@ export const PlanActualReportView: React.FC<{
         />
       </StatRow>
 
-      <Panel flush>
+      <Panel
+        flush
+        title={
+          <span className="flex items-center gap-2">
+            <ClipboardList className="w-4 h-4 text-critical" strokeWidth={1.75} />
+            Tiến độ từng gian hàng
+          </span>
+        }
+      >
         <DataTable
           columns={storeColumns}
           rows={reports}
@@ -317,6 +325,11 @@ export const PlanActualReportView: React.FC<{
             />
           }
         />
+        {data?.today && (
+          <p className="px-3.5 sm:px-4 py-2.5 border-t border-line text-2xs text-ink-3">
+            Tính đến {formatDate(data.today)} · nguồn: kế hoạch tháng 4.1.1 và video đã air.
+          </p>
+        )}
       </Panel>
 
       <Modal open={Boolean(detail)} onClose={() => setDetail(null)} title={detail ? `${detail.storeName} · ${monthLabel(detail.month)}` : ''} size="xl">

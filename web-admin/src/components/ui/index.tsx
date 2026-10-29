@@ -10,15 +10,18 @@ import React, { useContext, useRef } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Progress, Sparkline } from './data';
 import { NumberRoll, SlidingIndicator, deltaPercent, useActiveBox } from './motion';
+import { useDensity } from './blocks';
 
 export { Avatar, Person, initialsOf, CHANNELS, channelOf, ChannelTag, ChannelBar, Progress, Sparkline } from './data';
+export { TrendChart, ScatterPlot, CorrelationMatrix, BarList, StackBar, HeatGrid, GROUP_COLORS, autoScale, spearman, pearson, describeCorrelation, formatCorr } from './charts';
 export type { ChannelKey } from './data';
+export type { TrendPoint, ScatterPoint, AxisScale, BarItem, StackPart } from './charts';
 export { BrandAvatar } from './BrandAvatar';
 export type { BrandAvatarProps } from './BrandAvatar';
 export { PlatformLogo, FacebookLogo, ThreadsLogo, InstagramLogo, ShopeeLogo, TikTokLogo, LazadaLogo, LiveLogo, SelfChannelLogo, PlatformBadge, getPlatformShortLabel } from './PlatformLogos';
 export type { PlatformKey, PlatformBadgeProps } from './PlatformLogos';
-export { Toolbar, Panel, Chips, SearchInput, FilterBar, DataTable, Modal, ConfirmDialog, Field, Input, Select, Textarea, ActionMenu, Pagination, PageActions, PageActionsSlot, PageHeaderNav, PageHeaderNavSlot, PageActiveContext } from './blocks';
-export type { Column, ChipOption, ActionMenuItem } from './blocks';
+export { Density, DensityContext, useDensity, Toolbar, Panel, Chips, SearchInput, FilterBar, DataTable, Modal, ConfirmDialog, Field, Input, Select, Textarea, ActionMenu, Pagination, PageActions, PageActionsSlot, PageHeaderNav, PageHeaderNavSlot, PageActiveContext } from './blocks';
+export type { Column, ChipOption, ActionMenuItem, DensityMode } from './blocks';
 export { MOTION, NumberRoll, deltaPercent, useActiveBox, SlidingIndicator, useFlipList, StepMark, ChangeFlash, usePresence, Presence, withViewTransition, tagShared, sharedFrom, sharedTo, openShared, closeShared, Skeleton, SkeletonRows, useReducedMotion } from './motion';
 export { ToastStack, useToastQueue } from './toast';
 export type { ToastItem, ToastType } from './toast';
@@ -50,7 +53,7 @@ export function Button({ variant = 'secondary', size = 'md', icon: Icon, classNa
       type={type}
       className={cx(
         'inline-flex items-center justify-center gap-1.5 rounded-md font-medium whitespace-nowrap transition-colors disabled:opacity-50 disabled:pointer-events-none',
-        size === 'sm' ? 'h-7 px-2.5 text-[13px]' : 'h-[34px] px-3.5 text-[13.5px]',
+        size === 'sm' ? 'h-7 px-2.5 text-ctl' : 'h-[34px] px-3.5 text-ctl-md',
         BUTTON_VARIANT[variant],
         className,
       )}
@@ -142,7 +145,7 @@ function TabList<K extends string>({ items, value, onChange, className }: { item
             data-active={on}
             onClick={() => onChange(t.key)}
             className={cx(
-              'relative pb-2.5 pt-1 inline-flex items-center gap-1.5 text-[13px] sm:text-[13.5px] font-medium whitespace-nowrap border-b-2 border-transparent transition-colors shrink-0',
+              'relative pb-2.5 pt-1 inline-flex items-center gap-1.5 text-ctl sm:text-ctl-md font-medium whitespace-nowrap border-b-2 border-transparent transition-colors shrink-0',
               on ? 'text-ink' : 'text-ink-3 hover:text-ink',
             )}
           >
@@ -173,7 +176,7 @@ export function Segmented<K extends string>({ items, value, onChange }: { items:
           aria-pressed={it.key === value}
           data-active={it.key === value}
           className={cx(
-            'relative h-7 px-2.5 sm:px-3 rounded-[5px] text-[12.5px] sm:text-[13px] whitespace-nowrap shrink-0 transition-colors',
+            'relative h-7 px-2.5 sm:px-3 rounded-[5px] text-ctl-sm sm:text-ctl whitespace-nowrap shrink-0 transition-colors',
             it.key === value ? 'text-ink font-medium' : 'text-ink-3 hover:text-ink',
           )}
         >
@@ -229,15 +232,28 @@ export function Stat({
   icon?: LucideIcon;
 }) {
   const compact = useContext(StatSizeContext) === 'sm';
+  const dense = useDensity() === 'compact';
   const noteColor = tone === 'warning' ? 'text-warning' : tone === 'critical' ? 'text-critical' : tone === 'positive' ? 'text-positive' : 'text-ink-3';
   return (
-    <div className={cx('bg-surface grid gap-1 content-start min-w-0 transition-colors hover:bg-canvas/50', compact ? 'px-3 py-2.5 sm:px-3.5' : 'px-3.5 pt-3 pb-3.5 sm:px-4 sm:pt-3.5 sm:pb-4')}>
+    <div
+      className={cx(
+        'bg-surface grid gap-1 content-start min-w-0 transition-colors hover:bg-canvas/50',
+        dense ? 'px-3 pt-2.5 pb-3 border border-line rounded-xl' : compact ? 'px-3 py-2.5 sm:px-3.5' : 'px-3.5 pt-3 pb-3.5 sm:px-4 sm:pt-3.5 sm:pb-4',
+      )}
+    >
       <div className="flex items-center justify-between gap-1.5 sm:gap-2">
-        <span className="text-2xs sm:text-[12.5px] text-ink-3 truncate" title={label}>{label}</span>
+        <span className="text-2xs sm:text-ctl-sm text-ink-3 truncate" title={label}>{label}</span>
         {Icon && <Icon className="w-3.5 h-3.5 text-ink-3/70 shrink-0" strokeWidth={1.75} />}
       </div>
       <div className="flex items-end justify-between gap-2 sm:gap-3 min-w-0">
-        <span title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined} className={cx('min-w-0 truncate font-semibold text-ink tabular-nums tracking-tight', compact ? 'text-lg sm:text-xl leading-6 sm:leading-7' : 'text-xl sm:text-[26px] leading-7 sm:leading-8')}>
+        <span
+          title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}
+          className={cx(
+            'min-w-0 truncate text-ink tabular-nums font-figure',
+            dense ? 'font-medium text-stat-sm' : 'font-semibold tracking-tight',
+            !dense && (compact ? 'text-lg sm:text-stat-sm' : 'text-xl sm:text-stat'),
+          )}
+        >
           {typeof value === 'string' || typeof value === 'number'
             ? <NumberRoll value={value} numeric={numeric} invert={invert} formatDelta={numeric !== undefined ? deltaPercent : undefined} />
             : value}
@@ -255,15 +271,23 @@ export function Stat({
 }
 
 const StatSizeContext = React.createContext<'md' | 'sm'>('md');
+const WIDE_COLS: Record<number, string> = { 5: 'xl:grid-cols-5', 6: 'xl:grid-cols-6', 7: 'xl:grid-cols-7', 8: 'xl:grid-cols-8' };
 
 /**
  * Hàng chỉ số: các ô chung một khung, ngăn bằng đường kẻ mảnh. Tối đa 4 ô.
- * : chữ số 20px, đệm gọn — dùng khi hàng chỉ số nằm trên tab hoặc bảng, để nội dung chính lên sớm.
+ * `size="sm"`: chữ số 20px, đệm gọn — dùng khi hàng chỉ số nằm trên tab hoặc bảng, để nội dung chính lên sớm.
+ * Trong <Density mode="compact">: mỗi ô là một thẻ riêng, tối đa 8 ô một hàng (2 → 4 → 8 cột theo bề rộng).
  */
 export function StatRow({ children, size = 'md' }: { children: React.ReactNode; size?: 'md' | 'sm' }) {
+  const dense = useDensity() === 'compact';
+  const count = React.Children.toArray(children).filter(Boolean).length;
   return (
     <StatSizeContext.Provider value={size}>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-line border border-line rounded-xl overflow-hidden">{children}</div>
+      {dense ? (
+        <div className={cx('grid grid-cols-2 sm:grid-cols-4 gap-2', WIDE_COLS[count])}>{children}</div>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-line border border-line rounded-xl overflow-hidden">{children}</div>
+      )}
     </StatSizeContext.Provider>
   );
 }

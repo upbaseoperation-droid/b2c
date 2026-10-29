@@ -1,4 +1,5 @@
 import type { BookingDealItem, KocItem, StorePortfolioItem, KocListingItem } from './types';
+import { formatVndShort } from './format';
 import { REAL_LARK_LISTINGS_BY_BOARD_KEY } from './realLarkListings2026';
 
 export type FillMode = 'AUTO_SYSTEM' | 'FORMULA' | 'MANUAL_STAFF';
@@ -961,15 +962,17 @@ export function buildStaffListingRowFromKoc(params: {
   let thanhQuaText = '';
   if (kocDeals.length > 0) {
     const topBrands = Array.from(new Set(kocDeals.map((d) => d.brandName).filter(Boolean))).slice(0, 3);
-    const totalDealsCount = koc.totalPastDeals || kocDeals.length;
-    thanhQuaText = `Đã hợp tác ${totalDealsCount} job tại UpBase (${topBrands.join(', ')})`;
+    const totalDealsCount = Math.max(koc.totalPastDeals || 0, kocDeals.length);
+    const brandNote = topBrands.length > 0 ? ` (${topBrands.join(', ')})` : koc.brandName ? ` (${koc.brandName})` : '';
+    thanhQuaText = `Đã hợp tác ${totalDealsCount} job tại UpBase${brandNote}`;
     if (maxDealGmv > 0) {
-      thanhQuaText += ` · GMV cao nhất: ${Math.round(maxDealGmv / 1_000_000)}M₫`;
+      thanhQuaText += ` · GMV cao nhất: ${formatVndShort(maxDealGmv)}`;
     }
   } else if (koc.totalPastDeals && koc.totalPastDeals > 0) {
-    thanhQuaText = `Đã hợp tác ${koc.totalPastDeals} job tại UpBase`;
+    const brandNote = koc.brandName ? ` (${koc.brandName})` : '';
+    thanhQuaText = `Đã hợp tác ${koc.totalPastDeals} job tại UpBase${brandNote}`;
     if (koc.totalPastGmv && koc.totalPastGmv > 0) {
-      thanhQuaText += ` · Tổng GMV: ${Math.round(koc.totalPastGmv / 1_000_000)}M₫`;
+      thanhQuaText += ` · Tổng GMV: ${formatVndShort(koc.totalPastGmv)}`;
     }
   } else {
     thanhQuaText = 'KOC mới đề xuất hợp tác';
@@ -1216,9 +1219,10 @@ export function buildStaffListingRowFromListingItem(
 
   let thanhQuaText = '';
   if (matchedKoc?.totalPastDeals && matchedKoc.totalPastDeals > 0) {
-    thanhQuaText = `Đã hợp tác ${matchedKoc.totalPastDeals} job tại UpBase`;
+    const brandNote = matchedKoc.brandName ? ` (${matchedKoc.brandName})` : '';
+    thanhQuaText = `Đã hợp tác ${matchedKoc.totalPastDeals} job tại UpBase${brandNote}`;
     if (maxDealGmv > 0) {
-      thanhQuaText += ` · GMV cao nhất: ${Math.round(maxDealGmv / 1_000_000)}M₫`;
+      thanhQuaText += ` · GMV cao nhất: ${formatVndShort(maxDealGmv)}`;
     }
   }
 
@@ -1505,7 +1509,10 @@ export function loadStaffSheetCollection(
               (r.doanhSo === 0 && enriched.doanhSo > 0) ||
               (r.viewTrungBinh === 0 && enriched.viewTrungBinh > 0) ||
               (!r.sanPham && enriched.sanPham) ||
-              (r.tepKenh === enriched.sanPham && enriched.tepKenh !== enriched.sanPham)
+              (r.tepKenh === enriched.sanPham && enriched.tepKenh !== enriched.sanPham) ||
+              ((!r.thanhQuaHopTac || r.thanhQuaHopTac.includes('0M₫') || r.thanhQuaHopTac !== enriched.thanhQuaHopTac) && Boolean(enriched.thanhQuaHopTac)) ||
+              ((!r.gmvDaHopTac || r.gmvDaHopTac === 0) && (enriched.gmvDaHopTac || 0) > 0) ||
+              (r.kocId !== enriched.kocId && Boolean(enriched.kocId))
             ) {
               sheetUpdated = true;
               return recalculateStaffListingRow({

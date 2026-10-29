@@ -1,18 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import {
-  Filter,
-  Search,
-  ChevronRight,
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
-  FileText,
-  Film,
-  Users,
-  XCircle,
-} from 'lucide-react';
+import { Filter, CheckCircle2, Clock, AlertTriangle, Users, XCircle } from 'lucide-react';
 import {
   StorePortfolioItem,
   BookingDealItem,
@@ -28,8 +17,24 @@ import {
   type PlanValidityEvaluation,
 } from '../../lib/planBreakdownRules';
 import { fetchClientMonthlyPlans, getCachedClientMonthlyPlans } from '../../lib/useMonthlyPlanSync';
-import { formatVndShort } from '../../lib/format';
-import { Modal, Button } from '../ui';
+import { formatNumber, formatVndShort } from '../../lib/format';
+import {
+  BarList,
+  Button,
+  ChannelTag,
+  DataTable,
+  FilterBar,
+  Modal,
+  Panel,
+  Person,
+  Progress,
+  Segmented,
+  Select,
+  Stat,
+  StatRow,
+  Status,
+} from '../ui';
+import type { Column, StatusTone } from '../ui';
 
 type FinancialRiskStatus = 'NORMAL' | 'UNBUDGETED' | 'OVERBUDGET' | 'SLOW_BURN';
 
@@ -41,17 +46,6 @@ interface StorePipelineFunnelOverviewProps {
   onNavigateToTab?: (tabKey: string, context?: Record<string, unknown>) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
-
-type PipelineFilterKey =
-  | 'ALL'
-  | 'MISSING_PLAN_411'
-  | 'INVALID_PLAN_411'
-  | 'PLAN_411_PENDING'
-  | 'BRAND_PLAN_PENDING'
-  | 'LISTING_INCOMPLETE'
-  | 'CONTRACT_PENDING'
-  | 'AIR_PENDING_ACCEPTANCE'
-  | 'FINANCIAL_ALERT';
 
 interface StoreFunnelProgress {
   store: StorePortfolioItem;
@@ -84,6 +78,59 @@ const normalize = (v: string) =>
     .replace(/đ/gi, 'd')
     .replace(/[^a-zA-Z0-9]/g, '')
     .toLowerCase();
+
+// Các mốc quy trình theo thứ tự; mỗi gian dừng ở mốc đầu tiên chưa xong (currentBottleneckStep).
+type FunnelStage = 'PIC' | 'PLAN' | 'BRAND' | 'LISTING' | 'CONTRACT' | 'AIR' | 'ACCEPT';
+type StageKey = FunnelStage | 'BUDGET' | 'DONE';
+type ProgressFilter = 'ALL' | 'BLOCKED' | 'DONE';
+
+const FUNNEL_STAGES: { key: FunnelStage; label: string }[] = [
+  { key: 'PIC', label: 'Phân công PIC' },
+  { key: 'PLAN', label: 'Kế hoạch 4.1.1' },
+  { key: 'BRAND', label: 'Plan Brand' },
+  { key: 'LISTING', label: 'Listing KOC' },
+  { key: 'CONTRACT', label: 'Hợp đồng & SOW' },
+  { key: 'AIR', label: 'Air video' },
+  { key: 'ACCEPT', label: 'Nghiệm thu & duyệt chi' },
+];
+
+const STAGE_META: Record<StageKey, { label: string; tone: StatusTone }> = {
+  PIC: { label: 'Chưa phân công PIC', tone: 'critical' },
+  PLAN: { label: 'Kế hoạch 4.1.1', tone: 'warning' },
+  BRAND: { label: 'Plan Brand', tone: 'warning' },
+  LISTING: { label: 'Listing KOC', tone: 'info' },
+  CONTRACT: { label: 'Hợp đồng & SOW', tone: 'info' },
+  AIR: { label: 'Air video', tone: 'info' },
+  ACCEPT: { label: 'Nghiệm thu & duyệt chi', tone: 'info' },
+  BUDGET: { label: 'Cảnh báo ngân sách', tone: 'critical' },
+  DONE: { label: 'Hoàn tất', tone: 'positive' },
+};
+
+function stageOf(p: StoreFunnelProgress): StageKey {
+  if (p.currentBottleneckLabel === 'Hoàn tất phễu') return 'DONE';
+  const s = p.currentBottleneckStep;
+  if (s === 0) return 'PIC';
+  if (s <= 3) return 'PLAN';
+  if (s === 4) return 'BRAND';
+  if (s <= 9) return 'LISTING';
+  if (s <= 11) return 'CONTRACT';
+  if (s <= 14) return 'AIR';
+  if (s <= 16) return 'ACCEPT';
+  return 'BUDGET';
+}
+
+/** Số mốc quy trình đã xong (BUDGET/DONE = qua hết các mốc). */
+const stageIndex = (k: StageKey) => {
+  const i = FUNNEL_STAGES.findIndex((s) => s.key === k);
+  return i === -1 ? FUNNEL_STAGES.length : i;
+};
+
+/** Nguyên nhân nghẽn: nhãn bước, bỏ tiền tố "Bước N:" và phần đếm trong ngoặc. */
+const causeOf = (p: StoreFunnelProgress) =>
+  p.currentBottleneckLabel.replace(/^Bước \d+:\s*/, '').replace(/\s*\([^)]*\)\s*$/, '');
+
+const picOf = (p: StoreFunnelProgress) =>
+  p.store.primaryPic || p.store.b2cOwners?.[0] || p.store.b2cOwnerName || 'Chưa phân công';
 
 export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewProps> = ({
   currentUser,
@@ -138,7 +185,9 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
   }, []);
 
   // Bộ lọc
-  const [filterKey, setFilterKey] = useState<PipelineFilterKey>('ALL');
+  const [stageFilter, setStageFilter] = useState<StageKey | 'ALL'>('ALL');
+  const [causeFilter, setCauseFilter] = useState<string>('ALL');
+  const [progressFilter, setProgressFilter] = useState<ProgressFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [platformFilter, setPlatformFilter] = useState<'ALL' | 'TikTok Shop' | 'Shopee Mall'>('ALL');
   const [governanceFilter, setGovernanceFilter] = useState<'ALL' | 'WITH_LEADER' | 'DIRECT_HEAD'>('ALL');
@@ -423,60 +472,22 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
   // Lọc danh sách hiển thị
   const filteredList = useMemo(() => {
     return funnelProgressList.filter((item) => {
-      // 1. Lọc theo phễu
-      if (filterKey === 'MISSING_PLAN_411' && item.planValidity.hasWeeklyBreakdown) {
-        return false;
-      }
-      if (filterKey === 'INVALID_PLAN_411' && item.planValidity.isValidForSubmit) {
-        return false;
-      }
-      if (filterKey === 'PLAN_411_PENDING' && item.plan411Status !== 'PENDING') {
-        return false;
-      }
-      if (filterKey === 'BRAND_PLAN_PENDING' && item.brandPlanStatus !== 'PENDING') {
-        return false;
-      }
-      if (filterKey === 'LISTING_INCOMPLETE' && (item.listingPct >= 100 || item.targetVideos === 0)) {
-        return false;
-      }
-      if (
-        filterKey === 'CONTRACT_PENDING' &&
-        (item.dealCount === 0 || item.dealsWithSowSigned >= item.dealCount)
-      ) {
-        return false;
-      }
-      if (
-        filterKey === 'AIR_PENDING_ACCEPTANCE' &&
-        (item.airedVideos === 0 || item.acceptedVideos >= item.airedVideos)
-      ) {
-        return false;
-      }
-      if (
-        filterKey === 'FINANCIAL_ALERT' &&
-        item.financialRisk !== 'UNBUDGETED' &&
-        item.financialRisk !== 'OVERBUDGET'
-      ) {
-        return false;
-      }
+      const stage = stageOf(item);
+      // 1. Lọc theo mốc / nguyên nhân nghẽn / trạng thái
+      if (stageFilter !== 'ALL' && stage !== stageFilter) return false;
+      if (causeFilter !== 'ALL' && causeOf(item) !== causeFilter) return false;
+      if (progressFilter === 'BLOCKED' && stage === 'DONE') return false;
+      if (progressFilter === 'DONE' && stage !== 'DONE') return false;
 
       // 2. Lọc theo sàn
-      if (platformFilter !== 'ALL' && item.store.platform !== platformFilter) {
-        return false;
-      }
+      if (platformFilter !== 'ALL' && item.store.platform !== platformFilter) return false;
 
       // 3. Lọc theo cơ cấu duyệt
-      if (governanceFilter === 'WITH_LEADER' && !item.store.hasBookingLeader) {
-        return false;
-      }
-      if (governanceFilter === 'DIRECT_HEAD' && item.store.hasBookingLeader) {
-        return false;
-      }
+      if (governanceFilter === 'WITH_LEADER' && !item.store.hasBookingLeader) return false;
+      if (governanceFilter === 'DIRECT_HEAD' && item.store.hasBookingLeader) return false;
 
       // 3b. Lọc theo Chuyên viên PIC
-      if (picFilter !== 'ALL') {
-        const pic = item.store.primaryPic || item.store.b2cOwners?.[0] || item.store.b2cOwnerName || 'Chưa phân công';
-        if (pic !== picFilter) return false;
-      }
+      if (picFilter !== 'ALL' && picOf(item) !== picFilter) return false;
 
       // 4. Tìm kiếm từ khóa
       if (searchQuery.trim()) {
@@ -490,459 +501,313 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
 
       return true;
     });
-  }, [funnelProgressList, filterKey, platformFilter, governanceFilter, picFilter, searchQuery]);
+  }, [funnelProgressList, stageFilter, causeFilter, progressFilter, platformFilter, governanceFilter, picFilter, searchQuery]);
+
+  // Phễu: số gian đã qua từng mốc (mốc nghẽn đầu tiên của gian nằm sau mốc đó)
+  const funnelBars = useMemo(() => {
+    const idx = funnelProgressList.map((p) => stageIndex(stageOf(p)));
+    return FUNNEL_STAGES.map((s, i) => {
+      const passed = idx.filter((k) => k > i).length;
+      return { ...s, passed, stuck: idx.filter((k) => k === i).length };
+    });
+  }, [funnelProgressList]);
+
+  // Điểm nghẽn: số gian theo từng nguyên nhân cụ thể
+  const causeBars = useMemo(() => {
+    const byCause = new Map<string, number>();
+    for (const p of funnelProgressList) {
+      if (stageOf(p) === 'DONE') continue;
+      const c = causeOf(p);
+      byCause.set(c, (byCause.get(c) || 0) + 1);
+    }
+    return Array.from(byCause.entries()).sort((a, b) => b[1] - a[1]);
+  }, [funnelProgressList]);
+
+  const doneCount = useMemo(() => funnelProgressList.filter((p) => stageOf(p) === 'DONE').length, [funnelProgressList]);
+  const totalStages = FUNNEL_STAGES.length;
+  const hasFilter =
+    stageFilter !== 'ALL' ||
+    causeFilter !== 'ALL' ||
+    progressFilter !== 'ALL' ||
+    platformFilter !== 'ALL' ||
+    governanceFilter !== 'ALL' ||
+    picFilter !== 'ALL' ||
+    searchQuery.trim() !== '';
+
+  const columns: Column<StoreFunnelProgress>[] = [
+    {
+      key: 'store',
+      header: 'Gian hàng',
+      render: (item) => (
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="truncate font-medium text-ink">{item.store.storeName}</span>
+            <ChannelTag channel={item.store.platform} iconOnly />
+          </div>
+          <div className="text-2xs text-ink-3 truncate">{item.store.brandName}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'pic',
+      header: 'Phụ trách',
+      render: (item) => {
+        const pic = item.store.primaryPic || item.store.assignedStaff;
+        return pic ? (
+          <Person
+            name={pic}
+            sub={item.store.hasBookingLeader && item.store.bookingLeader ? `Leader ${item.store.bookingLeader}` : 'Trình GĐ trực tiếp'}
+          />
+        ) : (
+          <span className="text-ink-3">—</span>
+        );
+      },
+    },
+    {
+      key: 'stage',
+      header: 'Mốc hiện tại',
+      render: (item) => {
+        const stage = stageOf(item);
+        const meta = STAGE_META[stage];
+        return <Status tone={meta.tone}>{meta.label}</Status>;
+      },
+    },
+    {
+      key: 'progress',
+      header: 'Tiến độ',
+      width: 120,
+      render: (item) => {
+        const done = Math.min(stageIndex(stageOf(item)), totalStages);
+        return (
+          <div className="flex items-center gap-2">
+            <Progress value={done} max={totalStages} className="w-16" label="Số mốc đã xong" />
+            <span className="text-2xs tabular-nums text-ink-3">{done}/{totalStages}</span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'spend',
+      header: 'Chi phí Net / hạn mức',
+      align: 'right',
+      width: 150,
+      render: (item) => (
+        <div className="space-y-1">
+          <div className="tabular-nums text-ink">
+            {formatVndShort(item.spentNet)}
+            <span className="text-ink-3"> / {item.budgetNet > 0 ? formatVndShort(item.budgetNet) : '0 đ'}</span>
+          </div>
+          {item.budgetNet > 0 && <Progress value={item.spentNet} max={item.budgetNet} invert label="Đã chi so với hạn mức Net" />}
+        </div>
+      ),
+    },
+    {
+      key: 'cause',
+      header: 'Điểm nghẽn',
+      render: (item) =>
+        stageOf(item) === 'DONE' ? (
+          <span className="text-ink-3">—</span>
+        ) : (
+          <span className="block max-w-[240px] truncate text-ink-2" title={item.currentBottleneckLabel}>
+            {item.currentBottleneckLabel.replace(/^Bước \d+:\s*/, '')}
+          </span>
+        ),
+    },
+  ];
 
   return (
-    <div className="space-y-5">
-      {/* 4 THẺ CHỈ SỐ PHỄU TỔNG QUAN */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
-        <div className="bg-surface rounded-xl border border-line p-4">
-          <div className="flex items-center justify-between text-xs text-ink-3 font-medium mb-1">
-            <span>Mốc 0-3: Kế Hoạch 4.1.1 &amp; Hợp Lệ</span>
-            <FileText className="w-4 h-4 text-accent" />
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl font-semibold text-ink font-mono">
-              {metrics.validPlan411} / {metrics.totalStores} Hợp Lệ
-            </span>
-            <span className="text-2xs font-semibold text-positive px-1.5 py-0.5 rounded bg-positive-soft">
-              {metrics.approvedPlan411} Đã duyệt
-            </span>
-          </div>
-          <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
-            <span className="text-warning font-semibold">{metrics.pendingPlan411} chờ duyệt</span>
-            <span className="text-critical font-semibold">{metrics.missingPlan411} chưa chia 4.1.1</span>
-          </div>
-        </div>
+    <div className="space-y-4">
+      <StatRow size="sm">
+        <Stat
+          label="Kế hoạch 4.1.1 hợp lệ"
+          value={`${metrics.validPlan411}/${metrics.totalStores}`}
+          progress={{ value: metrics.validPlan411, max: Math.max(1, metrics.totalStores) }}
+          note={`${metrics.approvedPlan411} đã duyệt · ${metrics.pendingPlan411} chờ duyệt · ${metrics.missingPlan411} chưa chia tuần`}
+        />
+        <Stat
+          label="Gian đủ listing KOC"
+          value={`${metrics.fullListingStores}/${metrics.totalStores}`}
+          progress={{ value: metrics.fullListingStores, max: Math.max(1, metrics.totalStores) }}
+          note={`${metrics.incompleteListing} gian còn thiếu`}
+        />
+        <Stat
+          label="Deal đã ký SOW"
+          value={`${formatNumber(metrics.totalSowSigned)}/${formatNumber(metrics.totalDeals)}`}
+          progress={{ value: metrics.totalSowSigned, max: Math.max(1, metrics.totalDeals) }}
+          note={`${formatNumber(metrics.totalHdntSigned)} deal đã ký HĐNT`}
+        />
+        <Stat
+          label="Video đã air"
+          value={formatNumber(metrics.totalAired)}
+          note={`${formatNumber(metrics.totalAccepted)} đã nghiệm thu · ${metrics.alertStores} gian vượt trần / hạn mức 0đ`}
+          tone={metrics.alertStores > 0 ? 'critical' : undefined}
+        />
+      </StatRow>
 
-        <div className="bg-surface rounded-xl border border-line p-4">
-          <div className="flex items-center justify-between text-xs text-accent font-semibold mb-1">
-            <span>Mốc 5-9: Listing KOC Theo Quota</span>
-            <Users className="w-4 h-4 text-accent" />
-          </div>
-          <div className="text-xl font-semibold text-accent font-mono">
-            {metrics.fullListingStores} / {metrics.totalStores} Đủ Quota
-          </div>
-          <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
-            <span className="text-ink-3">Tỷ lệ phủ toàn bộ</span>
-            <span className="text-ink font-semibold font-mono">
-              {metrics.incompleteListing} gian cần bổ sung
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+        <Panel
+          title={
+            <span className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-critical" strokeWidth={1.75} />
+              Phễu quy trình
             </span>
-          </div>
-        </div>
+          }
+        >
+          <BarList
+            max={Math.max(1, metrics.totalStores)}
+            items={funnelBars.map((s) => ({
+              key: s.key,
+              label: s.label,
+              value: s.passed,
+              display: `${s.passed}/${metrics.totalStores}`,
+              color:
+                stageFilter === s.key
+                  ? 'var(--color-critical)'
+                  : 'color-mix(in srgb, var(--color-critical) 55%, var(--color-surface))',
+              onClick: () => {
+                setStageFilter(stageFilter === s.key ? 'ALL' : s.key);
+                setCauseFilter('ALL');
+              },
+            }))}
+          />
+          <p className="mt-3 text-2xs text-ink-3">
+            Thanh = số gian đã qua mốc. Bấm một mốc để xem các gian đang dừng ở mốc đó. {doneCount}/{metrics.totalStores} gian đã qua hết các mốc.
+          </p>
+        </Panel>
 
-        <div className="bg-surface rounded-xl border border-line p-4">
-          <div className="flex items-center justify-between text-xs text-positive font-semibold mb-1">
-            <span>Mốc 10-11: Hợp Đồng &amp; Phụ Lục SOW</span>
-            <CheckCircle2 className="w-4 h-4 text-positive" />
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl font-semibold text-positive font-mono">
-              {metrics.totalSowSigned} / {metrics.totalDeals} SOW Ký
+        <Panel
+          title={
+            <span className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-critical" strokeWidth={1.75} />
+              Điểm nghẽn
             </span>
-            <span className="text-xs text-ink-3 font-mono">
-              ({metrics.totalHdntSigned} HĐNT)
-            </span>
-          </div>
-          <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
-            <span className="text-ink-3">Đã ký đầy đủ pháp chế</span>
-            <span className="text-positive font-semibold font-mono">
-              {metrics.totalDeals > 0
-                ? Math.round((metrics.totalSowSigned / metrics.totalDeals) * 100)
-                : 0}
-              %
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-surface rounded-xl border border-line p-4">
-          <div className="flex items-center justify-between text-xs text-ink-3 font-medium mb-1">
-            <span>Mốc 14-18: Air, Nghiệm Thu &amp; PnL</span>
-            <Film className="w-4 h-4 text-warning" />
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl font-semibold text-ink font-mono">
-              {metrics.totalAired} Video Air
-            </span>
-            <span className="text-xs font-semibold text-positive px-1.5 py-0.5 rounded bg-positive-soft">
-              {metrics.totalAccepted} Nghiệm thu
-            </span>
-          </div>
-          <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
-            <span className="text-ink-3">Kiểm soát ngân sách</span>
-            <span className="font-semibold text-critical">
-              {metrics.alertStores} gian vượt/0đ
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* THANH LỌC NHANH ĐIỂM NGHẼN PHỄU (0 → 18) */}
-      <div className="bg-surface rounded-xl border border-line p-3.5 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-ink">
-            <Filter className="w-4 h-4 text-accent" />
-            <span>Lọc nhanh các gian hàng theo điểm nghẽn tiến độ:</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {[
-              {
-                key: 'ALL',
-                label: `Tất cả (${funnelProgressList.length} gian)`,
-                activeClass: 'bg-ink text-white',
-                idleClass: 'bg-sunken text-ink-2 hover:bg-sunken',
-              },
-              {
-                key: 'MISSING_PLAN_411',
-                label: `Chưa chia 4.1.1 (${metrics.missingPlan411} gian)`,
-                activeClass: 'bg-critical text-white',
-                idleClass: 'bg-critical-soft text-critical border border-critical/20 hover:bg-critical-soft',
-              },
-              {
-                key: 'INVALID_PLAN_411',
-                label: `Chưa hợp lệ 4.1 vs 4.1.1 (${metrics.invalidOrEmptyPlan411} gian)`,
-                activeClass: 'bg-warning text-white',
-                idleClass: 'bg-warning-soft text-warning border border-warning/20 hover:bg-warning-soft',
-              },
-              {
-                key: 'PLAN_411_PENDING',
-                label: `Chờ duyệt 4.1.1 (${metrics.pendingPlan411} gian)`,
-                activeClass: 'bg-warning text-white',
-                idleClass: 'bg-warning-soft text-warning border border-warning/20 hover:bg-warning-soft',
-              },
-              {
-                key: 'LISTING_INCOMPLETE',
-                label: `Thiếu Listing KOC (${metrics.incompleteListing} gian)`,
-                activeClass: 'bg-accent text-white',
-                idleClass: 'bg-accent-soft text-accent border border-accent/20 hover:bg-accent-soft',
-              },
-              {
-                key: 'FINANCIAL_ALERT',
-                label: `Báo động ngân sách (${metrics.alertStores} gian)`,
-                activeClass: 'bg-critical text-white',
-                idleClass: 'bg-critical-soft text-critical border border-critical/20 hover:bg-critical-soft',
-              },
-            ].map((f) => (
-              <button
-                key={f.key}
-                type="button"
-                onClick={() => setFilterKey(f.key as PipelineFilterKey)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                  filterKey === f.key ? f.activeClass : f.idleClass
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* CÁC BỘ LỌC CHI TIẾT */}
-        <div className="pt-3 border-t border-line grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm tên gian hàng, PIC, Brand..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-canvas border border-line rounded-lg focus:outline-hidden focus:border-accent/20"
+          }
+        >
+          {causeBars.length === 0 ? (
+            <p className="py-6 text-center text-sm text-ink-3">Không có gian hàng nào đang nghẽn.</p>
+          ) : (
+            <BarList
+              items={causeBars.slice(0, 8).map(([cause, count]) => ({
+                key: cause,
+                label: <span title={cause}>{cause}</span>,
+                value: count,
+                display: `${count} gian`,
+                color:
+                  causeFilter === cause
+                    ? 'var(--color-critical)'
+                    : 'color-mix(in srgb, var(--color-critical) 55%, var(--color-surface))',
+                onClick: () => {
+                  setCauseFilter(causeFilter === cause ? 'ALL' : cause);
+                  setStageFilter('ALL');
+                },
+              }))}
             />
-          </div>
+          )}
+          <p className="mt-3 text-2xs text-ink-3">
+            Mỗi gian tính một lần, ở mốc đầu tiên chưa xong. Nguồn: kế hoạch 4.1.1, deal booking và hạn mức Net tháng 10/2026.
+          </p>
+        </Panel>
+      </div>
 
-          <select
-            value={platformFilter}
-            onChange={(e) => setPlatformFilter(e.target.value as typeof platformFilter)}
-            className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden"
-          >
-            <option value="ALL">Tất cả Sàn ({totalTiktokCount} TikTok · {totalShopeeCount} Shopee)</option>
-            <option value="TikTok Shop">TikTok Shop ({totalTiktokCount} gian hàng)</option>
-            <option value="Shopee Mall">Shopee Mall ({totalShopeeCount} gian hàng)</option>
-          </select>
-
-          <select
-            value={governanceFilter}
-            onChange={(e) => setGovernanceFilter(e.target.value as typeof governanceFilter)}
-            className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden"
-          >
-            <option value="ALL">Cơ cấu duyệt: Tất cả {stores.length} gian hàng</option>
-            <option value="WITH_LEADER">Nhóm có Leader Nguyễn Thị Ngọc Tâm ({totalLeaderCount} gian)</option>
-            <option value="DIRECT_HEAD">Không có Leader — Trình trực tiếp Yến Nhi ({totalDirectCount} gian)</option>
-          </select>
-        </div>
-
-        {/* LỌC NHANH THEO CHUYÊN VIÊN PIC */}
-        {picSummaryList.length > 0 && (
-          <div className="pt-2.5 border-t border-line flex items-center gap-1.5 flex-wrap">
-            <span className="text-2xs font-semibold text-ink-3 mr-1">Chuyên viên PIC:</span>
-            <button
-              type="button"
-              onClick={() => setPicFilter('ALL')}
-              className={`px-2 py-1 rounded-md text-2xs font-medium transition cursor-pointer ${
-                picFilter === 'ALL' ? 'bg-accent text-white' : 'bg-sunken text-ink-2 hover:bg-line'
-              }`}
-            >
-              Tất cả PIC
-            </button>
-            {picSummaryList.map((pic) => {
-              const isSelected = picFilter === pic.name;
-              const shortName = pic.name.trim().split(/\s+/).slice(-2).join(' ');
-              return (
-                <button
-                  key={pic.name}
-                  type="button"
-                  onClick={() => setPicFilter(isSelected ? 'ALL' : pic.name)}
-                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-2xs font-medium transition cursor-pointer ${
-                    isSelected
-                      ? 'bg-accent text-white border-accent'
-                      : pic.invalid411 > 0
-                        ? 'bg-surface border-warning/40 text-ink hover:border-warning'
-                        : 'bg-surface border-line text-ink-2 hover:bg-sunken'
-                  }`}
+      <Panel
+        flush
+        title={
+          <span className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-critical" strokeWidth={1.75} />
+            Tiến độ từng gian hàng
+          </span>
+        }
+        actions={
+          <Segmented<ProgressFilter>
+            items={[
+              { key: 'ALL', label: 'Tất cả' },
+              { key: 'BLOCKED', label: 'Đang nghẽn' },
+              { key: 'DONE', label: 'Xong' },
+            ]}
+            value={progressFilter}
+            onChange={setProgressFilter}
+          />
+        }
+      >
+        <div className="px-3.5 sm:px-4 py-3 border-b border-line">
+          <FilterBar
+            search={{ value: searchQuery, onChange: setSearchQuery, placeholder: 'Tìm gian hàng, thương hiệu, PIC' }}
+            resultCount={filteredList.length}
+            filters={
+              <>
+                <Select
+                  aria-label="Sàn"
+                  value={platformFilter}
+                  onChange={(e) => setPlatformFilter(e.target.value as typeof platformFilter)}
+                  className="w-auto"
                 >
-                  <span>{shortName}</span>
-                  <span className="font-mono text-2xs opacity-80">({pic.valid411}/{pic.total})</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* BẢNG TIẾN ĐỘ PHỄU GIAN HÀNG (0 → 18) */}
-      <div className="bg-surface rounded-xl border border-line overflow-hidden">
-        <div className="px-5 py-4 border-b border-line flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h3 className="text-sm font-semibold text-ink">
-            Bảng Theo Dõi Phễu Vận Hành {filteredList.length} / {stores.length} Gian Hàng B2C (Quy Trình 0 → 18)
-          </h3>
-        </div>
-
-        <div className="overflow-x-auto max-h-[660px]">
-          <table className="w-full text-xs text-left">
-            <thead className="bg-canvas text-ink-2 uppercase border-b border-line sticky top-0 z-10">
-              <tr>
-                <th className="py-3 px-4 font-semibold">Gian Hàng &amp; Brand</th>
-                <th className="py-3 px-3 font-semibold">Phụ Trách (PIC &amp; Leader)</th>
-                <th className="py-3 px-3 font-semibold text-center">Plan 4.1 &amp; 4.1.1 (Mốc 1-3)</th>
-                <th className="py-3 px-3 font-semibold text-center">Plan Brand (Mốc 4)</th>
-                <th className="py-3 px-3 font-semibold text-center">Listing KOC (Mốc 5-9)</th>
-                <th className="py-3 px-3 font-semibold text-center">Hợp Đồng &amp; SOW (Mốc 10-11)</th>
-                <th className="py-3 px-3 font-semibold text-center">Air Video (Mốc 14)</th>
-                <th className="py-3 px-3 font-semibold text-center">Nghiệm Thu (Mốc 15-16)</th>
-                <th className="py-3 px-3 font-semibold text-right">Chi Phí Net / Hạn Mức</th>
-                <th className="py-3 px-4 font-semibold">Điểm Nghẽn Tiến Độ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {filteredList.map((item) => {
-                const st = item.store;
-
-                return (
-                  <tr
-                    key={st.id}
-                    onClick={() => setSelectedProgress(item)}
-                    className="hover:bg-canvas transition cursor-pointer"
+                  <option value="ALL">Tất cả sàn</option>
+                  <option value="TikTok Shop">TikTok Shop ({totalTiktokCount})</option>
+                  <option value="Shopee Mall">Shopee Mall ({totalShopeeCount})</option>
+                </Select>
+                <Select
+                  aria-label="Cơ cấu duyệt"
+                  value={governanceFilter}
+                  onChange={(e) => setGovernanceFilter(e.target.value as typeof governanceFilter)}
+                  className="w-auto"
+                >
+                  <option value="ALL">Mọi cơ cấu duyệt</option>
+                  <option value="WITH_LEADER">Có Leader ({totalLeaderCount})</option>
+                  <option value="DIRECT_HEAD">Trình GĐ trực tiếp ({totalDirectCount})</option>
+                </Select>
+                {picSummaryList.length > 1 && (
+                  <Select aria-label="Chuyên viên PIC" value={picFilter} onChange={(e) => setPicFilter(e.target.value)} className="w-auto">
+                    <option value="ALL">Mọi PIC</option>
+                    {picSummaryList.map((pic) => (
+                      <option key={pic.name} value={pic.name}>
+                        {pic.name} ({pic.valid411}/{pic.total} hợp lệ)
+                      </option>
+                    ))}
+                  </Select>
+                )}
+                {hasFilter && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setStageFilter('ALL');
+                      setCauseFilter('ALL');
+                      setProgressFilter('ALL');
+                      setPlatformFilter('ALL');
+                      setGovernanceFilter('ALL');
+                      setPicFilter('ALL');
+                      setSearchQuery('');
+                    }}
                   >
-                    <td className="py-2.5 px-4">
-                      <div className="font-semibold text-ink flex items-center gap-1.5">
-                        <span>{st.storeName}</span>
-                        <span
-                          className={`text-2xs font-semibold px-1 py-0.2 rounded ${
-                            st.platform === 'TikTok Shop'
-                              ? 'bg-ink text-white'
-                              : 'bg-warning-soft text-warning'
-                          }`}
-                        >
-                          {st.platform === 'TikTok Shop' ? 'TikTok' : 'Shopee'}
-                        </span>
-                      </div>
-                      <div className="text-2xs text-ink-3">{st.brandName}</div>
-                    </td>
-
-                    <td className="py-2.5 px-3">
-                      <div className="font-semibold text-ink">
-                        {st.primaryPic || st.assignedStaff || 'Chưa gán'}
-                      </div>
-                      <div className="text-2xs text-ink-3">
-                        {st.hasBookingLeader && st.bookingLeader ? (
-                          <span className="text-accent font-medium">Leader: {st.bookingLeader}</span>
-                        ) : (
-                          <span>Trình GĐ Yến Nhi</span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Mốc 1-3: Plan 4.1 & 4.1.1 */}
-                    <td className="py-2.5 px-3 text-center">
-                      <div className="flex flex-col items-center gap-1">
-                        {item.plan411Status === 'APPROVED' && (
-                          <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-positive-soft text-positive">
-                            Đã duyệt
-                          </span>
-                        )}
-                        {item.plan411Status === 'PENDING' && (
-                          <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-warning-soft text-warning">
-                            Chờ duyệt
-                          </span>
-                        )}
-                        {item.plan411Status === 'DRAFT' && (
-                          <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-sunken text-ink-2">
-                            Bản nháp
-                          </span>
-                        )}
-                        {item.plan411Status === 'CHANGES' && (
-                          <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-critical-soft text-critical">
-                            Cần sửa
-                          </span>
-                        )}
-                        {item.plan411Status === 'NONE' && (
-                          <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-critical-soft text-critical">
-                            Chưa lập
-                          </span>
-                        )}
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-2xs font-semibold ${
-                            item.planValidity.badgeTone === 'positive'
-                              ? 'bg-positive-soft text-positive'
-                              : item.planValidity.badgeTone === 'info'
-                              ? 'bg-accent-soft text-accent'
-                              : item.planValidity.badgeTone === 'warning'
-                              ? 'bg-warning-soft text-warning'
-                              : item.planValidity.badgeTone === 'critical'
-                              ? 'bg-critical-soft text-critical'
-                              : 'bg-sunken text-ink-3'
-                          }`}
-                        >
-                          {item.planValidity.badgeLabel}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Mốc 4: Plan Brand */}
-                    <td className="py-2.5 px-3 text-center">
-                      {item.brandPlanStatus === 'APPROVED' && (
-                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-positive-soft text-positive">
-                          Đã duyệt
-                        </span>
-                      )}
-                      {item.brandPlanStatus === 'PENDING' && (
-                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-warning-soft text-warning">
-                          Chờ duyệt
-                        </span>
-                      )}
-                      {(item.brandPlanStatus === 'DRAFT' || item.brandPlanStatus === 'NONE') && (
-                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-sunken text-ink-3">
-                          Chưa chốt
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Mốc 5-9: Listing KOC */}
-                    <td className="py-2.5 px-3 text-center font-mono">
-                      <div className="flex items-center justify-center gap-1">
-                        <span
-                          className={`font-semibold ${
-                            item.listingPct >= 100 ? 'text-positive' : 'text-accent'
-                          }`}
-                        >
-                          {item.listingCount}/{item.listingQuota}
-                        </span>
-                        <span className="text-2xs text-ink-3">({item.listingPct}%)</span>
-                      </div>
-                    </td>
-
-                    {/* Mốc 10-11: HĐNT & SOW */}
-                    <td className="py-2.5 px-3 text-center font-mono">
-                      {item.dealCount > 0 ? (
-                        <div className="text-2xs">
-                          <span className="text-ink font-semibold">{item.dealCount} Deal</span>
-                          <span className="text-ink-3 mx-1">·</span>
-                          <span
-                            className={
-                              item.dealsWithSowSigned >= item.dealCount
-                                ? 'text-positive font-semibold'
-                                : 'text-warning'
-                            }
-                          >
-                            {item.dealsWithSowSigned} SOW ký
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-ink-3 text-2xs">—</span>
-                      )}
-                    </td>
-
-                    {/* Mốc 14: Air Video */}
-                    <td className="py-2.5 px-3 text-center font-mono">
-                      <div className="font-semibold text-positive">
-                        {item.airedVideos}{' '}
-                        <span className="text-2xs font-normal text-ink-3">
-                          / {st.targetPaidVideos || 0}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Mốc 15-16: Nghiệm thu */}
-                    <td className="py-2.5 px-3 text-center font-mono">
-                      {item.airedVideos > 0 ? (
-                        <div className="text-2xs">
-                          <span
-                            className={`font-semibold ${
-                              item.acceptedVideos >= item.airedVideos
-                                ? 'text-positive'
-                                : 'text-accent'
-                            }`}
-                          >
-                            {item.acceptedVideos} / {item.airedVideos}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-ink-3 text-2xs">—</span>
-                      )}
-                    </td>
-
-                    {/* Mốc 17-18: Chi phí Net */}
-                    <td className="py-2.5 px-3 text-right font-mono">
-                      <div className="font-semibold text-ink">
-                        {formatVndShort(item.spentNet)}
-                      </div>
-                      <div className="text-2xs text-ink-3">
-                        {item.budgetNet > 0 ? `${item.spendPct}% Net` : 'Net 0đ'}
-                      </div>
-                    </td>
-
-                    {/* Điểm nghẽn tiến độ */}
-                    <td className="py-2.5 px-4">
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className={`text-2xs font-semibold px-2 py-0.5 rounded truncate max-w-[200px] ${
-                            item.currentBottleneckStep === 18
-                              ? 'bg-critical-soft text-critical'
-                              : item.currentBottleneckStep >= 14
-                              ? 'bg-positive-soft text-positive'
-                              : item.currentBottleneckStep >= 10
-                              ? 'bg-accent-soft text-accent'
-                              : 'bg-warning-soft text-warning'
-                          }`}
-                        >
-                          {item.currentBottleneckLabel}
-                        </span>
-                        <ChevronRight className="w-3.5 h-3.5 text-ink-3 shrink-0" />
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    Đặt lại lọc
+                  </Button>
+                )}
+              </>
+            }
+            chips={
+              stageFilter !== 'ALL' || causeFilter !== 'ALL' ? (
+                <div className="flex items-center gap-2 text-2xs text-ink-3">
+                  Đang xem gian dừng ở:
+                  <Status tone="critical">{stageFilter !== 'ALL' ? STAGE_META[stageFilter].label : causeFilter}</Status>
+                </div>
+              ) : undefined
+            }
+          />
         </div>
-      </div>
+        <DataTable
+          columns={columns}
+          rows={filteredList}
+          rowKey={(item) => item.store.id}
+          onRowClick={setSelectedProgress}
+          empty={<p className="py-6 text-center text-sm text-ink-3">Không có gian hàng khớp bộ lọc.</p>}
+        />
+      </Panel>
 
       {/* MODAL CHI TIẾT PHỄU 1 GIAN HÀNG (0 → 18) */}
       <Modal
         open={Boolean(selectedProgress)}
         onClose={() => setSelectedProgress(null)}
-        title={selectedProgress ? `Tiến Trình Phễu Vận Hành 0 → 18: ${selectedProgress.store.storeName}` : 'Chi Tiết Gian Hàng'}
+        title={selectedProgress ? `Tiến độ quy trình: ${selectedProgress.store.storeName}` : 'Chi tiết gian hàng'}
         size="xl"
       >
         {selectedProgress && (
@@ -975,13 +840,13 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
 
             {/* SƠ ĐỒ CÁC MỐC TIẾN ĐỘ 0 → 18 */}
             <div className="space-y-3">
-              <div className="text-xs font-semibold text-ink">Bảng Kiểm Tra 7 Cột Mốc Nghiệp Vụ:</div>
+              <h4 className="text-xs font-semibold text-ink">Các mốc quy trình</h4>
 
               <div className="space-y-2">
                 {[
                   {
                     step: 'Mốc 0-3',
-                    title: 'Phân quyền & Đối soát Plan 4.1 vs 4.1.1',
+                    title: 'Phân quyền & đối soát Plan 4.1 vs 4.1.1',
                     status:
                       selectedProgress.plan411Status === 'APPROVED' && selectedProgress.planValidity.isValidForSubmit
                         ? 'DONE'
@@ -1007,7 +872,7 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
                   },
                   {
                     step: 'Mốc 5-9',
-                    title: 'Listing KOC & Phê duyệt Danh sách',
+                    title: 'Listing KOC & phê duyệt danh sách',
                     status: selectedProgress.listingPct >= 100 ? 'DONE' : 'PENDING',
                     detail: `Đã lên danh sách ${selectedProgress.listingCount} / ${selectedProgress.listingQuota} KOC theo quota các bậc KL (${selectedProgress.listingPct}%).`,
                     actionTab: 'koc-listing',
@@ -1015,7 +880,7 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
                   },
                   {
                     step: 'Mốc 10-11',
-                    title: 'Hợp Đồng Nguyên Tắc & Phụ Lục SOW',
+                    title: 'Hợp đồng nguyên tắc & phụ lục SOW',
                     status:
                       selectedProgress.dealCount > 0 && selectedProgress.dealsWithSowSigned >= selectedProgress.dealCount
                         ? 'DONE'
@@ -1028,7 +893,7 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
                   },
                   {
                     step: 'Mốc 12-14',
-                    title: 'Sản Xuất, Video Nháp & Air Video',
+                    title: 'Sản xuất, video nháp & air video',
                     status:
                       selectedProgress.targetVideos > 0 && selectedProgress.airedVideos >= selectedProgress.targetVideos
                         ? 'DONE'
@@ -1041,7 +906,7 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
                   },
                   {
                     step: 'Mốc 15-16',
-                    title: 'Nghiệm Thu Kỹ Thuật & Duyệt Chi',
+                    title: 'Nghiệm thu kỹ thuật & duyệt chi',
                     status:
                       selectedProgress.airedVideos > 0 && selectedProgress.acceptedVideos >= selectedProgress.airedVideos
                         ? 'DONE'
@@ -1054,16 +919,16 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
                   },
                   {
                     step: 'Mốc 17-18',
-                    title: 'Hiệu Suất PnL & Kiểm Soát Ngân Sách',
+                    title: 'Hiệu suất PnL & kiểm soát ngân sách',
                     status:
                       selectedProgress.financialRisk === 'UNBUDGETED' || selectedProgress.financialRisk === 'OVERBUDGET'
                         ? 'ALERT'
                         : 'DONE',
                     detail:
                       selectedProgress.financialRisk === 'UNBUDGETED'
-                        ? 'CẢNH BÁO ĐỎ: Phát sinh chi phí ngoài kế hoạch (Hạn mức Net = 0đ).'
+                        ? 'Phát sinh chi phí ngoài kế hoạch (hạn mức Net = 0đ).'
                         : selectedProgress.financialRisk === 'OVERBUDGET'
-                        ? 'CẢNH BÁO: Thực chi vượt hạn mức Net được giao.'
+                        ? 'Thực chi vượt hạn mức Net được giao.'
                         : `Thực chi ${formatVndShort(selectedProgress.spentNet)} / Hạn mức ${formatVndShort(selectedProgress.budgetNet)} (${selectedProgress.spendPct}%). An toàn.`,
                     actionTab: 'dashboard-brand',
                     actionLabel: 'Mở Báo cáo Ngân sách',
@@ -1082,7 +947,7 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
                       </div>
                       <div>
                         <div className="font-semibold text-ink flex items-center gap-2">
-                          <span className="text-2xs text-ink-3 uppercase font-mono">{item.step}</span>
+                          <span className="text-2xs text-ink-3 tabular-nums">{item.step}</span>
                           <span>{item.title}</span>
                         </div>
                         <div className="text-ink-2 text-2xs mt-0.5">{item.detail}</div>

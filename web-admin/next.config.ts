@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
   ...(customDistDir ? { distDir: customDistDir } : {}),
   experimental: {
     cpus: 1,
+    webpackBuildWorker: false,
   },
 };
 

@@ -1,11 +1,18 @@
-# Upbase B2C — Chrome Extension Phân Tích KOC, TikTok Seller, TikTok Ads & Nghiệm Thu Air Link (v1.4.0)
+# Upbase B2C — Tiện Ích Phân Tích KOC, Bóc Tách Kịch Bản & Nghiệm Thu Đa Nền Tảng (v1.4.0)
 
-Bộ tiện ích mở rộng Chrome dành riêng cho chuyên viên Booking (PIC) và vận hành phòng B2C tại Upbase, tích hợp đầy đủ 3 tầng tính năng (**MIỄN PHÍ**, **PRO**, **SUPER VIP**) và đồng bộ trực tiếp về hệ thống **Upbase B2C Web-Admin**.
+> **Đơn vị phát triển:** **Hệ thống Upbase B2C Operations**
+
+## Giới thiệu mở đầu
+
+**Upbase B2C Extension** là công cụ chuyên dụng dành cho đội ngũ Booking (PIC), Content và Vận hành thương mại điện tử đa sàn (**TikTok, Douyin, Instagram, Threads, Facebook & Reels**). Tiện ích hỗ trợ đọc trực tiếp số liệu thực tế ngay trên trang kênh của KOC, gắn nhãn nhận diện bài gắn giỏ hàng, bóc tách lời thoại và cấu trúc kịch bản hàng loạt, tải video không logo và đồng bộ nghiệm thu trực tiếp về hệ thống **Upbase B2C Web-Admin**.
+
+---
 
 ## 1. Cấu trúc thư mục
 
 - [`e:\Upbase\B2C\chrome-extension\`](file:///e:/Upbase/B2C/chrome-extension): Bản Chrome Extension chính thức của **Upbase B2C (v1.4.0)** tuân thủ nghiêm ngặt [`DESIGN_SYSTEM.md`](file:///e:/Upbase/B2C/web-admin/DESIGN_SYSTEM.md) (Font Be Vietnam Pro, hệ màu ngữ nghĩa, tiền tệ nguyên VND, bảo mật che mờ CCCD/SĐT/STK `****5678`).
-- [`e:\Upbase\B2C\chrome-extension\Upbase-B2C-Extension-v1.4.zip`](file:///e:/Upbase/B2C/chrome-extension/Upbase-B2C-Extension-v1.4.zip) & [`Upbase-B2C-Extension-v1.3.zip`](file:///e:/Upbase/B2C/chrome-extension/Upbase-B2C-Extension-v1.3.zip): File nén đóng gói sẵn để gửi nhanh qua Lark / Zalo cho nhân sự trong phòng cài đặt.
+- **Kiến trúc Dữ liệu tập trung (Database Centric):** Toàn bộ dữ liệu lịch sử của hơn 5.020 KOC và lịch sử Booking chi tiết đã được chuyển về lưu trữ tập trung tại cơ sở dữ liệu máy chủ backend ([`web-admin/src/lib/kocHistoricalDatabase.ts`](file:///e:/Upbase/B2C/web-admin/src/lib/kocHistoricalDatabase.ts)), hoàn toàn không lưu trên máy client Extension để bảo mật thông tin nội bộ và tối ưu kích thước gói cài đặt chỉ còn ~185 KB.
+- [`e:\Upbase\B2C\chrome-extension\Upbase-B2C-ChromeWebStore-v1.4.0.zip`](file:///e:/Upbase/B2C/chrome-extension/Upbase-B2C-ChromeWebStore-v1.4.0.zip) & [`web-admin/public/Upbase-B2C-Extension-v1.4.zip`](file:///e:/Upbase/B2C/web-admin/public/Upbase-B2C-Extension-v1.4.zip): File nén đóng gói sẵn chuẩn Chrome Web Store để triển khai hoặc gửi nhanh qua Lark / Zalo cho nhân sự trong phòng cài đặt.
 - [`e:\Upbase\B2C\chrome-extension\updog-mod\`](file:///e:/Upbase/B2C/chrome-extension/updog-mod): Bản giải nén tích hợp cầu nối đồng bộ (`upbase-bridge.js`) về hệ thống Upbase B2C.
 
 ## 2. Chi tiết các nhóm tính năng nghiệp vụ (v1.4.0)
@@ -31,9 +38,20 @@ Bộ tiện ích mở rộng Chrome dành riêng cho chuyên viên Booking (PIC)
 - **Tab TikTok Ads (`BE → BI`):** Nạp mã ủy quyền Spark Ads hàng loạt trên `ads.tiktok.com`, tính **ROI Tổng Thực Tế = GMV / (Cát-xê Net + Chi phí Ads)**, copy **Cột BE → BI** và đồng bộ về Web-Admin.
 - **Tab Đề xuất:** Đối soát trực tiếp 2.357 KOC Master & 16.024 Deal lịch sử, định tuyến phê duyệt chuẩn phòng B2C (**Leader Nguyễn Thị Ngọc Tâm** cho 8 gian hàng trọng điểm hoặc trình trực tiếp **GĐ Marketing Đặng Thị Yến Nhi**).
 - **Tab Air Link (Tải đa định dạng, Xuất bình luận & Viết kịch bản):**
-  - **Tải về đa định dạng (hỗ trợ cả TikTok & Douyin):** Tải **Video MP4 Không Logo**, **Nhạc nền MP3**, **Lời thoại Phụ đề (`.txt`/WebVTT)**, **Bộ ảnh Photo Slide**, và **Xuất CSV toàn bộ Bình luận** (kèm phân loại 10 nhóm ý định mua hàng & SĐT khách để lại).
+  - **Tải về đa định dạng (hỗ trợ TikTok, Douyin, Instagram, Threads, Facebook Reels):** Tải **Video MP4 Không Logo**, **Nhạc nền MP3**, **Lời thoại Phụ đề (`.txt`/WebVTT)**, **Bộ ảnh Photo Slide**, và **Xuất CSV toàn bộ Bình luận** (kèm phân loại 10 nhóm ý định mua hàng & SĐT khách để lại).
   - **Nhận xét Kênh & Viết Kịch bản 3 cảnh (`ANALYZE_CHANNEL_AND_SCRIPT`):** Bấm nút tường minh (tuân thủ `RULE-API-02`) để tổng hợp nhận xét kênh và dựng khung kịch bản 3 phân cảnh (`Mở đầu 3s`, `Chứng minh USP`, `Kêu gọi bấm giỏ hàng`).
   - **Nút `Báo lỗi` trên thanh tiêu đề:** Gửi ghi chú ngắn về bộ phận kỹ thuật, chỉ gửi khi người dùng chủ động bấm nút `Gửi ghi chú`.
+
+### C. Tính năng chuyên sâu cho Instagram, Reels, Threads & Facebook (Tích hợp từ các Repo mã nguồn mở GitHub)
+1. **Giải mã Shortcode → PK 64-bit & Làm giàu dữ liệu bài đăng (từ [`Andrei-Alb/isorter`](https://github.com/Andrei-Alb/isorter)):**
+   - Tự động chuyển mã `shortcode` (`p/ABC...`, `reel/XYZ...`, `post/DEF...`) sang `media_id` (`pk` 64-bit `BigInt`) và gọi `/api/v1/media/{pk}/info/` kèm `x-ig-app-id` để lấy đủ Caption, Hashtag, Lượt xem, Lượt tim và luồng `video_versions` có độ phân giải cao nhất (`width × height`).
+2. **Sắp xếp lưới & Đọc số liệu SVG chuẩn xác (từ [`RostyslavDzhohola/free-sort-feed-extension`](https://github.com/RostyslavDzhohola/free-sort-feed-extension)):**
+   - Định vị gốc ô lưới (`resolveMetaGridTile`) trên Instagram & Facebook Reels để sắp xếp theo `View cao`, `Tim cao`, `ER cao`, `Chỉ bài giỏ` mà không làm vỡ bố cục CSS Flexbox/Grid.
+   - Đọc chính xác số Follower nguyên từ thuộc tính `header [title]` và bóc tách số lượt xem/tim cạnh biểu tượng SVG (`Play` / `Heart` / `Comment`), loại bỏ hoàn toàn số liệu ước tính giả (tuân thủ `RULE-DATA-01`).
+3. **Thanh công cụ ngang `.ub-ThreadsPostBar` & Tải Video MSE/Blob trên Threads, IG, FB Reels (từ [`jeongpiano/threads-video-downloader`](https://github.com/jeongpiano/threads-video-downloader) & `yt-dlp`):**
+   - **Giao diện riêng cho Threads (`.ub-ThreadsPostBar`):** Hiển thị thanh ngang gọn bên dưới bài đăng Threads (kèm nút `🔍 Chọn bài` và `⬇ Tải Video`), không đè lên Avatar và không làm lệch lưới 2 cột của Threads.
+   - **Giao diện Compact Tile cho Instagram & Facebook Reels (`.ub-GridCardOverlay--compactTile` + `.ub-MetaQuickDlBtn`):** Hiển thị gọn ở đáy ô vuông/9:16 kèm nút `⬇ MP4` ở góc phải trên.
+   - **Tải trọn vẹn file MP4 khi trang phát bằng `blob:`:** Tự động cắt bỏ tham số phân mảnh `bytestart` / `byteend` trên `cdninstagram.com` & `fbcdn.net`, kết hợp bóc tách `videoDeliveryResponseFragment.progressive_urls` (HD/SD) và dự phòng qua trang `/embed` / `/embed/captioned/`.
 
 ## 3. Hướng dẫn cài đặt và chia sẻ cho nhân sự khác trong team
 

@@ -1,7 +1,5 @@
 const DEFAULT_SERVER_URL = 'http://localhost:3000';
 
-let cachedMasterDbPromise = null;
-
 function normalizeHandle(raw) {
   return String(raw || '')
     .trim()
@@ -10,170 +8,16 @@ function normalizeHandle(raw) {
     .replace(/\s+/g, '');
 }
 
-function stripHandlePunct(raw) {
-  return normalizeHandle(raw).replace(/[._-]+/g, '');
-}
-
-function dedupeHandleLetters(raw) {
-  return stripHandlePunct(raw).replace(/([a-z])\1+/g, '$1');
-}
-
-function inflateTupleToKoc(tuple) {
-  if (!Array.isArray(tuple)) return null;
-  const rawDeals = Array.isArray(tuple[29]) ? tuple[29] : [];
-  const recentDeals = rawDeals.map((d, idx) => ({
-    id: `${tuple[0]}-deal-${idx + 1}`,
-    dealCode: d[0] || '—',
-    brandName: d[1] || '—',
-    storeName: d[1] || '—',
-    bookingFormat: 'Booking Video KOC',
-    totalValue: Number(d[2] || 0),
-    viewsCount: Number(d[3] || 0),
-    assignedStaff: d[4] || '—',
-    videoUrl: d[5] || '',
-    statusLabel: 'Đã hoàn tất',
-  }));
-
-  return {
-    id: tuple[0] || '',
-    channelId: tuple[1] || '',
-    stageName: tuple[2] || tuple[1] || '',
-    realName: tuple[3] || '—',
-    salaryGrade: tuple[4] || 'KL1',
-    segment: tuple[5] || 'Micro',
-    followers: Number(tuple[6] || 0),
-    avgViews: Number(tuple[7] || 0),
-    medianViews: Number(tuple[8] || 0),
-    engagementRate: Number(tuple[9] || 0),
-    rateCardVideo: Number(tuple[10] || 0),
-    minRate: Number(tuple[11] || tuple[10] || 0),
-    maxRate: Number(tuple[12] || tuple[10] || 0),
-    reliabilityScore: Number(tuple[13] || 0),
-    totalPastDeals: Number(tuple[14] || recentDeals.length || 0),
-    totalPaidVideos: Number(tuple[15] || 0),
-    totalFocVideos: Number(tuple[16] || 0),
-    latestBookMonth: tuple[17] || '—',
-    latestBoCode: tuple[18] || '—',
-    bookingPic: tuple[19] || '—',
-    brandName: tuple[20] || '—',
-    proposedStores: tuple[20] || '',
-    phoneMasked: tuple[21] || '—',
-    cccdMasked: tuple[22] || '—',
-    bankAccountMasked: tuple[23] || '—',
-    sharedMcnInfo: tuple[24] || null,
-    recentRevenue: Number(tuple[25] || 0),
-    itemsSold: Number(tuple[26] || 0),
-    gpm: Number(tuple[27] || 0),
-    aov: Number(tuple[28] || 0),
-    gmvShareVideo: 80,
-    gmvShareLive: 14,
-    gmvShareProductCard: 6,
-    maleRatio: 22,
-    femaleRatio: 78,
-    age18_24: 35,
-    age25_34: 45,
-    age35Plus: 20,
-    location: 'Việt Nam',
-    recentDeals,
-  };
-}
-
-async function getLocalMasterDb() {
-  if (!cachedMasterDbPromise) {
-    cachedMasterDbPromise = (async () => {
-      try {
-        if (typeof chrome === 'undefined' || typeof chrome?.runtime?.getURL !== 'function') {
-          return { byExact: new Map(), byStripped: new Map(), byFuzzy: new Map(), stores: [] };
-        }
-        const url = chrome.runtime.getURL('koc-master-db.json');
-        const res = await fetch(url);
-        const raw = await res.json();
-        const kocsMap = raw?.kocs || {};
-        const stores = Array.isArray(raw?.stores) ? raw.stores : [];
-        const byExact = new Map();
-        const byStripped = new Map();
-        const byFuzzy = new Map();
-
-        for (const [key, tuple] of Object.entries(kocsMap)) {
-          const clean = normalizeHandle(key);
-          if (!clean || !Array.isArray(tuple)) continue;
-          const dealsCount = Number(tuple[14] || 0);
-
-          const prevExact = byExact.get(clean);
-          if (!prevExact || Number(prevExact[14] || 0) < dealsCount) {
-            byExact.set(clean, tuple);
-          }
-
-          const stripped = stripHandlePunct(clean);
-          if (stripped) {
-            const prevStripped = byStripped.get(stripped);
-            if (!prevStripped || Number(prevStripped[14] || 0) < dealsCount) {
-              byStripped.set(stripped, tuple);
-            }
-          }
-
-          const fuzzy = dedupeHandleLetters(clean);
-          if (fuzzy) {
-            const prevFuzzy = byFuzzy.get(fuzzy);
-            if (!prevFuzzy || Number(prevFuzzy[14] || 0) < dealsCount) {
-              byFuzzy.set(fuzzy, tuple);
-            }
-          }
-        }
-
-        return { byExact, byStripped, byFuzzy, stores };
-      } catch {
-        return { byExact: new Map(), byStripped: new Map(), byFuzzy: new Map(), stores: [] };
-      }
-    })();
-  }
-  return cachedMasterDbPromise;
-}
-
-async function lookupLocalMasterKoc(rawHandle) {
-  const db = await getLocalMasterDb();
+function getSafeDisconnectedKocResponse(rawHandle) {
   const clean = normalizeHandle(rawHandle);
-  if (!clean) {
-    return {
-      success: true,
-      handle: '',
-      foundInMaster: false,
-      sourceType: 'LOCAL_MASTER_DB',
-      koc: null,
-      recentDeals: [],
-      stores: db.stores,
-      registeredVideos: [],
-    };
-  }
-
-  let matchedTuple = db.byExact.get(clean) || null;
-  const strippedTuple = db.byStripped.get(stripHandlePunct(clean)) || null;
-  const fuzzyTuple = db.byFuzzy.get(dedupeHandleLetters(clean)) || null;
-
-  // Ưu tiên bản ghi có số lượng BO lịch sử đầy đủ hơn khi trùng tên kênh biến thể (VD: po.trann77 vs po.tran77)
-  if (!matchedTuple && strippedTuple) {
-    matchedTuple = strippedTuple;
-  } else if (
-    matchedTuple &&
-    fuzzyTuple &&
-    Number(fuzzyTuple[14] || 0) > Number(matchedTuple[14] || 0) &&
-    (String(fuzzyTuple[3] || '') === String(matchedTuple[3] || '') ||
-      Number(fuzzyTuple[14] || 0) >= Number(matchedTuple[14] || 0) * 3)
-  ) {
-    matchedTuple = fuzzyTuple;
-  } else if (!matchedTuple && fuzzyTuple) {
-    matchedTuple = fuzzyTuple;
-  }
-
-  const koc = matchedTuple ? inflateTupleToKoc(matchedTuple) : null;
   return {
     success: true,
     handle: clean,
-    foundInMaster: Boolean(koc),
-    sourceType: koc ? 'LOCAL_MASTER_DB' : 'NEW_PROSPECT',
-    koc,
-    recentDeals: koc ? koc.recentDeals : [],
-    stores: db.stores,
+    foundInMaster: false,
+    sourceType: 'API_DISCONNECTED',
+    koc: null,
+    recentDeals: [],
+    stores: [],
     registeredVideos: [],
   };
 }
@@ -195,7 +39,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'UPBASE_LOOKUP_KOC') {
     (async () => {
       const rawHandle = String(message.handle || '').trim();
-      const localFallback = await lookupLocalMasterKoc(rawHandle);
+      const offlineFallback = getSafeDisconnectedKocResponse(rawHandle);
 
       try {
         const baseUrl = await getServerBaseUrl();
@@ -210,7 +54,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           typeof AbortController !== 'undefined' ? new AbortController() : null;
         const timer =
           controller && typeof setTimeout === 'function'
-            ? setTimeout(() => controller.abort(), 2500)
+            ? setTimeout(() => controller.abort(), 3500)
             : null;
         const fetchOpts = {
           method: 'GET',
@@ -229,21 +73,29 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         const data = await res.json();
 
         if (res.ok && data?.success) {
-          if (!data.foundInMaster && localFallback.foundInMaster) {
-            data.foundInMaster = true;
-            data.koc = localFallback.koc;
-            data.recentDeals = localFallback.recentDeals;
-          }
-          if (!Array.isArray(data.stores) || data.stores.length === 0) {
-            data.stores = localFallback.stores;
-          }
           sendResponse({ ok: true, status: res.status, data });
           return;
         }
-        sendResponse({ ok: true, status: 200, data: localFallback });
-      } catch {
-        // Fallback 100% sang Master Data nhúng sẵn trong Extension khi chưa bật localhost:3000
-        sendResponse({ ok: true, status: 200, data: localFallback });
+        sendResponse({
+          ok: true,
+          status: 200,
+          data: {
+            ...offlineFallback,
+            sourceType: 'NEW_DISCOVERY',
+            error: data?.error || 'Không tìm thấy KOC trong hệ thống',
+          },
+        });
+      } catch (err) {
+        // Fallback an toàn khi máy chủ chưa kết nối, không crash và không lộ dữ liệu
+        sendResponse({
+          ok: true,
+          status: 200,
+          data: {
+            ...offlineFallback,
+            offlineFallback: true,
+            error: err?.message || 'Không kết nối được máy chủ',
+          },
+        });
       }
     })();
     return true;
@@ -316,6 +168,63 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === 'UPBASE_CAPTURE_TAB') {
+    (async () => {
+      try {
+        chrome.tabs.captureVisibleTab(
+          null,
+          { format: 'jpeg', quality: 92 },
+          (dataUrl) => {
+            if (chrome.runtime.lastError || !dataUrl) {
+              sendResponse({
+                ok: false,
+                error: chrome.runtime.lastError?.message || 'Không thể chụp ảnh màn hình tab hiện tại.',
+              });
+            } else {
+              sendResponse({ ok: true, dataUrl });
+            }
+          }
+        );
+      } catch (err) {
+        sendResponse({ ok: false, error: err?.message || 'Lỗi chụp ảnh màn hình.' });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === 'UPBASE_DOWNLOAD_DATA_URL') {
+    (async () => {
+      try {
+        const dataUrl = String(message.dataUrl || '').trim();
+        const filename = String(message.filename || `Upbase_Anh_NghiemThu_${Date.now()}.jpg`).replace(
+          /[\\/:*?"<>|]+/g,
+          '_'
+        );
+        if (!dataUrl) {
+          sendResponse({ ok: false, error: 'Thiếu dữ liệu ảnh dataUrl.' });
+          return;
+        }
+        chrome.downloads.download(
+          {
+            url: dataUrl,
+            filename,
+            saveAs: false,
+          },
+          (downloadId) => {
+            if (chrome.runtime.lastError) {
+              sendResponse({ ok: false, error: chrome.runtime.lastError.message });
+            } else {
+              sendResponse({ ok: true, downloadId });
+            }
+          }
+        );
+      } catch (err) {
+        sendResponse({ ok: false, error: err?.message || 'Lỗi tải ảnh về máy.' });
+      }
+    })();
+    return true;
+  }
+
   if (
     message.type === 'UPBASE_DOWNLOAD_VIDEO' ||
     message.type === 'UPBASE_DOWNLOAD_MEDIA' ||
@@ -323,29 +232,259 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   ) {
     (async () => {
       try {
-        const url = String(message.url || '').trim();
+        let rawUrl = String(message.url || '').trim();
+        const postUrl = String(message.postUrl || '').trim();
         const filename = String(message.filename || `Upbase_Media_${Date.now()}.mp4`).replace(
           /[\\/:*?"<>|]+/g,
           '_'
         );
-        if (!url) {
+
+        // Loại bỏ tham số cắt đoạn DASH/MSE (bytestart, byteend) của CDN Meta để tải trọn vẹn file MP4
+        const stripMetaRange = (u) =>
+          String(u || '')
+            .replace(/[&?](?:bytestart|byteend)=[^&]*/gi, '')
+            .replace(/[?&]$/, '');
+
+        const extractMetaVideoFromEmbedHtml = (html) => {
+          if (!html || typeof html !== 'string') return '';
+          const dec = (s) =>
+            String(s || '')
+              .replace(/\\u0026/g, '&')
+              .replace(/\\u00253D/g, '%3D')
+              .replace(/\\\//g, '/')
+              .replace(/&amp;/g, '&')
+              .replace(/&quot;/g, '"');
+          const candidates = [];
+          let m;
+          const patterns = [
+            /\\"playable_url_quality_hd\\":\\"(https:[^"\\]+(?:\\.[^"\\]+)*)\\"/g,
+            /\\"browser_native_hd_url\\":\\"(https:[^"\\]+(?:\\.[^"\\]+)*)\\"/g,
+            /\\"progressive_url\\":\\"(https:[^"\\]+(?:\\.[^"\\]+)*)\\"/g,
+            /\\"video_url\\":\\"(https:[^"\\]+(?:\\.[^"\\]+)*)\\"/g,
+            /\\"playable_url\\":\\"(https:[^"\\]+(?:\\.[^"\\]+)*)\\"/g,
+            /\\"browser_native_sd_url\\":\\"(https:[^"\\]+(?:\\.[^"\\]+)*)\\"/g,
+            /<source\s+[^>]*src="([^"]+)"/gi,
+            /<video\s+[^>]*src="([^"]+)"/gi,
+            /https:\/\/[^\s"'<>\\]+\.mp4[^\s"'<>\\]*/gi,
+          ];
+          for (const re of patterns) {
+            while ((m = re.exec(html)) !== null) {
+              const u = stripMetaRange(dec(m[1] || m[0]).split('\\')[0]);
+              if (
+                u.startsWith('https://') &&
+                !u.startsWith('blob:') &&
+                (u.includes('cdninstagram') || u.includes('fbcdn') || u.includes('.mp4')) &&
+                !candidates.includes(u)
+              ) {
+                candidates.push(u);
+              }
+            }
+          }
+          return candidates[0] || '';
+        };
+
+        const resolveMetaPageToDirectMp4 = async (pageUrl) => {
+          if (!pageUrl || !/^https?:\/\//i.test(pageUrl)) return '';
+          const clean = pageUrl.split('?')[0].replace(/\/(media|embed|captioned)?\/?$/i, '');
+          const urlsToTry = [];
+          if (/threads\.(net|com)/i.test(clean)) {
+            urlsToTry.push(`${clean}/embed`);
+          } else if (/instagram\.com\/(?:p|reel|reels)\//i.test(clean)) {
+            urlsToTry.push(`${clean}/embed/captioned/`);
+            urlsToTry.push(`${clean}/embed/`);
+          }
+          urlsToTry.push(pageUrl);
+          for (const target of urlsToTry) {
+            try {
+              const r = await fetch(target, {
+                method: 'GET',
+                credentials: 'omit',
+                headers: {
+                  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                },
+              });
+              if (!r.ok) continue;
+              const html = await r.text();
+              const found = extractMetaVideoFromEmbedHtml(html);
+              if (found) return found;
+            } catch {
+              // Thử tiếp URL dự phòng
+            }
+          }
+          return '';
+        };
+
+        if (rawUrl && !rawUrl.startsWith('blob:')) {
+          rawUrl = stripMetaRange(rawUrl);
+        }
+
+        const resolveTikTokPageToDirectMedia = async (pageUrl) => {
+          if (!pageUrl || !/tiktok\.com/i.test(pageUrl)) return { url: '', isImage: false };
+          // Tầng 1: Bóc tách luồng MP4 HD không logo (hoặc ảnh Photo Slide) qua TikWM API
+          try {
+            const apiRes = await fetch(
+              `https://www.tikwm.com/api/?url=${encodeURIComponent(pageUrl)}&hd=1`,
+              {
+                method: 'GET',
+                credentials: 'omit',
+                headers: { Accept: 'application/json' },
+              }
+            );
+            if (apiRes.ok) {
+              const json = await apiRes.json();
+              const d = json?.data;
+              if (d) {
+                if (Array.isArray(d.images) && d.images.length > 0 && d.images[0]) {
+                  return { url: String(d.images[0]), isImage: true };
+                }
+                const hdCandidate = d.hdplay || d.play || d.wmplay || '';
+                if (typeof hdCandidate === 'string' && hdCandidate.startsWith('http')) {
+                  return { url: hdCandidate, isImage: false };
+                }
+              }
+            }
+          } catch {
+            // Chuyển sang Tầng 2 nếu API phụ không phản hồi
+          }
+
+          // Tầng 2: Bóc tách trực tiếp từ __UNIVERSAL_DATA_FOR_REHYDRATION__ của trang TikTok
+          try {
+            const htmlRes = await fetch(pageUrl, {
+              method: 'GET',
+              credentials: 'include',
+              headers: {
+                Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              },
+            });
+            if (htmlRes.ok) {
+              const html = await htmlRes.text();
+              const m = html.match(
+                /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
+              );
+              if (m && m[1]) {
+                const parsed = JSON.parse(m[1]);
+                const scope = parsed?.__DEFAULT_SCOPE__ || {};
+                const item =
+                  scope?.['webapp.video-detail']?.itemInfo?.itemStruct ||
+                  scope?.['webapp.reflow.video.detail']?.itemInfo?.itemStruct ||
+                  null;
+                const v = item?.video || {};
+                const pickHttp = (cand) => {
+                  if (!cand) return '';
+                  if (typeof cand === 'string' && cand.startsWith('http')) return cand;
+                  const arr = cand.UrlList || cand.urlList || cand.url_list || [];
+                  return Array.isArray(arr) ? arr.find((u) => typeof u === 'string' && u.startsWith('http')) || '' : '';
+                };
+                const directMp4 =
+                  pickHttp(v.playAddr) ||
+                  pickHttp(v.PlayAddrStruct) ||
+                  pickHttp(v.bitrateInfo?.[0]?.PlayAddr) ||
+                  pickHttp(v.downloadAddr) ||
+                  '';
+                if (directMp4) return { url: directMp4, isImage: false };
+                const firstImg = item?.imagePost?.images?.[0]?.imageURL?.urlList?.[0] || '';
+                if (firstImg && firstImg.startsWith('http')) {
+                  return { url: firstImg, isImage: true };
+                }
+              }
+            }
+          } catch {
+            // Bỏ qua
+          }
+          return { url: '', isImage: false };
+        };
+
+        const isTikTokPostLink =
+          /tiktok\.com\/@[^/]+\/(?:video|photo)\/\d+/i.test(postUrl) ||
+          /tiktok\.com\/@[^/]+\/(?:video|photo)\/\d+/i.test(rawUrl);
+        const isTikTokSessionLockedStream =
+          /webapp-prime\.tiktok\.com|tiktok\.com\/video\/tos/i.test(rawUrl);
+
+        if (isTikTokPostLink && (!rawUrl || rawUrl.startsWith('blob:') || isTikTokPostLink && rawUrl === postUrl || isTikTokSessionLockedStream)) {
+          const ttResolved = await resolveTikTokPageToDirectMedia(
+            /tiktok\.com\/@[^/]+\/(?:video|photo)\/\d+/i.test(postUrl) ? postUrl : rawUrl
+          );
+          if (ttResolved.url) {
+            rawUrl = ttResolved.url;
+          }
+        }
+
+        const isPageLinkNotDirectMedia =
+          !rawUrl ||
+          rawUrl.startsWith('blob:') ||
+          (/(?:instagram\.com|threads\.net|threads\.com|facebook\.com|fb\.watch)/i.test(rawUrl) &&
+            !/(?:cdninstagram\.com|fbcdn\.net|\.mp4|\.jpg|\.webp|\.mp3)/i.test(rawUrl));
+
+        if (isPageLinkNotDirectMedia && (postUrl || rawUrl)) {
+          const resolved = await resolveMetaPageToDirectMp4(
+            postUrl || (!rawUrl.startsWith('blob:') ? rawUrl : '')
+          );
+          if (resolved) {
+            rawUrl = resolved;
+          }
+        }
+
+        if (!rawUrl || rawUrl.startsWith('blob:')) {
           sendResponse({ ok: false, error: 'Chưa tìm thấy luồng tệp phương tiện gốc.' });
           return;
         }
+
+        const finalFilename =
+          /\.(?:jpe?g|png|webp)(?:\?|$)/i.test(rawUrl) && filename.endsWith('.mp4')
+            ? filename.replace(/\.mp4$/i, '.jpg')
+            : filename;
+
         chrome.downloads.download(
           {
-            url,
-            filename,
+            url: rawUrl,
+            filename: finalFilename,
             saveAs: false,
           },
-          (downloadId) => {
+          async (downloadId) => {
             if (chrome.runtime.lastError || !downloadId) {
+              // Nếu luồng CDN nội bộ bị chặn (403), thử bóc luồng dự phòng từ postUrl
+              if (postUrl && /tiktok\.com/i.test(postUrl)) {
+                const retryMedia = await resolveTikTokPageToDirectMedia(postUrl);
+                if (retryMedia.url && retryMedia.url !== rawUrl) {
+                  chrome.downloads.download(
+                    {
+                      url: retryMedia.url,
+                      filename: retryMedia.isImage
+                        ? finalFilename.replace(/\.mp4$/i, '.jpg')
+                        : finalFilename,
+                      saveAs: false,
+                    },
+                    (retryId) => {
+                      if (chrome.runtime.lastError || !retryId) {
+                        sendResponse({
+                          ok: false,
+                          error:
+                            chrome.runtime.lastError?.message || 'Trình duyệt từ chối tải xuống.',
+                        });
+                      } else {
+                        sendResponse({
+                          ok: true,
+                          downloadId: retryId,
+                          resolvedUrl: retryMedia.url,
+                          filename: finalFilename,
+                        });
+                      }
+                    }
+                  );
+                  return;
+                }
+              }
               sendResponse({
                 ok: false,
                 error: chrome.runtime.lastError?.message || 'Trình duyệt từ chối tải xuống.',
               });
             } else {
-              sendResponse({ ok: true, downloadId });
+              sendResponse({
+                ok: true,
+                downloadId,
+                resolvedUrl: rawUrl,
+                filename: finalFilename,
+              });
             }
           }
         );
@@ -354,6 +493,32 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           ok: false,
           error: err instanceof Error ? err.message : 'Lỗi tải tệp phương tiện.',
         });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === 'UPBASE_FETCH_TEXT_URL') {
+    (async () => {
+      try {
+        const targetUrl = String(message.url || '').trim();
+        if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
+          sendResponse({ ok: false, text: '' });
+          return;
+        }
+        const res = await fetch(targetUrl, {
+          method: 'GET',
+          credentials: 'omit',
+          cache: 'no-store',
+        });
+        if (!res.ok) {
+          sendResponse({ ok: false, status: res.status, text: '' });
+          return;
+        }
+        const text = await res.text();
+        sendResponse({ ok: true, status: res.status, text });
+      } catch {
+        sendResponse({ ok: false, text: '' });
       }
     })();
     return true;

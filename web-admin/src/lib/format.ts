@@ -23,6 +23,16 @@ export function formatVndShort(n: number): string {
 
 export const formatMoney = formatVndShort;
 
+/** Số lượng gọn cho trục biểu đồ, ô tóm tắt: 950 · 12,5 N · 3,4 tr · 1,2 tỷ */
+export function formatCountShort(n: number): string {
+  const v = n || 0;
+  const abs = Math.abs(v);
+  if (abs >= 1e9) return `${nf(2).format(v / 1e9)} tỷ`;
+  if (abs >= 1e6) return `${nf(1).format(v / 1e6)} tr`;
+  if (abs >= 1e4) return `${nf(1).format(v / 1e3)} N`;
+  return formatNumber(v);
+}
+
 /** 76,5% */
 export const formatPercent = (ratio: number, digits = 1) => `${nf(digits).format((ratio || 0) * 100)}%`;
 

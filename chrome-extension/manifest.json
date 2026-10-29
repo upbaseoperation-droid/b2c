@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Upbase B2C - KOC, TikTok Seller, TikTok Ads & Nghiệm thu Air Link",
+  "name": "Upbase B2C - KOC, TikTok, Shopee, IG, Threads & FB",
   "version": "1.4.0",
-  "description": "Phân tích KOC, nhãn lưới bài đăng, bóc giỏ hàng & chấm điểm mặt hàng, phụ đề WebVTT, tải MP4/MP3/Ảnh trên TikTok & Douyin, đồng bộ Seller & Ads.",
+  "description": "Phân tích KOC, Shopee Video/Live, TikTok Seller/Live/Ads, nhãn lưới Gắn giỏ, quét kịch bản & tải MP4 không logo đa nền tảng.",
   "permissions": [
     "storage",
     "activeTab",
@@ -26,8 +26,19 @@
     "https://*.tiktokcdn.com/*",
     "https://*.tiktokcdn-us.com/*",
     "https://*.tiktokv.com/*",
+    "https://*.tikwm.com/*",
+    "https://*.shopee.vn/*",
+    "https://*.shp.ee/*",
+    "https://*.susercontent.com/*",
+    "https://*.shopeemobile.com/*",
     "https://*.douyin.com/*",
     "https://*.instagram.com/*",
+    "https://*.cdninstagram.com/*",
+    "https://*.threads.net/*",
+    "https://*.threads.com/*",
+    "https://*.facebook.com/*",
+    "https://*.fb.watch/*",
+    "https://*.fbcdn.net/*",
     "https://*.upbase.vn/*",
     "http://localhost:3000/*",
     "http://127.0.0.1:3000/*"
@@ -59,16 +70,23 @@
     {
       "resources": [
         "upbase-logo.png",
+        "icon-16.png",
         "icon-32.png",
-        "icon-128.png",
-        "koc-master-db.json"
+        "icon-48.png",
+        "icon-128.png"
       ],
       "matches": [
         "https://*.tiktok.com/*",
         "https://*.tiktokshop.com/*",
         "https://*.tiktokglobalshop.com/*",
+        "https://*.shopee.vn/*",
+        "https://*.shp.ee/*",
         "https://*.douyin.com/*",
-        "https://*.instagram.com/*"
+        "https://*.instagram.com/*",
+        "https://*.threads.net/*",
+        "https://*.threads.com/*",
+        "https://*.facebook.com/*",
+        "https://*.fb.watch/*"
       ]
     }
   ],
@@ -80,8 +98,14 @@
         "https://*.tiktok.com/*",
         "https://*.tiktokshop.com/*",
         "https://*.tiktokglobalshop.com/*",
+        "https://*.shopee.vn/*",
+        "https://*.shp.ee/*",
         "https://*.douyin.com/*",
-        "https://*.instagram.com/*"
+        "https://*.instagram.com/*",
+        "https://*.threads.net/*",
+        "https://*.threads.com/*",
+        "https://*.facebook.com/*",
+        "https://*.fb.watch/*"
       ],
       "js": [
         "page-interceptor.js"
@@ -93,8 +117,14 @@
         "https://*.tiktok.com/*",
         "https://*.tiktokshop.com/*",
         "https://*.tiktokglobalshop.com/*",
+        "https://*.shopee.vn/*",
+        "https://*.shp.ee/*",
         "https://*.douyin.com/*",
-        "https://*.instagram.com/*"
+        "https://*.instagram.com/*",
+        "https://*.threads.net/*",
+        "https://*.threads.com/*",
+        "https://*.facebook.com/*",
+        "https://*.fb.watch/*"
       ],
       "js": [
         "content.js"

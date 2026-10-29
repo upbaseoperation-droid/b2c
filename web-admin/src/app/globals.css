@@ -155,6 +155,13 @@
   --text-2xl: 1.375rem;     --text-2xl--line-height: 1.75rem;   /* 22/28 tiêu đề trang, số lớn */
   --text-3xl: 1.75rem;      --text-3xl--line-height: 2.25rem;
   --text-4xl: 2rem;         --text-4xl--line-height: 2.5rem;
+  /* Chữ điều khiển (tab, nút, ô nhập) và con số chỉ số — tách token để chế độ dày thu nhỏ được */
+  --text-ctl-sm: 0.78125rem; --text-ctl-sm--line-height: 1.125rem; /* 12,5 chip, nút chọn */
+  --text-ctl: 0.8125rem;     --text-ctl--line-height: 1.25rem;     /* 13 tab, nút nhỏ */
+  --text-ctl-md: 0.84375rem; --text-ctl-md--line-height: 1.25rem;  /* 13,5 nút, ô nhập */
+  --text-stat: 1.625rem;     --text-stat--line-height: 2rem;       /* 26/32 số chỉ số */
+  --text-stat-sm: 1.25rem;   --text-stat-sm--line-height: 1.75rem; /* 20/28 số chỉ số gọn */
+  --font-figure: var(--font-sans);                                  /* font của số chỉ số */
 
   /* ---- Bo góc: nhãn 4, điều khiển 8, khung 12 ---- */
   --radius-xs: 4px;
@@ -190,6 +197,23 @@
   --motion-base: 200ms;   /* mở/đóng lớp nổi, vạch chỉ báo trượt */
   --motion-slow: 320ms;   /* chuỗi có thứ tự: duyệt bước, hàng bảng đổi chỗ */
   --motion-data: 640ms;   /* số liệu: số lăn, thanh và cột biểu đồ */
+}
+
+/*
+ * Mật độ dày (DESIGN_SYSTEM.md §3.1): màn nhiều số liệu như Dashboard bọc trong <Density> (data-density="compact").
+ * Hạ cả thang chữ một bậc; class text-* và các thành phần ui tự đọc lại token nên không phải sửa từng màn.
+ */
+[data-density='compact'] {
+  --text-2xs: 0.6875rem;     --text-2xs--line-height: 1rem;        /* 11/16 nhãn, chú thích */
+  --text-xs: 0.75rem;        --text-xs--line-height: 1.125rem;     /* 12/18 ô bảng */
+  --text-sm: 0.8125rem;      --text-sm--line-height: 1.25rem;      /* 13/20 nội dung, tiêu đề khối */
+  --text-base: 0.875rem;     --text-base--line-height: 1.375rem;   /* 14/22 tiêu đề nhóm */
+  --text-ctl-sm: 0.75rem;    --text-ctl-sm--line-height: 1rem;
+  --text-ctl: 0.75rem;       --text-ctl--line-height: 1.125rem;
+  --text-ctl-md: 0.78125rem; --text-ctl-md--line-height: 1.125rem;
+  --text-stat: 1.25rem;      --text-stat--line-height: 1.75rem;    /* 20/28 */
+  --text-stat-sm: 1.125rem;  --text-stat-sm--line-height: 1.5rem;  /* 18/24 */
+  --font-figure: var(--font-mono);                                   /* số chỉ số dạng mono như bảng tính */
 }
 
 /* ========================================================================= */

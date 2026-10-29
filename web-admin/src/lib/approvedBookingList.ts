@@ -764,9 +764,21 @@ function mergeDealsAndKocsIntoApprovedList(
       (rawItem.linkedDealId ? dealByCode.get(rawItem.linkedDealId.toUpperCase()) : undefined) ||
       dealByJobId.get(rawItem.id);
 
+    const isRebookFromKoc =
+      Boolean(matchedKoc?.totalPastDeals && matchedKoc.totalPastDeals > 0) ||
+      Boolean(matchedKoc?.totalPastGmv && matchedKoc.totalPastGmv > 0);
+    const finalNetVal = Number(rawItem.chiPhiBookingNetCuoi) || 0;
+    const syncedHinhThuc: 'New' | 'Rebook' | 'FOC' =
+      finalNetVal === 0
+        ? 'FOC'
+        : rawItem.hinhThucHopTac === 'Rebook' || isRebookFromKoc
+          ? 'Rebook'
+          : rawItem.hinhThucHopTac || 'New';
+
     const next: ApprovedBookingListItem = {
       ...rawItem,
-      kocId: rawItem.kocId || matchedKoc?.id,
+      kocId: matchedKoc?.id || rawItem.kocId,
+      hinhThucHopTac: syncedHinhThuc,
       tenKenh: rawItem.tenKenh || matchedKoc?.stageName || matchedKoc?.realName || rawItem.idKenh,
       follower: rawItem.follower || matchedKoc?.followers || 0,
       tenTaiKhoanNganHang:
@@ -1074,7 +1086,9 @@ export function buildBookingDealFromApprovedItem(
   item: ApprovedBookingListItem
 ): BookingDealItem {
   const normalized = recalculateApprovedBookingItem(item);
-  const maBo = normalized.maBooking || generateBookingOrderCode(normalized.thangPlan);
+  const fallbackSeq =
+    parseInt(String(normalized.id || normalized.sourceSheetRowId || '').replace(/\D/g, '').slice(-5), 10) || 10001;
+  const maBo = normalized.maBooking || generateBookingOrderCode(normalized.thangPlan, fallbackSeq);
   const salaryGrade: SalaryGrade = normalized.klGrade || 'KL3';
   const isVideoVerified = normalized.acceptanceStatus === 'DA_NGHIEM_THU';
   const isFullyVerified =

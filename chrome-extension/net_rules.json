@@ -5,20 +5,25 @@
     "action": {
       "type": "modifyHeaders",
       "requestHeaders": [
-        {
-          "header": "Referer",
-          "operation": "set",
-          "value": "https://www.tiktok.com/"
-        }
+        { "header": "Referer", "operation": "set", "value": "https://www.tiktok.com/" },
+        { "header": "Origin", "operation": "set", "value": "https://www.tiktok.com" }
+      ],
+      "responseHeaders": [
+        { "header": "Access-Control-Allow-Origin", "operation": "set", "value": "*" },
+        { "header": "Access-Control-Allow-Methods", "operation": "set", "value": "GET, HEAD, OPTIONS" },
+        { "header": "Access-Control-Expose-Headers", "operation": "set", "value": "Content-Length, Content-Range" }
       ]
     },
     "condition": {
-      "urlFilter": "*://*.tiktokcdn.com/*|*://*.tiktokcdn-us.com/*|*://*.tiktokv.com/*|*://*.muscdn.com/*|*://*.tikcdn.io/*|*://*.byteoversea.com/*",
-      "resourceTypes": [
-        "xmlhttprequest",
-        "media",
-        "other"
-      ]
+      "requestDomains": [
+        "tiktokcdn.com",
+        "tiktokcdn-us.com",
+        "tiktokv.com",
+        "muscdn.com",
+        "tikcdn.io",
+        "byteoversea.com"
+      ],
+      "resourceTypes": ["xmlhttprequest", "media", "other"]
     }
   },
   {
@@ -27,20 +32,21 @@
     "action": {
       "type": "modifyHeaders",
       "requestHeaders": [
-        {
-          "header": "Referer",
-          "operation": "set",
-          "value": "https://www.douyin.com/"
-        }
+        { "header": "Referer", "operation": "set", "value": "https://www.douyin.com/" },
+        { "header": "Origin", "operation": "set", "value": "https://www.douyin.com" }
+      ],
+      "responseHeaders": [
+        { "header": "Access-Control-Allow-Origin", "operation": "set", "value": "*" },
+        { "header": "Access-Control-Allow-Methods", "operation": "set", "value": "GET, HEAD, OPTIONS" }
       ]
     },
     "condition": {
-      "urlFilter": "*://*.douyincdn.com/*|*://*.snssdk.com/*|*://*.amemv.com/*",
-      "resourceTypes": [
-        "xmlhttprequest",
-        "media",
-        "other"
-      ]
+      "requestDomains": [
+        "douyincdn.com",
+        "snssdk.com",
+        "amemv.com"
+      ],
+      "resourceTypes": ["xmlhttprequest", "media", "other"]
     }
   },
   {
@@ -52,7 +58,7 @@
         {
           "header": "User-Agent",
           "operation": "set",
-          "value": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+          "value": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1"
         },
         {
           "header": "Sec-CH-UA-Mobile",
@@ -68,10 +74,52 @@
     },
     "condition": {
       "urlFilter": "*://*.tiktok.com/*__tpt_mobile=1*",
-      "resourceTypes": [
-        "xmlhttprequest",
-        "other"
+      "resourceTypes": ["xmlhttprequest", "sub_frame", "other"]
+    }
+  },
+  {
+    "id": 4,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        { "header": "Origin", "operation": "remove" }
+      ],
+      "responseHeaders": [
+        { "header": "Access-Control-Allow-Origin", "operation": "set", "value": "*" },
+        { "header": "Access-Control-Allow-Methods", "operation": "set", "value": "GET, HEAD, OPTIONS" },
+        { "header": "Cross-Origin-Resource-Policy", "operation": "set", "value": "cross-origin" }
       ]
+    },
+    "condition": {
+      "requestDomains": [
+        "cdninstagram.com",
+        "fbcdn.net"
+      ],
+      "resourceTypes": ["xmlhttprequest", "media", "image", "other"]
+    }
+  },
+  {
+    "id": 5,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        { "header": "Referer", "operation": "set", "value": "https://shopee.vn/" },
+        { "header": "Origin", "operation": "set", "value": "https://shopee.vn" }
+      ],
+      "responseHeaders": [
+        { "header": "Access-Control-Allow-Origin", "operation": "set", "value": "*" },
+        { "header": "Access-Control-Allow-Methods", "operation": "set", "value": "GET, HEAD, OPTIONS" },
+        { "header": "Cross-Origin-Resource-Policy", "operation": "set", "value": "cross-origin" }
+      ]
+    },
+    "condition": {
+      "requestDomains": [
+        "susercontent.com",
+        "shopeemobile.com"
+      ],
+      "resourceTypes": ["xmlhttprequest", "media", "image", "other"]
     }
   }
 ]

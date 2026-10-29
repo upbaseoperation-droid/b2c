@@ -20,11 +20,22 @@ Thứ tự ưu tiên khi có mâu thuẫn: yêu cầu của người dùng → f
 - Chuyển động theo quy chuẩn riêng ở §9: token thời lượng/đường cong, số KPI lăn, thanh biểu đồ mọc, vạch chỉ báo trượt, hàng bảng trượt khi sắp xếp, dấu duyệt bước, toast xếp chồng, chuyển cảnh danh sách → hồ sơ. Tôn trọng `prefers-reduced-motion`; không thêm chuyển động lặp liên tục.
 - Danh bạ KOC, hợp đồng, báo cáo Ads và báo cáo điều hành được chia gói tải theo nhu cầu, có thông báo đang tải và khung giữ chỗ. Chưa có số đo tốc độ trước/sau.
 
+### Cập nhật 29/10/2026: học từ UpOperation MCN
+
+Mẫu tham chiếu là các màn Tổng quan, Phân tích và Chi tiết creator của UpOperation. Những màn này hiện rất nhiều số mà vẫn sạch nhờ các điểm sau, nay thành quy chuẩn:
+
+- **Mật độ dày cho màn số liệu.** Bọc màn bằng `<Density>` (§3.1). Chữ nhỏ đi một bậc (13px nội dung, 11px nhãn), số chỉ số dùng font mono, một hàng có tới 8 ô chỉ số. Dashboard là màn đầu tiên dùng chế độ này.
+- **Phân cấp bằng cỡ chữ và độ đậm, không bằng màu.** Nhãn nhỏ màu xám, số to màu đen, chỉ một màu nhấn (`critical`) cho icon khối, biểu đồ và heatmap. Không dùng hộp nền màu (`*-soft`) để trang trí, chỉ dùng cho trạng thái.
+- **Khối = icon + tiêu đề + một dòng ngữ cảnh.** `Panel` nhận `icon` và `meta`. `meta` chỉ ghi kỳ dữ liệu, lúc cập nhật hoặc nguồn ("29/09 – 28/10 · cập nhật 17:13"), không giải thích. Điều khiển nhỏ (khoảng ngày, chỉ số) nằm ở góc phải khối, không gom thành dải bộ lọc riêng.
+- **Biểu đồ trước, bảng sau.** Hai biểu đồ đặt cạnh nhau rồi mới đến bảng. Dưới biểu đồ có một dòng "Cao nhất: …" hoặc "Nhiều nhất: …". Bảng tối đa 7 cột, mỗi ô một ý.
+- **Cột phải cho thông tin phụ.** Ở màn ≥1536px (`2xl`), tiến độ, việc cần xử lý và hồ sơ nằm trong một cột phải khoảng 320–360px. Màn hẹp hơn thì cột này xuống dưới.
+- **Thiếu số là "—", và dồn về sau.** Ô chỉ số chưa có dữ liệu để "—", và nên xếp sau các ô có số.
+
 ---
 
 ## 1. Nguyên tắc
 
-1. **Dữ liệu là nhân vật chính.** Bảng, con số và trạng thái nằm ở màn hình đầu. Không mở trang bằng banner giới thiệu, thẻ giải thích vai trò, khẩu hiệu hay dòng phụ đề xám (`subtitle`, `description`, `hint`) dưới tiêu đề.
+1. **Dữ liệu là nhân vật chính.** Bảng, con số và trạng thái nằm ở màn hình đầu. Không mở trang bằng banner giới thiệu, thẻ giải thích vai trò, khẩu hiệu hay dòng phụ đề xám (`subtitle`, `description`, `hint`) dưới tiêu đề. Ngoại lệ duy nhất: `Panel meta` ghi kỳ dữ liệu, lúc cập nhật hoặc nguồn.
 2. **Một nguồn dữ liệu duy nhất (Single Source of Truth).** Mỗi danh mục, bảng cấu hình hoặc chỉ số KPI chỉ xuất hiện ở một nơi duy nhất trên màn hình và một phân hệ duy nhất trong toàn hệ thống. Không lặp lại cùng một con số giữa thẻ KPI đầu trang và các ô phụ bên dưới; không nhúng lại bảng của màn hình khác thành tab phụ.
 3. **Một điểm nhấn mỗi vùng.** Một màu nhấn, một nút chính, một con số quan trọng. Màu chỉ dùng để báo trạng thái, không dùng để phân biệt phân hệ.
 4. **Khoảng trắng thay đường viền.** Nhóm nội dung bằng khoảng cách và tiêu đề. Chỉ đóng khung khi khối đó thao tác được độc lập (bảng, form). Không lồng khung trong khung.
@@ -109,10 +120,37 @@ Code cũ dùng 12 họ màu. Trong `@theme`, mỗi họ đã được trỏ về
 | Ô bảng, nội dung dày | `text-xs` | 13/20 · 400 |
 | Nhãn, chú thích | `text-2xs text-ink-3` | 12/18 · 400–500 |
 
+Chữ điều khiển và số chỉ số có token riêng để chế độ dày thu nhỏ được: `text-ctl-sm` (12,5px: chip, nút chọn), `text-ctl` (13px: tab, nút nhỏ), `text-ctl-md` (13,5px: nút, ô nhập), `text-stat` (26px), `text-stat-sm` (20px), `font-figure` (font của số chỉ số). Thành phần trong `ui` dùng các token này, không gõ `text-[13px]`.
+
 Quy tắc:
-- **Cỡ nhỏ nhất là 12px** (`text-2xs`). Không dùng `text-[9px]`, `text-[10px]`, `text-[11px]`.
+- **Cỡ nhỏ nhất là 12px** (`text-2xs`), riêng trong mật độ dày là 11px (vẫn qua `text-2xs`). Không dùng `text-[9px]`, `text-[10px]`, `text-[11px]`.
 - Chỉ 3 độ đậm: `font-normal`, `font-medium`, `font-semibold`. Không dùng `font-bold` trở lên.
 - Không viết hoa toàn bộ (`uppercase`), kể cả tiêu đề cột và tên nhóm menu. Không giãn chữ (`tracking-wider`).
+
+### 3.1 Mật độ dày (compact)
+
+Dùng cho màn đọc nhiều số liệu: Dashboard, báo cáo, hồ sơ có nhiều chỉ số. Bọc cả màn trong `<Density>` (từ `@/components/ui`); không bật cho form nhập liệu dài.
+
+```tsx
+<Density className="space-y-4">…</Density>
+```
+
+`<Density>` gắn `data-density="compact"`. Trong vùng này, `globals.css` hạ thang chữ một bậc và các thành phần tự đổi kiểu theo `useDensity()`:
+
+| | Thường | Dày |
+|---|---|---|
+| `text-2xs` / `text-xs` / `text-sm` / `text-base` | 12 / 13 / 14 / 16px | 11 / 12 / 13 / 14px |
+| Chữ tab, nút chọn (`text-ctl*`) | 12,5–13,5px | 12–12,5px |
+| Số chỉ số | 26px Be Vietnam Pro, đậm 600 | 18px JetBrains Mono, đậm 500 |
+| `StatRow` | Chung một khung, tối đa 4 ô | Mỗi ô một thẻ, tối đa 8 ô (2 → 4 → 8 cột theo bề rộng) |
+| `Panel` | Tiêu đề có kẻ ngang bên dưới | Không kẻ ngang; icon màu nhấn + `meta` ngay dưới tiêu đề |
+
+Bố cục gợi ý cho một màn số liệu, từ trên xuống:
+1. `Panel` kỳ dữ liệu: icon, tiêu đề, `meta` là khoảng ngày, nút phụ bên phải.
+2. `StatRow` tối đa 8 ô.
+3. Lưới `grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_320px]`. Cột trái có hai biểu đồ cạnh nhau, rồi đến bảng. Cột phải là tiến độ và việc cần xử lý.
+
+Chữ 11–13px dễ đọc trên màn 1920px nhưng hơi nhỏ trên laptop 13 inch. Không bật mật độ dày cho màn người dùng phải đọc lâu hoặc nhập liệu.
 
 ---
 
@@ -146,7 +184,8 @@ Import từ `@/components/ui` (hoặc đường dẫn tương đối `../ui`).
 | `Tabs` | Chuyển giữa các phần cùng cấp của một trang | Gạch chân. Số đếm màu nhạt bên cạnh, không đóng khung, không đánh số “1. 2. 3.” |
 | `Segmented` | Bộ lọc nhỏ hoặc phân khu con (tháng, tuần, mục trong tab) | Không lồng `Tabs` trong `Tabs` — tầng thứ hai dùng `Segmented` |
 | `SectionHeader` | Đầu một khối | Một tiêu đề, mô tả chỉ khi thêm thông tin, thao tác bên phải |
-| `Stat`, `StatRow` | Hàng chỉ số đầu trang | Tối đa 4 ô. Ghi chú nói ý nghĩa của con số, không lặp lại nhãn |
+| `Stat`, `StatRow` | Hàng chỉ số đầu trang | Tối đa 4 ô, hoặc 8 ô trong mật độ dày (§3.1). Ghi chú nói ý nghĩa của con số, không lặp lại nhãn |
+| `Density` | Bọc màn số liệu để dùng mật độ dày | Xem §3.1. Một màn chỉ một vùng `Density`, không lồng |
 | `EmptyState` | Bảng hoặc danh sách rỗng | Một câu nói đang thiếu gì, một câu nói việc tiếp theo, một nút |
 
 **Thành phần dữ liệu** (`src/components/ui/data.tsx`, export qua `ui`):
@@ -167,7 +206,7 @@ Import từ `@/components/ui` (hoặc đường dẫn tương đối `../ui`).
 |---|---|---|
 | `Toolbar` | Hàng ngay dưới tiêu đề trang, khi có bộ chọn kỳ hoặc lọc nhanh | Trái: chọn kỳ, bộ lọc nhanh. Phải: thao tác phụ. Không dùng Toolbar chỉ để chứa một nút — nút chính đưa lên thanh trên bằng `PageActions` |
 | `PageActions` | Nút chính của màn (Thêm KOC, Tạo booking…) | Đưa nút lên cuối thanh trên, cạnh tiêu đề trang. Chỉ hiện khi màn đang mở. Tối đa một `primary` |
-| `Panel` | Khung chứa bảng, form | Tiêu đề + thao tác (không hiển thị dòng phụ đề xám giải thích dưới tiêu đề). `flush` cho bảng |
+| `Panel` | Khung chứa bảng, form, biểu đồ | Tiêu đề + thao tác. `icon`: icon lucide màu nhấn trước tiêu đề. `meta`: một dòng ngữ cảnh dưới tiêu đề, **chỉ** ghi kỳ dữ liệu, lúc cập nhật hoặc nguồn, không dùng để giải thích. `flush` cho bảng |
 | `FilterBar`, `SearchInput`, `Chips` | Lọc một bảng | Đặt ngay trên bảng, trong `Panel`. Ô tìm kiếm trái, ô chọn phải, chip trạng thái hàng dưới, số kết quả cuối hàng. Chip có số đếm |
 | `ActionMenu` | Thao tác phụ của một hàng | Nút “⋯” mở danh sách thao tác. Tự chặn lan sự kiện nên dùng được cùng `onRowClick` |
 | `Pagination` | Chân bảng có phân trang | Vị trí đang xem, số dòng mỗi trang, trang trước/sau. Chỉ đặt cuối bảng |
@@ -256,7 +295,7 @@ Dùng hàm trong `src/lib/format.ts`, không tự viết `toFixed(1)}M`.
 - Nhóm màn hình cùng cụm nghiệp vụ (`NAV_GROUPS` trong `src/lib/navGroups.ts`): hiển thị 1 mục đại diện trên menu trái, đưa cụm `<Segmented>` chuyển màn hình trong nhóm lên thẳng `TopHeader` cạnh tiêu đề trang, và dành thanh `<Tabs>` bên dưới cho các phân mục con bên trong từng màn hình.
 - Dưới thanh trên: bộ chọn kỳ (tháng/tuần) và thao tác phụ → `Tabs` → nội dung.
 - Thao tác nằm cùng hàng với tab: truyền vào `Tabs actions={…}`, không tự xếp `Tabs` cạnh nút bằng `flex` (dãy tab bị nút đè). Trong `actions`: tối đa một `Button` primary + một `ActionMenu` cho phần còn lại. Màn mẫu: `ContentView.tsx`.
-- Phía trên tab chỉ được một hàng chỉ số (`StatRow`, tối đa 4 ô) và chỉ khi các số đó dùng cho mọi tab. Hàng chỉ số nằm trên tab hoặc bảng dùng `StatRow size="sm"`. Không xếp chồng thẻ cảnh báo + thẻ chỉ số lớn + biểu mẫu trước nội dung chính: nội dung chính phải bắt đầu trong nửa trên màn 1440×900.
+- Phía trên tab chỉ được một hàng chỉ số (`StatRow`, tối đa 4 ô, hoặc 8 ô trong mật độ dày) và chỉ khi các số đó dùng cho mọi tab. Hàng chỉ số nằm trên tab hoặc bảng dùng `StatRow size="sm"`. Không xếp chồng thẻ cảnh báo + thẻ chỉ số lớn + biểu mẫu trước nội dung chính: nội dung chính phải bắt đầu trong nửa trên màn 1440×900.
 - Không thêm tiêu đề lớn thứ hai trong trang. Không thêm thẻ “giới thiệu phân hệ”.
 - Lề trang `px-3 sm:px-4 lg:px-6`, khoảng cách giữa các khối `space-y-5`.
 - Không hiển thị ô chọn chuyển đổi tài khoản / vai trò hay nút đăng xuất trùng lặp trên thanh trên (`TopHeader`) hoặc các màn hình nghiệp vụ; thông tin tài khoản và nút đăng xuất chỉ đặt tại chân menu trái (`Sidebar`).

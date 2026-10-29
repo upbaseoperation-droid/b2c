@@ -8,6 +8,7 @@ import { USERS } from '@/lib/mockData';
 import { requestActor } from '@/lib/server/requestActor';
 import { readRecord, upsertRecord } from '@/lib/server/sharedRecords';
 import type { KocDirectoryChangesData } from '@/app/api/kocs/route';
+import { historicalDb } from '@/lib/kocHistoricalDatabase';
 import {
   KOC_VIDEO_HISTORY_RECORD_KEY,
   buildInitialWeeklyHistoryStore,
@@ -223,34 +224,56 @@ export async function GET(req: NextRequest) {
     }));
 
     const customKoc = handle ? customRecord.data.itemsByHandle?.[handle] : undefined;
-    const masterKoc = handle ? resolveMasterKocByHandle(handle) : undefined;
+    const standardMasterKoc = handle ? resolveMasterKocByHandle(handle) : undefined;
+    const historicalKoc = handle ? historicalDb.getKoc(handle) : null;
+
+    // Ưu tiên bản ghi có đầy đủ deal lịch sử hơn giữa standardMasterKoc và historicalKoc
+    const baseMasterKoc = standardMasterKoc && historicalKoc
+      ? (Number(historicalKoc.totalPastDeals || 0) > Number(standardMasterKoc.totalPastDeals || 0)
+          ? { ...standardMasterKoc, ...historicalKoc, id: standardMasterKoc.id || historicalKoc.id }
+          : { ...historicalKoc, ...standardMasterKoc })
+      : (standardMasterKoc || historicalKoc || undefined);
+
     const mergedKoc: KocItem | null = customKoc
       ? {
-          ...(masterKoc || {}),
+          ...(baseMasterKoc || {}),
           ...customKoc,
-          ...(masterKoc
+          ...(baseMasterKoc
             ? {
-                id: masterKoc.id,
-                salaryGrade: masterKoc.salaryGrade,
-                segment: masterKoc.segment,
-                rateCardVideo: masterKoc.rateCardVideo,
-                minRate: masterKoc.minRate,
-                maxRate: masterKoc.maxRate,
-                totalPastDeals: masterKoc.totalPastDeals,
-                totalPaidVideos: masterKoc.totalPaidVideos,
-                totalFocVideos: masterKoc.totalFocVideos,
-                latestBookMonth: masterKoc.latestBookMonth,
-                latestBoCode: masterKoc.latestBoCode,
-                reliabilityScore: masterKoc.reliabilityScore,
+                id: baseMasterKoc.id,
+                salaryGrade: baseMasterKoc.salaryGrade,
+                segment: baseMasterKoc.segment,
+                rateCardVideo: baseMasterKoc.rateCardVideo,
+                minRate: baseMasterKoc.minRate,
+                maxRate: baseMasterKoc.maxRate,
+                totalPastDeals: baseMasterKoc.totalPastDeals,
+                totalPaidVideos: baseMasterKoc.totalPaidVideos,
+                totalFocVideos: baseMasterKoc.totalFocVideos,
+                latestBookMonth: baseMasterKoc.latestBookMonth,
+                latestBoCode: baseMasterKoc.latestBoCode,
+                reliabilityScore: baseMasterKoc.reliabilityScore,
               }
             : {}),
         }
-      : masterKoc || null;
+      : baseMasterKoc || null;
 
-    const canonicalMasterHandle = normalizeHandle(masterKoc?.channelId || handle);
-    const historyDeals = handle
+    const canonicalMasterHandle = normalizeHandle(baseMasterKoc?.channelId || handle);
+    const standardDeals = handle
       ? dealsByHandle?.get(canonicalMasterHandle) || dealsByHandle?.get(handle) || []
       : [];
+    const historicalDeals = handle
+      ? historicalDb.getDeals(canonicalMasterHandle) || historicalDb.getDeals(handle) || []
+      : [];
+
+    const seenDealCodes = new Set<string>();
+    const historyDeals: BookingDealItem[] = [];
+    for (const d of [...standardDeals, ...historicalDeals]) {
+      const code = String(d.dealCode || '').trim();
+      if (code && !seenDealCodes.has(code)) {
+        seenDealCodes.add(code);
+        historyDeals.push(d);
+      }
+    }
 
     let inspectedVideo: Record<string, unknown> | null = null;
     if (videoIdParam || videoUrlParam) {
@@ -345,7 +368,13 @@ export async function GET(req: NextRequest) {
         success: true,
         handle,
         foundInMaster: Boolean(mergedKoc),
-        sourceType: customKoc ? 'CUSTOM_SYNCED' : masterKoc ? 'MASTER_DATA' : 'NEW_DISCOVERY',
+        sourceType: customKoc
+          ? 'CUSTOM_SYNCED'
+          : standardMasterKoc
+            ? 'MASTER_DATA'
+            : historicalKoc
+              ? 'HISTORICAL_DATABASE'
+              : 'NEW_DISCOVERY',
         koc: mergedKoc
           ? {
               id: mergedKoc.id,
@@ -381,7 +410,9 @@ export async function GET(req: NextRequest) {
               phoneMasked: maskSensitive(mergedKoc.phone || mergedKoc.zalo),
               cccdMasked: maskSensitive(mergedKoc.cccd || mergedKoc.taxCode),
               bankAccountMasked: mergedKoc.bankAccount
-                ? `${mergedKoc.bankName || 'NH'} · ${maskSensitive(mergedKoc.bankAccount)}`
+                ? (mergedKoc.bankAccount.includes('·')
+                    ? mergedKoc.bankAccount
+                    : `${mergedKoc.bankName || 'NH'} · ${maskSensitive(mergedKoc.bankAccount)}`)
                 : '—',
               sharedMcnInfo: mergedKoc.sharedMcnInfo || null,
               metricsUpdatedAt: mergedKoc.metricsUpdatedAt || null,
@@ -442,7 +473,8 @@ interface ExtensionSyncPayload {
     | 'VERIFY_SPARK_ADS_CODES'
     | 'SCORE_PRODUCT_SUPER_VIP'
     | 'ANALYZE_CHANNEL_AND_SCRIPT'
-    | 'SUBMIT_EXTENSION_FEEDBACK';
+    | 'SUBMIT_EXTENSION_FEEDBACK'
+    | 'SYNC_ACCEPTANCE_SCREENSHOT';
   platform?: 'tiktok' | 'instagram' | 'tiktok_ads' | 'douyin' | 'threads' | 'facebook';
   handle?: string;
   productQuery?: string;
@@ -608,6 +640,13 @@ interface ExtensionSyncPayload {
   shopSharePct?: number;
   goldenHours?: string[];
   dealCode?: string;
+  imageDataUrl?: string;
+  captionQuote?: string;
+  productName?: string;
+  timeLabel?: string;
+  sourceMode?: 'VIDEO_FRAME' | 'FULL_SCREEN' | string;
+  timestampSec?: number;
+  matchedTerm?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -671,7 +710,7 @@ export async function POST(req: NextRequest) {
             dateRange: `${vnDate} ~ ${vnDate}`,
             fileName: `TikTok_Ads_Manager_Extension_${vnDate}`,
             sourceType: 'API_INGEST',
-            importedBy: String(body.picName || actor?.name || 'Trần Hữu Chiến'),
+            importedBy: String(body.picName || actor?.name || 'Chuyên viên B2C'),
             defaultBrandName: body.brandName || 'ClubClio',
             defaultStoreName: body.storeName || 'ClubClio_TikTok_E2E-S',
             rows: weeklyInputRows,
@@ -1133,6 +1172,84 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (body.action === 'SYNC_ACCEPTANCE_SCREENSHOT') {
+      const videoUrl = String(body.videoUrl || '').trim();
+      const videoId = String(body.videoId || extractSystemVideoId(videoUrl) || `ext-${Date.now()}`).trim();
+      const dealCode = String(body.dealCode || '').trim();
+      const imageDataUrl = String(body.imageDataUrl || '').trim();
+      const captionQuote = String(body.captionQuote || body.productName || '').trim();
+      const timeLabel = String(body.timeLabel || '00:00').trim();
+      const sourceMode = body.sourceMode || 'VIDEO_FRAME';
+
+      if (!imageDataUrl) {
+        return NextResponse.json(
+          { success: false, error: 'Thiếu dữ liệu ảnh imageDataUrl.' },
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+
+      const screenshotItem = {
+        id: `shot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        videoUrl: videoUrl || `https://www.tiktok.com/@${handle}/video/${videoId}`,
+        videoId,
+        authorHandle: handle,
+        timestampSec: Number(body.timestampSec || 0),
+        timeLabel,
+        matchedTerm: body.matchedTerm || body.productName || 'Sản phẩm nghiệm thu',
+        captionQuote,
+        imageDataUrl,
+        capturedAt: new Date().toISOString(),
+        sourceMode,
+        note: body.note || `Ảnh chụp từ Upbase B2C Extension (${sourceMode === 'FULL_SCREEN' ? 'Màn hình bài đăng' : 'Khung hình SP'})`,
+      };
+
+      await upsertRecord<any[]>(
+        'video-acceptance-screenshots-v1',
+        [],
+        (current) => {
+          const list = Array.isArray(current) ? [...current] : [];
+          const primaryKey = dealCode || videoId || handle;
+          const bucketIdx = list.findIndex(
+            (b: any) =>
+              b.key === primaryKey ||
+              (dealCode && b.dealCode === dealCode) ||
+              (videoId && b.videoId === videoId)
+          );
+          const bucket =
+            bucketIdx >= 0
+              ? list[bucketIdx]
+              : {
+                  key: primaryKey,
+                  dealCode: dealCode || undefined,
+                  videoId,
+                  authorHandle: handle,
+                  videoUrl,
+                  updatedAt: new Date().toISOString(),
+                  items: [],
+                };
+          bucket.items = [screenshotItem, ...(bucket.items || [])].slice(0, 20);
+          bucket.updatedAt = new Date().toISOString();
+          if (bucketIdx >= 0) {
+            list[bucketIdx] = bucket;
+          } else {
+            list.unshift(bucket);
+          }
+          return list.slice(0, 50);
+        }
+      );
+
+      return NextResponse.json(
+        {
+          success: true,
+          action: 'SYNC_ACCEPTANCE_SCREENSHOT',
+          message: `Đã lưu ảnh chụp nghiệm thu bài đăng #${videoId} của @${handle} vào hệ thống Web-Admin.`,
+          screenshotId: screenshotItem.id,
+          data: screenshotItem,
+        },
+        { headers: CORS_HEADERS }
+      );
+    }
+
     if (body.action === 'VERIFY_AIR_LINK') {
       const videoUrl = String(body.videoUrl || '').trim();
       const videoId = String(body.videoId || extractSystemVideoId(videoUrl) || `ext-${Date.now()}`).trim();
@@ -1143,7 +1260,7 @@ export async function POST(req: NextRequest) {
       const costNet = Math.max(0, Math.round(Number(body.rateCardNet || 0)));
       const storeName = String(body.storeName || 'ClubClio_TikTok_E2E-S').trim();
       const brandName = String(body.brandName || storeName.split('_')[0] || 'ClubClio').trim();
-      const picName = String(body.picName || actor?.name || 'Trần Hữu Chiến').trim();
+      const picName = String(body.picName || actor?.name || 'Chuyên viên B2C').trim();
 
       // Đẩy toàn bộ dữ liệu Giỏ hàng (cartProducts), Phụ đề (transcriptText) và MP4 (playableUrl) từ trình duyệt vào bộ nhớ đệm Server
       injectExtensionCapturedVideoToCache({
@@ -1405,7 +1522,7 @@ export async function POST(req: NextRequest) {
             body.action === 'CREATE_DEAL_PROPOSAL'
               ? 'CHỜ_DUYỆT'
               : prev?.brandApprovalStatus || 'ĐÃ_DUYỆT',
-          bookingPic: body.picName || prev?.bookingPic || actor?.name || 'Trần Hữu Chiến',
+          bookingPic: body.picName || prev?.bookingPic || actor?.name || 'Chuyên viên B2C',
           contentNote: body.note || prev?.contentNote,
           metricsUpdatedAt: vnDate,
           sourceSheet: 'Upbase B2C Chrome Extension',

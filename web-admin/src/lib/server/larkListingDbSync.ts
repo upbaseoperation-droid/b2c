@@ -99,7 +99,10 @@ function mergeStaffSheetCollections(
         (r.follower === 0 && rich.follower > 0) ||
         (r.doanhSo === 0 && rich.doanhSo > 0) ||
         (r.viewTrungBinh === 0 && rich.viewTrungBinh > 0) ||
-        (!r.sanPham && rich.sanPham)
+        (!r.sanPham && rich.sanPham) ||
+        ((!r.thanhQuaHopTac || r.thanhQuaHopTac.includes('0M₫') || r.thanhQuaHopTac !== rich.thanhQuaHopTac) && Boolean(rich.thanhQuaHopTac)) ||
+        ((!r.gmvDaHopTac || r.gmvDaHopTac === 0) && (rich.gmvDaHopTac || 0) > 0) ||
+        (r.kocId !== rich.kocId && Boolean(rich.kocId))
       ) {
         return {
           ...rich,
@@ -152,10 +155,30 @@ function mergeApprovedBookings(
   if (!hasRealRows) {
     return seeded;
   }
-  const existingKeys = new Set(
-    existing.map((i) => i.sourceSheetRowId || i.id).filter(Boolean)
-  );
-  const combined = [...existing];
+  const seededByKey = new Map<string, ApprovedBookingListItem>();
+  for (const s of seeded) {
+    const k = s.sourceSheetRowId || s.id;
+    if (k) seededByKey.set(k, s);
+  }
+  const existingKeys = new Set<string>();
+  const combined = existing.map((item) => {
+    const key = item.sourceSheetRowId || item.id;
+    if (key) existingKeys.add(key);
+    const rich = key ? seededByKey.get(key) : undefined;
+    if (!rich) return item;
+    return {
+      ...item,
+      kocId: rich.kocId || item.kocId,
+      hinhThucHopTac:
+        item.chiPhiBookingNetCuoi === 0
+          ? 'FOC'
+          : rich.hinhThucHopTac === 'Rebook'
+            ? 'Rebook'
+            : item.hinhThucHopTac,
+      follower: item.follower || rich.follower,
+      tenKenh: item.tenKenh || rich.tenKenh,
+    };
+  });
   for (const item of seeded) {
     const key = item.sourceSheetRowId || item.id;
     if (key && !existingKeys.has(key)) {

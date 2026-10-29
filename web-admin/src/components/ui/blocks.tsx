@@ -8,6 +8,7 @@
 import React, { useContext, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown, ChevronLeft, ChevronRight, MoreHorizontal, Search, X } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { SkeletonRows, SlidingIndicator, useActiveBox, useFlipList, usePresence } from './motion';
 
 const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ');
@@ -24,11 +25,30 @@ export function Toolbar({ children, actions, className }: { children?: React.Rea
   );
 }
 
+/* ----------------------------------------------------------------- Density */
+
+export type DensityMode = 'comfortable' | 'compact';
+export const DensityContext = React.createContext<DensityMode>('comfortable');
+export const useDensity = () => useContext(DensityContext);
+
+/**
+ * Bọc một màn nhiều số liệu (Dashboard, báo cáo) để dùng mật độ dày: chữ nhỏ một bậc, số chỉ số dạng mono,
+ * ô chỉ số tách thẻ (tối đa 8 ô/hàng), khung không kẻ ngang dưới tiêu đề. Xem DESIGN_SYSTEM.md §3.1.
+ */
+export function Density({ mode = 'compact', className, children }: { mode?: DensityMode; className?: string; children: React.ReactNode }) {
+  return (
+    <DensityContext.Provider value={mode}>
+      <div data-density={mode} className={className}>{children}</div>
+    </DensityContext.Provider>
+  );
+}
+
 /* ------------------------------------------------------------------- Panel */
 
 /**
  * Khung nội dung có viền. Dùng cho bảng, form, nhóm thao tác độc lập.
- * `flush`: nội dung tràn sát viền (bảng).
+ * `icon`: icon nhỏ màu nhấn trước tiêu đề. `meta`: một dòng ngữ cảnh dưới tiêu đề — chỉ kỳ dữ liệu, lúc cập nhật,
+ * nguồn (vd "29/09 – 28/10 · cập nhật 17:13"), không dùng để giải thích. `flush`: nội dung tràn sát viền (bảng).
  */
 export function Panel({
   title,
@@ -37,6 +57,8 @@ export function Panel({
   children,
   flush = false,
   className,
+  icon: Icon,
+  meta,
 }: {
   title?: React.ReactNode;
   description?: React.ReactNode;
@@ -44,18 +66,32 @@ export function Panel({
   children: React.ReactNode;
   flush?: boolean;
   className?: string;
+  icon?: LucideIcon;
+  meta?: React.ReactNode;
 }) {
+  const compact = useDensity() === 'compact';
   return (
     <section className={cx('workspace-panel bg-surface border border-line rounded-xl overflow-hidden shadow-2xs', className)}>
       {(title || actions) && (
-        <header className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-3.5 sm:px-4 py-3 border-b border-line bg-surface">
+        <header
+          className={cx(
+            'flex flex-wrap items-start justify-between gap-2 sm:gap-3 bg-surface',
+            compact ? cx('px-4 pt-3.5', flush ? 'pb-3' : 'pb-0') : 'px-3.5 sm:px-4 py-3 border-b border-line',
+          )}
+        >
           <div className="min-w-0">
-            {title && <h3 className="text-sm font-semibold text-ink leading-tight">{title}</h3>}
+            {title && (
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-ink leading-tight">
+                {Icon && <Icon className="w-4 h-4 text-critical shrink-0" strokeWidth={1.75} />}
+                {title}
+              </h3>
+            )}
+            {meta && <p className={cx('mt-1 text-2xs text-ink-3', Icon && 'pl-6')}>{meta}</p>}
           </div>
           {actions && <div className="flex flex-wrap items-center gap-2 max-w-full">{actions}</div>}
         </header>
       )}
-      <div className={flush ? '' : 'p-3.5 sm:p-4'}>{children}</div>
+      <div className={flush ? '' : compact ? 'px-4 pb-4 pt-3' : 'p-3.5 sm:p-4'}>{children}</div>
     </section>
   );
 }
@@ -86,7 +122,7 @@ export function Chips<K extends string>({ items, value, onChange, label }: { ite
             data-active={on}
             onClick={() => onChange(it.key)}
             className={cx(
-              'relative h-7 px-2.5 rounded-full text-[12.5px] whitespace-nowrap shrink-0 border transition-colors duration-(--motion-base)',
+              'relative h-7 px-2.5 rounded-full text-ctl-sm whitespace-nowrap shrink-0 border transition-colors duration-(--motion-base)',
               on ? 'text-white border-transparent' : 'bg-transparent text-ink-2 border-line hover:border-line-strong hover:text-ink',
             )}
           >
@@ -110,7 +146,7 @@ export function SearchInput({ value, onChange, placeholder = 'Tìm kiếm', clas
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="w-full h-[34px] pl-9 pr-8 rounded-md border border-line-strong bg-surface text-[13.5px] text-ink focus:outline-none focus:border-focus"
+        className="w-full h-[34px] pl-9 pr-8 rounded-md border border-line-strong bg-surface text-ctl-md text-ink focus:outline-none focus:border-focus"
       />
       {value && (
         <button type="button" onClick={() => onChange('')} className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded text-ink-3 hover:text-ink" aria-label="Xóa tìm kiếm">
@@ -232,7 +268,7 @@ export function DataTable<T>({
           ) : rows.length === 0 ? (
             <tr>
               <td colSpan={columns.length} className={compact ? "px-3" : "px-4"}>
-                {empty ?? <p className="py-10 text-[13px] text-ink-3">Không có dữ liệu phù hợp.</p>}
+                {empty ?? <p className="py-10 text-ctl text-ink-3">Không có dữ liệu phù hợp.</p>}
               </td>
             </tr>
           ) : (
@@ -402,7 +438,7 @@ export function ConfirmDialog({
       size="sm"
       footer={
         <>
-          <button type="button" onClick={handleClose} className="h-[34px] px-3.5 rounded-md text-[13.5px] font-medium text-ink-2 hover:bg-sunken">{cancelLabel}</button>
+          <button type="button" onClick={handleClose} className="h-[34px] px-3.5 rounded-md text-ctl-md font-medium text-ink-2 hover:bg-sunken">{cancelLabel}</button>
           <button
             type="button"
             disabled={blocked}
@@ -411,7 +447,7 @@ export function ConfirmDialog({
               onOpenChange?.(false);
             }}
             className={cx(
-              'h-[34px] px-3.5 rounded-md text-[13.5px] font-medium text-white disabled:opacity-50',
+              'h-[34px] px-3.5 rounded-md text-ctl-md font-medium text-white disabled:opacity-50',
               effectiveTone === 'danger' ? 'bg-critical hover:opacity-90' : 'bg-primary hover:bg-primary-hover',
             )}
           >
@@ -420,7 +456,7 @@ export function ConfirmDialog({
         </>
       }
     >
-      {effectiveMessage && <p className="text-[13.5px] text-ink leading-relaxed">{effectiveMessage}</p>}
+      {effectiveMessage && <p className="text-ctl-md text-ink leading-relaxed">{effectiveMessage}</p>}
       {reason && (
         <Field label={reason.label} htmlFor={fieldId}>
           <Textarea id={fieldId} rows={3} value={text} onChange={(e) => setText(e.target.value)} placeholder={reason.placeholder} />
@@ -437,7 +473,7 @@ export function Field({ label, error, htmlFor, children, className, labelClassNa
   const parenMatch = !noWrap ? label.match(/^(.*?\s)(\([^()]+\)(?:\s*\*)?)$/) : null;
   return (
     <div className={cx('grid grid-cols-[minmax(0,1fr)] gap-1.5 min-w-0 [&>select]:w-full [&>[data-select-root]]:w-full', className)}>
-      <label htmlFor={htmlFor} className={cx('text-[13px] font-medium text-ink text-pretty', noWrap && 'whitespace-nowrap', labelClassName)}>
+      <label htmlFor={htmlFor} className={cx('text-ctl font-medium text-ink text-pretty', noWrap && 'whitespace-nowrap', labelClassName)}>
         {parenMatch ? <>{parenMatch[1]}<span className="whitespace-nowrap">{parenMatch[2]}</span></> : label}
       </label>
       {children}
@@ -446,7 +482,7 @@ export function Field({ label, error, htmlFor, children, className, labelClassNa
   );
 }
 
-const CONTROL = 'rounded-md border border-line-strong bg-surface text-[13.5px] text-ink focus:outline-none focus:border-focus disabled:bg-sunken disabled:text-ink-3';
+const CONTROL = 'rounded-md border border-line-strong bg-surface text-ctl-md text-ink focus:outline-none focus:border-focus disabled:bg-sunken disabled:text-ink-3';
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(function Input({ className, ...rest }, ref) {
   return <input ref={ref} className={cx(CONTROL, "h-9 px-3 w-full", className)} {...rest} />;
@@ -785,7 +821,7 @@ export function ActionMenu({ items, label = 'Thao tác khác' }: { items: Action
                 role="menuitem"
                 disabled={it.disabled}
                 onClick={() => { setOpen(false); it.onSelect(); }}
-                className="w-full flex items-center gap-2 px-3 h-8 text-[13px] text-ink hover:bg-sunken disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap"
+                className="w-full flex items-center gap-2 px-3 h-8 text-ctl text-ink hover:bg-sunken disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap"
               >
                 {Icon && <Icon className="w-4 h-4 text-ink-3" strokeWidth={1.75} />}
                 {it.label}
@@ -831,7 +867,7 @@ export function Pagination({
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="h-7 pl-2 pr-6 rounded-md border border-line-strong bg-surface text-[12.5px] text-ink"
+              className="h-7 pl-2 pr-6 rounded-md border border-line-strong bg-surface text-ctl-sm text-ink"
             >
               {pageSizes.map((n) => <option key={n} value={n}>{n}</option>)}
             </select>

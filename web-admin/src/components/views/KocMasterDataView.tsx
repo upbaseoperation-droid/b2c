@@ -43,6 +43,10 @@ import {
   KOC_MASTER_CONTACT_SYNCED_EVENT,
   syncKocContactToStaffSheets,
 } from '../../lib/staffBrandListingSheet';
+import {
+  buildBookingDealFromApprovedItem,
+  loadApprovedBookingList,
+} from '../../lib/approvedBookingList';
 import { AddToBrandListingSheetModal } from '../shortlist/AddToBrandListingSheetModal';
 import { LegalOcrModal } from '../LegalOcrModal';
 import { CreateKocModal } from '../CreateKocModal';
@@ -1207,6 +1211,27 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
   /* ------------------------------------------------------------- Render */
 
+  const enrichedDeals = useMemo(() => {
+    if (!openKocId && !historyEvalTarget) return allDeals;
+    try {
+      const approved = loadApprovedBookingList(localKocs, stores, allDeals);
+      if (!approved.length) return allDeals;
+      const existingCodes = new Set(allDeals.map((d) => (d.dealCode || d.id).toUpperCase()));
+      const extra: BookingDealItem[] = [];
+      for (const item of approved) {
+        const d = buildBookingDealFromApprovedItem(item);
+        const codeKey = (d.dealCode || d.id).toUpperCase();
+        if (!existingCodes.has(codeKey)) {
+          existingCodes.add(codeKey);
+          extra.push(d);
+        }
+      }
+      return extra.length > 0 ? [...extra, ...allDeals] : allDeals;
+    } catch {
+      return allDeals;
+    }
+  }, [allDeals, localKocs, stores, openKocId, historyEvalTarget]);
+
   const openKoc = useMemo(() => {
     if (!openKocId) return undefined;
     const cleanTarget = openKocId.trim().toLowerCase().replace(/^@+/, '');
@@ -1225,7 +1250,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         <KocProfile
           key={openKoc.id}
           koc={openKoc}
-          deals={allDeals}
+          deals={enrichedDeals}
           currentUser={currentUser}
           duplicates={duplicates.get(openKoc.id)}
           nav={{
@@ -1665,7 +1690,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         open={!!historyEvalTarget}
         onClose={() => setHistoryEvalTarget(null)}
         koc={historyEvalTarget}
-        deals={allDeals}
+        deals={enrichedDeals}
         duplicates={historyEvalTarget ? duplicates.get(historyEvalTarget.id) : undefined}
         onCreateBooking={onOpenQuickBookWithKoc}
       />
