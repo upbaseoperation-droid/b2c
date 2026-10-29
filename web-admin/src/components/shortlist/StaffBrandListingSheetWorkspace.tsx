@@ -98,6 +98,7 @@ import {
   buildBrandProductCatalogGroups,
 } from './BrandProductDropdownInput';
 import { ActionMenu, Avatar, Button, Field, Input, Modal, PageActions, Person, Select, Status } from '../ui';
+import { PushSheetReconciliationView, type PushSheetReconciliationReport } from './PushSheetReconciliationView';
 
 const BRAND_REVIEW_PRIORITY_KEYS: StaffListingColumnKey[] = [
   'idKenh',
@@ -2002,13 +2003,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   const [availableSheetTabs, setAvailableSheetTabs] = useState<string[]>([]);
   const [loadingSheetTabs, setLoadingSheetTabs] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
-  const [pushDiffReport, setPushDiffReport] = useState<{
-    added: number;
-    updated: number;
-    skipped: number;
-    totalInSheet: number;
-    diffs: SheetPushRowDiff[];
-  } | null>(null);
+  const [pushDiffReport, setPushDiffReport] = useState<PushSheetReconciliationReport | null>(null);
 
   const [isPullSheetModalOpen, setIsPullSheetModalOpen] = useState(false);
   const [pullSheetUrl, setPullSheetUrl] = useState('');
@@ -2272,6 +2267,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         added: body.added || 0,
         updated: body.updated || 0,
         skipped: body.skipped || 0,
+        sheetOnlyCount: body.sheetOnlyCount || 0,
         totalInSheet: body.totalInSheet || 0,
         diffs: Array.isArray(body.diffs) ? body.diffs : [],
       });
@@ -5258,7 +5254,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         open={isPushSheetModalOpen}
         onClose={() => setIsPushSheetModalOpen(false)}
         title={`Đẩy dữ liệu lên Google Sheet & Báo cáo Đối soát 2 bên — "${activeStoreName}"`}
-        size="xl"
+        size="2xl"
         footer={
           <>
             <Button variant="ghost" onClick={() => setIsPushSheetModalOpen(false)}>
@@ -5571,101 +5567,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   <em>Lý do từ chối</em>). Chỉ thêm dòng mới vào cuối bảng hoặc cập nhật các ô thông tin KOC có thay đổi.
                 </div>
 
-                <div className="max-h-72 overflow-y-auto border border-line rounded-md">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead className="sticky top-0 bg-sunken border-b border-line text-2xs font-semibold text-ink-2">
-                      <tr>
-                        <th className="py-2 px-2.5 w-[24%]">KOC (@ID kênh)</th>
-                        <th className="py-2 px-2.5 w-[20%]">Hành động dự kiến</th>
-                        <th className="py-2 px-2.5 w-[18%]">Trạng thái trên Sheet</th>
-                        <th className="py-2 px-2.5 w-[38%]">Chi tiết thay đổi (Sheet hiện tại → App đẩy lên)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-line">
-                      {pushDiffReport.diffs.map((d, idx) => (
-                        <tr key={`${d.key}-${idx}`} className="hover:bg-sunken/40">
-                          <td className="py-2 px-2.5 font-medium text-ink">
-                            <div>@{d.handle || d.key}</div>
-                            {d.kocName && d.kocName !== (d.handle || d.key) && (
-                              <div className="text-2xs text-ink-3">{d.kocName}</div>
-                            )}
-                            {d.rowId && (
-                              <div className="text-2xs font-mono text-ink-3">
-                                RowID: {d.rowId.slice(-10)}
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-2 px-2.5">
-                            {d.action === 'ADD' && (
-                              <Status tone="positive">+ Thêm dòng mới</Status>
-                            )}
-                            {d.action === 'UPDATE' && (
-                              <div className="space-y-0.5">
-                                <Status tone="warning">
-                                  Cập nhật dòng #{d.sheetRowNum}
-                                </Status>
-                                <div className="text-2xs text-ink-3">
-                                  {d.matchedBy === 'ROW_ID'
-                                    ? 'Khớp chuẩn theo Row ID'
-                                    : 'Khớp theo ID kênh'}
-                                </div>
-                              </div>
-                            )}
-                            {d.action === 'SKIP' && (
-                              <div className="space-y-0.5">
-                                <Status tone="neutral">
-                                  Giữ nguyên dòng #{d.sheetRowNum}
-                                </Status>
-                                <div className="text-2xs text-ink-3">
-                                  {d.matchedBy === 'ROW_ID'
-                                    ? 'Khớp chuẩn theo Row ID'
-                                    : 'Khớp theo ID kênh'}
-                                </div>
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-2 px-2.5 text-2xs">
-                            {d.brandDecisionOnSheet ? (
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold">
-                                Brand: {d.brandDecisionOnSheet} (Giữ nguyên)
-                              </span>
-                            ) : d.action === 'ADD' ? (
-                              <span className="text-ink-3">Chưa có trên Sheet</span>
-                            ) : (
-                              <span className="text-ink-3">Brand chưa điền</span>
-                            )}
-                          </td>
-                          <td className="py-2 px-2.5 text-2xs">
-                            {d.action === 'ADD' ? (
-                              <span className="text-emerald-700 font-medium">
-                                Ghi dòng KOC mới vào cuối tab &ldquo;{pushSheetTab || defaultGoogleSheetTab}&rdquo;
-                              </span>
-                            ) : d.fieldChanges.length === 0 ? (
-                              <span className="text-ink-3">
-                                Dữ liệu 2 bên giống nhau 100%, không cần ghi lại
-                              </span>
-                            ) : (
-                              <div className="space-y-1">
-                                {d.fieldChanges.map((fc, fIdx) => (
-                                  <div key={fIdx} className="leading-snug">
-                                    <strong className="text-ink">{fc.column}:</strong>{' '}
-                                    <span className="line-through text-ink-3">
-                                      {fc.sheetValue || '(Trống)'}
-                                    </span>{' '}
-                                    →{' '}
-                                    <span className="font-semibold text-accent">
-                                      {fc.appValue || '(Trống)'}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <PushSheetReconciliationView
+                  report={pushDiffReport}
+                  targetTabName={pushSheetTab || defaultGoogleSheetTab}
+                  storeName={activeStoreName}
+                  sheetUrl={pushSheetUrl}
+                  onNotify={onNotify}
+                />
               </div>
             )}
           </div>

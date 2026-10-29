@@ -275,8 +275,40 @@ const normHeaderToken = (v: string) => {
 
 export interface PushFieldChange {
   column: string;
+  columnLetter?: string;
   sheetValue: string;
   appValue: string;
+  diffKind?: 'PRICE' | 'DATE' | 'DECISION' | 'PRODUCT' | 'TEXT' | 'STATUS';
+  diffSummary?: string;
+}
+
+function analyzeFieldDiff(
+  colName: string,
+  colLetter: string,
+  oldVal: string,
+  newVal: string
+): PushFieldChange {
+  let diffKind: PushFieldChange['diffKind'] = 'TEXT';
+  const lowerCol = colName.toLowerCase();
+  if (/giá|chi phí|thù lao|net|cost/i.test(lowerCol)) {
+    diffKind = 'PRICE';
+  } else if (/ngày|date|tháng/i.test(lowerCol)) {
+    diffKind = 'DATE';
+  } else if (/duyệt|chọn|decision/i.test(lowerCol)) {
+    diffKind = 'DECISION';
+  } else if (/sản phẩm|sku|product/i.test(lowerCol)) {
+    diffKind = 'PRODUCT';
+  } else if (/trạng thái|status/i.test(lowerCol)) {
+    diffKind = 'STATUS';
+  }
+
+  return {
+    column: colName,
+    columnLetter: colLetter,
+    sheetValue: oldVal || '—',
+    appValue: newVal,
+    diffKind,
+  };
 }
 
 export interface PushRowDiff {
@@ -284,10 +316,15 @@ export interface PushRowDiff {
   handle: string;
   kocName: string;
   briefCode?: string;
-  action: 'ADD' | 'UPDATE' | 'SKIP';
+  action: 'ADD' | 'UPDATE' | 'SKIP' | 'SHEET_ONLY';
   sheetRowNum?: number;
-  matchedBy?: 'ROW_ID' | 'COMPOSITE' | 'HANDLE';
+  matchedBy?: 'ROW_ID' | 'COMPOSITE' | 'HANDLE' | 'NONE';
   brandDecisionOnSheet?: string;
+  rejectionReasonOnSheet?: string;
+  productName?: string;
+  price?: string | number;
+  assignedStaff?: string;
+  airDate?: string;
   fieldChanges: PushFieldChange[];
 }
 
@@ -295,6 +332,7 @@ export interface AppendResult {
   added: number;
   skipped: number;
   updated?: number;
+  sheetOnlyCount?: number;
   createdTab: boolean;
   writtenHeader: boolean;
   dryRun?: boolean;
@@ -618,11 +656,7 @@ export async function appendNewRows(opts: {
         });
         // Không đưa cột kỹ thuật Row ID vào danh sách thay đổi hiển thị nếu chỉ là gán mã lần đầu, trừ khi dòng không có thay đổi nào khác
         if (targetNorm !== normHeaderToken(ROW_ID_COLUMN_HEADER)) {
-          fieldChanges.push({
-            column: colName,
-            sheetValue: oldVal || '—',
-            appValue: newVal,
-          });
+          fieldChanges.push(analyzeFieldDiff(colName, colLetter(dstIdx), oldVal, newVal));
           rowTouched = true;
         }
       }
@@ -653,6 +687,54 @@ export async function appendNewRows(opts: {
         fieldChanges: [],
       });
     }
+  }
+
+  // Thu thập các dòng chỉ có trên Google Sheet mà App chưa có
+  let sheetOnlyCount = 0;
+  if (hasHeader) {
+    const sheetNameIdx = header.findIndex(h => /tên kênh|tên người ảnh hưởng|koc/i.test(h));
+    const sheetPriceIdx = header.findIndex(h => /giá net|giá chốt/i.test(h));
+    const sheetStaffIdx = header.findIndex(h => /nhân sự|pic/i.test(h));
+    const sheetAirDateIdx = header.findIndex(h => /ngày air/i.test(h));
+    const sheetRejectionIdx = header.findIndex(h => /lý do từ chối|lý do/i.test(h));
+
+    values.slice(headerRowIdx + 1).forEach((sheetRow, sIdx) => {
+      const rowNum = headerRowIdx + sIdx + 2;
+      if (matchedSheetRowNums.has(rowNum)) return;
+
+      const rawKey = sheetKeyIdx >= 0 ? sheetRow[sheetKeyIdx] : '';
+      const k = keyOf(rawKey);
+      const name = sheetNameIdx >= 0 ? String(sheetRow[sheetNameIdx] ?? '').trim() : '';
+      const prod = sheetProdIdx >= 0 ? String(sheetRow[sheetProdIdx] ?? '').trim() : '';
+      const hasAnyContent = Boolean(k || name || prod || sheetRow.some(cell => String(cell ?? '').trim().length > 0));
+      if (!hasAnyContent) return;
+
+      sheetOnlyCount++;
+      const brandDecision = sheetBrandDecisionIdx >= 0 ? String(sheetRow[sheetBrandDecisionIdx] ?? '').trim() : '';
+      const rejectionReason = sheetRejectionIdx >= 0 ? String(sheetRow[sheetRejectionIdx] ?? '').trim() : '';
+      const priceVal = sheetPriceIdx >= 0 ? String(sheetRow[sheetPriceIdx] ?? '').trim() : '';
+      const staffVal = sheetStaffIdx >= 0 ? String(sheetRow[sheetStaffIdx] ?? '').trim() : '';
+      const airVal = sheetAirDateIdx >= 0 ? String(sheetRow[sheetAirDateIdx] ?? '').trim() : '';
+
+      diffs.push({
+        handle: k || name || `Dòng #${rowNum}`,
+        kocName: name || k || `Dòng #${rowNum}`,
+        action: 'SHEET_ONLY',
+        sheetRowNum: rowNum,
+        matchedBy: 'NONE',
+        brandDecisionOnSheet: brandDecision || undefined,
+        rejectionReasonOnSheet: rejectionReason || undefined,
+        productName: prod || undefined,
+        price: priceVal || undefined,
+        assignedStaff: staffVal || undefined,
+        airDate: airVal || undefined,
+        fieldChanges: [
+          ...(prod ? [{ column: 'Sản phẩm', sheetValue: prod, appValue: '(Chưa có trên App)' }] : []),
+          ...(priceVal ? [{ column: 'Giá net', sheetValue: priceVal, appValue: '(Chưa có trên App)' }] : []),
+          ...(brandDecision ? [{ column: 'Brand chọn', sheetValue: brandDecision, appValue: '(Chưa có trên App)' }] : []),
+        ],
+      });
+    });
   }
 
   if (!dryRun) {
@@ -751,6 +833,7 @@ export async function appendNewRows(opts: {
     added: fresh.length,
     skipped: rows.length - fresh.length - updatedCount,
     updated: updatedCount,
+    sheetOnlyCount,
     createdTab: !exists,
     writtenHeader: !hasHeader,
     dryRun,
