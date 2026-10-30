@@ -1306,6 +1306,233 @@ export function ContractForm({
     );
   }, [deals, koc]);
 
+  const availableDealsToAdd = useMemo(() => {
+    if (!koc) return [];
+    const currentCodes = new Set(draftJobTables.map(j => j.jobCode));
+    return kocScopedDeals.filter(d => !currentCodes.has(d.dealCode));
+  }, [koc, kocScopedDeals, draftJobTables]);
+
+  const addDealToSow = (selectedDeal: BookingDealItem) => {
+    const nextIdx = draftJobTables.length;
+    const newJobsToAdd: SowJobTableDraft[] = [];
+    const currentCodes = new Set(draftJobTables.map(j => j.jobCode));
+
+    if (selectedDeal.dealJobs && selectedDeal.dealJobs.length > 0) {
+      selectedDeal.dealJobs.forEach((dj, jIdx) => {
+        const code = dj.jobCode || `${selectedDeal.dealCode}-J0${jIdx + 1}`;
+        if (!currentCodes.has(code)) {
+          newJobsToAdd.push({
+            id: `sow-job-${Date.now()}-${jIdx}`,
+            jobCode: code,
+            jobId: dj.id,
+            jobTitle: dj.jobTitle || `Bảng công việc #${nextIdx + jIdx + 1} (${code})`,
+            productName: dj.productName || dj.sanPham || selectedDeal.productName || selectedDeal.brandName || 'Sản phẩm chiến dịch',
+            mediaChannel: dj.mediaChannel || (selectedDeal.bookingFormat?.includes('Live') ? 'Livestream' : 'TikTok'),
+            airDate: dj.plannedAirDate || dj.actualAirDate || selectedDeal.postedDate || selectedDeal.deadlinePost || '',
+            videoUrl: dj.linkAir || '',
+            videoFeeNetVnd: dj.videoAssetNetCost || selectedDeal.totalValue || 2000000,
+            quantity: 1,
+            addonItems: [
+              {
+                id: `addon-ads-${Date.now()}-${jIdx}`,
+                taskCode: `${code}-T02`,
+                termType: 'ADS_CODE',
+                termLabel: 'Cấp mã quảng cáo Spark Ads',
+                includedInSow: Boolean(dj.sparkAdsCode || selectedDeal.sparkAdsCode),
+                deliverableLabel: 'Mã Spark Ads',
+                durationDays: selectedDeal.sparkAdsExpiryDays || 30,
+                evidenceCodeOrUrl: dj.sparkAdsCode || selectedDeal.sparkAdsCode || '',
+                allocatedCostVnd: 0,
+                acceptanceStatus: (dj.sparkAdsCode || selectedDeal.sparkAdsCode) ? 'VERIFIED' : 'PENDING_ACCEPTANCE',
+              },
+              {
+                id: `addon-cart-${Date.now()}-${jIdx}`,
+                taskCode: `${code}-T03`,
+                termType: 'LINK_BIO_CART',
+                termLabel: 'Gắn giỏ hàng / Link Bio',
+                includedInSow: true,
+                deliverableLabel: 'Link sản phẩm',
+                durationDays: 30,
+                evidenceCodeOrUrl: '',
+                allocatedCostVnd: 0,
+                acceptanceStatus: 'PENDING_ACCEPTANCE',
+              },
+              {
+                id: `addon-img-${Date.now()}-${jIdx}`,
+                taskCode: `${code}-T04`,
+                termType: 'IMAGE_USAGE',
+                termLabel: 'Sử dụng hình ảnh & video',
+                includedInSow: false,
+                deliverableLabel: 'Hình ảnh / Video',
+                durationDays: 90,
+                evidenceCodeOrUrl: '',
+                allocatedCostVnd: 0,
+                acceptanceStatus: 'PENDING_ACCEPTANCE',
+              },
+              {
+                id: `addon-excl-${Date.now()}-${jIdx}`,
+                taskCode: `${code}-T05`,
+                termType: 'EXCLUSIVITY',
+                termLabel: 'Độc quyền ngành hàng',
+                includedInSow: false,
+                deliverableLabel: 'Cam kết độc quyền',
+                durationDays: 30,
+                evidenceCodeOrUrl: '',
+                allocatedCostVnd: 0,
+                acceptanceStatus: 'PENDING_ACCEPTANCE',
+              },
+            ],
+          });
+        }
+      });
+    } else {
+      const code = selectedDeal.dealCode || `JOB-0${nextIdx + 1}`;
+      newJobsToAdd.push({
+        id: `sow-job-${Date.now()}`,
+        jobCode: code,
+        jobId: selectedDeal.jobId || selectedDeal.id,
+        jobTitle: `Bảng công việc #${nextIdx + 1} (${code})`,
+        productName: selectedDeal.productName || selectedDeal.brandName || 'Sản phẩm chiến dịch',
+        mediaChannel: selectedDeal.bookingFormat?.includes('Live') ? 'Livestream' : 'TikTok',
+        airDate: selectedDeal.postedDate || selectedDeal.deadlinePost || '',
+        videoUrl: selectedDeal.tiktokVideoUrl || '',
+        videoFeeNetVnd: selectedDeal.totalValue || 2000000,
+        quantity: 1,
+        addonItems: [
+          {
+            id: `addon-ads-${Date.now()}`,
+            taskCode: `${code}-T02`,
+            termType: 'ADS_CODE',
+            termLabel: 'Cấp mã quảng cáo Spark Ads',
+            includedInSow: Boolean(selectedDeal.sparkAdsCode),
+            deliverableLabel: 'Mã Spark Ads',
+            durationDays: selectedDeal.sparkAdsExpiryDays || 30,
+            evidenceCodeOrUrl: selectedDeal.sparkAdsCode || '',
+            allocatedCostVnd: 0,
+            acceptanceStatus: selectedDeal.sparkAdsCode ? 'VERIFIED' : 'PENDING_ACCEPTANCE',
+          },
+          {
+            id: `addon-cart-${Date.now()}`,
+            taskCode: `${code}-T03`,
+            termType: 'LINK_BIO_CART',
+            termLabel: 'Gắn giỏ hàng / Link Bio',
+            includedInSow: true,
+            deliverableLabel: 'Link sản phẩm',
+            durationDays: 30,
+            evidenceCodeOrUrl: '',
+            allocatedCostVnd: 0,
+            acceptanceStatus: 'PENDING_ACCEPTANCE',
+          },
+          {
+            id: `addon-img-${Date.now()}`,
+            taskCode: `${code}-T04`,
+            termType: 'IMAGE_USAGE',
+            termLabel: 'Sử dụng hình ảnh & video',
+            includedInSow: false,
+            deliverableLabel: 'Hình ảnh / Video',
+            durationDays: 90,
+            evidenceCodeOrUrl: '',
+            allocatedCostVnd: 0,
+            acceptanceStatus: 'PENDING_ACCEPTANCE',
+          },
+          {
+            id: `addon-excl-${Date.now()}`,
+            taskCode: `${code}-T05`,
+            termType: 'EXCLUSIVITY',
+            termLabel: 'Độc quyền ngành hàng',
+            includedInSow: false,
+            deliverableLabel: 'Cam kết độc quyền',
+            durationDays: 30,
+            evidenceCodeOrUrl: '',
+            allocatedCostVnd: 0,
+            acceptanceStatus: 'PENDING_ACCEPTANCE',
+          },
+        ],
+      });
+    }
+
+    if (newJobsToAdd.length > 0) {
+      const nextJobs = [...draftJobTables, ...newJobsToAdd];
+      applyMultiJobTablesToDraftValues(nextJobs, nextJobs.length - 1);
+    }
+  };
+
+  const createNewBlankJob = () => {
+    const nextIdx = draftJobTables.length;
+    const baseCode = deal?.dealCode || (draftJobTables[0] ? draftJobTables[0].jobCode.split('-')[0] : 'JOB');
+    const nextJobCode = `${baseCode}-J0${nextIdx + 1}`;
+    const newJob: SowJobTableDraft = {
+      id: `sow-job-${Date.now()}`,
+      jobCode: nextJobCode,
+      jobTitle: `Bảng công việc #${nextIdx + 1} (${nextJobCode})`,
+      productName: brand ? `Sản phẩm ${brand} (Job #${nextIdx + 1})` : `Sản phẩm Job #${nextIdx + 1}`,
+      mediaChannel: 'TikTok',
+      airDate: draftAirDate || '',
+      videoUrl: '',
+      videoFeeNetVnd: 2000000,
+      quantity: 1,
+      addonItems: [
+        {
+          id: `addon-ads-${Date.now()}`,
+          taskCode: `${nextJobCode}-T02`,
+          termType: 'ADS_CODE',
+          termLabel: 'Cấp mã quảng cáo Spark Ads',
+          includedInSow: true,
+          deliverableLabel: 'Mã Spark Ads',
+          durationDays: 30,
+          evidenceCodeOrUrl: '',
+          allocatedCostVnd: 0,
+          acceptanceStatus: 'PENDING_ACCEPTANCE',
+        },
+        {
+          id: `addon-cart-${Date.now()}`,
+          taskCode: `${nextJobCode}-T03`,
+          termType: 'LINK_BIO_CART',
+          termLabel: 'Gắn giỏ hàng / Link Bio',
+          includedInSow: true,
+          deliverableLabel: 'Link sản phẩm',
+          durationDays: 30,
+          evidenceCodeOrUrl: '',
+          allocatedCostVnd: 0,
+          acceptanceStatus: 'PENDING_ACCEPTANCE',
+        },
+        {
+          id: `addon-img-${Date.now()}`,
+          taskCode: `${nextJobCode}-T04`,
+          termType: 'IMAGE_USAGE',
+          termLabel: 'Sử dụng hình ảnh & video',
+          includedInSow: false,
+          deliverableLabel: 'Hình ảnh / Video',
+          durationDays: 90,
+          evidenceCodeOrUrl: '',
+          allocatedCostVnd: 0,
+          acceptanceStatus: 'PENDING_ACCEPTANCE',
+        },
+        {
+          id: `addon-excl-${Date.now()}`,
+          taskCode: `${nextJobCode}-T05`,
+          termType: 'EXCLUSIVITY',
+          termLabel: 'Độc quyền ngành hàng',
+          includedInSow: false,
+          deliverableLabel: 'Cam kết độc quyền',
+          durationDays: 30,
+          evidenceCodeOrUrl: '',
+          allocatedCostVnd: 0,
+          acceptanceStatus: 'PENDING_ACCEPTANCE',
+        },
+      ],
+    };
+    const nextJobs = [...draftJobTables, newJob];
+    applyMultiJobTablesToDraftValues(nextJobs, nextIdx);
+  };
+
+  const removeJobFromSow = (jIdx: number) => {
+    if (draftJobTables.length <= 1) return;
+    const remaining = draftJobTables.filter((_, idx) => idx !== jIdx);
+    const nextActive = Math.max(0, Math.min(activeJobTableIdx, remaining.length - 1));
+    applyMultiJobTablesToDraftValues(remaining, nextActive);
+  };
+
   const dealOptions = useMemo(() => {
     const slice = deals.slice(0, 200);
     if (deal && !slice.some(d => d.id === deal.id)) {
@@ -1394,7 +1621,11 @@ export function ContractForm({
         e.preventDefault();
         const baseValues =
           isSow || kind === 'ACCEPTANCE'
-            ? { ...values, [SOW_TASKS_META_KEY]: JSON.stringify(draftAddons) }
+            ? {
+                ...values,
+                [SOW_TASKS_META_KEY]: JSON.stringify(draftAddons),
+                [SOW_JOBS_META_KEY]: JSON.stringify(draftJobTables),
+              }
             : values;
         const nextValues = isKocOwnForm && customContractValue.trim()
           ? { ...baseValues, 'token:[Tổng tiền trước thuế/sau thuế]': customContractValue.trim() }
@@ -1994,42 +2225,35 @@ export function ContractForm({
             <Panel
               title={
                 isSow
-                  ? `Tổ chức Bảng công việc theo từng Job trong Phụ lục SOW (${draftJobTables.length} Job · ${draftJobTables.length} Bảng công việc)`
+                  ? `Danh sách Bảng công việc trong Phụ lục SOW (${draftJobTables.length} Job)`
                   : `Nghiệm thu theo từng Bảng công việc (Job) của Phụ lục SOW (${draftJobTables.length} Job)`
               }
               actions={
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      const nextIdx = draftJobTables.length;
-                      const baseDealCode = deal?.dealCode || jobAcceptanceBreakdown.jobCode || 'DEAL';
-                      const nextJobCode = `${baseDealCode}-J0${nextIdx + 1}`;
-                      const templateJob = draftJobTables[activeJobTableIdx] || draftJobTables[0];
-                      const defaultAddons: JobAcceptanceAddonRow[] = (templateJob?.addonItems || draftAddons).map((a, i) => ({
-                        ...a,
-                        id: `${nextJobCode}-addon-${Date.now()}-${i}`,
-                        taskCode: `${nextJobCode}-T0${i + 2}`,
-                      }));
-                      const newJob: SowJobTableDraft = {
-                        id: `sow-job-${Date.now()}`,
-                        jobCode: nextJobCode,
-                        jobTitle: `Bảng công việc #${nextIdx + 1} (${nextJobCode})`,
-                        productName: brand ? `Sản phẩm ${brand} (Job #${nextIdx + 1})` : `Sản phẩm Job #${nextIdx + 1}`,
-                        mediaChannel: templateJob?.mediaChannel || 'TikTok',
-                        airDate: templateJob?.airDate || draftAirDate || '',
-                        videoUrl: '',
-                        videoFeeNetVnd: templateJob?.videoFeeNetVnd || draftVideoFee || 2000000,
-                        quantity: 1,
-                        addonItems: defaultAddons,
-                      };
-                      const nextJobs = [...draftJobTables, newJob];
-                      applyMultiJobTablesToDraftValues(nextJobs, nextIdx);
-                    }}
-                  >
-                    + Thêm Job (Bảng công việc mới)
-                  </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {isSow && (
+                    <>
+                      {availableDealsToAdd.length > 0 && (
+                        <select
+                          className="text-xs py-1.5 px-2.5 rounded-lg border border-line bg-surface text-ink font-medium focus:ring-1 focus:ring-accent cursor-pointer"
+                          value=""
+                          onChange={e => {
+                            const d = availableDealsToAdd.find(x => x.id === e.target.value);
+                            if (d) addDealToSow(d);
+                          }}
+                        >
+                          <option value="">+ Thêm Job từ kế hoạch KOC (${availableDealsToAdd.length} có sẵn)...</option>
+                          {availableDealsToAdd.map(d => (
+                            <option key={d.id} value={d.id}>
+                              ${d.dealCode} · ${d.brandName} — ${d.productName || 'Sản phẩm'} (${formatNumber(d.totalValue || 0)}đ)
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <Button size="sm" variant="secondary" onClick={createNewBlankJob}>
+                        + Tạo Job mới
+                      </Button>
+                    </>
+                  )}
                   <Button
                     size="sm"
                     variant="primary"
@@ -2040,45 +2264,57 @@ export function ContractForm({
                 </div>
               }
             >
-              <div className="space-y-3 text-xs">
-                {/* Thanh chuyển đổi giữa N Bảng công việc (N Job trong Deal) */}
-                <div className="p-2.5 rounded-lg border border-line bg-sunken/60 space-y-2.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold text-ink">
-                        Danh sách Job trong Deal ({draftJobTables.length} Job = {draftJobTables.length} Bảng công việc trong Phụ lục SOW):
+              <div className="space-y-4 text-xs">
+                {/* Thanh tóm tắt tiến độ & số lượng Job */}
+                <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg border border-line bg-sunken/40">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="font-semibold text-ink">
+                      ${draftJobTables.length} Bảng công việc trong ${isSow ? 'Phụ lục SOW' : 'Biên bản nghiệm thu'}
+                    </span>
+                    {jobAcceptanceBreakdown.appendixCode && (
+                      <span className="px-2 py-0.5 rounded bg-surface border border-line font-code text-2xs text-ink-2">
+                        Số SOW: ${jobAcceptanceBreakdown.appendixCode}
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-surface border border-line font-code text-ink-2">
-                        Phụ lục SOW: {jobAcceptanceBreakdown.appendixCode}
+                    )}
+                    {jobAcceptanceBreakdown.masterContractCode && (
+                      <span className="px-2 py-0.5 rounded bg-surface border border-line font-code text-2xs text-ink-2">
+                        Kế thừa HĐNT: ${jobAcceptanceBreakdown.masterContractCode}
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-surface border border-line font-code text-ink-2">
-                        HĐNT: {jobAcceptanceBreakdown.masterContractCode}
-                      </span>
-                    </div>
-                    <Status tone="positive">
-                      Tổng Phụ lục ({draftJobTables.length} Job): {formatNumber(jobAcceptanceBreakdown.financials.plannedTotalNet)}đ
-                    </Status>
+                    )}
                   </div>
+                  <Status tone="positive">
+                    Tổng thù lao Net: ${formatNumber(jobAcceptanceBreakdown.financials.plannedTotalNet)}đ
+                  </Status>
+                </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    {draftJobTables.map((jTab, jIdx) => {
-                      const isSelectedJob = jIdx === activeJobTableIdx;
-                      const jVideoNet = Math.max(0, Number(jTab.videoFeeNetVnd) || 0) * Math.max(1, Number(jTab.quantity) || 1);
-                      const jAddonsNet = (jTab.addonItems || [])
-                        .filter(a => a.includedInSow !== false && a.acceptanceStatus !== 'DROPPED')
-                        .reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
-                      const jSubtotal = jVideoNet + jAddonsNet;
-                      return (
-                        <div
-                          key={jTab.id || jIdx}
-                          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs transition-colors ${
-                            isSelectedJob
-                              ? 'border-accent bg-accent-soft/40 text-ink font-semibold'
-                              : 'border-line bg-surface text-ink-2 hover:bg-sunken'
-                          }`}
-                        >
-                          <button
-                            type="button"
+                {/* Bảng danh sách tất cả các Job trong Phụ lục (DataTable) */}
+                <div className="overflow-x-auto border border-line rounded-lg bg-surface">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-sunken/70 text-ink-2 border-b border-line font-semibold text-2xs">
+                      <tr>
+                        <th className="py-2.5 px-3 w-10 text-center">#</th>
+                        <th className="py-2.5 px-3">Mã Job</th>
+                        <th className="py-2.5 px-3">Sản phẩm / Dịch vụ</th>
+                        <th className="py-2.5 px-3">Kênh</th>
+                        <th className="py-2.5 px-3">Ngày Air</th>
+                        <th className="py-2.5 px-3 text-right">Thù lao Video</th>
+                        <th className="py-2.5 px-3">Dịch vụ đi kèm</th>
+                        <th className="py-2.5 px-3 text-right">Tổng Net</th>
+                        <th className="py-2.5 px-3 text-right w-24">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-line">
+                      {draftJobTables.map((jTab, jIdx) => {
+                        const isSelected = jIdx === activeJobTableIdx;
+                        const qty = Math.max(1, Number(jTab.quantity) || 1);
+                        const jVideoNet = Math.max(0, Number(jTab.videoFeeNetVnd) || 0) * qty;
+                        const activeAddons = (jTab.addonItems || []).filter(a => a.includedInSow !== false && a.acceptanceStatus !== 'DROPPED');
+                        const jAddonsNet = activeAddons.reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+                        const jSubtotal = jVideoNet + jAddonsNet;
+
+                        return (
+                          <tr
+                            key={jTab.id || jIdx}
                             onClick={() => {
                               setActiveJobTableIdx(jIdx);
                               setDraftVideoFee(jTab.videoFeeNetVnd);
@@ -2086,115 +2322,170 @@ export function ContractForm({
                               setDraftProductName(jTab.productName);
                               setDraftAirDate(jTab.airDate);
                             }}
-                            className="text-left flex items-center gap-2"
+                            className={`cursor-pointer transition-colors ${
+                              isSelected
+                                ? 'bg-accent-soft/30 font-medium'
+                                : 'hover:bg-sunken/40'
+                            }`}
                           >
-                            <span className="px-1.5 py-0.5 rounded bg-accent/15 text-accent font-code text-2xs font-semibold">
-                              Bảng CV #{jIdx + 1} · {jTab.jobCode}
-                            </span>
-                            <span className="truncate max-w-[180px]">{jTab.productName || 'Sản phẩm'}</span>
-                            <span className="font-code text-accent">{formatNumber(jSubtotal)}đ</span>
-                          </button>
-                          {draftJobTables.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const remaining = draftJobTables.filter((_, idx) => idx !== jIdx);
-                                const nextActive = Math.max(0, Math.min(activeJobTableIdx, remaining.length - 1));
-                                applyMultiJobTablesToDraftValues(remaining, nextActive);
-                              }}
-                              className="text-ink-3 hover:text-critical p-0.5"
-                              title="Xóa Bảng công việc (Job) này khỏi Phụ lục"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                            <td className="py-2.5 px-3 text-center text-ink-3 font-code">
+                              ${jIdx + 1}
+                            </td>
+                            <td className="py-2.5 px-3 font-code font-semibold text-ink">
+                              ${jTab.jobCode}
+                            </td>
+                            <td className="py-2.5 px-3 text-ink">
+                              <div className="font-medium truncate max-w-[200px]">${jTab.productName || 'Sản phẩm chiến dịch'}</div>
+                            </td>
+                            <td className="py-2.5 px-3 text-ink-2">
+                              <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs">
+                                ${jTab.mediaChannel || 'TikTok'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 font-code text-ink-2">
+                              ${jTab.airDate || '—'}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-code font-medium text-ink">
+                              ${formatNumber(jVideoNet)}đ
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <div className="flex flex-wrap items-center gap-1">
+                                {activeAddons.length === 0 ? (
+                                  <span className="text-3xs text-ink-3">Chỉ video</span>
+                                ) : (
+                                  activeAddons.map(a => (
+                                    <span key={a.id || a.termType} className="px-1.5 py-0.5 rounded bg-surface border border-line text-3xs text-ink-2">
+                                      {a.termType === 'ADS_CODE' ? 'Spark Ads' : a.termType === 'LINK_BIO_CART' ? 'Giỏ hàng' : a.termType === 'IMAGE_USAGE' ? 'Hình ảnh' : 'Độc quyền'}
+                                    </span>
+                                  ))
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-code font-semibold text-accent">
+                              ${formatNumber(jSubtotal)}đ
+                            </td>
+                            <td className="py-2.5 px-3 text-right">
+                              <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveJobTableIdx(jIdx);
+                                    setDraftVideoFee(jTab.videoFeeNetVnd);
+                                    setDraftAddons(jTab.addonItems);
+                                    setDraftProductName(jTab.productName);
+                                    setDraftAirDate(jTab.airDate);
+                                  }}
+                                  className={`px-2 py-1 rounded text-2xs font-medium transition ${
+                                    isSelected ? 'bg-accent text-white' : 'bg-surface hover:bg-sunken border border-line text-ink-2'
+                                  }`}
+                                >
+                                  {isSelected ? 'Đang sửa' : 'Sửa'}
+                                </button>
+                                {draftJobTables.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeJobFromSow(jIdx)}
+                                    className="p-1 rounded hover:bg-critical-soft text-ink-3 hover:text-critical transition"
+                                    title="Xóa Job này khỏi Phụ lục SOW"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
 
-                {/* Task #1 của Bảng công việc đang chọn: Sản xuất & đăng tải Video chính */}
-                <div className="p-3 rounded-lg border border-line bg-surface space-y-2.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-1.5 py-0.5 rounded bg-accent/15 text-accent font-code text-2xs font-semibold">
-                        Bảng công việc #{activeJobTableIdx + 1} ({draftJobTables[activeJobTableIdx]?.jobCode || jobAcceptanceBreakdown.jobCode}) · Hạng mục #1
+                {/* Khối chỉnh sửa chi tiết cho Job đang chọn */}
+                <div className="p-3.5 rounded-lg border border-line bg-surface space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-accent text-white font-code text-2xs font-semibold">
+                        Bảng công việc #${activeJobTableIdx + 1}
                       </span>
-                      <span className="font-semibold text-ink">
-                        Sản xuất và đăng tải Video review ({draftProductName || brand || 'Sản phẩm chiến dịch'})
+                      <span className="font-semibold text-ink text-xs">
+                        Chi tiết đầu việc: ${draftJobTables[activeJobTableIdx]?.jobCode}
                       </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="px-2 py-0.5 rounded bg-sunken border border-line text-2xs text-ink-2">
-                        {jobAcceptanceBreakdown.videoItem.deliverableLabel}
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xs text-ink-3 font-code">
+                        Mã Job: ${draftJobTables[activeJobTableIdx]?.jobCode}
                       </span>
-                      <Status tone={jobAcceptanceBreakdown.videoItem.videoUrl ? 'positive' : 'warning'}>
-                        {jobAcceptanceBreakdown.videoItem.videoUrl
-                          ? 'Đã gắn Link Air'
-                          : isSow
-                            ? 'Bắt đầu Deal (Chưa Air)'
-                            : 'Chờ Link Air'}
-                      </Status>
+                      {draftJobTables[activeJobTableIdx]?.videoUrl ? (
+                        <Status tone="positive">Đã gắn Link Air</Status>
+                      ) : (
+                        <Status tone="neutral">${isSow ? 'Chưa Air' : 'Chờ Link Air'}</Status>
+                      )}
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 items-end">
-                    <Field label={isSow ? 'Tên sản phẩm / Dịch vụ trong Phụ lục SOW' : 'Đầu việc nghiệm thu: Link bài đăng (Link Air)'}>
-                      {isSow ? (
-                        <Input
-                          value={draftProductName}
-                          onChange={e => {
-                            const nextProd = e.target.value;
-                            applyJobBreakdownToDraftValues(
-                              draftVideoFee,
-                              draftAddons,
-                              undefined,
-                              undefined,
-                              undefined,
-                              draftAdvanceAmount,
-                              nextProd,
-                              draftAirDate,
-                            );
-                          }}
-                          placeholder={brand || 'Nhập tên sản phẩm / chiến dịch'}
-                        />
-                      ) : (
-                        <Input
-                          value={jobAcceptanceBreakdown.videoItem.videoUrl || 'Chưa có link video trên Job'}
-                          readOnly
-                          className="font-code bg-sunken/40"
-                        />
-                      )}
+
+                  {/* Task #1: Thông số Video chính */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                    <Field label="Tên sản phẩm / Chiến dịch *">
+                      <Input
+                        value={draftProductName}
+                        onChange={e => {
+                          const nextProd = e.target.value;
+                          applyJobBreakdownToDraftValues(
+                            draftVideoFee,
+                            draftAddons,
+                            undefined,
+                            undefined,
+                            undefined,
+                            draftAdvanceAmount,
+                            nextProd,
+                            draftAirDate,
+                          );
+                        }}
+                        placeholder="Nhập tên sản phẩm..."
+                      />
                     </Field>
-                    <Field label={isSow ? 'Ngày dự kiến đăng tải (Air Date)' : 'Ngày đăng tải (Tự lấy từ Job)'}>
-                      {isSow ? (
-                        <Input
-                          value={draftAirDate}
-                          onChange={e => {
-                            const nextDate = e.target.value;
-                            applyJobBreakdownToDraftValues(
-                              draftVideoFee,
-                              draftAddons,
-                              undefined,
-                              undefined,
-                              undefined,
-                              draftAdvanceAmount,
-                              draftProductName,
-                              nextDate,
-                            );
-                          }}
-                          placeholder="DD/MM/YYYY"
-                          className="font-code"
-                        />
-                      ) : (
-                        <Input
-                          value={jobAcceptanceBreakdown.videoItem.airDate || '—'}
-                          readOnly
-                          className="font-code bg-sunken/40"
-                        />
-                      )}
+
+                    <Field label="Kênh đăng tải *">
+                      <Select
+                        value={draftJobTables[activeJobTableIdx]?.mediaChannel || 'TikTok'}
+                        onChange={e => {
+                          const nextChan = e.target.value;
+                          const updatedJobs = draftJobTables.map((job, idx) =>
+                            idx === activeJobTableIdx ? { ...job, mediaChannel: nextChan } : job,
+                          );
+                          applyMultiJobTablesToDraftValues(updatedJobs, activeJobTableIdx);
+                        }}
+                      >
+                        <option value="TikTok">TikTok</option>
+                        <option value="Facebook">Facebook</option>
+                        <option value="Instagram">Instagram</option>
+                        <option value="Shopee Video">Shopee Video</option>
+                        <option value="YouTube">YouTube</option>
+                      </Select>
                     </Field>
-                    <Field label="Thành tiền Task #1 (VNĐ - Net)">
+
+                    <Field label={isSow ? 'Ngày dự kiến đăng (Air Date)' : 'Ngày đăng tải thực tế'}>
+                      <Input
+                        value={draftAirDate}
+                        onChange={e => {
+                          const nextDate = e.target.value;
+                          applyJobBreakdownToDraftValues(
+                            draftVideoFee,
+                            draftAddons,
+                            undefined,
+                            undefined,
+                            undefined,
+                            draftAdvanceAmount,
+                            draftProductName,
+                            nextDate,
+                          );
+                        }}
+                        placeholder="DD/MM/YYYY"
+                        className="font-code"
+                      />
+                    </Field>
+
+                    <Field label="Thù lao Video Task #1 (VNĐ - Net)">
                       <Input
                         inputMode="numeric"
                         className="font-code tabular-nums font-semibold"
@@ -2216,420 +2507,215 @@ export function ContractForm({
                     </Field>
                   </div>
 
-                  {isSow && (
-                    <div className="pt-3 border-t border-line/70 space-y-2.5">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-semibold text-ink">
-                          Mục 1.3. Thanh toán phí dịch vụ (Lựa chọn 1 trong 2 phương án trong Phụ lục SOW)
-                        </span>
-                        <Status tone="info">
-                          {paymentScheduleOption === 'TWO_TIMES'
-                            ? 'Đang chọn: Thanh toán 2 lần (Có tạm ứng Lần 1)'
-                            : 'Đang chọn: Thanh toán 1 lần (100% sau nghiệm thu)'}
-                        </Status>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                        <button
-                          type="button"
-                          onClick={() => selectPaymentScheduleOption('ONE_TIME')}
-                          className={`text-left p-2.5 rounded-lg border transition-colors ${
-                            paymentScheduleOption !== 'TWO_TIMES'
-                              ? 'border-accent bg-accent-soft/25 ring-1 ring-accent'
-                              : 'border-line bg-surface hover:bg-sunken/50'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-semibold text-ink">Phương án 1: Thanh toán 1 lần</span>
-                            {paymentScheduleOption !== 'TWO_TIMES' && (
-                              <Status tone="positive">Đang áp dụng</Status>
-                            )}
-                          </div>
-                          <p className="text-2xs text-ink-2 mt-1">
-                            Thanh toán 01 (một) lần 100% trong vòng 07 - 10 ngày làm việc sau khi hoàn thành dịch vụ theo SOW, ký BBNT và cung cấp hóa đơn hợp lệ.
-                          </p>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => selectPaymentScheduleOption('TWO_TIMES')}
-                          className={`text-left p-2.5 rounded-lg border transition-colors ${
-                            paymentScheduleOption === 'TWO_TIMES'
-                              ? 'border-accent bg-accent-soft/25 ring-1 ring-accent'
-                              : 'border-line bg-surface hover:bg-sunken/50'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-semibold text-ink">Phương án 2: Thanh toán 2 lần</span>
-                            {paymentScheduleOption === 'TWO_TIMES' && (
-                              <Status tone="positive">Đang áp dụng</Status>
-                            )}
-                          </div>
-                          <p className="text-2xs text-ink-2 mt-1">
-                            Lần 1 tạm ứng sau khi ký kết Phụ lục SOW; Lần 2 thanh toán phần giá trị còn lại sau khi hoàn thành dịch vụ và ký BBNT.
-                          </p>
-                        </button>
-                      </div>
-
-                      {paymentScheduleOption === 'TWO_TIMES' && (
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end p-2.5 rounded-lg border border-line bg-surface">
-                          <div className="md:col-span-5">
-                            <Field label="Số tiền tạm ứng Lần 1 khi ký SOW (VNĐ)">
-                              <Input
-                                inputMode="numeric"
-                                className="font-code tabular-nums font-semibold"
-                                value={formatMoneyInput(String(draftAdvanceAmount || 0))}
-                                onChange={e => {
-                                  const nextAdv = Number(e.target.value.replace(/\D/g, '')) || 0;
-                                  applyJobBreakdownToDraftValues(
-                                    draftVideoFee,
-                                    draftAddons,
-                                    undefined,
-                                    undefined,
-                                    undefined,
-                                    nextAdv,
-                                    draftProductName,
-                                    draftAirDate,
-                                  );
-                                  setValues(prev => ({ ...prev, [PAYMENT_SCHEDULE_META_KEY]: 'TWO_TIMES' }));
-                                }}
-                              />
-                            </Field>
-                          </div>
-                          <div className="md:col-span-7 flex flex-wrap items-center gap-1.5">
-                            <span className="text-2xs text-ink-3 mr-1">Chọn nhanh mức tạm ứng:</span>
-                            {[
-                              {
-                                label: 'Tạm ứng 30%',
-                                calc: () => Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.3),
-                              },
-                              {
-                                label: 'Tạm ứng 50%',
-                                calc: () => Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.5),
-                              },
-                              {
-                                label: 'Tối đa 2.000.000đ',
-                                calc: () =>
-                                  Math.min(
-                                    2_000_000,
-                                    Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.5),
-                                  ),
-                              },
-                            ].map(preset => (
-                              <Button
-                                key={preset.label}
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => {
-                                  const nextAdv = preset.calc();
-                                  applyJobBreakdownToDraftValues(
-                                    draftVideoFee,
-                                    draftAddons,
-                                    undefined,
-                                    undefined,
-                                    undefined,
-                                    nextAdv,
-                                    draftProductName,
-                                    draftAirDate,
-                                  );
-                                  setValues(prev => ({ ...prev, [PAYMENT_SCHEDULE_META_KEY]: 'TWO_TIMES' }));
-                                }}
-                              >
-                                {preset.label}
-                              </Button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Task #2..N: Các Task đi kèm trong Phụ lục SOW (Bật/tắt tùy theo Job của từng KOC) */}
-                <div className="p-3 rounded-lg border border-line bg-surface space-y-2.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold text-ink">
-                        Các hạng mục đi kèm trong Phụ lục SOW ({draftAddons.filter(a => a.includedInSow !== false).length}/{draftAddons.length} nhóm áp dụng cho Job này)
-                      </span>
-                      {kind === 'ACCEPTANCE' && draftAddons.some(a => a.includedInSow === false) && (
-                        <button
-                          type="button"
-                          onClick={() => setShowOmittedSowTasks(v => !v)}
-                          className="text-2xs text-accent hover:underline font-medium"
-                        >
-                          {showOmittedSowTasks
-                            ? 'Ẩn các hạng mục không có trong SOW'
-                            : `Hiện ${draftAddons.filter(a => a.includedInSow === false).length} hạng mục không có trong SOW`}
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => {
-                          const nextList = draftAddons.map(a => ({ ...a, includedInSow: false }));
-                          applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                        }}
-                      >
-                        Chỉ Video
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => {
-                          const nextList = draftAddons.map(a => ({
-                            ...a,
-                            includedInSow: a.termType === 'LINK_BIO_CART' || a.termType === 'ADS_CODE',
-                          }));
-                          applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                        }}
-                      >
-                        Video + Giỏ hàng + Mã Ads
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => {
-                          const nextList = draftAddons.map(a => ({
-                            ...a,
-                            includedInSow:
-                              a.termType === 'LINK_BIO_CART' ||
-                              a.termType === 'ADS_CODE' ||
-                              a.termType === 'IMAGE_USAGE' ||
-                              Boolean(a.includedInSow),
-                          }));
-                          applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                        }}
-                      >
-                        Đủ 4 nhóm SOW chuẩn
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => {
-                          const activeJob = draftJobTables[activeJobTableIdx];
-                          const activeJobCode = activeJob?.jobCode || jobAcceptanceBreakdown.jobCode;
-                          const info = SOW_TASK_DELIVERABLE_INFO.CROSS_POST_REUP;
-                          const nextList: JobAcceptanceAddonRow[] = [
-                            ...draftAddons,
-                            {
-                              id: `addon-${Date.now()}`,
-                              taskCode: `${activeJobCode}-T0${draftAddons.length + 2}`,
-                              termType: 'CROSS_POST_REUP',
-                              termLabel: info.taskTitle,
-                              includedInSow: true,
-                              deliverableLabel: info.deliverableLabel,
-                              durationDays: info.defaultDays,
-                              evidenceCodeOrUrl: '',
-                              allocatedCostVnd: 0,
-                              acceptanceStatus: 'VERIFIED',
-                            },
-                          ];
-                          applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                        }}
-                      >
-                        + Thêm hạng mục
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-end text-2xs font-code text-ink-2">
-                    <span>
-                      Phí hạng mục đi kèm đạt nghiệm thu: {formatNumber(jobAcceptanceBreakdown.financials.activeAddonsNet)}đ
-                      {jobAcceptanceBreakdown.financials.droppedDeduction > 0
-                        ? ` · Khấu trừ hủy Task: -${formatNumber(jobAcceptanceBreakdown.financials.droppedDeduction)}đ`
-                        : ''}
+                  {/* Task #2..N: Dịch vụ bổ sung đi kèm (4 gói chuẩn) */}
+                  <div className="pt-2.5 border-t border-line space-y-2">
+                    <span className="font-semibold text-2xs text-ink-2 uppercase tracking-wide">
+                      Dịch vụ bổ sung đi kèm theo Job này
                     </span>
-                  </div>
-
-                  <div className="space-y-2">
-                    {draftAddons.map((addon, idx) => {
-                      const isIncluded = addon.includedInSow !== false;
-                      if (kind === 'ACCEPTANCE' && !isIncluded && !showOmittedSowTasks) {
-                        return null;
-                      }
-                      const info = SOW_TASK_DELIVERABLE_INFO[addon.termType] || SOW_TASK_DELIVERABLE_INFO.ADS_CODE;
-                      const taskNo = idx + 2;
-                      return (
-                        <div
-                          key={addon.id || idx}
-                          className={`p-2.5 rounded-lg border space-y-2 transition-colors ${
-                            isIncluded ? 'border-line bg-sunken/30' : 'border-dashed border-line bg-sunken/15 opacity-70'
-                          }`}
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <label className="inline-flex items-center gap-2 cursor-pointer font-semibold text-ink">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                      {draftAddons.slice(0, 4).map((addon, aIdx) => {
+                        const isInc = addon.includedInSow !== false;
+                        return (
+                          <div
+                            key={addon.id || aIdx}
+                            className={`p-2.5 rounded-lg border transition-colors ${
+                              isInc ? 'border-accent bg-accent-soft/20' : 'border-line bg-sunken/30 opacity-70'
+                            }`}
+                          >
+                            <label className="flex items-start gap-2 cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={isIncluded}
+                                checked={isInc}
                                 onChange={e => {
                                   const checked = e.target.checked;
                                   const nextList = draftAddons.map((a, i) =>
-                                    i === idx ? { ...a, includedInSow: checked } : a,
+                                    i === aIdx ? { ...a, includedInSow: checked } : a,
                                   );
                                   applyJobBreakdownToDraftValues(draftVideoFee, nextList);
                                 }}
-                                className="rounded border-line text-accent focus:ring-accent"
+                                className="mt-0.5 rounded border-line text-accent focus:ring-accent"
                               />
-                              <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-code text-2xs">
-                                Task #{taskNo} · {addon.taskCode || `${jobAcceptanceBreakdown.jobCode}-T0${taskNo}`}
-                              </span>
-                              <span>{addon.termLabel}</span>
-                            </label>
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              {isIncluded ? (
-                                <>
-                                  <span className="px-2 py-0.5 rounded bg-surface border border-line text-2xs text-ink-2">
-                                    {addon.deliverableLabel || info.deliverableLabel}
-                                  </span>
-                                  <Status
-                                    tone={
-                                      addon.acceptanceStatus === 'DROPPED'
-                                        ? 'critical'
-                                        : addon.acceptanceStatus === 'VERIFIED'
-                                          ? 'positive'
-                                          : 'warning'
-                                    }
-                                  >
-                                    {addon.acceptanceStatus === 'DROPPED'
-                                      ? 'Hủy - Khấu trừ'
-                                      : addon.acceptanceStatus === 'VERIFIED'
-                                        ? 'Đạt nghiệm thu'
-                                        : 'Chờ bàn giao đầu việc'}
-                                  </Status>
-                                </>
-                              ) : (
-                                <Status tone="neutral">Không có trong Job này (SOW ghi Không áp dụng)</Status>
-                              )}
-                            </div>
-                          </div>
-
-                          {isIncluded && (
-                            <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
-                              <div className="md:col-span-3">
-                                <Select
-                                  value={addon.termType}
-                                  onChange={e => {
-                                    const nextType = e.target.value as SowTaskTermType;
-                                    const nextInfo = SOW_TASK_DELIVERABLE_INFO[nextType];
-                                    const nextList = draftAddons.map((a, i) =>
-                                      i === idx
-                                        ? {
-                                            ...a,
-                                            termType: nextType,
-                                            termLabel: nextInfo.taskTitle,
-                                            deliverableLabel: nextInfo.deliverableLabel,
-                                            durationDays: nextInfo.defaultDays,
-                                          }
-                                        : a,
-                                    );
-                                    applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                                  }}
-                                >
-                                  <option value="ADS_CODE">Cấp mã quảng cáo Spark Ads</option>
-                                  <option value="IMAGE_USAGE">Sử dụng hình ảnh &amp; video</option>
-                                  <option value="CROSS_POST_REUP">Đăng chéo / Reup kênh phụ</option>
-                                  <option value="LINK_BIO_CART">Gắn giỏ hàng / Link Bio</option>
-                                  <option value="EXCLUSIVITY">Độc quyền ngành hàng</option>
-                                </Select>
-                              </div>
-                              <div className="md:col-span-2 flex items-center gap-1">
-                                <Input
-                                  type="number"
-                                  min={1}
-                                  value={addon.durationDays}
-                                  onChange={e => {
-                                    const days = Math.max(1, Number(e.target.value) || 30);
-                                    const nextList = draftAddons.map((a, i) =>
-                                      i === idx ? { ...a, durationDays: days } : a,
-                                    );
-                                    applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                                  }}
-                                  className="font-code text-right"
-                                />
-                                <span className="text-2xs text-ink-3 shrink-0">ngày</span>
-                              </div>
-                              <div className="md:col-span-3">
-                                <Input
-                                  value={addon.evidenceCodeOrUrl}
-                                  onChange={e => {
-                                    const val = e.target.value;
-                                    const nextList = draftAddons.map((a, i) =>
-                                      i === idx
-                                        ? {
-                                            ...a,
-                                            evidenceCodeOrUrl: val,
-                                            acceptanceStatus:
-                                              val.trim() && a.acceptanceStatus === 'PENDING_ACCEPTANCE'
-                                                ? 'VERIFIED'
-                                                : a.acceptanceStatus,
-                                          }
-                                        : a,
-                                    );
-                                    applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                                  }}
-                                  placeholder={info.evidencePlaceholder}
-                                  className="font-code"
-                                />
-                              </div>
-                              <div className="md:col-span-2">
-                                <Input
-                                  inputMode="numeric"
-                                  value={addon.allocatedCostVnd > 0 ? formatMoneyInput(String(addon.allocatedCostVnd)) : '0'}
-                                  onChange={e => {
-                                    const cost = Number(e.target.value.replace(/\D/g, '')) || 0;
-                                    const nextList = draftAddons.map((a, i) =>
-                                      i === idx ? { ...a, allocatedCostVnd: cost } : a,
-                                    );
-                                    applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                                  }}
-                                  placeholder="0 (Gộp gói)"
-                                  className="font-code text-right"
-                                />
-                              </div>
-                              <div className="md:col-span-2 flex items-center gap-1">
-                                <Select
-                                  value={addon.acceptanceStatus}
-                                  onChange={e => {
-                                    const st = e.target.value as JobAcceptanceAddonRow['acceptanceStatus'];
-                                    const nextList = draftAddons.map((a, i) =>
-                                      i === idx ? { ...a, acceptanceStatus: st } : a,
-                                    );
-                                    applyJobBreakdownToDraftValues(draftVideoFee, nextList);
-                                  }}
-                                >
-                                  <option value="VERIFIED">Hoàn thành</option>
-                                  <option value="PENDING_ACCEPTANCE">Chờ bàn giao</option>
-                                  <option value="DROPPED">Hủy - Khấu trừ</option>
-                                </Select>
-                                {draftAddons.length > 2 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const nextList = draftAddons.filter((_, i) => i !== idx);
+                              <div className="space-y-1 min-w-0">
+                                <span className="font-semibold text-ink text-xs block leading-tight">
+                                  {addon.termLabel}
+                                </span>
+                                <div className="flex items-center gap-1.5 text-2xs text-ink-3">
+                                  <span>Thời hạn:</span>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    disabled={!isInc}
+                                    value={addon.durationDays}
+                                    onChange={e => {
+                                      const days = Math.max(1, Number(e.target.value) || 30);
+                                      const nextList = draftAddons.map((a, i) =>
+                                        i === aIdx ? { ...a, durationDays: days } : a,
+                                      );
                                       applyJobBreakdownToDraftValues(draftVideoFee, nextList);
                                     }}
-                                    className="text-ink-3 hover:text-critical p-1 shrink-0"
-                                    title="Xóa Task"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+                                    className="w-12 px-1 py-0.5 text-right font-code border border-line rounded bg-surface text-ink text-2xs disabled:opacity-50"
+                                  />
+                                  <span>ngày</span>
+                                </div>
+                                {isInc && (
+                                  <div className="flex items-center gap-1 text-2xs text-ink-3">
+                                    <span>Phí:</span>
+                                    <input
+                                      type="text"
+                                      value={formatMoneyInput(String(addon.allocatedCostVnd || 0))}
+                                      onChange={e => {
+                                        const cost = Number(e.target.value.replace(/\D/g, '')) || 0;
+                                        const nextList = draftAddons.map((a, i) =>
+                                          i === aIdx ? { ...a, allocatedCostVnd: cost } : a,
+                                        );
+                                        applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                                      }}
+                                      placeholder="0đ"
+                                      className="w-20 px-1 py-0.5 text-right font-code border border-line rounded bg-surface text-ink text-2xs"
+                                    />
+                                    <span>đ</span>
+                                  </div>
                                 )}
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
-                {/* Tóm tắt quyết toán nghiệm thu theo các Task của Phụ lục Job */}
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-2.5 rounded-lg border border-line bg-sunken/60 font-code">
+                {/* Mục 1.3: Phương án thanh toán phí dịch vụ (Lựa chọn 1 trong 2) */}
+                {isSow && (
+                  <div className="p-3.5 rounded-lg border border-line bg-surface space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-semibold text-ink text-xs">
+                        Mục 1.3. Phương án thanh toán phí dịch vụ (Lựa chọn 1 trong 2)
+                      </span>
+                      <Status tone={paymentScheduleOption === 'TWO_TIMES' ? 'info' : 'positive'}>
+                        {paymentScheduleOption === 'TWO_TIMES' ? 'Thanh toán 2 lần (Có tạm ứng)' : 'Thanh toán 1 lần (100%)'}
+                      </Status>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Phương án 1 */}
+                      <button
+                        type="button"
+                        onClick={() => selectPaymentScheduleOption('ONE_TIME')}
+                        className={`text-left p-3 rounded-lg border transition-all ${
+                          paymentScheduleOption !== 'TWO_TIMES'
+                            ? 'border-accent bg-accent-soft/25 ring-1 ring-accent'
+                            : 'border-line bg-surface hover:bg-sunken/40'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold text-ink text-xs">Phương án 1: Thanh toán 1 lần</span>
+                          {paymentScheduleOption !== 'TWO_TIMES' && <Status tone="positive">Đang áp dụng</Status>}
+                        </div>
+                        <p className="text-2xs text-ink-2 mt-1">
+                          Thanh toán 01 lần 100% trong vòng 07 - 10 ngày làm việc sau khi hoàn tất dịch vụ theo SOW, ký Biên bản nghiệm thu (BBNT) và cung cấp hóa đơn hợp lệ.
+                        </p>
+                      </button>
+
+                      {/* Phương án 2 */}
+                      <button
+                        type="button"
+                        onClick={() => selectPaymentScheduleOption('TWO_TIMES')}
+                        className={`text-left p-3 rounded-lg border transition-all ${
+                          paymentScheduleOption === 'TWO_TIMES'
+                            ? 'border-accent bg-accent-soft/25 ring-1 ring-accent'
+                            : 'border-line bg-surface hover:bg-sunken/40'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold text-ink text-xs">Phương án 2: Thanh toán 2 lần</span>
+                          {paymentScheduleOption === 'TWO_TIMES' && <Status tone="positive">Đang áp dụng</Status>}
+                        </div>
+                        <p className="text-2xs text-ink-2 mt-1">
+                          Lần 1: Tạm ứng sau khi hoàn tất ký kết Phụ lục SOW. Lần 2: Thanh toán phần giá trị còn lại sau khi ký BBNT và cung cấp hóa đơn hợp lệ.
+                        </p>
+                      </button>
+                    </div>
+
+                    {/* Cấu hình tạm ứng Lần 1 khi chọn Phương án 2 */}
+                    {paymentScheduleOption === 'TWO_TIMES' && (
+                      <div className="p-3 rounded-lg border border-line bg-sunken/30 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                        <div className="md:col-span-5">
+                          <Field label="Số tiền tạm ứng Lần 1 (VNĐ - Net)">
+                            <Input
+                              inputMode="numeric"
+                              className="font-code tabular-nums font-semibold"
+                              value={formatMoneyInput(String(draftAdvanceAmount || 0))}
+                              onChange={e => {
+                                const nextAdv = Number(e.target.value.replace(/\D/g, '')) || 0;
+                                applyJobBreakdownToDraftValues(
+                                  draftVideoFee,
+                                  draftAddons,
+                                  undefined,
+                                  undefined,
+                                  undefined,
+                                  nextAdv,
+                                  draftProductName,
+                                  draftAirDate,
+                                );
+                                setValues(prev => ({ ...prev, [PAYMENT_SCHEDULE_META_KEY]: 'TWO_TIMES' }));
+                              }}
+                            />
+                          </Field>
+                        </div>
+
+                        <div className="md:col-span-7 flex flex-wrap items-center gap-2">
+                          <span className="text-2xs text-ink-3">Chọn nhanh:</span>
+                          {[
+                            {
+                              label: 'Tạm ứng 30%',
+                              val: Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.3),
+                            },
+                            {
+                              label: 'Tạm ứng 50%',
+                              val: Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.5),
+                            },
+                            {
+                              label: 'Tối đa 2tr',
+                              val: Math.min(2_000_000, Math.round((jobAcceptanceBreakdown.financials.plannedTotalNet || 0) * 0.5)),
+                            },
+                          ].map(chip => (
+                            <button
+                              key={chip.label}
+                              type="button"
+                              onClick={() => {
+                                applyJobBreakdownToDraftValues(
+                                  draftVideoFee,
+                                  draftAddons,
+                                  undefined,
+                                  undefined,
+                                  undefined,
+                                  chip.val,
+                                  draftProductName,
+                                  draftAirDate,
+                                );
+                                setValues(prev => ({ ...prev, [PAYMENT_SCHEDULE_META_KEY]: 'TWO_TIMES' }));
+                              }}
+                              className="px-2.5 py-1 rounded-lg border border-line bg-surface hover:bg-sunken text-ink text-2xs font-medium transition"
+                            >
+                              ${chip.label} (${formatNumber(chip.val)}đ)
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="md:col-span-12 text-2xs text-ink-2 font-code">
+                          Thanh toán Đợt 2 sau khi ký BBNT: <strong className="text-positive">${formatNumber(Math.max(0, (jobAcceptanceBreakdown.financials.plannedTotalNet || 0) - (draftAdvanceAmount || 0)))}đ</strong>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tóm tắt quyết toán tài chính Phụ lục */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-3 rounded-lg border border-line bg-sunken/60 font-code text-xs">
                   <div>
                     <span className="text-2xs text-ink-3 block">Tổng Phụ lục SOW</span>
-                    <span className="font-semibold text-ink">{formatNumber(jobAcceptanceBreakdown.financials.plannedTotalNet)}đ</span>
+                    <span className="font-semibold text-ink">${formatNumber(jobAcceptanceBreakdown.financials.plannedTotalNet)}đ</span>
                   </div>
                   <div>
                     <span className="text-2xs text-ink-3 block">Khấu trừ hủy Task</span>
@@ -2641,7 +2727,7 @@ export function ContractForm({
                   </div>
                   <div>
                     <span className="text-2xs text-ink-3 block">Nghiệm thu Net</span>
-                    <span className="font-semibold text-ink">{formatNumber(jobAcceptanceBreakdown.financials.acceptedTotalNet)}đ</span>
+                    <span className="font-semibold text-ink">${formatNumber(jobAcceptanceBreakdown.financials.acceptedTotalNet)}đ</span>
                   </div>
                   <div>
                     <span className="text-2xs text-ink-3 block">
@@ -2652,7 +2738,7 @@ export function ContractForm({
                           : 'Thuế TNCN (10%)'}
                     </span>
                     <span className="font-semibold text-ink">
-                      {formatNumber(
+                      ${formatNumber(
                         jobAcceptanceBreakdown.subjectKind === 'COM'
                           ? jobAcceptanceBreakdown.financials.vatTax
                           : jobAcceptanceBreakdown.financials.pitTax,
@@ -2661,9 +2747,9 @@ export function ContractForm({
                   </div>
                   <div>
                     <span className="text-2xs text-ink-3 block">
-                      Còn trả (Sau tạm ứng {formatNumber(jobAcceptanceBreakdown.financials.advanceAmount)}đ)
+                      Còn trả (Sau tạm ứng ${formatNumber(jobAcceptanceBreakdown.financials.advanceAmount)}đ)
                     </span>
-                    <span className="font-semibold text-positive">{formatNumber(jobAcceptanceBreakdown.financials.remainingPayable)}đ</span>
+                    <span className="font-semibold text-positive">${formatNumber(jobAcceptanceBreakdown.financials.remainingPayable)}đ</span>
                   </div>
                 </div>
               </div>
