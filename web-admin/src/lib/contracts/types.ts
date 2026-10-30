@@ -1,3 +1,4 @@
+export * from './googleDocsTypes';
 export type ContractRole = 'CREATOR' | 'LEGAL' | 'FINANCE' | 'LEAD' | 'SIGN_COORDINATOR' | 'AUDITOR';
 export interface ContractActor { id: string; name: string; roles: ContractRole[]; brands: string[]; allBrands?: boolean }
 export type FieldGroup = 'NUMBER' | 'PARTY' | 'DATE' | 'SCOPE' | 'MONEY' | 'OTHER';
@@ -299,4 +300,11 @@ export interface ContractRecord {
   acceptanceScreenshots?: AcceptanceScreenshotItem[];
   /** Metadata đồng bộ với contract-system (generateContract, Google Docs, requestSign, webhook Step 13). */
   contractSystem?: ContractSystemSyncMeta;
+  /** Luồng hợp đồng sửa đổi / riêng trên Google Docs */
+  googleDocsUrl?: string;
+  googleDocsId?: string;
+  googleDocsSource?: 'TEMPLATE_AMENDED' | 'KOC_CUSTOM_DOC';
+  googleDocsReviewRouting?: import('./googleDocsTypes').GoogleDocsReviewRouting;
+  googleDocsComments?: import('./googleDocsTypes').GoogleDocCommentItem[];
+  googleDocsAuditTrail?: import('./googleDocsTypes').GoogleDocsAuditTrail;
 }

@@ -20,6 +20,12 @@ type Input = Pick<ContractRecord, 'title' | 'brand' | 'partner' | 'templateId' |
   isKocOwnForm?: boolean;
   customFile?: ContractRecord['customFile'];
   acceptanceScreenshots?: ContractRecord['acceptanceScreenshots'];
+  googleDocsUrl?: string;
+  googleDocsId?: string;
+  googleDocsSource?: ContractRecord['googleDocsSource'];
+  googleDocsReviewRouting?: ContractRecord['googleDocsReviewRouting'];
+  googleDocsComments?: ContractRecord['googleDocsComments'];
+  googleDocsAuditTrail?: ContractRecord['googleDocsAuditTrail'];
 };
 export function createContract(input: Input, actor: ContractActor): ContractRecord {
   requireCondition(actor.roles.includes('CREATOR') && inScope(input.brand, actor), 'Không có quyền tạo hợp đồng cho nhãn hàng này.', 403);
@@ -89,24 +95,35 @@ export function decideContract(record: ContractRecord, actor: ContractActor, dec
   requireCondition(decision === 'APPROVED' || note.trim(), 'Cần nêu lý do yêu cầu sửa hoặc từ chối.');
   if (decision === 'APPROVED' && index > 0) {
     const previousPending = record.steps.slice(0, index).find(s => s.status !== 'APPROVED');
-    requireCondition(!previousPending, 'Cần bước thẩm định trước hoàn tất phê duyệt trước khi duyệt bước này.');
+    // Luồng Google Docs: Kế toán là người duyệt cuối cùng (FINAL); bước Pháp chế là tham vấn / comment theo điều khoản, không chặn Kế toán
+    const isAdvisoryLegal = previousPending?.role === 'LEGAL' && Boolean(record.googleDocsUrl || record.hasCustomTerms);
+    if (!isAdvisoryLegal) {
+      requireCondition(!previousPending, 'Cần bước thẩm định trước hoàn tất phê duyệt trước khi duyệt bước này.');
+    }
   }
   const next = structuredClone(record); Object.assign(next.steps[index], { status: decision, note, decidedAt: new Date().toISOString() });
-  next.approval = decision === 'CHANGES' ? 'CHANGES' : decision === 'REJECTED' ? 'REJECTED' : next.steps.every(s => s.status === 'APPROVED') ? 'APPROVED' : 'IN_REVIEW';
+  // Kế toán duyệt FINAL trên luồng Google Docs: chốt hồ sơ thành APPROVED
+  const isFinanceFinal = Boolean(record.googleDocsUrl) && (actor.roles.includes('FINANCE') || actor.roles.includes('LEAD')) && decision === 'APPROVED';
+  next.approval = decision === 'CHANGES'
+    ? 'CHANGES'
+    : decision === 'REJECTED'
+    ? 'REJECTED'
+    : (isFinanceFinal || next.steps.every(s => s.status === 'APPROVED'))
+    ? 'APPROVED'
+    : 'IN_REVIEW';
   event(next, actor, decision, note); return next;
 }
 export function assertCanSign(record: ContractRecord, actor: ContractActor) {
   requireCondition(actor.roles.includes('SIGN_COORDINATOR') && inScope(record.brand, actor), 'Không có quyền trình ký.', 403);
   const hasFinance = record.steps.some(s => s.role === 'FINANCE' && s.status === 'APPROVED' && s.version === record.version);
   const hasLegal = record.steps.some(s => s.role === 'LEGAL');
-  const legalApproved = !hasLegal || record.steps.some(s => s.role === 'LEGAL' && s.status === 'APPROVED' && s.version === record.version);
+  const legalApproved = !hasLegal || record.steps.some(s => s.role === 'LEGAL' && s.status === 'APPROVED' && s.version === record.version) || Boolean(record.googleDocsUrl);
   requireCondition(
     record.approval === 'APPROVED' &&
     record.steps.length >= 1 &&
     hasFinance &&
-    legalApproved &&
-    record.steps.every(s => s.status === 'APPROVED' && s.version === record.version),
-    'Chỉ phiên bản đã đủ phê duyệt mới được bắt đầu luồng trình ký.'
+    legalApproved,
+    'Chỉ phiên bản đã được Kế toán phê duyệt cuối cùng (FINAL) mới được bắt đầu luồng trình ký.'
   );
 }
 /** Kết quả đọc lại từ weSign có khác lần trước không (trạng thái, người ký, lỗi). */

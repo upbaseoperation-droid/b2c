@@ -97,6 +97,12 @@ async function parseInput(body: Record<string, unknown>, actor: ContractActor, e
     isKocOwnForm,
     customFile: isKocOwnForm ? customFile : undefined,
     acceptanceScreenshots,
+    googleDocsUrl: typeof body.googleDocsUrl === 'string' && body.googleDocsUrl.trim() ? body.googleDocsUrl.trim() : existing?.googleDocsUrl,
+    googleDocsId: typeof body.googleDocsId === 'string' && body.googleDocsId.trim() ? body.googleDocsId.trim() : existing?.googleDocsId,
+    googleDocsSource: body.googleDocsSource === 'KOC_CUSTOM_DOC' ? 'KOC_CUSTOM_DOC' : (body.googleDocsUrl ? 'TEMPLATE_AMENDED' : existing?.googleDocsSource),
+    googleDocsReviewRouting: (typeof body.googleDocsReviewRouting === 'object' && body.googleDocsReviewRouting !== null ? body.googleDocsReviewRouting : existing?.googleDocsReviewRouting) as any,
+    googleDocsComments: (Array.isArray(body.googleDocsComments) ? body.googleDocsComments : existing?.googleDocsComments) as any,
+    googleDocsAuditTrail: (typeof body.googleDocsAuditTrail === 'object' && body.googleDocsAuditTrail !== null ? body.googleDocsAuditTrail : existing?.googleDocsAuditTrail) as any,
   };
 }
 export async function POST(req: NextRequest) {

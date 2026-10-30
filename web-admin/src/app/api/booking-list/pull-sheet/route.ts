@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
   const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
   try {
-    const body = (await request.json()) as { planId?: string; sheetUrl?: string; tab?: string; tabName?: string; dryRun?: boolean };
+    const body = (await request.json()) as { planId?: string; sheetUrl?: string; tab?: string; tabName?: string; dryRun?: boolean; refresh?: boolean };
     // dryRun: chỉ so Sheet với app, trả danh sách thay đổi và mâu thuẫn để người dùng xác nhận trước khi ghi
     const dryRun = body.dryRun === true;
     type PullChange = { handle: string; briefCode?: string; field: string; app: string; sheet: string; conflict?: string };
@@ -154,6 +154,7 @@ export async function POST(request: NextRequest) {
       spreadsheetId,
       tab,
       sheetGid: parseSpreadsheetGid(body.sheetUrl || ''),
+      forceFresh: body.refresh === true || !dryRun,
     });
     const col = (...names: string[]) => header.find(h => names.some(n => normHeader(h) === normHeader(n)));
     const keyCol = col('ID kênh', 'ID Kênh TikTok', 'TikTok ID', 'Handle', 'Kênh KOC');

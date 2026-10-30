@@ -218,6 +218,74 @@ async function sheetsFetch(path: string, init?: RequestInit) {
   throw new GoogleSheetsError(`Google Sheets báo lỗi ${res.status}: ${text.slice(0, 200)}`, 'FAILED', 502);
 }
 
+// ============================================================================
+// BỘ NHỚ ĐỆM TỐC ĐỘ CAO (IN-MEMORY CACHE) CHO METADATA VÀ DỮ LIỆU GOOGLE SHEET
+// ============================================================================
+interface CachedMeta {
+  properties?: { title?: string };
+  sheets?: {
+    properties: {
+      sheetId: number;
+      title: string;
+      hidden?: boolean;
+      index?: number;
+      gridProperties?: { rowCount?: number; columnCount?: number };
+    };
+  }[];
+  cachedAt: number;
+}
+
+const spreadsheetMetaCache = new Map<string, CachedMeta>();
+const SPREADSHEET_META_CACHE_TTL_MS = 60_000;
+
+interface CachedTabValues {
+  values: string[][];
+  cachedAt: number;
+}
+
+const tabValuesCache = new Map<string, CachedTabValues>();
+const TAB_VALUES_CACHE_TTL_MS = 45_000;
+
+/** Xóa bộ nhớ đệm khi có tác vụ ghi hoặc tạo tab mới vào Google Sheet */
+export function invalidateSpreadsheetCache(spreadsheetId: string) {
+  spreadsheetMetaCache.delete(spreadsheetId);
+  const prefix = `${spreadsheetId}::`;
+  for (const k of tabValuesCache.keys()) {
+    if (k.startsWith(prefix)) tabValuesCache.delete(k);
+  }
+}
+
+async function getSpreadsheetMeta(spreadsheetId: string, forceFresh = false): Promise<CachedMeta> {
+  const now = Date.now();
+  if (!forceFresh) {
+    const hit = spreadsheetMetaCache.get(spreadsheetId);
+    if (hit && now - hit.cachedAt < SPREADSHEET_META_CACHE_TTL_MS) {
+      return hit;
+    }
+  }
+  const raw = (await sheetsFetch(
+    `${spreadsheetId}?fields=properties.title,sheets.properties(sheetId,title,hidden,index,gridProperties)`
+  )) as {
+    properties?: { title?: string };
+    sheets?: {
+      properties: {
+        sheetId: number;
+        title: string;
+        hidden?: boolean;
+        index?: number;
+        gridProperties?: { rowCount?: number; columnCount?: number };
+      };
+    }[];
+  };
+  const data: CachedMeta = {
+    properties: raw.properties,
+    sheets: raw.sheets || [],
+    cachedAt: now,
+  };
+  spreadsheetMetaCache.set(spreadsheetId, data);
+  return data;
+}
+
 /** Khóa so khớp ID kênh: bỏ @, link TikTok, khác hoa thường. */
 const keyOf = (v: unknown) =>
   String(v ?? '')
@@ -293,6 +361,162 @@ export interface PushFieldChange {
   diffSummary?: string;
 }
 
+/**
+ * Phân tích chuỗi số có thể có định dạng phân cách hàng nghìn (Việt Nam hoặc US),
+ * ký hiệu tiền tệ (₫, đ, VND), hoặc phần trăm (%).
+ */
+export function tryParseSheetNumber(raw: unknown): number | null {
+  if (typeof raw === 'number') return isNaN(raw) ? null : raw;
+  if (!raw || typeof raw !== 'string') return null;
+  const s = raw.replace(/[\s₫đVNĐvnd$]/gi, '').trim();
+  if (!s) return null;
+
+  const isPercent = s.endsWith('%');
+  const numStr = isPercent ? s.slice(0, -1).trim() : s;
+
+  // 1. Chuẩn Việt Nam: Phân cách hàng nghìn bằng dấu chấm (4.643.973 hoặc 48.000.000 hoặc 1.000.000,50)
+  if (/^[-+]?\d{1,3}(\.\d{3})+(,\d+)?$/.test(numStr)) {
+    const normalized = numStr.replace(/\./g, '').replace(',', '.');
+    const n = Number(normalized);
+    return isNaN(n) ? null : isPercent ? n / 100 : n;
+  }
+
+  // 2. Chuẩn Quốc tế / US: Phân cách hàng nghìn bằng dấu phẩy (4,643,973 hoặc 48,000,000 hoặc 1,000,000.50)
+  if (/^[-+]?\d{1,3}(,\d{3})+(\.\d+)?$/.test(numStr)) {
+    const normalized = numStr.replace(/,/g, '');
+    const n = Number(normalized);
+    return isNaN(n) ? null : isPercent ? n / 100 : n;
+  }
+
+  // 3. Số nguyên / số thực tiêu chuẩn JS (4643973 hoặc 48000000 hoặc 123.45)
+  if (/^[-+]?\d+(\.\d+)?$/.test(numStr)) {
+    const n = Number(numStr);
+    return isNaN(n) ? null : isPercent ? n / 100 : n;
+  }
+
+  // 4. Định dạng 1 dấu chấm hoặc phẩy với 3 chữ số hàng nghìn (1.000 hoặc 500.000)
+  if (/^[-+]?\d{1,3}[.,]\d{3}$/.test(numStr)) {
+    const n = Number(numStr.replace(/[.,]/, ''));
+    return isNaN(n) ? null : isPercent ? n / 100 : n;
+  }
+
+  return null;
+}
+
+/**
+ * Chuẩn hóa chuỗi ngày tháng sang dạng chuẩn YYYY-MM-DD để so sánh tương đương.
+ * Hỗ trợ DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD, YYYY/MM/DD, có thể kèm giờ.
+ */
+export function normalizeDateString(raw: unknown): string {
+  if (!raw || typeof raw !== 'string') return '';
+  const s = raw.trim().split(/\s+/)[0] || '';
+  const m1 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m1) {
+    const d = m1[1].padStart(2, '0');
+    const m = m1[2].padStart(2, '0');
+    const y = m1[3];
+    return `${y}-${m}-${d}`;
+  }
+  const m2 = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (m2) {
+    const y = m2[1];
+    const m = m2[2].padStart(2, '0');
+    const d = m2[3].padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  return s;
+}
+
+/**
+ * Chuẩn hóa quyết định duyệt Brand (Yes / No / Cân nhắc)
+ */
+export function normalizeDecisionString(raw: unknown): string {
+  if (!raw || typeof raw !== 'string') return '';
+  const s = raw.trim().toLowerCase();
+  if (/^(yes|duyệt|duyet|đồng ý|dong y|ok|approve|approved|1|true|chọn|chon)$/i.test(s)) return 'YES';
+  if (/^(no|từ chối|tu choi|loại|loai|reject|rejected|0|false|không|khong)$/i.test(s)) return 'NO';
+  if (/^(cân nhắc|can nhac|pending|xem xét|xem xet|considering|hold)$/i.test(s)) return 'CONSIDERING';
+  return s;
+}
+
+/**
+ * Kiểm tra xem 2 giá trị ô giữa Google Sheet và Web Admin có tương đương ngữ nghĩa hay không.
+ * Ngăn chặn tuyệt đối tình trạng báo lệch ảo (false-positive mismatch) khi bản chất dữ liệu giống nhau:
+ * - Số tiền / Follower / Chỉ số định dạng hàng nghìn: '4.643.973' === '4643973', '48.000.000' === '48000000'
+ * - Ô trống / Ký tự placeholder: '' === '—' === '-' === 'Chưa có' === 'null' === 'undefined'
+ * - ID kênh / Handle TikTok: '@quynhalee' === 'quynhalee' === 'https://www.tiktok.com/@quynhalee'
+ * - Ngày tháng: '25/10/2026' === '2026-10-25'
+ * - Quyết định duyệt: 'Yes' === 'Duyệt' === 'Đã duyệt'
+ */
+export function isSheetValueEqual(oldVal: unknown, newVal: unknown, colName?: string): boolean {
+  const sOld = String(oldVal ?? '').trim();
+  const sNew = String(newVal ?? '').trim();
+
+  // 1. Trùng khớp chuỗi trực tiếp
+  if (sOld === sNew) return true;
+
+  // 2. Cả hai cùng là rỗng hoặc ký hiệu placeholder
+  const isOldEmpty = !sOld || /^(—|-|chưa có|chua co|null|undefined|n\/a|none|\(trống\)|\(trong\))$/i.test(sOld);
+  const isNewEmpty = !sNew || /^(—|-|chưa có|chua co|null|undefined|n\/a|none|\(trống\)|\(trong\))$/i.test(sNew);
+  if (isOldEmpty && isNewEmpty) return true;
+  if (isOldEmpty !== isNewEmpty) {
+    const nonEmp = isOldEmpty ? sNew : sOld;
+    if (nonEmp === '0' || nonEmp === '0đ' || nonEmp === '0 ₫') return true;
+    return false;
+  }
+
+  // 3. Chuẩn hóa ID kênh / Link kênh TikTok
+  const isChannelCol = colName ? /id kênh|id kenh|tên kênh|link kênh|koc|handle/i.test(colName) : false;
+  if (isChannelCol) {
+    const cleanOld = keyOf(sOld);
+    const cleanNew = keyOf(sNew);
+    if (cleanOld && cleanNew && cleanOld === cleanNew) return true;
+  }
+
+  // 4. So sánh số (Follower, Giá net, Chi phí, Doanh số, GMV, AOV, GPM, View, Tỉ trọng...)
+  const numOld = tryParseSheetNumber(sOld);
+  const numNew = tryParseSheetNumber(sNew);
+
+  if (numOld !== null && numNew !== null) {
+    if (Math.abs(numOld - numNew) < 0.0001) return true;
+    if (Math.abs(numOld * 100 - numNew) < 0.0001 || Math.abs(numOld - numNew * 100) < 0.0001) return true;
+  } else {
+    const isNumericCol = colName
+      ? /follower|giá|chi phí|thù lao|net|cost|phí|doanh số|gmv|aov|gpm|view|cpv|tỉ trọng|tỷ lệ|số món|đơn hàng|roi|ngân sách|budget/i.test(
+          colName
+        )
+      : false;
+    if (isNumericCol) {
+      const digitsOld = sOld.replace(/[^\d-]/g, '');
+      const digitsNew = sNew.replace(/[^\d-]/g, '');
+      if (digitsOld && digitsNew && digitsOld === digitsNew) return true;
+    }
+  }
+
+  // 5. So sánh Ngày tháng (DD/MM/YYYY vs YYYY-MM-DD)
+  const isDateCol = colName ? /ngày|date|thời gian/i.test(colName) : false;
+  if (isDateCol || /^\d{1,4}[\/\-]\d{1,2}[\/\-]\d{1,4}/.test(sOld)) {
+    const normDateOld = normalizeDateString(sOld);
+    const normDateNew = normalizeDateString(sNew);
+    if (normDateOld && normDateNew && normDateOld === normDateNew) return true;
+  }
+
+  // 6. So sánh Trạng thái / Quyết định duyệt (Yes/No/Cân nhắc)
+  const isDecisionCol = colName ? /duyệt|chọn|decision|status|trạng thái/i.test(colName) : false;
+  if (isDecisionCol) {
+    const normDecOld = normalizeDecisionString(sOld);
+    const normDecNew = normalizeDecisionString(sNew);
+    if (normDecOld && normDecNew && normDecOld === normDecNew) return true;
+  }
+
+  // 7. Chuẩn hóa chuỗi văn bản: NFC, khoảng trắng thừa
+  const normTextOld = sOld.normalize('NFC').replace(/\s+/g, ' ').toLowerCase();
+  const normTextNew = sNew.normalize('NFC').replace(/\s+/g, ' ').toLowerCase();
+  if (normTextOld === normTextNew) return true;
+
+  return false;
+}
+
 function analyzeFieldDiff(
   colName: string,
   colLetter: string,
@@ -300,9 +524,19 @@ function analyzeFieldDiff(
   newVal: string
 ): PushFieldChange {
   let diffKind: PushFieldChange['diffKind'] = 'TEXT';
+  let diffSummary: string | undefined = undefined;
   const lowerCol = colName.toLowerCase();
   if (/giá|chi phí|thù lao|net|cost/i.test(lowerCol)) {
     diffKind = 'PRICE';
+    const nOld = tryParseSheetNumber(oldVal);
+    const nNew = tryParseSheetNumber(newVal);
+    if (nOld !== null && nNew !== null) {
+      const delta = nNew - nOld;
+      diffSummary =
+        delta > 0
+          ? `+${new Intl.NumberFormat('vi-VN').format(delta)}đ`
+          : `${new Intl.NumberFormat('vi-VN').format(delta)}đ`;
+    }
   } else if (/ngày|date|tháng/i.test(lowerCol)) {
     diffKind = 'DATE';
   } else if (/duyệt|chọn|decision/i.test(lowerCol)) {
@@ -319,6 +553,7 @@ function analyzeFieldDiff(
     sheetValue: oldVal || '—',
     appValue: newVal,
     diffKind,
+    diffSummary,
   };
 }
 
@@ -446,8 +681,9 @@ export async function appendNewRows(opts: {
   rows: (string | number)[][];
   keyColumn: string;
   dryRun?: boolean;
+  forceFresh?: boolean;
 }): Promise<AppendResult> {
-  const { spreadsheetId, sheetGid, keyColumn, dryRun = false } = opts;
+  const { spreadsheetId, sheetGid, keyColumn, dryRun = false, forceFresh = false } = opts;
   // CCCD / tài khoản ngân hàng không bao giờ lên Sheet của Brand (ẩn cột vẫn mở lại hoặc tải file được)
   const keptIdx = opts.columns.map((c, i) => (BRAND_SHEET_BLOCKED_TOKENS.has(normHeaderToken(c)) ? -1 : i)).filter(i => i >= 0);
   const columns = keptIdx.map(i => opts.columns[i]);
@@ -462,17 +698,7 @@ export async function appendNewRows(opts: {
   const dotIdx = columns.findIndex(c => normHeaderToken(c) === 'dot');
   const nameIdx = columns.findIndex(c => /tên kênh|tên người ảnh hưởng/i.test(c));
 
-  const meta = (await sheetsFetch(
-    `${spreadsheetId}?fields=sheets.properties(sheetId,title,gridProperties)`
-  )) as {
-    sheets?: {
-      properties: {
-        sheetId: number;
-        title: string;
-        gridProperties?: { rowCount?: number; columnCount?: number };
-      };
-    }[];
-  };
+  const meta = await getSpreadsheetMeta(spreadsheetId, forceFresh);
   let targetSheetProp = (meta.sheets || []).find(s => s.properties.title === tab)?.properties;
   if (!targetSheetProp && sheetGid !== undefined && sheetGid !== null) {
     const byGid = (meta.sheets || []).find(s => s.properties.sheetId === sheetGid)?.properties;
@@ -498,13 +724,31 @@ export async function appendNewRows(opts: {
       }[];
     };
     targetSheetProp = addRes.replies?.[0]?.addSheet?.properties;
+    invalidateSpreadsheetCache(spreadsheetId);
   }
 
-  const range = encodeURIComponent(`${quoteTab(tab)}!A1:ZZ`);
-  const current = exists
-    ? ((await sheetsFetch(`${spreadsheetId}/values/${range}`)) as { values?: string[][] })
-    : { values: [] };
-  const values = current.values || [];
+  // Tối ưu phạm vi cột đọc từ Sheet: chỉ quét đủ số cột dữ liệu (+ cột ghi chú của Brand), tối đa 90 cột thay vì quét toàn bộ 702 cột (ZZ)
+  const currentSheetColCount = targetSheetProp?.gridProperties?.columnCount ?? 65;
+  const optimalColLimit = Math.min(Math.max(columns.length + 12, currentSheetColCount), 90);
+  const endColLetter = colLetter(optimalColLimit - 1);
+  const range = encodeURIComponent(`${quoteTab(tab)}!A1:${endColLetter}`);
+
+  const cacheKey = `${spreadsheetId}::${normHeaderToken(tab)}`;
+  let values: string[][] = [];
+
+  if (exists) {
+    const now = Date.now();
+    const cached = !forceFresh && dryRun ? tabValuesCache.get(cacheKey) : null;
+    if (cached && now - cached.cachedAt < TAB_VALUES_CACHE_TTL_MS) {
+      values = cached.values;
+    } else {
+      const current = (await sheetsFetch(`${spreadsheetId}/values/${range}`)) as { values?: string[][] };
+      values = current.values || [];
+      if (dryRun) {
+        tabValuesCache.set(cacheKey, { values, cachedAt: now });
+      }
+    }
+  }
 
   let headerRowIdx = 0;
   for (let idx = 0; idx < Math.min(15, values.length); idx++) {
@@ -653,23 +897,37 @@ export async function appendNewRows(opts: {
 
     let rowTouched = false;
     const fieldChanges: PushFieldChange[] = [];
+    const visitedDstIdx = new Set<number>();
     for (const colName of UPDATABLE_COLUMNS) {
       const targetNorm = normHeaderToken(colName);
       const srcIdx = columns.findIndex(c => normHeaderToken(c) === targetNorm);
       const dstIdx = findHeaderIndex(colName);
       if (srcIdx < 0 || dstIdx < 0) continue;
+      if (visitedDstIdx.has(dstIdx)) continue;
+      visitedDstIdx.add(dstIdx);
+
       const newVal = String(r[srcIdx] ?? '').trim();
       const oldVal = String(match.rowVals[dstIdx] ?? '').trim();
-      if (newVal && newVal !== oldVal) {
+
+      // Cột kỹ thuật Row ID: nếu trên Sheet chưa có (oldVal rỗng) và App có mã, ghi lên Sheet để neo cố định dòng
+      if (targetNorm === normHeaderToken(ROW_ID_COLUMN_HEADER)) {
+        if (!oldVal && newVal) {
+          updateRequests.push({
+            range: `${quoteTab(tab)}!${colLetter(dstIdx)}${match.rowNum}`,
+            values: [[r[srcIdx]]],
+          });
+        }
+        continue;
+      }
+
+      // So sánh tương đương ngữ nghĩa (bỏ qua khác biệt về định dạng số dấu chấm/phẩy, ký hiệu tiền tệ, khoảng trắng)
+      if (newVal && !isSheetValueEqual(oldVal, newVal, colName)) {
         updateRequests.push({
           range: `${quoteTab(tab)}!${colLetter(dstIdx)}${match.rowNum}`,
           values: [[r[srcIdx]]],
         });
-        // Không đưa cột kỹ thuật Row ID vào danh sách thay đổi hiển thị nếu chỉ là gán mã lần đầu, trừ khi dòng không có thay đổi nào khác
-        if (targetNorm !== normHeaderToken(ROW_ID_COLUMN_HEADER)) {
-          fieldChanges.push(analyzeFieldDiff(colName, colLetter(dstIdx), oldVal, newVal));
-          rowTouched = true;
-        }
+        fieldChanges.push(analyzeFieldDiff(colName, colLetter(dstIdx), oldVal, newVal));
+        rowTouched = true;
       }
     }
     if (rowTouched) {
@@ -917,6 +1175,10 @@ export async function appendNewRows(opts: {
     }
   }
 
+  if (!dryRun) {
+    invalidateSpreadsheetCache(spreadsheetId);
+  }
+
   return {
     added: fresh.length,
     skipped: rows.length - fresh.length - updatedCount,
@@ -940,25 +1202,15 @@ export interface SpreadsheetTabDetail {
 }
 
 /** Lấy danh sách tên và trạng thái ẩn/hiện của các Tab (Sheet) hiện có trong một file Google Spreadsheet. */
-export async function listSpreadsheetTabs(spreadsheetId: string): Promise<{
+export async function listSpreadsheetTabs(
+  spreadsheetId: string,
+  forceFresh = false
+): Promise<{
   spreadsheetTitle: string;
   tabs: string[];
   tabsDetail: SpreadsheetTabDetail[];
 }> {
-  const meta = (await sheetsFetch(
-    `${spreadsheetId}?fields=properties.title,sheets.properties(sheetId,title,hidden,index,gridProperties)`
-  )) as {
-    properties?: { title?: string };
-    sheets?: {
-      properties?: {
-        sheetId?: number;
-        title?: string;
-        hidden?: boolean;
-        index?: number;
-        gridProperties?: { rowCount?: number; columnCount?: number };
-      };
-    }[];
-  };
+  const meta = await getSpreadsheetMeta(spreadsheetId, forceFresh);
   const tabsDetail: SpreadsheetTabDetail[] = (meta.sheets || [])
     .map((s, idx) => ({
       sheetId: s.properties?.sheetId ?? idx,
@@ -981,30 +1233,51 @@ export async function listSpreadsheetTabs(spreadsheetId: string): Promise<{
  * Đọc toàn bộ một tab: tự động dò dòng tiêu đề cột trong 10 dòng đầu tiên.
  * Trả về mảng đối tượng theo tên cột (bao gồm cả cột ẩn `Mã dòng (Row ID)` nếu có).
  */
-export async function readTab(opts: { spreadsheetId: string; tab: string; sheetGid?: number | null }): Promise<{ header: string[]; rows: Record<string, string>[] }> {
-  const { spreadsheetId, sheetGid } = opts;
+export async function readTab(opts: {
+  spreadsheetId: string;
+  tab: string;
+  sheetGid?: number | null;
+  forceFresh?: boolean;
+}): Promise<{ header: string[]; rows: Record<string, string>[] }> {
+  const { spreadsheetId, sheetGid, forceFresh = false } = opts;
   let tab = opts.tab;
   if (!tab.trim() || tab.length > 100) throw new GoogleSheetsError('Tên tab không hợp lệ.', 'INVALID', 400);
-  const meta = (await sheetsFetch(`${spreadsheetId}?fields=sheets.properties(sheetId,title)`)) as {
-    sheets?: { properties: { sheetId?: number; title: string } }[];
-  };
+  const meta = await getSpreadsheetMeta(spreadsheetId, forceFresh);
   const sheetsList = meta.sheets || [];
-  if (!sheetsList.some(s => s.properties.title === tab)) {
+  let targetSheet = sheetsList.find(s => s.properties.title === tab);
+  if (!targetSheet) {
     const byGid =
       sheetGid !== undefined && sheetGid !== null
         ? sheetsList.find(s => s.properties.sheetId === sheetGid)
         : undefined;
     if (byGid?.properties?.title) {
+      targetSheet = byGid;
       tab = byGid.properties.title;
     } else if (sheetsList.length === 1 && sheetsList[0].properties.title) {
+      targetSheet = sheetsList[0];
       tab = sheetsList[0].properties.title;
     } else {
       throw new GoogleSheetsError(`Sheet chưa có tab "${tab}".`, 'NOT_FOUND', 404);
     }
   }
-  const range = encodeURIComponent(`${quoteTab(tab)}!A1:ZZ`);
-  const res = (await sheetsFetch(`${spreadsheetId}/values/${range}`)) as { values?: string[][] };
-  const values = res.values || [];
+
+  // Bounded scan: quét theo số cột thực tế của Sheet (+ biên độ an toàn), tối đa 90 cột thay vì quét 702 cột (ZZ)
+  const colCount = Math.min(Math.max(70, targetSheet?.properties?.gridProperties?.columnCount || 70), 90);
+  const endColLetter = colLetter(colCount - 1);
+  const range = encodeURIComponent(`${quoteTab(tab)}!A1:${endColLetter}`);
+
+  const cacheKey = `${spreadsheetId}::${normHeaderToken(tab)}`;
+  const now = Date.now();
+  let values: string[][] = [];
+  const cached = !forceFresh ? tabValuesCache.get(cacheKey) : null;
+  if (cached && now - cached.cachedAt < TAB_VALUES_CACHE_TTL_MS) {
+    values = cached.values;
+  } else {
+    const res = (await sheetsFetch(`${spreadsheetId}/values/${range}`)) as { values?: string[][] };
+    values = res.values || [];
+    tabValuesCache.set(cacheKey, { values, cachedAt: now });
+  }
+
   if (values.length === 0) return { header: [], rows: [] };
 
   let headerRowIdx = 0;
@@ -1227,8 +1500,10 @@ export async function configureSpreadsheetTemplate(opts: {
     const sheetId = targetSheet?.properties?.sheetId;
     const sheetTitle = (targetSheet?.properties?.title || resolvedTabName).trim();
     if (targetSheet && sheetId !== undefined && sheetTitle) {
+      const currentColCount = targetSheet.properties?.gridProperties?.columnCount ?? 65;
+      const scanCols = Math.min(Math.max(65, currentColCount), 90);
       const range = encodeURIComponent(
-        `${quoteTab(sheetTitle)}!A1:ZZ${hasMonthRowAction ? 2000 : 20}`
+        `${quoteTab(sheetTitle)}!A1:${colLetter(scanCols - 1)}${hasMonthRowAction ? 2000 : 20}`
       );
       const res = (await sheetsFetch(`${spreadsheetId}/values/${range}`)) as { values?: string[][] };
       const values = res.values || [];
@@ -1740,6 +2015,7 @@ export async function configureSpreadsheetTemplate(opts: {
       method: 'POST',
       body: JSON.stringify({ requests }),
     });
+    invalidateSpreadsheetCache(spreadsheetId);
   }
 
   const updatedMeta = await listSpreadsheetTabs(spreadsheetId);

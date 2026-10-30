@@ -13,6 +13,9 @@ import { Button, Field, Input, Modal, Panel, Person, Segmented, Select, Status, 
 import { formatNumber } from '../../lib/format';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
+import { GoogleDocsReviewPanel } from './GoogleDocsReviewPanel';
+import { extractGoogleDocId } from '../../lib/contracts/googleDocsService';
+import type { GoogleDocsReviewRouting, GoogleDocCommentItem } from '../../lib/contracts/googleDocsTypes';
 import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
 import {
@@ -73,6 +76,12 @@ export interface ContractFormPayload {
   customFileBlocks?: DocBlock[];
   customFileParagraphs?: string[];
   acceptanceScreenshots?: AcceptanceScreenshotItem[];
+  googleDocsUrl?: string;
+  googleDocsId?: string;
+  googleDocsSource?: 'TEMPLATE_AMENDED' | 'KOC_CUSTOM_DOC';
+  googleDocsReviewRouting?: GoogleDocsReviewRouting;
+  googleDocsComments?: GoogleDocCommentItem[];
+  googleDocsAuditTrail?: import('../../lib/contracts/googleDocsTypes').GoogleDocsAuditTrail;
 }
 
 const findKoc = (kocs: KocItem[], deal?: BookingDealItem) =>
@@ -319,6 +328,23 @@ export function ContractForm({
       : loadSavedScreenshotsForDeal(initialDeal, initialParent?.kocId)
   );
 
+  const [sourceMode, setSourceMode] = useState<'UPBASE_TEMPLATE' | 'GOOGLE_DOCS' | 'KOC_DOCX'>(() => {
+    if (record?.googleDocsUrl) return 'GOOGLE_DOCS';
+    if (record?.isKocOwnForm ?? init?.isKocOwnForm) return 'KOC_DOCX';
+    return 'UPBASE_TEMPLATE';
+  });
+  const [googleDocsUrl, setGoogleDocsUrl] = useState<string>(record?.googleDocsUrl || '');
+  const [googleDocsSource, setGoogleDocsSource] = useState<'TEMPLATE_AMENDED' | 'KOC_CUSTOM_DOC'>(
+    record?.googleDocsSource || 'TEMPLATE_AMENDED'
+  );
+  const [googleDocsRouting, setGoogleDocsRouting] = useState<GoogleDocsReviewRouting | null>(
+    record?.googleDocsReviewRouting || null
+  );
+  const [googleDocsComments, setGoogleDocsComments] = useState<GoogleDocCommentItem[]>(
+    record?.googleDocsComments || []
+  );
+  const [inspectingGDocs, setInspectingGDocs] = useState<boolean>(false);
+  const [gdocsInspectError, setGdocsInspectError] = useState<string>('');
   const [isKocOwnForm, setIsKocOwnForm] = useState<boolean>(record?.isKocOwnForm ?? init?.isKocOwnForm ?? false);
   const [customFile, setCustomFile] = useState<{
     filename: string;
@@ -1392,6 +1418,11 @@ export function ContractForm({
           customFileBlocks: isKocOwnForm ? customFile?.blocks : undefined,
           customFileParagraphs: isKocOwnForm ? customFile?.paragraphs : undefined,
           acceptanceScreenshots,
+          googleDocsUrl: sourceMode === 'GOOGLE_DOCS' ? googleDocsUrl.trim() : undefined,
+          googleDocsId: sourceMode === 'GOOGLE_DOCS' ? (extractGoogleDocId(googleDocsUrl) || undefined) : undefined,
+          googleDocsSource: sourceMode === 'GOOGLE_DOCS' ? googleDocsSource : undefined,
+          googleDocsReviewRouting: sourceMode === 'GOOGLE_DOCS' ? (googleDocsRouting || undefined) : undefined,
+          googleDocsComments: sourceMode === 'GOOGLE_DOCS' ? googleDocsComments : undefined,
         });
       }}
     >

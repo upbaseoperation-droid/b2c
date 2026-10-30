@@ -217,8 +217,10 @@ export async function POST(request: NextRequest) {
       header?: string[];
       rows?: (PushRow | (string | number)[])[];
       dryRun?: boolean;
+      refresh?: boolean;
     };
     const dryRun = body.dryRun === true;
+    const forceFresh = dryRun ? body.refresh === true : true;
     const planId = body.planId || '';
     const spreadsheetId = parseSpreadsheetId(body.sheetUrl || '');
     const columns = Array.isArray(body.columns) ? body.columns : Array.isArray(body.header) ? body.header : null;
@@ -245,6 +247,7 @@ export async function POST(request: NextRequest) {
       rows: cellRows,
       keyColumn: resolvedKeyCol,
       dryRun,
+      forceFresh,
     });
 
     // Đưa KOC vừa gửi vào bảng điều phối listing (Chờ Brand duyệt) — chỉ thực hiện khi ghi thật (!dryRun)

@@ -14,6 +14,9 @@ import type { ActionMenuItem, StatusTone } from '../ui';
 import { formatDate } from '../../lib/format';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
+import { GoogleDocsReviewPanel } from './GoogleDocsReviewPanel';
+import { GoogleDocsFinanceApproveDialog } from './GoogleDocsFinanceApproveDialog';
+import type { GoogleDocCommentItem } from '../../lib/contracts/googleDocsTypes';
 import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
 import {
@@ -89,6 +92,9 @@ export function ContractDetail({
   const editable = isOwner && record.approval !== 'IN_REVIEW' && !activeSigning;
   const canSubmit = editable && ['DRAFT', 'CHANGES', 'REJECTED'].includes(record.approval);
   const myStep = record.approval === 'IN_REVIEW' ? record.steps.find(s => s.reviewerId === me.id && s.status === 'PENDING') : undefined;
+  const legalStep = record.steps.find(s => s.role === 'LEGAL');
+  const financeStep = record.steps.find(s => s.role === 'FINANCE');
+  const isLegalDone = !legalStep || legalStep.status === 'APPROVED';
   const coordinator = me.roles.includes('SIGN_COORDINATOR');
   const canStartSigning = coordinator && record.approval === 'APPROVED' && !activeSigning;
   const demo = data.demoActors.length > 0;
@@ -105,7 +111,7 @@ export function ContractDetail({
       (linkedDeal?.kocChannelId && k.channelId.replace(/^@/, '').toLowerCase() === linkedDeal.kocChannelId.replace(/^@/, '').toLowerCase()),
   );
 
-  const [dialog, setDialog] = useState<null | 'submit' | 'approve' | 'changes' | 'reject' | 'withdraw' | 'link' | 'request_sign'>(null);
+  const [dialog, setDialog] = useState<null | 'submit' | 'approve' | 'changes' | 'reject' | 'withdraw' | 'link' | 'request_sign' | 'google_docs_finance'>(null);
   const enrichedTemplate = template ? enrichTemplateWithSignFlow(template) : undefined;
   const stableContractCode = record.contractSystem?.contractCode || signing?.contractCode || buildStableContractCode(record);
   const templateSignTags = record.contractSystem?.templateSnapshot?.signTags || enrichedTemplate?.signTags || [...DEFAULT_SIGN_TAGS];
@@ -145,8 +151,35 @@ export function ContractDetail({
     };
   }, [record.id, record.revision, selectedVersion]);
 
-  // Nút chính: việc tiếp theo của người đang xem.
-  const primary = canSubmit ? (
+  const canApproveGDocsFinance =
+    Boolean(record.googleDocsUrl) &&
+    (me.roles.includes('FINANCE') || me.roles.includes('LEAD')) &&
+    !record.signing.some(s => s.status === 'COMPLETED');
+
+  // Nút chính: việc tiếp theo của người đang xem (Pháp chế duyệt trước -> Kế toán duyệt & Đẩy WeSign).
+  const primary = myStep?.role === 'LEGAL' ? (
+    <Button variant="primary" icon={Scale} disabled={busy} onClick={() => setDialog('approve')}>
+      Pháp chế duyệt điều khoản
+    </Button>
+  ) : myStep?.role === 'FINANCE' && record.googleDocsUrl ? (
+    <Button
+      variant="primary"
+      icon={CheckCircle2}
+      disabled={busy || !isLegalDone}
+      onClick={() => setDialog('google_docs_finance')}
+    >
+      Kế toán duyệt &amp; Đẩy WeSign
+    </Button>
+  ) : canApproveGDocsFinance && record.approval !== 'APPROVED' ? (
+    <Button
+      variant="primary"
+      icon={CheckCircle2}
+      disabled={busy || !isLegalDone}
+      onClick={() => setDialog('google_docs_finance')}
+    >
+      Kế toán duyệt &amp; Đẩy WeSign
+    </Button>
+  ) : canSubmit ? (
     <Button variant="primary" icon={FileCheck2} disabled={busy} onClick={() => setDialog('submit')}>Gửi duyệt</Button>
   ) : myStep ? (
     <Button variant="primary" disabled={busy} onClick={() => setDialog('approve')}>Duyệt</Button>
@@ -186,7 +219,40 @@ export function ContractDetail({
       : record.versions.find(v => v.version === selectedVersion)?.acceptanceScreenshots || [];
 
   const isSowDoc = record.templateId.endsWith('-SOW');
-  const [workspaceTab, setWorkspaceTab] = useState<'DOCUMENT' | 'APPROVAL'>('DOCUMENT');
+  const [workspaceTab, setWorkspaceTab] = useState<'DOCUMENT' | 'APPROVAL' | 'GOOGLE_DOCS'>(
+    record.googleDocsUrl ? 'GOOGLE_DOCS' : 'DOCUMENT'
+  );
+
+  const [syncingGDocsComments, setSyncingGDocsComments] = useState(false);
+  const handleSyncGoogleDocsComments = async () => {
+    setSyncingGDocsComments(true);
+    try {
+      const res = await contractApi<{ success: boolean; comments: GoogleDocCommentItem[]; record: ContractRecord }>(
+        '/api/contracts/google-docs/sync-comments',
+        { contractId: record.id, url: record.googleDocsUrl }
+      );
+      await onAction({ action: 'SYNC_GOOGLE_DOCS', note: `Đã đồng bộ ${res.comments.length} bình luận từ Google Docs` }, 'Đã đồng bộ bình luận từ Google Docs');
+    } catch {
+      // Không gián đoạn
+    } finally {
+      setSyncingGDocsComments(false);
+    }
+  };
+
+  const handleApproveAndPushWeSign = async (dataPayload: { note: string; partyAEmail?: string; partyBEmail?: string }) => {
+    await contractApi<{ success: boolean; record: ContractRecord }>(
+      '/api/contracts/google-docs/approve-and-push-wesign',
+      {
+        contractId: record.id,
+        note: dataPayload.note,
+        partyAEmail: dataPayload.partyAEmail,
+        partyBEmail: dataPayload.partyBEmail,
+      }
+    );
+    setDialog(null);
+    await onAction({ action: 'SYNC_WESIGN' }, 'Kế toán đã duyệt và đẩy sang WeSign thành công');
+  };
+
 
   // Tìm bộ 3 hồ sơ liên kết (HĐNT -> Phụ lục SOW -> BBNT) để bấm chuyển nhanh 1 chạm
   const linkedFrameworkRecord = isFrameworkWithSow
@@ -897,7 +963,7 @@ export function ContractDetail({
       <div className="grid gap-6 items-start lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid gap-4 min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Segmented<'DOCUMENT' | 'APPROVAL'>
+            <Segmented<'DOCUMENT' | 'APPROVAL' | 'GOOGLE_DOCS'>
               value={workspaceTab}
               onChange={setWorkspaceTab}
               items={[
@@ -906,6 +972,14 @@ export function ContractDetail({
                   key: 'APPROVAL',
                   label: `2. Tiến trình duyệt nội bộ & Quy chuẩn pháp chế (${record.steps.length} bước${current?.findings.length ? ` · ${current.findings.length} lưu ý` : ''})`,
                 },
+                ...(record.googleDocsUrl
+                  ? [
+                      {
+                        key: 'GOOGLE_DOCS' as const,
+                        label: `3. Hồ sơ sửa đổi Google Docs (${record.googleDocsReviewRouting?.clauseDiffs.length || 0} điều khoản)`,
+                      },
+                    ]
+                  : []),
               ]}
             />
             {canCheck && (
@@ -914,6 +988,29 @@ export function ContractDetail({
               </Button>
             )}
           </div>
+
+          {workspaceTab === 'GOOGLE_DOCS' && record.googleDocsUrl && (
+            <GoogleDocsReviewPanel
+              url={record.googleDocsUrl}
+              docId={record.googleDocsId}
+              sourceType={record.googleDocsSource || 'TEMPLATE_AMENDED'}
+              routing={record.googleDocsReviewRouting}
+              comments={record.googleDocsComments || []}
+              auditTrail={record.googleDocsAuditTrail}
+              onSyncComments={handleSyncGoogleDocsComments}
+              syncingComments={syncingGDocsComments}
+              canApproveWeSign={canApproveGDocsFinance}
+              onApproveAndPushWeSign={() => setDialog('google_docs_finance')}
+              isFinanceRole={me.roles.includes('FINANCE')}
+              isLegalRole={me.roles.includes('LEGAL')}
+              isLeadRole={me.roles.includes('LEAD')}
+              approvalStatus={record.approval}
+              legalStep={legalStep}
+              financeStep={financeStep}
+              canLegalApprove={Boolean(myStep?.role === 'LEGAL' && myStep.status === 'PENDING')}
+              onLegalApprove={() => setDialog('approve')}
+            />
+          )}
 
           {workspaceTab === 'DOCUMENT' ? (
             <section className="grid gap-3">

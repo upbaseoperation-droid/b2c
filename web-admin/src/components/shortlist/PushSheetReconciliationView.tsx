@@ -519,7 +519,9 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
                               <td className="py-1.5 px-2.5">
                                 <div className="flex flex-wrap items-center gap-1.5">
                                   <span className="inline-block px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold font-mono text-3xs">
-                                    {fc.appValue || '(Trống)'}
+                                    {fc.diffKind === 'PRICE' && !isNaN(Number(fc.appValue)) && Number(fc.appValue) > 0
+                                      ? `${new Intl.NumberFormat('vi-VN').format(Number(fc.appValue))}đ`
+                                      : fc.appValue || '(Trống)'}
                                   </span>
                                   {fc.diffSummary && (
                                     <span className="text-3xs font-semibold px-1 rounded bg-warning-soft text-warning-strong">

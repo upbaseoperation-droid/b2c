@@ -44,7 +44,7 @@ type Screen =
   | { mode: 'catalog' }
   | { mode: 'detail'; id: string }
   | { mode: 'form'; editId?: string; init?: ContractFormInit };
-type Filter = 'ALL' | 'MINE' | 'REVIEW' | 'SIGN' | 'DONE' | 'NEED_ACCEPTANCE';
+type Filter = 'ALL' | 'MINE' | 'REVIEW' | 'GOOGLE_DOCS' | 'SIGN' | 'DONE' | 'NEED_ACCEPTANCE';
 
 export function ContractManagementView({
   deals = [],
@@ -300,6 +300,7 @@ export function ContractManagementView({
     ALL: () => true,
     MINE: r => r.ownerId === me?.id,
     REVIEW: waitingMe,
+    GOOGLE_DOCS: (r: ContractRecord) => Boolean(r.googleDocsUrl || r.hasCustomTerms),
     SIGN: awaitingSign,
     DONE: done,
     NEED_ACCEPTANCE: needAcceptance,
@@ -314,12 +315,13 @@ export function ContractManagementView({
   const [pagedKey, setPagedKey] = useState('');
   if (`${search}|${filter}` !== pagedKey) { setPagedKey(`${search}|${filter}`); setPage(1); }
 
-  const chips = (['ALL', 'MINE', 'REVIEW', 'SIGN', 'DONE', 'NEED_ACCEPTANCE'] as Filter[]).map(key => ({
+  const chips = (['ALL', 'MINE', 'REVIEW', 'GOOGLE_DOCS', 'SIGN', 'DONE', 'NEED_ACCEPTANCE'] as Filter[]).map(key => ({
     key,
     label: {
       ALL: 'Tất cả',
       MINE: 'Của tôi',
       REVIEW: 'Chờ tôi duyệt',
+      GOOGLE_DOCS: 'Google Docs / Sửa mẫu',
       SIGN: 'Chờ ký',
       DONE: 'Đã ký',
       NEED_ACCEPTANCE: 'Cần lập nghiệm thu',

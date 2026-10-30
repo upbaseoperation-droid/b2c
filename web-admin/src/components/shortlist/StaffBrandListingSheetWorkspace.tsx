@@ -2002,6 +2002,17 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   const [pushSheetTab, setPushSheetTab] = useState('');
   const [availableSheetTabs, setAvailableSheetTabs] = useState<string[]>([]);
   const [loadingSheetTabs, setLoadingSheetTabs] = useState(false);
+  const sheetTabsCacheRef = useRef<
+    Record<
+      string,
+      {
+        tabs: string[];
+        tabsDetail?: SheetTabDetailItem[];
+        matchedTabByGid?: string | null;
+      }
+    >
+  >({});
+  const pushAbortControllerRef = useRef<AbortController | null>(null);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushDiffReport, setPushDiffReport] = useState<PushSheetReconciliationReport | null>(null);
 
@@ -2107,10 +2118,20 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   const fetchTabsForSheetUrl = async (
     url: string,
     currentTab: string,
-    onPickTab: (tab: string) => void
+    onPickTab: (tab: string) => void,
+    forceReload = false
   ) => {
     const cleanUrl = url.trim();
     if (!cleanUrl) return;
+    if (!forceReload && sheetTabsCacheRef.current[cleanUrl]) {
+      const cached = sheetTabsCacheRef.current[cleanUrl];
+      setAvailableSheetTabs(cached.tabs);
+      if (cached.tabsDetail) setSheetTabsDetail(cached.tabsDetail);
+      if (cached.tabs.length > 0 && (!currentTab || !cached.tabs.includes(currentTab))) {
+        onPickTab(cached.matchedTabByGid || cached.tabs[0]);
+      }
+      return;
+    }
     setLoadingSheetTabs(true);
     try {
       let res = await fetch(
@@ -2143,6 +2164,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         }
       }
       if (res.ok && Array.isArray(data?.tabs)) {
+        sheetTabsCacheRef.current[cleanUrl] = {
+          tabs: data.tabs,
+          tabsDetail: data.tabsDetail,
+          matchedTabByGid: data.matchedTabByGid,
+        };
         setAvailableSheetTabs(data.tabs);
         if (Array.isArray(data.tabsDetail)) {
           setSheetTabsDetail(data.tabsDetail);
@@ -2197,7 +2223,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     overrideUrl?: string,
     overrideTab?: string,
     overrideScope?: 'SELECTED_ONLY' | 'ALL_ROWS',
-    overrideColMode?: 'BRAND_WORKING_32' | 'ALL_VISIBLE'
+    overrideColMode?: 'BRAND_WORKING_32' | 'ALL_VISIBLE',
+    forceRefresh = false
   ) => {
     const urlToUse = (overrideUrl ?? pushSheetUrl).trim();
     const tabToUse = (overrideTab ?? pushSheetTab).trim() || defaultGoogleSheetTab;
@@ -2219,6 +2246,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       return;
     }
 
+    if (pushAbortControllerRef.current) {
+      pushAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    pushAbortControllerRef.current = controller;
+
     setPushBusy(true);
     setPushDiffReport(null);
     try {
@@ -2231,11 +2264,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         columns,
         rows: matrixRows,
         dryRun: true,
+        refresh: forceRefresh,
       });
       let res = await fetch('/api/booking-list/push-sheet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: reqPayload,
+        signal: controller.signal,
       });
       let body = await res.json().catch(() => null);
       if (!res.ok && body?.code === 'NOT_CONFIGURED') {
@@ -2246,6 +2281,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: reqPayload,
+            signal: controller.signal,
           });
           body = await res.json().catch(() => null);
         } else {
@@ -2271,13 +2307,18 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         totalInSheet: body.totalInSheet || 0,
         diffs: Array.isArray(body.diffs) ? body.diffs : [],
       });
-    } catch (err) {
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return;
+      }
       onNotify?.(
         err instanceof Error ? err.message : 'Không kết nối được Google Sheet để đối soát.',
         'error'
       );
     } finally {
-      setPushBusy(false);
+      if (pushAbortControllerRef.current === controller) {
+        setPushBusy(false);
+      }
     }
   };
 
@@ -5265,7 +5306,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               variant="secondary"
               icon={RefreshCw}
               disabled={pushBusy || !pushSheetUrl.trim()}
-              onClick={() => void handleRunPushDiffPreview()}
+              onClick={() => void handleRunPushDiffPreview(undefined, undefined, undefined, undefined, true)}
             >
               {pushBusy ? 'Đang so sánh…' : '1. So sánh dữ liệu 2 bên'}
             </Button>
@@ -5310,7 +5351,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         pushSheetUrl,
                         pushSheetTab,
                         'SELECTED_ONLY',
-                        pushColMode
+                        pushColMode,
+                        false
                       );
                     }
                   }}
@@ -5340,7 +5382,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         pushSheetUrl,
                         pushSheetTab,
                         'ALL_ROWS',
-                        pushColMode
+                        pushColMode,
+                        false
                       );
                     }
                   }}
@@ -5374,7 +5417,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       pushSheetUrl,
                       pushSheetTab,
                       pushScope,
-                      nextMode
+                      nextMode,
+                      false
                     );
                   }
                 }}
