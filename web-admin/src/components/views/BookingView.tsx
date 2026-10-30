@@ -47,6 +47,7 @@ import { CreateKocModal } from '../CreateKocModal';
 import { MyPlanWorkspace } from '../MyPlanWorkspace';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
 import { LarkPaymentRequestModal } from '../booking/LarkPaymentRequestModal';
+import type { PaymentRequestType } from '../../lib/larkPaymentRequestEngine';
 import SampleTrackerView from './SampleTrackerView';
 import { ActionMenu, Avatar, Button, Chips, ConfirmDialog, DataTable, EmptyState, Field, FilterBar, Input, Modal, PageActions, Pagination, Panel, Person, Segmented, Select, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
 import type { StatusTone } from '../ui';
@@ -357,7 +358,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const [kocsPageSize, setKocsPageSize] = useState(20);
 
   // Filters for Booking Deals
-  const [dealsFilter, setDealsFilter] = useState<'ALL' | 'BRAND_PENDING' | 'BRAND_APPROVED' | 'BRAND_REJECTED' | 'WINNER_TOP20' | 'HAS_GMV' | 'BREAK_EVEN' | 'OVERDUE_SLA' | 'SAMPLE_PENDING' | 'ADS_CODE_PENDING'>('ALL');
+  const [dealsFilter, setDealsFilter] = useState<'ALL' | 'BRAND_PENDING' | 'BRAND_APPROVED' | 'BRAND_REJECTED' | 'WINNER_TOP20' | 'HAS_GMV' | 'BREAK_EVEN' | 'OVERDUE_SLA' | 'SAMPLE_PENDING' | 'ADS_CODE_PENDING' | 'ADVANCE_PENDING' | 'ADVANCE_PAID'>('ALL');
   const [dealPeriodScope, setDealPeriodScope] = useState<'CURRENT_PAID' | 'ALL_PAID' | 'FOC_ONLY' | 'ALL_ARCHIVE'>('CURRENT_PAID');
   const [selectedDealPicFilter, setSelectedDealPicFilter] = useState<string>('ALL');
   const [dealsSearch, setDealsSearch] = useState('');
@@ -410,6 +411,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     gmv30: number;
     status: BookingDealItem['status'];
     statusLabel: string;
+    advanceAmount: number;
     deliverables: DealDeliverableItem[];
     rightsTerms: DealRightsTermItem[];
   }>({
@@ -426,6 +428,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     tiktokVideoUrl: '',
     viewsCount: 0,
     gmv30: 0,
+    advanceAmount: 0,
     status: 'VIDEO_SUBMITTED',
     statusLabel: 'Video Đã Lên Sóng',
     deliverables: [],
@@ -517,6 +520,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const [inspectorInitialUrl, setInspectorInitialUrl] = useState<string>('');
   const [isPaymentRequestOpen, setIsPaymentRequestOpen] = useState(false);
   const [paymentRequestDeal, setPaymentRequestDeal] = useState<BookingDealItem | null>(null);
+  const [paymentRequestMode, setPaymentRequestMode] = useState<PaymentRequestType>('SETTLEMENT');
   const [handoffForm, setHandoffForm] = useState({
     sparkAdsCode: '',
     tiktokVideoUrl: '',
@@ -766,6 +770,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
     let winnerTop20 = 0;
     let samplePending = 0;
     let adsCodePending = 0;
+    let advancePending = 0;
+    let advancePaid = 0;
     let hasGmv = 0;
     let breakEven = 0;
     let paidCount = 0;
@@ -793,6 +799,10 @@ export const BookingView: React.FC<BookingViewProps> = ({
       if ((d.gmv30 || 0) > 0) hasGmv++;
       if ((d.roi || 0) >= 1) breakEven++;
       if ((d.totalValue || 0) > 0) paidCount++;
+      const hasAgreedAdvance = (d.totalValue || 0) > 0 && (d.advanceAmount || 0) > 0;
+      const isAdvPaid = d.status === 'ADVANCE_PAID' || Boolean(d.larkAdvanceApprovalCode);
+      if (hasAgreedAdvance && !isAdvPaid) advancePending++;
+      if (isAdvPaid) advancePaid++;
       totalCost += bookingDealCost(d);
       totalGmv += d.gmv30 || 0;
 
@@ -822,6 +832,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
       winnerTop20,
       samplePending,
       adsCodePending,
+      advancePending,
+      advancePaid,
       hasGmv,
       breakEven,
       byStage,
@@ -841,6 +853,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
       if (dealsFilter === 'OVERDUE_SLA' && !deal.isSlaWarning) return false;
       if (dealsFilter === 'SAMPLE_PENDING' && deal.sampleStatus === 'ĐÃ_NHẬN') return false;
       if (dealsFilter === 'ADS_CODE_PENDING' && deal.adsCodeStatus !== 'CHƯA_CẤP') return false;
+      if (dealsFilter === 'ADVANCE_PENDING' && !((deal.totalValue || 0) > 0 && (deal.advanceAmount || 0) > 0 && !deal.larkAdvanceApprovalCode && deal.status !== 'ADVANCE_PAID')) return false;
+      if (dealsFilter === 'ADVANCE_PAID' && !(deal.status === 'ADVANCE_PAID' || Boolean(deal.larkAdvanceApprovalCode))) return false;
       if (!q) return true;
       return (
         deal.dealCode.toLowerCase().includes(q) ||
@@ -1101,6 +1115,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       tiktokVideoUrl: deal.tiktokVideoUrl || deal.videoUrl || '',
       viewsCount: deal.viewsCount || 0,
       gmv30: deal.gmv30 || 0,
+      advanceAmount: deal.advanceAmount || 0,
       status: deal.status,
       statusLabel: deal.statusLabel,
       deliverables: deal.deliverables ? deal.deliverables.map(item => ({ ...item })) : [],
@@ -1189,7 +1204,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
       rightsTerms: resolvedRightsTerms.length > 0 ? resolvedRightsTerms : editingDeal.rightsTerms,
       droppedCostVnd: droppedCost,
       sequentialAcceptanceStage: nextSequentialStage,
-      finalAmount: Math.max(0, (editingDeal.totalValue || 0) - (editingDeal.advanceAmount || 0) - droppedCost),
+      advanceAmount: Number(editForm.advanceAmount) || 0,
+      finalAmount: Math.max(0, (editingDeal.totalValue || 0) - (Number(editForm.advanceAmount) || 0) - droppedCost),
     };
 
     applyDealUpdate(updatedDeal);
@@ -1350,14 +1366,30 @@ export const BookingView: React.FC<BookingViewProps> = ({
         ),
       },
       {
-        key: 'cost', header: 'Cát-xê & ĐNTT', align: 'right' as const, width: 120, render: (d: BookingDealItem) => (
-          <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
-            <span className="text-ink font-semibold font-mono">{formatVndShort(d.totalValue)}</span>
-            <span className="text-2xs text-ink-3 font-code">
-              {d.larkFinalApprovalCode || d.larkAdvanceApprovalCode || ((d.totalValue || 0) === 0 ? 'Đơn FOC (0đ)' : 'Chưa ĐNTT')}
-            </span>
-          </div>
-        ),
+        key: 'cost', header: 'Cát-xê & ĐNTT', align: 'right' as const, width: 140, render: (d: BookingDealItem) => {
+          const hasAdvance = (d.advanceAmount || 0) > 0;
+          const isAdvancePaid = d.status === 'ADVANCE_PAID' || Boolean(d.larkAdvanceApprovalCode);
+          const isFinalPaid = d.status === 'FINAL_PAID' || Boolean(d.larkFinalApprovalCode);
+          return (
+            <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
+              <span className="text-ink font-semibold font-mono">{formatVndShort(d.totalValue)}</span>
+              {hasAdvance && (
+                <span className={`text-2xs font-mono font-medium ${isAdvancePaid ? 'text-positive' : 'text-warning'}`}>
+                  {isAdvancePaid ? `Đã cọc ${formatVndShort(d.advanceAmount)}` : `Cọc ${formatVndShort(d.advanceAmount)}`}
+                </span>
+              )}
+              <span className="text-2xs text-ink-3 font-code truncate max-w-[130px]" title={d.larkFinalApprovalCode || d.larkAdvanceApprovalCode || ''}>
+                {isFinalPaid
+                  ? `Tất toán (${d.larkFinalApprovalCode || 'Lark'})`
+                  : d.larkAdvanceApprovalCode
+                  ? `Mã cọc: ${d.larkAdvanceApprovalCode}`
+                  : (d.totalValue || 0) === 0
+                  ? 'Đơn FOC (0đ)'
+                  : 'Chưa ĐNTT'}
+              </span>
+            </div>
+          );
+        },
       },
       {
         key: 'gmv_roi', header: 'GMV & ROI', align: 'right' as const, width: 110, render: (d: BookingDealItem) => (
@@ -1400,19 +1432,52 @@ export const BookingView: React.FC<BookingViewProps> = ({
               >
                 {d.contractAppendixStatus === 'ĐÃ_KÝ' ? 'HĐ' : 'Ký SOW'}
               </Button>
-              {(d.totalValue || 0) > 0 && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => {
-                    setPaymentRequestDeal(d);
-                    setIsPaymentRequestOpen(true);
-                  }}
-                  title="Tạo phiếu đề nghị thanh toán / tạm ứng trên Lark"
-                >
-                  ĐNTT
-                </Button>
-              )}
+              {(d.totalValue || 0) > 0 && (() => {
+                const hasAdvance = (d.advanceAmount || 0) > 0;
+                const isAdvancePaid = d.status === 'ADVANCE_PAID' || Boolean(d.larkAdvanceApprovalCode);
+                const isFinalPaid = d.status === 'FINAL_PAID' || Boolean(d.larkFinalApprovalCode);
+                const needsAdvance = hasAdvance && !isAdvancePaid;
+
+                if (isFinalPaid) {
+                  return (
+                    <span className="text-3xs font-semibold px-1.5 py-0.5 rounded bg-positive-soft text-positive border border-positive/30 shrink-0">
+                      Đã chi
+                    </span>
+                  );
+                }
+
+                if (needsAdvance) {
+                  return (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setPaymentRequestMode('ADVANCE');
+                        setPaymentRequestDeal(d);
+                        setIsPaymentRequestOpen(true);
+                      }}
+                      title={`Tạo phiếu đề nghị tạm ứng ${formatVndShort(d.advanceAmount)} trên Lark`}
+                    >
+                      Tạm ứng
+                    </Button>
+                  );
+                }
+
+                return (
+                  <Button
+                    size="sm"
+                    variant={isAdvancePaid ? 'primary' : 'secondary'}
+                    onClick={() => {
+                      setPaymentRequestMode(isAdvancePaid ? 'SETTLEMENT' : (d.tiktokVideoUrl ? 'SETTLEMENT' : 'ADVANCE'));
+                      setPaymentRequestDeal(d);
+                      setIsPaymentRequestOpen(true);
+                    }}
+                    title={isAdvancePaid ? 'Tạo phiếu tất toán phần còn lại sau tạm ứng' : 'Tạo phiếu đề nghị thanh toán'}
+                  >
+                    {isAdvancePaid ? 'Tất toán' : 'ĐNTT'}
+                  </Button>
+                );
+              })()}
             </div>
           );
         },
@@ -1700,6 +1765,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
                     { key: 'BRAND_REJECTED', label: 'Brand từ chối', count: dealFilterCounts.brandRejected },
                     { key: 'SAMPLE_PENDING', label: 'Chờ gửi/nhận mẫu', count: dealFilterCounts.samplePending },
                     { key: 'ADS_CODE_PENDING', label: 'Chưa mã Ads', count: dealFilterCounts.adsCodePending },
+                    { key: 'ADVANCE_PENDING', label: 'Chờ tạm ứng', count: dealFilterCounts.advancePending },
+                    { key: 'ADVANCE_PAID', label: 'Đã tạm ứng', count: dealFilterCounts.advancePaid },
                     { key: 'WINNER_TOP20', label: 'Top GMV', count: dealFilterCounts.winnerTop20 },
                     { key: 'HAS_GMV', label: 'Có GMV', count: dealFilterCounts.hasGmv },
                     { key: 'BREAK_EVEN', label: 'Hoàn vốn', count: dealFilterCounts.breakEven },
@@ -2039,18 +2106,52 @@ export const BookingView: React.FC<BookingViewProps> = ({
                                   >
                                     {d.contractAppendixStatus === 'ĐÃ_KÝ' ? 'HĐ' : 'Ký SOW'}
                                   </Button>
-                                  {(d.totalValue || 0) > 0 && (
-                                    <Button
-                                      size="sm"
-                                      variant="secondary"
-                                      onClick={() => {
-                                        setPaymentRequestDeal(d);
-                                        setIsPaymentRequestOpen(true);
-                                      }}
-                                    >
-                                      ĐNTT
-                                    </Button>
-                                  )}
+                                  {(d.totalValue || 0) > 0 && (() => {
+                                    const hasAdvance = (d.advanceAmount || 0) > 0;
+                                    const isAdvancePaid = d.status === 'ADVANCE_PAID' || Boolean(d.larkAdvanceApprovalCode);
+                                    const isFinalPaid = d.status === 'FINAL_PAID' || Boolean(d.larkFinalApprovalCode);
+                                    const needsAdvance = hasAdvance && !isAdvancePaid;
+
+                                    if (isFinalPaid) {
+                                      return (
+                                        <span className="text-3xs font-semibold px-1.5 py-0.5 rounded bg-positive-soft text-positive border border-positive/30 shrink-0">
+                                          Đã chi
+                                        </span>
+                                      );
+                                    }
+
+                                    if (needsAdvance) {
+                                      return (
+                                        <Button
+                                          size="sm"
+                                          variant="secondary"
+                                          onClick={() => {
+                                            setPaymentRequestMode('ADVANCE');
+                                            setPaymentRequestDeal(d);
+                                            setIsPaymentRequestOpen(true);
+                                          }}
+                                          title={`Tạo phiếu đề nghị tạm ứng ${formatVndShort(d.advanceAmount)}`}
+                                        >
+                                          Tạm ứng
+                                        </Button>
+                                      );
+                                    }
+
+                                    return (
+                                      <Button
+                                        size="sm"
+                                        variant={isAdvancePaid ? 'primary' : 'secondary'}
+                                        onClick={() => {
+                                          setPaymentRequestMode(isAdvancePaid ? 'SETTLEMENT' : (d.tiktokVideoUrl ? 'SETTLEMENT' : 'ADVANCE'));
+                                          setPaymentRequestDeal(d);
+                                          setIsPaymentRequestOpen(true);
+                                        }}
+                                        title={isAdvancePaid ? 'Tất toán Deal' : 'Đề nghị thanh toán'}
+                                      >
+                                        {isAdvancePaid ? 'Tất toán' : 'ĐNTT'}
+                                      </Button>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             </div>
@@ -2306,6 +2407,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
               icon={Send}
               onClick={() => {
                 setPaymentRequestDeal(null);
+                setPaymentRequestMode('SETTLEMENT');
                 setIsPaymentRequestOpen(true);
               }}
             >
@@ -2325,6 +2427,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
             <ActionMenu
               items={[
                 { label: 'Thêm KOC', icon: UserPlus, onSelect: () => setIsCreateKocOpen(true) },
+                { label: 'Tạo phiếu tạm ứng Lark', icon: Send, onSelect: () => { setPaymentRequestDeal(null); setPaymentRequestMode('ADVANCE'); setIsPaymentRequestOpen(true); } },
                 ...(onOpenImport ? [{ label: 'Nhập Excel', icon: Upload, onSelect: onOpenImport }] : []),
                 ...(onOpenInputPlan ? [{ label: 'Phân rã kế hoạch', icon: Calculator, onSelect: onOpenInputPlan }] : []),
               ]}
@@ -2960,6 +3063,63 @@ export const BookingView: React.FC<BookingViewProps> = ({
               </Field>
             </div>
 
+            {/* THIẾT LẬP TẠM ỨNG & TẤT TOÁN DEAL */}
+            <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-ink">Thỏa thuận Tạm ứng & Quyết toán</span>
+                <span className="text-2xs font-mono text-ink-2">
+                  Tổng thù lao: <strong>{formatVnd(editingDeal.totalValue || 0)}</strong>
+                </span>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <Field label="Tiền tạm ứng (Đợt 1)" htmlFor="edit-advance">
+                  <Input
+                    id="edit-advance"
+                    type="number"
+                    step={100000}
+                    value={editForm.advanceAmount}
+                    onChange={e => setEditForm(prev => ({ ...prev, advanceAmount: Math.max(0, Number(e.target.value)) }))}
+                  />
+                </Field>
+                <div className="flex flex-col justify-end pb-1">
+                  <div className="text-2xs text-ink-3">Tất toán còn lại (Đợt 2):</div>
+                  <div className="text-sm font-semibold font-mono text-ink">
+                    {formatVnd(Math.max(0, (editingDeal.totalValue || 0) - editForm.advanceAmount))}
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setEditForm(prev => ({ ...prev, advanceAmount: 0 }))}
+                  className="h-6 px-2 rounded-full border border-line text-2xs text-ink-2 hover:border-line-strong"
+                >
+                  Không tạm ứng (0đ)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditForm(prev => ({ ...prev, advanceAmount: Math.round((editingDeal.totalValue || 0) * 0.3) }))}
+                  className="h-6 px-2 rounded-full border border-line text-2xs text-ink-2 hover:border-line-strong"
+                >
+                  Cọc 30% ({formatVndShort(Math.round((editingDeal.totalValue || 0) * 0.3))})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditForm(prev => ({ ...prev, advanceAmount: Math.round((editingDeal.totalValue || 0) * 0.5) }))}
+                  className="h-6 px-2 rounded-full border border-line text-2xs text-ink-2 hover:border-line-strong"
+                >
+                  Cọc 50% ({formatVndShort(Math.round((editingDeal.totalValue || 0) * 0.5))})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditForm(prev => ({ ...prev, advanceAmount: Math.min(2000000, editingDeal.totalValue || 0) }))}
+                  className="h-6 px-2 rounded-full border border-line text-2xs text-ink-2 hover:border-line-strong"
+                >
+                  Tối đa 2.000.000đ
+                </button>
+              </div>
+            </div>
+
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="Hàng mẫu (Bước 3)">
                 <Segmented
@@ -3162,6 +3322,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
         open={isPaymentRequestOpen}
         onClose={() => setIsPaymentRequestOpen(false)}
         initialDeal={paymentRequestDeal}
+        initialRequestType={paymentRequestMode}
         allDeals={deals}
         kocs={localKocs}
         currentUserName={currentUser?.name || selectedStaffName}

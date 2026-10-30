@@ -39,6 +39,7 @@ interface LarkPaymentRequestModalProps {
   onClose: () => void;
   initialDeal: BookingDealItem | null;
   initialDeals?: BookingDealItem[];
+  initialRequestType?: PaymentRequestType;
   allDeals: BookingDealItem[];
   kocs: KocItem[];
   currentUserName: string;
@@ -53,6 +54,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
   onClose,
   initialDeal,
   initialDeals,
+  initialRequestType,
   allDeals,
   kocs,
   currentUserName,
@@ -78,7 +80,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
     initialDeals && initialDeals.length > 0
       ? initialDeals.map(d => d.id).join(',')
       : initialDeal?.id || 'NONE';
-  const initKey = open ? initDealsKey : 'CLOSED';
+  const initKey = open ? `${initDealsKey}:${initialRequestType || 'AUTO'}` : 'CLOSED';
   const [prevInitKey, setPrevInitKey] = useState<string>('CLOSED');
   if (initKey !== prevInitKey) {
     setPrevInitKey(initKey);
@@ -104,15 +106,16 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
           firstSeed.status === 'VIDEO_VERIFIED' ||
           firstSeed.status === 'VIDEO_SUBMITTED' ||
           Boolean(firstSeed.tiktokVideoUrl || firstSeed.videoUrl);
-        setRequestType(isAlreadyVerified ? 'SETTLEMENT' : 'ADVANCE');
+        const resolvedType = initialRequestType ?? (isAlreadyVerified ? 'SETTLEMENT' : 'ADVANCE');
+        setRequestType(resolvedType);
         const codesText = seedDeals.map(d => d.dealCode).join(', ');
         setSlipNote(
-          `Đề nghị ${isAlreadyVerified ? 'tất toán' : 'tạm ứng'} Deal ${codesText} (${firstSeed.kocStageName} · ${firstSeed.brandName})`
+          `Đề nghị ${resolvedType === 'ADVANCE' ? 'tạm ứng' : 'tất toán'} Deal ${codesText} (${firstSeed.kocStageName} · ${firstSeed.brandName})`
         );
       } else {
         const firstPaid = allDeals.find(d => (d.totalValue || 0) > 0 && d.brandApprovalStatus === 'ĐÃ_DUYỆT');
         setSelectedDealIds(firstPaid ? [firstPaid.id] : []);
-        setRequestType('SETTLEMENT');
+        setRequestType(initialRequestType ?? 'SETTLEMENT');
         setSlipNote('');
       }
     }
