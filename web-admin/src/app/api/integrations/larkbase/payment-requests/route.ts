@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchLarkAppAccessToken, getAuthenticatedUser } from '@/lib/larkAuth';
-import { isStaffGlobalAdminOrManager } from '@/lib/rbacScope';
+import { filterScopedStores, isStaffGlobalAdminOrManager } from '@/lib/rbacScope';
+import { readMasterCatalog } from '@/lib/server/masterCatalogStore';
 import {
   buildLarkPaymentRequestSlip,
   type DealPaymentLedgerEntry,
@@ -75,6 +76,8 @@ async function seedInitialPaymentSlips() {
         bookingPic: 'Lương Thị Như Quỳnh',
         approverDirector: 'Đặng Thị Yến Nhi',
         requestType: 'SETTLEMENT',
+        larkPaymentCategory: 'Thanh toán Booking KOC',
+        transferTitle: 'UpBase thanh toan cho KOC Kutieskin Mama 202610 BO260961606',
         agreedNetAmount: 3500000,
         droppedDeductionAmount: 0,
         effectiveSettledNetAmount: 3500000,
@@ -160,10 +163,33 @@ export async function GET(request: NextRequest) {
     const config = getLarkPaymentIntegrationConfig();
     const canSeeFullPayee =
       isStaffGlobalAdminOrManager(user) ||
-      ['FINANCE', 'LEADER'].includes(user.role) ||
+      ['FINANCE', 'LEGAL'].includes(user.role) ||
       Boolean(user.permissions?.includes('canApprovePayment'));
+    const hasGlobalPaymentVisibility =
+      isStaffGlobalAdminOrManager(user) ||
+      ['FINANCE', 'LEGAL'].includes(user.role) ||
+      Boolean(user.permissions?.includes('canApprovePayment'));
+    let scopedStoreKeys = new Set<string>();
+    if (!hasGlobalPaymentVisibility) {
+      const { data: catalog } = await readMasterCatalog();
+      const allowedStores = filterScopedStores(catalog.stores || [], user);
+      scopedStoreKeys = new Set(
+        allowedStores.flatMap(s => [
+          (s.storeName || '').trim().toLowerCase(),
+          (s.brandName || '').trim().toLowerCase(),
+        ]).filter(Boolean)
+      );
+    }
     const slips = (await listPaymentSlips())
-      .slice()
+      .filter(slip => {
+        if (hasGlobalPaymentVisibility) return true;
+        if (slip.createdBy.trim().toLowerCase() === (user.name || '').trim().toLowerCase()) return true;
+        return (slip.lineItems || []).some(li => {
+          const storeKey = (li.storeName || '').trim().toLowerCase();
+          const brandKey = (li.brandName || '').trim().toLowerCase();
+          return (storeKey && scopedStoreKeys.has(storeKey)) || (brandKey && scopedStoreKeys.has(brandKey));
+        });
+      })
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .map(slip => {
         if (canSeeFullPayee || slip.createdBy.trim().toLowerCase() === (user.name || '').trim().toLowerCase()) {
@@ -498,10 +524,12 @@ export async function POST(request: NextRequest) {
                   {
                     id: 'request_type',
                     type: 'input',
-                    value:
-                      requestType === 'ADVANCE'
-                        ? 'Phiếu Tạm ứng Đợt 1'
-                        : 'Phiếu Đề nghị thanh toán Tất toán',
+                    value: built.larkPaymentCategory,
+                  },
+                  {
+                    id: 'transfer_title',
+                    type: 'input',
+                    value: built.transferTitle,
                   },
                   {
                     id: 'deal_codes',
@@ -592,8 +620,8 @@ export async function POST(request: NextRequest) {
               fields: {
                 'Mã phiếu ĐNTT': slipCode,
                 'Mã duyệt Lark Approval': approvalInstanceCode,
-                'Loại thanh toán':
-                  requestType === 'ADVANCE' ? 'Tạm ứng đợt 1' : 'Tất toán / Thanh toán 100%',
+                'Loại thanh toán': built.larkPaymentCategory,
+                'Tên đề nghị': built.transferTitle,
                 'Danh sách Mã BO': built.lineItems.map(i => i.dealCode).join(', '),
                 'Thương hiệu': Array.from(new Set(built.lineItems.map(i => i.brandName))).join(', '),
                 'Gian hàng': Array.from(new Set(built.lineItems.map(i => i.storeName))).join(', '),
@@ -700,10 +728,14 @@ export async function POST(request: NextRequest) {
         requestType === 'ADVANCE'
           ? 'Phiếu tạm ứng (Đợt 1)'
           : 'Đề nghị thanh toán tất toán (Đợt 2 / 100%)',
+      larkPaymentCategory: built.larkPaymentCategory,
+      transferTitle: built.transferTitle,
       month,
       createdAt: nowIso,
       createdBy: actorName,
       note: body.note?.trim() || undefined,
+      isBrandBudgetAdvance: Boolean(body.sharedPayeeOverride?.isBrandBudgetAdvance),
+      brandConfirmPaymentDate: body.sharedPayeeOverride?.brandConfirmPaymentDate || undefined,
       payee: built.payee,
       approvalRoute: built.approvalRoute,
       lineItems: built.lineItems,
@@ -719,6 +751,7 @@ export async function POST(request: NextRequest) {
           ? 'PENDING_LEADER'
           : 'PENDING_DIRECTOR',
         syncedAt: nowIso,
+        daDiTien: false,
       },
     };
 
@@ -796,6 +829,9 @@ export async function PATCH(request: NextRequest) {
     const body = (await request.json()) as {
       slipId?: string;
       approvalInstanceCode?: string;
+      action?: 'ADVANCE_STEP' | 'REJECT_SLIP';
+      uncBillCode?: string;
+      rejectedReason?: string;
     };
 
     const target = (await listPaymentSlips()).find(
@@ -816,13 +852,37 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    const currentStatus = target.larkSync.approvalStatus;
+
+    // Xử lý từ chối / thu hồi phiếu trên Lark Approval (P-09: đồng bộ ngược về Deal/Job)
+    if (body.action === 'REJECT_SLIP') {
+      const updatedRejected: LarkPaymentRequestSlip = {
+        ...target,
+        larkSync: {
+          ...target.larkSync,
+          approvalStatus: 'REJECTED',
+          lastLarkStatus: 'REJECTED',
+          rejectedReason: (body.rejectedReason || 'Cần bổ sung chứng từ / kiểm tra lại STK').trim(),
+          syncedAt: new Date().toISOString(),
+        },
+      };
+      await mutatePaymentSlips(list =>
+        list.map(x => (x.id === updatedRejected.id ? updatedRejected : x))
+      );
+      await applySlipStatusToJobs(updatedRejected).catch(() => 0);
+      return NextResponse.json({
+        success: true,
+        slip: updatedRejected,
+        message: `Đã đồng bộ trạng thái TỪ CHỐI phiếu ${updatedRejected.slipCode} về Deal/Job để sửa hồ sơ.`,
+      });
+    }
+
     const order: LarkPaymentRequestSlip['larkSync']['approvalStatus'][] = target.approvalRoute
       .hasBookingLeader
       ? ['PENDING_LEADER', 'PENDING_DIRECTOR', 'PENDING_FINANCE', 'APPROVED', 'PAID']
       : ['PENDING_DIRECTOR', 'PENDING_FINANCE', 'APPROVED', 'PAID'];
 
     // Chỉ tiến đúng một bước theo luồng; không nhận trạng thái đích từ client, không lùi, không bỏ bước.
-    const currentStatus = target.larkSync.approvalStatus;
     const currentIdx = order.indexOf(currentStatus);
     if (currentIdx < 0 || currentIdx >= order.length - 1) {
       return NextResponse.json(
@@ -854,13 +914,25 @@ export async function PATCH(request: NextRequest) {
       );
     }
     const resolvedNext: ApprovalStatus = order[currentIdx + 1];
+    const nowIso = new Date().toISOString();
+    const isMovingToPaid = resolvedNext === 'PAID';
+    const resolvedUncBill =
+      (body.uncBillCode || target.larkSync.uncBillCode || '').trim() ||
+      (isMovingToPaid ? `UNC-VCB-${target.slipCode}` : undefined);
 
     const updatedSlip: LarkPaymentRequestSlip = {
       ...target,
       larkSync: {
         ...target.larkSync,
         approvalStatus: resolvedNext,
-        syncedAt: new Date().toISOString(),
+        syncedAt: nowIso,
+        ...(isMovingToPaid
+          ? {
+              daDiTien: true,
+              uncBillCode: resolvedUncBill,
+              uncSentToKocAt: nowIso,
+            }
+          : {}),
       },
     };
 

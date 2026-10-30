@@ -1456,18 +1456,22 @@ export const BookingView: React.FC<BookingViewProps> = ({
               <Button size="sm" variant="ghost" icon={Truck} onClick={() => handleOpenSampleModal(d)} title="Vận đơn hàng mẫu (Bước 3)" />
               <Button size="sm" variant="ghost" icon={Share2} onClick={() => handleOpenGrowthHandoff(d)} title="Bàn giao mã Spark Ads (Bước 4)" />
               <Button size="sm" variant="ghost" icon={Edit3} onClick={() => handleOpenEditModal(d)} title="Chỉnh sửa deal" />
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onSelectDealForContract?.(d, d.tiktokVideoUrl ? undefined : 'SOW')}
-                title="Ký Phụ lục SOW / Xem hợp đồng của Deal"
-              >
-                {d.contractAppendixStatus === 'ĐÃ_KÝ' ? 'HĐ' : 'Ký SOW'}
-              </Button>
+              {d.contractAppendixStatus === 'ĐÃ_KÝ' && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onSelectDealForContract?.(d, undefined)}
+                  title="Xem hợp đồng của Deal"
+                >
+                  HĐ
+                </Button>
+              )}
               {(d.totalValue || 0) > 0 && (() => {
-                const hasAdvance = (d.advanceAmount || 0) > 0;
+                const advVal = d.advanceAmount ?? (d as any).soTienTamUngTruoc ?? 0;
+                const hasAdvance = advVal > 0;
                 const isAdvancePaid = d.status === 'ADVANCE_PAID' || Boolean(d.larkAdvanceApprovalCode);
                 const isFinalPaid = d.status === 'FINAL_PAID' || Boolean(d.larkFinalApprovalCode);
+                const isSowSigned = d.contractAppendixStatus === 'ĐÃ_KÝ';
                 const needsAdvance = hasAdvance && !isAdvancePaid;
 
                 if (isFinalPaid) {
@@ -1479,18 +1483,43 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 }
 
                 if (needsAdvance) {
+                  if (!isSowSigned) {
+                    return (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => onSelectDealForContract?.(d, 'SOW')}
+                        title="Cần ký Phụ lục SOW trước khi đề nghị tạm ứng (Bước 2.4)"
+                      >
+                        Ký SOW
+                      </Button>
+                    );
+                  }
                   return (
                     <Button
                       size="sm"
-                      variant="secondary"
+                      variant="primary"
                       onClick={() => {
                         setPaymentRequestMode('ADVANCE');
                         setPaymentRequestDeal(d);
                         setIsPaymentRequestOpen(true);
                       }}
-                      title={`Tạo phiếu đề nghị tạm ứng ${formatVndShort(d.advanceAmount)} trên Lark`}
+                      title={`Tạo phiếu đề nghị tạm ứng ${formatVndShort(advVal)} trên Lark`}
                     >
                       Tạm ứng
+                    </Button>
+                  );
+                }
+
+                if (!isSowSigned && (d.totalValue || 0) >= 10_000_000) {
+                  return (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onSelectDealForContract?.(d, 'SOW')}
+                      title="Ký Phụ lục SOW của Deal"
+                    >
+                      Ký SOW
                     </Button>
                   );
                 }
@@ -1498,9 +1527,9 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 return (
                   <Button
                     size="sm"
-                    variant={isAdvancePaid ? 'primary' : 'secondary'}
+                    variant={isAdvancePaid || d.tiktokVideoUrl ? 'primary' : 'secondary'}
                     onClick={() => {
-                      setPaymentRequestMode(isAdvancePaid ? 'SETTLEMENT' : (d.tiktokVideoUrl ? 'SETTLEMENT' : 'ADVANCE'));
+                      setPaymentRequestMode('SETTLEMENT');
                       setPaymentRequestDeal(d);
                       setIsPaymentRequestOpen(true);
                     }}
@@ -2139,9 +2168,11 @@ export const BookingView: React.FC<BookingViewProps> = ({
                                     {d.contractAppendixStatus === 'ĐÃ_KÝ' ? 'HĐ' : 'Ký SOW'}
                                   </Button>
                                   {(d.totalValue || 0) > 0 && (() => {
-                                    const hasAdvance = (d.advanceAmount || 0) > 0;
+                                    const advVal = d.advanceAmount ?? (d as any).soTienTamUngTruoc ?? 0;
+                                    const hasAdvance = advVal > 0;
                                     const isAdvancePaid = d.status === 'ADVANCE_PAID' || Boolean(d.larkAdvanceApprovalCode);
                                     const isFinalPaid = d.status === 'FINAL_PAID' || Boolean(d.larkFinalApprovalCode);
+                                    const isSowSigned = d.contractAppendixStatus === 'ĐÃ_KÝ';
                                     const needsAdvance = hasAdvance && !isAdvancePaid;
 
                                     if (isFinalPaid) {
@@ -2153,16 +2184,28 @@ export const BookingView: React.FC<BookingViewProps> = ({
                                     }
 
                                     if (needsAdvance) {
+                                      if (!isSowSigned) {
+                                        return (
+                                          <Button
+                                            size="sm"
+                                            variant="primary"
+                                            onClick={() => onSelectDealForContract?.(d, 'SOW')}
+                                            title="Cần ký Phụ lục SOW trước khi đề nghị tạm ứng (Bước 2.4)"
+                                          >
+                                            Ký SOW
+                                          </Button>
+                                        );
+                                      }
                                       return (
                                         <Button
                                           size="sm"
-                                          variant="secondary"
+                                          variant="primary"
                                           onClick={() => {
                                             setPaymentRequestMode('ADVANCE');
                                             setPaymentRequestDeal(d);
                                             setIsPaymentRequestOpen(true);
                                           }}
-                                          title={`Tạo phiếu đề nghị tạm ứng ${formatVndShort(d.advanceAmount)}`}
+                                          title={`Tạo phiếu đề nghị tạm ứng ${formatVndShort(advVal)} trên Lark`}
                                         >
                                           Tạm ứng
                                         </Button>
@@ -2172,9 +2215,9 @@ export const BookingView: React.FC<BookingViewProps> = ({
                                     return (
                                       <Button
                                         size="sm"
-                                        variant={isAdvancePaid ? 'primary' : 'secondary'}
+                                        variant={isAdvancePaid || d.tiktokVideoUrl ? 'primary' : 'secondary'}
                                         onClick={() => {
-                                          setPaymentRequestMode(isAdvancePaid ? 'SETTLEMENT' : (d.tiktokVideoUrl ? 'SETTLEMENT' : 'ADVANCE'));
+                                          setPaymentRequestMode('SETTLEMENT');
                                           setPaymentRequestDeal(d);
                                           setIsPaymentRequestOpen(true);
                                         }}

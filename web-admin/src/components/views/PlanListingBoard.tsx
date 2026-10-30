@@ -516,6 +516,9 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({
         return;
       }
       await reload();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('upbase-deal-board-updated'));
+      }
       setPullPreview(null);
       setPullOpen(false);
 

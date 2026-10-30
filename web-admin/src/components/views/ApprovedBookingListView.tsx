@@ -32,7 +32,7 @@ import type {
   KocItem,
   StorePortfolioItem,
 } from '../../lib/types';
-import { formatDate, formatNumber, formatVnd, formatVndShort, getVietnamDateYmd } from '../../lib/format';
+import { formatDate, formatNumber, formatVnd, formatVndShort, getVietnamDateYmd, maskSensitivePii } from '../../lib/format';
 
 const parseThousandNumberInput = (raw: string): number => {
   const digits = String(raw || '').replace(/[^\d]/g, '');
@@ -107,6 +107,7 @@ export interface ApprovedBookingListViewProps {
   stores: StorePortfolioItem[];
   deals: BookingDealItem[];
   currentUserName: string;
+  canViewFullPii?: boolean;
   initialStoreName?: string;
   initialMonthKey?: string;
   onCreateOrUpdateDeals?: (newOrUpdatedDeals: BookingDealItem[]) => void;
@@ -143,6 +144,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   stores,
   deals,
   currentUserName,
+  canViewFullPii = false,
   initialStoreName,
   initialMonthKey,
   onCreateOrUpdateDeals,
@@ -153,6 +155,10 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   const b2cStores = useMemo(
     () => stores.filter((s) => s.isB2cManaged !== false && s.storeName),
     [stores]
+  );
+  const b2cStoreNameSet = useMemo(
+    () => new Set(b2cStores.map((s) => s.storeName)),
+    [b2cStores]
   );
 
   const [selectedMonth, setSelectedMonth] = useState<string>(initialMonthKey || '2026/10');
@@ -398,6 +404,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     const counts = new Map<string, number>();
     let total = 0;
     for (const it of items) {
+      if (b2cStoreNameSet.size > 0 && !b2cStoreNameSet.has(it.storeName)) continue;
       if (selectedMonth === 'ALL' || it.thangPlan === selectedMonth) {
         total += 1;
         counts.set(it.storeName, (counts.get(it.storeName) || 0) + 1);
@@ -416,12 +423,13 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       storeItemCountsForMonth: counts,
       sortedB2cStoresForMonth: sorted,
     };
-  }, [items, selectedMonth, b2cStores]);
+  }, [items, selectedMonth, b2cStores, b2cStoreNameSet]);
 
   // Danh sách sau khi lọc theo Tháng + Gian hàng + Từ khóa (dùng để tính số lượng trên Chips)
   const scopedItems = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return items.filter((it) => {
+      if (b2cStoreNameSet.size > 0 && !b2cStoreNameSet.has(it.storeName)) return false;
       if (selectedMonth !== 'ALL' && it.thangPlan !== selectedMonth) return false;
       if (selectedStore !== 'ALL' && it.storeName !== selectedStore) return false;
       if (it.id !== editingRowId) {
@@ -442,7 +450,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       }
       return true;
     });
-  }, [items, selectedMonth, selectedStore, filterPipeline, filterAcceptance, searchQuery, editingRowId]);
+  }, [items, b2cStoreNameSet, selectedMonth, selectedStore, filterPipeline, filterAcceptance, searchQuery, editingRowId]);
 
   const chipCounts = useMemo(() => {
     let pendingDeal = 0;
@@ -584,22 +592,31 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       })
     );
     if (updatedRowRef) {
-      const rowToSync = updatedRowRef;
+      const rowToSync: ApprovedBookingListItem = updatedRowRef;
       if (sheetSyncTimerRef.current) clearTimeout(sheetSyncTimerRef.current);
       sheetSyncTimerRef.current = setTimeout(() => {
         syncApprovedItemsBackToStaffBrandSheets([rowToSync], kocs, stores, deals);
+        if (rowToSync.bookingOrderCreated && rowToSync.maBooking && onCreateOrUpdateDeals) {
+          onCreateOrUpdateDeals([buildBookingDealFromApprovedItem(rowToSync)]);
+        }
       }, 350);
     }
   };
 
-  // Kéo tất cả các dòng Brand chọn = Yes từ Sheet Listing Cá nhân sang List Duyệt Book
+  // Kéo tất cả các dòng Brand chọn = Yes (và KOC không từ chối) từ Sheet Listing Cá nhân sang List Duyệt Book
   const handlePullBrandApprovedFromSheets = () => {
     const collection = loadStaffSheetCollection(kocs, stores, deals, currentUserName);
     let totalAdded = 0;
     let totalUpdated = 0;
 
     Object.entries(collection.sheets).forEach(([sheetKey, rows]) => {
-      const approvedRows = rows.filter((r) => r.brandChon === 'Yes');
+      const approvedRows = rows.filter(
+        (r) =>
+          r.brandChon === 'Yes' &&
+          r.trangThai !== 'Từ chối' &&
+          r.trangThai !== 'Không phản hồi' &&
+          (b2cStoreNameSet.size === 0 || b2cStoreNameSet.has(r.store))
+      );
       if (approvedRows.length === 0) return;
       const storeObj = stores.find((s) => s.storeName === approvedRows[0]?.store);
       const res = transferBrandApprovedRowsToBookingList({
@@ -670,37 +687,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   };
 
   const openDealBuilderModal = (item: ApprovedBookingListItem) => {
-    const seqIdx = items.findIndex((x) => x.id === item.id);
-    const maBo =
-      item.maBooking ||
-      generateBookingOrderCode(item.thangPlan, (seqIdx >= 0 ? seqIdx : 0) + 201);
-    const masterCode =
-      item.masterContractCode || generateMasterContractCode(item.idKenh, item.kocId);
-    const appendixCode =
-      item.contractAppendixCode || generateDealAppendixCode(maBo, 1);
-    const initialJobs = ensureDealJobsForApprovedItem({
-      ...item,
-      maBooking: maBo,
-    });
-    const firstJob = initialJobs[0];
-
-    setDealBuilderTargetId(item.id);
-    setDealDraftCode(maBo);
-    setDealDraftMasterContract(masterCode);
-    setDealDraftAppendixCode(appendixCode);
-    setDealDraftAppendixStatus(
-      item.contractAppendixStatus && item.contractAppendixStatus !== 'CHƯA_LẬP'
-        ? item.contractAppendixStatus
-        : 'CHỜ_KÝ'
-    );
-    setDealDraftJobs(initialJobs);
-    setActiveDealDraftJobIdx(0);
-    setDealDraftPlannedAirDate(
-      firstJob?.plannedAirDate || item.plannedAirDate || `${item.thangPlan.replace('/', '-')}-20`
-    );
-    setDealDraftVideoNetCost(firstJob?.videoAssetNetCost ?? 0);
-    setDealDraftAdvanceAmount(item.soTienTamUngTruoc || 0);
-    setDealDraftAddons(firstJob?.addonServices || []);
+    openDrawerForItem(item, 'OVERVIEW');
   };
 
   const updateActiveDealDraftJob = (
@@ -917,6 +904,10 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         : filteredItems.filter((i) => !i.bookingOrderCreated).map((i) => i.id);
 
     if (idsToProcess.length === 0) {
+      if (filteredItems.length > 0) {
+        openDealBuilderModal(filteredItems[0]);
+        return;
+      }
       onNotify?.('Tất cả các dòng hiển thị đã được tạo Deal & Phụ lục.', 'info');
       return;
     }
@@ -1177,15 +1168,15 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
           views30d:
             inspection.viewsCount > 0
               ? inspection.viewsCount
-              : targetItem?.views30d || 24500,
+              : targetItem?.views30d || 0,
           gmv30d:
             targetItem?.gmv30d && targetItem.gmv30d > 0
               ? targetItem.gmv30d
-              : Math.round((targetItem?.chiPhiBookingNetCuoi || 1500000) * 2.6),
+              : 0,
           orders30d:
             targetItem?.orders30d && targetItem.orders30d > 0
               ? targetItem.orders30d
-              : 18,
+              : 0,
           storeNameFilter: selectedStore,
           thangPlanFilter: selectedMonth,
           targetItemId: targetItem?.id,
@@ -1213,19 +1204,13 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     );
   };
 
-  const buildSampleLineForItem = (u: ApprovedBookingListItem, idx = 0) => {
-    const sampleUrl =
-      u.linkAir ||
-      `https://www.tiktok.com/@${u.idKenh}/video/7426881920192837${idx + 1}`;
-    const sampleSpark =
-      u.sparkAdsCode || `#SPARK-${u.idKenh.slice(0, 6).toUpperCase()}-2610`;
-    const sampleViews = u.views30d > 0 ? u.views30d : 22000 + idx * 9500;
-    const sampleGmv =
-      u.gmv30d > 0
-        ? u.gmv30d
-        : Math.round((u.chiPhiBookingNetCuoi || 1500000) * (2.6 + idx * 0.4));
-    const sampleOrders =
-      u.orders30d > 0 ? u.orders30d : Math.max(15, Math.round(sampleGmv / 255000));
+  const buildSampleLineForItem = (u: ApprovedBookingListItem, _idx = 0) => {
+    if (!u.linkAir?.trim()) return '';
+    const sampleUrl = u.linkAir.trim();
+    const sampleSpark = u.sparkAdsCode || '';
+    const sampleViews = u.views30d > 0 ? u.views30d : 0;
+    const sampleGmv = u.gmv30d > 0 ? u.gmv30d : 0;
+    const sampleOrders = u.orders30d > 0 ? u.orders30d : 0;
     const sampleDate = u.actualAirDate || u.plannedAirDate || defaultAcceptanceAirDate;
     return `${sampleUrl} | ${sampleSpark} | ${sampleViews} | ${sampleGmv} | ${sampleOrders} | ${sampleDate}`;
   };
@@ -1247,17 +1232,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       }
     } else {
       setSelectedTargetBoItemId('AUTO');
-      // Gợi ý mẫu từ các dòng chưa nghiệm thu trong danh sách đang lọc
-      const unaccepted = filteredItems
-        .filter((i) => i.acceptanceStatus === 'CHUA_NGHIEM_THU' && i.idKenh)
-        .slice(0, 3);
-      if (unaccepted.length > 0) {
-        setAcceptanceBulkText(
-          unaccepted.map((u, idx) => buildSampleLineForItem(u, idx)).join('\n')
-        );
-      } else {
-        setAcceptanceBulkText('');
-      }
+      setAcceptanceBulkText('');
     }
     setIsAcceptanceModalOpen(true);
   };
@@ -1369,29 +1344,25 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       const sparkAdsCode =
         override.sparkAdsCode !== undefined
           ? override.sparkAdsCode
-          : parts[1] ||
-            matchedItem?.sparkAdsCode ||
-            (effectiveHandle
-              ? `#SPARK-${effectiveHandle.slice(0, 6).toUpperCase()}-2610`
-              : '');
+          : parts[1] || matchedItem?.sparkAdsCode || '';
       const views30d =
         override.views30d !== undefined
           ? override.views30d
           : Number((parts[2] || '').replace(/[^0-9]/g, '')) ||
             matchedItem?.views30d ||
-            24500;
+            0;
       const gmv30d =
         override.gmv30d !== undefined
           ? override.gmv30d
           : Number((parts[3] || '').replace(/[^0-9]/g, '')) ||
             matchedItem?.gmv30d ||
-            Math.round((matchedItem?.chiPhiBookingNetCuoi || 1500000) * 2.6);
+            0;
       const orders30d =
         override.orders30d !== undefined
           ? override.orders30d
           : Number((parts[4] || '').replace(/[^0-9]/g, '')) ||
             matchedItem?.orders30d ||
-            Math.max(12, Math.round(gmv30d / 260000));
+            0;
       const actualAirDate =
         override.actualAirDate !== undefined
           ? override.actualAirDate
@@ -1834,7 +1805,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       return;
     }
     try {
-      const tsv = formatApprovedBookingListToTsv(target, includeHeaders);
+      const tsv = formatApprovedBookingListToTsv(target, includeHeaders, canViewFullPii);
       await navigator.clipboard.writeText(tsv);
       onNotify?.(
         `Đã copy ${target.length} dòng chuẩn File 3.2 List duyệt book (${
@@ -2333,7 +2304,9 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
 
   return (
     <div className="space-y-4">
-      <PageActions>
+      {!(isDrawerOpen && activeDrawerItem) && (
+        <>
+          <PageActions>
         {onNavigateTab && (
           <Button
             variant="secondary"
@@ -2415,7 +2388,8 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                 downloadApprovedBookingListCsv(
                   filteredItems,
                   selectedMonth,
-                  selectedStore
+                  selectedStore,
+                  canViewFullPii
                 ),
             },
           ]}
@@ -3475,16 +3449,16 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             )}
                           </td>
 
-                          {/* Cột 23-26: Ngân hàng, STK, CCCD */}
+                          {/* Cột 23-26: Ngân hàng, STK, CCCD (Che mờ 4 số cuối theo GEMINI.md §3 trừ Kế toán/Pháp chế) */}
                           <td className="px-2.5 py-2 border-r border-line align-middle text-2xs">
                             <div className="font-medium text-ink truncate max-w-[170px]">
                               {item.tenTaiKhoanNganHang || '—'}
                             </div>
                             <div className="font-code text-ink-2">
-                              {item.soTaiKhoan || '—'} · {item.nganHang || '—'}
+                              {maskSensitivePii(item.soTaiKhoan, canViewFullPii)} · {item.nganHang || '—'}
                             </div>
                             <div className="font-code text-2xs text-ink-3">
-                              CCCD: {item.soCccd || '—'}
+                              CCCD: {maskSensitivePii(item.soCccd, canViewFullPii)}
                             </div>
                           </td>
                         </>
@@ -3623,6 +3597,8 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         </div>
       )}
       </Panel>
+        </>
+      )}
 
       {/* Hộp thoại Nghiệm thu video & quyền lợi */}
       <Modal
@@ -4987,9 +4963,22 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         onOpenTikTokInspector={openDeepVideoInspector}
         onOpenKocProfile={(it) => setQuickViewApprovedItem(it)}
         onUpdateDealFields={(dealId, patch) => {
+          let updatedRow: ApprovedBookingListItem | null = null;
           updateItemsAndSync((prev) =>
-            prev.map((it) => (it.id === dealId ? recalculateApprovedBookingItem({ ...it, ...patch }) : it))
+            prev.map((it) => {
+              if (it.id !== dealId) return it;
+              const recalc = recalculateApprovedBookingItem({ ...it, ...patch });
+              updatedRow = recalc;
+              return recalc;
+            })
           );
+          if (updatedRow) {
+            const rowToSync: ApprovedBookingListItem = updatedRow;
+            syncApprovedItemsBackToStaffBrandSheets([rowToSync], kocs, stores, deals);
+            if (rowToSync.bookingOrderCreated && rowToSync.maBooking && onCreateOrUpdateDeals) {
+              onCreateOrUpdateDeals([buildBookingDealFromApprovedItem(rowToSync)]);
+            }
+          }
         }}
         onPullContractLinks={handlePullContractInfoAndLinks}
         isPullingContractLinks={isPullingContractLinks}

@@ -16,6 +16,8 @@ import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { GoogleDocsReviewPanel } from './GoogleDocsReviewPanel';
 import { GoogleDocsFinanceApproveDialog } from './GoogleDocsFinanceApproveDialog';
+import { LegalAttachmentsPanel } from './LegalAttachmentsPanel';
+import { getKocLegalProfiles } from '../koc/kocUtils';
 import type { GoogleDocCommentItem } from '../../lib/contracts/googleDocsTypes';
 import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
@@ -91,7 +93,10 @@ export function ContractDetail({
   const isOwner = record.ownerId === me.id;
   const editable = isOwner && record.approval !== 'IN_REVIEW' && !activeSigning;
   const canSubmit = editable && ['DRAFT', 'CHANGES', 'REJECTED'].includes(record.approval);
-  const myStep = record.approval === 'IN_REVIEW' ? record.steps.find(s => s.reviewerId === me.id && s.status === 'PENDING') : undefined;
+  const myStep = record.approval === 'IN_REVIEW'
+    ? (record.steps.find(s => s.reviewerId === me.id && s.status === 'PENDING') ||
+       (me.id !== record.ownerId ? record.steps.find(s => s.status === 'PENDING' && me.roles.includes(s.role)) : undefined))
+    : undefined;
   const legalStep = record.steps.find(s => s.role === 'LEGAL');
   const financeStep = record.steps.find(s => s.role === 'FINANCE');
   const isLegalDone = !legalStep || legalStep.status === 'APPROVED';
@@ -157,6 +162,7 @@ export function ContractDetail({
     !record.signing.some(s => s.status === 'COMPLETED');
 
   // Nút chính: việc tiếp theo của người đang xem (Pháp chế duyệt trước -> Kế toán duyệt & Đẩy WeSign).
+  // Lưu ý: Trên luồng Google Docs (record.googleDocsUrl), Pháp chế là tham vấn điều khoản, Kế toán là cấp duyệt FINAL không bị chặn bởi !isLegalDone.
   const primary = myStep?.role === 'LEGAL' ? (
     <Button variant="primary" icon={Scale} disabled={busy} onClick={() => setDialog('approve')}>
       Pháp chế duyệt điều khoản
@@ -165,7 +171,7 @@ export function ContractDetail({
     <Button
       variant="primary"
       icon={CheckCircle2}
-      disabled={busy || !isLegalDone}
+      disabled={busy}
       onClick={() => setDialog('google_docs_finance')}
     >
       Kế toán duyệt &amp; Đẩy WeSign
@@ -174,7 +180,7 @@ export function ContractDetail({
     <Button
       variant="primary"
       icon={CheckCircle2}
-      disabled={busy || !isLegalDone}
+      disabled={busy}
       onClick={() => setDialog('google_docs_finance')}
     >
       Kế toán duyệt &amp; Đẩy WeSign
@@ -231,7 +237,7 @@ export function ContractDetail({
         '/api/contracts/google-docs/sync-comments',
         { contractId: record.id, url: record.googleDocsUrl }
       );
-      await onAction({ action: 'SYNC_GOOGLE_DOCS', note: `Đã đồng bộ ${res.comments.length} bình luận từ Google Docs` }, 'Đã đồng bộ bình luận từ Google Docs');
+      await onAction({ action: 'REFRESH_ONLY', updatedRecord: res.record }, `Đã đồng bộ ${res.comments.length} bình luận từ Google Docs`);
     } catch {
       // Không gián đoạn
     } finally {
@@ -240,7 +246,7 @@ export function ContractDetail({
   };
 
   const handleApproveAndPushWeSign = async (dataPayload: { note: string; partyAEmail?: string; partyBEmail?: string }) => {
-    await contractApi<{ success: boolean; record: ContractRecord }>(
+    const res = await contractApi<{ success: boolean; record: ContractRecord }>(
       '/api/contracts/google-docs/approve-and-push-wesign',
       {
         contractId: record.id,
@@ -250,7 +256,7 @@ export function ContractDetail({
       }
     );
     setDialog(null);
-    await onAction({ action: 'SYNC_WESIGN' }, 'Kế toán đã duyệt và đẩy sang WeSign thành công');
+    await onAction({ action: 'REFRESH_ONLY', updatedRecord: res.record }, 'Kế toán đã duyệt FINAL và đẩy sang WeSign thành công');
   };
 
 
@@ -944,6 +950,41 @@ export function ContractDetail({
         </div>
       </div>
 
+      {/* HỒ SƠ PHÁP LÝ ĐÍNH KÈM (CCCD & ĐKKD LƯU TRỮ TRÊN CLOUDFLARE R2) */}
+      {(() => {
+        const profiles = linkedKoc ? getKocLegalProfiles(linkedKoc) : [];
+        const activeProf =
+          (record.legalProfileId ? profiles.find(p => p.id === record.legalProfileId) : undefined) ||
+          profiles.find(p => p.isDefault) ||
+          profiles[0];
+        const effectiveAttachments =
+          record.legalAttachments && record.legalAttachments.length > 0
+            ? record.legalAttachments
+            : activeProf?.legalAttachments || linkedDeal?.legalProfileSnapshot?.legalAttachments || [];
+        const effectiveLegalType =
+          activeProf?.legalType ||
+          (record.templateId.startsWith('COM-')
+            ? 'COMPANY'
+            : record.templateId.startsWith('HKD-')
+              ? 'HOUSEHOLD'
+              : 'INDIVIDUAL');
+        return (
+          <LegalAttachmentsPanel
+            attachments={effectiveAttachments}
+            entitySlug={linkedKoc?.channelId || linkedKoc?.id || record.partner || record.id}
+            legalType={effectiveLegalType}
+            editable={!isFullySigned}
+            onChange={nextAttachments => {
+              void onAction(
+                { action: 'ATTACH_LEGAL_DOCS', legalAttachments: nextAttachments },
+                'Đã cập nhật tệp đính kèm CCCD / ĐKKD trên Cloudflare R2',
+              );
+            }}
+            title="Hồ sơ pháp lý đính kèm: CCCD & Giấy phép ĐKKD (Cloudflare R2)"
+          />
+        );
+      })()}
+
       {record.hasCustomTerms && (
         <div className="rounded-xl border border-warning/50 bg-warning-soft/70 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
           <div className="space-y-0.5">
@@ -1011,6 +1052,13 @@ export function ContractDetail({
               onLegalApprove={() => setDialog('approve')}
             />
           )}
+          <GoogleDocsFinanceApproveDialog
+            open={dialog === 'google_docs_finance'}
+            record={record}
+            busy={busy}
+            onClose={() => setDialog(null)}
+            onConfirm={handleApproveAndPushWeSign}
+          />
 
           {workspaceTab === 'DOCUMENT' ? (
             <section className="grid gap-3">

@@ -17,7 +17,7 @@ import {
   syncTemplatesWithContractSystem,
 } from '@/lib/contracts/contractSystemClient';
 import { buildStableContractCode } from '@/lib/contracts/contractSystemRules';
-import type { AcceptanceScreenshotItem, ContractActor, ContractRecord, ReviewStep } from '@/lib/contracts/types';
+import type { AcceptanceScreenshotItem, ContractActor, ContractRecord, LegalDocAttachment, ReviewStep } from '@/lib/contracts/types';
 import { simulateSigning } from '@/lib/contracts/demo';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -97,6 +97,12 @@ async function parseInput(body: Record<string, unknown>, actor: ContractActor, e
     isKocOwnForm,
     customFile: isKocOwnForm ? customFile : undefined,
     acceptanceScreenshots,
+    legalProfileId: ref(body.legalProfileId) || existing?.legalProfileId,
+    legalAttachments: Array.isArray(body.legalAttachments)
+      ? (body.legalAttachments as LegalDocAttachment[])
+          .filter((item) => item && typeof item.fileKey === 'string' && item.fileKey.trim().length > 0 && typeof item.url === 'string')
+          .slice(0, 20)
+      : existing?.legalAttachments,
     googleDocsUrl: typeof body.googleDocsUrl === 'string' && body.googleDocsUrl.trim() ? body.googleDocsUrl.trim() : existing?.googleDocsUrl,
     googleDocsId: typeof body.googleDocsId === 'string' && body.googleDocsId.trim() ? body.googleDocsId.trim() : existing?.googleDocsId,
     googleDocsSource: body.googleDocsSource === 'KOC_CUSTOM_DOC' ? 'KOC_CUSTOM_DOC' : (body.googleDocsUrl ? 'TEMPLATE_AMENDED' : existing?.googleDocsSource),
@@ -160,6 +166,12 @@ export async function POST(req: NextRequest) {
     } else if (body.action === 'ADD_NOTE') {
       requireCondition(typeof body.note === 'string' && body.note.trim() && body.note.length <= 4000, 'Nội dung ghi chú không hợp lệ.');
       event(next, actor, 'NOTE', (body.note as string).trim());
+    } else if (body.action === 'ATTACH_LEGAL_DOCS') {
+      requireCondition(Array.isArray(body.legalAttachments), 'Danh sách tệp pháp lý đính kèm không hợp lệ.');
+      next.legalAttachments = (body.legalAttachments as LegalDocAttachment[])
+        .filter((item) => item && typeof item.fileKey === 'string' && item.fileKey.trim().length > 0 && typeof item.url === 'string')
+        .slice(0, 20);
+      event(next, actor, 'NOTE', `Cập nhật tệp đính kèm CCCD / ĐKKD trên Cloudflare R2 (${next.legalAttachments.length} tệp)`);
     } else if (body.action === 'DECIDE') {
       requireCondition(typeof body.note === 'string' && body.note.length <= 4000, 'Nhận xét không hợp lệ.');
       next = decideContract(record, actor, body.decision as ReviewStep['status'], body.note);

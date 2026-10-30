@@ -14,6 +14,7 @@ import {
 import type { BookingDealItem, KocItem } from '../../lib/types';
 import {
   buildLarkPaymentRequestSlip,
+  normalizeBankHolderUpperNoAccent,
   type DealPaymentOverrides,
   type LarkPaymentRequestSlip,
   type PaymentRequestType,
@@ -74,6 +75,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
   const [showQrPreview, setShowQrPreview] = useState<boolean>(false);
   const [editingDealIds, setEditingDealIds] = useState<Record<string, boolean>>({});
   const [isEditingPayee, setIsEditingPayee] = useState<boolean>(false);
+  const [uncBillInputs, setUncBillInputs] = useState<Record<string, string>>({});
 
   // Đồng bộ deal khởi tạo khi mở hộp thoại
   const initDealsKey =
@@ -102,11 +104,9 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
       if (seedDeals.length > 0) {
         const firstSeed = seedDeals[0];
         setSelectedDealIds(seedDeals.map(d => d.id));
-        const isAlreadyVerified =
-          firstSeed.status === 'VIDEO_VERIFIED' ||
-          firstSeed.status === 'VIDEO_SUBMITTED' ||
-          Boolean(firstSeed.tiktokVideoUrl || firstSeed.videoUrl);
-        const resolvedType = initialRequestType ?? (isAlreadyVerified ? 'SETTLEMENT' : 'ADVANCE');
+        const hasAdvanceAgreed = (firstSeed.advanceAmount || 0) > 0;
+        const isAdvPaid = firstSeed.status === 'ADVANCE_PAID' || Boolean(firstSeed.larkAdvanceApprovalCode);
+        const resolvedType = initialRequestType ?? (hasAdvanceAgreed && !isAdvPaid ? 'ADVANCE' : 'SETTLEMENT');
         setRequestType(resolvedType);
         const codesText = seedDeals.map(d => d.dealCode).join(', ');
         setSlipNote(
@@ -202,6 +202,20 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
   );
 
   // Chạy động cơ kiểm tra chặn cứng 100% theo thời gian thực
+  const resolvedSlipMonth = useMemo(() => {
+    const first = selectedDeals[0];
+    if (!first) return '2026/10';
+    const campDigits = (first.campaignCode || '').replace(/\D/g, '');
+    if (campDigits.length >= 6) {
+      return `${campDigits.slice(0, 4)}/${campDigits.slice(4, 6)}`;
+    }
+    const dateStr = first.postedDate || first.deadlinePost || '';
+    if (/^\d{4}-\d{2}/.test(dateStr)) {
+      return dateStr.slice(0, 7).replace('-', '/');
+    }
+    return '2026/10';
+  }, [selectedDeals]);
+
   const evaluation = useMemo(
     () =>
       buildLarkPaymentRequestSlip({
@@ -212,9 +226,9 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
         sharedPayeeOverride,
         createdBy: currentUserName,
         note: slipNote,
-        month: '2026/10',
+        month: resolvedSlipMonth,
       }),
-    [requestType, selectedDeals, kocs, overridesByDealId, sharedPayeeOverride, currentUserName, slipNote]
+    [requestType, selectedDeals, kocs, overridesByDealId, sharedPayeeOverride, currentUserName, slipNote, resolvedSlipMonth]
   );
 
   const hasPayeeInfo = Boolean(evaluation.payee.bankAccount && evaluation.payee.legalId);
@@ -246,7 +260,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
           sharedPayeeOverride,
           actorName: currentUserName,
           note: slipNote,
-          month: '2026/10',
+          month: resolvedSlipMonth,
         }),
       });
 
@@ -314,7 +328,10 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
     }
   };
 
-  const handleAdvanceLarkApprovalStep = async (targetSlip: LarkPaymentRequestSlip) => {
+  const handleAdvanceLarkApprovalStep = async (
+    targetSlip: LarkPaymentRequestSlip,
+    options?: { action?: 'ADVANCE_STEP' | 'REJECT_SLIP'; uncBillCode?: string; rejectedReason?: string }
+  ) => {
     try {
       const res = await fetch('/api/integrations/larkbase/payment-requests', {
         method: 'PATCH',
@@ -322,6 +339,9 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
         body: JSON.stringify({
           slipId: targetSlip.id,
           approvalInstanceCode: targetSlip.larkSync.approvalInstanceCode,
+          action: options?.action || 'ADVANCE_STEP',
+          uncBillCode: options?.uncBillCode ?? uncBillInputs[targetSlip.id],
+          rejectedReason: options?.rejectedReason,
         }),
       });
       const json = await res.json();
@@ -419,9 +439,9 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
             <div className="flex items-center justify-between gap-1">
               <span className="font-semibold">{st.title}</span>
               <span
-                className={`text-3xs font-semibold px-1.5 py-0.5 rounded ${
+                className={`text-2xs font-semibold px-1.5 py-0.5 rounded ${
                   st.done
-                    ? 'bg-emerald-100 text-emerald-800'
+                    ? 'bg-positive-soft text-positive'
                     : st.active
                     ? 'bg-accent-soft text-accent'
                     : 'bg-surface text-ink-3'
@@ -621,7 +641,21 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
             </StatRow>
 
             {/* Sơ đồ luồng phê duyệt thanh toán trên Lark Approval */}
-            <Panel title="Luồng phê duyệt thanh toán tự động trên Lark Approval">
+            <Panel
+              title="Luồng phê duyệt thanh toán tự động trên Lark Approval"
+              actions={
+                <div className="flex items-center gap-1.5 flex-wrap text-2xs">
+                  <span className="px-2 py-0.5 rounded bg-sunken border border-line font-code font-semibold text-ink">
+                    Luồng Lark: {evaluation.approvalRoute.larkWhiteboardCode || 'KN8A'} · {evaluation.larkPaymentCategory}
+                  </span>
+                  {evaluation.approvalRoute.b2cAmountTier && (
+                    <span className="px-2 py-0.5 rounded bg-accent-soft text-accent font-code font-semibold">
+                      Mốc duyệt B2C: {evaluation.approvalRoute.b2cAmountTier}
+                    </span>
+                  )}
+                </div>
+              }
+            >
               <div className="space-y-2">
                 {renderLarkApprovalNodes(
                   evaluation.approvalRoute.hasBookingLeader,
@@ -629,6 +663,17 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                   evaluation.approvalRoute.marketingDirectorName,
                   createdSlipResult?.larkSync.approvalStatus
                 )}
+                <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-2xs text-ink-2">
+                  <span>
+                    Tên đề nghị / Nội dung CK chuẩn (§3.3.2):{' '}
+                    <code className="font-code font-semibold text-ink bg-sunken px-1.5 py-0.5 rounded">
+                      {evaluation.transferTitle}
+                    </code>
+                  </span>
+                  <span>
+                    Bước cuối <strong>KT Handle</strong>: Kế toán tích Đã đi tiền &amp; đính kèm Bill UNC gửi KOC (100% trong 7 ngày)
+                  </span>
+                </div>
               </div>
             </Panel>
 
@@ -707,7 +752,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                             <span className="font-code text-xs font-semibold text-ink">
                               Deal: {line.dealCode}
                             </span>
-                            <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-code text-3xs text-ink-2">
+                            <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-code text-2xs text-ink-2">
                               HĐNT: {line.masterContractCode} · Phụ lục SOW: {line.contractAppendixCode}{dealJobsList.length > 0 ? ` (${dealJobsList.length} Job · ${dealJobsList.length} Bảng CV)` : ''}
                             </span>
                             <Status tone={line.isEligible ? 'positive' : 'critical'}>
@@ -945,49 +990,89 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                                   </Field>
                                 </>
                               )}
-                              <Field
-                                label={
-                                  line.isContractMandatory
-                                    ? 'Link Hợp đồng đã ký 2 bên (Bắt buộc BR-03)'
-                                    : 'Link Hợp đồng (Miễn ký theo BR-03)'
-                                }
-                              >
-                                <Input
-                                  value={line.contractUrl}
-                                  onChange={e =>
-                                    updateDealOverride(line.dealId, { contractUrl: e.target.value })
+                                <Field
+                                  label={
+                                    line.isContractMandatory
+                                      ? 'Link Hợp đồng / Phụ lục SOW đã ký 2 bên (Bắt buộc BR-03)'
+                                      : 'Link Hợp đồng / Phụ lục SOW'
                                   }
-                                  placeholder="https://drive.google.com/drive/folders/..."
-                                />
-                              </Field>
-                              {requestType === 'SETTLEMENT' && line.isBbntMandatory && (
-                                <Field label="Mã / Link BBNT đã ký (Bắt buộc BR-04)" noWrap>
+                                >
                                   <Input
-                                    value={
-                                      overridesByDealId[line.dealId]?.bbntUrl ??
-                                      (line.bbntUrl.startsWith('Miễn BBNT') ? '' : line.bbntUrl)
-                                    }
+                                    value={line.contractUrl}
                                     onChange={e =>
-                                      updateDealOverride(line.dealId, { bbntUrl: e.target.value })
+                                      updateDealOverride(line.dealId, { contractUrl: e.target.value })
                                     }
-                                    placeholder="BBNT-202610-..."
+                                    placeholder="https://drive.google.com/drive/folders/..."
                                   />
                                 </Field>
-                              )}
-                              {requestType === 'SETTLEMENT' &&
-                                evaluation.payee.subjectKind === 'COM' && (
-                                  <Field label="Số Hóa đơn GTGT (Bắt buộc Công ty)" noWrap>
+                                {requestType === 'ADVANCE' && (
+                                  <Field label="Số tiền tạm ứng Net (VND)" noWrap>
                                     <Input
-                                      value={line.invoiceNumber}
+                                      type="number"
+                                      className="font-code"
+                                      value={
+                                        overridesByDealId[line.dealId]?.advanceAmount ??
+                                        line.requestBaseNetAmount
+                                      }
                                       onChange={e =>
                                         updateDealOverride(line.dealId, {
-                                          invoiceNumber: e.target.value,
+                                          advanceAmount: Math.max(0, Number(e.target.value) || 0),
                                         })
                                       }
-                                      placeholder="HD-001284..."
+                                      placeholder="Nhập số tiền tạm ứng Net..."
                                     />
                                   </Field>
                                 )}
+                                {requestType === 'ADVANCE' &&
+                                  (evaluation.payee.subjectKind === 'COM' ||
+                                    evaluation.payee.subjectKind === 'HKD') && (
+                                    <Field
+                                      label="Số / Link Hóa đơn nháp đợt 1 (Bắt buộc HKD/Công ty)"
+                                      noWrap
+                                    >
+                                      <Input
+                                        value={line.invoiceNumber}
+                                        onChange={e =>
+                                          updateDealOverride(line.dealId, {
+                                            invoiceNumber: e.target.value,
+                                          })
+                                        }
+                                        placeholder="HD-NHAP-001..."
+                                      />
+                                    </Field>
+                                  )}
+                                {requestType === 'SETTLEMENT' && line.isBbntMandatory && (
+                                  <Field label="Mã / Link BBNT đã ký (Bắt buộc BR-04)" noWrap>
+                                    <Input
+                                      value={
+                                        overridesByDealId[line.dealId]?.bbntUrl ??
+                                        (line.bbntUrl.startsWith('Miễn BBNT') ? '' : line.bbntUrl)
+                                      }
+                                      onChange={e =>
+                                        updateDealOverride(line.dealId, { bbntUrl: e.target.value })
+                                      }
+                                      placeholder="BBNT-202610-..."
+                                    />
+                                  </Field>
+                                )}
+                                {requestType === 'SETTLEMENT' &&
+                                  (evaluation.payee.subjectKind === 'COM' ||
+                                    evaluation.payee.subjectKind === 'HKD') && (
+                                    <Field
+                                      label="Số Hóa đơn hợp lệ (Trùng ngày ký BBNT)"
+                                      noWrap
+                                    >
+                                      <Input
+                                        value={line.invoiceNumber}
+                                        onChange={e =>
+                                          updateDealOverride(line.dealId, {
+                                            invoiceNumber: e.target.value,
+                                          })
+                                        }
+                                        placeholder="HD-001284..."
+                                      />
+                                    </Field>
+                                  )}
                             </div>
                             {line.isEligible && editingDealIds[line.dealId] && (
                               <div className="flex justify-end">
@@ -1015,7 +1100,26 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
             <Panel
               title="2. Thông tin thụ hưởng, Pháp lý (CCCD / MST) & Thuế (BR-09)"
               actions={
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      const cleanHolder = normalizeBankHolderUpperNoAccent(
+                        sharedPayeeOverride.bankHolder ?? evaluation.payee.bankHolder
+                      );
+                      const cleanAcc = (
+                        sharedPayeeOverride.bankAccount ?? evaluation.payee.bankAccount
+                      ).replace(/\s+/g, '');
+                      setSharedPayeeOverride(prev => ({
+                        ...prev,
+                        bankHolder: cleanHolder,
+                        bankAccount: cleanAcc,
+                      }));
+                    }}
+                  >
+                    Chuẩn hóa IN HOA không dấu &amp; STK
+                  </Button>
                   {hasPayeeInfo && (
                     <Button
                       size="sm"
@@ -1171,7 +1275,42 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                 </div>
               )}
 
-              <div className="mt-3">
+              <div className="mt-3 space-y-3">
+                <div className="p-2.5 rounded-lg border border-line bg-sunken/50 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <label className="inline-flex items-center gap-2 cursor-pointer font-medium text-ink">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(sharedPayeeOverride.isBrandBudgetAdvance)}
+                      onChange={e =>
+                        setSharedPayeeOverride(prev => ({
+                          ...prev,
+                          isBrandBudgetAdvance: e.target.checked,
+                        }))
+                      }
+                      className="rounded border-line"
+                    />
+                    <span>
+                      Ngoại lệ vượt ngân sách Brand (GĐ2 B-11..B-14): Đề nghị UpBase tạm ứng chi trước thay Brand (Account + Booking trình kèm email xác nhận ngày TT của Brand)
+                    </span>
+                  </label>
+                  {sharedPayeeOverride.isBrandBudgetAdvance && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xs text-ink-2">Ngày Brand cam kết TT:</span>
+                      <Input
+                        type="date"
+                        className="w-40"
+                        value={sharedPayeeOverride.brandConfirmPaymentDate || ''}
+                        onChange={e =>
+                          setSharedPayeeOverride(prev => ({
+                            ...prev,
+                            brandConfirmPaymentDate: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <Field label="Ghi chú trình duyệt gửi Leader / Giám đốc MKT / Kế toán">
                   <Textarea
                     rows={2}
@@ -1199,43 +1338,74 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                     </span>
                     <Status
                       tone={
-                        slip.larkSync.approvalStatus === 'APPROVED' ||
-                        slip.larkSync.approvalStatus === 'PAID'
+                        slip.larkSync.approvalStatus === 'REJECTED'
+                          ? 'critical'
+                          : slip.larkSync.approvalStatus === 'APPROVED' ||
+                            slip.larkSync.approvalStatus === 'PAID'
                           ? 'positive'
                           : 'warning'
                       }
                     >
-                      {slip.larkSync.approvalStatus === 'PAID'
-                        ? 'Đã giải ngân hoàn tất'
+                      {slip.larkSync.approvalStatus === 'REJECTED'
+                        ? `Từ chối trên Lark (${slip.larkSync.rejectedReason || 'Cần sửa hồ sơ'})`
+                        : slip.larkSync.approvalStatus === 'PAID'
+                        ? `KT Handle: Đã đi tiền (${slip.larkSync.uncBillCode || 'Đã có UNC'})`
                         : slip.larkSync.approvalStatus === 'APPROVED'
-                        ? 'Đã duyệt trên Lark · Chờ giải ngân'
+                        ? 'Đã duyệt trên Lark · Chờ KT Handle đi tiền & gửi UNC'
                         : slip.larkSync.approvalStatus === 'PENDING_FINANCE'
-                        ? 'Chờ Kế toán đối soát & giải ngân'
+                        ? 'Chờ Kế toán Approval đối soát'
                         : slip.larkSync.approvalStatus === 'PENDING_LEADER'
                         ? 'Chờ Leader sơ duyệt trên Lark'
                         : 'Chờ GĐ MKT duyệt trên Lark'}
                     </Status>
                     <span className="text-xs font-semibold text-ink">
-                      {slip.requestTypeLabel}
+                      {slip.larkPaymentCategory || slip.requestTypeLabel}
                     </span>
                     <span className="text-xs text-ink-3 font-code">
                       ({slip.larkSync.approvalInstanceCode})
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <div className="text-xs font-semibold text-ink tabular-nums">
                       Thực chuyển: {formatVnd(slip.totals.netTransferTotal)}
                     </div>
-                    {slip.larkSync.approvalStatus !== 'PAID' && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        icon={CheckCircle2}
-                        onClick={() => handleAdvanceLarkApprovalStep(slip)}
-                      >
-                        Duyệt bước tiếp theo trên Lark
-                      </Button>
+                    {slip.larkSync.approvalStatus === 'APPROVED' && (
+                      <Input
+                        className="w-44 font-code"
+                        value={uncBillInputs[slip.id] ?? slip.larkSync.uncBillCode ?? ''}
+                        onChange={e =>
+                          setUncBillInputs(prev => ({ ...prev, [slip.id]: e.target.value }))
+                        }
+                        placeholder="Mã / Link Bill UNC..."
+                      />
                     )}
+                    {slip.larkSync.approvalStatus !== 'PAID' &&
+                      slip.larkSync.approvalStatus !== 'REJECTED' && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            icon={CheckCircle2}
+                            onClick={() => handleAdvanceLarkApprovalStep(slip)}
+                          >
+                            {slip.larkSync.approvalStatus === 'APPROVED'
+                              ? 'KT Handle: Xác nhận Đã đi tiền & Gửi UNC'
+                              : 'Duyệt bước tiếp theo trên Lark'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              handleAdvanceLarkApprovalStep(slip, {
+                                action: 'REJECT_SLIP',
+                                rejectedReason: 'Từ chối trên Lark Approval để bổ sung chứng từ',
+                              })
+                            }
+                          >
+                            Từ chối phiếu
+                          </Button>
+                        </>
+                      )}
                   </div>
                 </div>
                 {renderLarkApprovalNodes(

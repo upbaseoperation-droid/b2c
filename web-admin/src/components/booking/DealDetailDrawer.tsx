@@ -1,41 +1,84 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 import {
+  ArrowLeft,
   Check,
   ChevronLeft,
   ChevronRight,
   Copy,
-  Edit2,
   ExternalLink,
   Eye,
   FileCheck,
   FileText,
   Layers,
+  Lock,
   Plus,
   RefreshCw,
   Send,
   Sparkles,
   Trash2,
+  Unlock,
   UserCheck,
   Video,
   X,
 } from 'lucide-react';
-import type { BookingDealItem, DealRightsTermItem, DealSowJobItem, KocItem, MediaChannelPlatform } from '../../lib/types';
+import type {
+  BookingDealItem,
+  DealContractAppendixStatus,
+  DealRightsTermItem,
+  DealSowJobItem,
+  KocItem,
+  MediaChannelPlatform,
+} from '../../lib/types';
 import type { ContractRecord } from '../../lib/contracts/types';
-import { formatDate, formatNumber, formatVnd, formatVndShort, getVietnamDateYmd } from '../../lib/format';
+import {
+  formatDate,
+  formatNumber,
+  formatVnd,
+  formatVndShort,
+  getVietnamDateYmd,
+} from '../../lib/format';
 import {
   buildBookingDealFromApprovedItem,
   buildDefaultAddonServicesForDeal,
+  computeDataLockDate,
   computeDealSowJobSubtotal,
   ensureDealJobsForApprovedItem,
+  generateBookingOrderCode,
+  generateDealAppendixCode,
+  generateMasterContractCode,
+  normalizeBankHolderUpperNoAccent,
+  recalculateApprovedBookingItem,
   type ApprovedBookingListItem,
 } from '../../lib/approvedBookingList';
 import { normalizeTikTokId } from '../../lib/staffBrandListingSheet';
 import { documentOfTemplate } from '../../lib/planDealLink';
-import { computeSigningProgress, contractStatus, resolveActiveLegalProfile } from '../contracts/contractUi';
-import { Avatar, Button, Panel, Person, Presence, Progress, Stat, StatRow, Status, StepMark, Tabs } from '../ui';
+import {
+  computeSigningProgress,
+  contractStatus,
+  resolveActiveLegalProfile,
+} from '../contracts/contractUi';
+import {
+  Button,
+  Field,
+  Input,
+  PageActions,
+  Panel,
+  Person,
+  Progress,
+  Select,
+  Stat,
+  StatRow,
+  Status,
+  StepMark,
+  Tabs,
+} from '../ui';
+
+const parseThousandNumberInput = (raw: string): number => {
+  const digits = String(raw || '').replace(/[^\d]/g, '');
+  return digits ? Number(digits) || 0 : 0;
+};
 
 export interface DealDetailDrawerProps {
   isOpen: boolean;
@@ -49,7 +92,10 @@ export interface DealDetailDrawerProps {
   onOpenContractForDeal?: (deal: BookingDealItem, document?: 'HDNT' | 'SOW' | 'BBNT') => void;
   onOpenDraftBbntPreview?: (deal: BookingDealItem) => void;
   onOpenAcceptanceModal?: (item: ApprovedBookingListItem) => void;
-  onOpenLarkPaymentModal?: (item: ApprovedBookingListItem) => void;
+  onOpenLarkPaymentModal?: (
+    item: ApprovedBookingListItem,
+    requestType?: 'ADVANCE' | 'SETTLEMENT'
+  ) => void;
   onOpenDealBuilderModal?: (item: ApprovedBookingListItem) => void;
   onOpenTikTokInspector?: (item: ApprovedBookingListItem) => void;
   onOpenKocProfile?: (item: ApprovedBookingListItem) => void;
@@ -65,7 +111,7 @@ function maskSensitive(raw?: string, showFull?: boolean): string {
   const clean = (raw || '').trim();
   if (!clean) return 'Chưa cập nhật';
   if (showFull || clean.length <= 4) return clean;
-  return `•••• ${clean.slice(-4)}`;
+  return `****${clean.slice(-4)}`;
 }
 
 export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
@@ -81,7 +127,6 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
   onOpenDraftBbntPreview,
   onOpenAcceptanceModal,
   onOpenLarkPaymentModal,
-  onOpenDealBuilderModal,
   onOpenTikTokInspector,
   onOpenKocProfile,
   onUpdateDealFields,
@@ -93,7 +138,20 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
   const [showSensitive, setShowSensitive] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<DrawerTab>(initialTab || 'OVERVIEW');
 
-  // Inline state for deliverable / asset acceptance
+  // State cấu hình Deal & Phụ lục SOW (tích hợp trực tiếp vào màn hình lớn)
+  const [dealDraftCode, setDealDraftCode] = useState<string>('');
+  const [dealDraftMasterContract, setDealDraftMasterContract] = useState<string>('');
+  const [dealDraftAppendixCode, setDealDraftAppendixCode] = useState<string>('');
+  const [dealDraftAppendixStatus, setDealDraftAppendixStatus] =
+    useState<DealContractAppendixStatus>('CHỜ_KÝ');
+  const [dealDraftPlannedAirDate, setDealDraftPlannedAirDate] = useState<string>('');
+  const [dealDraftVideoNetCost, setDealDraftVideoNetCost] = useState<number>(0);
+  const [dealDraftAdvanceAmount, setDealDraftAdvanceAmount] = useState<number>(0);
+  const [dealDraftAddons, setDealDraftAddons] = useState<DealRightsTermItem[]>([]);
+  const [dealDraftJobs, setDealDraftJobs] = useState<DealSowJobItem[]>([]);
+  const [activeDealDraftJobIdx, setActiveDealDraftJobIdx] = useState<number>(0);
+
+  // Inline state cho Nghiệm thu Video & Asset đi kèm
   const [editingAddonId, setEditingAddonId] = useState<string | null>(null);
   const [editingEvidenceText, setEditingEvidenceText] = useState<string>('');
   const [addingAddonJobIdx, setAddingAddonJobIdx] = useState<number | null>(null);
@@ -103,23 +161,53 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
   const [newAddonCost, setNewAddonCost] = useState<number>(0);
   const [newAddonEvidence, setNewAddonEvidence] = useState<string>('');
 
-  // Inline state for quick air update
+  // Inline state cập nhật nhanh Link Video lên sóng
   const [editingAirJobIdx, setEditingAirJobIdx] = useState<number | null>(null);
   const [quickAirLink, setQuickAirLink] = useState<string>('');
   const [quickAirDate, setQuickAirDate] = useState<string>('');
-
-  // Inline state for editing a Job in Deal
-  const [editingJobIdx, setEditingJobIdx] = useState<number | null>(null);
-  const [editJobProduct, setEditJobProduct] = useState<string>('');
-  const [editJobChannel, setEditJobChannel] = useState<MediaChannelPlatform>('TikTok');
-  const [editJobPlannedDate, setEditJobPlannedDate] = useState<string>('');
-  const [editJobVideoNet, setEditJobVideoNet] = useState<number>(0);
 
   useEffect(() => {
     if (isOpen && initialTab) {
       setActiveTab(initialTab);
     }
   }, [isOpen, initialTab]);
+
+  // Đồng bộ dữ liệu Deal đang chọn vào bộ soạn thảo Deal & Bảng công việc
+  useEffect(() => {
+    if (!deal) return;
+    const seqIdx = allDeals.findIndex((x) => x.id === deal.id);
+    const maBo =
+      deal.maBooking ||
+      generateBookingOrderCode(deal.thangPlan, (seqIdx >= 0 ? seqIdx : 0) + 201);
+    const masterCode =
+      deal.masterContractCode || generateMasterContractCode(deal.idKenh, deal.kocId);
+    const appendixCode =
+      deal.contractAppendixCode || generateDealAppendixCode(maBo, 1);
+    const initialJobs = ensureDealJobsForApprovedItem({
+      ...deal,
+      maBooking: maBo,
+    });
+    const safeIdx = Math.min(activeDealDraftJobIdx, Math.max(0, initialJobs.length - 1));
+    const currentJob = initialJobs[safeIdx] || initialJobs[0];
+
+    setDealDraftCode(maBo);
+    setDealDraftMasterContract(masterCode);
+    setDealDraftAppendixCode(appendixCode);
+    setDealDraftAppendixStatus(
+      deal.contractAppendixStatus && deal.contractAppendixStatus !== 'CHƯA_LẬP'
+        ? deal.contractAppendixStatus
+        : 'CHỜ_KÝ'
+    );
+    setDealDraftJobs(initialJobs);
+    setActiveDealDraftJobIdx(safeIdx);
+    setDealDraftPlannedAirDate(
+      currentJob?.plannedAirDate || deal.plannedAirDate || `${deal.thangPlan.replace('/', '-')}-20`
+    );
+    setDealDraftVideoNetCost(currentJob?.videoAssetNetCost ?? deal.chiPhiBookingNetCuoi ?? 0);
+    setDealDraftAdvanceAmount(deal.soTienTamUngTruoc || 0);
+    setDealDraftAddons(currentJob?.addonServices || []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deal?.id, deal?.updatedAt]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -179,7 +267,6 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
     [matchedKoc, mappedBookingDeal]
   );
 
-  // Tìm các hồ sơ hợp đồng thực tế từ /api/contracts của Deal / KOC này
   const linkedContracts = useMemo(() => {
     if (!deal || contractRecords.length === 0) {
       return { hdnt: undefined, sow: undefined, bbnt: undefined };
@@ -220,12 +307,236 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
     return { hdnt, sow, bbnt };
   }, [deal, contractRecords, matchedKoc]);
 
+  const nextAmendmentAppendixCode = useMemo(() => {
+    const baseCode = dealDraftCode || deal?.maBooking || 'BO2610-201';
+    const currentPl = dealDraftAppendixCode || '';
+    const matchSeq = currentPl.match(/-(\d+)$/);
+    const nextSeq = matchSeq ? Number(matchSeq[1]) + 1 : 2;
+    return generateDealAppendixCode(baseCode, nextSeq);
+  }, [dealDraftCode, dealDraftAppendixCode, deal?.maBooking]);
+
+  if (!isOpen || !deal) return null;
+
+  const isAccepted = deal.acceptanceStatus === 'DA_NGHIEM_THU';
+  const hasBo = deal.bookingOrderCreated && Boolean(deal.maBooking);
+  const sowSigningCompleted =
+    linkedContracts.sow?.signing.at(-1)?.status === 'COMPLETED' ||
+    deal.contractAppendixStatus === 'ĐÃ_KÝ';
+  const isDealBuilderSowLocked = dealDraftAppendixStatus === 'ĐÃ_KÝ';
+
+  const stageStatus =
+    deal.trangThaiPhieuThanhToan === 'Đã thanh toán'
+      ? { label: 'Hoàn tất', tone: 'positive' as const }
+      : isAccepted
+      ? { label: 'Đã duyệt', tone: 'positive' as const }
+      : sowSigningCompleted
+      ? { label: 'Đang chạy', tone: 'info' as const }
+      : hasBo
+      ? { label: 'Chờ duyệt', tone: 'warning' as const }
+      : { label: 'Nháp', tone: 'neutral' as const };
+
+  // Các hàm thao tác trên Bộ cấu hình Deal & Job (Tab 1)
+  const updateActiveDealDraftJob = (
+    updater: (job: DealSowJobItem) => DealSowJobItem,
+    targetIdx = activeDealDraftJobIdx
+  ) => {
+    setDealDraftJobs((prev) => {
+      const safeIdx = Math.max(0, Math.min(targetIdx, prev.length - 1));
+      return prev.map((j, idx) => (idx === safeIdx ? updater(j) : j));
+    });
+  };
+
+  const handleSelectDealDraftJob = (idx: number) => {
+    const target = dealDraftJobs[idx];
+    if (!target) return;
+    setActiveDealDraftJobIdx(idx);
+    setDealDraftPlannedAirDate(target.plannedAirDate || '');
+    setDealDraftVideoNetCost(target.videoAssetNetCost || 0);
+    setDealDraftAddons(target.addonServices || []);
+  };
+
+  const handleAddJobToDealBuilder = () => {
+    const nextIdx = dealDraftJobs.length;
+    const baseBo = dealDraftCode || deal.maBooking || 'BO2610';
+    const nextJobCode = `${baseBo}-J${String(nextIdx + 1).padStart(2, '0')}`;
+    const defaultAddons = buildDefaultAddonServicesForDeal({
+      maBooking: nextJobCode,
+      totalNet: dealDraftVideoNetCost || 2000000,
+      includeDefaultAddons: true,
+    });
+    const newJob: DealSowJobItem = {
+      id: `${nextJobCode}-${Date.now()}`,
+      jobCode: nextJobCode,
+      jobTitle: `Bảng công việc #${nextIdx + 1} (${nextJobCode})`,
+      productName: `${deal.sanPham || deal.brandName} (Job #${nextIdx + 1})`,
+      mediaChannel: 'TikTok',
+      affiliateChannel: deal.storeName.toLowerCase().includes('shopee')
+        ? 'Shopee'
+        : 'TikTok Shop',
+      plannedAirDate:
+        dealDraftPlannedAirDate ||
+        deal.plannedAirDate ||
+        `${deal.thangPlan.replace('/', '-')}-20`,
+      videoAssetNetCost: dealDraftVideoNetCost || 2000000,
+      quantity: 1,
+      addonServices: defaultAddons,
+      acceptanceStatus: 'CHUA_NGHIEM_THU',
+    };
+    const nextJobs = [...dealDraftJobs, newJob];
+    setDealDraftJobs(nextJobs);
+    setActiveDealDraftJobIdx(nextIdx);
+    setDealDraftPlannedAirDate(newJob.plannedAirDate);
+    setDealDraftVideoNetCost(newJob.videoAssetNetCost);
+    setDealDraftAddons(newJob.addonServices);
+  };
+
+  const handleDeleteDealDraftJob = (idx: number) => {
+    if (dealDraftJobs.length <= 1) {
+      onNotify?.('Mỗi Deal cần có tối thiểu 1 Bảng công việc.', 'warning');
+      return;
+    }
+    const remaining = dealDraftJobs.filter((_, i) => i !== idx);
+    const nextActive = Math.max(0, Math.min(activeDealDraftJobIdx, remaining.length - 1));
+    setDealDraftJobs(remaining);
+    setActiveDealDraftJobIdx(nextActive);
+    const activeJob = remaining[nextActive];
+    if (activeJob) {
+      setDealDraftPlannedAirDate(activeJob.plannedAirDate || '');
+      setDealDraftVideoNetCost(activeJob.videoAssetNetCost || 0);
+      setDealDraftAddons(activeJob.addonServices || []);
+    }
+  };
+
+  const handleTogglePresetAddonInBuilder = (
+    termType: DealRightsTermItem['termType'],
+    defaultLabel: string,
+    anchorType: 'ACCEPTANCE_DATE' | 'AIR_DATE',
+    defaultDays: number
+  ) => {
+    const activeJob = dealDraftJobs[activeDealDraftJobIdx];
+    const currentAddons = activeJob ? activeJob.addonServices : dealDraftAddons;
+    const exists = currentAddons.some((a) => a.termType === termType);
+    const nextAddons = exists
+      ? currentAddons.filter((a) => a.termType !== termType)
+      : [
+          ...currentAddons,
+          {
+            id: `${activeJob?.jobCode || dealDraftCode || 'DEAL'}-ADDON-${termType}-${Date.now().toString().slice(-3)}`,
+            termType,
+            termLabel: defaultLabel,
+            scopeType: 'ASSET' as const,
+            targetDeliverableId: activeJob?.jobCode,
+            anchorType,
+            durationDays: defaultDays,
+            allocatedWeightPct: 10,
+            allocatedCostVnd: 0,
+            status: 'PENDING_ANCHOR' as const,
+            acceptanceStatus: 'LOCKED_BY_VIDEO' as const,
+            evidenceCodeOrUrl: '',
+          },
+        ];
+    setDealDraftAddons(nextAddons);
+    updateActiveDealDraftJob((job) => ({
+      ...job,
+      addonServices: nextAddons,
+    }));
+  };
+
+  const handleUnlockForAmendmentAppendix = () => {
+    const nextCode = nextAmendmentAppendixCode;
+    setDealDraftAppendixCode(nextCode);
+    setDealDraftAppendixStatus('CHỜ_KÝ');
+    setActiveTab('OVERVIEW');
+    onNotify?.(
+      `Đã mở khóa cấu hình Deal để lập Phụ lục bổ sung ${nextCode}`,
+      'info'
+    );
+  };
+
+  const handleSaveDealWorkspace = (openSowAfterSave?: boolean) => {
+    const normalizedJobs: DealSowJobItem[] =
+      dealDraftJobs.length > 0
+        ? dealDraftJobs
+        : [
+            {
+              id: `${dealDraftCode || 'BO'}-J01`,
+              jobCode: `${dealDraftCode || 'BO'}-J01`,
+              jobTitle: `Bảng công việc #1 (${dealDraftCode || 'BO'}-J01)`,
+              productName: deal.sanPham || deal.brandName,
+              mediaChannel: 'TikTok',
+              plannedAirDate: dealDraftPlannedAirDate,
+              videoAssetNetCost: Math.max(0, dealDraftVideoNetCost),
+              quantity: 1,
+              addonServices: dealDraftAddons,
+            },
+          ];
+
+    const missingAirJob = normalizedJobs.find((j) => !j.plannedAirDate?.trim());
+    if (missingAirJob) {
+      onNotify?.(
+        `Chưa chọn ngày air dự kiến cho ${missingAirJob.jobCode} của kênh @${deal.idKenh}. Chọn ngày air rồi thử lại.`,
+        'warning'
+      );
+      return;
+    }
+
+    const jobSubtotals = normalizedJobs.map((j) => computeDealSowJobSubtotal(j));
+    const totalVideoNet = jobSubtotals.reduce((s, t) => s + t.videoNet, 0);
+    const addonsTotal = jobSubtotals.reduce((s, t) => s + t.addonsNet, 0);
+    const totalDealNet = totalVideoNet + addonsTotal;
+    const allAddons = normalizedJobs.flatMap((j) => j.addonServices || []);
+    const primaryAirDate = normalizedJobs[0]?.plannedAirDate || dealDraftPlannedAirDate;
+    const combinedProducts =
+      normalizedJobs.length > 1
+        ? Array.from(
+            new Set(normalizedJobs.map((j) => j.productName?.trim()).filter(Boolean))
+          ).join(' + ')
+        : normalizedJobs[0]?.productName || deal.sanPham;
+
+    const finalDealCode =
+      dealDraftCode.trim() || generateBookingOrderCode(deal.thangPlan, 205);
+    const finalAppendixCode =
+      dealDraftAppendixCode.trim() || generateDealAppendixCode(finalDealCode, 1);
+    const finalMasterCode =
+      dealDraftMasterContract.trim() || generateMasterContractCode(deal.idKenh, deal.kocId);
+
+    const patch: Partial<ApprovedBookingListItem> = {
+      maBooking: finalDealCode,
+      bookingOrderCreated: true,
+      bookingOrderCreatedAt: deal.bookingOrderCreatedAt || new Date().toISOString(),
+      linkedDealId: finalDealCode,
+      sanPham: combinedProducts || deal.sanPham,
+      plannedAirDate: primaryAirDate,
+      chiPhiBookingNetCuoi: totalDealNet,
+      videoAssetNetCost: totalVideoNet,
+      addonServicesNetCost: addonsTotal,
+      soTienTamUngTruoc: Math.max(0, dealDraftAdvanceAmount),
+      addonServices: allAddons,
+      dealJobs: normalizedJobs,
+      masterContractCode: finalMasterCode,
+      contractAppendixCode: finalAppendixCode,
+      contractAppendixStatus: dealDraftAppendixStatus,
+    };
+
+    onUpdateDealFields?.(deal.id, patch);
+
+    onNotify?.(
+      `Đã lưu deal ${finalDealCode} (${normalizedJobs.length} bảng công việc · Tổng Net ${formatVnd(totalDealNet)})`,
+      'success'
+    );
+
+    if (openSowAfterSave && onOpenContractForDeal) {
+      const updatedItem = recalculateApprovedBookingItem({ ...deal, ...patch });
+      onOpenContractForDeal(buildBookingDealFromApprovedItem(updatedItem), 'SOW');
+    }
+  };
+
+  // Các hàm thao tác Nghiệm thu 2 tầng (Tab 3)
   const handleToggleAddonStatus = (
     jobIdx: number,
     addonId: string,
     nextStatus: 'VERIFIED' | 'DROPPED' | 'PENDING_ACCEPTANCE'
   ) => {
-    if (!deal) return;
     const currentJobs = ensureDealJobsForApprovedItem(deal);
     const targetJob = currentJobs[jobIdx];
     if (!targetJob) return;
@@ -269,7 +580,6 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
   };
 
   const handleSaveAddonEvidence = (jobIdx: number, addonId: string, evidence: string) => {
-    if (!deal) return;
     const currentJobs = ensureDealJobsForApprovedItem(deal);
     const targetJob = currentJobs[jobIdx];
     if (!targetJob) return;
@@ -290,7 +600,8 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
       };
     });
 
-    const isAdsTerm = targetJob.addonServices?.find((a) => a.id === addonId)?.termType === 'ADS_CODE';
+    const isAdsTerm =
+      targetJob.addonServices?.find((a) => a.id === addonId)?.termType === 'ADS_CODE';
     const updatedJobs = currentJobs.map((j, idx) => {
       if (idx !== jobIdx) return j;
       return {
@@ -311,11 +622,10 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
 
     onUpdateDealFields?.(deal.id, patch);
     setEditingAddonId(null);
-    onNotify?.('Đã lưu mã/bằng chứng bàn giao asset', 'success');
+    onNotify?.('Đã lưu mã/bằng chứng bàn giao quyền lợi', 'success');
   };
 
   const handleAddNewAddonToJob = (jobIdx: number) => {
-    if (!deal) return;
     const currentJobs = ensureDealJobsForApprovedItem(deal);
     const targetJob = currentJobs[jobIdx];
     if (!targetJob) return;
@@ -327,9 +637,9 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
 
     const defaultLabels: Record<DealRightsTermItem['termType'], string> = {
       ADS_CODE: 'Mã ủy quyền Spark Ads',
-      IMAGE_USAGE: 'Quyền SDHA & Video gốc (File Raw)',
-      CROSS_POST_REUP: 'Đăng chéo (Reup Facebook Reels / Shopee)',
-      LINK_BIO_CART: 'Duy trì link Bio / Giỏ hàng Affiliate',
+      IMAGE_USAGE: 'Quyền sử dụng hình ảnh & file video gốc',
+      CROSS_POST_REUP: 'Đăng chéo kênh phụ / Reup Wave 1',
+      LINK_BIO_CART: 'Duy trì link Bio & giỏ hàng',
       EXCLUSIVITY: 'Độc quyền ngành hàng',
     };
 
@@ -366,11 +676,10 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
     setNewAddonLabel('');
     setNewAddonCost(0);
     setNewAddonEvidence('');
-    onNotify?.(`Đã thêm hạng mục asset: ${newAddon.termLabel}`, 'success');
+    onNotify?.(`Đã thêm hạng mục: ${newAddon.termLabel}`, 'success');
   };
 
   const handleRemoveAddonFromJob = (jobIdx: number, addonId: string) => {
-    if (!deal) return;
     const currentJobs = ensureDealJobsForApprovedItem(deal);
     const targetJob = currentJobs[jobIdx];
     if (!targetJob) return;
@@ -384,11 +693,10 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
       dealJobs: updatedJobs,
       addonServices: allAddons,
     });
-    onNotify?.('Đã xóa hạng mục asset khỏi Job', 'info');
+    onNotify?.('Đã xóa hạng mục khỏi bảng công việc', 'info');
   };
 
   const handleSaveJobAirVideo = (jobIdx: number) => {
-    if (!deal) return;
     const currentJobs = ensureDealJobsForApprovedItem(deal);
     const trimmedLink = quickAirLink.trim();
     const trimmedDate = quickAirDate.trim() || getVietnamDateYmd();
@@ -399,7 +707,9 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
         ...j,
         linkAir: trimmedLink || j.linkAir,
         actualAirDate: trimmedDate || j.actualAirDate,
-        acceptanceStatus: (trimmedLink ? 'DA_NGHIEM_THU' : j.acceptanceStatus) as 'DA_NGHIEM_THU' | 'CHUA_NGHIEM_THU',
+        acceptanceStatus: (trimmedLink ? 'DA_NGHIEM_THU' : j.acceptanceStatus) as
+          | 'DA_NGHIEM_THU'
+          | 'CHUA_NGHIEM_THU',
       };
     });
 
@@ -414,1435 +724,1553 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
 
     onUpdateDealFields?.(deal.id, patch);
     setEditingAirJobIdx(null);
-    onNotify?.('Đã cập nhật nghiệm thu Video lên sóng', 'success');
+    onNotify?.('Đã cập nhật nghiệm thu video lên sóng', 'success');
   };
 
-  const handleAddJobToCurrentDeal = () => {
-    if (!deal) return;
-    const currentJobs = ensureDealJobsForApprovedItem(deal);
-    const nextIdx = currentJobs.length + 1;
-    const baseBo = deal.maBooking || 'BO2610-001';
-    const nextJobCode = `${baseBo}-J${String(nextIdx).padStart(2, '0')}`;
-    const defaultVideoNet = 2000000;
-    const defaultAddons = buildDefaultAddonServicesForDeal({
-      maBooking: nextJobCode,
-      totalNet: defaultVideoNet,
-      includeDefaultAddons: true,
-    });
-    const newJob: DealSowJobItem = {
-      id: `${nextJobCode}-${Date.now()}`,
-      jobCode: nextJobCode,
-      jobTitle: `Bảng công việc #${nextIdx} (${nextJobCode}) — ${deal.sanPham || deal.brandName}`,
-      productName: `${deal.sanPham || deal.brandName} (Job #${nextIdx})`,
-      mediaChannel: 'TikTok',
-      affiliateChannel: deal.storeName?.toLowerCase().includes('shopee') ? 'Shopee' : 'TikTok Shop',
-      plannedAirDate: deal.plannedAirDate || getVietnamDateYmd(),
-      videoAssetNetCost: defaultVideoNet,
-      quantity: 1,
-      addonServices: defaultAddons,
-      acceptanceStatus: 'CHUA_NGHIEM_THU',
-    };
-    const updatedJobs = [...currentJobs, newJob];
-    const allAddons = updatedJobs.flatMap((j) => j.addonServices || []);
-    onUpdateDealFields?.(deal.id, {
-      dealJobs: updatedJobs,
-      addonServices: allAddons,
-    });
-    onNotify?.(`Đã thêm Bảng công việc #${nextIdx} (${nextJobCode}) vào Deal`, 'success');
-  };
+  // Tính toán tổng hợp trực tiếp từ cấu hình nháp đang chỉnh sửa
+  const draftSubtotals = dealDraftJobs.map((j) => computeDealSowJobSubtotal(j));
+  const draftTotalVideoNet = draftSubtotals.reduce((s, x) => s + x.videoNet, 0);
+  const draftTotalAddonsNet = draftSubtotals.reduce((s, x) => s + x.addonsNet, 0);
+  const draftGrandDealNet = draftTotalVideoNet + draftTotalAddonsNet;
+  const draftGrossWithTax = Math.round(draftGrandDealNet / 0.9);
+  const draftRemainingPayable = Math.max(0, draftGrandDealNet - (dealDraftAdvanceAmount || 0));
 
-  const handleDeleteJobFromCurrentDeal = (jobIdx: number) => {
-    if (!deal) return;
-    const currentJobs = ensureDealJobsForApprovedItem(deal);
-    if (currentJobs.length <= 1) {
-      onNotify?.('Mỗi Deal phải có tối thiểu 1 Bảng công việc (Job)!', 'warning');
-      return;
-    }
-    const updatedJobs = currentJobs
-      .filter((_, idx) => idx !== jobIdx)
-      .map((j, idx) => {
-        const seqStr = String(idx + 1).padStart(2, '0');
-        const baseBo = deal.maBooking || 'BO2610';
-        return {
-          ...j,
-          jobCode: `${baseBo}-J${seqStr}`,
-          jobTitle: j.jobTitle.replace(/Bảng công việc #\d+/, `Bảng công việc #${idx + 1}`),
-        };
-      });
-    const allAddons = updatedJobs.flatMap((j) => j.addonServices || []);
-    onUpdateDealFields?.(deal.id, {
-      dealJobs: updatedJobs,
-      addonServices: allAddons,
-    });
-    if (editingJobIdx === jobIdx) setEditingJobIdx(null);
-    onNotify?.(`Đã xóa Bảng công việc #${jobIdx + 1} khỏi Deal`, 'info');
-  };
-
-  const handleSaveJobDetails = (jobIdx: number) => {
-    if (!deal) return;
-    const currentJobs = ensureDealJobsForApprovedItem(deal);
-    const updatedJobs = currentJobs.map((j, idx) => {
-      if (idx !== jobIdx) return j;
-      const cleanProd = editJobProduct.trim() || j.productName;
-      return {
-        ...j,
-        productName: cleanProd,
-        jobTitle: `Bảng công việc #${idx + 1} (${j.jobCode}) — ${cleanProd}`,
-        mediaChannel: editJobChannel,
-        plannedAirDate: editJobPlannedDate || j.plannedAirDate,
-        videoAssetNetCost: Math.max(0, Number(editJobVideoNet) || 0),
+  const activeDraftJob = dealDraftJobs[activeDealDraftJobIdx];
+  const activeDraftJobSub = activeDraftJob
+    ? computeDealSowJobSubtotal(activeDraftJob)
+    : {
+        videoNet: dealDraftVideoNetCost,
+        addonsNet: 0,
+        plannedJobNet: dealDraftVideoNetCost,
       };
-    });
-    const allAddons = updatedJobs.flatMap((j) => j.addonServices || []);
-    onUpdateDealFields?.(deal.id, {
-      dealJobs: updatedJobs,
-      addonServices: allAddons,
-    });
-    setEditingJobIdx(null);
-    onNotify?.(`Đã lưu thông tin Bảng công việc #${jobIdx + 1}`, 'success');
-  };
 
-  if (!deal) return <Presence show={false} exit="drawer" />;
+  return (
+    <div className="space-y-5">
+      {/* PHÂN VÙNG 1A: Thanh công cụ đầu trang (PageActions) */}
+      <PageActions>
+        <Button variant="secondary" size="sm" icon={ArrowLeft} onClick={onClose}>
+          Về danh sách Deal
+        </Button>
 
-  const isAccepted = deal.acceptanceStatus === 'DA_NGHIEM_THU';
-  const hasBo = deal.bookingOrderCreated && Boolean(deal.maBooking);
-  const sowSigningCompleted =
-    linkedContracts.sow?.signing.at(-1)?.status === 'COMPLETED' ||
-    deal.contractAppendixStatus === 'ĐÃ_KÝ';
+        {allDeals.length > 1 && (
+          <div className="inline-flex items-center gap-1.5">
+            <Select
+              value={deal.id}
+              onChange={(e) => {
+                const found = allDeals.find((d) => d.id === e.target.value);
+                if (found) onSelectDeal?.(found);
+              }}
+              aria-label="Chọn nhanh Deal"
+              className="w-auto min-w-[210px] max-w-[280px] h-7 text-xs"
+            >
+              {allDeals.map((d, idx) => (
+                <option key={d.id} value={d.id}>
+                  #{idx + 1} · {d.maBooking || 'Chờ BO'} — @{d.idKenh.replace(/^@/, '')}
+                </option>
+              ))}
+            </Select>
 
-  const stageStatus =
-    deal.trangThaiPhieuThanhToan === 'Đã thanh toán'
-      ? { label: 'Đã thanh toán', tone: 'positive' as const }
-      : isAccepted
-      ? { label: 'Đã nghiệm thu', tone: 'positive' as const }
-      : sowSigningCompleted
-      ? { label: 'Đang thực thi', tone: 'info' as const }
-      : hasBo
-      ? { label: 'Chờ ký SOW', tone: 'warning' as const }
-      : { label: 'Chờ tạo deal', tone: 'warning' as const };
-
-  if (typeof document === 'undefined') return null;
-
-  return createPortal(
-    <Presence show={isOpen} exit="drawer">
-      <div className="fixed inset-0 z-50 flex justify-end bg-ink/40">
-        <div
-          className="absolute inset-0"
-          onClick={onClose}
-          aria-hidden="true"
-        />
-
-        <div
-          data-motion-panel
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Hồ sơ Deal ${deal.maBooking || deal.id}`}
-          className="relative bg-surface w-full max-w-3xl h-full border-l border-line shadow-lg flex flex-col overflow-hidden"
-        >
-          {/* Đầu trang Hồ sơ — chuẩn DESIGN_SYSTEM.md §7 Rule 12: Định danh bên trái (tối đa 1 Status), Nút hành động chính + Điều hướng bên phải */}
-          <header className="px-5 py-3.5 bg-surface border-b border-line flex flex-wrap items-center justify-between gap-3 shrink-0">
-            <div className="flex items-center gap-3 min-w-0">
-              <Avatar name={deal.tenKenh || deal.idKenh} size={36} />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-base font-semibold text-ink truncate">
-                    {deal.tenKenh || deal.idKenh}
-                  </h2>
-                  <Status tone={stageStatus.tone}>{stageStatus.label}</Status>
-                </div>
-                <div className="flex items-center gap-2 text-2xs text-ink-3 mt-0.5 flex-wrap">
-                  <span className="font-code text-ink-2">
-                    @{deal.idKenh.replace(/^@/, '')}
-                  </span>
-                  <span>·</span>
-                  <span className="font-code font-medium text-ink">
-                    {deal.maBooking || 'Chưa cấp mã BO'}
-                  </span>
-                  {deal.maBooking && (
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(deal.maBooking, 'maBooking', 'mã Deal')}
-                      title="Sao chép mã Deal"
-                      className="inline-flex items-center justify-center w-5 h-5 rounded text-ink-3 hover:text-ink hover:bg-sunken"
-                    >
-                      {copiedField === 'maBooking' ? (
-                        <Check className="w-3.5 h-3.5 text-positive" />
-                      ) : (
-                        <Copy className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                  )}
-                  <span>·</span>
-                  <span className="truncate">{deal.storeName}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              {!hasBo ? (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon={FileCheck}
-                  onClick={() => onOpenDealBuilderModal?.(deal)}
-                >
-                  Tạo Deal &amp; SOW
-                </Button>
-              ) : !sowSigningCompleted && onOpenContractForDeal && mappedBookingDeal ? (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon={FileText}
-                  onClick={() => onOpenContractForDeal(mappedBookingDeal, 'SOW')}
-                >
-                  Ký Phụ lục SOW
-                </Button>
-              ) : !isAccepted ? (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon={Video}
-                  onClick={() => onOpenAcceptanceModal?.(deal)}
-                >
-                  Nghiệm thu video
-                </Button>
-              ) : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon={Send}
-                  onClick={() => onOpenLarkPaymentModal?.(deal)}
-                >
-                  Lập phiếu ĐNTT
-                </Button>
-              )}
-
-              {allDeals.length > 1 && (
-                <div className="inline-flex items-center border border-line-strong rounded-md overflow-hidden bg-surface h-7">
-                  <button
-                    type="button"
-                    disabled={!prevDeal}
-                    onClick={() => prevDeal && onSelectDeal?.(prevDeal)}
-                    title={prevDeal ? `Deal trước: ${prevDeal.maBooking || prevDeal.idKenh}` : 'Đầu danh sách'}
-                    aria-label="Deal trước"
-                    className="h-7 w-7 inline-flex items-center justify-center text-ink-2 hover:bg-sunken disabled:opacity-40 disabled:pointer-events-none"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <span className="text-2xs font-code text-ink-3 px-2 tabular-nums">
-                    {currentIndex >= 0 ? currentIndex + 1 : 1}/{allDeals.length}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={!nextDeal}
-                    onClick={() => nextDeal && onSelectDeal?.(nextDeal)}
-                    title={nextDeal ? `Deal sau: ${nextDeal.maBooking || nextDeal.idKenh}` : 'Cuối danh sách'}
-                    aria-label="Deal sau"
-                    className="h-7 w-7 inline-flex items-center justify-center text-ink-2 hover:bg-sunken disabled:opacity-40 disabled:pointer-events-none"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-
+            <div className="inline-flex items-center border border-line-strong rounded-md overflow-hidden bg-surface h-7">
               <button
                 type="button"
-                onClick={onClose}
-                title="Đóng (Esc)"
-                aria-label="Đóng"
-                className="h-7 w-7 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-ink hover:bg-sunken"
+                disabled={!prevDeal}
+                onClick={() => prevDeal && onSelectDeal?.(prevDeal)}
+                title={prevDeal ? `Deal trước: ${prevDeal.maBooking || prevDeal.idKenh}` : 'Đầu danh sách'}
+                aria-label="Deal trước"
+                className="h-7 w-7 inline-flex items-center justify-center text-ink-2 hover:bg-sunken disabled:opacity-40 disabled:pointer-events-none"
               >
-                <X className="w-4 h-4" />
+                <ChevronLeft className="w-4 h-4" />
               </button>
-            </div>
-          </header>
-
-          {/* Thanh hành trình 4 chặng chuẩn StepMark — nhấp vào từng chặng để mở đúng phân hệ */}
-          <div className="px-5 py-2.5 bg-sunken/50 border-b border-line shrink-0">
-            <div className="grid grid-cols-4 gap-2 items-center">
+              <span className="text-2xs font-code text-ink-3 px-2 tabular-nums">
+                {currentIndex >= 0 ? currentIndex + 1 : 1}/{allDeals.length}
+              </span>
               <button
                 type="button"
-                onClick={() => {
-                  setActiveTab('OVERVIEW');
-                  if (!hasBo) onOpenDealBuilderModal?.(deal);
-                }}
-                className="flex items-center gap-2 min-w-0 text-left px-2 py-1.5 rounded-md hover:bg-surface transition-colors"
+                disabled={!nextDeal}
+                onClick={() => nextDeal && onSelectDeal?.(nextDeal)}
+                title={nextDeal ? `Deal sau: ${nextDeal.maBooking || nextDeal.idKenh}` : 'Cuối danh sách'}
+                aria-label="Deal sau"
+                className="h-7 w-7 inline-flex items-center justify-center text-ink-2 hover:bg-sunken disabled:opacity-40 disabled:pointer-events-none"
               >
-                <StepMark done={hasBo} label="1" size={20} />
-                <div className="min-w-0">
-                  <div className="text-2xs font-medium text-ink truncate">Tạo Deal &amp; BO</div>
-                  <div className="text-2xs text-ink-3 font-code truncate">
-                    {hasBo ? deal.maBooking : 'Chờ cấp mã'}
-                  </div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('CONTRACT')}
-                className="flex items-center gap-2 min-w-0 text-left px-2 py-1.5 rounded-md hover:bg-surface transition-colors"
-              >
-                <StepMark done={sowSigningCompleted} label="2" size={20} />
-                <div className="min-w-0">
-                  <div className="text-2xs font-medium text-ink truncate">Ký Phụ lục SOW</div>
-                  <div className="text-2xs text-ink-3 truncate">
-                    {sowSigningCompleted
-                      ? deal.contractAppendixCode || 'Đã ký kết'
-                      : 'Chờ ký SOW'}
-                  </div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('ACCEPTANCE')}
-                className="flex items-center gap-2 min-w-0 text-left px-2 py-1.5 rounded-md hover:bg-surface transition-colors"
-              >
-                <StepMark done={isAccepted} label="3" size={20} />
-                <div className="min-w-0">
-                  <div className="text-2xs font-medium text-ink truncate">Nghiệm thu Video</div>
-                  <div className="text-2xs text-ink-3 truncate">
-                    {isAccepted
-                      ? deal.actualAirDate
-                        ? `Air ${formatDate(deal.actualAirDate)}`
-                        : 'Đã lên sóng'
-                      : 'Chờ link video'}
-                  </div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('ACCEPTANCE');
-                  if (isAccepted) onOpenLarkPaymentModal?.(deal);
-                }}
-                className="flex items-center gap-2 min-w-0 text-left px-2 py-1.5 rounded-md hover:bg-surface transition-colors"
-              >
-                <StepMark
-                  done={deal.trangThaiPhieuThanhToan === 'Đã thanh toán'}
-                  label="4"
-                  size={20}
-                />
-                <div className="min-w-0">
-                  <div className="text-2xs font-medium text-ink truncate">Quyết toán Lark</div>
-                  <div className="text-2xs text-ink-3 truncate">
-                    {deal.trangThaiPhieuThanhToan}
-                  </div>
-                </div>
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
+        )}
 
-          {/* Dãy 3 Tab chuẩn DESIGN_SYSTEM.md §7 Rule 14 (không đánh số, tên ngắn gọn, thao tác phụ bên phải) */}
-          <div className="px-5 pt-2 bg-surface border-b border-line shrink-0">
-            <Tabs<DrawerTab>
-              value={activeTab}
-              onChange={setActiveTab}
-              items={[
-                { key: 'OVERVIEW', label: 'Tổng quan' },
-                {
-                  key: 'CONTRACT',
-                  label: 'Pháp lý & SOW',
-                  count: 1 + (deal.addonServices?.length || 0),
-                },
-                { key: 'ACCEPTANCE', label: 'Nghiệm thu & Thanh toán' },
-              ]}
+        {onPullContractLinks && (
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={RefreshCw}
+            disabled={isPullingContractLinks}
+            onClick={onPullContractLinks}
+          >
+            Kéo HĐ · PL · BBNT
+          </Button>
+        )}
+
+        {!isDealBuilderSowLocked ? (
+          <Button
+            variant="primary"
+            size="sm"
+            icon={FileCheck}
+            onClick={() => handleSaveDealWorkspace(Boolean(onOpenContractForDeal))}
+          >
+            {onOpenContractForDeal ? 'Lưu Deal & Ký SOW' : 'Lưu cấu hình Deal'}
+          </Button>
+        ) : !isAccepted ? (
+          <Button
+            variant="primary"
+            size="sm"
+            icon={Video}
+            onClick={() => {
+              setActiveTab('ACCEPTANCE');
+              onOpenAcceptanceModal?.(deal);
+            }}
+          >
+            Nghiệm thu video
+          </Button>
+        ) : (
+          <Button
+            variant="primary"
+            size="sm"
+            icon={Send}
+            onClick={() => onOpenLarkPaymentModal?.(deal)}
+          >
+            Lập phiếu Lark
+          </Button>
+        )}
+      </PageActions>
+
+      {/* PHÂN VÙNG 1B: Khung Định danh Deal & Thanh hành trình 4 chặng */}
+      <section className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
+        <div className="p-4 flex flex-wrap items-center justify-between gap-4 border-b border-line">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <Person
+              name={deal.tenKenh || deal.idKenh}
+              sub={`@${deal.idKenh.replace(/^@/, '')} · Bậc ${deal.klGrade || 'KL3'} · ${formatNumber(deal.follower || matchedKoc?.followers || 0)} người theo dõi`}
+              size={40}
+            />
+            <div className="hidden sm:block h-8 w-px bg-line" />
+            <div className="flex flex-wrap items-center gap-2">
+              <Status tone={stageStatus.tone}>{stageStatus.label}</Status>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-sunken border border-line font-code text-xs font-semibold text-ink">
+                <span>{dealDraftCode || deal.maBooking || 'Chưa cấp mã BO'}</span>
+                {(dealDraftCode || deal.maBooking) && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopy(dealDraftCode || deal.maBooking, 'maBooking', 'mã Deal')
+                    }
+                    className="text-ink-3 hover:text-ink ml-1"
+                    title="Sao chép mã Deal"
+                  >
+                    {copiedField === 'maBooking' ? (
+                      <Check className="w-3.5 h-3.5 text-positive" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                )}
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-sunken border border-line font-code text-xs text-ink-2">
+                {dealDraftAppendixCode || deal.contractAppendixCode || 'Chưa lập PL'}
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-sunken border border-line text-xs text-ink-2">
+                {deal.storeName} · <span className="font-code">{deal.thangPlan}</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {onOpenKocProfile && (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={UserCheck}
+                onClick={() => onOpenKocProfile(deal)}
+              >
+                Hồ sơ KOC
+              </Button>
+            )}
+            {deal.linkKenh && (
+              <a
+                href={deal.linkKenh}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-line bg-surface hover:bg-sunken text-xs font-medium text-accent"
+              >
+                <span>Mở kênh</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+          </div>
+        </div>
+
+        {/* Thanh hành trình 4 chặng chuẩn StepMark */}
+        <div className="px-4 py-2.5 bg-sunken/50 grid grid-cols-2 lg:grid-cols-4 gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('OVERVIEW')}
+            className={`flex items-center gap-2.5 min-w-0 text-left px-3 py-2 rounded-lg border transition-colors ${
+              activeTab === 'OVERVIEW'
+                ? 'bg-surface border-line-strong'
+                : 'border-transparent hover:bg-surface/70'
+            }`}
+          >
+            <StepMark done={hasBo} label="1" size={22} />
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-ink truncate">
+                Cấu hình Deal &amp; Bảng CV
+              </div>
+              <div className="text-2xs text-ink-3 font-code truncate">
+                {hasBo
+                  ? `${deal.maBooking} · ${dealDraftJobs.length} Job`
+                  : 'Chờ cấp mã BO'}
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('CONTRACT')}
+            className={`flex items-center gap-2.5 min-w-0 text-left px-3 py-2 rounded-lg border transition-colors ${
+              activeTab === 'CONTRACT'
+                ? 'bg-surface border-line-strong'
+                : 'border-transparent hover:bg-surface/70'
+            }`}
+          >
+            <StepMark done={sowSigningCompleted} label="2" size={22} />
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-ink truncate">
+                Hợp đồng &amp; Ký SOW
+              </div>
+              <div className="text-2xs text-ink-3 truncate">
+                {sowSigningCompleted
+                  ? `${dealDraftAppendixCode} (Đã ký)`
+                  : 'Chờ ký Phụ lục SOW'}
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('ACCEPTANCE')}
+            className={`flex items-center gap-2.5 min-w-0 text-left px-3 py-2 rounded-lg border transition-colors ${
+              activeTab === 'ACCEPTANCE'
+                ? 'bg-surface border-line-strong'
+                : 'border-transparent hover:bg-surface/70'
+            }`}
+          >
+            <StepMark done={isAccepted} label="3" size={22} />
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-ink truncate">
+                Nghiệm thu Video &amp; Asset
+              </div>
+              <div className="text-2xs text-ink-3 truncate">
+                {isAccepted
+                  ? deal.actualAirDate
+                    ? `Đã air ${formatDate(deal.actualAirDate)}`
+                    : 'Đã nghiệm thu'
+                  : 'Chờ cập nhật link air'}
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('ACCEPTANCE');
+              if (isAccepted) onOpenLarkPaymentModal?.(deal);
+            }}
+            className="flex items-center gap-2.5 min-w-0 text-left px-3 py-2 rounded-lg border border-transparent hover:bg-surface/70 transition-colors"
+          >
+            <StepMark
+              done={deal.trangThaiPhieuThanhToan === 'Đã thanh toán'}
+              label="4"
+              size={22}
+            />
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-ink truncate">
+                BBNT &amp; Quyết toán Lark
+              </div>
+              <div className="text-2xs text-ink-3 truncate">
+                {deal.trangThaiPhieuThanhToan}
+              </div>
+            </div>
+          </button>
+        </div>
+      </section>
+
+      {/* PHÂN VÙNG 2: Hàng 4 chỉ số tổng quan của Deal (StatRow) */}
+      <StatRow size="sm">
+        <Stat
+          label="Ngân sách Net chốt"
+          value={formatVnd(draftGrandDealNet)}
+          numeric={draftGrandDealNet}
+          note={`Gross kèm thuế ${formatVndShort(draftGrossWithTax)} · Bậc ${deal.klGrade || 'KL3'}`}
+        />
+        <Stat
+          label="Cấu trúc Bảng công việc"
+          value={`${dealDraftJobs.length} Job`}
+          note={`Video ${formatVndShort(draftTotalVideoNet)} · Quyền lợi kèm ${formatVndShort(draftTotalAddonsNet)}`}
+        />
+        <Stat
+          label="Cần thanh toán"
+          value={formatVnd(deal.soTienCanThanhToan)}
+          numeric={deal.soTienCanThanhToan}
+          progress={{
+            value:
+              deal.trangThaiPhieuThanhToan === 'Đã thanh toán'
+                ? draftGrandDealNet
+                : dealDraftAdvanceAmount,
+            max: Math.max(1, draftGrandDealNet),
+          }}
+          note={
+            dealDraftAdvanceAmount > 0
+              ? `Đã tạm ứng ${formatVndShort(dealDraftAdvanceAmount)}`
+              : 'Chưa phát sinh tạm ứng'
+          }
+        />
+        <Stat
+          label="Doanh số GMV 30 ngày"
+          value={formatVnd(deal.gmv30d || 0)}
+          numeric={deal.gmv30d || 0}
+          tone={deal.roi30d >= 2 ? 'positive' : deal.roi30d > 0 ? 'warning' : undefined}
+          note={`${formatNumber(deal.orders30d || 0)} đơn · ROI ${deal.roi30d.toFixed(2)}x`}
+        />
+      </StatRow>
+
+      {/* PHÂN VÙNG 3: Thanh điều hướng 3 phân khu nghiệp vụ (Tabs) */}
+      <Tabs<DrawerTab>
+        value={activeTab}
+        onChange={setActiveTab}
+        items={[
+          {
+            key: 'OVERVIEW',
+            label: 'Cấu hình Deal & Bảng công việc',
+            count: dealDraftJobs.length,
+          },
+          {
+            key: 'CONTRACT',
+            label: 'Pháp lý & Hợp đồng',
+            count: 3,
+          },
+          {
+            key: 'ACCEPTANCE',
+            label: 'Nghiệm thu & Quyết toán',
+          },
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            {isDealBuilderSowLocked ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Unlock}
+                onClick={handleUnlockForAmendmentAppendix}
+              >
+                Lập Phụ lục bổ sung ({nextAmendmentAppendixCode})
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={FileCheck}
+                onClick={() => handleSaveDealWorkspace(false)}
+              >
+                Lưu cấu hình Deal
+              </Button>
+            )}
+          </div>
+        }
+      />
+
+      {/* PHÂN VÙNG 4: Không gian làm việc 2 cột theo từng Tab */}
+      {activeTab === 'OVERVIEW' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          {/* CỘT TRÁI (8 CỘT): Thiết kế Định danh Deal, Danh sách Job & Quyền lợi SOW */}
+          <div className="lg:col-span-8 space-y-5">
+            {/* Panel 1: Định danh Deal & Phụ lục Hợp đồng */}
+            <Panel
+              title="Định danh Deal & Hồ sơ Phụ lục SOW"
               actions={
-                <div className="flex items-center gap-1.5">
-                  {onOpenKocProfile && (
+                <Status tone={isDealBuilderSowLocked ? 'positive' : 'warning'}>
+                  {isDealBuilderSowLocked ? 'Đã duyệt' : 'Chờ duyệt'}
+                </Status>
+              }
+            >
+              <div className="space-y-4 text-xs">
+                {isDealBuilderSowLocked ? (
+                  <div className="p-3 rounded-lg bg-warning-soft border border-line flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-warning font-medium">
+                      <Lock className="w-4 h-4 shrink-0" />
+                      <span>
+                        Phụ lục SOW ({dealDraftAppendixCode}) đã ký hoàn tất — các điều khoản đơn giá, ngày air cam kết và hạng mục bàn giao được khóa để bảo toàn hồ sơ pháp lý.
+                      </span>
+                    </div>
                     <Button
-                      variant="ghost"
+                      variant="secondary"
                       size="sm"
-                      icon={UserCheck}
-                      onClick={() => onOpenKocProfile(deal)}
+                      icon={Unlock}
+                      onClick={handleUnlockForAmendmentAppendix}
                     >
-                      Hồ sơ KOC
+                      Lập Phụ lục bổ sung ({nextAmendmentAppendixCode})
                     </Button>
-                  )}
+                  </div>
+                ) : (
+                  <div className="p-2.5 rounded-lg bg-positive-soft/60 border border-line flex items-center gap-2 text-positive font-medium">
+                    <Unlock className="w-4 h-4 shrink-0" />
+                    <span>
+                      Phụ lục SOW đang ở trạng thái chờ ký — cho phép chỉnh sửa đơn giá, ngày air dự kiến và quyền lợi đi kèm trước khi phát hành.
+                    </span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <Field label="Mã Deal (Booking Order)">
+                    <Input
+                      value={dealDraftCode}
+                      disabled={isDealBuilderSowLocked}
+                      onChange={(e) => {
+                        const nextCode = e.target.value;
+                        setDealDraftCode(nextCode);
+                        setDealDraftAppendixCode(generateDealAppendixCode(nextCode, 1));
+                      }}
+                    />
+                  </Field>
+                  <Field label="Mã Hợp đồng nguyên tắc (1 HĐNT / KOC)">
+                    <Input
+                      value={dealDraftMasterContract}
+                      disabled={isDealBuilderSowLocked}
+                      onChange={(e) => setDealDraftMasterContract(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Mã Phụ lục theo Deal (1 Phụ lục / Deal)">
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        value={dealDraftAppendixCode}
+                        disabled={isDealBuilderSowLocked}
+                        onChange={(e) => setDealDraftAppendixCode(e.target.value)}
+                      />
+                      <Select
+                        value={dealDraftAppendixStatus}
+                        onChange={(e) =>
+                          setDealDraftAppendixStatus(
+                            e.target.value as DealContractAppendixStatus
+                          )
+                        }
+                        className="w-auto shrink-0"
+                      >
+                        <option value="CHỜ_KÝ">Chờ ký PL</option>
+                        <option value="ĐÃ_KÝ">Đã ký PL</option>
+                        <option value="CHƯA_LẬP">Chưa lập</option>
+                      </Select>
+                    </div>
+                  </Field>
+                </div>
+              </div>
+            </Panel>
+
+            {/* Panel 2: Danh sách Bảng công việc (Job) & Cấu hình chi tiết */}
+            <Panel
+              title={`Cấu hình Bảng công việc trong Phụ lục SOW (${dealDraftJobs.length} Job)`}
+              actions={
+                !isDealBuilderSowLocked ? (
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => onOpenDealBuilderModal?.(deal)}
+                    icon={Plus}
+                    onClick={handleAddJobToDealBuilder}
                   >
-                    {sowSigningCompleted ? 'Lập Phụ lục bổ sung' : 'Sửa cấu hình Deal'}
+                    Thêm Job vào Deal
                   </Button>
-                </div>
+                ) : undefined
               }
-            />
-          </div>
-
-          {/* Nội dung cuộn */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-canvas">
-            {/* 4 ô chỉ số đầu hồ sơ — chuẩn StatRow size="sm" */}
-            <StatRow size="sm">
-              <Stat
-                label="Chi phí Net chốt"
-                value={formatVnd(deal.chiPhiBookingNetCuoi)}
-                numeric={deal.chiPhiBookingNetCuoi}
-                note={`Gross ${formatVndShort(deal.chiPhiGrossKemThue)} · Bậc ${deal.klGrade || 'KL3'}`}
-              />
-              <Stat
-                label="Cần thanh toán"
-                value={formatVnd(deal.soTienCanThanhToan)}
-                numeric={deal.soTienCanThanhToan}
-                note={
-                  deal.soTienTamUngTruoc > 0
-                    ? `Đã tạm ứng ${formatVndShort(deal.soTienTamUngTruoc)}`
-                    : 'Chưa phát sinh tạm ứng'
-                }
-              />
-              <Stat
-                label="Doanh số GMV 30 ngày"
-                value={formatVnd(deal.gmv30d || 0)}
-                numeric={deal.gmv30d || 0}
-                note={`${formatNumber(deal.orders30d || 0)} đơn · ${formatNumber(deal.views30d || 0)} lượt xem`}
-              />
-              <Stat
-                label="Hiệu quả ROI 30 ngày"
-                value={`${deal.roi30d.toFixed(2)}x`}
-                tone={deal.roi30d >= 2 ? 'positive' : deal.roi30d > 0 ? 'warning' : undefined}
-                note={deal.danhGiaHieuQuaVideo || 'Chờ lên sóng'}
-              />
-            </StatRow>
-
-            {activeTab === 'OVERVIEW' && (
-              <div className="space-y-4">
-                <Panel title="Cấu trúc chi phí & Đối chiếu giải ngân">
-                  <div className="space-y-3.5">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-2xs">
-                        <span className="text-ink-2">
-                          Đã tạm ứng / Giải ngân:{' '}
-                          <span className="font-code font-semibold text-ink">
-                            {formatVnd(
-                              deal.trangThaiPhieuThanhToan === 'Đã thanh toán'
-                                ? deal.chiPhiBookingNetCuoi
-                                : deal.soTienTamUngTruoc
-                            )}
-                          </span>{' '}
-                          / {formatVnd(deal.chiPhiBookingNetCuoi)}
-                        </span>
-                        <span className="font-code text-ink-3 tabular-nums">
-                          {deal.trangThaiPhieuThanhToan === 'Đã thanh toán'
-                            ? 100
-                            : deal.chiPhiBookingNetCuoi > 0
-                            ? Math.round(
-                                (deal.soTienTamUngTruoc / deal.chiPhiBookingNetCuoi) * 100
-                              )
-                            : 0}
-                          % hoàn tất
-                        </span>
-                      </div>
-                      <Progress
-                        value={
-                          deal.trangThaiPhieuThanhToan === 'Đã thanh toán'
-                            ? deal.chiPhiBookingNetCuoi
-                            : deal.soTienTamUngTruoc
-                        }
-                        max={Math.max(1, deal.chiPhiBookingNetCuoi)}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-line text-xs">
-                      <div className="p-2.5 rounded-lg bg-sunken border border-line">
-                        <div className="text-2xs text-ink-3">Chi phí Gross</div>
-                        <div className="font-code font-semibold text-ink mt-0.5 tabular-nums">
-                          {formatVnd(deal.chiPhiGrossKemThue)}
-                        </div>
-                        <div className="text-2xs text-ink-3 mt-0.5">
-                          Bậc {deal.klGrade || 'KL3'}
-                        </div>
-                      </div>
-                      <div className="p-2.5 rounded-lg bg-sunken border border-line">
-                        <div className="text-2xs text-ink-3">Net chốt Deal</div>
-                        <div className="font-code font-semibold text-ink mt-0.5 tabular-nums">
-                          {formatVnd(deal.chiPhiBookingNetCuoi)}
-                        </div>
-                        <div className="text-2xs text-ink-3 mt-0.5">HĐNT &amp; SOW</div>
-                      </div>
-                      <div className="p-2.5 rounded-lg bg-sunken border border-line">
-                        <div className="text-2xs text-ink-3">Đã tạm ứng trước</div>
-                        <div className="font-code font-semibold text-warning mt-0.5 tabular-nums">
-                          {formatVnd(deal.soTienTamUngTruoc)}
-                        </div>
-                        <div className="text-2xs text-ink-3 mt-0.5">Theo điều khoản SOW</div>
-                      </div>
-                      <div className="p-2.5 rounded-lg bg-sunken border border-line">
-                        <div className="text-2xs text-ink-3">Cần thanh toán</div>
-                        <div className="font-code font-semibold text-positive mt-0.5 tabular-nums">
-                          {formatVnd(deal.soTienCanThanhToan)}
-                        </div>
-                        <div className="text-2xs text-ink-3 mt-0.5">Quyết toán sau BBNT</div>
-                      </div>
-                    </div>
-                  </div>
-                </Panel>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Panel
-                    title="Thông tin KOC & Kênh phát sóng"
-                  actions={
-                    deal.linkKenh ? (
-                      <a
-                        href={deal.linkKenh}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
+            >
+              <div className="space-y-4 text-xs">
+                {/* Thanh chuyển đổi giữa các Job trong Deal */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+                  {dealDraftJobs.map((jobItem, jIdx) => {
+                    const isSelected = jIdx === activeDealDraftJobIdx;
+                    const jobSub = computeDealSowJobSubtotal(jobItem);
+                    return (
+                      <div
+                        key={jobItem.id || jIdx}
+                        className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border transition-colors ${
+                          isSelected
+                            ? 'border-accent bg-accent-soft/40 text-ink'
+                            : 'border-line bg-sunken/40 text-ink-2 hover:bg-sunken'
+                        }`}
                       >
-                        <span>Mở kênh TikTok</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    ) : undefined
-                  }
-                >
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
-                    <div>
-                      <dt className="text-2xs text-ink-3">Nghệ danh / KOC</dt>
-                      <dd className="font-medium text-ink mt-0.5">{deal.tenKenh || deal.idKenh}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-2xs text-ink-3">ID Kênh TikTok</dt>
-                      <dd className="font-code text-ink mt-0.5">@{deal.idKenh.replace(/^@/, '')}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-2xs text-ink-3">Tệp kênh &amp; Phân loại</dt>
-                      <dd className="text-ink mt-0.5">
-                        {deal.tepKenh || 'Review'} · {deal.phanLoaiVideo || 'Affiliate KOC'}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-2xs text-ink-3">Lượt theo dõi</dt>
-                      <dd className="font-code text-ink tabular-nums mt-0.5">
-                        {formatNumber(deal.follower || matchedKoc?.followers || 0)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-2xs text-ink-3">Điện thoại nhận mẫu</dt>
-                      <dd className="font-code text-ink mt-0.5">
-                        {maskSensitive(deal.sdtNhanHang || matchedKoc?.phone, showSensitive)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-2xs text-ink-3">Hình thức hợp tác</dt>
-                      <dd className="text-ink mt-0.5">{deal.hinhThucHopTac || 'New'}</dd>
-                    </div>
-                    <div className="col-span-2">
-                      <dt className="text-2xs text-ink-3">Địa chỉ gửi hàng mẫu</dt>
-                      <dd className="text-ink mt-0.5">
-                        {deal.diaChiNhanHang || matchedKoc?.shippingAddress || 'Chưa cập nhật địa chỉ nhận mẫu'}
-                      </dd>
-                    </div>
-                  </dl>
-                </Panel>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectDealDraftJob(jIdx)}
+                          className="text-left min-w-0 flex-1 space-y-1"
+                        >
+                          <div className="flex items-center justify-between gap-1.5">
+                            <span className="px-1.5 py-0.5 rounded bg-accent/15 text-accent font-code text-2xs font-semibold">
+                              Bảng CV #{jIdx + 1} · {jobItem.jobCode}
+                            </span>
+                            <span className="font-code font-semibold text-accent tabular-nums">
+                              {formatVndShort(jobSub.plannedJobNet)}
+                            </span>
+                          </div>
+                          <div className="font-medium text-ink truncate">
+                            {jobItem.productName || deal.sanPham || 'Sản phẩm'}
+                          </div>
+                          <div className="text-2xs text-ink-3 font-code">
+                            {jobItem.mediaChannel || 'TikTok'} · Air:{' '}
+                            {jobItem.plannedAirDate
+                              ? formatDate(jobItem.plannedAirDate)
+                              : 'Chưa chốt'}
+                          </div>
+                        </button>
+                        {!isDealBuilderSowLocked && dealDraftJobs.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteDealDraftJob(jIdx)}
+                            className="text-ink-3 hover:text-critical p-1 rounded hover:bg-critical-soft shrink-0"
+                            title="Xóa Bảng công việc này"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
 
-                <Panel title="Gian hàng, Sản phẩm & Lịch phát sóng">
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
-                    <div>
-                      <dt className="text-2xs text-ink-3">Gian hàng</dt>
-                      <dd className="font-medium text-ink mt-0.5">{deal.storeName}</dd>
+                {/* Chi tiết Bảng công việc đang chọn */}
+                <div className="p-4 rounded-xl border border-line bg-sunken/30 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-line">
+                    <div className="font-semibold text-ink inline-flex items-center gap-1.5">
+                      <Video className="w-4 h-4 text-accent" />
+                      <span>
+                        Bảng công việc #{activeDealDraftJobIdx + 1} (
+                        {activeDraftJob?.jobCode || `${dealDraftCode}-J01`}) — Hạng mục Video &amp; Quyền lợi đi kèm
+                      </span>
                     </div>
-                    <div>
-                      <dt className="text-2xs text-ink-3">Thương hiệu &amp; Kỳ Plan</dt>
-                      <dd className="text-ink mt-0.5">
-                        {deal.brandName} · <span className="font-code">{deal.thangPlan}</span> ({deal.dot})
-                      </dd>
+                    <span className="px-2.5 py-1 rounded-md bg-surface border border-line font-code text-xs font-semibold text-accent tabular-nums">
+                      Cộng Bảng CV #{activeDealDraftJobIdx + 1}:{' '}
+                      {formatVnd(activeDraftJobSub.plannedJobNet)}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <Field label="Mã Job trên Phụ lục">
+                      <Input
+                        value={
+                          activeDraftJob?.jobCode ||
+                          `${dealDraftCode}-J0${activeDealDraftJobIdx + 1}`
+                        }
+                        disabled={isDealBuilderSowLocked}
+                        onChange={(e) => {
+                          const nextCode = e.target.value;
+                          updateActiveDealDraftJob((j) => ({ ...j, jobCode: nextCode }));
+                        }}
+                      />
+                    </Field>
+                    <Field label="Sản phẩm / Nội dung Job" className="sm:col-span-2">
+                      <Input
+                        value={activeDraftJob?.productName ?? deal.sanPham}
+                        disabled={isDealBuilderSowLocked}
+                        onChange={(e) => {
+                          const nextProd = e.target.value;
+                          updateActiveDealDraftJob((j) => ({
+                            ...j,
+                            productName: nextProd,
+                            jobTitle: `Bảng công việc #${activeDealDraftJobIdx + 1} (${j.jobCode}) — ${nextProd}`,
+                          }));
+                        }}
+                      />
+                    </Field>
+                    <Field label="Kênh đăng tải">
+                      <Select
+                        value={activeDraftJob?.mediaChannel || 'TikTok'}
+                        disabled={isDealBuilderSowLocked}
+                        onChange={(e) => {
+                          const ch = e.target.value as NonNullable<
+                            DealSowJobItem['mediaChannel']
+                          >;
+                          updateActiveDealDraftJob((j) => ({ ...j, mediaChannel: ch }));
+                        }}
+                      >
+                        <option value="TikTok">TikTok</option>
+                        <option value="Facebook">Facebook Reels</option>
+                        <option value="Instagram">Instagram Reels</option>
+                        <option value="Shopee Video">Shopee Video</option>
+                        <option value="YouTube">YouTube Shorts</option>
+                      </Select>
+                    </Field>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <Field label="Ngày air dự kiến (Job này)">
+                      <Input
+                        type="date"
+                        value={dealDraftPlannedAirDate}
+                        disabled={isDealBuilderSowLocked}
+                        onChange={(e) => {
+                          const nextDate = e.target.value;
+                          setDealDraftPlannedAirDate(nextDate);
+                          updateActiveDealDraftJob((j) => ({
+                            ...j,
+                            plannedAirDate: nextDate,
+                          }));
+                        }}
+                      />
+                    </Field>
+                    <Field label="Đơn giá Net Video chính (VNĐ)">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        disabled={isDealBuilderSowLocked}
+                        value={formatNumber(Number(dealDraftVideoNetCost) || 0)}
+                        onChange={(e) => {
+                          const nextCost = parseThousandNumberInput(e.target.value);
+                          setDealDraftVideoNetCost(nextCost);
+                          updateActiveDealDraftJob((j) => ({
+                            ...j,
+                            videoAssetNetCost: nextCost,
+                          }));
+                        }}
+                      />
+                    </Field>
+                    <Field label="Tạm ứng trước toàn Deal (VNĐ)">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        disabled={isDealBuilderSowLocked}
+                        value={formatNumber(Number(dealDraftAdvanceAmount) || 0)}
+                        onChange={(e) =>
+                          setDealDraftAdvanceAmount(
+                            parseThousandNumberInput(e.target.value)
+                          )
+                        }
+                      />
+                    </Field>
+                  </div>
+
+                  {/* Quyền lợi & Hạng mục đi kèm của Job */}
+                  <div className="pt-3 border-t border-line space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-semibold text-ink">
+                        Hạng mục quyền lợi đi kèm trong Bảng công việc #{activeDealDraftJobIdx + 1} (
+                        {dealDraftAddons.length} hạng mục)
+                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {[
+                          {
+                            type: 'ADS_CODE' as const,
+                            label: 'Mã Spark Ads (30d)',
+                            fullLabel: 'Cấp mã quảng cáo Spark Ads (30 ngày)',
+                            anchor: 'ACCEPTANCE_DATE' as const,
+                            days: 30,
+                          },
+                          {
+                            type: 'IMAGE_USAGE' as const,
+                            label: 'Sử dụng hình ảnh (30d)',
+                            fullLabel: 'Quyền sử dụng hình ảnh & file video gốc (30 ngày)',
+                            anchor: 'ACCEPTANCE_DATE' as const,
+                            days: 30,
+                          },
+                          {
+                            type: 'EXCLUSIVITY' as const,
+                            label: 'Độc quyền ngành hàng',
+                            fullLabel: 'Độc quyền ngành hàng (30 ngày)',
+                            anchor: 'AIR_DATE' as const,
+                            days: 30,
+                          },
+                          {
+                            type: 'CROSS_POST_REUP' as const,
+                            label: 'Đăng chéo / Reup Wave 1',
+                            fullLabel: 'Đăng chéo kênh phụ / Reup Wave 1',
+                            anchor: 'ACCEPTANCE_DATE' as const,
+                            days: 30,
+                          },
+                          {
+                            type: 'LINK_BIO_CART' as const,
+                            label: 'Gắn giỏ & Link Bio',
+                            fullLabel: 'Gắn giỏ hàng & Link Bio (30 ngày)',
+                            anchor: 'AIR_DATE' as const,
+                            days: 30,
+                          },
+                        ].map((preset) => {
+                          const active = dealDraftAddons.some(
+                            (a) => a.termType === preset.type
+                          );
+                          return (
+                            <button
+                              key={preset.type}
+                              type="button"
+                              disabled={isDealBuilderSowLocked}
+                              onClick={() =>
+                                handleTogglePresetAddonInBuilder(
+                                  preset.type,
+                                  preset.fullLabel,
+                                  preset.anchor,
+                                  preset.days
+                                )
+                              }
+                              className={`px-2.5 py-1 rounded-md border text-2xs font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none ${
+                                active
+                                  ? 'bg-ink border-ink text-white'
+                                  : 'bg-surface border-line text-ink-2 hover:bg-sunken'
+                              }`}
+                            >
+                              {active ? `✓ ${preset.label}` : `+ ${preset.label}`}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div className="col-span-2">
-                      <dt className="text-2xs text-ink-3">Sản phẩm trọng tâm (SKU)</dt>
-                      <dd className="font-medium text-ink mt-0.5">
-                        {deal.sanPham || 'Chưa gán sản phẩm'}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-2xs text-ink-3">Định hướng nội dung (Pillar)</dt>
-                      <dd className="text-ink mt-0.5">{deal.pillarContent || 'Review trực tiếp'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-2xs text-ink-3">Nhân sự phụ trách</dt>
-                      <dd className="mt-0.5">
-                        <Person
-                          name={deal.nguoiPhuTrach || 'Chuyên viên Booking'}
-                          sub={deal.leaderName ? `Leader: ${deal.leaderName}` : undefined}
-                          size={20}
-                        />
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-2xs text-ink-3">Ngày air cam kết</dt>
-                      <dd className="font-code text-ink tabular-nums mt-0.5">
-                        {deal.plannedAirDate ? formatDate(deal.plannedAirDate) : 'Chưa chốt ngày air'}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-2xs text-ink-3">Ngày air thực tế &amp; SLA</dt>
-                      <dd className="text-ink mt-0.5">
-                        <span className="font-code tabular-nums">
-                          {deal.actualAirDate ? formatDate(deal.actualAirDate) : 'Chưa lên sóng'}
-                        </span>
-                        <span className="text-ink-3"> · {deal.trangThaiSlaAir}</span>
-                      </dd>
-                    </div>
-                  </dl>
-                </Panel>
+
+                    {dealDraftAddons.length === 0 ? (
+                      <div className="p-3 rounded-lg border border-dashed border-line bg-surface text-ink-3 text-center">
+                        Bảng công việc #{activeDealDraftJobIdx + 1} hiện chỉ có 1 Hạng mục Video chính. Bấm các nút phía trên để gắn thêm quyền lợi đi kèm vào Phụ lục SOW.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {dealDraftAddons.map((addon, idx) => (
+                          <div
+                            key={addon.id || idx}
+                            className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center p-2.5 rounded-lg border border-line bg-surface"
+                          >
+                            <div className="sm:col-span-6">
+                              <input
+                                type="text"
+                                disabled={isDealBuilderSowLocked}
+                                value={addon.termLabel}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const nextAddons = dealDraftAddons.map((a, i) =>
+                                    i === idx ? { ...a, termLabel: val } : a
+                                  );
+                                  setDealDraftAddons(nextAddons);
+                                  updateActiveDealDraftJob((j) => ({
+                                    ...j,
+                                    addonServices: nextAddons,
+                                  }));
+                                }}
+                                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface font-medium text-xs text-ink disabled:bg-sunken disabled:text-ink-3"
+                              />
+                            </div>
+                            <div className="sm:col-span-2 flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                disabled={isDealBuilderSowLocked}
+                                value={addon.durationDays}
+                                onChange={(e) => {
+                                  const days = Math.max(1, Number(e.target.value) || 30);
+                                  const nextAddons = dealDraftAddons.map((a, i) =>
+                                    i === idx ? { ...a, durationDays: days } : a
+                                  );
+                                  setDealDraftAddons(nextAddons);
+                                  updateActiveDealDraftJob((j) => ({
+                                    ...j,
+                                    addonServices: nextAddons,
+                                  }));
+                                }}
+                                className="w-16 h-8 px-2 rounded-md border border-line bg-surface font-code text-xs text-right text-ink disabled:bg-sunken disabled:text-ink-3"
+                              />
+                              <span className="text-2xs text-ink-3 shrink-0">ngày</span>
+                            </div>
+                            <div className="sm:col-span-3 flex items-center gap-1.5">
+                              <span className="text-2xs text-ink-3 shrink-0">Phí Net:</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                disabled={isDealBuilderSowLocked}
+                                value={formatNumber(Number(addon.allocatedCostVnd) || 0)}
+                                onChange={(e) => {
+                                  const cost = parseThousandNumberInput(e.target.value);
+                                  const nextAddons = dealDraftAddons.map((a, i) =>
+                                    i === idx ? { ...a, allocatedCostVnd: cost } : a
+                                  );
+                                  setDealDraftAddons(nextAddons);
+                                  updateActiveDealDraftJob((j) => ({
+                                    ...j,
+                                    addonServices: nextAddons,
+                                  }));
+                                }}
+                                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface font-code text-xs text-right font-semibold text-ink tabular-nums disabled:bg-sunken disabled:text-ink-3"
+                              />
+                            </div>
+                            <div className="sm:col-span-1 text-right">
+                              {!isDealBuilderSowLocked && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const nextAddons = dealDraftAddons.filter(
+                                      (_, i) => i !== idx
+                                    );
+                                    setDealDraftAddons(nextAddons);
+                                    updateActiveDealDraftJob((j) => ({
+                                      ...j,
+                                      addonServices: nextAddons,
+                                    }));
+                                  }}
+                                  className="text-critical hover:underline text-xs font-medium"
+                                >
+                                  Xóa
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            )}
+            </Panel>
+          </div>
 
-            {activeTab === 'CONTRACT' && (
-              <div className="space-y-4">
+          {/* CỘT PHẢI (4 CỘT): Tổng hợp Phụ lục SOW, Gian hàng & Hồ sơ KOC */}
+          <div className="lg:col-span-4 space-y-5">
+            {/* Panel 3: Tổng hợp Phụ lục SOW & Thao tác phát hành */}
+            <Panel title="Tổng hợp Phụ lục SOW & Giải ngân">
+              <div className="space-y-3.5 text-xs">
+                <div className="divide-y divide-line border border-line rounded-lg bg-sunken/40 px-3">
+                  {dealDraftJobs.map((jobItem, idx) => {
+                    const sub = computeDealSowJobSubtotal(jobItem);
+                    return (
+                      <div
+                        key={jobItem.id || idx}
+                        className="py-2.5 flex items-center justify-between gap-2"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-medium text-ink truncate">
+                            Bảng CV #{idx + 1} · {jobItem.jobCode}
+                          </div>
+                          <div className="text-2xs text-ink-3 truncate">
+                            {jobItem.productName || deal.sanPham} ·{' '}
+                            {(jobItem.addonServices || []).length} quyền lợi
+                          </div>
+                        </div>
+                        <div className="font-code font-semibold text-ink tabular-nums shrink-0">
+                          {formatVnd(sub.plannedJobNet)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <dl className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between text-ink-2">
+                    <dt>Tổng đơn giá Video Net</dt>
+                    <dd className="font-code font-medium text-ink tabular-nums">
+                      {formatVnd(draftTotalVideoNet)}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between text-ink-2">
+                    <dt>Tổng phí quyền lợi đi kèm</dt>
+                    <dd className="font-code font-medium text-ink tabular-nums">
+                      {formatVnd(draftTotalAddonsNet)}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between text-ink-2">
+                    <dt>Chi phí Gross kèm thuế</dt>
+                    <dd className="font-code text-ink-2 tabular-nums">
+                      {formatVnd(draftGrossWithTax)}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-line font-semibold text-ink">
+                    <dt>Tổng giá trị Deal (Ghi trên SOW)</dt>
+                    <dd className="font-code text-sm text-accent tabular-nums">
+                      {formatVnd(draftGrandDealNet)}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between text-ink-2">
+                    <dt>Tạm ứng trước</dt>
+                    <dd className="font-code text-warning font-medium tabular-nums">
+                      {formatVnd(dealDraftAdvanceAmount)}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between text-ink-2">
+                    <dt>Còn lại quyết toán sau BBNT</dt>
+                    <dd className="font-code text-positive font-semibold tabular-nums">
+                      {formatVnd(draftRemainingPayable)}
+                    </dd>
+                  </div>
+                </dl>
+
+                {!isDealBuilderSowLocked ? (
+                  <div className="pt-2 border-t border-line flex flex-col gap-2">
+                    {onOpenContractForDeal && (
+                      <Button
+                        variant="primary"
+                        icon={FileText}
+                        onClick={() => handleSaveDealWorkspace(true)}
+                      >
+                        Lưu Deal &amp; Ký Phụ lục SOW
+                      </Button>
+                    )}
+                    <Button
+                      variant={onOpenContractForDeal ? 'secondary' : 'primary'}
+                      icon={FileCheck}
+                      onClick={() => handleSaveDealWorkspace(false)}
+                    >
+                      Lưu cấu hình Deal
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="pt-2 border-t border-line flex flex-col gap-2">
+                    {onOpenContractForDeal && mappedBookingDeal && (
+                      <Button
+                        variant="secondary"
+                        icon={FileText}
+                        onClick={() => onOpenContractForDeal(mappedBookingDeal, 'SOW')}
+                      >
+                        Mở văn bản Phụ lục SOW
+                      </Button>
+                    )}
+                    <Button
+                      variant="primary"
+                      icon={Unlock}
+                      onClick={handleUnlockForAmendmentAppendix}
+                    >
+                      Lập Phụ lục bổ sung ({nextAmendmentAppendixCode})
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </Panel>
+
+            {/* Panel 4: Gian hàng, Sản phẩm & Lịch phát sóng */}
+            <Panel title="Gian hàng & Lịch phát sóng">
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                <div>
+                  <dt className="text-2xs text-ink-3">Gian hàng</dt>
+                  <dd className="font-medium text-ink mt-0.5">{deal.storeName}</dd>
+                </div>
+                <div>
+                  <dt className="text-2xs text-ink-3">Thương hiệu &amp; Kỳ</dt>
+                  <dd className="text-ink mt-0.5">
+                    {deal.brandName} · <span className="font-code">{deal.thangPlan}</span> ({deal.dot})
+                  </dd>
+                </div>
+                <div className="col-span-2">
+                  <dt className="text-2xs text-ink-3">Sản phẩm trọng tâm (SKU)</dt>
+                  <dd className="font-medium text-ink mt-0.5">
+                    {deal.sanPham || 'Chưa gán sản phẩm'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-2xs text-ink-3">Định hướng nội dung</dt>
+                  <dd className="text-ink mt-0.5">{deal.pillarContent || 'Review trực tiếp'}</dd>
+                </div>
+                <div>
+                  <dt className="text-2xs text-ink-3">Nhân sự phụ trách</dt>
+                  <dd className="mt-0.5">
+                    <Person
+                      name={deal.nguoiPhuTrach || 'Chuyên viên Booking'}
+                      sub={deal.leaderName ? `Leader: ${deal.leaderName}` : undefined}
+                      size={20}
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-2xs text-ink-3">Ngày air cam kết</dt>
+                  <dd className="font-code text-ink tabular-nums mt-0.5">
+                    {dealDraftPlannedAirDate
+                      ? formatDate(dealDraftPlannedAirDate)
+                      : 'Chưa chốt ngày air'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-2xs text-ink-3">Ngày air thực tế &amp; SLA</dt>
+                  <dd className="text-ink mt-0.5">
+                    <span className="font-code tabular-nums">
+                      {deal.actualAirDate ? formatDate(deal.actualAirDate) : 'Chưa lên sóng'}
+                    </span>
+                    <span className="text-ink-3"> · {deal.trangThaiSlaAir}</span>
+                  </dd>
+                </div>
+              </dl>
+            </Panel>
+
+            {/* Panel 5: Thông tin KOC & Gửi hàng mẫu */}
+            <Panel title="Thông tin KOC & Gửi hàng mẫu">
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                <div>
+                  <dt className="text-2xs text-ink-3">Nghệ danh / KOC</dt>
+                  <dd className="font-medium text-ink mt-0.5">{deal.tenKenh || deal.idKenh}</dd>
+                </div>
+                <div>
+                  <dt className="text-2xs text-ink-3">ID Kênh TikTok</dt>
+                  <dd className="font-code text-ink mt-0.5">@{deal.idKenh.replace(/^@/, '')}</dd>
+                </div>
+                <div>
+                  <dt className="text-2xs text-ink-3">Tệp kênh &amp; Phân loại</dt>
+                  <dd className="text-ink mt-0.5">
+                    {deal.tepKenh || 'Review'} · {deal.phanLoaiVideo || 'Affiliate KOC'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-2xs text-ink-3">Điện thoại nhận mẫu</dt>
+                  <dd className="font-code text-ink mt-0.5">
+                    {maskSensitive(deal.sdtNhanHang || matchedKoc?.phone, showSensitive)}
+                  </dd>
+                </div>
+                <div className="col-span-2">
+                  <dt className="text-2xs text-ink-3">Địa chỉ gửi hàng mẫu</dt>
+                  <dd className="text-ink mt-0.5">
+                    {deal.diaChiNhanHang ||
+                      matchedKoc?.shippingAddress ||
+                      'Chưa cập nhật địa chỉ nhận mẫu'}
+                  </dd>
+                </div>
+              </dl>
+            </Panel>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'CONTRACT' && (
+        <div className="space-y-5">
+          {/* Hàng trên: Chuỗi 3 chặng văn bản pháp lý */}
+          <Panel
+            title="Chuỗi 3 chặng văn bản pháp lý (HĐNT · Phụ lục SOW · BBNT)"
+            actions={
+              <div className="flex items-center gap-2">
+                {onPullContractLinks && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={RefreshCw}
+                    disabled={isPullingContractLinks}
+                    onClick={onPullContractLinks}
+                  >
+                    Kéo HĐ · PL · BBNT &amp; Link
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSensitive((v) => !v)}
+                >
+                  {showSensitive ? 'Che CCCD / MST' : 'Hiện đầy đủ CCCD / MST'}
+                </Button>
+              </div>
+            }
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Chặng 1: HĐNT */}
+              <div className="p-4 rounded-xl border border-line bg-sunken/30 flex flex-col justify-between gap-3">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-2xs font-medium text-ink-3">
+                      1. Hợp đồng nguyên tắc
+                    </span>
+                    {linkedContracts.hdnt ? (
+                      <Status tone={contractStatus(linkedContracts.hdnt).tone}>
+                        {contractStatus(linkedContracts.hdnt).label}
+                      </Status>
+                    ) : (
+                      <Status tone="neutral">Khung năm</Status>
+                    )}
+                  </div>
+                  <div className="font-code text-xs font-semibold text-ink truncate">
+                    {linkedContracts.hdnt?.contractSystem?.contractCode ||
+                      linkedContracts.hdnt?.title ||
+                      deal.masterContractCode ||
+                      'Chưa gắn mã HĐNT'}
+                  </div>
+                  <div className="text-2xs text-ink-3">
+                    {linkedContracts.hdnt
+                      ? computeSigningProgress(linkedContracts.hdnt.signing.at(-1))
+                          ?.summaryText || 'Đã khởi tạo hồ sơ HĐNT'
+                      : 'Áp dụng chung cho các Deal của KOC'}
+                  </div>
+                  {linkedContracts.hdnt && (
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      {linkedContracts.hdnt.contractSystem?.googleDocsUrl && (
+                        <a
+                          href={linkedContracts.hdnt.contractSystem.googleDocsUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Google Docs
+                        </a>
+                      )}
+                      {(linkedContracts.hdnt.signing.at(-1)?.signedFileUrl ||
+                        linkedContracts.hdnt.contractSystem?.signedFileUrl) && (
+                        <a
+                          href={
+                            linkedContracts.hdnt.signing.at(-1)?.signedFileUrl ||
+                            linkedContracts.hdnt.contractSystem?.signedFileUrl
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-2xs font-medium text-positive hover:underline"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Bản đã ký
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {onOpenContractForDeal && mappedBookingDeal && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={FileText}
+                    onClick={() => onOpenContractForDeal(mappedBookingDeal, 'HDNT')}
+                  >
+                    {linkedContracts.hdnt ? 'Mở hồ sơ HĐNT' : 'Soạn HĐNT'}
+                  </Button>
+                )}
+              </div>
+
+              {/* Chặng 2: Phụ lục SOW */}
+              <div className="p-4 rounded-xl border border-line bg-sunken/30 flex flex-col justify-between gap-3">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-2xs font-medium text-ink-3">
+                      2. Phụ lục SOW theo Deal
+                    </span>
+                    <Status tone={sowSigningCompleted ? 'positive' : 'warning'}>
+                      {sowSigningCompleted ? 'Đã duyệt' : 'Chờ duyệt'}
+                    </Status>
+                  </div>
+                  <div className="font-code text-xs font-semibold text-ink truncate">
+                    {linkedContracts.sow?.contractSystem?.contractCode ||
+                      linkedContracts.sow?.title ||
+                      deal.contractAppendixCode ||
+                      (deal.maBooking ? `PL-${deal.maBooking}-01` : 'Chưa cấp mã SOW')}
+                  </div>
+                  <div className="text-2xs text-ink-3">
+                    {linkedContracts.sow
+                      ? computeSigningProgress(linkedContracts.sow.signing.at(-1))
+                          ?.summaryText || `Giá trị Net: ${formatVnd(deal.chiPhiBookingNetCuoi)}`
+                      : `Giá trị Net: ${formatVnd(deal.chiPhiBookingNetCuoi)}`}
+                  </div>
+                  {linkedContracts.sow && (
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      {linkedContracts.sow.contractSystem?.googleDocsUrl && (
+                        <a
+                          href={linkedContracts.sow.contractSystem.googleDocsUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Google Docs
+                        </a>
+                      )}
+                      {(linkedContracts.sow.signing.at(-1)?.signedFileUrl ||
+                        linkedContracts.sow.contractSystem?.signedFileUrl) && (
+                        <a
+                          href={
+                            linkedContracts.sow.signing.at(-1)?.signedFileUrl ||
+                            linkedContracts.sow.contractSystem?.signedFileUrl
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-2xs font-medium text-positive hover:underline"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Bản đã ký
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {onOpenContractForDeal && mappedBookingDeal && (
+                  <Button
+                    variant={sowSigningCompleted ? 'secondary' : 'primary'}
+                    size="sm"
+                    icon={FileText}
+                    onClick={() => onOpenContractForDeal(mappedBookingDeal, 'SOW')}
+                  >
+                    {linkedContracts.sow ? 'Mở Phụ lục SOW' : 'Soạn & Ký SOW'}
+                  </Button>
+                )}
+              </div>
+
+              {/* Chặng 3: Biên bản nghiệm thu BBNT */}
+              <div className="p-4 rounded-xl border border-line bg-sunken/30 flex flex-col justify-between gap-3">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-2xs font-medium text-ink-3">
+                      3. Biên bản nghiệm thu
+                    </span>
+                    <Status tone={linkedContracts.bbnt || isAccepted ? 'positive' : 'neutral'}>
+                      {linkedContracts.bbnt
+                        ? contractStatus(linkedContracts.bbnt).label
+                        : isAccepted
+                        ? 'Đã duyệt'
+                        : 'Nháp'}
+                    </Status>
+                  </div>
+                  <div className="font-code text-xs font-semibold text-ink truncate">
+                    {linkedContracts.bbnt?.contractSystem?.contractCode ||
+                      linkedContracts.bbnt?.title ||
+                      (deal.maBooking ? `BBNT-${deal.maBooking}` : 'Chưa lập BBNT')}
+                  </div>
+                  <div className="text-2xs text-ink-3">
+                    {linkedContracts.bbnt
+                      ? computeSigningProgress(linkedContracts.bbnt.signing.at(-1))
+                          ?.summaryText || 'Đã khởi tạo BBNT'
+                      : isAccepted
+                      ? `Đã nghiệm thu ngày ${formatDate(deal.actualAirDate)}`
+                      : 'Cần có link video thực tế để xuất BBNT'}
+                  </div>
+                  {linkedContracts.bbnt && (
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      {linkedContracts.bbnt.contractSystem?.googleDocsUrl && (
+                        <a
+                          href={linkedContracts.bbnt.contractSystem.googleDocsUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Google Docs
+                        </a>
+                      )}
+                      {(linkedContracts.bbnt.signing.at(-1)?.signedFileUrl ||
+                        linkedContracts.bbnt.contractSystem?.signedFileUrl) && (
+                        <a
+                          href={
+                            linkedContracts.bbnt.signing.at(-1)?.signedFileUrl ||
+                            linkedContracts.bbnt.contractSystem?.signedFileUrl
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-2xs font-medium text-positive hover:underline"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Bản đã ký
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {onOpenContractForDeal && mappedBookingDeal && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={FileText}
+                      onClick={() => onOpenContractForDeal(mappedBookingDeal, 'BBNT')}
+                    >
+                      {linkedContracts.bbnt ? 'Mở BBNT' : 'Soạn BBNT'}
+                    </Button>
+                  )}
+                  {onOpenDraftBbntPreview && mappedBookingDeal && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onOpenDraftBbntPreview(mappedBookingDeal)}
+                    >
+                      Xem nháp
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Panel>
+
+          {/* Hàng dưới 2 cột: Đường link văn bản (8 cột) & Chủ thể pháp lý KOC (4 cột) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            <div className="lg:col-span-8">
+              <Panel title="Đường dẫn lưu trữ Hợp đồng (HĐNT) · Phụ lục (PL) · Biên bản (BBNT)">
+                <div className="space-y-4 text-xs">
+                  {/* 1. HĐNT */}
+                  <div className="p-3.5 rounded-lg border border-line bg-sunken/30 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-ink">
+                        1. Hợp đồng nguyên tắc (HĐNT)
+                      </span>
+                      <span className="text-2xs font-code text-ink-2">
+                        {deal.masterContractStatus ||
+                          (linkedContracts.hdnt
+                            ? contractStatus(linkedContracts.hdnt).label
+                            : 'CHƯA_LẬP')}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <Field label="Số / Mã HĐNT">
+                        <Input
+                          value={
+                            deal.masterContractCode ||
+                            linkedContracts.hdnt?.contractSystem?.contractCode ||
+                            linkedContracts.hdnt?.title ||
+                            ''
+                          }
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              masterContractCode: e.target.value,
+                            })
+                          }
+                          placeholder="VD: 291026/HDNT/KOC"
+                        />
+                      </Field>
+                      <Field label="Link Google Docs HĐNT">
+                        <Input
+                          value={
+                            deal.masterContractGoogleDocsUrl ||
+                            linkedContracts.hdnt?.contractSystem?.googleDocsUrl ||
+                            ''
+                          }
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              masterContractGoogleDocsUrl: e.target.value,
+                            })
+                          }
+                          placeholder="https://docs.google.com/document/d/..."
+                        />
+                      </Field>
+                      <Field label="Link bản HĐNT đã ký">
+                        <Input
+                          value={
+                            deal.masterContractSignedUrl ||
+                            linkedContracts.hdnt?.signing.at(-1)?.signedFileUrl ||
+                            linkedContracts.hdnt?.contractSystem?.signedFileUrl ||
+                            ''
+                          }
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              masterContractSignedUrl: e.target.value,
+                            })
+                          }
+                          placeholder="/api/contracts/.../document"
+                        />
+                      </Field>
+                    </div>
+                  </div>
+
+                  {/* 2. Phụ lục SOW */}
+                  <div className="p-3.5 rounded-lg border border-line bg-sunken/30 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-ink">
+                        2. Phụ lục Hợp đồng theo Deal (PL / SOW)
+                      </span>
+                      <span className="text-2xs font-code text-ink-2">
+                        {deal.contractAppendixStatus || 'CHỜ_KÝ'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <Field label="Số / Mã Phụ lục SOW">
+                        <Input
+                          value={
+                            deal.contractAppendixCode ||
+                            linkedContracts.sow?.contractSystem?.contractCode ||
+                            linkedContracts.sow?.title ||
+                            ''
+                          }
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              contractAppendixCode: e.target.value,
+                            })
+                          }
+                          placeholder="VD: PL-BO2610-01"
+                        />
+                      </Field>
+                      <Field label="Link Google Docs Phụ lục">
+                        <Input
+                          value={
+                            deal.contractAppendixGoogleDocsUrl ||
+                            linkedContracts.sow?.contractSystem?.googleDocsUrl ||
+                            ''
+                          }
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              contractAppendixGoogleDocsUrl: e.target.value,
+                            })
+                          }
+                          placeholder="https://docs.google.com/document/d/..."
+                        />
+                      </Field>
+                      <Field label="Link bản Phụ lục đã ký">
+                        <Input
+                          value={
+                            deal.contractAppendixSignedUrl ||
+                            linkedContracts.sow?.signing.at(-1)?.signedFileUrl ||
+                            linkedContracts.sow?.contractSystem?.signedFileUrl ||
+                            ''
+                          }
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              contractAppendixSignedUrl: e.target.value,
+                            })
+                          }
+                          placeholder="/api/contracts/.../document"
+                        />
+                      </Field>
+                    </div>
+                  </div>
+
+                  {/* 3. BBNT */}
+                  <div className="p-3.5 rounded-lg border border-line bg-sunken/30 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-ink">
+                        3. Biên bản nghiệm thu (BBNT)
+                      </span>
+                      <span className="text-2xs font-code text-ink-2">
+                        {deal.bbntStatus ||
+                          (linkedContracts.bbnt
+                            ? contractStatus(linkedContracts.bbnt).label
+                            : 'CHƯA_LẬP')}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <Field label="Số / Mã BBNT">
+                        <Input
+                          value={
+                            deal.bbntCode ||
+                            linkedContracts.bbnt?.contractSystem?.contractCode ||
+                            linkedContracts.bbnt?.title ||
+                            ''
+                          }
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, { bbntCode: e.target.value })
+                          }
+                          placeholder="VD: BBNT-BO2610-01"
+                        />
+                      </Field>
+                      <Field label="Link Google Docs BBNT">
+                        <Input
+                          value={
+                            deal.bbntGoogleDocsUrl ||
+                            linkedContracts.bbnt?.contractSystem?.googleDocsUrl ||
+                            ''
+                          }
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              bbntGoogleDocsUrl: e.target.value,
+                            })
+                          }
+                          placeholder="https://docs.google.com/document/d/..."
+                        />
+                      </Field>
+                      <Field label="Link bản BBNT đã ký">
+                        <Input
+                          value={
+                            deal.bbntSignedUrl ||
+                            linkedContracts.bbnt?.signing.at(-1)?.signedFileUrl ||
+                            linkedContracts.bbnt?.contractSystem?.signedFileUrl ||
+                            ''
+                          }
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              bbntSignedUrl: e.target.value,
+                            })
+                          }
+                          placeholder="/api/contracts/.../document"
+                        />
+                      </Field>
+                    </div>
+                  </div>
+                </div>
+              </Panel>
+            </div>
+
+            <div className="lg:col-span-4">
+              <Panel title="Chủ thể pháp lý & Tài khoản thuế KOC">
+                <dl className="space-y-3 text-xs">
+                  <div>
+                    <dt className="text-2xs text-ink-3">Loại chủ thể &amp; Khấu trừ thuế</dt>
+                    <dd className="font-medium text-ink mt-0.5">
+                      {activeLegalProfile
+                        ? `${activeLegalProfile.taxAccountType} · ${activeLegalProfile.holderName}`
+                        : deal.loaiTaiKhoanThanhToan}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-2xs text-ink-3">Số CCCD / Mã số thuế</dt>
+                    <dd className="font-code text-ink mt-0.5">
+                      {maskSensitive(
+                        activeLegalProfile?.taxCode ||
+                          activeLegalProfile?.cccd ||
+                          deal.soCccd ||
+                          matchedKoc?.cccd,
+                        showSensitive
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-2xs text-ink-3">Chủ tài khoản thụ hưởng</dt>
+                    <dd className="font-medium text-ink mt-0.5">
+                      {deal.tenTaiKhoanNganHang || 'Chưa cập nhật'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-2xs text-ink-3">Ngân hàng &amp; Số tài khoản</dt>
+                    <dd className="font-code text-ink mt-0.5">
+                      {maskSensitive(deal.soTaiKhoan, showSensitive)} · {deal.nganHang || '—'}
+                    </dd>
+                  </div>
+                </dl>
+              </Panel>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'ACCEPTANCE' &&
+        (() => {
+          const jobs = ensureDealJobsForApprovedItem(deal);
+          const totalAddons = jobs.flatMap((j) => j.addonServices || []);
+          const activeAddons = totalAddons.filter((a) => a.acceptanceStatus !== 'DROPPED');
+          const verifiedAddons = totalAddons.filter((a) => a.acceptanceStatus === 'VERIFIED');
+          const pendingAddons = totalAddons.filter(
+            (a) => a.acceptanceStatus === 'PENDING_ACCEPTANCE'
+          );
+
+          const airedJobsCount = jobs.filter((j) =>
+            Boolean(j.linkAir?.trim() || j.actualAirDate?.trim())
+          ).length;
+          const isAllJobsAired = airedJobsCount === jobs.length && jobs.length > 0;
+          const isStage1Complete = isAllJobsAired;
+          const isStage2Complete =
+            isStage1Complete &&
+            (activeAddons.length === 0 ||
+              activeAddons.every((a) => a.acceptanceStatus === 'VERIFIED'));
+          const isDealFullyAccepted =
+            deal.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL' || isStage2Complete;
+
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              {/* CỘT TRÁI (8 CỘT): Quy trình nghiệm thu 2 tầng theo từng Job */}
+              <div className="lg:col-span-8 space-y-5">
                 <Panel
-                  title="Chuỗi 3 chặng văn bản pháp lý (Kết nối Quản lý Hợp đồng)"
+                  title={`Nghiệm thu theo Bảng công việc & Quyền lợi (${jobs.length} Job)`}
                   actions={
                     <div className="flex items-center gap-2">
-                      {onPullContractLinks && (
+                      {deal.linkAir && onOpenTikTokInspector && (
                         <Button
                           variant="secondary"
                           size="sm"
-                          icon={RefreshCw}
-                          disabled={isPullingContractLinks}
-                          onClick={onPullContractLinks}
+                          icon={Eye}
+                          onClick={() => onOpenTikTokInspector(deal)}
                         >
-                          Kéo HĐ · PL · BBNT &amp; Link
+                          Đối soát kịch bản &amp; giỏ hàng
                         </Button>
                       )}
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => setShowSensitive((v) => !v)}
+                        icon={Video}
+                        onClick={() => onOpenAcceptanceModal?.(deal)}
                       >
-                        {showSensitive ? 'Che CCCD / MST' : 'Hiện đầy đủ CCCD / MST'}
+                        {isAccepted ? 'Cập nhật hàng loạt' : 'Nghiệm thu video'}
                       </Button>
                     </div>
-                  }
-                >
-                  <div className="space-y-3">
-                    {/* Hồ sơ pháp lý đang áp dụng của KOC */}
-                    <div className="p-3 rounded-lg bg-sunken border border-line flex flex-wrap items-center justify-between gap-2 text-xs">
-                      <div className="space-y-0.5">
-                        <div className="text-2xs text-ink-3">Chủ thể ký kết &amp; Khấu trừ thuế</div>
-                        <div className="font-medium text-ink">
-                          {activeLegalProfile
-                            ? `${activeLegalProfile.taxAccountType} · ${activeLegalProfile.holderName}`
-                            : deal.loaiTaiKhoanThanhToan}
-                        </div>
-                      </div>
-                      <div className="text-right space-y-0.5">
-                        <div className="text-2xs text-ink-3">Số CCCD / Mã số thuế</div>
-                        <div className="font-code text-ink">
-                          {maskSensitive(
-                            activeLegalProfile?.taxCode ||
-                              activeLegalProfile?.cccd ||
-                              deal.soCccd ||
-                              matchedKoc?.cccd,
-                            showSensitive
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 3 chặng: HĐNT -> SOW -> BBNT */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      {/* Chặng 1: HĐNT */}
-                      <div className="p-3.5 rounded-lg border border-line bg-surface flex flex-col justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-2xs font-medium text-ink-3">Hợp đồng nguyên tắc</span>
-                            {linkedContracts.hdnt ? (
-                              <Status tone={contractStatus(linkedContracts.hdnt).tone}>
-                                {contractStatus(linkedContracts.hdnt).label}
-                              </Status>
-                            ) : (
-                              <Status tone="neutral">Khung năm</Status>
-                            )}
-                          </div>
-                          <div className="font-code text-xs font-semibold text-ink truncate">
-                            {linkedContracts.hdnt?.contractSystem?.contractCode ||
-                              linkedContracts.hdnt?.title ||
-                              deal.masterContractCode ||
-                              'Chưa gắn mã HĐNT'}
-                          </div>
-                          <div className="text-2xs text-ink-3">
-                            {linkedContracts.hdnt
-                              ? computeSigningProgress(linkedContracts.hdnt.signing.at(-1))?.summaryText ||
-                                'Đã khởi tạo hồ sơ HĐNT (contract-system)'
-                              : 'Áp dụng chung cho mọi Deal của KOC'}
-                          </div>
-                          {linkedContracts.hdnt && (
-                            <div className="flex flex-wrap items-center gap-2 pt-1">
-                              {linkedContracts.hdnt.contractSystem?.googleDocsUrl && (
-                                <a
-                                  href={linkedContracts.hdnt.contractSystem.googleDocsUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  Google Docs
-                                </a>
-                              )}
-                              {(linkedContracts.hdnt.signing.at(-1)?.signedFileUrl ||
-                                linkedContracts.hdnt.contractSystem?.signedFileUrl) && (
-                                <a
-                                  href={
-                                    linkedContracts.hdnt.signing.at(-1)?.signedFileUrl ||
-                                    linkedContracts.hdnt.contractSystem?.signedFileUrl
-                                  }
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-1 text-2xs font-medium text-positive hover:underline"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  Bản đã ký
-                                </a>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        {onOpenContractForDeal && mappedBookingDeal && (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            icon={FileText}
-                            onClick={() => onOpenContractForDeal(mappedBookingDeal, 'HDNT')}
-                          >
-                            {linkedContracts.hdnt ? 'Mở hồ sơ HĐNT' : 'Soạn HĐNT'}
-                          </Button>
-                        )}
-                      </div>
-
-                      {/* Chặng 2: Phụ lục SOW */}
-                      <div className="p-3.5 rounded-lg border border-line bg-surface flex flex-col justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-2xs font-medium text-ink-3">Phụ lục SOW theo Deal</span>
-                            <Status tone={sowSigningCompleted ? 'positive' : 'warning'}>
-                              {sowSigningCompleted ? 'Đã ký' : 'Chờ ký'}
-                            </Status>
-                          </div>
-                          <div className="font-code text-xs font-semibold text-ink truncate">
-                            {linkedContracts.sow?.contractSystem?.contractCode ||
-                              linkedContracts.sow?.title ||
-                              deal.contractAppendixCode ||
-                              (deal.maBooking ? `PL-${deal.maBooking}-01` : 'Chưa cấp mã SOW')}
-                          </div>
-                          <div className="text-2xs text-ink-3">
-                            {linkedContracts.sow
-                              ? computeSigningProgress(linkedContracts.sow.signing.at(-1))?.summaryText ||
-                                `Giá trị Net: ${formatVnd(deal.chiPhiBookingNetCuoi)}`
-                              : `Giá trị Net: ${formatVnd(deal.chiPhiBookingNetCuoi)}`}
-                          </div>
-                          {linkedContracts.sow && (
-                            <div className="flex flex-wrap items-center gap-2 pt-1">
-                              {linkedContracts.sow.contractSystem?.googleDocsUrl && (
-                                <a
-                                  href={linkedContracts.sow.contractSystem.googleDocsUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  Google Docs
-                                </a>
-                              )}
-                              {(linkedContracts.sow.signing.at(-1)?.signedFileUrl ||
-                                linkedContracts.sow.contractSystem?.signedFileUrl) && (
-                                <a
-                                  href={
-                                    linkedContracts.sow.signing.at(-1)?.signedFileUrl ||
-                                    linkedContracts.sow.contractSystem?.signedFileUrl
-                                  }
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-1 text-2xs font-medium text-positive hover:underline"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  Bản đã ký
-                                </a>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        {onOpenContractForDeal && mappedBookingDeal && (
-                          <Button
-                            variant={sowSigningCompleted ? 'secondary' : 'primary'}
-                            size="sm"
-                            icon={FileText}
-                            onClick={() => onOpenContractForDeal(mappedBookingDeal, 'SOW')}
-                          >
-                            {linkedContracts.sow ? 'Mở Phụ lục SOW' : 'Soạn & Ký SOW'}
-                          </Button>
-                        )}
-                      </div>
-
-                      {/* Chặng 3: Biên bản nghiệm thu BBNT */}
-                      <div className="p-3.5 rounded-lg border border-line bg-surface flex flex-col justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-2xs font-medium text-ink-3">Biên bản nghiệm thu</span>
-                            <Status tone={linkedContracts.bbnt || isAccepted ? 'positive' : 'neutral'}>
-                              {linkedContracts.bbnt
-                                ? contractStatus(linkedContracts.bbnt).label
-                                : isAccepted
-                                ? 'Đủ điều kiện lập'
-                                : 'Chờ nghiệm thu'}
-                            </Status>
-                          </div>
-                          <div className="font-code text-xs font-semibold text-ink truncate">
-                            {linkedContracts.bbnt?.contractSystem?.contractCode ||
-                              linkedContracts.bbnt?.title ||
-                              (deal.maBooking ? `BBNT-${deal.maBooking}` : 'Chưa lập BBNT')}
-                          </div>
-                          <div className="text-2xs text-ink-3">
-                            {linkedContracts.bbnt
-                              ? computeSigningProgress(linkedContracts.bbnt.signing.at(-1))?.summaryText ||
-                                (isAccepted
-                                  ? `Đã nghiệm thu ngày ${formatDate(deal.actualAirDate)}`
-                                  : 'Đã khởi tạo BBNT (contract-system)')
-                              : isAccepted
-                              ? `Đã nghiệm thu ngày ${formatDate(deal.actualAirDate)}`
-                              : 'Cần có link video thực tế để xuất BBNT'}
-                          </div>
-                          {linkedContracts.bbnt && (
-                            <div className="flex flex-wrap items-center gap-2 pt-1">
-                              {linkedContracts.bbnt.contractSystem?.googleDocsUrl && (
-                                <a
-                                  href={linkedContracts.bbnt.contractSystem.googleDocsUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  Google Docs
-                                </a>
-                              )}
-                              {(linkedContracts.bbnt.signing.at(-1)?.signedFileUrl ||
-                                linkedContracts.bbnt.contractSystem?.signedFileUrl) && (
-                                <a
-                                  href={
-                                    linkedContracts.bbnt.signing.at(-1)?.signedFileUrl ||
-                                    linkedContracts.bbnt.contractSystem?.signedFileUrl
-                                  }
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-1 text-2xs font-medium text-positive hover:underline"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  Bản đã ký
-                                </a>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          {onOpenContractForDeal && mappedBookingDeal && (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              icon={FileText}
-                              onClick={() => onOpenContractForDeal(mappedBookingDeal, 'BBNT')}
-                            >
-                              {linkedContracts.bbnt ? 'Mở BBNT' : 'Soạn BBNT'}
-                            </Button>
-                          )}
-                          {onOpenDraftBbntPreview && mappedBookingDeal && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => onOpenDraftBbntPreview(mappedBookingDeal)}
-                            >
-                              Xem nháp
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Panel>
-
-                {/* Bảng trường thông tin & Đường link HĐNT, Phụ lục SOW (PL), BBNT */}
-                <Panel
-                  title="Trường thông tin & Đường link Hợp đồng (HĐNT) · Phụ lục (PL) · BBNT"
-                  actions={
-                    onPullContractLinks ? (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        icon={RefreshCw}
-                        disabled={isPullingContractLinks}
-                        onClick={onPullContractLinks}
-                      >
-                        Đồng bộ lại từ contract-system
-                      </Button>
-                    ) : undefined
                   }
                 >
                   <div className="space-y-4 text-xs">
-                    {/* 1. Trường thông tin HĐNT */}
-                    <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-ink">1. Hợp đồng nguyên tắc (HĐNT)</span>
-                        <span className="text-2xs font-code text-ink-2">
-                          {deal.masterContractStatus || (linkedContracts.hdnt ? contractStatus(linkedContracts.hdnt).label : 'CHƯA_LẬP')}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <div>
-                          <label className="text-2xs text-ink-3 block mb-1">Số / Mã HĐNT</label>
-                          <input
-                            type="text"
-                            value={
-                              deal.masterContractCode ||
-                              linkedContracts.hdnt?.contractSystem?.contractCode ||
-                              linkedContracts.hdnt?.title ||
-                              ''
-                            }
-                            onChange={(e) =>
-                              onUpdateDealFields?.(deal.id, { masterContractCode: e.target.value })
-                            }
-                            placeholder="VD: 291026/HDNT/KOC"
-                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
-                          />
-                        </div>
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="text-2xs text-ink-3">Link Google Docs HĐNT</label>
-                            {(deal.masterContractGoogleDocsUrl ||
-                              linkedContracts.hdnt?.contractSystem?.googleDocsUrl) && (
-                              <a
-                                href={
-                                  deal.masterContractGoogleDocsUrl ||
-                                  linkedContracts.hdnt?.contractSystem?.googleDocsUrl
-                                }
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-2xs font-medium text-accent hover:underline"
-                              >
-                                Mở ↗
-                              </a>
-                            )}
-                          </div>
-                          <input
-                            type="text"
-                            value={
-                              deal.masterContractGoogleDocsUrl ||
-                              linkedContracts.hdnt?.contractSystem?.googleDocsUrl ||
-                              ''
-                            }
-                            onChange={(e) =>
-                              onUpdateDealFields?.(deal.id, {
-                                masterContractGoogleDocsUrl: e.target.value,
-                              })
-                            }
-                            placeholder="https://docs.google.com/document/d/..."
-                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink-2"
-                          />
-                        </div>
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="text-2xs text-ink-3">Link bản HĐNT đã ký</label>
-                            {(deal.masterContractSignedUrl ||
-                              linkedContracts.hdnt?.signing.at(-1)?.signedFileUrl ||
-                              linkedContracts.hdnt?.contractSystem?.signedFileUrl) && (
-                              <a
-                                href={
-                                  deal.masterContractSignedUrl ||
-                                  linkedContracts.hdnt?.signing.at(-1)?.signedFileUrl ||
-                                  linkedContracts.hdnt?.contractSystem?.signedFileUrl
-                                }
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-2xs font-medium text-positive hover:underline"
-                              >
-                                Tải ↗
-                              </a>
-                            )}
-                          </div>
-                          <input
-                            type="text"
-                            value={
-                              deal.masterContractSignedUrl ||
-                              linkedContracts.hdnt?.signing.at(-1)?.signedFileUrl ||
-                              linkedContracts.hdnt?.contractSystem?.signedFileUrl ||
-                              ''
-                            }
-                            onChange={(e) =>
-                              onUpdateDealFields?.(deal.id, {
-                                masterContractSignedUrl: e.target.value,
-                              })
-                            }
-                            placeholder="/api/contracts/.../document"
-                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink-2"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 2. Trường thông tin Phụ lục SOW (PL) */}
-                    <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-ink">2. Phụ lục Hợp đồng theo Deal (PL / SOW)</span>
-                        <span className="text-2xs font-code text-ink-2">
-                          {deal.contractAppendixStatus || 'CHỜ_KÝ'}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <div>
-                          <label className="text-2xs text-ink-3 block mb-1">Số / Mã Phụ lục SOW</label>
-                          <input
-                            type="text"
-                            value={
-                              deal.contractAppendixCode ||
-                              linkedContracts.sow?.contractSystem?.contractCode ||
-                              linkedContracts.sow?.title ||
-                              ''
-                            }
-                            onChange={(e) =>
-                              onUpdateDealFields?.(deal.id, {
-                                contractAppendixCode: e.target.value,
-                              })
-                            }
-                            placeholder="VD: PL-BO2610-01"
-                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
-                          />
-                        </div>
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="text-2xs text-ink-3">Link Google Docs Phụ lục</label>
-                            {(deal.contractAppendixGoogleDocsUrl ||
-                              linkedContracts.sow?.contractSystem?.googleDocsUrl) && (
-                              <a
-                                href={
-                                  deal.contractAppendixGoogleDocsUrl ||
-                                  linkedContracts.sow?.contractSystem?.googleDocsUrl
-                                }
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-2xs font-medium text-accent hover:underline"
-                              >
-                                Mở ↗
-                              </a>
-                            )}
-                          </div>
-                          <input
-                            type="text"
-                            value={
-                              deal.contractAppendixGoogleDocsUrl ||
-                              linkedContracts.sow?.contractSystem?.googleDocsUrl ||
-                              ''
-                            }
-                            onChange={(e) =>
-                              onUpdateDealFields?.(deal.id, {
-                                contractAppendixGoogleDocsUrl: e.target.value,
-                              })
-                            }
-                            placeholder="https://docs.google.com/document/d/..."
-                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink-2"
-                          />
-                        </div>
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="text-2xs text-ink-3">Link bản Phụ lục đã ký</label>
-                            {(deal.contractAppendixSignedUrl ||
-                              linkedContracts.sow?.signing.at(-1)?.signedFileUrl ||
-                              linkedContracts.sow?.contractSystem?.signedFileUrl) && (
-                              <a
-                                href={
-                                  deal.contractAppendixSignedUrl ||
-                                  linkedContracts.sow?.signing.at(-1)?.signedFileUrl ||
-                                  linkedContracts.sow?.contractSystem?.signedFileUrl
-                                }
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-2xs font-medium text-positive hover:underline"
-                              >
-                                Tải ↗
-                              </a>
-                            )}
-                          </div>
-                          <input
-                            type="text"
-                            value={
-                              deal.contractAppendixSignedUrl ||
-                              linkedContracts.sow?.signing.at(-1)?.signedFileUrl ||
-                              linkedContracts.sow?.contractSystem?.signedFileUrl ||
-                              ''
-                            }
-                            onChange={(e) =>
-                              onUpdateDealFields?.(deal.id, {
-                                contractAppendixSignedUrl: e.target.value,
-                              })
-                            }
-                            placeholder="/api/contracts/.../document"
-                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink-2"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 3. Trường thông tin Biên bản nghiệm thu (BBNT) */}
-                    <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-ink">3. Biên bản nghiệm thu (BBNT)</span>
-                        <span className="text-2xs font-code text-ink-2">
-                          {deal.bbntStatus || (linkedContracts.bbnt ? contractStatus(linkedContracts.bbnt).label : 'CHƯA_LẬP')}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <div>
-                          <label className="text-2xs text-ink-3 block mb-1">Số / Mã BBNT</label>
-                          <input
-                            type="text"
-                            value={
-                              deal.bbntCode ||
-                              linkedContracts.bbnt?.contractSystem?.contractCode ||
-                              linkedContracts.bbnt?.title ||
-                              ''
-                            }
-                            onChange={(e) =>
-                              onUpdateDealFields?.(deal.id, { bbntCode: e.target.value })
-                            }
-                            placeholder="VD: BBNT-BO2610-01"
-                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
-                          />
-                        </div>
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="text-2xs text-ink-3">Link Google Docs BBNT</label>
-                            {(deal.bbntGoogleDocsUrl ||
-                              linkedContracts.bbnt?.contractSystem?.googleDocsUrl) && (
-                              <a
-                                href={
-                                  deal.bbntGoogleDocsUrl ||
-                                  linkedContracts.bbnt?.contractSystem?.googleDocsUrl
-                                }
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-2xs font-medium text-accent hover:underline"
-                              >
-                                Mở ↗
-                              </a>
-                            )}
-                          </div>
-                          <input
-                            type="text"
-                            value={
-                              deal.bbntGoogleDocsUrl ||
-                              linkedContracts.bbnt?.contractSystem?.googleDocsUrl ||
-                              ''
-                            }
-                            onChange={(e) =>
-                              onUpdateDealFields?.(deal.id, {
-                                bbntGoogleDocsUrl: e.target.value,
-                              })
-                            }
-                            placeholder="https://docs.google.com/document/d/..."
-                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink-2"
-                          />
-                        </div>
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="text-2xs text-ink-3">Link bản BBNT đã ký</label>
-                            {(deal.bbntSignedUrl ||
-                              linkedContracts.bbnt?.signing.at(-1)?.signedFileUrl ||
-                              linkedContracts.bbnt?.contractSystem?.signedFileUrl) && (
-                              <a
-                                href={
-                                  deal.bbntSignedUrl ||
-                                  linkedContracts.bbnt?.signing.at(-1)?.signedFileUrl ||
-                                  linkedContracts.bbnt?.contractSystem?.signedFileUrl
-                                }
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-2xs font-medium text-positive hover:underline"
-                              >
-                                Tải ↗
-                              </a>
-                            )}
-                          </div>
-                          <input
-                            type="text"
-                            value={
-                              deal.bbntSignedUrl ||
-                              linkedContracts.bbnt?.signing.at(-1)?.signedFileUrl ||
-                              linkedContracts.bbnt?.contractSystem?.signedFileUrl ||
-                              ''
-                            }
-                            onChange={(e) =>
-                              onUpdateDealFields?.(deal.id, {
-                                bbntSignedUrl: e.target.value,
-                              })
-                            }
-                            placeholder="/api/contracts/.../document"
-                            className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink-2"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Panel>
-
-                {(() => {
-                  const dealJobs = ensureDealJobsForApprovedItem(deal);
-                  return (
-                    <Panel
-                      title={`Cấu trúc Bảng công việc theo từng Job trong Phụ lục SOW (${dealJobs.length} Job · ${dealJobs.length} Bảng công việc)`}
-                      actions={
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            icon={Plus}
-                            onClick={handleAddJobToCurrentDeal}
-                          >
-                            + Thêm Job vào Deal
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => onOpenDealBuilderModal?.(deal)}
-                          >
-                            {sowSigningCompleted
-                              ? 'Lập Phụ lục bổ sung'
-                              : 'Soạn chi tiết SOW'}
-                          </Button>
-                        </div>
-                      }
-                    >
-                      <div className="space-y-3 text-xs">
-                        {dealJobs.map((jobItem, jIdx) => {
-                          const jobSub = computeDealSowJobSubtotal(jobItem);
-                          const isEditing = editingJobIdx === jIdx;
-                          return (
-                            <div
-                              key={jobItem.id || jIdx}
-                              className="rounded-lg border border-line bg-sunken/30 p-3 space-y-2.5"
-                            >
-                              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="px-2 py-0.5 rounded bg-accent/15 text-accent font-code text-2xs font-semibold">
-                                    Bảng công việc #{jIdx + 1} · {jobItem.jobCode}
-                                  </span>
-                                  <span className="font-semibold text-ink">
-                                    {jobItem.productName || deal.sanPham || deal.brandName}
-                                  </span>
-                                  <span className="text-2xs text-ink-3">
-                                    ({jobItem.mediaChannel || 'TikTok'} · Air dự kiến:{' '}
-                                    {jobItem.plannedAirDate ? formatDate(jobItem.plannedAirDate) : '—'})
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-code font-semibold text-accent">
-                                    Cộng Bảng CV #{jIdx + 1}: {formatVnd(jobSub.plannedJobNet)}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      if (isEditing) {
-                                        setEditingJobIdx(null);
-                                      } else {
-                                        setEditingJobIdx(jIdx);
-                                        setEditJobProduct(jobItem.productName || deal.sanPham || deal.brandName);
-                                        setEditJobChannel(jobItem.mediaChannel || 'TikTok');
-                                        setEditJobPlannedDate(jobItem.plannedAirDate || deal.plannedAirDate || '');
-                                        setEditJobVideoNet(jobItem.videoAssetNetCost || 0);
-                                      }
-                                    }}
-                                    className="p-1 rounded text-ink-3 hover:text-ink hover:bg-surface text-2xs font-medium inline-flex items-center gap-1"
-                                    title="Chỉnh sửa thông tin Bảng công việc này"
-                                  >
-                                    <Edit2 className="w-3.5 h-3.5" />
-                                    <span>{isEditing ? 'Đóng' : 'Sửa'}</span>
-                                  </button>
-                                  {dealJobs.length > 1 && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteJobFromCurrentDeal(jIdx)}
-                                      className="p-1 rounded text-ink-3 hover:text-critical hover:bg-critical-soft"
-                                      title="Xóa Bảng công việc này khỏi Deal"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-
-                              {isEditing && (
-                                <div className="p-3 rounded-lg border border-accent/40 bg-accent-soft/20 space-y-2.5 text-xs">
-                                  <div className="font-semibold text-ink text-2xs">
-                                    Chỉnh sửa thông tin Bảng công việc #{jIdx + 1} ({jobItem.jobCode})
-                                  </div>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                    <div>
-                                      <label className="text-2xs text-ink-3 block mb-0.5">Sản phẩm / Chiến dịch</label>
-                                      <input
-                                        type="text"
-                                        value={editJobProduct}
-                                        onChange={(e) => setEditJobProduct(e.target.value)}
-                                        className="w-full h-7 px-2 rounded border border-line bg-surface text-xs text-ink"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-2xs text-ink-3 block mb-0.5">Kênh phát sóng</label>
-                                      <select
-                                        value={editJobChannel}
-                                        onChange={(e) => setEditJobChannel(e.target.value as MediaChannelPlatform)}
-                                        className="w-full h-7 px-2 rounded border border-line bg-surface text-xs text-ink"
-                                      >
-                                        <option value="TikTok">TikTok</option>
-                                        <option value="Shopee Video">Shopee Video</option>
-                                        <option value="Facebook">Facebook</option>
-                                        <option value="Instagram">Instagram</option>
-                                        <option value="YouTube">YouTube</option>
-                                      </select>
-                                    </div>
-                                    <div>
-                                      <label className="text-2xs text-ink-3 block mb-0.5">Ngày lên sóng dự kiến</label>
-                                      <input
-                                        type="date"
-                                        value={editJobPlannedDate}
-                                        onChange={(e) => setEditJobPlannedDate(e.target.value)}
-                                        className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-2xs text-ink-3 block mb-0.5">Chi phí Net Video (VND)</label>
-                                      <input
-                                        type="number"
-                                        value={editJobVideoNet}
-                                        onChange={(e) => setEditJobVideoNet(Number(e.target.value) || 0)}
-                                        className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center justify-end gap-2 pt-1">
-                                    <Button size="sm" variant="ghost" onClick={() => setEditingJobIdx(null)}>
-                                      Hủy
-                                    </Button>
-                                    <Button size="sm" variant="primary" onClick={() => handleSaveJobDetails(jIdx)}>
-                                      Lưu thay đổi
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
-
-                              <div className="divide-y divide-line">
-                                <div className="py-2 flex items-center justify-between gap-3">
-                                  <div>
-                                    <div className="font-medium text-ink">
-                                      1. Sản xuất &amp; đăng tải Video — {jobItem.productName || deal.sanPham || deal.brandName}
-                                    </div>
-                                    <div className="text-2xs text-ink-3">
-                                      Kênh @{deal.idKenh.replace(/^@/, '')} ({jobItem.mediaChannel || 'TikTok'})
-                                      {jobItem.linkAir ? ` · Đã có Link Air` : ''}
-                                    </div>
-                                  </div>
-                                  <div className="text-right font-code tabular-nums shrink-0">
-                                    <div className="font-semibold text-ink">
-                                      {formatVnd(jobSub.videoNet)}
-                                    </div>
-                                    <div className="text-2xs text-ink-3">Hạng mục chính</div>
-                                  </div>
-                                </div>
-
-                                {(jobItem.addonServices || []).map((addon, idx) => (
-                                  <div
-                                    key={addon.id || idx}
-                                    className="py-2 flex items-center justify-between gap-3"
-                                  >
-                                    <div>
-                                      <div className="font-medium text-ink">
-                                        {idx + 2}. {addon.termLabel}
-                                      </div>
-                                      <div className="text-2xs text-ink-3">
-                                        Thời hạn: {addon.durationDays ? `${addon.durationDays} ngày` : 'Theo thỏa thuận'} ·{' '}
-                                        {addon.evidenceCodeOrUrl || 'Chờ bàn giao mã / file'}
-                                      </div>
-                                    </div>
-                                    <div className="text-right font-code tabular-nums shrink-0">
-                                      <div className="font-semibold text-ink">
-                                        {(addon.allocatedCostVnd || 0) > 0
-                                          ? formatVnd(addon.allocatedCostVnd || 0)
-                                          : 'Đã gộp trong gói'}
-                                      </div>
-                                      <div className="text-2xs text-ink-3">
-                                        {addon.acceptanceStatus === 'VERIFIED' ? 'Đã bàn giao' : 'Đi kèm Job'}
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-
-                        <div className="pt-2 border-t border-line flex items-center justify-between font-code text-xs">
-                          <span className="text-ink-2">
-                            Tổng hợp Phụ lục SOW ({dealJobs.length} Job = {dealJobs.length} Bảng công việc):
-                          </span>
-                          <span className="font-semibold text-ink">
-                            {formatVnd(deal.chiPhiBookingNetCuoi)}
-                          </span>
-                        </div>
-                      </div>
-                    </Panel>
-                  );
-                })()}
-              </div>
-            )}
-
-            {activeTab === 'ACCEPTANCE' && (() => {
-              const jobs = ensureDealJobsForApprovedItem(deal);
-              const totalAddons = jobs.flatMap((j) => j.addonServices || []);
-              const activeAddons = totalAddons.filter((a) => a.acceptanceStatus !== 'DROPPED');
-              const verifiedAddons = totalAddons.filter((a) => a.acceptanceStatus === 'VERIFIED');
-              const droppedAddons = totalAddons.filter((a) => a.acceptanceStatus === 'DROPPED');
-              const pendingAddons = totalAddons.filter((a) => a.acceptanceStatus === 'PENDING_ACCEPTANCE');
-
-              const hasVideo = Boolean(deal.linkAir || deal.actualAirDate);
-              const airedJobsCount = jobs.filter((j) =>
-                Boolean(j.linkAir?.trim() || j.actualAirDate?.trim())
-              ).length;
-              const isAllJobsAired = airedJobsCount === jobs.length && jobs.length > 0;
-              const isStage1Complete = isAllJobsAired;
-              const isStage2Complete =
-                isStage1Complete &&
-                (activeAddons.length === 0 || activeAddons.every((a) => a.acceptanceStatus === 'VERIFIED'));
-              const isDealFullyAccepted =
-                deal.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL' || isStage2Complete;
-
-              return (
-                <div className="space-y-4">
-                  {/* 1. Tiến trình nghiệm thu 2 tầng theo Deal */}
-                  <div className="p-3.5 rounded-lg border border-line bg-surface space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="font-semibold text-ink text-xs flex items-center gap-1.5">
-                        <Layers className="w-4 h-4 text-accent" />
-                        <span>
-                          Quy trình nghiệm thu Deal ({jobs.length} Bảng công việc / Jobs)
-                        </span>
-                      </div>
-                      <Status
-                        tone={
-                          isDealFullyAccepted
-                            ? 'positive'
-                            : isStage1Complete
-                            ? 'warning'
-                            : 'neutral'
-                        }
-                      >
-                        {isDealFullyAccepted
-                          ? 'Đã nghiệm thu toàn Deal'
-                          : isStage1Complete
-                          ? 'Chờ bàn giao Asset'
-                          : `Chờ Video (${airedJobsCount}/${jobs.length} Job)`}
-                      </Status>
-                    </div>
-
-                    {/* 3-Step Pipeline Card */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                    {/* 3 ô tiến độ nghiệm thu */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                       <div
-                        className={`p-2.5 rounded border transition-colors ${
+                        className={`p-3 rounded-lg border ${
                           isStage1Complete
                             ? 'border-positive/40 bg-positive-soft/20'
                             : 'border-line bg-sunken/40'
@@ -1850,21 +2278,21 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                       >
                         <div className="flex items-center justify-between gap-1">
                           <span className="font-semibold text-ink text-2xs">
-                            1. Video lên sóng ({airedJobsCount}/{jobs.length} Job)
+                            1. Video lên sóng
                           </span>
                           <Status tone={isStage1Complete ? 'positive' : 'warning'}>
                             {isStage1Complete ? 'Hoàn tất' : `${airedJobsCount}/${jobs.length} Job`}
                           </Status>
                         </div>
-                        <div className="text-2xs text-ink-3 mt-1 truncate">
+                        <div className="text-2xs text-ink-3 mt-1">
                           {isStage1Complete
-                            ? `Tất cả ${jobs.length} Job đã có link bài đăng`
+                            ? `Đủ link bài đăng cho ${jobs.length} Job`
                             : `Còn ${jobs.length - airedJobsCount} Job chưa lên sóng`}
                         </div>
                       </div>
 
                       <div
-                        className={`p-2.5 rounded border transition-colors ${
+                        className={`p-3 rounded-lg border ${
                           !isStage1Complete
                             ? 'border-line bg-sunken/40 opacity-75'
                             : isStage2Complete
@@ -1886,23 +2314,23 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                             }
                           >
                             {!isStage1Complete
-                              ? 'Đang khóa'
+                              ? 'Nháp'
                               : isStage2Complete
-                              ? 'Đủ asset'
+                              ? 'Hoàn tất'
                               : `${verifiedAddons.length}/${activeAddons.length}`}
                           </Status>
                         </div>
-                        <div className="text-2xs text-ink-3 mt-1 truncate">
+                        <div className="text-2xs text-ink-3 mt-1">
                           {!isStage1Complete
                             ? 'Cần nghiệm thu video trước'
                             : isStage2Complete
                             ? `Đã nhận đủ ${verifiedAddons.length} hạng mục`
-                            : `Còn ${pendingAddons.length} asset chờ bàn giao`}
+                            : `Còn ${pendingAddons.length} quyền lợi chờ bàn giao`}
                         </div>
                       </div>
 
                       <div
-                        className={`p-2.5 rounded border transition-colors ${
+                        className={`p-3 rounded-lg border ${
                           isDealFullyAccepted
                             ? 'border-positive/40 bg-positive-soft/20'
                             : 'border-line bg-sunken/40 opacity-75'
@@ -1913,729 +2341,747 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                             3. Quyết toán &amp; BBNT
                           </span>
                           <Status tone={isDealFullyAccepted ? 'positive' : 'neutral'}>
-                            {isDealFullyAccepted ? 'Sẵn sàng' : 'Chưa đủ'}
+                            {isDealFullyAccepted ? 'Đã duyệt' : 'Nháp'}
                           </Status>
                         </div>
-                        <div className="text-2xs text-ink-3 mt-1 truncate">
+                        <div className="text-2xs text-ink-3 mt-1">
                           {isDealFullyAccepted
                             ? `Cần chi: ${formatVndShort(deal.soTienCanThanhToan || 0)}`
-                            : 'Cần hoàn tất Tầng 1 & 2'}
+                            : 'Hoàn tất tầng 1 & 2 để mở khóa'}
                         </div>
                       </div>
                     </div>
 
-                    {/* Financial Summary Strip */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-line text-xs font-code">
-                      <div>
-                        <div className="text-2xs text-ink-3 font-sans">Tổng giá trị SOW Net</div>
-                        <div className="font-semibold text-ink mt-0.5">
-                          {formatVnd(deal.chiPhiBookingNetCuoi)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-2xs text-ink-3 font-sans">Tạm ứng trước</div>
-                        <div className="font-semibold text-ink mt-0.5">
-                          {formatVnd(deal.soTienTamUngTruoc || 0)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-2xs text-ink-3 font-sans">Khấu trừ hủy</div>
+                    {/* Danh sách từng Job nghiệm thu */}
+                    {jobs.map((jobItem, jIdx) => {
+                      const sub = computeDealSowJobSubtotal(jobItem);
+                      const jobLink = jobItem.linkAir || (jIdx === 0 ? deal.linkAir : '');
+                      const jobAirDate =
+                        jobItem.actualAirDate || (jIdx === 0 ? deal.actualAirDate : '');
+                      const hasJobAir = Boolean(jobLink || jobAirDate);
+
+                      return (
                         <div
-                          className={`font-semibold mt-0.5 ${
-                            (deal.khauTruHangMucHuy || 0) > 0 ? 'text-critical' : 'text-ink-3'
-                          }`}
+                          key={jobItem.id || jIdx}
+                          className="p-3.5 rounded-xl border border-line bg-sunken/20 space-y-3"
                         >
-                          {(deal.khauTruHangMucHuy || 0) > 0
-                            ? `-${formatVnd(deal.khauTruHangMucHuy || 0)}`
-                            : '0 đ'}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-2xs text-ink-3 font-sans">Cần tất toán</div>
-                        <div className="font-semibold text-accent mt-0.5">
-                          {formatVnd(deal.soTienCanThanhToan || 0)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="px-2 py-0.5 rounded bg-accent/15 text-accent font-code font-semibold text-2xs">
+                                Bảng CV #{jIdx + 1} · {jobItem.jobCode}
+                              </span>
+                              <span className="font-semibold text-ink">
+                                {jobItem.productName || jobItem.jobTitle}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-code text-2xs font-semibold text-ink">
+                                Net: {formatVnd(sub.acceptedJobNet)}
+                              </span>
+                              <Status tone={hasJobAir ? 'positive' : 'warning'}>
+                                {hasJobAir ? 'Hoàn tất' : 'Chờ duyệt'}
+                              </Status>
+                            </div>
+                          </div>
 
-                  {/* 2. Quản lý Nghiệm thu theo Bảng công việc (Job) & Deliverables */}
-                  <Panel
-                    title={`Nghiệm thu theo Bảng công việc (Job) & Deliverables (${jobs.length} Job)`}
-                    actions={
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          icon={Plus}
-                          onClick={handleAddJobToCurrentDeal}
-                        >
-                          + Thêm Job vào Deal
-                        </Button>
-                        {deal.linkAir && onOpenTikTokInspector && (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            icon={Eye}
-                            onClick={() => onOpenTikTokInspector(deal)}
-                          >
-                            Đối soát kịch bản &amp; giỏ hàng
-                          </Button>
-                        )}
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          icon={Video}
-                          onClick={() => onOpenAcceptanceModal?.(deal)}
-                        >
-                          {isAccepted ? 'Cập nhật hàng loạt' : 'Nghiệm thu video'}
-                        </Button>
-                      </div>
-                    }
-                  >
-                    <div className="space-y-3 text-xs">
-                      {jobs.map((jobItem, jIdx) => {
-                        const sub = computeDealSowJobSubtotal(jobItem);
-                        const jobLink = jobItem.linkAir || (jIdx === 0 ? deal.linkAir : '');
-                        const jobAirDate = jobItem.actualAirDate || (jIdx === 0 ? deal.actualAirDate : '');
-                        const hasJobAir = Boolean(jobLink || jobAirDate);
-
-                        return (
-                          <div
-                            key={jobItem.id || jIdx}
-                            className="p-3 rounded-lg border border-line bg-surface space-y-3"
-                          >
-                            {/* Job Header */}
-                            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="px-2 py-0.5 rounded bg-accent/15 text-accent font-code font-semibold text-2xs">
-                                  Bảng công việc #{jIdx + 1} · {jobItem.jobCode}
-                                </span>
-                                <span className="font-semibold text-ink">
-                                  {jobItem.productName || jobItem.jobTitle}
-                                </span>
-                                <span className="text-2xs text-ink-3">
-                                  ({jobItem.mediaChannel || 'TikTok'} · {jobItem.affiliateChannel || 'TikTok Shop'})
-                                </span>
+                          {/* Tầng 1: Video chính lên sóng */}
+                          <div className="p-3 rounded-lg border border-line bg-surface space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5 font-medium text-ink">
+                                <Video className="w-3.5 h-3.5 text-accent" />
+                                <span>Tầng 1: Video chính lên sóng</span>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-code text-2xs font-semibold text-ink">
-                                  Tổng Net Job: {formatVnd(sub.acceptedJobNet)}
+                              {jobAirDate && (
+                                <span className="font-code text-2xs text-ink-2">
+                                  Ngày air: {formatDate(jobAirDate)}
                                 </span>
-                                <Status tone={hasJobAir ? 'positive' : 'warning'}>
-                                  {hasJobAir ? 'Đã lên sóng' : 'Chờ lên sóng'}
-                                </Status>
-                                {jobs.length > 1 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteJobFromCurrentDeal(jIdx)}
-                                    className="p-1 rounded text-ink-3 hover:text-critical hover:bg-critical-soft"
-                                    title="Xóa Bảng công việc này khỏi Deal"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
-                              </div>
+                              )}
                             </div>
 
-                            {/* Tầng 1: Video chính lên sóng */}
-                            <div className="p-2.5 rounded border border-line bg-sunken/40 space-y-2">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1.5 font-medium text-ink text-xs">
-                                  <Video className="w-3.5 h-3.5 text-accent" />
-                                  <span>Tầng 1: Video chính lên sóng</span>
-                                </div>
-                                <div className="flex items-center gap-1 text-2xs">
-                                  {jobAirDate && (
-                                    <span className="font-code text-ink-2">
-                                      Ngày air: {formatDate(jobAirDate)}{' '}
-                                      {jobItem.plannedAirDate ? `(KH: ${formatDate(jobItem.plannedAirDate)})` : ''}
-                                    </span>
-                                  )}
-                                  <Status tone={hasJobAir ? 'positive' : 'warning'}>
-                                    {hasJobAir ? 'Đã nghiệm thu' : 'Chưa có link'}
-                                  </Status>
+                            {editingAirJobIdx === jIdx ? (
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                                <input
+                                  type="text"
+                                  value={quickAirLink}
+                                  onChange={(e) => setQuickAirLink(e.target.value)}
+                                  placeholder="Dán link video TikTok..."
+                                  className="sm:col-span-2 h-8 px-2.5 rounded-md border border-line bg-surface font-code text-xs text-ink"
+                                />
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    type="date"
+                                    value={quickAirDate}
+                                    onChange={(e) => setQuickAirDate(e.target.value)}
+                                    className="h-8 px-2 rounded-md border border-line bg-surface font-code text-xs text-ink flex-1"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="primary"
+                                    onClick={() => handleSaveJobAirVideo(jIdx)}
+                                  >
+                                    Lưu
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setEditingAirJobIdx(null)}
+                                  >
+                                    Hủy
+                                  </Button>
                                 </div>
                               </div>
-
-                              {/* Video Link & Actions */}
-                              {editingAirJobIdx === jIdx ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-                                  <input
-                                    type="text"
-                                    value={quickAirLink}
-                                    onChange={(e) => setQuickAirLink(e.target.value)}
-                                    placeholder="Dán link video TikTok (https://www.tiktok.com/@.../video/...)"
-                                    className="sm:col-span-2 h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
-                                  />
-                                  <div className="flex items-center gap-1">
-                                    <input
-                                      type="date"
-                                      value={quickAirDate}
-                                      onChange={(e) => setQuickAirDate(e.target.value)}
-                                      className="h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink flex-1"
-                                    />
-                                    <Button
-                                      size="sm"
-                                      variant="primary"
-                                      onClick={() => handleSaveJobAirVideo(jIdx)}
-                                    >
-                                      Lưu
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => setEditingAirJobIdx(null)}
-                                    >
-                                      Hủy
-                                    </Button>
-                                  </div>
+                            ) : (
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  {jobLink ? (
+                                    <>
+                                      <a
+                                        href={jobLink}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="font-code text-xs text-accent hover:underline truncate max-w-[360px]"
+                                      >
+                                        {jobLink}
+                                      </a>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleCopy(jobLink, `jobLink_${jIdx}`, 'link video')
+                                        }
+                                        className="p-1 rounded text-ink-3 hover:text-ink"
+                                      >
+                                        {copiedField === `jobLink_${jIdx}` ? (
+                                          <Check className="w-3.5 h-3.5 text-positive" />
+                                        ) : (
+                                          <Copy className="w-3.5 h-3.5" />
+                                        )}
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <span className="text-ink-3 text-2xs">
+                                      Chưa cập nhật đường dẫn video phát sóng
+                                    </span>
+                                  )}
                                 </div>
-                              ) : (
-                                <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
-                                  <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                                    {jobLink ? (
-                                      <>
-                                        <a
-                                          href={jobLink}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          className="font-code text-xs text-accent hover:underline break-all truncate max-w-[340px]"
-                                          title={jobLink}
-                                        >
-                                          {jobLink}
-                                        </a>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingAirJobIdx(jIdx);
+                                    setQuickAirLink(jobLink || '');
+                                    setQuickAirDate(jobAirDate || getVietnamDateYmd());
+                                  }}
+                                >
+                                  {jobLink ? 'Sửa link' : 'Cập nhật link air'}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Tầng 2: Asset & Quyền lợi đi kèm */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5 font-medium text-ink">
+                                <Sparkles className="w-3.5 h-3.5 text-accent" />
+                                <span>
+                                  Tầng 2: Bàn giao Asset &amp; Quyền lợi đi kèm (
+                                  {jobItem.addonServices?.length || 0})
+                                </span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                icon={Plus}
+                                onClick={() => {
+                                  setAddingAddonJobIdx(jIdx);
+                                  setNewAddonType('ADS_CODE');
+                                  setNewAddonLabel('Mã ủy quyền Spark Ads (30 ngày)');
+                                  setNewAddonDays(30);
+                                  setNewAddonCost(0);
+                                  setNewAddonEvidence('');
+                                }}
+                              >
+                                Thêm asset
+                              </Button>
+                            </div>
+
+                            {(jobItem.addonServices || []).map((addon) => {
+                              const isEditingEvidence = editingAddonId === addon.id;
+                              const isVerified = addon.acceptanceStatus === 'VERIFIED';
+                              const isDropped = addon.acceptanceStatus === 'DROPPED';
+                              const isLocked = !hasJobAir;
+
+                              return (
+                                <div
+                                  key={addon.id}
+                                  className="p-2.5 rounded-lg border border-line bg-surface space-y-2"
+                                >
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-ink">
+                                        {addon.termLabel}
+                                      </span>
+                                      <span className="text-2xs px-1.5 py-0.5 rounded bg-sunken text-ink-2 font-code">
+                                        {addon.durationDays
+                                          ? `${addon.durationDays} ngày`
+                                          : 'Theo thỏa thuận'}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <Status
+                                        tone={
+                                          isDropped
+                                            ? 'critical'
+                                            : isVerified
+                                            ? 'positive'
+                                            : isLocked
+                                            ? 'neutral'
+                                            : 'warning'
+                                        }
+                                      >
+                                        {isDropped
+                                          ? 'Đã hủy'
+                                          : isVerified
+                                          ? 'Hoàn tất'
+                                          : isLocked
+                                          ? 'Nháp'
+                                          : 'Chờ duyệt'}
+                                      </Status>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveAddonFromJob(jIdx, addon.id)}
+                                        className="p-1 rounded text-ink-3 hover:text-critical"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex flex-wrap items-center justify-between gap-2 text-2xs">
+                                    <div className="flex-1 min-w-[200px]">
+                                      {isEditingEvidence ? (
+                                        <div className="flex items-center gap-1.5">
+                                          <input
+                                            type="text"
+                                            value={editingEvidenceText}
+                                            onChange={(e) =>
+                                              setEditingEvidenceText(e.target.value)
+                                            }
+                                            placeholder="Nhập mã Spark Ads hoặc link Drive..."
+                                            className="h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink flex-1"
+                                          />
+                                          <Button
+                                            size="sm"
+                                            variant="primary"
+                                            onClick={() =>
+                                              handleSaveAddonEvidence(
+                                                jIdx,
+                                                addon.id,
+                                                editingEvidenceText
+                                              )
+                                            }
+                                          >
+                                            Lưu
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => setEditingAddonId(null)}
+                                          >
+                                            Hủy
+                                          </Button>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-ink-3">Bằng chứng:</span>
+                                          {addon.evidenceCodeOrUrl ? (
+                                            <span className="font-code font-semibold text-ink">
+                                              {addon.evidenceCodeOrUrl}
+                                            </span>
+                                          ) : (
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setEditingAddonId(addon.id);
+                                                setEditingEvidenceText('');
+                                              }}
+                                              className="text-accent hover:underline font-medium"
+                                            >
+                                              Nhập mã / link bàn giao
+                                            </button>
+                                          )}
+                                          {addon.evidenceCodeOrUrl && (
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setEditingAddonId(addon.id);
+                                                setEditingEvidenceText(
+                                                  addon.evidenceCodeOrUrl || ''
+                                                );
+                                              }}
+                                              className="text-accent hover:underline"
+                                            >
+                                              Sửa
+                                            </button>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {!isLocked && (
+                                      <div className="flex items-center gap-1">
                                         <button
                                           type="button"
                                           onClick={() =>
-                                            handleCopy(jobLink, `jobLink_${jIdx}`, 'link video')
+                                            handleToggleAddonStatus(jIdx, addon.id, 'VERIFIED')
                                           }
-                                          className="p-1 rounded text-ink-3 hover:text-ink hover:bg-surface"
-                                          title="Sao chép link video"
+                                          className={`px-2 py-0.5 rounded text-2xs font-medium ${
+                                            isVerified
+                                              ? 'bg-positive text-white'
+                                              : 'border border-line bg-surface text-ink hover:bg-positive-soft'
+                                          }`}
                                         >
-                                          {copiedField === `jobLink_${jIdx}` ? (
-                                            <Check className="w-3.5 h-3.5 text-positive" />
-                                          ) : (
-                                            <Copy className="w-3.5 h-3.5" />
-                                          )}
+                                          Đã nhận
                                         </button>
-                                        {onOpenTikTokInspector && (
-                                          <button
-                                            type="button"
-                                            onClick={() => onOpenTikTokInspector(deal)}
-                                            className="text-2xs font-medium text-accent hover:underline flex items-center gap-0.5"
-                                          >
-                                            <Eye className="w-3 h-3" />
-                                            Đối soát Brief &amp; Giỏ
-                                          </button>
-                                        )}
-                                      </>
-                                    ) : (
-                                      <span className="text-ink-3 italic text-2xs">
-                                        Chưa cập nhật đường dẫn video phát sóng
-                                      </span>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleToggleAddonStatus(jIdx, addon.id, 'DROPPED')
+                                          }
+                                          className={`px-2 py-0.5 rounded text-2xs font-medium ${
+                                            isDropped
+                                              ? 'bg-critical text-white'
+                                              : 'border border-line bg-surface text-ink-3 hover:bg-critical-soft'
+                                          }`}
+                                        >
+                                          Khấu trừ
+                                        </button>
+                                      </div>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        setEditingAirJobIdx(jIdx);
-                                        setQuickAirLink(jobLink || '');
-                                        setQuickAirDate(jobAirDate || getVietnamDateYmd());
-                                      }}
-                                    >
-                                      {jobLink ? 'Sửa link' : '+ Cập nhật link air'}
-                                    </Button>
-                                  </div>
                                 </div>
-                              )}
-                            </div>
+                              );
+                            })}
 
-                            {/* Tầng 2: Asset & Quyền lợi đi kèm (addonServices) */}
-                            <div className="space-y-2 pt-1">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1.5 font-medium text-ink text-xs">
-                                  <Sparkles className="w-3.5 h-3.5 text-accent" />
-                                  <span>
-                                    Tầng 2: Quản lý bàn giao Asset &amp; Quyền lợi đi kèm (
-                                    {jobItem.addonServices?.length || 0})
-                                  </span>
+                            {addingAddonJobIdx === jIdx && (
+                              <div className="p-3 rounded-lg border border-line bg-surface space-y-2.5">
+                                <div className="font-semibold text-ink flex items-center justify-between">
+                                  <span>Thêm quyền lợi / Asset đi kèm cho Job #{jIdx + 1}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setAddingAddonJobIdx(null)}
+                                    className="text-ink-3 hover:text-ink"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  icon={Plus}
-                                  onClick={() => {
-                                    setAddingAddonJobIdx(jIdx);
-                                    setNewAddonType('ADS_CODE');
-                                    setNewAddonLabel('Mã ủy quyền Spark Ads (30 ngày)');
-                                    setNewAddonDays(30);
-                                    setNewAddonCost(0);
-                                    setNewAddonEvidence('');
-                                  }}
-                                >
-                                  Thêm asset
-                                </Button>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                  <Field label="Tên hạng mục hiển thị">
+                                    <Input
+                                      value={newAddonLabel}
+                                      onChange={(e) => setNewAddonLabel(e.target.value)}
+                                    />
+                                  </Field>
+                                  <Field label="Mã Spark Ads / Link bàn giao">
+                                    <Input
+                                      value={newAddonEvidence}
+                                      onChange={(e) => setNewAddonEvidence(e.target.value)}
+                                      placeholder="Dán mã hoặc link..."
+                                    />
+                                  </Field>
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setAddingAddonJobIdx(null)}
+                                  >
+                                    Hủy
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="primary"
+                                    onClick={() => handleAddNewAddonToJob(jIdx)}
+                                  >
+                                    Thêm hạng mục
+                                  </Button>
+                                </div>
                               </div>
-
-                              {/* Addon Items List */}
-                              <div className="space-y-1.5">
-                                {(jobItem.addonServices || []).length === 0 ? (
-                                  <div className="p-2 rounded border border-line/60 bg-sunken/20 text-2xs text-ink-3 italic">
-                                    Chưa có hạng mục asset/quyền lợi phụ đi kèm trong Job này. Bấm &quot;Thêm asset&quot; nếu có phát sinh mã Spark Ads, file Raw, quyền SDHA hoặc link bio.
-                                  </div>
-                                ) : (
-                                  (jobItem.addonServices || []).map((addon) => {
-                                    const isEditingEvidence = editingAddonId === addon.id;
-                                    const isVerified = addon.acceptanceStatus === 'VERIFIED';
-                                    const isDropped = addon.acceptanceStatus === 'DROPPED';
-                                    const isLocked = !hasJobAir;
-                                    const isPending = !isVerified && !isDropped && !isLocked;
-
-                                    let tone: 'positive' | 'warning' | 'critical' | 'neutral' = 'neutral';
-                                    let badgeText = 'Khóa chờ video';
-                                    if (isDropped) {
-                                      tone = 'critical';
-                                      badgeText = 'Đã khấu trừ hủy';
-                                    } else if (isVerified) {
-                                      tone = 'positive';
-                                      badgeText = 'Đã nhận đủ';
-                                    } else if (isPending) {
-                                      tone = 'warning';
-                                      badgeText = 'Chờ bàn giao';
-                                    }
-
-                                    return (
-                                      <div
-                                        key={addon.id}
-                                        className={`p-2.5 rounded border transition-colors ${
-                                          isDropped
-                                            ? 'border-critical/30 bg-critical-soft/20'
-                                            : isVerified
-                                            ? 'border-positive/30 bg-positive-soft/20'
-                                            : 'border-line bg-surface'
-                                        } space-y-2`}
-                                      >
-                                        <div className="flex flex-wrap items-center justify-between gap-2">
-                                          <div className="flex items-center gap-2">
-                                            <span className="font-medium text-ink text-xs">
-                                              {addon.termLabel}
-                                            </span>
-                                            <span className="text-2xs px-1.5 py-0.2 rounded bg-sunken text-ink-2 font-code">
-                                              {addon.durationDays ? `${addon.durationDays} ngày` : 'Theo thỏa thuận'}
-                                            </span>
-                                            <span className="text-2xs font-code text-ink-3">
-                                              {(addon.allocatedCostVnd || 0) > 0
-                                                ? `Net: ${formatVnd(addon.allocatedCostVnd || 0)}`
-                                                : 'Gộp trong gói'}
-                                            </span>
-                                          </div>
-
-                                          <div className="flex items-center gap-1.5">
-                                            <Status tone={tone}>{badgeText}</Status>
-                                            <button
-                                              type="button"
-                                              onClick={() => handleRemoveAddonFromJob(jIdx, addon.id)}
-                                              className="p-1 rounded text-ink-3 hover:text-critical hover:bg-critical-soft"
-                                              title="Xóa hạng mục này"
-                                            >
-                                              <Trash2 className="w-3 h-3" />
-                                            </button>
-                                          </div>
-                                        </div>
-
-                                        {/* Evidence Row */}
-                                        <div className="flex flex-wrap items-center justify-between gap-2 text-2xs">
-                                          <div className="flex-1 min-w-[200px]">
-                                            {isEditingEvidence ? (
-                                              <div className="flex items-center gap-1">
-                                                <input
-                                                  type="text"
-                                                  value={editingEvidenceText}
-                                                  onChange={(e) => setEditingEvidenceText(e.target.value)}
-                                                  placeholder={
-                                                    addon.termType === 'ADS_CODE'
-                                                      ? 'Nhập mã ủy quyền Spark Ads...'
-                                                      : 'Nhập link Google Drive file raw hoặc bài đăng...'
-                                                  }
-                                                  className="h-6 px-2 rounded border border-line bg-surface font-code text-xs text-ink flex-1"
-                                                />
-                                                <button
-                                                  type="button"
-                                                  onClick={() =>
-                                                    handleSaveAddonEvidence(
-                                                      jIdx,
-                                                      addon.id,
-                                                      editingEvidenceText
-                                                    )
-                                                  }
-                                                  className="px-2 py-0.5 rounded bg-primary text-white font-medium hover:bg-black"
-                                                >
-                                                  Lưu
-                                                </button>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => setEditingAddonId(null)}
-                                                  className="px-1.5 py-0.5 rounded text-ink-3 hover:bg-sunken"
-                                                >
-                                                  Hủy
-                                                </button>
-                                              </div>
-                                            ) : (
-                                              <div className="flex items-center gap-1.5 flex-wrap">
-                                                <span className="text-ink-3">Bằng chứng / Mã:</span>
-                                                {addon.evidenceCodeOrUrl ? (
-                                                  <>
-                                                    {addon.evidenceCodeOrUrl.startsWith('http') ? (
-                                                      <a
-                                                        href={addon.evidenceCodeOrUrl}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className="font-code text-accent hover:underline break-all truncate max-w-[260px]"
-                                                      >
-                                                        {addon.evidenceCodeOrUrl} ↗
-                                                      </a>
-                                                    ) : (
-                                                      <span className="font-code font-semibold px-1.5 py-0.2 rounded bg-sunken text-ink">
-                                                        {addon.evidenceCodeOrUrl}
-                                                      </span>
-                                                    )}
-                                                    <button
-                                                      type="button"
-                                                      onClick={() =>
-                                                        handleCopy(
-                                                          addon.evidenceCodeOrUrl || '',
-                                                          `addon_${addon.id}`,
-                                                          addon.termLabel
-                                                        )
-                                                      }
-                                                      className="p-0.5 text-ink-3 hover:text-ink"
-                                                      title="Sao chép"
-                                                    >
-                                                      {copiedField === `addon_${addon.id}` ? (
-                                                        <Check className="w-3 h-3 text-positive" />
-                                                      ) : (
-                                                        <Copy className="w-3 h-3" />
-                                                      )}
-                                                    </button>
-                                                    <button
-                                                      type="button"
-                                                      onClick={() => {
-                                                        setEditingAddonId(addon.id);
-                                                        setEditingEvidenceText(
-                                                          addon.evidenceCodeOrUrl || ''
-                                                        );
-                                                      }}
-                                                      className="text-ink-3 hover:text-accent hover:underline ml-1"
-                                                    >
-                                                      Sửa
-                                                    </button>
-                                                  </>
-                                                ) : (
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                      setEditingAddonId(addon.id);
-                                                      setEditingEvidenceText('');
-                                                    }}
-                                                    className="text-accent hover:underline"
-                                                  >
-                                                    + Nhập mã / link bàn giao
-                                                  </button>
-                                                )}
-                                              </div>
-                                            )}
-                                          </div>
-
-                                          {/* Action buttons per addon */}
-                                          {!isLocked && (
-                                            <div className="flex items-center gap-1 shrink-0">
-                                              <button
-                                                type="button"
-                                                onClick={() =>
-                                                  handleToggleAddonStatus(jIdx, addon.id, 'VERIFIED')
-                                                }
-                                                className={`px-2 py-0.5 rounded text-2xs font-medium transition-colors ${
-                                                  isVerified
-                                                    ? 'bg-positive text-white'
-                                                    : 'border border-line bg-surface text-ink hover:bg-positive-soft hover:text-positive'
-                                                }`}
-                                              >
-                                                ✓ Đã nhận
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() =>
-                                                  handleToggleAddonStatus(jIdx, addon.id, 'DROPPED')
-                                                }
-                                                className={`px-2 py-0.5 rounded text-2xs font-medium transition-colors ${
-                                                  isDropped
-                                                    ? 'bg-critical text-white'
-                                                    : 'border border-line bg-surface text-ink-3 hover:bg-critical-soft hover:text-critical'
-                                                }`}
-                                                title="Không bàn giao - Khấu trừ vào quyết toán"
-                                              >
-                                                ✕ Khấu trừ
-                                              </button>
-                                              {(isVerified || isDropped) && (
-                                                <button
-                                                  type="button"
-                                                  onClick={() =>
-                                                    handleToggleAddonStatus(
-                                                      jIdx,
-                                                      addon.id,
-                                                      'PENDING_ACCEPTANCE'
-                                                    )
-                                                  }
-                                                  className="px-1.5 py-0.5 rounded text-2xs text-ink-3 hover:bg-sunken hover:text-ink"
-                                                  title="Chuyển lại về Chờ bàn giao"
-                                                >
-                                                  ↺ Chờ
-                                                </button>
-                                              )}
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    );
-                                  })
-                                )}
-                              </div>
-
-                              {/* Inline Add Addon Form */}
-                              {addingAddonJobIdx === jIdx && (
-                                <div className="p-3 rounded-lg border border-accent/40 bg-accent-soft/20 space-y-2.5 text-xs">
-                                  <div className="font-semibold text-ink flex items-center justify-between">
-                                    <span>Thêm quyền lợi / Asset đi kèm cho Job #{jIdx + 1}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => setAddingAddonJobIdx(null)}
-                                      className="text-ink-3 hover:text-ink"
-                                    >
-                                      <X className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    <div>
-                                      <label className="text-2xs text-ink-3 block mb-0.5">
-                                        Loại quyền lợi / Asset
-                                      </label>
-                                      <select
-                                        value={newAddonType}
-                                        onChange={(e) => {
-                                          const val = e.target.value as DealRightsTermItem['termType'];
-                                          setNewAddonType(val);
-                                          if (val === 'ADS_CODE')
-                                            setNewAddonLabel('Mã ủy quyền Spark Ads (30 ngày)');
-                                          else if (val === 'IMAGE_USAGE')
-                                            setNewAddonLabel('Quyền SDHA & Video gốc (File Raw)');
-                                          else if (val === 'CROSS_POST_REUP')
-                                            setNewAddonLabel('Đăng chéo (Reup Reels / Shopee)');
-                                          else if (val === 'LINK_BIO_CART')
-                                            setNewAddonLabel('Duy trì link Bio / Giỏ hàng');
-                                          else if (val === 'EXCLUSIVITY')
-                                            setNewAddonLabel('Độc quyền ngành hàng');
-                                        }}
-                                        className="w-full h-7 px-2 rounded border border-line bg-surface text-xs text-ink"
-                                      >
-                                        <option value="ADS_CODE">Mã ủy quyền Spark Ads</option>
-                                        <option value="IMAGE_USAGE">
-                                          Quyền SDHA &amp; Video gốc (File Raw sạch)
-                                        </option>
-                                        <option value="CROSS_POST_REUP">
-                                          Đăng chéo (Reup FB Reels / Shopee Video)
-                                        </option>
-                                        <option value="LINK_BIO_CART">
-                                          Duy trì link Bio / Giỏ hàng Affiliate
-                                        </option>
-                                        <option value="EXCLUSIVITY">Độc quyền ngành hàng</option>
-                                      </select>
-                                    </div>
-
-                                    <div>
-                                      <label className="text-2xs text-ink-3 block mb-0.5">
-                                        Tên hạng mục hiển thị
-                                      </label>
-                                      <input
-                                        type="text"
-                                        value={newAddonLabel}
-                                        onChange={(e) => setNewAddonLabel(e.target.value)}
-                                        placeholder="VD: Cấp mã Spark Ads 30 ngày / Bàn giao file raw 4K"
-                                        className="w-full h-7 px-2 rounded border border-line bg-surface text-xs text-ink"
-                                      />
-                                    </div>
-
-                                    <div>
-                                      <label className="text-2xs text-ink-3 block mb-0.5">
-                                        Thời hạn hiệu lực (ngày)
-                                      </label>
-                                      <input
-                                        type="number"
-                                        value={newAddonDays}
-                                        onChange={(e) => setNewAddonDays(Number(e.target.value) || 0)}
-                                        className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
-                                      />
-                                    </div>
-
-                                    <div>
-                                      <label className="text-2xs text-ink-3 block mb-0.5">
-                                        Giá trị Net phân bổ (0 nếu gộp gói)
-                                      </label>
-                                      <input
-                                        type="number"
-                                        value={newAddonCost}
-                                        onChange={(e) => setNewAddonCost(Number(e.target.value) || 0)}
-                                        placeholder="0"
-                                        className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
-                                      />
-                                    </div>
-
-                                    <div className="sm:col-span-2">
-                                      <label className="text-2xs text-ink-3 block mb-0.5">
-                                        Mã Spark Ads hoặc Link Drive file raw (nếu có sẵn)
-                                      </label>
-                                      <input
-                                        type="text"
-                                        value={newAddonEvidence}
-                                        onChange={(e) => setNewAddonEvidence(e.target.value)}
-                                        placeholder="Dán mã ads hoặc link Drive..."
-                                        className="w-full h-7 px-2 rounded border border-line bg-surface font-code text-xs text-ink"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center justify-end gap-2 pt-1">
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => setAddingAddonJobIdx(null)}
-                                    >
-                                      Hủy
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="primary"
-                                      onClick={() => handleAddNewAddonToJob(jIdx)}
-                                    >
-                                      Thêm hạng mục
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
+                            )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  </Panel>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Panel>
+              </div>
 
-                  {/* 3. Tầng 3: Tổng kết Nghiệm thu Deal & Mở khóa Thủ tục */}
-                  <Panel
-                    title="Tầng 3: Tổng kết Nghiệm thu &amp; Thủ tục Pháp chế - Kế toán"
-                    actions={
-                      <div className="flex items-center gap-2">
-                        {onOpenDraftBbntPreview && (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            icon={FileText}
-                            onClick={() =>
-                              onOpenDraftBbntPreview(buildBookingDealFromApprovedItem(deal))
-                            }
-                          >
-                            Xem trước BBNT
-                          </Button>
-                        )}
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          icon={Send}
-                          onClick={() => onOpenLarkPaymentModal?.(deal)}
+              {/* CỘT PHẢI (4 CỘT): Kết nối Lark 3 Luồng — (1) Tạm ứng QNvp · (2) Nghiệm thu & Khóa sổ WORKDAY 3 · (3) Tất toán ĐNTT KN8A & Bill UNC */}
+              <div className="lg:col-span-4 space-y-5">
+                {/* LUỒNG 1: Tạm ứng Deal trên Lark Approval (Whiteboard QNvp) */}
+                <Panel
+                  title="1. Luồng Tạm ứng Lark (QNvp)"
+                  actions={
+                    <Status
+                      tone={
+                        deal.larkAdvanceStatus === 'ĐÃ_CHI_TẠM_ỨNG' ||
+                        deal.larkAdvanceStatus === 'ĐÃ_DUYỆT_TẠM_ỨNG'
+                          ? 'positive'
+                          : deal.larkAdvanceStatus === 'TỪ_CHỐI_TẠM_ỨNG'
+                          ? 'critical'
+                          : deal.larkAdvanceStatus === 'CHỜ_DUYỆT_TẠM_ỨNG' ||
+                            (deal.soTienTamUngTruoc || 0) > 0
+                          ? 'warning'
+                          : 'neutral'
+                      }
+                    >
+                      {deal.larkAdvanceStatus === 'ĐÃ_CHI_TẠM_ỨNG'
+                        ? 'Đã chi tạm ứng'
+                        : deal.larkAdvanceStatus === 'ĐÃ_DUYỆT_TẠM_ỨNG'
+                        ? 'Đã duyệt tạm ứng'
+                        : deal.larkAdvanceStatus === 'TỪ_CHỐI_TẠM_ỨNG'
+                        ? 'Từ chối tạm ứng'
+                        : deal.larkAdvanceStatus === 'CHỜ_DUYỆT_TẠM_ỨNG'
+                        ? 'Chờ duyệt QNvp'
+                        : (deal.soTienTamUngTruoc || 0) > 0
+                        ? 'Có thỏa thuận ứng'
+                        : 'Không tạm ứng'}
+                    </Status>
+                  }
+                >
+                  <div className="space-y-3 text-xs">
+                    <div className="p-2.5 rounded-lg bg-sunken border border-line space-y-1.5 text-2xs text-ink-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span>Điều kiện Phụ lục SOW (Bước 2.4):</span>
+                        <strong
+                          className={
+                            deal.contractAppendixStatus === 'ĐÃ_KÝ'
+                              ? 'text-positive'
+                              : 'text-warning'
+                          }
                         >
-                          Lập phiếu Lark
+                          {deal.contractAppendixStatus === 'ĐÃ_KÝ'
+                            ? 'Đã ký 2 bên (Đủ điều kiện)'
+                            : 'Chờ ký Phụ lục SOW'}
+                        </strong>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span>Mã phiếu tạm ứng (6.1):</span>
+                        <span className="font-code font-semibold text-ink">
+                          {deal.larkAdvanceSlipCode ||
+                            deal.larkAdvanceInstanceCode ||
+                            'Chưa tạo phiếu'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2.5">
+                      <Field label="Số tiền tạm ứng trước (Net VND)">
+                        <Input
+                          type="number"
+                          className="font-code"
+                          value={deal.soTienTamUngTruoc || 0}
+                          onChange={(e) => {
+                            const nextAdv = Math.max(0, Number(e.target.value) || 0);
+                            onUpdateDealFields?.(deal.id, {
+                              soTienTamUngTruoc: nextAdv,
+                            });
+                          }}
+                          placeholder="Nhập số tiền tạm ứng Net..."
+                        />
+                      </Field>
+                      {(deal.loaiTaiKhoanThanhToan.includes('Công ty') ||
+                        deal.loaiTaiKhoanThanhToan.includes('Hộ kinh doanh')) && (
+                        <Field label="Số / Link Hóa đơn nháp đợt 1 (HKD / Công ty)">
+                          <Input
+                            className="font-code"
+                            value={deal.draftInvoiceCode || ''}
+                            onChange={(e) =>
+                              onUpdateDealFields?.(deal.id, {
+                                draftInvoiceCode: e.target.value,
+                              })
+                            }
+                            placeholder="HD-NHAP-001..."
+                          />
+                        </Field>
+                      )}
+                    </div>
+
+                    <Button
+                      variant="secondary"
+                      icon={Send}
+                      onClick={() => onOpenLarkPaymentModal?.(deal, 'ADVANCE')}
+                    >
+                      Lập phiếu Tạm ứng trên Lark (QNvp)
+                    </Button>
+                  </div>
+                </Panel>
+
+                {/* LUỒNG 2: Nghiệm thu tháng, Khóa sổ WORKDAY 3 & Mở khóa 2 đợt (GĐ7 B-54..B-65, S40) */}
+                <Panel
+                  title="2. Khóa sổ Nghiệm thu Tháng & Mở khóa (GĐ7)"
+                  actions={
+                    <Status tone={deal.chotData ? 'positive' : 'warning'}>
+                      {deal.chotData ? 'Đã chốt data' : 'Chưa chốt data'}
+                    </Status>
+                  }
+                >
+                  <div className="space-y-3 text-xs">
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <Field label="Kỳ nghiệm thu chốt (Cố định)">
+                        <Input
+                          className="font-code"
+                          value={deal.thangNghiemThuChot || deal.thangPlan || '2026/10'}
+                          onChange={(e) => {
+                            const nextMonth = e.target.value;
+                            onUpdateDealFields?.(deal.id, {
+                              thangNghiemThuChot: nextMonth,
+                              ngayKhoaData: computeDataLockDate(
+                                deal.actualAirDate || deal.plannedAirDate,
+                                nextMonth
+                              ),
+                            });
+                          }}
+                        />
+                      </Field>
+                      <Field label="Ngày khóa sổ (WORKDAY 3)">
+                        <Input
+                          className="font-code"
+                          value={
+                            deal.ngayKhoaData ||
+                            computeDataLockDate(
+                              deal.actualAirDate || deal.plannedAirDate,
+                              deal.thangNghiemThuChot || deal.thangPlan
+                            )
+                          }
+                          readOnly
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-sunken border border-line flex items-center justify-between gap-2">
+                      <span className="text-2xs text-ink-2">
+                        Cờ <strong>Chốt data</strong> trên Base 3.2 (trước 00:00 ngày khóa):
+                      </span>
+                      <Button
+                        size="sm"
+                        variant={deal.chotData ? 'secondary' : 'primary'}
+                        onClick={() => {
+                          const nextChot = !deal.chotData;
+                          onUpdateDealFields?.(deal.id, { chotData: nextChot });
+                          onNotify?.(
+                            nextChot
+                              ? `Đã tích "Chốt data" cho Deal ${deal.maBooking} vào kỳ ${deal.thangNghiemThuChot || deal.thangPlan}.`
+                              : `Đã bỏ tích "Chốt data" cho Deal ${deal.maBooking}.`,
+                            'info'
+                          );
+                        }}
+                      >
+                        {deal.chotData ? 'Bỏ Chốt data' : 'Tích Chốt data'}
+                      </Button>
+                    </div>
+
+                    <Field label="Đề nghị Kế toán mở khóa sửa sau nghiệm thu (Sheet S40)">
+                      <Select
+                        value={deal.unlockRequestBatch || 'NONE'}
+                        onChange={(e) => {
+                          const nextBatch = e.target.value as NonNullable<
+                            ApprovedBookingListItem['unlockRequestBatch']
+                          >;
+                          onUpdateDealFields?.(deal.id, {
+                            unlockRequestBatch: nextBatch,
+                          });
+                          if (nextBatch !== 'NONE') {
+                            onNotify?.(
+                              `Đã ghi nhận đề nghị mở khóa sửa (${nextBatch}) cho mã ${deal.maBooking}.`,
+                              'info'
+                            );
+                          }
+                        }}
+                      >
+                        <option value="NONE">Không yêu cầu mở khóa</option>
+                        <option value="DOT_1_LV4_LV5">
+                          Đợt 1: Gửi lỗi LV4 · Kế toán mở sửa 09h-17h LV5
+                        </option>
+                        <option value="DOT_2_LV10_LV11">
+                          Đợt 2: Đối soát Brand LV10 · Kế toán mở sửa LV11
+                        </option>
+                        <option value="UNLOCKED">Kế toán đã mở khóa cho phép sửa</option>
+                      </Select>
+                    </Field>
+
+                    {deal.unlockRequestBatch && deal.unlockRequestBatch !== 'NONE' && (
+                      <Field label="Lý do xin mở khóa sửa trên S40">
+                        <Input
+                          value={deal.unlockRequestReason || ''}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              unlockRequestReason: e.target.value,
+                            })
+                          }
+                          placeholder="VD: Bổ sung mã Spark Ads / Sửa tên TK IN HOA không dấu..."
+                        />
+                      </Field>
+                    )}
+                  </div>
+                </Panel>
+
+                {/* LUỒNG 3: Đối chiếu Quyết toán ĐNTT (KN8A/Le27) & Khép kín KT Handle (Bill UNC) */}
+                <Panel title="3. Luồng Tất toán ĐNTT Lark (KN8A) &amp; KT Handle">
+                  <div className="space-y-3.5 text-xs">
+                    <dl className="space-y-2">
+                      <div className="flex items-center justify-between text-ink-2">
+                        <dt>Loại thanh toán Lark (§3.3.2)</dt>
+                        <dd className="font-code font-semibold text-ink">
+                          {deal.loaiThanhToanLark || 'Thanh toán Booking KOC'}
+                        </dd>
+                      </div>
+                      <div className="flex items-center justify-between text-ink-2">
+                        <dt>Tổng giá trị SOW Net</dt>
+                        <dd className="font-code font-semibold text-ink tabular-nums">
+                          {formatVnd(deal.chiPhiBookingNetCuoi)}
+                        </dd>
+                      </div>
+                      <div className="flex items-center justify-between text-ink-2">
+                        <dt>Tổng tiền đã ứng KOC (Tự trừ từ QNvp)</dt>
+                        <dd className="font-code text-warning font-medium tabular-nums">
+                          {(deal.soTienTamUngTruoc || 0) > 0
+                            ? `-${formatVnd(deal.soTienTamUngTruoc || 0)}`
+                            : '0 đ'}
+                        </dd>
+                      </div>
+                      <div className="flex items-center justify-between text-ink-2">
+                        <dt>Khấu trừ hạng mục hủy</dt>
+                        <dd className="font-code text-critical font-medium tabular-nums">
+                          {(deal.khauTruHangMucHuy || 0) > 0
+                            ? `-${formatVnd(deal.khauTruHangMucHuy || 0)}`
+                            : '0 đ'}
+                        </dd>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-line font-semibold text-ink">
+                        <dt>Cần tất toán Đợt 2</dt>
+                        <dd className="font-code text-sm text-accent tabular-nums">
+                          {formatVnd(deal.soTienCanThanhToan || 0)}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    <div className="pt-2 border-t border-line flex flex-col gap-2">
+                      <Button
+                        variant="primary"
+                        icon={Send}
+                        onClick={() => onOpenLarkPaymentModal?.(deal, 'SETTLEMENT')}
+                      >
+                        Lập phiếu ĐNTT Tất toán trên Lark (KN8A)
+                      </Button>
+                      {onOpenDraftBbntPreview && (
+                        <Button
+                          variant="secondary"
+                          icon={FileText}
+                          onClick={() =>
+                            onOpenDraftBbntPreview(buildBookingDealFromApprovedItem(deal))
+                          }
+                        >
+                          Xem trước Biên bản nghiệm thu
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Khép kín bước cuối KT Handle: Đã đi tiền + Gửi Bill UNC 100% trong 7 ngày (P-07) */}
+                    <div className="pt-3 border-t border-line space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-ink">
+                          Bước cuối KT Handle (Bảng 6.1):
+                        </span>
+                        <Status tone={deal.daDiTien ? 'positive' : 'neutral'}>
+                          {deal.daDiTien ? 'Đã đi tiền & Có UNC' : 'Chờ Kế toán giải ngân'}
+                        </Status>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Input
+                          className="font-code flex-1"
+                          value={deal.uncBillCode || ''}
+                          onChange={(e) =>
+                            onUpdateDealFields?.(deal.id, {
+                              uncBillCode: e.target.value,
+                            })
+                          }
+                          placeholder="Mã lệnh chi / Link ảnh Bill UNC..."
+                        />
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            const nextPaid = !deal.daDiTien;
+                            const billCode =
+                              (deal.uncBillCode || '').trim() ||
+                              (nextPaid ? `UNC-${deal.maBooking || 'DEAL'}` : '');
+                            onUpdateDealFields?.(deal.id, {
+                              daDiTien: nextPaid,
+                              uncBillCode: billCode,
+                              uncSentToKocAt: nextPaid
+                                ? new Date().toISOString()
+                                : undefined,
+                              trangThaiPhieuThanhToan: nextPaid
+                                ? 'Đã thanh toán'
+                                : deal.trangThaiPhieuThanhToan,
+                              soTienDaThanhToan: nextPaid
+                                ? deal.chiPhiBookingNetCuoi - (deal.khauTruHangMucHuy || 0)
+                                : deal.soTienDaThanhToan,
+                            });
+                            onNotify?.(
+                              nextPaid
+                                ? `KT Handle: Đã xác nhận đi tiền và lưu Bill UNC (${billCode}) gửi KOC.`
+                                : `Đã hoàn tác trạng thái đi tiền của ${deal.maBooking}.`,
+                              nextPaid ? 'success' : 'info'
+                            );
+                          }}
+                        >
+                          {deal.daDiTien ? 'Đã gửi UNC' : 'Xác nhận UNC'}
                         </Button>
                       </div>
-                    }
-                  >
-                    <div className="space-y-3 text-xs">
-                      {isDealFullyAccepted ? (
-                        <div className="p-3 rounded-lg border border-positive/40 bg-positive-soft/20 flex items-start gap-2.5">
-                          <Check className="w-4 h-4 text-positive shrink-0 mt-0.5" />
-                          <div className="space-y-1">
-                            <div className="font-semibold text-ink">
-                              Toàn bộ Video và Asset đi kèm đã được nghiệm thu hoàn tất
-                            </div>
-                            <div className="text-2xs text-ink-2">
-                              Deal đã đủ điều kiện tiến hành ký Biên bản nghiệm thu (BBNT) và lập phiếu Đề nghị thanh toán (ĐNTT) tất toán qua Lark Approval.
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-3 rounded-lg border border-warning/40 bg-warning-soft/20 flex items-start gap-2.5">
-                          <Eye className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-                          <div className="space-y-1">
-                            <div className="font-semibold text-ink">
-                              Chưa hoàn tất đủ 2 tầng nghiệm thu
-                            </div>
-                            <div className="text-2xs text-ink-2">
-                              {!isStage1Complete
-                                ? 'Vui lòng cập nhật nghiệm thu Video phát sóng chính thức (Tầng 1).'
-                                : `Còn ${pendingAddons.length} hạng mục asset/quyền lợi đi kèm đang chờ bàn giao hoặc chưa xác nhận khấu trừ (Tầng 2).`}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                        <div className="p-2.5 rounded border border-line bg-surface">
-                          <div className="text-2xs text-ink-3">Biên bản nghiệm thu (BBNT)</div>
-                          <div className="font-code font-semibold text-ink mt-0.5">
-                            {deal.bbntCode || (deal.maBooking ? `BBNT-${deal.maBooking}` : 'Chưa lập')}
-                          </div>
-                          <div className="text-2xs text-ink-3 mt-1">
-                            Trạng thái ký: {deal.bbntStatus || 'CHƯA_LẬP'}
-                          </div>
-                        </div>
-                        <div className="p-2.5 rounded border border-line bg-surface">
-                          <div className="text-2xs text-ink-3">Phiếu ĐNTT Tất toán (Lark Approval)</div>
-                          <div className="font-code font-semibold text-ink mt-0.5">
-                            {deal.larkSlipCode || 'Chưa khởi tạo phiếu'}
-                          </div>
-                          <div className="text-2xs text-ink-3 mt-1">
-                            Trạng thái: {deal.trangThaiPhieuThanhToan || 'Chưa lập ĐNTT'}
-                          </div>
-                        </div>
-                      </div>
                     </div>
-                  </Panel>
+                  </div>
+                </Panel>
 
                 <Panel
-                  title="Tài khoản thụ hưởng & Phê duyệt thanh toán Lark"
+                  title="Tài khoản thụ hưởng &amp; Chuẩn hóa P-02"
                   actions={
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          const normalizedHolder = normalizeBankHolderUpperNoAccent(
+                            deal.tenTaiKhoanNganHang || deal.tenKenh
+                          );
+                          const normalizedAcc = (deal.soTaiKhoan || '').replace(/\s+/g, '');
+                          onUpdateDealFields?.(deal.id, {
+                            tenTaiKhoanNganHang: normalizedHolder,
+                            soTaiKhoan: normalizedAcc,
+                          });
+                          onNotify?.(
+                            `Đã chuẩn hóa Tên TK "${normalizedHolder}" (IN HOA không dấu) và xóa khoảng trắng STK.`,
+                            'success'
+                          );
+                        }}
+                      >
+                        Chuẩn hóa TK
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setShowSensitive((v) => !v)}
                       >
-                        {showSensitive ? 'Che STK / CCCD' : 'Hiện đầy đủ'}
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        icon={Send}
-                        onClick={() => onOpenLarkPaymentModal?.(deal)}
-                      >
-                        Lập phiếu Lark
+                        {showSensitive ? 'Che STK' : 'Hiện đầy đủ'}
                       </Button>
                     </div>
                   }
                 >
-                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <dl className="space-y-3 text-xs">
                     <div>
-                      <dt className="text-2xs text-ink-3">Chủ tài khoản thụ hưởng</dt>
-                      <dd className="font-medium text-ink mt-0.5">
+                      <dt className="text-2xs text-ink-3">Chủ tài khoản thụ hưởng (IN HOA không dấu)</dt>
+                      <dd className="font-medium text-ink mt-0.5 uppercase">
                         {deal.tenTaiKhoanNganHang || 'Chưa cập nhật'}
                       </dd>
                     </div>
@@ -2646,21 +3092,18 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-2xs text-ink-3">Số CCCD / Mã số thuế</dt>
+                      <dt className="text-2xs text-ink-3">Mã phiếu Lark Approval (Tạm ứng / ĐNTT)</dt>
                       <dd className="font-code text-ink mt-0.5">
-                        {maskSensitive(deal.soCccd, showSensitive)}
+                        {deal.larkSlipCode ||
+                          deal.larkApprovalInstanceCode ||
+                          deal.larkAdvanceSlipCode ||
+                          'Chưa khởi tạo phiếu'}{' '}
+                        · <span className="font-sans text-ink-2">{deal.trangThaiPhieuThanhToan}</span>
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-2xs text-ink-3">Phiếu đề nghị thanh toán (Lark)</dt>
-                      <dd className="font-code text-ink mt-0.5">
-                        {deal.larkSlipCode || deal.larkApprovalInstanceCode || 'Chưa khởi tạo phiếu'} ·{' '}
-                        <span className="font-sans text-ink-2">{deal.trangThaiPhieuThanhToan}</span>
-                      </dd>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <dt className="text-2xs text-ink-3">Nội dung chuyển khoản chuẩn Kế toán</dt>
-                      <dd className="mt-1 flex items-center justify-between gap-2 p-2 rounded bg-sunken border border-line font-code text-xs text-ink">
+                      <dt className="text-2xs text-ink-3">Nội dung chuyển khoản Kế toán (§3.3.2)</dt>
+                      <dd className="mt-1 flex items-center justify-between gap-2 p-2 rounded-md bg-sunken border border-line font-code text-xs text-ink">
                         <span className="truncate">{deal.noiDungChuyenKhoan || '—'}</span>
                         {deal.noiDungChuyenKhoan && (
                           <button
@@ -2672,7 +3115,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                                 'nội dung chuyển khoản'
                               )
                             }
-                            className="p-1 rounded text-ink-3 hover:text-ink hover:bg-surface shrink-0"
+                            className="p-1 rounded text-ink-3 hover:text-ink shrink-0"
                           >
                             {copiedField === 'noiDungCk' ? (
                               <Check className="w-3.5 h-3.5 text-positive" />
@@ -2686,12 +3129,9 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                   </dl>
                 </Panel>
               </div>
-            );
-          })()}
-          </div>
-        </div>
-      </div>
-    </Presence>,
-    document.body
+            </div>
+          );
+        })()}
+    </div>
   );
 };

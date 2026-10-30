@@ -741,11 +741,22 @@ export function computeTepBookingFromNetFee(netFee: number): string {
 }
 
 /**
- * Công thức Phí booking kèm thuế TNCN (Cột O): = N4 / 0.9
+ * Công thức Phí booking kèm thuế TNCN (Cột O) theo chuẩn BR-09:
+ * - Cá nhân (TNCN 10%): Dưới 2.000.000đ không khấu trừ thuế (Gross = Net); từ 2.000.000đ trở lên tính Gross = Net / 0.9
+ * - Hộ kinh doanh / FOC: Gross = Net
+ * - Công ty / MCN (VAT 8%): Gross = Net * 1.08
  */
-export function computeGrossFeeWithTax(netFee: number): number {
-  const n = Number(netFee) || 0;
+export function computeGrossFeeWithTax(netFee: number, loaiTaiKhoan?: string): number {
+  const n = Math.max(0, Math.round(Number(netFee) || 0));
   if (n <= 0) return 0;
+  const acct = (loaiTaiKhoan || '').toLowerCase();
+  if (acct.includes('foc') || acct.includes('hộ kinh doanh')) {
+    return n;
+  }
+  if (acct.includes('công ty') || acct.includes('mcn') || acct.includes('vat')) {
+    return Math.round(n * 1.08);
+  }
+  if (n < 2_000_000) return n;
   return Math.round(n / 0.9);
 }
 
@@ -1006,20 +1017,28 @@ export function buildStaffListingRowFromKoc(params: {
     thanhQuaText = 'KOC mới đề xuất hợp tác';
   }
 
-  // Tỷ trọng GMV theo kênh bán hàng (%)
-  const videoShare = Number(koc.gmvShareVideo ?? 85);
-  const liveShare = Number(koc.gmvShareLive ?? 10);
-  const cardShare = Math.max(0, Number((100 - videoShare - liveShare).toFixed(2)));
+  // Tỷ trọng GMV theo kênh bán hàng (%) — RULE-DATA-01: Chỉ hiển thị số liệu thực tế từ hồ sơ KOC
+  const videoShare = Number(koc.gmvShareVideo ?? 0);
+  const liveShare = Number(koc.gmvShareLive ?? 0);
+  const cardShare =
+    videoShare > 0 || liveShare > 0
+      ? Math.max(0, Number((100 - videoShare - liveShare).toFixed(2)))
+      : 0;
 
   // Tỷ trọng Giới tính (%)
-  const nuPct = Number(koc.femaleRatio ?? 75);
-  const namPct = Number(koc.maleRatio ?? Math.max(0, Number((100 - nuPct).toFixed(2))));
+  const nuPct = Number(koc.femaleRatio ?? 0);
+  const namPct = Number(
+    koc.maleRatio ?? (nuPct > 0 ? Math.max(0, Number((100 - nuPct).toFixed(2))) : 0)
+  );
 
   // Tỷ trọng Độ tuổi (%)
-  const age18_24 = Number(koc.age18_24 ?? 35);
-  const age25_34 = Number(koc.age25_34 ?? 45);
+  const age18_24 = Number(koc.age18_24 ?? 0);
+  const age25_34 = Number(koc.age25_34 ?? 0);
   const ageOther = 0;
-  const ageOver35 = Math.max(0, Number((100 - age18_24 - age25_34 - ageOther).toFixed(2)));
+  const ageOver35 =
+    age18_24 > 0 || age25_34 > 0
+      ? Math.max(0, Number((100 - age18_24 - age25_34 - ageOther).toFixed(2)))
+      : 0;
 
   const listedDate = listedAtDate || new Date();
   const createdAtIso = listedDate.toISOString();
@@ -1033,9 +1052,7 @@ export function buildStaffListingRowFromKoc(params: {
         : 'Chờ duyệt';
 
   const isInitiallyReviewed = initialBrandChon === 'Yes' || initialBrandChon === 'No';
-  const reviewDate = isInitiallyReviewed
-    ? brandReviewedAtDate || new Date(listedDate.getTime() + 18 * 3_600_000)
-    : undefined;
+  const reviewDate = isInitiallyReviewed ? brandReviewedAtDate : undefined;
   const brandReviewedAtIso = reviewDate ? reviewDate.toISOString() : undefined;
   const ngayBrandDuyetFormatted = reviewDate ? formatVnDateTime(reviewDate) : '';
 
@@ -1050,12 +1067,12 @@ export function buildStaffListingRowFromKoc(params: {
   const avgViewsVal = Number(koc.avgViews ?? 0);
   const medianViewsVal = Number(koc.medianViews ?? avgViewsVal);
   const aovVal = Number(koc.aov ?? 0);
-  const ctrVal = Number(koc.tiktokAvgCtr ?? 4.5);
-  const crVal = Number(koc.tiktokAvgCvr ?? 2.8);
-  const engRateVal = Number(koc.engagementRate ?? 3.5);
+  const ctrVal = Number(koc.tiktokAvgCtr ?? 0);
+  const crVal = Number(koc.tiktokAvgCvr ?? 0);
+  const engRateVal = Number(koc.engagementRate ?? 0);
   const cpvVal = avgViewsVal > 0 ? Math.round(netFee / avgViewsVal) : 0;
   const gmvTargetVal =
-    avgViewsVal > 0 && aovVal > 0
+    avgViewsVal > 0 && aovVal > 0 && ctrVal > 0 && crVal > 0
       ? Math.round(avgViewsVal * (ctrVal / 100) * (crVal / 100) * aovVal)
       : Number(koc.recentRevenue ?? 0);
   const lastHistPrice =
@@ -1227,19 +1244,25 @@ export function buildStaffListingRowFromListingItem(
   const itemsSoldVal = Number(matchedKoc?.itemsSold || 0);
   const recentRevenueVal = Number(matchedKoc?.recentRevenue || 0);
   const maxDealGmv = Number(matchedKoc?.gmvBestCase || matchedKoc?.totalPastGmv || 0);
-  const ctrVal = Number(matchedKoc?.tiktokAvgCtr ?? 4.5);
-  const crVal = Number(matchedKoc?.tiktokAvgCvr ?? 2.8);
-  const engRateVal = Number(matchedKoc?.engagementRate ?? 3.5);
-  const videoShare = Number(matchedKoc?.gmvShareVideo ?? 80);
-  const liveShare = Number(matchedKoc?.gmvShareLive ?? 14);
-  const cardShare = Math.max(0, Number((100 - videoShare - liveShare).toFixed(2)));
-  const nuPct = Number(matchedKoc?.femaleRatio ?? 78);
+  const ctrVal = Number(matchedKoc?.tiktokAvgCtr ?? 0);
+  const crVal = Number(matchedKoc?.tiktokAvgCvr ?? 0);
+  const engRateVal = Number(matchedKoc?.engagementRate ?? 0);
+  const videoShare = Number(matchedKoc?.gmvShareVideo ?? 0);
+  const liveShare = Number(matchedKoc?.gmvShareLive ?? 0);
+  const cardShare =
+    videoShare > 0 || liveShare > 0
+      ? Math.max(0, Number((100 - videoShare - liveShare).toFixed(2)))
+      : 0;
+  const nuPct = Number(matchedKoc?.femaleRatio ?? 0);
   const namPct = Number(
-    matchedKoc?.maleRatio ?? Math.max(0, Number((100 - nuPct).toFixed(2)))
+    matchedKoc?.maleRatio ?? (nuPct > 0 ? Math.max(0, Number((100 - nuPct).toFixed(2))) : 0)
   );
-  const age18_24 = Number(matchedKoc?.age18_24 ?? 35);
-  const age25_34 = Number(matchedKoc?.age25_34 ?? 45);
-  const ageOver35 = Math.max(0, Number((100 - age18_24 - age25_34).toFixed(2)));
+  const age18_24 = Number(matchedKoc?.age18_24 ?? 0);
+  const age25_34 = Number(matchedKoc?.age25_34 ?? 0);
+  const ageOver35 =
+    age18_24 > 0 || age25_34 > 0
+      ? Math.max(0, Number((100 - age18_24 - age25_34).toFixed(2)))
+      : 0;
   const topCategoriesText =
     matchedKoc?.tiktokTopCategories && matchedKoc.tiktokTopCategories.length > 0
       ? matchedKoc.tiktokTopCategories.slice(0, 3).join(', ')
@@ -1344,25 +1367,36 @@ export function recalculateStaffListingRow(
 
   const vPct = Math.min(100, Math.max(0, Number(row.gmvTuVideoPct) || 0));
   const lPct = Math.min(100 - vPct, Math.max(0, Number(row.gmvTuLivePct) || 0));
-  const cPct = Number(Math.max(0, 100 - vPct - lPct).toFixed(2));
+  const cPct =
+    vPct > 0 || lPct > 0
+      ? Number(Math.max(0, 100 - vPct - lPct).toFixed(2))
+      : Math.min(100, Math.max(0, Number(row.gmvTuTheSanPhamPct) || 0));
 
-  const namPct = Math.min(100, Math.max(0, Number(row.namPct) || 0));
-  const nuPct = Number(Math.max(0, 100 - namPct).toFixed(2));
+  const rawNamPct = Math.min(100, Math.max(0, Number(row.namPct) || 0));
+  const rawNuPct = Math.min(100, Math.max(0, Number(row.nuPct) || 0));
+  const namPct = rawNamPct;
+  const nuPct =
+    rawNamPct > 0
+      ? Number(Math.max(0, 100 - rawNamPct).toFixed(2))
+      : rawNuPct;
 
   const a18 = Math.min(100, Math.max(0, Number(row.tuoi18_24Pct) || 0));
   const a25 = Math.min(100 - a18, Math.max(0, Number(row.tuoi25_34Pct) || 0));
-  const a35 = Number(Math.max(0, 100 - a18 - a25).toFixed(2));
+  const a35 =
+    a18 > 0 || a25 > 0
+      ? Number(Math.max(0, 100 - a18 - a25).toFixed(2))
+      : Math.min(100, Math.max(0, Number(row.tuoiTren35Pct) || 0));
   const aOther = Number(row.tuoiOtherPct) > 0 ? Number(row.tuoiOtherPct) : a35;
 
   const avgViewsVal = Math.max(0, Number(row.viewTrungBinh) || 0);
   const costPerView = avgViewsVal > 0 ? Math.round(netFee / avgViewsVal) : 0;
   const aovVal = Math.max(0, Number(row.aov) || 0);
-  const ctrVal = Number(row.ctrPct ?? 4.5);
-  const crVal = Number(row.crPct ?? 2.8);
+  const ctrVal = Number(row.ctrPct ?? 0);
+  const crVal = Number(row.crPct ?? 0);
   const gmvTarget =
     Number(row.gmvTarget) > 0
       ? Number(row.gmvTarget)
-      : avgViewsVal > 0 && aovVal > 0
+      : avgViewsVal > 0 && aovVal > 0 && ctrVal > 0 && crVal > 0
         ? Math.round(avgViewsVal * (ctrVal / 100) * (crVal / 100) * aovVal)
         : 0;
 
@@ -1418,7 +1452,7 @@ export function recalculateStaffListingRow(
     ctrPct: ctrVal,
     crPct: crVal,
     viewTarget: Number(row.viewTarget) > 0 ? Number(row.viewTarget) : avgViewsVal,
-    tyLeTuongTacPct: Number(row.tyLeTuongTacPct ?? 3.5),
+    tyLeTuongTacPct: Number(row.tyLeTuongTacPct ?? 0),
     loaiGia: row.loaiGia || 'Booking',
     gmvTuVideoPct: vPct,
     gmvTuLivePct: lPct,

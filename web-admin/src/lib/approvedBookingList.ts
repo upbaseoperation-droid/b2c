@@ -89,6 +89,7 @@ export interface ApprovedBookingListItem {
   plannedScriptDate: string;           // Cột 86: P.Ngày KOC gửi kịch bản
   plannedDemoDate: string;             // Cột 87: P.Ngày KOC gửi demo
   soTienTamUngTruoc: number;           // Cột 40: 🎃 Số tiền tạm ứng trước
+  advanceAmount?: number;              // Alias tương thích ngược cho soTienTamUngTruoc
   loaiTaiKhoanThanhToan: string;       // Cột 17: 🎃📝Loại tài khoản thanh toán
   ghiChu: string;                      // Cột 32: Ghi chú
   pipelineStatus: ApprovedBookingPipelineStatus; // Cột 27: Pipeline
@@ -155,7 +156,7 @@ export interface ApprovedBookingListItem {
   sequentialAcceptanceStage?: DealSequentialAcceptanceStage; // Nghiệm thu tuần tự: (1) Video -> (2) Phần khác
   addonsAcceptanceStatus?: AddonServicesAcceptanceStatus;
 
-  // 7. Kết nối Luồng phê duyệt thanh toán trên Lark Approval
+  // 7. Kết nối Luồng phê duyệt thanh toán trên Lark Approval & Base (3.2 / 6.1)
   larkApprovalInstanceCode?: string;   // Mã instance luồng duyệt trên Lark Approval (VD: LARK-DNTT-202610-001)
   larkSlipCode?: string;               // Mã phiếu đối soát thanh toán (VD: DNTT-202610-001 / TU-202610-001)
   larkApprovalStatus?:
@@ -168,6 +169,91 @@ export interface ApprovedBookingListItem {
     | 'REJECTED';
   larkApprovalRouteSummary?: string;   // Tóm tắt luồng phê duyệt Lark Approval (Chuyên viên -> Leader -> GĐ MKT -> Kế toán)
   larkSyncedAt?: string;
+
+  // 8. Luồng 1 — Tạm ứng trên Lark (Whiteboard QNvp & Bảng 3.2/6.1)
+  larkAdvanceSlipCode?: string;        // Mã phiếu tạm ứng (TU-202610-001)
+  larkAdvanceInstanceCode?: string;    // Mã instance Lark Approval luồng tạm ứng QNvp
+  larkAdvanceStatus?:
+    | 'CHƯA_TẠM_ỨNG'
+    | 'CHỜ_DUYỆT_TẠM_ỨNG'
+    | 'ĐÃ_DUYỆT_TẠM_ỨNG'
+    | 'ĐÃ_CHI_TẠM_ỨNG'
+    | 'TỪ_CHỐI_TẠM_ỨNG';
+  draftInvoiceCode?: string;           // Số/Link hóa đơn nháp hoặc hóa đơn đợt 1 (bắt buộc với HKD/Công ty khi tạm ứng)
+
+  // 9. Luồng 2 — Nghiệm thu tháng, Khóa sổ WORKDAY 3 & Mở khóa 2 đợt (GĐ7 B-54..B-65, S40)
+  thangNghiemThuChot?: string;         // Kỳ nghiệm thu chốt cố định theo tháng Air gốc (không nhảy khi mua thêm mã Ads tháng sau - P-01)
+  ngayKhoaData?: string;               // Công thức Base 3.2: WORKDAY(EOMONTH(Ngày air, 0), 3) - khóa lúc 00:00 ngày LV thứ 3 tháng kế tiếp
+  chotData?: boolean;                  // Cờ "Chốt data" trên Base 3.2 (bắt buộc tích trước ngayKhoaData để vào kỳ nghiệm thu)
+  unlockRequestBatch?: 'NONE' | 'DOT_1_LV4_LV5' | 'DOT_2_LV10_LV11' | 'UNLOCKED'; // Đợt xin Kế toán mở khóa sửa trên S40
+  unlockRequestReason?: string;        // Lý do đề nghị mở khóa sửa nghiệm thu
+
+  // 10. Luồng 3 — Thanh toán ĐNTT & Bước cuối KT Handle (Đã đi tiền + Bill UNC 7 ngày - P-07, P-08)
+  loaiThanhToanLark?:
+    | 'Tạm ứng trước Booking KOC'
+    | 'Thanh toán Booking KOC'
+    | 'Tạm ứng trước Booking Livestream'
+    | 'Thanh toán Booking Livestream';
+  isBrandBudgetAdvance?: boolean;      // Ngoại lệ GĐ2 (B-11..B-14): Brand chưa kịp chuyển ngân sách, UpBase ứng trước thay Brand
+  brandConfirmPaymentDate?: string;    // Ngày Brand cam kết thanh toán trong email xác nhận gửi Kế toán
+  daDiTien?: boolean;                  // Checkbox "Đã đi tiền" trên Bảng 6.1 sau bước KT Handle
+  uncBillCode?: string;                // Mã lệnh chi / Link ảnh Bill Ủy nhiệm chi (UNC) gửi KOC
+  uncSentToKocAt?: string;             // Thời điểm gửi Bill UNC cho KOC (cam kết 100% trong 7 ngày sau duyệt)
+}
+
+/**
+ * Chuẩn hóa Tên chủ tài khoản ngân hàng sang IN HOA KHÔNG DẤU (chống lỗi P-02 trên Lark Approval)
+ */
+export function normalizeBankHolderUpperNoAccent(raw?: string): string {
+  return (raw || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/[^A-Za-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+}
+
+/**
+ * Tính ngày khóa sổ tự động trên Lark Base 3.2:
+ * Công thức: WORKDAY(EOMONTH(Ngày air, 0), 3) — ngày làm việc thứ 3 của tháng kế tiếp sau tháng Air
+ */
+export function computeDataLockDate(airDateStr?: string, fallbackMonth?: string): string {
+  let year = 2026;
+  let month = 10; // 1-12
+  const cleanAir = (airDateStr || '').trim();
+  const ymdMatch = cleanAir.match(/^(\d{4})-(\d{2})/);
+  const ymMatch = (fallbackMonth || '').trim().match(/^(\d{4})[/-](\d{2})/);
+  if (ymdMatch) {
+    year = Number(ymdMatch[1]);
+    month = Number(ymdMatch[2]);
+  } else if (ymMatch) {
+    year = Number(ymMatch[1]);
+    month = Number(ymMatch[2]);
+  } else {
+    return '';
+  }
+  // Tháng kế tiếp sau tháng Air
+  const nextMonthYear = month === 12 ? year + 1 : year;
+  const nextMonthIdx = month === 12 ? 0 : month; // 0-indexed cho Date.UTC
+  let workdaysCount = 0;
+  let day = 1;
+  while (workdaysCount < 3 && day <= 15) {
+    const dt = new Date(Date.UTC(nextMonthYear, nextMonthIdx, day));
+    const dow = dt.getUTCDay(); // 0 = CN, 6 = T7
+    if (dow !== 0 && dow !== 6) {
+      workdaysCount++;
+      if (workdaysCount === 3) {
+        const mm = String(nextMonthIdx + 1).padStart(2, '0');
+        const dd = String(day).padStart(2, '0');
+        return `${nextMonthYear}-${mm}-${dd}`;
+      }
+    }
+    day++;
+  }
+  return `${nextMonthYear}-${String(nextMonthIdx + 1).padStart(2, '0')}-05`;
 }
 
 export const LOAI_TAI_KHOAN_THANH_TOAN_OPTIONS: string[] = [
@@ -732,6 +818,23 @@ export function recalculateApprovedBookingItem(
     item.noiDungChuyenKhoan ||
     buildTransferDescription(item.brandName, item.thangPlan, item.maBooking);
 
+  // Luồng 2 (GĐ7 B-54..B-65, P-01): Khóa kỳ nghiệm thu theo tháng Air gốc, không tự nhảy khi bổ sung mã Ads tháng sau
+  const thangNghiemThuChot =
+    item.thangNghiemThuChot || thangAirReal || item.thangPlan || '2026/10';
+  const ngayKhoaData =
+    item.ngayKhoaData ||
+    computeDataLockDate(item.actualAirDate || item.plannedAirDate, thangNghiemThuChot);
+  const chotData =
+    item.chotData !== undefined
+      ? item.chotData
+      : sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL';
+
+  const isLivestreamFormat =
+    item.phanLoaiVideo === 'Livestream' || item.dinhDangNghiemThu === 'Phiên Livestream';
+  const loaiThanhToanLark =
+    item.loaiThanhToanLark ||
+    (isLivestreamFormat ? 'Thanh toán Booking Livestream' : 'Thanh toán Booking KOC');
+
   return {
     ...item,
     updatedAt: new Date().toISOString(),
@@ -773,6 +876,10 @@ export function recalculateApprovedBookingItem(
     contractAppendixStatus,
     sequentialAcceptanceStage,
     addonsAcceptanceStatus,
+    thangNghiemThuChot,
+    ngayKhoaData,
+    chotData,
+    loaiThanhToanLark,
   };
 }
 
@@ -1384,7 +1491,11 @@ export function buildBookingDealFromApprovedItem(
     storeName: normalized.storeName,
     productName: normalized.sanPham,
     bookingBatch: normalized.dot || 'Đợt 1',
-    bookingFormat: 'Booking Video KOC',
+    bookingFormat:
+      normalized.phanLoaiVideo === 'Livestream' ||
+      normalized.dinhDangNghiemThu === 'Phiên Livestream'
+        ? 'Booking Livestream KOC'
+        : 'Booking Video KOC',
     kocId: normalized.kocId || `KOC-${normalized.idKenh}`,
     kocStageName: normalized.tenKenh || normalized.idKenh,
     kocChannelId: `@${normalizeTikTokId(normalized.idKenh)}`,
@@ -1449,6 +1560,10 @@ export function buildBookingDealFromApprovedItem(
     sampleTrackingCode: normalized.sampleTrackingCode,
     sampleCarrier: (['GHN', 'ViettelPost', 'J&T', 'ShopeeExpress'].includes(normalized.sampleCarrier || '') ? (normalized.sampleCarrier as 'GHN' | 'ViettelPost' | 'J&T' | 'ShopeeExpress') : undefined),
     contractScanUrl: undefined,
+    larkAdvanceApprovalCode:
+      normalized.larkAdvanceInstanceCode ||
+      normalized.larkAdvanceSlipCode ||
+      (normalized.soTienTamUngTruoc > 0 ? `TU-${maBo}` : undefined),
     larkFinalApprovalCode: normalized.larkApprovalInstanceCode || undefined,
     committedOutputsCount: dealJobs.reduce((s, j) => s + Math.max(1, Number(j.quantity) || 1), 0),
     dealType: addons.length > 0 || dealJobs.length > 1 ? 'MULTI_PLATFORM_CONTENT' : 'SINGLE_CONTENT',

@@ -1,10 +1,15 @@
 // ============================================================================
 // ĐỘNG CƠ KIỂM TRA HỒ SƠ BẢNG 3.2 & TẠO PHIẾU DUYỆT THANH TOÁN LARK (TẠM ỨNG / ĐNTT)
 // Tuân thủ quy tắc:
-// - BR-03: Nghĩa vụ ký hợp đồng (HKD/COM 100%, IND/CTV khi tạm ứng >= 2M hoặc tổng >= 10M)
-// - BR-04: Nghĩa vụ ký BBNT (Tổng >= 20M hoặc có chênh lệch/khấu trừ nghiệm thu)
+// - BR-03: Nghĩa vụ ký hợp đồng (HKD/COM 100%, IND/CTV khi tạm ứng >= 2M Gross hoặc tổng >= 10M Gross)
+// - BR-04: Nghĩa vụ ký BBNT (Tổng >= 20M Gross hoặc có chênh lệch/khấu trừ nghiệm thu hoặc HKD/COM)
 // - BR-09: Tính thuế TNCN 10% (IND/CTV >= 2M) & VAT 8-10% (COM)
 // - Quy tắc Leader B2C: 8 gian hàng có Nguyễn Thị Ngọc Tâm sơ duyệt, còn lại trình thẳng Đặng Thị Yến Nhi
+// - Đấu nối 3 luồng Lark (Tài liệu VPyN & Usn0 29-30/10/2026):
+//   + Luồng 1: Tạm ứng (Whiteboard QNvp) — mở sau khi ký Phụ lục SOW, HKD/COM kèm hóa đơn đợt 1
+//   + Luồng 2: Nghiệm thu tháng & Khóa sổ WORKDAY(EOMONTH(air,0),3), Chốt data, mở khóa 2 đợt (LV 4-5, LV 10-11)
+//   + Luồng 3: Thanh toán ĐNTT (Whiteboard KN8A/Le27/VvoF) — tự trừ tạm ứng, rẽ nhánh hạn mức B2C (<1M, 1-5M, >5M),
+//              khép kín node KT Handle (Đã đi tiền + Gửi Bill UNC 100% cho KOC trong 7 ngày)
 // ============================================================================
 
 import type { BookingDealItem, KocItem } from './types';
@@ -17,6 +22,12 @@ import {
 } from './contracts/contractRules';
 
 export type PaymentRequestType = 'ADVANCE' | 'SETTLEMENT';
+
+export type LarkPaymentCategory =
+  | 'Tạm ứng trước Booking KOC'
+  | 'Thanh toán Booking KOC'
+  | 'Tạm ứng trước Booking Livestream'
+  | 'Thanh toán Booking Livestream';
 
 export type ValidationGroupKey =
   | 'DEAL_BUDGET'
@@ -60,6 +71,9 @@ export interface DealPaymentOverrides {
   bbntUrl?: string;
   invoiceNumber?: string;
   advanceRatePct?: number;
+  advanceAmount?: number;
+  isBrandBudgetAdvance?: boolean;
+  brandConfirmPaymentDate?: string;
 }
 
 /** Các phiếu đã lập trước đó cho cùng mã đơn (máy chủ tự tổng hợp, không nhận từ client). */
@@ -97,6 +111,8 @@ export interface DealPaymentLineBreakdown {
   bookingLeader?: string;
   approverDirector: string;
   requestType: PaymentRequestType;
+  larkPaymentCategory: LarkPaymentCategory;
+  transferTitle: string;
   masterContractCode?: string;
   contractAppendixCode?: string;
   videoAssetNetAmount?: number;
@@ -131,16 +147,22 @@ export interface LarkPaymentRequestSlip {
   slipCode: string;
   requestType: PaymentRequestType;
   requestTypeLabel: string;
+  larkPaymentCategory?: LarkPaymentCategory;
+  transferTitle?: string;
   month: string;
   createdAt: string;
   createdBy: string;
   note?: string;
+  isBrandBudgetAdvance?: boolean;
+  brandConfirmPaymentDate?: string;
   payee: ResolvedPayeeProfile;
   approvalRoute: {
     hasBookingLeader: boolean;
     bookingLeaderName?: string;
     marketingDirectorName: string;
     financeApproverName: string;
+    b2cAmountTier?: '< 1.000.000 đ' | '1.000.000 – 5.000.000 đ' | '> 5.000.000 đ';
+    larkWhiteboardCode?: 'QNvp' | 'KN8A / Le27' | 'VvoF';
     routeSummary: string;
   };
   lineItems: DealPaymentLineBreakdown[];
@@ -163,13 +185,45 @@ export interface LarkPaymentRequestSlip {
     larkTableId: string;
     anycrossWebhookDelivered: boolean;
     syncMode: 'LIVE_LARK_API' | 'ANYCROSS_WEBHOOK' | 'SANDBOX_SIMULATED';
-    approvalStatus: 'PENDING_LEADER' | 'PENDING_DIRECTOR' | 'PENDING_FINANCE' | 'APPROVED' | 'PAID';
+    approvalStatus:
+      | 'PENDING_LEADER'
+      | 'PENDING_DIRECTOR'
+      | 'PENDING_FINANCE'
+      | 'APPROVED'
+      | 'PAID'
+      | 'REJECTED';
     syncedAt: string;
     /** Trạng thái thô lần cuối đọc từ Lark Approval (PENDING / APPROVED / REJECTED / CANCELED) */
     lastLarkStatus?: string;
+    /** Node KT Handle trên Bảng 6.1: Đã đi tiền + Mã/Link Bill UNC gửi KOC trong 7 ngày (P-07) */
+    daDiTien?: boolean;
+    uncBillCode?: string;
+    uncSentToKocAt?: string;
+    rejectedReason?: string;
   };
   /** Job trên bảng Deal của từng dòng phiếu, để trạng thái phiếu tự cập nhật về Job */
   planJobRefs?: Array<{ planId: string; dealId: string; jobId: string }>;
+}
+
+/**
+ * Chuẩn hóa Tên chủ tài khoản ngân hàng sang IN HOA KHÔNG DẤU (Giải quyết P-02: 126 dòng lỗi trên S40)
+ */
+export function normalizeBankHolderUpperNoAccent(raw?: string): string {
+  return (raw || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/[^A-Za-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+}
+
+export function isBankHolderValidUpperNoAccent(raw?: string): boolean {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return false;
+  return trimmed === normalizeBankHolderUpperNoAccent(trimmed) && /^[A-Z0-9\s]+$/.test(trimmed);
 }
 
 // 8 gian hàng có Trưởng nhóm Nguyễn Thị Ngọc Tâm sơ duyệt (Cột 55 File 4.1.1)
@@ -233,7 +287,7 @@ export function buildVietQrImageUrl(params: {
   const matchedBin = Object.entries(BANK_BIN_MAP).find(([k]) => bankKey.includes(k))?.[1];
   const account = (params.bankAccount || '').replace(/\s+/g, '');
   if (!matchedBin || !account || params.amount <= 0) return undefined;
-  const holder = encodeURIComponent((params.bankHolder || '').toUpperCase());
+  const holder = encodeURIComponent(normalizeBankHolderUpperNoAccent(params.bankHolder));
   const memo = encodeURIComponent(params.addInfo.slice(0, 50));
   return `https://img.vietqr.io/image/${matchedBin}-${account}-compact2.png?amount=${Math.round(params.amount)}&addInfo=${memo}&accountName=${holder}`;
 }
@@ -315,19 +369,27 @@ export function resolvePayeeProfileForDeal(
     koc?.bankAccount ??
     altPayee?.bankAccount ??
     ''
-  ).trim();
+  )
+    .replace(/\s+/g, '')
+    .trim();
 
   const defaultHolder =
     detectedKind === 'COM' || detectedKind === 'HKD'
       ? koc?.companyName || altPayee?.holderName || koc?.realName || deal.kocStageName
       : koc?.realName || altPayee?.holderName || deal.kocStageName;
 
-  const bankHolder = (
+  const rawHolder = (
     override?.bankHolder ??
     deal.kocBankHolder ??
     defaultHolder ??
     ''
   ).trim();
+
+  // Nếu nguồn mặc định có dấu thì chuẩn hóa tự động sang IN HOA KHÔNG DẤU; nếu override do người dùng đang gõ thì giữ để kiểm tra
+  const bankHolder =
+    override?.bankHolder !== undefined
+      ? rawHolder
+      : normalizeBankHolderUpperNoAccent(rawHolder);
 
   const hasIdCardScan = Boolean(
     override?.hasIdCardScan ??
@@ -359,6 +421,24 @@ export function resolvePayeeProfileForDeal(
     isMcnOrAlternatePayee,
     mcnNote: koc?.sharedMcnInfo,
   };
+}
+
+/**
+ * Xác định Loại thanh toán chuẩn trên Form Lark Approval §3.3.2 & Bảng 6.1
+ * (Bao gồm cả Booking KOC Video và Booking Livestream trả phí theo chốt 30/10)
+ */
+export function resolveLarkPaymentCategory(
+  deal: BookingDealItem,
+  requestType: PaymentRequestType
+): LarkPaymentCategory {
+  const isLivestream =
+    deal.bookingFormat === 'Phiên Livestream' ||
+    (deal.bookingFormat || '').toLowerCase().includes('live') ||
+    (deal.contentPillar || '').toLowerCase().includes('live');
+  if (requestType === 'ADVANCE') {
+    return isLivestream ? 'Tạm ứng trước Booking Livestream' : 'Tạm ứng trước Booking KOC';
+  }
+  return isLivestream ? 'Thanh toán Booking Livestream' : 'Thanh toán Booking KOC';
 }
 
 /**
@@ -400,15 +480,19 @@ export function evaluateDealForPaymentRequest(
 
   const effectiveSettledNetAmount = Math.max(0, agreedNetAmount - droppedDeductionAmount);
 
-  // Tạm ứng: Nếu tạo phiếu ADVANCE thì tính theo advanceAmount trên deal (hoặc 50% mặc định)
+  // Tạm ứng: ưu tiên override.advanceAmount -> deal.advanceAmount -> tính theo advanceRatePct (mặc định 50%)
   const defaultAdvance =
-    deal.advanceAmount && deal.advanceAmount > 0
+    override?.advanceAmount !== undefined && override.advanceAmount > 0
+      ? Math.round(override.advanceAmount)
+      : deal.advanceAmount && deal.advanceAmount > 0
       ? Math.round(deal.advanceAmount)
       : Math.round(agreedNetAmount * ((override?.advanceRatePct ?? 50) / 100));
 
-  // Tất toán trừ phần đã tạm ứng: lấy số lớn hơn giữa trạng thái trên deal và sổ phiếu tạm ứng đã lập trên máy chủ
+  // Tất toán trừ phần đã tạm ứng (Giải quyết P-03: tự động lấy từ phiếu tạm ứng đã duyệt, không nhập tay sai lệch)
   const advanceFromDeal =
-    deal.status === 'ADVANCE_PAID' || Boolean(deal.larkAdvanceApprovalCode) ? deal.advanceAmount || 0 : 0;
+    deal.status === 'ADVANCE_PAID' || Boolean(deal.larkAdvanceApprovalCode) || (deal.advanceAmount || 0) > 0
+      ? deal.advanceAmount || 0
+      : 0;
   const advancePaidAmount =
     requestType === 'SETTLEMENT'
       ? Math.min(effectiveSettledNetAmount, Math.max(advanceFromDeal, ledger?.advanceRequestedAmount || 0))
@@ -447,16 +531,18 @@ export function evaluateDealForPaymentRequest(
     (sparkAdsCode ? 'ĐÃ_NGHIỆM_THU' : 'CHỜ_NGHIỆM_THU');
   const contractUrl = (
     override?.contractUrl ??
+    deal.contractAppendixSignedUrl ??
     deal.contractScanUrl ??
     deal.signedContractUrl ??
+    deal.masterContractSignedUrl ??
     koc?.contractDriveUrl ??
     ''
   ).trim();
-  const bbntUrl = (override?.bbntUrl ?? '').trim();
+  const bbntUrl = (override?.bbntUrl ?? deal.bbntSignedUrl ?? '').trim();
   const invoiceNumber = (override?.invoiceNumber ?? '').trim();
 
   // =========================================================================
-  // KIỂM TRA CHẶN CỨNG 100% THEO 4 NHÓM NGHIỆP VỤ BẢNG 3.2
+  // KIỂM TRA CHẶN CỨNG 100% THEO 4 NHÓM NGHIỆP VỤ BẢNG 3.2 & LARK APPROVAL
   // =========================================================================
 
   // NHÓM 1: ĐỊNH DANH ĐƠN & NGÂN SÁCH (DEAL_BUDGET)
@@ -526,7 +612,7 @@ export function evaluateDealForPaymentRequest(
     });
   }
 
-  // NHÓM 2: THÔNG TIN THỤ HƯỞNG, CCCD/MST & THUẾ (PAYEE_TAX)
+  // NHÓM 2: THÔNG TIN THỤ HƯỞNG, CCCD/MST & THUẾ (PAYEE_TAX — Giải quyết P-02)
   if (!payee.legalId || payee.legalId.length < 9) {
     issues.push({
       code: 'MISSING_LEGAL_ID',
@@ -567,6 +653,15 @@ export function evaluateDealForPaymentRequest(
       fieldKey: 'bankHolder',
       fieldLabel: 'Tên chủ tài khoản',
       message: `Thiếu Tên chủ tài khoản ngân hàng khớp với CCCD/Hợp đồng.`,
+      canQuickFix: true,
+    });
+  } else if (!isBankHolderValidUpperNoAccent(payee.bankHolder)) {
+    issues.push({
+      code: 'INVALID_BANK_HOLDER_FORMAT',
+      group: 'PAYEE_TAX',
+      fieldKey: 'bankHolder',
+      fieldLabel: 'Định dạng Tên chủ tài khoản (P-02)',
+      message: `Tên chủ tài khoản "${payee.bankHolder}" đang có dấu hoặc chữ thường. Quy định Kế toán bắt buộc viết IN HOA KHÔNG DẤU (Gợi ý: "${normalizeBankHolderUpperNoAccent(payee.bankHolder)}").`,
       canQuickFix: true,
     });
   }
@@ -629,8 +724,35 @@ export function evaluateDealForPaymentRequest(
     }
   }
 
-  // NHÓM 4: CHỨNG TỪ PHÁP LÝ HỢP ĐỒNG & BBNT (LEGAL_DOCS theo BR-03 & BR-04)
-  if (ruleEval.isContractMandatory && !contractUrl) {
+  // NHÓM 4: CHỨNG TỪ PHÁP LÝ HỢP ĐỒNG, BBNT & HÓA ĐƠN (LEGAL_DOCS theo BR-03, BR-04, P-05, P-06)
+  if (requestType === 'ADVANCE') {
+    const isSowSigned =
+      deal.contractAppendixStatus === 'ĐÃ_KÝ' ||
+      Boolean(contractUrl);
+    if (!isSowSigned) {
+      issues.push({
+        code: 'SOW_NOT_SIGNED_FOR_ADVANCE',
+        group: 'LEGAL_DOCS',
+        fieldKey: 'contractUrl',
+        fieldLabel: 'Phụ lục SOW / Hợp đồng đã ký 2 bên (P-05)',
+        message: `Đơn ${deal.dealCode} chưa có link Hợp đồng / Phụ lục SOW đã ký 2 bên. Quy định luồng Tạm ứng (QNvp): bắt buộc ký Phụ lục SOW trước khi mở tạm ứng.`,
+        canQuickFix: true,
+      });
+    }
+
+    if ((payee.subjectKind === 'HKD' || payee.subjectKind === 'COM') && !invoiceNumber) {
+      issues.push({
+        code: 'MISSING_ADVANCE_DRAFT_INVOICE',
+        group: 'LEGAL_DOCS',
+        fieldKey: 'invoiceNumber',
+        fieldLabel: 'Hóa đơn nháp / Hóa đơn đợt 1 (HKD / Công ty)',
+        message: `Chủ thể là ${payee.subjectKind === 'COM' ? 'Công ty' : 'Hộ kinh doanh'}: Khi làm tạm ứng đợt 1 bắt buộc đính kèm Số/Link Hóa đơn nháp (hoặc hóa đơn hợp lệ đợt 1) theo S37 §3.4.3.`,
+        canQuickFix: true,
+      });
+    }
+  }
+
+  if (ruleEval.isContractMandatory && !contractUrl && deal.contractAppendixStatus !== 'ĐÃ_KÝ') {
     issues.push({
       code: 'MISSING_SIGNED_CONTRACT',
       group: 'LEGAL_DOCS',
@@ -641,29 +763,48 @@ export function evaluateDealForPaymentRequest(
     });
   }
 
-  if (requestType === 'SETTLEMENT' && ruleEval.isAcceptanceMandatory && !bbntUrl) {
+  const isBbntRequiredForSubject =
+    ruleEval.isAcceptanceMandatory ||
+    payee.subjectKind === 'COM' ||
+    payee.subjectKind === 'HKD';
+  const bbntReasonText =
+    payee.subjectKind === 'COM' || payee.subjectKind === 'HKD'
+      ? `Chủ thể là ${payee.subjectKind === 'COM' ? 'Công ty' : 'Hộ kinh doanh'} (S37 §3.5: bắt buộc ký BBNT đối với Công ty/HKD).`
+      : ruleEval.acceptanceMandatoryReason;
+
+  if (requestType === 'SETTLEMENT' && isBbntRequiredForSubject && !bbntUrl) {
     issues.push({
       code: 'MISSING_SIGNED_BBNT',
       group: 'LEGAL_DOCS',
       fieldKey: 'bbntUrl',
-      fieldLabel: 'Biên bản nghiệm thu BBNT đã ký (BR-04)',
-      message: `${ruleEval.acceptanceMandatoryReason} Bắt buộc điền mã hoặc link BBNT đã ký.`,
+      fieldLabel: 'Biên bản nghiệm thu BBNT đã ký (BR-04 / S37 §3.5)',
+      message: `${bbntReasonText} Bắt buộc điền mã hoặc link BBNT đã ký 2 bên.`,
       canQuickFix: true,
     });
   }
 
-  if (requestType === 'SETTLEMENT' && payee.subjectKind === 'COM' && !invoiceNumber) {
+  if (
+    requestType === 'SETTLEMENT' &&
+    (payee.subjectKind === 'COM' || payee.subjectKind === 'HKD') &&
+    !invoiceNumber
+  ) {
     issues.push({
       code: 'MISSING_VAT_INVOICE',
       group: 'LEGAL_DOCS',
       fieldKey: 'invoiceNumber',
-      fieldLabel: 'Số Hóa đơn GTGT (VAT)',
-      message: `Chủ thể là Công ty/Doanh nghiệp (COM): Bắt buộc có Số Hóa đơn GTGT trùng ngày ký BBNT trước khi lập ĐNTT.`,
+      fieldLabel: 'Số Hóa đơn hợp lệ (Trùng ngày BBNT)',
+      message: `Chủ thể là ${payee.subjectKind === 'COM' ? 'Công ty (COM)' : 'Hộ kinh doanh (HKD)'}: Bắt buộc có Số Hóa đơn đã phát hành (ngày xuất hóa đơn trùng ngày ký BBNT) trước khi lập ĐNTT.`,
       canQuickFix: true,
     });
   }
 
   const bookingLeader = resolveStoreBookingLeader(deal.storeName || deal.brandName, deal.leadBooking);
+  const larkPaymentCategory = resolveLarkPaymentCategory(deal, requestType);
+  const monthCompact = (deal.campaignCode || '202610').replace(/\D/g, '').slice(0, 6) || '202610';
+  const transferTitle =
+    requestType === 'ADVANCE'
+      ? `UpBase tam ung cho KOC ${deal.brandName || 'Brand'} ${monthCompact} ${deal.dealCode}`
+      : `UpBase thanh toan cho KOC ${deal.brandName || 'Brand'} ${monthCompact} ${deal.dealCode}`;
 
   return {
     dealId: deal.id,
@@ -677,6 +818,8 @@ export function evaluateDealForPaymentRequest(
     bookingLeader,
     approverDirector: 'Đặng Thị Yến Nhi',
     requestType,
+    larkPaymentCategory,
+    transferTitle,
     masterContractCode:
       deal.masterContractCode ||
       `HDNT-2026-${(deal.kocChannelId || deal.kocId || 'KOC').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8)}`,
@@ -699,12 +842,12 @@ export function evaluateDealForPaymentRequest(
     postedDate,
     sparkAdsCode,
     contractUrl,
-    bbntUrl: bbntUrl || (!ruleEval.isAcceptanceMandatory ? 'Miễn BBNT (<20M & khớp 100% theo BR-04)' : ''),
+    bbntUrl: bbntUrl || (!isBbntRequiredForSubject ? 'Miễn BBNT (<20M & khớp 100% theo BR-04)' : ''),
     invoiceNumber,
     isContractMandatory: ruleEval.isContractMandatory,
     contractMandatoryReason: ruleEval.contractMandatoryReason,
-    isBbntMandatory: ruleEval.isAcceptanceMandatory,
-    bbntMandatoryReason: ruleEval.acceptanceMandatoryReason,
+    isBbntMandatory: isBbntRequiredForSubject,
+    bbntMandatoryReason: bbntReasonText,
     isEligible: issues.length === 0,
     issues,
   };
@@ -728,6 +871,8 @@ export function buildLarkPaymentRequestSlip(params: {
   allIssues: Array<{ dealCode: string; issue: PaymentValidationIssue }>;
   lineItems: DealPaymentLineBreakdown[];
   payee: ResolvedPayeeProfile;
+  larkPaymentCategory: LarkPaymentCategory;
+  transferTitle: string;
   approvalRoute: LarkPaymentRequestSlip['approvalRoute'];
   totals: LarkPaymentRequestSlip['totals'];
 } {
@@ -759,7 +904,6 @@ export function buildLarkPaymentRequestSlip(params: {
   });
 
   // Một phiếu chỉ chuyển cho một người thụ hưởng: các đơn phải cùng số tài khoản (MCN dùng chung STK vẫn gom được).
-  // Xét theo dữ liệu riêng của từng đơn, không theo STK dùng chung của phiếu — nếu không, STK chung sẽ che các KOC khác nhau.
   const ownPayees = deals.map(d => resolvePayeeProfileForDeal(d, findKocForDeal(d), overridesByDealId[d.id] || {}));
   const knownAccounts = new Set(ownPayees.map(p => p.bankAccount.replace(/\s/g, '')).filter(Boolean));
   const channels = new Set(ownPayees.map(p => p.kocChannelId.replace(/^@/, '').toLowerCase()));
@@ -812,28 +956,48 @@ export function buildLarkPaymentRequestSlip(params: {
   const grossTotal = lineItems.reduce((s, i) => s + i.grossContractAmount, 0);
   const netTransferTotal = lineItems.reduce((s, i) => s + i.netTransferAmount, 0);
 
+  const larkPaymentCategory: LarkPaymentCategory =
+    lineItems[0]?.larkPaymentCategory ||
+    (requestType === 'ADVANCE' ? 'Tạm ứng trước Booking KOC' : 'Thanh toán Booking KOC');
+  const brandLabel = lineItems[0]?.brandName || 'UpBase';
   const dealCodesLabel = lineItems.map(i => i.dealCode).join(' ');
+  const transferTitle =
+    requestType === 'ADVANCE'
+      ? `UpBase tam ung cho KOC ${brandLabel} ${month} (${dealCodesLabel})`
+      : `UpBase thanh toan cho KOC ${brandLabel} ${month} (${dealCodesLabel})`;
+
   const vietQrUrl = buildVietQrImageUrl({
     bankName: payee.bankName,
     bankAccount: payee.bankAccount,
     bankHolder: payee.bankHolder,
     amount: netTransferTotal,
-    addInfo: `${requestType === 'ADVANCE' ? 'TU' : 'DNTT'} ${dealCodesLabel} ${month}`,
+    addInfo: transferTitle,
   });
 
   payee.vietQrUrl = vietQrUrl;
 
   const hasBookingLeader = lineItems.some(i => Boolean(i.bookingLeader));
   const bookingLeaderName = hasBookingLeader ? 'Nguyễn Thị Ngọc Tâm' : undefined;
+  const b2cAmountTier: '< 1.000.000 đ' | '1.000.000 – 5.000.000 đ' | '> 5.000.000 đ' =
+    netTransferTotal < 1_000_000
+      ? '< 1.000.000 đ'
+      : netTransferTotal <= 5_000_000
+      ? '1.000.000 – 5.000.000 đ'
+      : '> 5.000.000 đ';
+  const isLivestreamSlip = larkPaymentCategory.includes('Livestream');
+  const larkWhiteboardCode: 'QNvp' | 'KN8A / Le27' | 'VvoF' =
+    requestType === 'ADVANCE' ? 'QNvp' : isLivestreamSlip ? 'VvoF' : 'KN8A / Le27';
 
   const approvalRoute: LarkPaymentRequestSlip['approvalRoute'] = {
     hasBookingLeader,
     bookingLeaderName,
     marketingDirectorName: 'Đặng Thị Yến Nhi',
     financeApproverName: 'Phòng Tài chính - Kế toán (TCKT)',
+    b2cAmountTier,
+    larkWhiteboardCode,
     routeSummary: hasBookingLeader
-      ? `Chuyên viên (${lineItems[0]?.bookingPic || 'PIC'}) → Trưởng nhóm (Nguyễn Thị Ngọc Tâm) → Giám đốc MKT (Đặng Thị Yến Nhi) → Kế toán (TCKT)`
-      : `Chuyên viên (${lineItems[0]?.bookingPic || 'PIC'}) → Giám đốc MKT (Đặng Thị Yến Nhi) → Kế toán (TCKT) (Gian hàng không qua Leader trung gian)`,
+      ? `Chuyên viên (${lineItems[0]?.bookingPic || 'PIC'}) → Trưởng nhóm (Nguyễn Thị Ngọc Tâm) → Giám đốc MKT (Đặng Thị Yến Nhi · Mức ${b2cAmountTier}) → Kế toán Approval → KT Handle (Chi tiền & Bill UNC)`
+      : `Chuyên viên (${lineItems[0]?.bookingPic || 'PIC'}) → Giám đốc MKT (Đặng Thị Yến Nhi · Mức ${b2cAmountTier}) → Kế toán Approval → KT Handle (Chi tiền & Bill UNC)`,
   };
 
   const allIssues: Array<{ dealCode: string; issue: PaymentValidationIssue }> = [];
@@ -848,6 +1012,8 @@ export function buildLarkPaymentRequestSlip(params: {
     allIssues,
     lineItems,
     payee,
+    larkPaymentCategory,
+    transferTitle,
     approvalRoute,
     totals: {
       dealsCount: lineItems.length,

@@ -21,8 +21,9 @@ import {
   Trash2,
   UserCheck,
 } from 'lucide-react';
-import type { KocItem, KocLegalProfile, UserProfile } from '../../lib/types';
+import type { KocItem, KocLegalProfile, LegalDocAttachment, OcrExtractedFields, UserProfile } from '../../lib/types';
 import { syncKocContactToStaffSheets } from '../../lib/staffBrandListingSheet';
+import { LegalAttachmentsPanel } from '../contracts/LegalAttachmentsPanel';
 import { Button, Field, Input, Modal, Panel, Select, Stat, StatRow, Status, Textarea } from '../ui';
 import {
   LEGAL_TYPE_LABEL,
@@ -582,6 +583,27 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                     </div>
                   </div>
                 </div>
+
+                {/* Khối đính kèm CCCD & ĐKKD lưu trữ trên Cloudflare R2 */}
+                <div className="px-4 pb-4">
+                  <LegalAttachmentsPanel
+                    attachments={p.legalAttachments || []}
+                    entitySlug={`${koc.channelId || koc.id}-${p.profileCode || 'hspl'}`}
+                    legalType={p.legalType}
+                    editable={Boolean(onUpdateKoc)}
+                    onChange={
+                      onUpdateKoc
+                        ? (nextAttachments) => {
+                            handleSaveProfile({
+                              ...p,
+                              legalAttachments: nextAttachments,
+                              isOcrVerified: p.isOcrVerified || nextAttachments.length > 0,
+                            });
+                          }
+                        : undefined
+                    }
+                  />
+                </div>
               </div>
             );
           })}
@@ -736,6 +758,44 @@ function LegalProfileFormModal({
     initialProfile ? initialProfile.isDefault : nextIndex === 1,
   );
   const [notes, setNotes] = useState(initialProfile?.notes || '');
+  const [legalAttachments, setLegalAttachments] = useState<LegalDocAttachment[]>(
+    initialProfile?.legalAttachments || [],
+  );
+
+  const handleApplyOcrFields = (extracted: OcrExtractedFields) => {
+    if (extracted.companyName) {
+      setHolderName(extracted.companyName);
+      if (!bankHolderName) setBankHolderName(extracted.companyName);
+    } else if (extracted.fullName && legalType === 'INDIVIDUAL') {
+      setHolderName(extracted.fullName);
+      if (!bankHolderName) setBankHolderName(extracted.fullName);
+    }
+    if (extracted.legalRepresentative) {
+      setRepresentativeName(extracted.legalRepresentative);
+    }
+    if (extracted.legalRepTitle) {
+      setRepresentativeTitle(extracted.legalRepTitle);
+    }
+    if (extracted.idNumber) {
+      setCccd(extracted.idNumber);
+    }
+    if (extracted.issueDate) {
+      setCccdIssueDate(extracted.issueDate);
+    }
+    if (extracted.issuePlace) {
+      setCccdIssuePlace(extracted.issuePlace);
+    }
+    if (extracted.taxCode) {
+      setTaxCode(extracted.taxCode);
+    }
+    const addr =
+      extracted.headquartersAddress ||
+      extracted.permanentAddress ||
+      extracted.originAddress;
+    if (addr) {
+      setRegisteredAddress(addr);
+    }
+  };
 
   const handleChangeLegalType = (next: LegalType) => {
     setLegalType(next);
@@ -783,7 +843,10 @@ function LegalProfileFormModal({
       bankAccount: cleanBankAcc,
       bankAccountNumber: cleanBankAcc,
       bankHolderName: bankHolderName.trim() || holderName.trim() || undefined,
-      isOcrVerified: Boolean(cccd.trim() || taxCode.trim() || initialProfile?.isOcrVerified),
+      isOcrVerified: Boolean(
+        cccd.trim() || taxCode.trim() || legalAttachments.length > 0 || initialProfile?.isOcrVerified,
+      ),
+      legalAttachments,
       frameworkContractCode: frameworkContractCode.trim() || undefined,
       frameworkContractStatus,
       frameworkContractDriveUrl: frameworkContractDriveUrl.trim() || undefined,
@@ -1081,6 +1144,16 @@ function LegalProfileFormModal({
             />
           </Field>
         </div>
+
+        <LegalAttachmentsPanel
+          attachments={legalAttachments}
+          onChange={setLegalAttachments}
+          entitySlug={`${koc.channelId || koc.id}-hspl-${nextIndex}`}
+          legalType={legalType}
+          editable
+          onExtractOcrFields={(fields) => handleApplyOcrFields(fields)}
+          title="Tải lên & Đính kèm CCCD / ĐKKD (Lưu trữ Cloudflare R2)"
+        />
 
         <Field label="Ghi chú vận hành / Ủy quyền thanh toán">
           <Textarea

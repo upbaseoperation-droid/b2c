@@ -7,13 +7,14 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, ArrowLeft, Building2, Camera, CheckCircle2, Columns2, CreditCard, FileScan, FileUp, RefreshCw, Scale, Search, ShieldCheck, Trash2, Upload, UserCheck } from 'lucide-react';
-import type { BookingDealItem, KocItem, OcrExtractedFields } from '../../lib/types';
+import type { BookingDealItem, KocItem, LegalDocAttachment, OcrExtractedFields } from '../../lib/types';
 import type { AcceptanceScreenshotItem, ContractField, ContractRecord, DocBlock, LegalTemplate, VideoAcceptanceInspectionMeta } from '../../lib/contracts/types';
 import { Button, Field, Input, Modal, Panel, Person, Segmented, Select, Status, StepMark, Textarea } from '../ui';
 import { formatNumber } from '../../lib/format';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { GoogleDocsReviewPanel } from './GoogleDocsReviewPanel';
+import { LegalAttachmentsPanel } from './LegalAttachmentsPanel';
 import { extractGoogleDocId } from '../../lib/contracts/googleDocsService';
 import type { GoogleDocsReviewRouting, GoogleDocCommentItem } from '../../lib/contracts/googleDocsTypes';
 import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
@@ -76,6 +77,8 @@ export interface ContractFormPayload {
   customFileBlocks?: DocBlock[];
   customFileParagraphs?: string[];
   acceptanceScreenshots?: AcceptanceScreenshotItem[];
+  legalProfileId?: string;
+  legalAttachments?: LegalDocAttachment[];
   googleDocsUrl?: string;
   googleDocsId?: string;
   googleDocsSource?: 'TEMPLATE_AMENDED' | 'KOC_CUSTOM_DOC';
@@ -326,6 +329,11 @@ export function ContractForm({
     record?.acceptanceScreenshots && record.acceptanceScreenshots.length > 0
       ? record.acceptanceScreenshots
       : loadSavedScreenshotsForDeal(initialDeal, initialParent?.kocId)
+  );
+  const [legalAttachments, setLegalAttachments] = useState<LegalDocAttachment[]>(() =>
+    record?.legalAttachments && record.legalAttachments.length > 0
+      ? record.legalAttachments
+      : initialResolvedProfile?.legalAttachments || initialDeal?.legalProfileSnapshot?.legalAttachments || []
   );
 
   const [sourceMode, setSourceMode] = useState<'UPBASE_TEMPLATE' | 'GOOGLE_DOCS' | 'KOC_DOCX'>(() => {
@@ -891,6 +899,9 @@ export function ContractForm({
     const defProf = profiles.find(p => p.isDefault) || profiles[0];
     const nextProfId = defProf?.id || '';
     setSelectedLegalProfileId(nextProfId);
+    if (defProf?.legalAttachments) {
+      setLegalAttachments(defProf.legalAttachments);
+    }
     const nextBrand = matchedDealForKoc?.brandName || (docStage === 'HDNT' ? 'UPBASE' : brand);
     if (nextBrand && nextBrand !== brand) setBrand(nextBrand);
     const nextPartner = partnerName(k, matchedDealForKoc, nextProfId);
@@ -997,6 +1008,9 @@ export function ContractForm({
   const chooseLegalProfile = (profId: string) => {
     setSelectedLegalProfileId(profId);
     const prof = kocLegalProfiles.find(p => p.id === profId);
+    if (prof?.legalAttachments) {
+      setLegalAttachments(prof.legalAttachments);
+    }
     const nextPartner = partnerName(koc, deal, profId);
     if (nextPartner) {
       setPartner(nextPartner);
@@ -1248,6 +1262,21 @@ export function ContractForm({
       runOcrRequest({ imageBase64: base64, fileName: file.name });
     };
     reader.readAsDataURL(file);
+
+    // Đồng thời lưu tệp CCCD/ĐKKD vừa tải lên vào Cloudflare R2 để gắn vào hồ sơ pháp lý
+    const formData = new FormData();
+    const docType = activeLegalProfile?.legalType && activeLegalProfile.legalType !== 'INDIVIDUAL' ? 'DKKD' : 'CCCD_FRONT';
+    formData.append('file', file);
+    formData.append('docType', docType);
+    formData.append('entitySlug', koc?.channelId || koc?.id || partner || 'koc-legal');
+    fetch('/api/contracts/legal-docs', { method: 'POST', body: formData })
+      .then(r => r.json())
+      .then(json => {
+        if (json?.attachment) {
+          setLegalAttachments(prev => [...prev, json.attachment as LegalDocAttachment]);
+        }
+      })
+      .catch(() => undefined);
   };
 
   const official11Set = useMemo(() => new Set<string>(OFFICIAL_3STAGE_TEMPLATE_IDS), []);
@@ -1655,6 +1684,8 @@ export function ContractForm({
           customFileBlocks: isKocOwnForm ? customFile?.blocks : undefined,
           customFileParagraphs: isKocOwnForm ? customFile?.paragraphs : undefined,
           acceptanceScreenshots,
+          legalProfileId: activeLegalProfile?.id || selectedLegalProfileId || undefined,
+          legalAttachments,
           googleDocsUrl: sourceMode === 'GOOGLE_DOCS' ? googleDocsUrl.trim() : undefined,
           googleDocsId: sourceMode === 'GOOGLE_DOCS' ? (extractGoogleDocId(googleDocsUrl) || undefined) : undefined,
           googleDocsSource: sourceMode === 'GOOGLE_DOCS' ? googleDocsSource : undefined,
@@ -1945,6 +1976,17 @@ export function ContractForm({
                   </div>
                 </Field>
               </div>
+
+              {/* Tệp đính kèm CCCD & ĐKKD của Hồ sơ pháp lý Bên B lưu trên Cloudflare R2 */}
+              <LegalAttachmentsPanel
+                attachments={legalAttachments}
+                onChange={setLegalAttachments}
+                entitySlug={koc?.channelId || koc?.id || partner || 'koc-legal'}
+                legalType={activeLegalProfile?.legalType || 'INDIVIDUAL'}
+                editable
+                onExtractOcrFields={(extracted, docLabel) => applyOcrFields(extracted, docLabel)}
+                title="Đính kèm CCCD & Giấy phép ĐKKD vào Hồ sơ pháp lý (Cloudflare R2)"
+              />
 
               {/* 2. Gắn kết Booking / Job & HĐNT gốc (cho SOW hoặc BBNT) */}
               {(isSow || kind === 'ACCEPTANCE') && (
@@ -2770,8 +2812,8 @@ export function ContractForm({
                 </Status>
                 <span className="text-ink-2">
                   {missingTotalCount === 0
-                    ? 'Đã kết nối đủ dữ liệu từ Hồ sơ KOC, Job & Hợp đồng gốc — Người dùng chỉ cần kiểm tra lại hoặc chỉnh sửa khi có ngoại lệ.'
-                    : `Còn ${missingTotalCount} trường trống (dòng dự phòng hoặc tùy chọn).`}
+                    ? 'Đã điền đủ trường dữ liệu'
+                    : `Còn ${missingTotalCount} trường trống`}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -2790,12 +2832,12 @@ export function ContractForm({
             </div>
           )}
 
-          {!isKocOwnForm && template && kind === 'CONTRACT' && !isSow && templateId !== 'CTV-HDNT' && (
+          {!isKocOwnForm && template && kind === 'CONTRACT' && !isSow && !isHdnt && templateId !== 'CTV-HDNT' && (
             <Panel title="Mục 3.3. Thanh toán phí dịch vụ — Lựa chọn phương thức thanh toán">
               <div className="space-y-3 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-ink-2">
-                    Chọn phương thức thanh toán áp dụng trên Hợp đồng để hiển thị đúng điều khoản tương ứng trên văn bản pháp lý:
+                    Phương thức thanh toán:
                   </span>
                   <Segmented
                     value={paymentScheduleOption}

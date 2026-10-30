@@ -3,7 +3,21 @@ export class ContractError extends Error { constructor(message: string, public s
 export function requireCondition(condition: unknown, message: string, status = 400): asserts condition { if (!condition) throw new ContractError(message, status); }
 export const inScope = (brand: string, actor: ContractActor) => actor.allBrands || actor.brands.includes(brand);
 export function canRead(record: ContractRecord, actor: ContractActor) {
-  return !!inScope(record.brand, actor) && (record.ownerId === actor.id || record.steps.some(s => s.reviewerId === actor.id) || actor.roles.some(r => ['LEAD', 'SIGN_COORDINATOR', 'AUDITOR'].includes(r)));
+  if (!inScope(record.brand, actor)) return false;
+  if (
+    record.ownerId === actor.id ||
+    record.steps.some(s => s.reviewerId === actor.id) ||
+    actor.roles.some(r => ['LEAD', 'SIGN_COORDINATOR', 'AUDITOR'].includes(r))
+  ) {
+    return true;
+  }
+  if (
+    actor.roles.some(r => ['LEGAL', 'FINANCE'].includes(r)) &&
+    (record.approval !== 'DRAFT' || Boolean(record.googleDocsUrl))
+  ) {
+    return true;
+  }
+  return false;
 }
 export function event(record: ContractRecord, actor: ContractActor, action: string, note = '') {
   const entry: ContractEvent = { at: new Date().toISOString(), actorId: actor.id, actorName: actor.name, action, note, version: record.version };
@@ -20,6 +34,8 @@ type Input = Pick<ContractRecord, 'title' | 'brand' | 'partner' | 'templateId' |
   isKocOwnForm?: boolean;
   customFile?: ContractRecord['customFile'];
   acceptanceScreenshots?: ContractRecord['acceptanceScreenshots'];
+  legalProfileId?: string;
+  legalAttachments?: ContractRecord['legalAttachments'];
   googleDocsUrl?: string;
   googleDocsId?: string;
   googleDocsSource?: ContractRecord['googleDocsSource'];
@@ -89,7 +105,10 @@ export function submitContract(record: ContractRecord, actor: ContractActor, rev
 }
 export function decideContract(record: ContractRecord, actor: ContractActor, decision: ReviewStep['status'], note: string) {
   requireCondition(record.approval === 'IN_REVIEW', 'Hồ sơ không đang chờ duyệt.');
-  const index = record.steps.findIndex(s => s.reviewerId === actor.id && s.status === 'PENDING' && actor.roles.includes(s.role) && s.version === record.version);
+  let index = record.steps.findIndex(s => s.reviewerId === actor.id && s.status === 'PENDING' && actor.roles.includes(s.role) && s.version === record.version);
+  if (index < 0) {
+    index = record.steps.findIndex(s => s.status === 'PENDING' && actor.roles.includes(s.role) && s.version === record.version);
+  }
   requireCondition(index >= 0 && actor.id !== record.ownerId && inScope(record.brand, actor), 'Không có bước duyệt được giao cho bạn.', 403);
   requireCondition(['APPROVED', 'CHANGES', 'REJECTED'].includes(decision), 'Quyết định không hợp lệ.');
   requireCondition(decision === 'APPROVED' || note.trim(), 'Cần nêu lý do yêu cầu sửa hoặc từ chối.');
@@ -101,7 +120,14 @@ export function decideContract(record: ContractRecord, actor: ContractActor, dec
       requireCondition(!previousPending, 'Cần bước thẩm định trước hoàn tất phê duyệt trước khi duyệt bước này.');
     }
   }
-  const next = structuredClone(record); Object.assign(next.steps[index], { status: decision, note, decidedAt: new Date().toISOString() });
+  const next = structuredClone(record);
+  Object.assign(next.steps[index], {
+    reviewerId: actor.id,
+    reviewerName: actor.name,
+    status: decision,
+    note,
+    decidedAt: new Date().toISOString(),
+  });
   // Kế toán duyệt FINAL trên luồng Google Docs: chốt hồ sơ thành APPROVED
   const isFinanceFinal = Boolean(record.googleDocsUrl) && (actor.roles.includes('FINANCE') || actor.roles.includes('LEAD')) && decision === 'APPROVED';
   next.approval = decision === 'CHANGES'

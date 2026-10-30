@@ -14,7 +14,7 @@ import {
   Sliders,
   ExternalLink,
 } from 'lucide-react';
-import { Button, Status } from '../ui';
+import { Button, Status, Pagination } from '../ui';
 import { formatVnd } from '../../lib/format';
 
 export interface PushFieldChangeDetail {
@@ -89,6 +89,9 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
     return report.diffs.filter((d) => d.action === 'SHEET_ONLY').length;
   }, [report]);
 
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
   // Bộ lọc danh sách dòng đối soát
   const filteredDiffs = useMemo(() => {
     let list = report.diffs;
@@ -121,6 +124,17 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
 
     return list;
   }, [report.diffs, selectedFilter, searchQuery]);
+
+  // Reset về trang 1 khi người dùng đổi bộ lọc hoặc tìm kiếm
+  React.useEffect(() => {
+    setPage(1);
+  }, [selectedFilter, searchQuery]);
+
+  const totalDiffs = filteredDiffs.length;
+  const paginatedDiffs = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredDiffs.slice(start, start + pageSize);
+  }, [filteredDiffs, page, pageSize]);
 
   const handleCopySummary = () => {
     const lines: string[] = [
@@ -397,7 +411,7 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
             </div>
           </div>
         ) : (
-          filteredDiffs.map((d, idx) => {
+          paginatedDiffs.map((d, idx) => {
             const isUpdate = d.action === 'UPDATE';
             const isAdd = d.action === 'ADD';
             const isSheetOnly = d.action === 'SHEET_ONLY';
@@ -611,6 +625,21 @@ export const PushSheetReconciliationView: React.FC<PushSheetReconciliationViewPr
           })
         )}
       </div>
+
+      {/* Phân trang danh sách đối soát khi số dòng lớn (tối ưu DOM, mượt mà khi tới hàng trăm/nghìn dòng) */}
+      {totalDiffs > pageSize && (
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={totalDiffs}
+          onPageChange={setPage}
+          onPageSizeChange={(sz) => {
+            setPageSize(sz);
+            setPage(1);
+          }}
+          pageSizes={[15, 25, 50, 100]}
+        />
+      )}
     </div>
   );
 };

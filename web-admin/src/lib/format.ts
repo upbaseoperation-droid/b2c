@@ -140,3 +140,16 @@ export function getVietnamIsoString(d: Date = new Date()): string {
   return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}+07:00`;
 }
 
+
+/**
+ * Che mờ dữ liệu nhạy cảm của KOC (Số CCCD, Số tài khoản ngân hàng, Số điện thoại):
+ * Chỉ hiển thị 4 ký tự cuối (`****5678`) trừ khi được mở quyền xem chi tiết (`canUnmask = true`).
+ */
+export function maskSensitivePii(value?: string | null, canUnmask = false): string {
+  const raw = String(value || '').trim();
+  if (!raw || raw === '—') return '—';
+  if (canUnmask) return raw;
+  const digitsOrChars = raw.replace(/\s+/g, '');
+  if (digitsOrChars.length <= 4) return `****${digitsOrChars}`;
+  return `****${digitsOrChars.slice(-4)}`;
+}

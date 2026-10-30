@@ -2,7 +2,8 @@
 
 /**
  * Hợp đồng: danh sách hồ sơ → hồ sơ chi tiết → form tạo/sửa theo mẫu pháp chế,
- * kèm Quản lý danh mục & biểu mẫu hợp đồng chuẩn của Pháp chế.
+ * kèm Portal Pháp chế phê duyệt, Portal Kế toán đối soát & phê duyệt,
+ * và Quản lý danh mục & biểu mẫu hợp đồng chuẩn của Pháp chế.
  * Dữ liệu và quyền lấy từ máy chủ (/api/contracts); giao diện không tự cấp quyền.
  * Từ màn Booking, nút “HĐ” mở hồ sơ của booking đó, chưa có thì mở form tạo đã điền sẵn.
  */
@@ -17,7 +18,8 @@ import type { Column } from '../ui';
 import { ApiError, contractApi, type ContractBootstrap } from '../contracts/api';
 import { browserDemoEnabled, downloadBrowserDemo, enableBrowserDemo } from '../contracts/browserDemo';
 import { computeSigningProgress, contractStatus, isAcceptance, OFFICIAL_3STAGE_TEMPLATE_IDS, PAYMENT_SCHEDULE_META_KEY, resolveActiveLegalProfile } from '../contracts/contractUi';
-import { ContractCatalogView, CATEGORY_LABELS } from '../contracts/ContractCatalogView';
+import { ContractCatalogView } from '../contracts/ContractCatalogView';
+import { ContractApprovalPortalView } from '../contracts/ContractApprovalPortalView';
 import { ContractDetail } from '../contracts/ContractDetail';
 import { ContractDocumentViewer } from '../contracts/ContractDocumentViewer';
 import { ContractForm, type ContractFormInit, type ContractFormPayload } from '../contracts/ContractForm';
@@ -40,6 +42,8 @@ export interface ContractIntent {
 
 type Screen =
   | { mode: 'list' }
+  | { mode: 'legal_portal' }
+  | { mode: 'finance_portal' }
   | { mode: 'sets' }
   | { mode: 'catalog' }
   | { mode: 'detail'; id: string }
@@ -52,6 +56,7 @@ export function ContractManagementView({
   intent,
   onNotify,
   onSyncDealContractStatus,
+  onSyncKocLegalProfileContract,
   onBackToBooking,
   demoMode = false,
   currentUserId,
@@ -61,6 +66,17 @@ export function ContractManagementView({
   intent?: ContractIntent | null;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onSyncDealContractStatus?: (dealId: string, patch: Partial<BookingDealItem>) => void;
+  onSyncKocLegalProfileContract?: (
+    kocId: string,
+    legalProfileId: string | undefined,
+    frameworkData: {
+      contractCode?: string;
+      status: 'CHƯA_KÝ' | 'ĐANG_TRÌNH_KÝ' | 'ĐÃ_KÝ';
+      signedAt?: string;
+      driveUrl?: string;
+      googleDocsUrl?: string;
+    }
+  ) => void;
   onBackToBooking?: () => void;
   demoMode?: boolean;
   currentUserId?: string;
@@ -91,7 +107,9 @@ export function ContractManagementView({
   const refresh = useCallback(async () => {
     if (demoMode) enableBrowserDemo();
     const result = await contractApi<ContractBootstrap>('/api/contracts');
-    setData(result); setLoadError(null); return result;
+    setData(result);
+    setLoadError(null);
+    return result;
   }, [demoMode]);
 
   useEffect(() => {
@@ -101,13 +119,19 @@ export function ContractManagementView({
       } else if (process.env.NODE_ENV === 'development') {
         await contractApi('/api/auth/me').catch(() => undefined);
       }
-      await refresh();
+      const nextData = await refresh();
+      if (!intent) {
+        if (nextData.actor.roles.includes('LEGAL') && !nextData.actor.roles.includes('LEAD')) {
+          setScreen({ mode: 'legal_portal' });
+        } else if (nextData.actor.roles.includes('FINANCE') && !nextData.actor.roles.includes('LEAD')) {
+          setScreen({ mode: 'finance_portal' });
+        }
+      }
     })().catch(e => setLoadError(e instanceof ApiError ? e : new ApiError((e as Error).message, 503)));
-  }, [refresh, currentUserId]);
+  }, [refresh, currentUserId, intent]);
 
   // Tải văn bản hợp đồng khi bấm Xem nhanh trên bảng danh sách
   useEffect(() => {
-    // quickViewDoc cleared during render when quickViewRecordId changes
     if (!quickViewRecord) return;
     let cancelled = false;
     contractApi<{ paragraphs: string[]; blocks?: DocBlock[]; fields?: ContractField[]; values?: Record<string, string> }>(`/api/contracts/${quickViewRecord.id}/document?preview=1`)
@@ -218,66 +242,91 @@ export function ContractManagementView({
     ? data?.records.find(r => r.id === (screen.mode === 'detail' ? screen.id : screen.editId))
     : undefined;
 
+  const syncDealStatusForRecord = (updatedRec: ContractRecord) => {
+    const docKind = documentOfTemplate(updatedRec.templateId);
+    const isCompleted = updatedRec.signing.at(-1)?.status === 'COMPLETED';
+    const vMap = updatedRec.values || {};
+    const docDate = vMap['token:[DDMMYY]'] || vMap['token:[DD/MM/YYYY]'] || '';
+    const kocCode = vMap['token:[ID KOC]'] || updatedRec.dealCode || 'KOC';
+    const signedUrl =
+      updatedRec.signing.at(-1)?.signedFileUrl ||
+      updatedRec.contractSystem?.signedFileUrl ||
+      (isCompleted ? `/api/contracts/${updatedRec.id}/document?version=${updatedRec.version}` : undefined);
+    const frameworkCode =
+      updatedRec.contractSystem?.contractCode || `${docDate || '26'}/${kocCode}/HĐNT-UPB`;
+
+    if (docKind === 'HDNT' && updatedRec.kocId && onSyncKocLegalProfileContract) {
+      onSyncKocLegalProfileContract(updatedRec.kocId, updatedRec.legalProfileId, {
+        contractCode: frameworkCode,
+        status: isCompleted ? 'ĐÃ_KÝ' : 'ĐANG_TRÌNH_KÝ',
+        signedAt: isCompleted ? new Date().toISOString() : undefined,
+        driveUrl: signedUrl,
+        googleDocsUrl: updatedRec.contractSystem?.googleDocsUrl,
+      });
+    }
+
+    if (!(updatedRec.dealId || updatedRec.dealCode) || !onSyncDealContractStatus) return;
+    const targetDealId = updatedRec.dealId || effectiveDeals.find(d => d.dealCode === updatedRec.dealCode)?.id || updatedRec.dealCode || '';
+    if (docKind === 'SOW') {
+      const schedMode = vMap[PAYMENT_SCHEDULE_META_KEY];
+      const hasSched = Boolean(schedMode);
+      const advNum =
+        schedMode === 'ONE_TIME'
+          ? 0
+          : Number(
+              String(
+                vMap['sowAdvanceAmount'] ||
+                vMap['token:[Số tiền tạm ứng đợt 1]'] ||
+                vMap['token:[advanceAmount]'] ||
+                ''
+              ).replace(/\D/g, '')
+            ) || 0;
+      onSyncDealContractStatus(targetDealId, {
+        dealCode: updatedRec.dealCode,
+        contractAppendixCode:
+          updatedRec.contractSystem?.contractCode || `PL01-${docDate || '26'}/${kocCode}`,
+        contractAppendixStatus: isCompleted ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
+        contractAppendixGoogleDocsUrl: updatedRec.contractSystem?.googleDocsUrl,
+        contractAppendixSignedUrl: signedUrl,
+        ...(hasSched ? { advanceAmount: advNum, soTienTamUngTruoc: advNum } : {}),
+      });
+    } else if (docKind === 'HDNT') {
+      onSyncDealContractStatus(targetDealId, {
+        dealCode: updatedRec.dealCode,
+        masterContractCode: frameworkCode,
+        masterContractStatus: isCompleted ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
+        masterContractGoogleDocsUrl: updatedRec.contractSystem?.googleDocsUrl,
+        masterContractSignedUrl: signedUrl,
+      });
+    } else if (docKind === 'BBNT') {
+      onSyncDealContractStatus(targetDealId, {
+        dealCode: updatedRec.dealCode,
+        bbntCode:
+          updatedRec.contractSystem?.contractCode || `BBNT-${docDate || '26'}/${kocCode}`,
+        bbntStatus: isCompleted ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
+        bbntGoogleDocsUrl: updatedRec.contractSystem?.googleDocsUrl,
+        bbntSignedUrl: signedUrl,
+      });
+    }
+  };
+
   /** Gửi một thao tác lên máy chủ. Thành công: tải lại, mở hồ sơ, báo bằng toast. */
   const act = async (payload: Record<string, unknown>, done = 'Đã cập nhật hồ sơ') => {
     setBusy(true);
     try {
+      if (payload.action === 'REFRESH_ONLY') {
+        await refresh();
+        const updatedRecord = payload.updatedRecord as ContractRecord | undefined;
+        if (updatedRecord) {
+          syncDealStatusForRecord(updatedRecord);
+          setScreen({ mode: 'detail', id: updatedRecord.id });
+        }
+        onNotify?.(done, 'success');
+        return updatedRecord;
+      }
       const result = await contractApi<{ record: ContractRecord }>('/api/contracts', { id: record?.id, revision: record?.revision, ...payload });
       await refresh();
-      if ((result.record.dealId || result.record.dealCode) && onSyncDealContractStatus) {
-        const docKind = documentOfTemplate(result.record.templateId);
-        const isCompleted = result.record.signing.at(-1)?.status === 'COMPLETED';
-        const vMap = result.record.values || {};
-        const docDate = vMap['token:[DDMMYY]'] || vMap['token:[DD/MM/YYYY]'] || '';
-        const kocCode = vMap['token:[ID KOC]'] || result.record.dealCode || 'KOC';
-        const targetDealId = result.record.dealId || effectiveDeals.find(d => d.dealCode === result.record.dealCode)?.id || result.record.dealCode || '';
-        const signedUrl =
-          result.record.signing.at(-1)?.signedFileUrl ||
-          result.record.contractSystem?.signedFileUrl ||
-          (isCompleted ? `/api/contracts/${result.record.id}/document?version=${result.record.version}` : undefined);
-        if (docKind === 'SOW') {
-          const schedMode = vMap[PAYMENT_SCHEDULE_META_KEY];
-          const hasSched = Boolean(schedMode);
-          const advNum =
-            schedMode === 'ONE_TIME'
-              ? 0
-              : Number(
-                  String(
-                    vMap['sowAdvanceAmount'] ||
-                    vMap['token:[Số tiền tạm ứng đợt 1]'] ||
-                    vMap['token:[advanceAmount]'] ||
-                    ''
-                  ).replace(/\D/g, '')
-                ) || 0;
-          onSyncDealContractStatus(targetDealId, {
-            dealCode: result.record.dealCode,
-            contractAppendixCode:
-              result.record.contractSystem?.contractCode || `PL01-${docDate || '26'}/${kocCode}`,
-            contractAppendixStatus: isCompleted ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
-            contractAppendixGoogleDocsUrl: result.record.contractSystem?.googleDocsUrl,
-            contractAppendixSignedUrl: signedUrl,
-            ...(hasSched ? { advanceAmount: advNum } : {}),
-          });
-        } else if (docKind === 'HDNT') {
-          onSyncDealContractStatus(targetDealId, {
-            dealCode: result.record.dealCode,
-            masterContractCode:
-              result.record.contractSystem?.contractCode || `${docDate || '26'}/${kocCode}/HĐNT-UPB`,
-            masterContractStatus: isCompleted ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
-            masterContractGoogleDocsUrl: result.record.contractSystem?.googleDocsUrl,
-            masterContractSignedUrl: signedUrl,
-          });
-        } else if (docKind === 'BBNT') {
-          onSyncDealContractStatus(targetDealId, {
-            dealCode: result.record.dealCode,
-            bbntCode:
-              result.record.contractSystem?.contractCode || `BBNT-${docDate || '26'}/${kocCode}`,
-            bbntStatus: isCompleted ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
-            bbntGoogleDocsUrl: result.record.contractSystem?.googleDocsUrl,
-            bbntSignedUrl: signedUrl,
-          });
-        }
-      }
+      syncDealStatusForRecord(result.record);
       setScreen({ mode: 'detail', id: result.record.id });
       onNotify?.(done, 'success');
       return result.record;
@@ -301,7 +350,13 @@ export function ContractManagementView({
   }, [screen.mode, record, data?.config.wesign, busy, refresh]);
 
   const me = data?.actor;
-  const waitingMe = (r: ContractRecord) => r.approval === 'IN_REVIEW' && r.steps.some(s => s.reviewerId === me?.id && s.status === 'PENDING');
+  const waitingMe = (r: ContractRecord) =>
+    r.approval === 'IN_REVIEW' &&
+    r.steps.some(
+      s =>
+        s.status === 'PENDING' &&
+        (s.reviewerId === me?.id || (me?.id !== r.ownerId && me?.roles.includes(s.role))),
+    );
   const awaitingSign = (r: ContractRecord) => r.approval === 'APPROVED' && r.signing.at(-1)?.status !== 'COMPLETED';
   const done = (r: ContractRecord) => r.signing.at(-1)?.status === 'COMPLETED';
   const needAcceptance = (r: ContractRecord) =>
@@ -400,7 +455,7 @@ export function ContractManagementView({
       render: r => {
         const code = r.contractSystem?.contractCode || r.signing.at(-1)?.contractCode || r.title;
         const parentCode = r.contractSystem?.parentContractCode;
-        const gdocsUrl = r.contractSystem?.googleDocsUrl;
+        const gdocsUrl = r.googleDocsUrl || r.contractSystem?.googleDocsUrl;
         const docxUrl = r.contractSystem?.exportedDocxUrl || `/api/contracts/${r.id}/document?version=${r.version}`;
         const signedUrl =
           r.signing.at(-1)?.signedFileUrl ||
@@ -554,63 +609,7 @@ export function ContractManagementView({
                       action: 'DEMO_FAST_SIGN',
                     });
                     await refresh();
-                    if ((result.record.dealId || result.record.dealCode) && onSyncDealContractStatus) {
-                      const docKind = documentOfTemplate(result.record.templateId);
-                      const vMap = result.record.values || {};
-                      const docDate = vMap['token:[DDMMYY]'] || vMap['token:[DD/MM/YYYY]'] || '';
-                      const kocCode = vMap['token:[ID KOC]'] || result.record.dealCode || 'KOC';
-                      const targetDealId =
-                        result.record.dealId ||
-                        effectiveDeals.find(d => d.dealCode === result.record.dealCode)?.id ||
-                        result.record.dealCode ||
-                        '';
-                      const signedUrl =
-                        result.record.signing.at(-1)?.signedFileUrl ||
-                        result.record.contractSystem?.signedFileUrl ||
-                        `/api/contracts/${result.record.id}/document?version=${result.record.version}`;
-                      if (docKind === 'SOW') {
-                        const schedMode = vMap[PAYMENT_SCHEDULE_META_KEY];
-                        const hasSched = Boolean(schedMode);
-                        const advNum =
-                          schedMode === 'ONE_TIME'
-                            ? 0
-                            : Number(
-                                String(
-                                  vMap['sowAdvanceAmount'] ||
-                                  vMap['token:[Số tiền tạm ứng đợt 1]'] ||
-                                  vMap['token:[advanceAmount]'] ||
-                                  ''
-                                ).replace(/\D/g, '')
-                              ) || 0;
-                        onSyncDealContractStatus(targetDealId, {
-                          dealCode: result.record.dealCode,
-                          contractAppendixCode:
-                            result.record.contractSystem?.contractCode || `PL01-${docDate || '26'}/${kocCode}`,
-                          contractAppendixStatus: 'ĐÃ_KÝ',
-                          contractAppendixGoogleDocsUrl: result.record.contractSystem?.googleDocsUrl,
-                          contractAppendixSignedUrl: signedUrl,
-                          ...(hasSched ? { advanceAmount: advNum } : {}),
-                        });
-                      } else if (docKind === 'HDNT') {
-                        onSyncDealContractStatus(targetDealId, {
-                          dealCode: result.record.dealCode,
-                          masterContractCode:
-                            result.record.contractSystem?.contractCode || `${docDate || '26'}/${kocCode}/HĐNT-UPB`,
-                          masterContractStatus: 'ĐÃ_KÝ',
-                          masterContractGoogleDocsUrl: result.record.contractSystem?.googleDocsUrl,
-                          masterContractSignedUrl: signedUrl,
-                        });
-                      } else if (docKind === 'BBNT') {
-                        onSyncDealContractStatus(targetDealId, {
-                          dealCode: result.record.dealCode,
-                          bbntCode:
-                            result.record.contractSystem?.contractCode || `BBNT-${docDate || '26'}/${kocCode}`,
-                          bbntStatus: 'ĐÃ_KÝ',
-                          bbntGoogleDocsUrl: result.record.contractSystem?.googleDocsUrl,
-                          bbntSignedUrl: signedUrl,
-                        });
-                      }
-                    }
+                    syncDealStatusForRecord(result.record);
                     onNotify?.(
                       isSow
                         ? `Đã ký đủ 2 bên Phụ lục SOW (${r.title}) — Đã khóa cấu hình Deal`
@@ -696,13 +695,33 @@ export function ContractManagementView({
 
   const canCreate = data.actor.roles.some(r => ['CREATOR', 'LEAD'].includes(r));
 
+  const pendingLegalCount = data.records.filter(
+    r =>
+      r.approval === 'IN_REVIEW' &&
+      (r.steps.some(s => s.role === 'LEGAL' && s.status === 'PENDING' && s.version === r.version) ||
+        r.hasCustomTerms ||
+        r.isKocOwnForm ||
+        Boolean(r.googleDocsReviewRouting?.requiresLegal)),
+  ).length;
+
+  const pendingFinanceCount = data.records.filter(
+    r =>
+      (r.approval === 'IN_REVIEW' &&
+        r.steps.some(s => s.role === 'FINANCE' && s.status === 'PENDING' && s.version === r.version)) ||
+      (Boolean(r.googleDocsUrl) && r.approval !== 'APPROVED' && !r.signing.some(s => s.status === 'COMPLETED')),
+  ).length;
+
   return (
     <div className="space-y-3.5" onClickCapture={e => {
       if (!browserDemoEnabled()) return;
       const link = (e.target as HTMLElement).closest('a');
       if (link?.getAttribute('href')?.startsWith('/api/contracts/')) { e.preventDefault(); downloadBrowserDemo(link.getAttribute('href')!).catch(error => onNotify?.(error.message, 'error')); }
     }}>
-      {(screen.mode === 'list' || screen.mode === 'sets' || screen.mode === 'catalog') && (
+      {(screen.mode === 'list' ||
+        screen.mode === 'legal_portal' ||
+        screen.mode === 'finance_portal' ||
+        screen.mode === 'sets' ||
+        screen.mode === 'catalog') && (
         <>
           <PageActions>
             {data.records.some(r => r.signing.length > 0 && r.signing.at(-1)!.provider !== 'DEMO' && !['COMPLETED', 'CANCELLED', 'REJECTED'].includes(r.signing.at(-1)!.status)) && (
@@ -762,7 +781,11 @@ export function ContractManagementView({
                   ? 'CATALOG'
                   : screen.mode === 'sets'
                     ? 'SETS'
-                    : 'RECORDS'
+                    : screen.mode === 'legal_portal'
+                      ? 'LEGAL_PORTAL'
+                      : screen.mode === 'finance_portal'
+                        ? 'FINANCE_PORTAL'
+                        : 'RECORDS'
               }
               onChange={v =>
                 setScreen(
@@ -770,20 +793,78 @@ export function ContractManagementView({
                     ? { mode: 'catalog' }
                     : v === 'SETS'
                       ? { mode: 'sets' }
-                      : { mode: 'list' },
+                      : v === 'LEGAL_PORTAL'
+                        ? { mode: 'legal_portal' }
+                        : v === 'FINANCE_PORTAL'
+                          ? { mode: 'finance_portal' }
+                          : { mode: 'list' },
                 )
               }
               items={[
                 { key: 'RECORDS', label: `Hồ sơ hợp đồng (${data.records.length})` },
-                { key: 'SETS', label: 'Bộ hồ sơ & Chỉ số phụ thuộc (HĐNT ↔ SOW ↔ BBNT)' },
+                { key: 'LEGAL_PORTAL', label: `Portal Pháp chế (${pendingLegalCount})` },
+                { key: 'FINANCE_PORTAL', label: `Portal Kế toán (${pendingFinanceCount})` },
+                { key: 'SETS', label: 'Bộ hồ sơ (HĐNT ↔ SOW ↔ BBNT)' },
                 { key: 'CATALOG', label: `Bộ 11 biểu mẫu chuẩn (${data.templates.filter(t => t.scope === 'KOC_CUSTOM' || OFFICIAL_3STAGE_TEMPLATE_IDS.includes(t.id as never)).length})` },
               ]}
             />
+
+            {data.demoActors.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-2xs">
+                <span className="text-ink-3 font-medium">Vai trò thao tác:</span>
+                {data.demoActors.map(actorItem => {
+                  const isActive = data.actor.id === actorItem.id;
+                  return (
+                    <button
+                      key={actorItem.id}
+                      type="button"
+                      disabled={busy}
+                      onClick={async () => {
+                        setBusy(true);
+                        try {
+                          await contractApi('/api/contracts/demo', { id: actorItem.id });
+                          const nextData = await refresh();
+                          if (nextData.actor.roles.includes('LEGAL') && !nextData.actor.roles.includes('LEAD')) {
+                            setScreen({ mode: 'legal_portal' });
+                          } else if (nextData.actor.roles.includes('FINANCE') && !nextData.actor.roles.includes('LEAD')) {
+                            setScreen({ mode: 'finance_portal' });
+                          }
+                          onNotify?.(`Đã chuyển sang góc nhìn: ${actorItem.name}`, 'info');
+                        } catch (err) {
+                          onNotify?.((err as Error).message, 'error');
+                        } finally {
+                          setBusy(false);
+                        }
+                      }}
+                      className={`px-2 py-0.5 rounded border font-medium transition-colors ${
+                        isActive
+                          ? 'bg-primary text-surface border-primary'
+                          : 'bg-sunken text-ink-2 border-line hover:text-ink'
+                      }`}
+                    >
+                      {actorItem.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </>
       )}
 
-      {screen.mode === 'catalog' ? (
+      {screen.mode === 'legal_portal' || screen.mode === 'finance_portal' ? (
+        <ContractApprovalPortalView
+          mode={screen.mode === 'legal_portal' ? 'LEGAL_PORTAL' : 'FINANCE_PORTAL'}
+          data={data}
+          deals={effectiveDeals}
+          kocs={kocs}
+          busy={busy}
+          onOpenRecord={id => setScreen({ mode: 'detail', id })}
+          onQuickViewRecord={rec => setQuickViewRecord(rec)}
+          onRefresh={refresh}
+          onNotify={onNotify}
+        />
+      ) : screen.mode === 'catalog' ? (
         <ContractCatalogView
           data={data}
           onRefresh={refresh}

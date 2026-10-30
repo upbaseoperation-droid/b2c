@@ -1,32 +1,49 @@
 import JSZip from 'jszip';
 import { assertCanSign, canRead, createContract, decideContract, editContract, event, requireCondition, submitContract } from '../../lib/contracts/domain';
-import type { AcceptanceScreenshotItem, ContractActor, ContractField, ContractRecord, DocBlock, LegalTemplate, ReviewStep } from '../../lib/contracts/types';
+import type { AcceptanceScreenshotItem, ContractActor, ContractRecord, DocBlock, LegalTemplate, ReviewStep } from '../../lib/contracts/types';
 import type { ContractBootstrap } from './api';
 import { OFFICIAL_TEMPLATES_SNAPSHOT } from '../../lib/contracts/builtInTemplatesSnapshot';
-import { numberToVietnameseWords } from '../../lib/contracts/contractRules';
 import {
   createStandaloneContractSystemMeta,
   createStandaloneRequestSignAttempt,
   enrichTemplateWithSignFlow,
 } from '../../lib/contracts/contractSystemRules';
 
-// Kho thử riêng trên trình duyệt; đồng bộ 100% bộ 8 biểu mẫu chuẩn Ver052026 từ Quản lý hợp đồng
+// Kho thử riêng trên trình duyệt; đồng bộ 100% bộ biểu mẫu chuẩn từ Quản lý hợp đồng
 const KEY = 'b2c-contract-browser-demo-v1';
 const actors: ContractActor[] = [
-  { id: 'demo-owner', name: 'Người tạo (kiểm thử)', roles: ['CREATOR'], brands: ['Kutieskin', 'Royal Ausnz', 'Bye Bye Blemish'], allBrands: true },
-  { id: 'demo-legal', name: 'Pháp chế (kiểm thử)', roles: ['LEGAL'], brands: [], allBrands: true },
-  { id: 'demo-finance', name: 'Kế toán (kiểm thử)', roles: ['FINANCE'], brands: [], allBrands: true },
-  { id: 'demo-lead', name: 'Trưởng nhóm (kiểm thử)', roles: ['LEAD', 'CREATOR'], brands: [], allBrands: true },
+  { id: 'demo-owner', name: 'Người tạo (kiểm thử)', roles: ['CREATOR'], brands: ['Kutieskin', 'Royal Ausnz', 'Bye Bye Blemish', 'ClubClio', 'Cathy Doll', 'Rejuran'], allBrands: true },
+  { id: 'demo-legal', name: 'Nguyễn Thị Liên (Pháp chế)', roles: ['LEGAL'], brands: [], allBrands: true },
+  { id: 'demo-finance', name: 'Lê Thị Thu Hà (Kế toán B2C)', roles: ['FINANCE'], brands: [], allBrands: true },
+  { id: 'demo-lead', name: 'Đặng Thị Yến Nhi (Giám đốc Marketing B2C)', roles: ['LEAD', 'CREATOR'], brands: [], allBrands: true },
   { id: 'demo-sign', name: 'Điều phối ký (kiểm thử)', roles: ['SIGN_COORDINATOR'], brands: [], allBrands: true },
 ];
 
-// Nạp toàn bộ 8 biểu mẫu chính thức từ bản chụp snapshot của Quản lý hợp đồng
+const ACTOR_ALIASES: Record<string, string> = {
+  'contract-demo-owner': 'demo-owner',
+  'contract-demo-legal': 'demo-legal',
+  'contract-demo-finance': 'demo-finance',
+  'contract-demo-sign': 'demo-sign',
+  'user-ngoc-tam': 'demo-lead',
+  'user-yen-nhi': 'demo-lead',
+  'user-admin-giang': 'demo-lead',
+};
+
+function normalizeActorId(rawId?: unknown): string | undefined {
+  if (typeof rawId !== 'string' || !rawId.trim()) return undefined;
+  const trimmed = rawId.trim();
+  return ACTOR_ALIASES[trimmed] || trimmed;
+}
+
+// Nạp toàn bộ biểu mẫu chính thức từ bản chụp snapshot của Quản lý hợp đồng
 const templates: LegalTemplate[] = Object.values(OFFICIAL_TEMPLATES_SNAPSHOT).map(enrichTemplateWithSignFlow);
 
 interface DemoState { actorId: string; records: ContractRecord[] }
 
 function createInitialDemoRecords(): ContractRecord[] {
   const indTpl = OFFICIAL_TEMPLATES_SNAPSHOT['IND-HD'];
+  const sowTpl = OFFICIAL_TEMPLATES_SNAPSHOT['IND-SOW'] || indTpl;
+  const bbntTpl = OFFICIAL_TEMPLATES_SNAPSHOT['IND-VID-BBNT'] || indTpl;
   if (!indTpl) return [];
 
   const now = new Date().toISOString();
@@ -53,6 +70,34 @@ function createInitialDemoRecords(): ContractRecord[] {
     'word/document.xml:p208:14': '5.000.000',
     'word/document.xml:p208:27': '05',
     'word/document.xml:p209:44': '05',
+    'src:bankAccount': '19036789123456',
+    'src:bankName': 'Techcombank - CN Cầu Giấy',
+    'src:taxCode': '8451239876',
+    'src:cccd': '001198012345',
+    'src:phone': '0988123456',
+    'src:netAmount': '9000000',
+    'src:grossAmount': '10000000',
+    'src:pitTax': '1000000',
+  };
+
+  const gdocsValues: Record<string, string> = {
+    ...sampleValues,
+    'token:[ID KOC]': 'halinhofficial',
+    'word/document.xml:p36:cell': 'Võ Hà Linh (Hà Linh Official)',
+    'word/document.xml:p48:cell': 'halinh.booking@upbase.vn',
+    'word/document.xml:p166:cell': '55.000.000',
+    'word/document.xml:p168:cell': '55.000.000',
+    'word/document.xml:p186:cell': '49.500.000',
+    'word/document.xml:p188:cell': '5.500.000',
+    'word/document.xml:p190:cell': '55.000.000',
+    'src:bankAccount': '00710099887766',
+    'src:bankName': 'Vietcombank - CN TP.HCM',
+    'src:taxCode': '8765432109',
+    'src:cccd': '040190005678',
+    'src:phone': '0912345678',
+    'src:netAmount': '49500000',
+    'src:grossAmount': '55000000',
+    'src:pitTax': '5500000',
   };
 
   return [
@@ -70,8 +115,36 @@ function createInitialDemoRecords(): ContractRecord[] {
       version: 1,
       revision: 1,
       approval: 'IN_REVIEW',
+      legalAttachments: [
+        {
+          id: 'ldoc-demo-1a',
+          docType: 'CCCD_FRONT',
+          label: 'CCCD mặt trước',
+          fileKey: 'legal-docs/demo-chanh-beauty/2026-10/00000001-cccd-mat-truoc.svg',
+          fileName: 'cccd-mat-truoc-dang-mai-phuong.svg',
+          fileSize: 184320,
+          mimeType: 'image/svg+xml',
+          storage: 'R2',
+          url: '/api/contracts/legal-docs?key=legal-docs%2Fdemo-chanh-beauty%2F2026-10%2F00000001-cccd-mat-truoc.svg',
+          uploadedAt: now,
+          uploadedBy: 'Chuyên viên B2C',
+        },
+        {
+          id: 'ldoc-demo-1b',
+          docType: 'CCCD_BACK',
+          label: 'CCCD mặt sau',
+          fileKey: 'legal-docs/demo-chanh-beauty/2026-10/00000002-cccd-mat-sau.svg',
+          fileName: 'cccd-mat-sau-dang-mai-phuong.svg',
+          fileSize: 176120,
+          mimeType: 'image/svg+xml',
+          storage: 'R2',
+          url: '/api/contracts/legal-docs?key=legal-docs%2Fdemo-chanh-beauty%2F2026-10%2F00000002-cccd-mat-sau.svg',
+          uploadedAt: now,
+          uploadedBy: 'Chuyên viên B2C',
+        },
+      ],
       steps: [
-        { role: 'FINANCE', reviewerId: 'demo-finance', reviewerName: 'Kế toán B2C', version: 1, status: 'PENDING', note: 'Chờ kế toán soát xét ngân sách Net' },
+        { role: 'FINANCE', reviewerId: 'demo-finance', reviewerName: 'Lê Thị Thu Hà (Kế toán B2C)', version: 1, status: 'PENDING', note: 'Chờ kế toán soát xét ngân sách Net & khấu trừ thuế TNCN 10%' },
       ],
       values: sampleValues,
       versions: [],
@@ -81,7 +154,151 @@ function createInitialDemoRecords(): ContractRecord[] {
       updatedAt: now,
       history: [
         { at: now, actorId: 'demo-owner', actorName: 'Chuyên viên B2C', action: 'CREATE', note: 'Soạn thảo hợp đồng từ booking BO260757625', version: 1 },
-        { at: now, actorId: 'demo-owner', actorName: 'Chuyên viên B2C', action: 'SUBMIT', note: 'Gửi duyệt Kế toán', version: 1 },
+        { at: now, actorId: 'demo-owner', actorName: 'Chuyên viên B2C', action: 'SUBMIT', note: 'Mẫu chuẩn: Miễn duyệt Pháp chế', version: 1 },
+      ],
+    },
+    {
+      id: 'CTR-DEMO-2026-002',
+      title: 'Phụ lục SOW sửa đổi điều khoản · Võ Hà Linh · ClubClio',
+      brand: 'ClubClio',
+      partner: 'Võ Hà Linh (Hà Linh Official)',
+      templateId: sowTpl.id,
+      templateHash: sowTpl.hash,
+      dealCode: 'BO260889102',
+      kocId: 'koc-2',
+      ownerId: 'demo-owner',
+      ownerName: 'Người tạo (kiểm thử)',
+      version: 1,
+      revision: 1,
+      approval: 'IN_REVIEW',
+      hasCustomTerms: true,
+      customTermsSummary: 'Điều 2: Tạm ứng 70% ngay sau khi ký SOW; Điều 3: Giới hạn quyền chạy Spark Ads trong 45 ngày.',
+      googleDocsUrl: 'https://docs.google.com/document/d/1UpbaseClubClioHaLinhSow2026/edit',
+      googleDocsId: '1UpbaseClubClioHaLinhSow2026',
+      googleDocsSource: 'TEMPLATE_AMENDED',
+      legalAttachments: [
+        {
+          id: 'ldoc-demo-2a',
+          docType: 'DKKD',
+          label: 'Giấy phép ĐKKD / Hộ kinh doanh',
+          fileKey: 'legal-docs/demo-ha-linh/2026-10/00000003-giay-phep-dkkd.svg',
+          fileName: 'giay-phep-dkkd-ha-linh-official.svg',
+          fileSize: 245760,
+          mimeType: 'image/svg+xml',
+          storage: 'R2',
+          url: '/api/contracts/legal-docs?key=legal-docs%2Fdemo-ha-linh%2F2026-10%2F00000003-giay-phep-dkkd.svg',
+          uploadedAt: now,
+          uploadedBy: 'Chuyên viên B2C',
+        },
+        {
+          id: 'ldoc-demo-2b',
+          docType: 'CCCD_FRONT',
+          label: 'CCCD mặt trước',
+          fileKey: 'legal-docs/demo-ha-linh/2026-10/00000001-cccd-mat-truoc.svg',
+          fileName: 'cccd-mat-truoc-vo-ha-linh.svg',
+          fileSize: 184320,
+          mimeType: 'image/svg+xml',
+          storage: 'R2',
+          url: '/api/contracts/legal-docs?key=legal-docs%2Fdemo-ha-linh%2F2026-10%2F00000001-cccd-mat-truoc.svg',
+          uploadedAt: now,
+          uploadedBy: 'Chuyên viên B2C',
+        },
+      ],
+      googleDocsReviewRouting: {
+        requiresLegal: true,
+        requiresFinance: true,
+        legalClauses: ['Điều 3', 'Điều 5'],
+        financeClauses: ['Điều 2'],
+        summary: 'Phát hiện 3 điều khoản có sửa đổi/bổ sung (1 điều khoản liên quan Kế toán, 2 điều khoản liên quan Pháp chế).',
+        analyzedAt: now,
+        clauseDiffs: [
+          {
+            clauseNumber: 'Điều 2',
+            title: 'Giá trị Phụ lục và Tiến độ thanh toán',
+            changeType: 'MODIFIED',
+            targetRole: 'FINANCE',
+            originalText: 'Bên A tạm ứng 50% sau khi ký hợp đồng và thanh toán 50% còn lại trong vòng 07 ngày làm việc sau nghiệm thu.',
+            modifiedText: 'Bên A tạm ứng 70% ngay sau khi ký Phụ lục SOW và thanh toán 30% còn lại trong vòng 03 ngày làm việc sau khi nghiệm thu.',
+            explanation: 'Thay đổi tỷ lệ tạm ứng từ 50% lên 70% và rút ngắn hạn thanh toán còn 03 ngày. Phân luồng thẩm định: Kế toán (TCKT).',
+          },
+          {
+            clauseNumber: 'Điều 3',
+            title: 'Quyền sử dụng hình ảnh & Quảng cáo Spark Ads',
+            changeType: 'MODIFIED',
+            targetRole: 'LEGAL',
+            originalText: 'Bên A được quyền sử dụng hình ảnh và video của Bên B để chạy quảng cáo trong vòng 90 ngày kể từ ngày đăng tải.',
+            modifiedText: 'Bên A chỉ được phép chạy Spark Ads trong thời hạn tối đa 45 ngày; quá hạn phải gỡ mã quảng cáo hoặc ký phụ lục gia hạn.',
+            explanation: 'Giới hạn thời hạn sử dụng hình ảnh KOC xuống 45 ngày. Phân luồng thẩm định: Pháp chế.',
+          },
+          {
+            clauseNumber: 'Điều 5',
+            title: 'Điều khoản miễn trừ trách nhiệm độc quyền ngành hàng',
+            changeType: 'ADDED',
+            targetRole: 'LEGAL',
+            modifiedText: 'KOC chỉ cam kết không nhận booking nhãn hàng đối thủ trực tiếp trong vòng 07 ngày trước và sau khi lên video.',
+            explanation: 'Điều khoản mới được bổ sung trên Google Docs, cần Pháp chế thẩm định.',
+          },
+        ],
+      },
+      googleDocsComments: [
+        {
+          id: 'c-demo-1',
+          author: 'Nguyễn Thị Liên (Pháp chế)',
+          content: 'Điều 3 rút xuống 45 ngày có thể chấp nhận nếu KOC cam kết giữ link giỏ hàng vàng đủ 60 ngày.',
+          quotedText: 'chạy Spark Ads trong thời hạn tối đa 45 ngày',
+          createdAt: now,
+          resolved: false,
+        },
+        {
+          id: 'c-demo-2',
+          author: 'Lê Thị Thu Hà (Kế toán B2C)',
+          content: 'Điều 2 tạm ứng 70% vượt chuẩn 50%, cần Lead Marketing xác nhận hạn mức chiến dịch ClubClio.',
+          quotedText: 'tạm ứng 70% ngay sau khi ký Phụ lục SOW',
+          createdAt: now,
+          resolved: false,
+        },
+      ],
+      steps: [
+        { role: 'LEGAL', reviewerId: 'demo-legal', reviewerName: 'Nguyễn Thị Liên (Pháp chế)', version: 1, status: 'PENDING', note: 'Thẩm định điều khoản bản quyền 45 ngày & độc quyền' },
+        { role: 'FINANCE', reviewerId: 'demo-finance', reviewerName: 'Lê Thị Thu Hà (Kế toán B2C)', version: 1, status: 'PENDING', note: 'Chốt điều khoản tạm ứng 70% & thuế TNCN 10%' },
+      ],
+      values: gdocsValues,
+      versions: [],
+      signing: [],
+      checks: [],
+      createdAt: now,
+      updatedAt: now,
+      history: [
+        { at: now, actorId: 'demo-owner', actorName: 'Chuyên viên B2C', action: 'CREATE', note: 'Tạo Phụ lục SOW đàm phán qua Google Docs cho booking BO260889102', version: 1 },
+        { at: now, actorId: 'demo-owner', actorName: 'Chuyên viên B2C', action: 'SUBMIT', note: 'Gửi Pháp chế và Kế toán thẩm định điều khoản sửa đổi', version: 1 },
+      ],
+    },
+    {
+      id: 'CTR-DEMO-2026-003',
+      title: 'Biên bản nghiệm thu Video · Chanh Beauty · Kutieskin',
+      brand: 'Kutieskin',
+      partner: 'Đặng Mai Phương (Chanh Beauty)',
+      templateId: bbntTpl.id,
+      templateHash: bbntTpl.hash,
+      dealCode: 'BO260757625',
+      kocId: 'koc-1',
+      ownerId: 'demo-owner',
+      ownerName: 'Người tạo (kiểm thử)',
+      version: 1,
+      revision: 1,
+      approval: 'IN_REVIEW',
+      steps: [
+        { role: 'FINANCE', reviewerId: 'demo-finance', reviewerName: 'Lê Thị Thu Hà (Kế toán B2C)', version: 1, status: 'PENDING', note: 'Đối soát link video nghiệm thu và duyệt chi tất toán 50% còn lại' },
+      ],
+      values: sampleValues,
+      versions: [],
+      signing: [],
+      checks: [],
+      createdAt: now,
+      updatedAt: now,
+      history: [
+        { at: now, actorId: 'demo-owner', actorName: 'Chuyên viên B2C', action: 'CREATE', note: 'Lập Biên bản nghiệm thu hoàn tất 01 video TikTok', version: 1 },
+        { at: now, actorId: 'demo-owner', actorName: 'Chuyên viên B2C', action: 'SUBMIT', note: 'Trình Kế toán duyệt quyết toán', version: 1 },
       ],
     },
   ];
@@ -132,13 +349,11 @@ function resolveLoginActor(): ContractActor | undefined {
     if (typeof window === 'undefined') return undefined;
     const savedId = localStorage.getItem('upbase_selected_user_id');
     if (!savedId) return undefined;
-    if (savedId === 'contract-demo-legal') return actors.find(a => a.id === 'demo-legal');
-    if (savedId === 'contract-demo-finance') return actors.find(a => a.id === 'demo-finance');
-    if (savedId === 'contract-demo-sign') return actors.find(a => a.id === 'demo-sign');
+    const mapped = normalizeActorId(savedId);
+    if (mapped && actors.some(a => a.id === mapped)) {
+      return actors.find(a => a.id === mapped);
+    }
     if (
-      savedId === 'user-ngoc-tam' ||
-      savedId === 'user-yen-nhi' ||
-      savedId === 'user-admin-giang' ||
       savedId === 'user-growth-manager-quyen' ||
       savedId === 'user-media-manager-quang'
     ) {
@@ -213,10 +428,163 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
   const path = new URL(url, 'https://demo.invalid');
 
   if (path.pathname === '/api/contracts/demo') {
-    requireCondition(actors.some(a => a.id === body?.id), 'Vai trò thử không hợp lệ.');
-    state.actorId = body!.id as string;
+    const normalizedId = normalizeActorId(body?.id);
+    requireCondition(normalizedId && actors.some(a => a.id === normalizedId), 'Vai trò thử không hợp lệ.');
+    state.actorId = normalizedId;
     write(state);
     return { success: true } as T;
+  }
+
+  if (path.pathname === '/api/contracts/google-docs/inspect') {
+    const rawUrl = typeof body?.url === 'string' ? body.url.trim() : '';
+    requireCondition(rawUrl, 'Vui lòng cung cấp liên kết Google Docs.');
+    const docId = rawUrl.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1] || 'demo-gdoc-id-2026';
+    const now = new Date().toISOString();
+    const diffs = [
+      {
+        clauseNumber: 'Điều 2',
+        title: 'Giá trị hợp đồng và Tiến độ thanh toán',
+        changeType: 'MODIFIED' as const,
+        targetRole: 'FINANCE' as const,
+        originalText: 'Bên A tạm ứng 50% sau khi ký hợp đồng và thanh toán 50% còn lại trong vòng 07 ngày làm việc.',
+        modifiedText: 'Bên A tạm ứng 70% sau khi ký hợp đồng và thanh toán 30% còn lại trong vòng 03 ngày làm việc.',
+        explanation: 'Thay đổi tỷ lệ tạm ứng và rút ngắn thời hạn thanh toán. Phân luồng thẩm định: Kế toán (TCKT).',
+      },
+      {
+        clauseNumber: 'Điều 3',
+        title: 'Quyền sở hữu trí tuệ và Sử dụng hình ảnh',
+        changeType: 'MODIFIED' as const,
+        targetRole: 'LEGAL' as const,
+        originalText: 'Bên A được quyền sử dụng hình ảnh KOC chạy quảng cáo trong 90 ngày.',
+        modifiedText: 'Bên A được quyền sử dụng hình ảnh KOC chạy Spark Ads tối đa 45 ngày.',
+        explanation: 'Điều chỉnh thời hạn bản quyền hình ảnh xuống 45 ngày. Phân luồng thẩm định: Pháp chế.',
+      },
+    ];
+    return {
+      success: true,
+      actor: { id: actor.id, name: actor.name },
+      docId,
+      docUrl: `https://docs.google.com/document/d/${docId}/edit`,
+      title: `Hợp đồng Google Docs (${docId.slice(0, 8)})`,
+      paragraphs: [
+        'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM',
+        'HỢP ĐỒNG HỢP TÁC QUẢNG BÁ SẢN PHẨM',
+        'Điều 1. Phạm vi công việc',
+        'Điều 2. Giá trị hợp đồng và Tiến độ thanh toán',
+        'Điều 3. Quyền sở hữu trí tuệ và Sử dụng hình ảnh',
+      ],
+      comments: [
+        {
+          id: `c-1-${docId.slice(0, 6)}`,
+          author: 'Lê Thị Thu Hà (Kế toán B2C)',
+          content: 'Đã kiểm tra hạn mức chiến dịch và thuế TNCN 10%.',
+          quotedText: 'thanh toán 30% còn lại trong vòng 03 ngày làm việc',
+          createdAt: now,
+          resolved: false,
+        },
+      ],
+      diffs,
+      reviewRouting: {
+        requiresLegal: true,
+        requiresFinance: true,
+        legalClauses: ['Điều 3'],
+        financeClauses: ['Điều 2'],
+        clauseDiffs: diffs,
+        summary: 'Phát hiện 2 điều khoản có sửa đổi/bổ sung (1 điều khoản liên quan Kế toán, 1 điều khoản liên quan Pháp chế).',
+        analyzedAt: now,
+      },
+    } as T;
+  }
+
+  if (path.pathname === '/api/contracts/google-docs/sync-comments') {
+    const contractId = typeof body?.contractId === 'string' ? body.contractId.trim() : '';
+    const record = state.records.find(r => r.id === contractId);
+    requireCondition(record && canRead(record, actor), 'Không có quyền truy cập hồ sơ này.', 403);
+    const next = structuredClone(record);
+    const now = new Date().toISOString();
+    const comments = next.googleDocsComments?.length
+      ? next.googleDocsComments
+      : [
+          {
+            id: `c-sync-${Date.now()}`,
+            author: 'Lê Thị Thu Hà (Kế toán B2C)',
+            content: 'Đã xác nhận tài khoản thụ hưởng và khấu trừ thuế TNCN 10%.',
+            createdAt: now,
+            resolved: true,
+          },
+        ];
+    next.googleDocsComments = comments;
+    next.googleDocsAuditTrail = {
+      ...next.googleDocsAuditTrail,
+      syncedAt: now,
+      commentsCount: comments.length,
+    };
+    event(next, actor, 'SYNC_GOOGLE_DOCS_COMMENTS', `Đã đồng bộ ${comments.length} bình luận & phản hồi từ Google Docs`);
+    next.revision++;
+    state.records[state.records.findIndex(r => r.id === next.id)] = next;
+    write(state);
+    return { success: true, comments, record: next } as T;
+  }
+
+  if (path.pathname === '/api/contracts/google-docs/approve-and-push-wesign') {
+    const contractId = typeof body?.contractId === 'string' ? body.contractId.trim() : '';
+    const record = state.records.find(r => r.id === contractId);
+    requireCondition(record && canRead(record, actor), 'Không có quyền truy cập hồ sơ này.', 403);
+    requireCondition(
+      actor.roles.includes('FINANCE') || actor.roles.includes('LEAD'),
+      'Chỉ Kế toán (FINANCE) hoặc Trưởng bộ phận (LEAD) mới có thẩm quyền phê duyệt hồ sơ và đẩy sang WeSign.',
+      403,
+    );
+    const next = structuredClone(record);
+    const now = new Date().toISOString();
+    const approvalNote =
+      typeof body?.note === 'string' && body.note.trim()
+        ? body.note.trim()
+        : 'Kế toán đã thẩm định các điều khoản tài chính & đối soát thảo luận trên Google Docs. Phê duyệt trình ký WeSign.';
+
+    for (const s of next.steps) {
+      if (s.status === 'PENDING') {
+        s.status = 'APPROVED';
+        s.decidedAt = now;
+        s.note = s.role === 'FINANCE' ? approvalNote : (s.note || 'Đã tham vấn trên Google Docs');
+      }
+    }
+    if (!next.steps.some(s => s.role === 'FINANCE')) {
+      next.steps.push({
+        role: 'FINANCE',
+        reviewerId: actor.id,
+        reviewerName: actor.name,
+        status: 'APPROVED',
+        note: approvalNote,
+        version: next.version,
+        decidedAt: now,
+      });
+    }
+    next.approval = 'APPROVED';
+    const commentsCount = next.googleDocsComments?.length || 0;
+    next.googleDocsAuditTrail = {
+      syncedAt: now,
+      commentsCount,
+      approvedByFinance: actor.name,
+      approvedAtFinance: now,
+      approvedByLegal: next.googleDocsAuditTrail?.approvedByLegal,
+      approvedAtLegal: next.googleDocsAuditTrail?.approvedAtLegal,
+    };
+    const template = templates.find(t => t.id === next.templateId) || templates[0];
+    const meta = next.contractSystem || createStandaloneContractSystemMeta(next, template);
+    next.contractSystem = meta;
+    const attempt = createStandaloneRequestSignAttempt(next, actor.id, `demo-gdocs-v${next.version}`, {
+      partyAEmail: typeof body?.partyAEmail === 'string' ? body.partyAEmail : 'marketing-lead@upbase.vn',
+      partyBEmail: typeof body?.partyBEmail === 'string' ? body.partyBEmail : 'koc-partner@upbase.vn',
+    });
+    next.signing.push(attempt);
+    event(next, actor, 'APPROVED', approvalNote);
+    event(next, actor, 'FINANCE_APPROVE_AND_EXPORT', `Kế toán (${actor.name}) đã phê duyệt FINAL và đóng băng ${commentsCount} trao đổi Google Docs.`);
+    event(next, actor, 'WESIGN_SUBMITTED', `Đã tạo luồng ký số e-Contract trên WeSign (${meta.contractCode}).`);
+    next.revision++;
+    state.records[state.records.findIndex(r => r.id === next.id)] = next;
+    write(state);
+    return { success: true, record: next, attempt, commentsCount } as T;
   }
 
   if (!body && path.pathname === '/api/contracts') {
@@ -327,7 +695,7 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
     const tplFields = new Set(template.fields.map(f => f.key));
     const values: Record<string, string> = {};
     for (const [key, value] of Object.entries(rawValues)) {
-      if (!tplFields.has(key) && !key.startsWith('token:')) continue;
+      if (!tplFields.has(key) && !key.startsWith('token:') && !key.startsWith('src:')) continue;
       if (typeof value === 'string' && value.length <= 4000) values[key] = value;
     }
     const isKocOwnForm = Boolean(body.isKocOwnForm);
@@ -370,6 +738,16 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       isKocOwnForm,
       customFile: isKocOwnForm ? customFile : undefined,
       acceptanceScreenshots,
+      legalProfileId: typeof body.legalProfileId === 'string' && body.legalProfileId ? body.legalProfileId : existing?.legalProfileId,
+      legalAttachments: Array.isArray(body.legalAttachments)
+        ? (body.legalAttachments as ContractRecord['legalAttachments'])
+        : existing?.legalAttachments,
+      googleDocsUrl: typeof body.googleDocsUrl === 'string' && body.googleDocsUrl.trim() ? body.googleDocsUrl.trim() : existing?.googleDocsUrl,
+      googleDocsId: typeof body.googleDocsId === 'string' && body.googleDocsId.trim() ? body.googleDocsId.trim() : existing?.googleDocsId,
+      googleDocsSource: body.googleDocsSource === 'KOC_CUSTOM_DOC' ? ('KOC_CUSTOM_DOC' as const) : (body.googleDocsUrl ? ('TEMPLATE_AMENDED' as const) : existing?.googleDocsSource),
+      googleDocsReviewRouting: (typeof body.googleDocsReviewRouting === 'object' && body.googleDocsReviewRouting !== null ? body.googleDocsReviewRouting : existing?.googleDocsReviewRouting) as ContractRecord['googleDocsReviewRouting'],
+      googleDocsComments: (Array.isArray(body.googleDocsComments) ? body.googleDocsComments : existing?.googleDocsComments) as ContractRecord['googleDocsComments'],
+      googleDocsAuditTrail: (typeof body.googleDocsAuditTrail === 'object' && body.googleDocsAuditTrail !== null ? body.googleDocsAuditTrail : existing?.googleDocsAuditTrail) as ContractRecord['googleDocsAuditTrail'],
     };
   };
 
@@ -427,16 +805,21 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       );
     }
     requireCondition(Array.isArray(body.reviewers), 'Cần chọn người duyệt.');
+    const normalizedReviewerIds = (body.reviewers as string[]).map(id => normalizeActorId(id) || id);
     const mandatoryLegal = Boolean(record.isKocOwnForm || record.hasCustomTerms || template?.exemptLegalReview === false);
     next = submitContract(
       record,
       actor,
-      actors.filter(a => (body.reviewers as string[]).includes(a.id)),
+      actors.filter(a => normalizedReviewerIds.includes(a.id)),
       { requireLegal: mandatoryLegal ? true : (typeof body.requireLegal === 'boolean' ? body.requireLegal : undefined) },
     );
   } else if (body.action === 'ADD_NOTE') {
     requireCondition(typeof body.note === 'string' && body.note.trim() && body.note.length <= 4000, 'Nội dung ghi chú không hợp lệ.');
     event(next, actor, 'NOTE', body.note.trim());
+  } else if (body.action === 'ATTACH_LEGAL_DOCS') {
+    requireCondition(Array.isArray(body.legalAttachments), 'Danh sách tệp đính kèm không hợp lệ.');
+    next.legalAttachments = body.legalAttachments as ContractRecord['legalAttachments'];
+    event(next, actor, 'NOTE', `Cập nhật tệp đính kèm CCCD / ĐKKD trên Cloudflare R2 (${next.legalAttachments?.length || 0} tệp)`);
   } else if (body.action === 'DECIDE') {
     next = decideContract(record, actor, body.decision as ReviewStep['status'], String(body.note || ''));
     const isLegal = actor.roles.includes('LEGAL') || record.steps.find(s => s.reviewerId === actor.id)?.role === 'LEGAL';
@@ -464,6 +847,11 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       else templates.push(customTpl);
       event(next, actor, 'NOTE', `Pháp chế đã lưu mẫu này thành Mẫu đã duyệt cho KOC ${record.partner || record.kocId}.`);
     }
+  } else if (body.action === 'UPDATE_LEGAL_NOTES') {
+    requireCondition(actor.roles.some(r => ['LEGAL', 'LEAD'].includes(r)), 'Chỉ Pháp chế hoặc Trưởng bộ phận mới có quyền cập nhật lưu ý pháp lý.', 403);
+    const notes = typeof body.legalNotes === 'string' ? body.legalNotes.trim() : '';
+    next.internalNotes = notes;
+    event(next, actor, 'NOTE', `Cập nhật lưu ý Pháp chế: ${notes}`);
   } else if (body.action === 'UPDATE_ACCEPTANCE_SCREENSHOTS') {
     requireCondition(Array.isArray(body.acceptanceScreenshots), 'Danh sách ảnh chụp không hợp lệ.');
     next.acceptanceScreenshots = (body.acceptanceScreenshots as AcceptanceScreenshotItem[])
@@ -485,7 +873,7 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
     requireCondition(
       record.approval !== 'APPROVED' &&
         !record.signing.length &&
-        (record.ownerId === actor.id || record.steps.some(s => s.reviewerId === actor.id)),
+        (record.ownerId === actor.id || record.steps.some(s => s.reviewerId === actor.id) || actor.roles.some(r => ['LEGAL', 'FINANCE', 'LEAD'].includes(r))),
       'Không có quyền kiểm tra hồ sơ.',
     );
     const requiredFields = template?.fields.filter(f => f.required) || [];

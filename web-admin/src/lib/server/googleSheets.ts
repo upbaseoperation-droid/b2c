@@ -788,6 +788,10 @@ export async function appendNewRows(opts: {
   const sheetDotIdx = findHeaderIndex('Đợt');
   const sheetBrandDecisionIdx = header.findIndex(h => /brand chọn|brand duyệt/i.test(h));
 
+  // Giới hạn 1 tháng tối đa 300 KOC listing.
+  // Cửa sổ Tail Window 450 dòng bao quát 100% KOC tháng hiện tại + tháng liền kề khi bảng kéo dài hàng nghìn dòng.
+  const TAIL_WINDOW_ROWS = 450;
+
   const existingRowByRowId = new Map<string, { rowNum: number; rowVals: string[] }>();
   const existingRowByComposite = new Map<string, { rowNum: number; rowVals: string[] }>();
   const existingRowByProdDot = new Map<string, { rowNum: number; rowVals: string[] }>();
@@ -810,7 +814,8 @@ export async function appendNewRows(opts: {
       const dot = sheetDotIdx >= 0 ? normHeaderToken(String(r[sheetDotIdx] ?? '')) : '';
       if (b) existingRowByComposite.set(`${k}::${b}`, { rowNum, rowVals: r });
       if (prod || dot) existingRowByProdDot.set(`${k}::${prod}::${dot}`, { rowNum, rowVals: r });
-      if (!existingRowByHandle.has(k)) existingRowByHandle.set(k, { rowNum, rowVals: r });
+      // Luôn gán dòng mới nhất xuất hiện ở phía dưới (gần tail)
+      existingRowByHandle.set(k, { rowNum, rowVals: r });
     });
   }
 
@@ -856,10 +861,16 @@ export async function appendNewRows(opts: {
         matchedBy = 'COMPOSITE';
       }
     }
-    // 3. Cuối cùng khớp theo ID kênh nếu dòng đó trên Sheet chưa có Row ID khác
+    // 3. Cuối cùng khớp theo ID kênh nếu dòng đó trên Sheet chưa có Row ID khác:
+    // Cơ chế Tail Window: Chỉ khớp dòng cũ nếu nằm trong phạm vi 450 dòng gần nhất của Sheet.
+    // Nếu dòng KOC chỉ xuất hiện ở các tháng cũ trước đó (> 450 dòng trước), KHÔNG ghi đè dòng lịch sử, mà đẩy dòng mới cho tháng này.
     if (!match) {
       const cand = existingRowByHandle.get(k);
-      if (cand && !matchedSheetRowNums.has(cand.rowNum)) {
+      const isWithinActiveWindow =
+        lastValidDataRowNum <= TAIL_WINDOW_ROWS ||
+        (cand && cand.rowNum >= lastValidDataRowNum - TAIL_WINDOW_ROWS);
+
+      if (cand && isWithinActiveWindow && !matchedSheetRowNums.has(cand.rowNum)) {
         const candRowId = sheetRowIdIdx >= 0 ? String(cand.rowVals[sheetRowIdIdx] ?? '').trim() : '';
         if (!candRowId || !appRowId || candRowId === appRowId) {
           match = cand;
@@ -1050,10 +1061,14 @@ export async function appendNewRows(opts: {
     }
 
     if (updateRequests.length > 0) {
-      await sheetsFetch(`${spreadsheetId}/values:batchUpdate`, {
-        method: 'POST',
-        body: JSON.stringify({ valueInputOption: 'USER_ENTERED', data: updateRequests }),
-      });
+      const CHUNK_SIZE = 300;
+      for (let i = 0; i < updateRequests.length; i += CHUNK_SIZE) {
+        const chunk = updateRequests.slice(i, i + CHUNK_SIZE);
+        await sheetsFetch(`${spreadsheetId}/values:batchUpdate`, {
+          method: 'POST',
+          body: JSON.stringify({ valueInputOption: 'USER_ENTERED', data: chunk }),
+        });
+      }
     }
 
     if (payload.length > 0) {

@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
     // Đưa KOC vừa gửi vào bảng điều phối listing (Chờ Brand duyệt) — chỉ thực hiện khi ghi thật (!dryRun)
     let listed = 0;
     if (!dryRun && plan && pushObjects.length > 0) {
-      const boardKey = listingKey(planId);
+      const boardKey = listingKey(plan.id);
       const fallbackItems = getRealLarkListingsForBoardKey(boardKey);
       for (let attempt = 0; attempt < 3; attempt++) {
         const rec = await readRecord<{ items: KocListingItem[] }>(boardKey, { items: fallbackItems });

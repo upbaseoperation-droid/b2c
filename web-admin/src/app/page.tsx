@@ -18,6 +18,7 @@ import type { ContractIntent } from '../components/views/ContractManagementView'
 import type { ContractDocument } from '../lib/planDealLink';
 import type { ListingPlanContext } from '../components/views/KocListingBatchHubView';
 import type { StoreSheetSetupTabKey } from '../components/views/StoreStaffSheetSetupView';
+import { getKocLegalProfiles } from '../components/koc/kocUtils';
 
 /** Khung giữ chỗ khi màn đang tải gói: đúng hình dạng màn (thanh lọc → hàng chỉ số → bảng), DESIGN_SYSTEM.md §9. */
 function ViewLoading() {
@@ -2144,6 +2145,52 @@ export default function App() {
               onNotify={showToast}
               onSyncDealContractStatus={(dealId, patch) => {
                 setDeals(prev => prev.map(d => (d.id === dealId ? { ...d, ...patch } : d)));
+              }}
+              onSyncKocLegalProfileContract={(kocId, legalProfileId, frameworkData) => {
+                setKocs(prev => {
+                  const updated = prev.map(k => {
+                    if (k.id !== kocId) return k;
+                    const profiles = getKocLegalProfiles(k);
+                    const updatedProfiles = profiles.map(p => {
+                      if (p.id === legalProfileId || (!legalProfileId && (p.isDefault || profiles.length === 1))) {
+                        return {
+                          ...p,
+                          frameworkContractCode: frameworkData.contractCode || p.frameworkContractCode,
+                          frameworkContractStatus: frameworkData.status,
+                          frameworkContractSignedAt: frameworkData.signedAt || p.frameworkContractSignedAt,
+                          frameworkContractDriveUrl: frameworkData.driveUrl || p.frameworkContractDriveUrl,
+                        };
+                      }
+                      return p;
+                    });
+                    return {
+                      ...k,
+                      legalProfiles: updatedProfiles,
+                      contractDriveUrl: frameworkData.driveUrl || k.contractDriveUrl,
+                    };
+                  });
+                  const matched = updated.filter(k => k.id === kocId);
+                  if (matched.length > 0) {
+                    syncCustomKocsIntoState(matched);
+                    void persistKocsToDatabase({ updated: matched });
+                  }
+                  return updated;
+                });
+
+                setDeals(prev =>
+                  prev.map(d => {
+                    if (d.kocId === kocId && (!d.legalProfileId || !legalProfileId || d.legalProfileId === legalProfileId)) {
+                      return {
+                        ...d,
+                        masterContractCode: frameworkData.contractCode || d.masterContractCode,
+                        masterContractStatus: frameworkData.status === 'ĐÃ_KÝ' ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
+                        masterContractGoogleDocsUrl: frameworkData.googleDocsUrl || d.masterContractGoogleDocsUrl,
+                        masterContractSignedUrl: frameworkData.driveUrl || d.masterContractSignedUrl,
+                      };
+                    }
+                    return d;
+                  })
+                );
               }}
               currentUserId={currentUser.id}
             />

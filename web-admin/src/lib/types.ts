@@ -451,7 +451,7 @@ export interface KocItem {
   followers: number; // Follower
   avgViews: number; // View trung bình
   rateCardVideo: number; // Giá net video
-  bookingFormat?: 'Booking Video KOC' | 'Booking Livestream KOC' | 'Affiliate Thuần'; // Định dạng booking
+  bookingFormat?: 'Booking Video KOC' | 'Booking Livestream KOC' | 'Affiliate Thuần' | 'Phiên Livestream'; // Định dạng booking
 
   // Nền tảng mạng xã hội hoạt động (TikTok, Shopee, Facebook, Instagram, Threads)
   platforms?: ('TIKTOK' | 'SHOPEE' | 'FACEBOOK' | 'INSTAGRAM' | 'THREADS')[];
@@ -627,6 +627,28 @@ export interface KocContactLogItem {
   outcome?: 'ĐÃ_PHẢN_HỒI' | 'CHƯA_PHẢN_HỒI' | 'ĐỒNG_Ý_BÁO_GIÁ' | 'TỪ_CHỐI';
 }
 
+export type LegalDocCategory =
+  | 'CCCD_FRONT'      // CCCD mặt trước
+  | 'CCCD_BACK'       // CCCD mặt sau
+  | 'CCCD_SCAN'       // Bản scan CCCD 2 mặt (PDF / Ảnh)
+  | 'DKKD'            // Giấy phép Đăng ký kinh doanh / Hộ kinh doanh
+  | 'AUTHORIZATION'   // Giấy ủy quyền ký hợp đồng / Nhận thanh toán
+  | 'TAX_COMMITMENT'; // Cam kết thuế / Hồ sơ pháp lý khác
+
+export interface LegalDocAttachment {
+  id: string;
+  docType: LegalDocCategory;
+  label: string;
+  fileKey: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  storage: 'R2' | 'LOCAL';
+  url: string;
+  uploadedAt: string;
+  uploadedBy?: string;
+}
+
 /**
  * Thực thể Hồ sơ pháp lý & Tài khoản thụ hưởng của KOC (1 KOC -> N KocLegalProfile).
  * Giải quyết bài toán thực tế:
@@ -665,6 +687,8 @@ export interface KocLegalProfile {
   contactEmail?: string;
   relationshipToKoc?: string;
   isOcrVerified?: boolean;
+  /** Danh sách tệp đính kèm CCCD (mặt trước/mặt sau/scan), Giấy phép ĐKKD, Ủy quyền lưu trên Cloudflare R2 */
+  legalAttachments?: LegalDocAttachment[];
   // Hợp đồng nguyên tắc (HĐNT) gắn liền với pháp nhân này
   frameworkContractCode?: string; // VD: HDNT-2026-0028
   frameworkContractStatus?: 'CHƯA_KÝ' | 'ĐANG_TRÌNH_KÝ' | 'ĐÃ_KÝ' | 'HẾT_HẠN';
@@ -835,7 +859,7 @@ export interface BookingDealItem {
   storeName?: string; // Store (Kutieskin Mama_TikTok_E2E-S, Fresh_TikTok_E2E-C...)
   productName?: string; // Sản phẩm (Mặt nạ rau má Premium, Nước tắm/kem tuti, Quạt tuần hoàn...)
   bookingBatch?: string; // Đợt (Đợt 1, Đợt 2, Đợt 3)
-  bookingFormat?: 'Booking Video KOC' | 'Booking Livestream KOC' | 'Affiliate Thuần';
+  bookingFormat?: 'Booking Video KOC' | 'Booking Livestream KOC' | 'Affiliate Thuần' | 'Phiên Livestream';
   assignedStaffId?: string; // Khóa ngoại nhân sự phụ trách trực tiếp deal (e.g. st-1, st-2)
   
   // KOC Reference & 4 Phân loại cốt lõi (Sheet 3.1 & 3.2)
@@ -894,6 +918,7 @@ export interface BookingDealItem {
   
   // Tài chính & Doanh thu Job
   totalValue: number; // Giá net video thỏa thuận cho Job này
+  soTienTamUngTruoc?: number;
   advanceAmount: number;
   finalAmount: number;
   deadlinePost: string;
@@ -966,6 +991,7 @@ export interface BookingDealItem {
     cccdIssueDate?: string;
     cccdIssuePlace?: string;
     frameworkContractCode?: string;
+    legalAttachments?: LegalDocAttachment[];
   }; // Snapshot bất biến (job_creator_*) tại thời điểm chốt Deal & duyệt chi
   organicCommissionPct?: number; // % Hoa hồng affiliate organic trên Phụ lục SOW
   adsCommissionPct?: number; // % Hoa hồng affiliate chạy quảng cáo trên Phụ lục SOW

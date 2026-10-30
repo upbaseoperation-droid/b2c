@@ -361,13 +361,26 @@ export async function assertPlanIdAccess(id: string, actor: UserProfile, action:
 /**
  * Quyền thao tác Google Sheet Listing theo khóa gửi lên:
  * - Mã kế hoạch tháng: quyền sửa kế hoạch, trả về kế hoạch.
- * - Khóa Sheet nhân sự "YYYY/MM__Tên gian hoặc nhãn": Booking / Leader của gian (hoặc gian thuộc nhãn đó), Giám đốc / Admin; trả về null.
+ * - Khóa Sheet nhân sự "YYYY/MM__Tên gian hoặc nhãn": Booking / Leader của gian (hoặc gian thuộc nhãn đó), Giám đốc / Admin;
+ *   tự động tìm kế hoạch tháng tương ứng của gian hàng để đồng bộ bảng điều phối Listing, kế hoạch Content và bảng Deal.
  */
 export async function assertListingSheetAccess(key: string, actor: UserProfile): Promise<InputPlanBreakdownState | null> {
-  const staffSheet = key.match(/^\d{4}\/\d{2}__(.+)$/);
+  const staffSheet = key.match(/^(\d{4}\/\d{2})__(.+)$/);
   if (!staffSheet) return assertPlanIdAccess(key, actor, 'write');
-  await assertStoreBookingAccess(staffSheet[1], actor);
-  return null;
+  const [, month, storeOrBrand] = staffSheet;
+  await assertStoreBookingAccess(storeOrBrand, actor);
+  const target = storeOrBrand.trim().toLowerCase();
+  const plans = (await loadAllStoredPlans(actor)).map(r => r.plan);
+  return (
+    plans.find(
+      p =>
+        p.month === month &&
+        String(p.status) !== 'ARCHIVED' &&
+        (normKey(p.storeId) === target ||
+          normKey(p.storeName) === target ||
+          brandKey(p.brandName || '') === brandKey(target))
+    ) || null
+  );
 }
 
 /** Booking / Leader của gian (theo mã gian, tên gian, hoặc gian thuộc nhãn trùng tên), Giám đốc / Admin. */

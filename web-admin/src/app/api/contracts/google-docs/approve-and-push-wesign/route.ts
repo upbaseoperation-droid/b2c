@@ -3,11 +3,10 @@ import { actorFromRequest } from '@/lib/contracts/access';
 import { canRead, ContractError, decideContract, event, inScope, requireCondition } from '@/lib/contracts/domain';
 import { getContract, saveContract } from '@/lib/contracts/store';
 import { loadTemplate, renderTemplate } from '@/lib/contracts/templates';
-import { fetchGoogleDocComments } from '@/lib/contracts/googleDocsService';
+import { extractGoogleDocId, fetchGoogleDocComments } from '@/lib/contracts/googleDocsService';
 import { requestSignOnSystem } from '@/lib/contracts/contractSystemClient';
 import { buildStableContractCode } from '@/lib/contracts/contractSystemRules';
 import { syncContractToJob } from '@/lib/server/contractJobSync';
-import type { SigningAttempt } from '@/lib/contracts/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -49,7 +48,10 @@ export async function POST(req: NextRequest) {
       legalStep.decidedAt = new Date().toISOString();
     }
 
-    const docId = record.googleDocsId;
+    const docId =
+      record.googleDocsId ||
+      extractGoogleDocId(record.googleDocsUrl || record.contractSystem?.googleDocsUrl || '') ||
+      record.id;
     requireCondition(docId, 'Hồ sơ chưa có mã tài liệu Google Docs.');
 
     // 1. Tải toàn bộ bình luận & phản hồi mới nhất để lưu vết kiểm toán (Audit Trail)
@@ -67,12 +69,40 @@ export async function POST(req: NextRequest) {
     };
 
     // 2. Cập nhật bước duyệt của Kế toán
-    const approvalNote = typeof note === 'string' && note.trim()
-      ? note.trim()
-      : 'Kế toán đã thẩm định các điều khoản tài chính & đối soát thảo luận trên Google Docs. Phê duyệt trình ký WeSign.';
-    
-    // Đánh dấu duyệt nội bộ
-    let updated = decideContract(record, actor, 'APPROVED', approvalNote);
+    const approvalNote =
+      typeof note === 'string' && note.trim()
+        ? note.trim()
+        : 'Kế toán đã thẩm định các điều khoản tài chính & đối soát thảo luận trên Google Docs. Phê duyệt trình ký WeSign.';
+
+    // Chuẩn hóa bước FINANCE nếu hồ sơ Google Docs chưa có bước FINANCE ở phiên bản hiện tại
+    let finStep = record.steps.find(s => s.role === 'FINANCE' && s.version === record.version);
+    if (!finStep) {
+      finStep = {
+        role: 'FINANCE',
+        reviewerId: actor.id,
+        reviewerName: actor.name,
+        status: 'PENDING',
+        note: '',
+        version: record.version,
+      };
+      record.steps.push(finStep);
+    }
+
+    let updated = structuredClone(record);
+    if (record.approval === 'IN_REVIEW' && actor.id !== record.ownerId && finStep.status === 'PENDING') {
+      updated = decideContract(record, actor, 'APPROVED', approvalNote);
+    } else {
+      const targetFin = updated.steps.find(s => s.role === 'FINANCE' && s.version === updated.version);
+      if (targetFin) {
+        targetFin.reviewerId = actor.id;
+        targetFin.reviewerName = actor.name;
+        targetFin.status = 'APPROVED';
+        targetFin.note = approvalNote;
+        targetFin.decidedAt = now;
+      }
+      updated.approval = 'APPROVED';
+      event(updated, actor, 'APPROVED', approvalNote);
+    }
 
     // 3. Ghi vết kiểm toán lịch sử trao đổi
     event(
@@ -106,7 +136,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const saved = await saveContract(updated);
+    const saved = await saveContract(updated, record.revision);
     await syncContractToJob(saved).catch(() => 0);
 
     return NextResponse.json({

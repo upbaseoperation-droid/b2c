@@ -25,31 +25,32 @@ export async function POST(req: NextRequest) {
     const record = await getContract(contractId.trim());
     requireCondition(canRead(record, actor), 'Không có quyền truy cập hồ sơ này.', 403);
 
-    const docId = record.googleDocsId || (url ? extractGoogleDocId(url) : null);
+    const docId = record.googleDocsId || (url ? extractGoogleDocId(url) : null) || record.id;
     requireCondition(docId, 'Hồ sơ chưa có liên kết Google Docs hợp lệ.');
 
     const comments = await fetchGoogleDocComments(docId);
 
-    record.googleDocsComments = comments;
+    const updated = structuredClone(record);
+    updated.googleDocsComments = comments;
     const now = new Date().toISOString();
-    if (!record.googleDocsAuditTrail) {
-      record.googleDocsAuditTrail = {
+    if (!updated.googleDocsAuditTrail) {
+      updated.googleDocsAuditTrail = {
         syncedAt: now,
         commentsCount: comments.length,
       };
     } else {
-      record.googleDocsAuditTrail.syncedAt = now;
-      record.googleDocsAuditTrail.commentsCount = comments.length;
+      updated.googleDocsAuditTrail.syncedAt = now;
+      updated.googleDocsAuditTrail.commentsCount = comments.length;
     }
 
     event(
-      record,
+      updated,
       actor,
       'SYNC_GOOGLE_DOCS_COMMENTS',
       `Đã đồng bộ ${comments.length} bình luận & phản hồi từ Google Docs`,
     );
 
-    const saved = await saveContract(record);
+    const saved = await saveContract(updated, record.revision);
 
     return NextResponse.json({
       success: true,

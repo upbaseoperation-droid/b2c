@@ -259,7 +259,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Đọc trước danh sách slot để biết slotId ứng với briefCode
-    const contentSnap = await readRecord<ContentPlanData>(contentKey(planId), { slots: [] });
+    const targetPlanId = plan.id;
+    const contentSnap = await readRecord<ContentPlanData>(contentKey(targetPlanId), { slots: [] });
     const briefCodeBySlotId = new Map<string, string>();
     const slotIdByBriefCode = new Map<string, string>();
     for (const s of contentSnap.data.slots || []) {
@@ -288,7 +289,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Bảng điều phối listing
-    const boardKey = listingKey(planId);
+    const boardKey = listingKey(targetPlanId);
     const fallbackListingItems = getRealLarkListingsForBoardKey(boardKey);
     for (let attempt = 0; attempt < 3; attempt++) {
       const rec = await readRecord<{ items: KocListingItem[] }>(boardKey, { items: fallbackListingItems });
@@ -461,7 +462,7 @@ export async function POST(request: NextRequest) {
       const rejected = new Set(summary.rejectedHandles);
       const restored = new Set(summary.restoredHandles);
       for (let attempt = 0; attempt < 3; attempt++) {
-        const rec = await readRecord<ContentPlanData>(contentKey(planId), { slots: [] });
+        const rec = await readRecord<ContentPlanData>(contentKey(targetPlanId), { slots: [] });
         let touched = false;
         const slotTaken: string[] = [];
         const slots = (rec.data.slots || []).map(s => {
@@ -506,7 +507,7 @@ export async function POST(request: NextRequest) {
         });
         if (!touched) break;
         try {
-          await updateRecord<ContentPlanData>(contentKey(planId), { slots: [] }, rec.revision, d => ({ ...d, slots }));
+          await updateRecord<ContentPlanData>(contentKey(targetPlanId), { slots: [] }, rec.revision, d => ({ ...d, slots }));
           summary.slotTaken = slotTaken;
           break;
         } catch (err) {
@@ -517,7 +518,7 @@ export async function POST(request: NextRequest) {
 
     // 3. Đồng bộ Giai đoạn 2 sang Bảng Deal & Job (Brand duyệt kịch bản / Brand duyệt video demo / Ghi chú sửa demo)
     for (let attempt = 0; attempt < 3; attempt++) {
-      const rec = await readRecord<DealBoardData>(dealKey(planId), EMPTY_DEAL_BOARD);
+      const rec = await readRecord<DealBoardData>(dealKey(targetPlanId), EMPTY_DEAL_BOARD);
       const board = sanitizeDealBoard(rec.data);
       if (!board.deals || board.deals.length === 0) break;
       let stage2Count = 0;
@@ -581,7 +582,7 @@ export async function POST(request: NextRequest) {
       });
       if (stage2Count === 0 || dryRun) break;
       try {
-        await updateRecord<DealBoardData>(dealKey(planId), EMPTY_DEAL_BOARD, rec.revision, prev => ({ ...prev, deals: nextDeals }));
+        await updateRecord<DealBoardData>(dealKey(targetPlanId), EMPTY_DEAL_BOARD, rec.revision, prev => ({ ...prev, deals: nextDeals }));
         summary.stage2UpdatedJobs = stage2Count;
         break;
       } catch (err) {

@@ -1174,6 +1174,34 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 
 ---
 
+### BUG-063 — Tổng Kiểm Toán Luồng Listing KOC & Quản Lý Deal (Khử Dữ Liệu Giả Nghiệm Thu/Vận Đơn/SLA, Đồng Bộ 2 Chiều Sheet ↔ Deal Board, Chuẩn Thuế BR-09 & Bảo Mật RBAC/PII)
+- **Ngày phát hiện:** 30/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/lib/format.ts`, `web-admin/src/lib/staffBrandListingSheet.ts`, `web-admin/src/lib/approvedBookingList.ts`, `web-admin/src/lib/server/monthlyPlanStore.ts`, `web-admin/src/app/api/booking-list/pull-sheet/route.ts`, `web-admin/src/app/api/booking-list/push-sheet/route.ts`, `web-admin/src/app/api/integrations/larkbase/payment-requests/route.ts`, `web-admin/src/components/views/ApprovedBookingListView.tsx`, `web-admin/src/components/views/BookingView.tsx`, `web-admin/src/components/views/KocListingBatchHubView.tsx`, `web-admin/src/components/views/PlanListingBoard.tsx`, `web-admin/src/components/shortlist/StaffBrandListingSheetWorkspace.tsx`, `web-admin/src/components/booking/LarkPaymentRequestModal.tsx`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Vi phạm `RULE-DATA-01` & `DESIGN_SYSTEM.md §1.6` (Sinh dữ liệu giả trên luồng Listing, Gửi mẫu & Nghiệm thu Deal):**
+     - `ApprovedBookingListView.tsx`: Nút nghiệm thu tự bịa `linkVideo = https://www.tiktok.com/@.../video/7429100001`, mã Spark Ads `#SPARK-...`, `views = 24500`, `gmv = chiPhi * 2.6`, `orders = 18`; trình nhập CSV/TSV hàng loạt cũng tự điền các số liệu giả này khi cột trống.
+     - `approvedBookingList.ts`: Tự nhân nội suy `views14N = Math.round(views30 * 0.75)` khi thiếu dữ liệu 14 ngày, tự gán dòng đầu tiên `idx === 0` là đã lên sóng (`views14N: 24500`, `donHang14N: 14`), và dùng `Math.random()` sinh mã đơn `BO...`.
+     - `staffBrandListingSheet.ts`: Tự tạo mốc `brandReviewedAt = createdMs + 18 * 3_600_000` (18h giả) làm sai lệch chỉ số SLA Brand duyệt 48h, đồng thời gán cứng các tỷ lệ nhân khẩu học & chuyển đổi mặc định (`85%`, `80%`, `75%`, `4.5%`, `2.8%`).
+     - `BookingView.tsx`: Hộp thoại gửi mẫu hàng FOC và bàn giao Growth tự điền SĐT giả `'0981.234.567'`, địa chỉ mẫu tại Cầu Giấy, mã vận đơn `GHN-...` và mã Spark Ads giả `SPARK-TT-...`.
+     - `LarkPaymentRequestModal.tsx`: Gán cứng `month: '2026/10'` khi tạo phiếu ĐNTT thay vì suy xuất từ kỳ tháng của các Deal được chọn.
+  2. **Đứt gãy đồng bộ (`RULE-SYNC-01`) & Lệch công thức thuế (`BR-09`):**
+     - `assertListingSheetAccess` (`monthlyPlanStore.ts`) luôn trả về `null` khi khóa có định dạng Sheet nhân sự `"YYYY/MM__TênGian"`, khiến `POST /api/booking-list/pull-sheet` và `push-sheet` thoát sớm mà không đồng bộ sang `listing-board`, `content-plan` và `deal-board` của kế hoạch tháng.
+     - `computeGrossFeeWithTax` (`staffBrandListingSheet.ts`) cộng 10% thuế TNCN cho mọi khoản phí `> 0` của cá nhân thay vì kiểm tra ngưỡng `>= 2.000.000đ` theo `BR-09` (và chưa cộng 8% VAT cho pháp nhân Công ty).
+     - Khi `brandChon === 'Yes'` nhưng KOC có trạng thái `'Từ chối'` hoặc `'Không phản hồi'`, dòng vẫn bị đẩy sang `ApprovedBookingList` để tạo Deal.
+     - Chuyển đổi qua lại giữa `ApprovedBookingListItem` và `BookingDealItem` làm rơi các trường vận đơn mẫu (`sampleStatus`, `sampleTrackingCode`, `sampleCarrier`), và sửa trường trên `ApprovedBookingListView` / `BookingView` chưa đồng bộ ngược về `StaffBrandListingSheet`.
+  3. **Bảo mật phân quyền theo gian (`RULE-AUTH-01`) & Che mờ dữ liệu nhạy cảm (`GEMINI.md §3`):**
+     - `KocListingBatchHubView.tsx` nạp toàn bộ `REAL_LARK_LISTINGS_BY_BOARD_KEY` chưa lọc theo `scopedStores`; `ApprovedBookingListView.tsx` khi kéo Sheet chưa lọc theo `b2cStoreNameSet`; `GET /api/integrations/larkbase/payment-requests` trả danh sách phiếu của mọi gian cho nhân sự thường.
+     - Các cột `soTaiKhoan`, `soCccd`, `sdtNhanHang` trên `ApprovedBookingListView.tsx`, `StaffBrandListingSheetWorkspace.tsx` và file xuất CSV/TSV chưa áp dụng che mờ `****5678` cho các vai trò ngoài Kế toán / Pháp chế / Admin.
+  4. **Mã chết & Vi phạm Token UI (`DESIGN_SYSTEM.md`):** `KocListingBatchHubView.tsx` chứa ~1.550 dòng mã chết của 4 sub-tab cũ không còn khả năng mở; còn sót `text-3xs`, `bg-emerald-100` và `uppercase tracking-wider`.
+- **Cách khắc phục:**
+  1. Xóa sạch 100% logic tự bịa URL TikTok, mã Spark Ads, Views/GMV/Orders, nội suy `0.75`, mốc SLA `+18h`, chỉ số kênh mặc định, SĐT/địa chỉ/vận đơn mẫu giả và `Math.random()`; suy xuất động kỳ tháng phiếu ĐNTT từ Deal được chọn.
+  2. Nâng cấp `assertListingSheetAccess` (`monthlyPlanStore.ts`) tự động ánh xạ khóa `"YYYY/MM__TênGian"` sang `MonthlyPlan` tương ứng và dùng `plan.id` thống nhất trong `pull-sheet` / `push-sheet`; chuẩn hóa `computeGrossFeeWithTax` theo `BR-09` (ngưỡng 2.000.000đ cho TNCN 10%, HKD/FOC 0%, Công ty 8% VAT); chặn chuyển Deal khi KOC `'Từ chối'` / `'Không phản hồi'`; bảo toàn `sampleStatus`/`sampleTrackingCode`/`sampleCarrier` và đồng bộ 2 chiều giữa `ApprovedBookingListView` ↔ `StaffBrandListingSheet` ↔ `BookingView`.
+  3. Bổ sung hàm dùng chung `maskSensitivePii` (`format.ts`), áp dụng che mờ `****5678` trên bảng Listing, bảng Deal và file xuất CSV/TSV khi `!canViewFullPii`, đồng thời siết chặt lọc `scopedStores` trên `KocListingBatchHubView`, `ApprovedBookingListView` và `GET /api/integrations/larkbase/payment-requests`.
+  4. Dọn dẹp ~1.550 dòng mã chết trong `KocListingBatchHubView.tsx` và thay thế toàn bộ class vi phạm bằng token chuẩn (`text-2xs`, `bg-positive-soft text-positive`).
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm chứng toàn bộ luồng Listing KOC & Quản lý Deal đạt `0 errors` TypeScript (`npm run typecheck`) và `npm run build` thành công.
+
+---
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

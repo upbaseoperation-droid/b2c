@@ -356,12 +356,29 @@ export function buildBrandFileKey(brandName: string, safeName: string, now = new
   return `brands/${bKey}/${month}/${randomUUID().slice(0, 8)}-${safeName}`;
 }
 
+/** Tạo khóa lưu trữ chuẩn cho hồ sơ pháp lý (CCCD / ĐKKD / Ủy quyền): `legal-docs/<slug>/<yyyy-mm>/<uuid>-<safeName>`. */
+export function buildLegalDocFileKey(entityNameOrId: string, safeName: string, now = new Date()): string {
+  const slug = brandKey(entityNameOrId || 'koc-legal') || 'koc-legal';
+  const month = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+  return `legal-docs/${slug}/${month}/${randomUUID().slice(0, 8)}-${safeName}`;
+}
+
 /** Kiểm tra khóa tệp hợp lệ, chặn truy cập vượt thư mục (`..`). */
 export function assertValidBrandFileKey(key: string): string {
   const cleaned = (key || '').trim().replace(/^\/+/, '');
   requireBrand(
-    /^brands\/[a-z0-9-]+\/\d{4}-\d{2}\/[a-zA-Z0-9._-]+$/.test(cleaned) && !cleaned.includes('..'),
-    'Đường dẫn tệp thương hiệu không hợp lệ.',
+    /^(?:brands|legal-docs)\/[a-z0-9-]+\/\d{4}-\d{2}\/[a-zA-Z0-9._-]+$/.test(cleaned) && !cleaned.includes('..'),
+    'Đường dẫn tệp lưu trữ không hợp lệ.',
+    400,
+  );
+  return cleaned;
+}
+
+export function assertValidLegalDocFileKey(key: string): string {
+  const cleaned = (key || '').trim().replace(/^\/+/, '');
+  requireBrand(
+    /^legal-docs\/[a-z0-9-]+\/\d{4}-\d{2}\/[a-zA-Z0-9._-]+$/.test(cleaned) && !cleaned.includes('..'),
+    'Đường dẫn tệp hồ sơ pháp lý không hợp lệ.',
     400,
   );
   return cleaned;
@@ -604,6 +621,80 @@ export async function deleteBrandFile(rawKey: string): Promise<void> {
   await unlink(targetPath).catch(() => undefined);
 }
 
+/**
+ * Tải tệp đính kèm hồ sơ pháp lý (CCCD mặt trước/sau, Giấy phép ĐKKD, Ủy quyền) lên Cloudflare R2.
+ * Khi chưa cấu hình biến môi trường / UI R2 hoặc R2 lỗi mạng cục bộ, tự động lưu dự phòng vào `.brand-data/files/legal-docs/...`.
+ */
+export async function uploadLegalDocFile(params: {
+  entitySlug: string;
+  originalName: string;
+  mimeType?: string;
+  buffer: Buffer;
+}): Promise<StoredBrandFile> {
+  await ensureR2ConfigHydratedFromDb();
+  const { safeName, contentType } = validateAndSanitizeFile(params.originalName, params.buffer.byteLength, params.mimeType);
+  const fileKey = buildLegalDocFileKey(params.entitySlug, safeName);
+  const displayFileName = params.originalName.trim().slice(0, 200);
+  const internalUrl = `/api/contracts/legal-docs?key=${encodeURIComponent(fileKey)}`;
+
+  const cfg = getR2Config();
+  if (cfg) {
+    try {
+      const signed = signR2Request({
+        method: 'PUT',
+        config: cfg,
+        key: fileKey,
+        body: params.buffer,
+        contentType,
+      });
+      const res = await fetch(signed.url, {
+        method: 'PUT',
+        headers: signed.headers,
+        body: new Uint8Array(params.buffer),
+        cache: 'no-store',
+        signal: AbortSignal.timeout(25_000),
+      });
+      if (res.ok) {
+        return {
+          fileKey,
+          fileName: displayFileName,
+          fileSize: params.buffer.byteLength,
+          mimeType: contentType,
+          storage: 'R2',
+          url: cfg.publicUrl ? `${cfg.publicUrl}/${fileKey}` : internalUrl,
+        };
+      }
+      const errText = await res.text().catch(() => '');
+      console.warn('[Cloudflare R2 LegalDoc PUT fallback to local]:', res.status, errText.slice(0, 200));
+    } catch (err) {
+      console.warn('[Cloudflare R2 LegalDoc network fallback to local]:', err);
+    }
+  }
+
+  const targetPath = path.join(localFilesDir(), ...fileKey.split('/'));
+  await mkdir(path.dirname(targetPath), { recursive: true });
+  await writeFile(targetPath, params.buffer, { mode: 0o600 });
+
+  return {
+    fileKey,
+    fileName: displayFileName,
+    fileSize: params.buffer.byteLength,
+    mimeType: contentType,
+    storage: 'LOCAL',
+    url: internalUrl,
+  };
+}
+
+export async function readLegalDocFile(rawKey: string): Promise<{ buffer: Buffer; contentType: string; fileName: string }> {
+  await ensureR2ConfigHydratedFromDb();
+  return readBrandFile(rawKey);
+}
+
+export async function deleteLegalDocFile(rawKey: string): Promise<void> {
+  await ensureR2ConfigHydratedFromDb();
+  return deleteBrandFile(rawKey);
+}
+
 /* ------------------------------------------------------- Kiểm tra kết nối & Đồng bộ tệp cục bộ lên R2 */
 
 function parseR2XmlError(xmlText: string, status: number): string {
@@ -782,7 +873,7 @@ export async function inspectLocalBrandFiles(): Promise<{
         await walk(fullPath);
       } else if (entry.isFile()) {
         const rel = path.relative(root, fullPath).split(path.sep).join('/');
-        if (/^brands\/[a-z0-9-]+\/\d{4}-\d{2}\/[a-zA-Z0-9._-]+$/.test(rel)) {
+        if (/^(?:brands|legal-docs)\/[a-z0-9-]+\/\d{4}-\d{2}\/[a-zA-Z0-9._-]+$/.test(rel)) {
           const st = await stat(fullPath).catch(() => null);
           if (st) {
             files.push({ key: rel, size: st.size, fullPath });

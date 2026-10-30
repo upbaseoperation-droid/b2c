@@ -1,3 +1,5 @@
+import type { LegalDocAttachment, LegalDocCategory } from '../types';
+export type { LegalDocAttachment, LegalDocCategory };
 export * from './googleDocsTypes';
 export type ContractRole = 'CREATOR' | 'LEGAL' | 'FINANCE' | 'LEAD' | 'SIGN_COORDINATOR' | 'AUDITOR';
 export interface ContractActor { id: string; name: string; roles: ContractRole[]; brands: string[]; allBrands?: boolean }
@@ -298,6 +300,10 @@ export interface ContractRecord {
   };
   /** Danh sách ảnh chụp màn hình video lúc sản phẩm xuất hiện đính kèm Biên bản nghiệm thu. */
   acceptanceScreenshots?: AcceptanceScreenshotItem[];
+  /** ID hồ sơ pháp lý Bên B đã chọn khi tạo hợp đồng. */
+  legalProfileId?: string;
+  /** Danh sách tệp đính kèm CCCD & ĐKKD của hồ sơ pháp lý Bên B lưu trên Cloudflare R2. */
+  legalAttachments?: LegalDocAttachment[];
   /** Metadata đồng bộ với contract-system (generateContract, Google Docs, requestSign, webhook Step 13). */
   contractSystem?: ContractSystemSyncMeta;
   /** Luồng hợp đồng sửa đổi / riêng trên Google Docs */
