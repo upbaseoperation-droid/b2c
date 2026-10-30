@@ -1,14 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CheckCircle2, CreditCard, FileCheck, Send, ShieldCheck } from 'lucide-react';
+import { CreditCard, Send, ShieldCheck } from 'lucide-react';
+import type { LegalDocAttachment } from '../../lib/types';
 import type { ContractRecord } from '../../lib/contracts/types';
+import type { LegalProfileSigningHistorySummary } from '../../lib/contracts/legalProfileHistory';
 import { Button, Field, Input, Modal, Textarea } from '../ui';
+import { LegalAttachmentsPanel, LegalProfileSigningHistoryBanner } from './LegalAttachmentsPanel';
 
 export interface GoogleDocsFinanceApproveDialogProps {
   open: boolean;
   record: ContractRecord;
   busy: boolean;
+  signingHistory?: LegalProfileSigningHistorySummary;
+  legalAttachments?: LegalDocAttachment[];
   onClose: () => void;
   onConfirm: (data: { note: string; partyAEmail?: string; partyBEmail?: string }) => Promise<void>;
 }
@@ -17,6 +22,8 @@ export function GoogleDocsFinanceApproveDialog({
   open,
   record,
   busy,
+  signingHistory,
+  legalAttachments,
   onClose,
   onConfirm,
 }: GoogleDocsFinanceApproveDialogProps) {
@@ -47,6 +54,22 @@ export function GoogleDocsFinanceApproveDialog({
       size="lg"
     >
       <div className="space-y-4 text-xs">
+        {signingHistory && <LegalProfileSigningHistoryBanner summary={signingHistory} />}
+
+        <LegalAttachmentsPanel
+          attachments={legalAttachments || signingHistory?.identity.attachments || record.legalAttachments || []}
+          entitySlug={record.kocId || record.partner || record.id}
+          legalType={
+            record.templateId.startsWith('COM-')
+              ? 'COMPANY'
+              : record.templateId.startsWith('HKD-')
+                ? 'HOUSEHOLD'
+                : 'INDIVIDUAL'
+          }
+          defaultExpandPreview={true}
+          title="Đối chiếu trực tiếp CCCD & ĐKKD trước khi chốt duyệt (Cloudflare R2)"
+        />
+
         {/* Tóm tắt hồ sơ và các điều khoản */}
         <div className="rounded-xl border border-line bg-surface p-3.5 space-y-2.5">
           <div className="flex items-center justify-between">

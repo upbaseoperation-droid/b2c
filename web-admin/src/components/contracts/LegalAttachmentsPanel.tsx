@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import {
+  AlertTriangle,
   Building2,
   CheckCircle2,
   Cloud,
@@ -10,10 +11,12 @@ import {
   FileScan,
   FileText,
   HardDrive,
+  ShieldCheck,
   Trash2,
   Upload,
 } from 'lucide-react';
 import type { LegalDocAttachment, LegalDocCategory, OcrExtractedFields } from '../../lib/types';
+import type { LegalProfileSigningHistorySummary } from '../../lib/contracts/legalProfileHistory';
 import { Button, Modal, Status } from '../ui';
 
 export const LEGAL_DOC_CATEGORY_LABEL: Record<LegalDocCategory, string> = {
@@ -50,6 +53,7 @@ export interface LegalAttachmentsPanelProps {
   legalType?: 'INDIVIDUAL' | 'HOUSEHOLD' | 'COMPANY';
   editable?: boolean;
   compact?: boolean;
+  defaultExpandPreview?: boolean;
   onExtractOcrFields?: (fields: OcrExtractedFields, docTypeLabel?: string) => void;
   title?: string;
 }
@@ -61,6 +65,7 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
   legalType = 'INDIVIDUAL',
   editable = false,
   compact = false,
+  defaultExpandPreview = false,
   onExtractOcrFields,
   title = 'Tệp đính kèm CCCD & ĐKKD (Cloudflare R2)',
 }) => {
@@ -71,6 +76,7 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [noticeMsg, setNoticeMsg] = useState<string>('');
   const [previewDoc, setPreviewDoc] = useState<LegalDocAttachment | null>(null);
+  const [inlinePreviewOpen, setInlinePreviewOpen] = useState<boolean>(defaultExpandPreview);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const hasCccd = attachments.some((a) =>
@@ -244,10 +250,22 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
           )}
         </div>
 
-        <span className="inline-flex items-center gap-1 text-2xs font-medium text-ink-2 bg-sunken px-2 py-0.5 rounded border border-line">
-          <Cloud className="w-3 h-3 text-accent" />
-          Lưu trữ Cloudflare R2
-        </span>
+        <div className="flex items-center gap-2">
+          {attachments.length > 0 && (
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={Eye}
+              onClick={() => setInlinePreviewOpen((v) => !v)}
+            >
+              {inlinePreviewOpen ? 'Thu gọn ảnh CCCD/ĐKKD' : 'Xem ảnh CCCD/ĐKKD trực tiếp'}
+            </Button>
+          )}
+          <span className="inline-flex items-center gap-1 text-2xs font-medium text-ink-2 bg-sunken px-2 py-0.5 rounded border border-line">
+            <Cloud className="w-3 h-3 text-accent" />
+            Lưu trữ Cloudflare R2
+          </span>
+        </div>
       </div>
 
       {/* Thanh nút tải nhanh CCCD / ĐKKD */}
@@ -342,95 +360,121 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
             return (
               <div
                 key={doc.id}
-                className="rounded-lg border border-line bg-sunken/40 p-2.5 flex items-start justify-between gap-2.5 hover:border-line-strong transition-colors"
+                className="rounded-lg border border-line bg-sunken/40 p-2.5 space-y-2 hover:border-line-strong transition-colors"
               >
-                <div className="flex items-start gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-surface border border-line flex items-center justify-center shrink-0 mt-0.5">
-                    {isDkkd ? (
-                      <Building2 className="w-4 h-4 text-accent" />
-                    ) : (
-                      <FileText className="w-4 h-4 text-positive" />
-                    )}
-                  </div>
-                  <div className="min-w-0 space-y-0.5">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="font-semibold text-ink text-xs">
-                        {doc.label || LEGAL_DOC_CATEGORY_LABEL[doc.docType] || 'Giấy tờ pháp lý'}
-                      </span>
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface border border-line text-2xs font-mono text-ink-2">
-                        {doc.storage === 'R2' ? (
-                          <>
-                            <Cloud className="w-3 h-3 text-accent" />
-                            R2
-                          </>
-                        ) : (
-                          <>
-                            <HardDrive className="w-3 h-3 text-ink-3" />
-                            R2 Local
-                          </>
-                        )}
-                      </span>
-                    </div>
-                    <div
-                      className="text-2xs text-ink-2 truncate max-w-[240px]"
-                      title={`${doc.fileName} (${doc.fileKey})`}
-                    >
-                      {doc.fileName}
-                    </div>
-                    <div className="text-2xs text-ink-3 flex flex-wrap items-center gap-1.5">
-                      <span>{formatFileSize(doc.fileSize)}</span>
-                      <span>·</span>
-                      <span>{formatUploadDate(doc.uploadedAt)}</span>
-                      {doc.uploadedBy && (
-                        <>
-                          <span>·</span>
-                          <span>{doc.uploadedBy}</span>
-                        </>
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-surface border border-line flex items-center justify-center shrink-0 mt-0.5">
+                      {isDkkd ? (
+                        <Building2 className="w-4 h-4 text-accent" />
+                      ) : (
+                        <FileText className="w-4 h-4 text-positive" />
                       )}
                     </div>
+                    <div className="min-w-0 space-y-0.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-semibold text-ink text-xs">
+                          {doc.label || LEGAL_DOC_CATEGORY_LABEL[doc.docType] || 'Giấy tờ pháp lý'}
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface border border-line text-2xs font-mono text-ink-2">
+                          {doc.storage === 'R2' ? (
+                            <>
+                              <Cloud className="w-3 h-3 text-accent" />
+                              R2
+                            </>
+                          ) : (
+                            <>
+                              <HardDrive className="w-3 h-3 text-ink-3" />
+                              R2 Local
+                            </>
+                          )}
+                        </span>
+                      </div>
+                      <div
+                        className="text-2xs text-ink-2 truncate max-w-[240px]"
+                        title={`${doc.fileName} (${doc.fileKey})`}
+                      >
+                        {doc.fileName}
+                      </div>
+                      <div className="text-2xs text-ink-3 flex flex-wrap items-center gap-1.5">
+                        <span>{formatFileSize(doc.fileSize)}</span>
+                        <span>·</span>
+                        <span>{formatUploadDate(doc.uploadedAt)}</span>
+                        {doc.uploadedBy && (
+                          <>
+                            <span>·</span>
+                            <span>{doc.uploadedBy}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={Eye}
+                      onClick={() => setPreviewDoc(doc)}
+                    >
+                      Phóng to
+                    </Button>
+                    {editable && onExtractOcrFields && isImage && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon={FileScan}
+                        disabled={readingDocId === doc.id}
+                        onClick={() => void handleReadExistingAttachment(doc)}
+                      >
+                        {readingDocId === doc.id ? 'Đang đọc...' : 'Đọc ảnh'}
+                      </Button>
+                    )}
+                    <a
+                      href={`${doc.url}${doc.url.includes('?') ? '&' : '?'}download=1`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center h-7 px-2 rounded-lg border border-line bg-surface text-ink-2 hover:text-ink hover:bg-sunken text-2xs"
+                      title="Tải tệp gốc về máy"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </a>
+                    {editable && onChange && (
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteAttachment(doc)}
+                        className="inline-flex items-center justify-center h-7 px-1.5 rounded-lg text-ink-3 hover:text-critical hover:bg-critical-soft/40"
+                        title="Xóa tệp khỏi hồ sơ"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={Eye}
+                {inlinePreviewOpen && (
+                  <div
                     onClick={() => setPreviewDoc(doc)}
+                    className="rounded-lg border border-line bg-surface p-2 flex items-center justify-center cursor-pointer hover:border-accent transition-colors overflow-hidden"
+                    title="Bấm để mở xem kích thước lớn"
                   >
-                    Xem
-                  </Button>
-                  {editable && onExtractOcrFields && isImage && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      icon={FileScan}
-                      disabled={readingDocId === doc.id}
-                      onClick={() => void handleReadExistingAttachment(doc)}
-                    >
-                      {readingDocId === doc.id ? 'Đang đọc...' : 'Đọc ảnh'}
-                    </Button>
-                  )}
-                  <a
-                    href={`${doc.url}${doc.url.includes('?') ? '&' : '?'}download=1`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center h-7 px-2 rounded-lg border border-line bg-surface text-ink-2 hover:text-ink hover:bg-sunken text-2xs"
-                    title="Tải tệp gốc về máy"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                  </a>
-                  {editable && onChange && (
-                    <button
-                      type="button"
-                      onClick={() => void handleDeleteAttachment(doc)}
-                      className="inline-flex items-center justify-center h-7 px-1.5 rounded-lg text-ink-3 hover:text-critical hover:bg-critical-soft/40"
-                      title="Xóa tệp khỏi hồ sơ"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+                    {doc.mimeType === 'application/pdf' ||
+                    doc.fileName.toLowerCase().endsWith('.pdf') ? (
+                      <iframe
+                        src={doc.url}
+                        title={doc.fileName}
+                        className="w-full h-44 rounded border border-line bg-surface pointer-events-none"
+                      />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={doc.url}
+                        alt={doc.label}
+                        className="max-h-44 w-auto object-contain rounded"
+                      />
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -503,3 +547,109 @@ export const LegalAttachmentsPanel: React.FC<LegalAttachmentsPanelProps> = ({
     </div>
   );
 };
+
+export function LegalProfileSigningHistoryBanner({
+  summary,
+  onOpenPriorContract,
+}: {
+  summary: LegalProfileSigningHistorySummary;
+  onOpenPriorContract?: (contractId: string) => void;
+}) {
+  if (summary.status === 'SIGNED_VERIFIED' || summary.status === 'FINANCE_VERIFIED') {
+    const match = summary.latestMatch;
+    return (
+      <div className="rounded-xl border border-positive/40 bg-positive-soft/70 p-3.5 space-y-2.5 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 font-semibold text-positive">
+            <ShieldCheck className="w-4 h-4 shrink-0" />
+            <span>Gợi ý Kế toán: {summary.headline}</span>
+          </div>
+          <Status tone="positive">
+            {summary.status === 'SIGNED_VERIFIED'
+              ? 'Đã từng ký · Khớp 100% Hồ sơ pháp lý (Miễn kiểm tra lại từ đầu)'
+              : 'Kế toán đã xác thực Hồ sơ pháp lý này'}
+          </Status>
+        </div>
+
+        <p className="text-ink-2 leading-relaxed">{summary.detailMessage}</p>
+
+        {match && (
+          <div className="rounded-lg border border-positive/30 bg-surface px-3 py-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="space-y-0.5 min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-2xs font-mono font-semibold text-ink bg-sunken px-1.5 py-0.5 rounded border border-line">
+                  {match.id}
+                </span>
+                <span className="font-semibold text-ink truncate">{match.title}</span>
+                {match.dealCode && (
+                  <span className="text-2xs text-ink-3 font-mono">· Booking {match.dealCode}</span>
+                )}
+              </div>
+              <div className="text-2xs text-ink-2">
+                Trạng thái HĐ đối chứng:{' '}
+                <strong className="text-positive">
+                  {match.isFullySigned ? 'Đã ký hoàn tất 2 bên' : 'Đã duyệt Kế toán (FINAL)'}
+                </strong>
+                {match.financeApprover ? ` · Người duyệt trước: ${match.financeApprover}` : ''}
+                {summary.matchedContracts.length > 1
+                  ? ` · Tổng cộng ${summary.matchedContracts.length} hợp đồng trùng khớp hồ sơ pháp lý`
+                  : ''}
+              </div>
+            </div>
+            {onOpenPriorContract && (
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={FileText}
+                onClick={() => onOpenPriorContract(match.id)}
+              >
+                Xem HĐ đã ký trước
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (summary.status === 'PROFILE_CHANGED') {
+    const prior = summary.priorKocContract;
+    return (
+      <div className="rounded-xl border border-critical/40 bg-critical-soft/70 p-3.5 space-y-2 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 font-semibold text-critical">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>Cảnh báo Kế toán: {summary.headline}</span>
+          </div>
+          <Status tone="critical">Thay đổi STK / MST — Cần kiểm tra lại CCCD &amp; ĐKKD</Status>
+        </div>
+        <p className="text-ink-2 leading-relaxed">{summary.detailMessage}</p>
+        {prior && onOpenPriorContract && (
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={FileText}
+              onClick={() => onOpenPriorContract(prior.id)}
+            >
+              Đối chiếu với HĐ cũ ({prior.id})
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-warning/40 bg-warning-soft/60 p-3.5 space-y-1.5 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 font-semibold text-warning-strong">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>Lưu ý Kế toán: {summary.headline}</span>
+        </div>
+        <Status tone="warning">Ký lần đầu — Cần đối chiếu CCCD / ĐKKD</Status>
+      </div>
+      <p className="text-ink-2 leading-relaxed">{summary.detailMessage}</p>
+    </div>
+  );
+}

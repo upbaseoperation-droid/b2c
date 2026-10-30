@@ -17,10 +17,14 @@ import {
 } from 'lucide-react';
 import type { BookingDealItem, KocItem, LegalDocAttachment } from '../../lib/types';
 import type { ContractRecord, ReviewStep } from '../../lib/contracts/types';
+import {
+  evaluateLegalProfileSigningHistory,
+  resolveContractLegalAttachments,
+  type LegalProfileSigningHistorySummary,
+} from '../../lib/contracts/legalProfileHistory';
 import { formatVnd } from '../../lib/format';
 import { documentOfTemplate } from '../../lib/planDealLink';
-import { getKocLegalProfiles } from '../koc/kocUtils';
-import { LegalAttachmentsPanel } from './LegalAttachmentsPanel';
+import { LegalAttachmentsPanel, LegalProfileSigningHistoryBanner } from './LegalAttachmentsPanel';
 import {
   Button,
   Chips,
@@ -45,7 +49,14 @@ import { isAcceptance } from './contractUi';
 export type ApprovalPortalMode = 'LEGAL_PORTAL' | 'FINANCE_PORTAL';
 
 type LegalFilter = 'PENDING_LEGAL' | 'CLAUSE_DIFF' | 'KOC_OWN_FORM' | 'LEGAL_APPROVED' | 'ALL';
-type FinanceFilter = 'PENDING_FINANCE' | 'GDOCS_FINAL' | 'BBNT_SETTLEMENT' | 'BUDGET_ALERT' | 'FINANCE_APPROVED' | 'ALL';
+type FinanceFilter =
+  | 'PENDING_FINANCE'
+  | 'VERIFIED_PROFILE'
+  | 'GDOCS_FINAL'
+  | 'BBNT_SETTLEMENT'
+  | 'BUDGET_ALERT'
+  | 'FINANCE_APPROVED'
+  | 'ALL';
 
 function parseVndNumber(raw?: string | number | null): number {
   if (typeof raw === 'number') return Number.isFinite(raw) ? Math.round(raw) : 0;
@@ -233,10 +244,12 @@ export function ContractApprovalPortalView({
   const [gdocsFinanceRecord, setGdocsFinanceRecord] = useState<ContractRecord | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
 
-  // Trạng thái form duyệt Pháp chế
+  // Trạng thái form duyệt Pháp chế & Kế toán
   const [legalApproveNote, setLegalApproveNote] = useState('');
   const [saveAsKocTemplate, setSaveAsKocTemplate] = useState(true);
   const [kocLegalNotes, setKocLegalNotes] = useState('');
+  const [financeApproveNote, setFinanceApproveNote] = useState('');
+  const [quickPreviewDoc, setQuickPreviewDoc] = useState<LegalDocAttachment | null>(null);
 
   // Index O(1) cho Deals và KOCs theo RULE-PERF-01
   const dealMap = useMemo(() => {
@@ -266,19 +279,17 @@ export function ContractApprovalPortalView({
     return map;
   }, [data.records, dealMap, kocMap]);
 
-  const resolveRecordLegalAttachments = (r: ContractRecord): LegalDocAttachment[] => {
-    if (r.legalAttachments && r.legalAttachments.length > 0) return r.legalAttachments;
-    const deal = (r.dealId && dealMap.get(r.dealId)) || (r.dealCode && dealMap.get(r.dealCode)) || undefined;
-    const koc = (r.kocId && kocMap.get(r.kocId)) || (deal?.kocId && kocMap.get(deal.kocId)) || undefined;
-    if (koc) {
-      const profiles = getKocLegalProfiles(koc);
-      const prof =
-        (r.legalProfileId ? profiles.find(p => p.id === r.legalProfileId) : undefined) ||
-        profiles.find(p => p.isDefault) ||
-        profiles[0];
-      if (prof?.legalAttachments && prof.legalAttachments.length > 0) return prof.legalAttachments;
+  // Index O(1) đánh giá lịch sử ký hợp đồng theo Hồ sơ pháp lý của KOC (RULE-SYNC-01 & RULE-PERF-01)
+  const signingHistoryMap = useMemo(() => {
+    const map = new Map<string, LegalProfileSigningHistorySummary>();
+    for (const r of data.records) {
+      map.set(r.id, evaluateLegalProfileSigningHistory(r, data.records, dealMap, kocMap));
     }
-    return deal?.legalProfileSnapshot?.legalAttachments || [];
+    return map;
+  }, [data.records, dealMap, kocMap]);
+
+  const resolveRecordLegalAttachments = (r: ContractRecord): LegalDocAttachment[] => {
+    return resolveContractLegalAttachments(r, dealMap, kocMap, data.records);
   };
 
   const isPendingLegal = (r: ContractRecord) => {
@@ -306,9 +317,16 @@ export function ContractApprovalPortalView({
     r.approval === 'APPROVED' ||
     r.steps.some(s => s.role === 'FINANCE' && s.status === 'APPROVED' && s.version === r.version);
 
+  const isVerifiedLegalProfile = (r: ContractRecord) =>
+    Boolean(signingHistoryMap.get(r.id)?.isSkipDeepCheckEligible);
+
   const hasBudgetOrBankAlert = (r: ContractRecord) => {
     const fin = financialMap.get(r.id);
-    return Boolean(fin && (fin.isOverDealBudget || fin.isUnbudgetedSpend || fin.missingBankInfo));
+    const hist = signingHistoryMap.get(r.id);
+    return Boolean(
+      (fin && (fin.isOverDealBudget || fin.isUnbudgetedSpend || fin.missingBankInfo)) ||
+        hist?.status === 'PROFILE_CHANGED',
+    );
   };
 
   const searchedRecords = useMemo(() => {
@@ -328,6 +346,7 @@ export function ContractApprovalPortalView({
 
   const financeMatches: Record<FinanceFilter, (r: ContractRecord) => boolean> = {
     PENDING_FINANCE: isPendingFinance,
+    VERIFIED_PROFILE: r => isPendingFinance(r) && isVerifiedLegalProfile(r),
     GDOCS_FINAL: isGDocsPendingFinal,
     BBNT_SETTLEMENT: r => isAcceptance(r.templateId) || documentOfTemplate(r.templateId) === 'BBNT',
     BUDGET_ALERT: hasBudgetOrBankAlert,
@@ -361,6 +380,13 @@ export function ContractApprovalPortalView({
       setGdocsFinanceRecord(record);
       return;
     }
+    const hist = signingHistoryMap.get(record.id);
+    setFinanceApproveNote(
+      decision === 'APPROVED'
+        ? hist?.recommendedFinanceNote ||
+            'Đã kiểm tra khớp hạn mức Booking, thuế khấu trừ và thông tin tài khoản thụ hưởng.'
+        : '',
+    );
     setDecisionModal({ record, decision, role: 'FINANCE' });
   };
 
@@ -457,21 +483,42 @@ export function ContractApprovalPortalView({
     },
     {
       key: 'partner',
-      header: 'Đối tác KOC · Định danh',
-      width: 190,
+      header: 'Đối tác KOC · Định danh & CCCD/ĐKKD',
+      width: 215,
       render: r => {
         const fin = financialMap.get(r.id);
         const docs = resolveRecordLegalAttachments(r);
         const isUnder50M = r.isKocOwnForm && (fin?.grossAmount || 0) > 0 && (fin?.grossAmount || 0) < 50_000_000;
         return (
-          <div className="min-w-0 max-w-[210px] leading-tight space-y-1">
+          <div className="min-w-0 max-w-[235px] leading-tight space-y-1">
             <span className="block truncate font-medium text-ink">{r.partner}</span>
             <span className="block truncate text-2xs text-ink-3 font-code">
               CCCD/MST: {maskSensitiveNumber(fin?.cccdOrTaxCode, revealSensitive)}
             </span>
-            <span className="block truncate text-2xs text-accent font-medium">
-              {docs.length > 0 ? `Cloudflare R2: ${docs.length} tệp CCCD/ĐKKD` : 'Chưa đính kèm CCCD/ĐKKD'}
-            </span>
+            {docs.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-1 pt-0.5" onClick={e => e.stopPropagation()}>
+                {docs.map(doc => (
+                  <button
+                    key={doc.id}
+                    type="button"
+                    onClick={() => setQuickPreviewDoc(doc)}
+                    className="inline-flex items-center gap-1 text-2xs font-medium px-1.5 py-0.5 rounded border border-accent/30 bg-accent-soft/50 text-accent hover:bg-accent-soft transition-colors"
+                    title={`Bấm để xem ${doc.label}`}
+                  >
+                    <Eye className="w-3 h-3 shrink-0" />
+                    {doc.docType === 'DKKD'
+                      ? 'Xem ĐKKD'
+                      : doc.docType === 'CCCD_BACK'
+                        ? 'CCCD sau'
+                        : 'CCCD trước'}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <span className="block truncate text-2xs text-warning-strong font-medium">
+                Chưa đính kèm CCCD/ĐKKD
+              </span>
+            )}
             {r.isKocOwnForm && (
               <span
                 className={`inline-block text-2xs px-1.5 py-0.5 rounded border font-medium ${
@@ -602,24 +649,76 @@ export function ContractApprovalPortalView({
     },
     {
       key: 'beneficiary',
-      header: 'Thụ hưởng & Mã số thuế',
-      width: 195,
+      header: 'Thụ hưởng · Hồ sơ pháp lý & CCCD/ĐKKD',
+      width: 265,
       render: r => {
         const fin = financialMap.get(r.id);
         const docs = resolveRecordLegalAttachments(r);
+        const hist = signingHistoryMap.get(r.id);
         return (
-          <div className="min-w-0 max-w-[215px] leading-tight space-y-1">
+          <div className="min-w-0 max-w-[285px] leading-tight space-y-1">
             <span className="block truncate font-medium text-ink">{r.partner}</span>
             <span className="block truncate text-2xs text-ink-2 font-code">
               {fin?.bankName ? `${fin.bankName} · ` : ''}
-              {maskSensitiveNumber(fin?.bankAccount, revealSensitive)}
+              {maskSensitiveNumber(fin?.bankAccount, revealSensitive)} · MST/CCCD:{' '}
+              {maskSensitiveNumber(fin?.cccdOrTaxCode, revealSensitive)}
             </span>
-            <span className="block truncate text-2xs text-ink-3 font-code">
-              CCCD/MST: {maskSensitiveNumber(fin?.cccdOrTaxCode, revealSensitive)} ·{' '}
-              <span className="text-accent font-sans">
-                {docs.length > 0 ? `R2 (${docs.length} tệp)` : 'Thiếu tệp'}
+
+            {/* Gợi ý Kế toán: Hồ sơ pháp lý đã từng ký hay ký lần đầu */}
+            {hist && (
+              <div>
+                {hist.status === 'SIGNED_VERIFIED' || hist.status === 'FINANCE_VERIFIED' ? (
+                  <span
+                    className="inline-flex items-center gap-1 text-2xs font-semibold px-1.5 py-0.5 rounded border border-positive/40 bg-positive-soft text-positive"
+                    title={hist.detailMessage}
+                  >
+                    <ShieldCheck className="w-3 h-3 shrink-0" />
+                    {hist.badgeLabel} ({hist.latestMatch?.id} · Miễn check lại)
+                  </span>
+                ) : hist.status === 'PROFILE_CHANGED' ? (
+                  <span
+                    className="inline-flex items-center gap-1 text-2xs font-semibold px-1.5 py-0.5 rounded border border-critical/40 bg-critical-soft text-critical"
+                    title={hist.detailMessage}
+                  >
+                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                    {hist.badgeLabel}
+                  </span>
+                ) : (
+                  <span
+                    className="inline-flex items-center gap-1 text-2xs font-medium px-1.5 py-0.5 rounded border border-warning/40 bg-warning-soft text-warning-strong"
+                    title={hist.detailMessage}
+                  >
+                    {hist.badgeLabel}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Nút mở xem nhanh CCCD & ĐKKD ngay trên dòng bảng cho Kế toán */}
+            {docs.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-1 pt-0.5" onClick={e => e.stopPropagation()}>
+                {docs.map(doc => (
+                  <button
+                    key={doc.id}
+                    type="button"
+                    onClick={() => setQuickPreviewDoc(doc)}
+                    className="inline-flex items-center gap-1 text-2xs font-medium px-1.5 py-0.5 rounded border border-accent/30 bg-accent-soft/50 text-accent hover:bg-accent-soft transition-colors"
+                    title={`Bấm để xem trực tiếp ${doc.label} (${doc.fileName})`}
+                  >
+                    <Eye className="w-3 h-3 shrink-0" />
+                    {doc.docType === 'DKKD'
+                      ? 'Xem ĐKKD'
+                      : doc.docType === 'CCCD_BACK'
+                        ? 'Xem CCCD sau'
+                        : 'Xem CCCD trước'}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <span className="block truncate text-2xs text-critical font-medium">
+                Thiếu tệp CCCD/ĐKKD trên R2
               </span>
-            </span>
+            )}
           </div>
         );
       },

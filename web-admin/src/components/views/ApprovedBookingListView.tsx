@@ -1667,6 +1667,9 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     useState<ApprovedBookingListItem | null>(null);
   const [larkPaymentInitialItems, setLarkPaymentInitialItems] =
     useState<ApprovedBookingListItem[]>([]);
+  const [larkPaymentRequestType, setLarkPaymentRequestType] = useState<
+    'ADVANCE' | 'SETTLEMENT' | undefined
+  >(undefined);
 
   const dealsForLarkModal = useMemo(() => {
     const dealMap = new Map<string, BookingDealItem>();
@@ -1680,7 +1683,11 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     return Array.from(dealMap.values());
   }, [deals, items]);
 
-  const openLarkPaymentModalForItem = (item?: ApprovedBookingListItem) => {
+  const openLarkPaymentModalForItem = (
+    item?: ApprovedBookingListItem,
+    reqType?: 'ADVANCE' | 'SETTLEMENT'
+  ) => {
+    setLarkPaymentRequestType(reqType);
     if (item) {
       setLarkPaymentInitialItem(item);
       setLarkPaymentInitialItems([item]);
@@ -1749,17 +1756,55 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
           (it.linkedDealId ? dealIdsInSlip.has(it.linkedDealId) : false);
         if (!matchCode && !matchId) return it;
 
-        const nextPaymentStatus: ApprovedBookingPaymentStatus =
-          createdSlip.larkSync.approvalStatus === 'PAID'
-            ? 'Đã thanh toán'
-            : 'Đã lập ĐNTT';
-        // Số đã thanh toán của từng dòng lấy theo dòng tương ứng trong phiếu, không lấy tổng cả phiếu.
         const slipLine = createdSlip.lineItems.find(
-          l =>
+          (l) =>
             (it.maBooking && l.dealCode.toUpperCase() === it.maBooking.toUpperCase()) ||
             l.dealId === `deal-from-32-${it.id}` ||
             (it.linkedDealId ? l.dealId === it.linkedDealId : false)
         );
+
+        const isAdvanceSlip = createdSlip.requestType === 'ADVANCE';
+        const approvalStatus = createdSlip.larkSync.approvalStatus;
+
+        if (isAdvanceSlip) {
+          const advanceAmt = slipLine
+            ? slipLine.netTransferAmount
+            : createdSlip.totals.netTransferTotal;
+          const nextAdvStatus =
+            approvalStatus === 'PAID'
+              ? 'ĐÃ_CHI_TẠM_ỨNG'
+              : approvalStatus === 'APPROVED'
+              ? 'ĐÃ_DUYỆT_TẠM_ỨNG'
+              : approvalStatus === 'REJECTED'
+              ? 'TỪ_CHỐI_TẠM_ỨNG'
+              : 'CHỜ_DUYỆT_TẠM_ỨNG';
+          const recalc = recalculateApprovedBookingItem({
+            ...it,
+            nganHang: createdSlip.payee.bankName || it.nganHang,
+            soTaiKhoan: createdSlip.payee.bankAccount || it.soTaiKhoan,
+            tenTaiKhoanNganHang:
+              createdSlip.payee.bankHolder || it.tenTaiKhoanNganHang,
+            soCccd: createdSlip.payee.legalId || it.soCccd,
+            soTienTamUngTruoc:
+              approvalStatus === 'REJECTED' ? it.soTienTamUngTruoc : advanceAmt,
+            larkAdvanceSlipCode: createdSlip.slipCode,
+            larkAdvanceInstanceCode: createdSlip.larkSync.approvalInstanceCode,
+            larkAdvanceStatus: nextAdvStatus,
+            loaiThanhToanLark: createdSlip.larkPaymentCategory,
+            isBrandBudgetAdvance: Boolean(createdSlip.isBrandBudgetAdvance),
+            larkApprovalRouteSummary: createdSlip.approvalRoute.routeSummary,
+            larkSyncedAt: createdSlip.larkSync.syncedAt,
+          });
+          changedRows.push(recalc);
+          return recalc;
+        }
+
+        const nextPaymentStatus: ApprovedBookingPaymentStatus =
+          approvalStatus === 'PAID'
+            ? 'Đã thanh toán'
+            : approvalStatus === 'REJECTED'
+            ? 'Đủ điều kiện ĐNTT'
+            : 'Đã lập ĐNTT';
         const recalc = recalculateApprovedBookingItem({
           ...it,
           nganHang: createdSlip.payee.bankName || it.nganHang,
@@ -1769,12 +1814,17 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
           soCccd: createdSlip.payee.legalId || it.soCccd,
           trangThaiPhieuThanhToan: nextPaymentStatus,
           soTienDaThanhToan:
-            createdSlip.larkSync.approvalStatus === 'PAID' && slipLine
+            approvalStatus === 'PAID' && slipLine
               ? slipLine.netTransferAmount
               : it.soTienDaThanhToan,
+          loaiThanhToanLark: createdSlip.larkPaymentCategory,
+          isBrandBudgetAdvance: Boolean(createdSlip.isBrandBudgetAdvance),
+          daDiTien: Boolean(createdSlip.larkSync.daDiTien || approvalStatus === 'PAID'),
+          uncBillCode: createdSlip.larkSync.uncBillCode || it.uncBillCode,
+          uncSentToKocAt: createdSlip.larkSync.uncSentToKocAt || it.uncSentToKocAt,
           larkApprovalInstanceCode: createdSlip.larkSync.approvalInstanceCode,
           larkSlipCode: createdSlip.slipCode,
-          larkApprovalStatus: createdSlip.larkSync.approvalStatus,
+          larkApprovalStatus: approvalStatus,
           larkApprovalRouteSummary: createdSlip.approvalRoute.routeSummary,
           larkSyncedAt: createdSlip.larkSync.syncedAt,
         });
@@ -1790,8 +1840,8 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       onCreateOrUpdateDeals(updatedDeals);
     }
     onNotify?.(
-      `Đã kết nối Lark Approval: khởi tạo luồng phê duyệt ${createdSlip.larkSync.approvalInstanceCode} (${createdSlip.slipCode}) cho ${createdSlip.lineItems.length} Deal.`,
-      'success'
+      `Đã đồng bộ Lark Approval (${createdSlip.larkPaymentCategory}): ${createdSlip.larkSync.approvalInstanceCode} (${createdSlip.slipCode}) — trạng thái ${createdSlip.larkSync.approvalStatus}.`,
+      createdSlip.larkSync.approvalStatus === 'REJECTED' ? 'warning' : 'success'
     );
   };
 
@@ -4894,6 +4944,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       <LarkPaymentRequestModal
         open={isLarkPaymentModalOpen}
         onClose={() => setIsLarkPaymentModalOpen(false)}
+        initialRequestType={larkPaymentRequestType}
         initialDeal={
           larkPaymentInitialItem
             ? buildBookingDealFromApprovedItem(larkPaymentInitialItem)
