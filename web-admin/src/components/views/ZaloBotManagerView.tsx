@@ -1901,10 +1901,10 @@ export function ZaloBotManagerView({ currentUser, onNotify }: ZaloBotManagerProp
       key: 'status',
       header: 'Trạng thái xử lý',
       render: (row) =>
-        row.replySent ? (
-          <Status tone="positive">Đã phản hồi</Status>
-        ) : row.error ? (
+        row.error ? (
           <Status tone="critical">{row.error}</Status>
+        ) : row.replySent ? (
+          <Status tone="positive">Đã phản hồi</Status>
         ) : (
           <Status tone="warning">Đã tiếp nhận</Status>
         ),

@@ -72,13 +72,19 @@ export async function GET(req: NextRequest) {
     if (!combinedMap.has(key)) {
       combinedMap.set(key, {
         time: ev.time || new Date().toISOString(),
-        body: ev.body || {
-          event_name: 'message.text.received',
-          message: { text: ev.text, chat: { id: ev.chatId }, from: { display_name: ev.sender } },
+        body: ev.body || ev.rawBody || {
+          event_name: ev.eventName || 'message.text.received',
+          message: {
+            text: ev.text,
+            message_type: ev.messageType,
+            chat: { id: ev.chatId },
+            from: { display_name: ev.sender },
+          },
         },
         extractedChatId: ev.chatId || ev.extractedChatId,
-        replySent: ev.replySent ?? true,
+        replySent: ev.error ? false : Boolean(ev.replySent || ev.replyText),
         replyText: ev.replyText || (ev.text ? `Đã tiếp nhận tin: "${ev.text.slice(0, 60)}..."` : ''),
+        replyPhotoUrl: ev.replyPhotoUrl,
         error: ev.error,
       });
     }
