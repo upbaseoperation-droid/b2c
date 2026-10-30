@@ -221,6 +221,9 @@ export async function POST(req: NextRequest) {
         sender: body?.result?.message?.from?.display_name || body?.message?.from?.display_name || body?.sender?.display_name || body?.sender?.id,
         text: (body?.result?.message?.text || body?.message?.text || body?.text || '').slice(0, 150),
         keys: Object.keys(body),
+        eventName: body?.event_name,
+        messageType: body?.result?.message?.message_type || body?.message?.message_type,
+        rawBody: body,
       };
       return [item, ...list].slice(0, 30);
     }).catch(() => null);

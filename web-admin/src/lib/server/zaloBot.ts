@@ -240,6 +240,8 @@ const recentDebugEvents: Array<{
   replyPhotoUrl?: string;
   error?: string;
 }> = [];
+// Chống spam nhắc "gửi lại link dạng chữ": tối đa 1 lần / 2 phút / nhóm
+const unreadableHintSentAt = new Map<string, number>();
 
 // 8 gian hàng trọng điểm có Leader Nguyễn Thị Ngọc Tâm phụ trách (theo Cột 55 File 4.1.1)
 const LEADER_NGOC_TAM_BRANDS = new Set([
@@ -1275,29 +1277,63 @@ export async function sendZaloMessage(chatId: string, text: string): Promise<boo
     return false;
   }
 
-  try {
-    const res = await fetch(`https://bot-api.zaloplatforms.com/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-      }),
-      cache: 'no-store',
-    });
+  // Zalo Bot API từ chối tin quá 2000 ký tự (báo cáo video nhiều SP trong giỏ dễ vượt) → chia theo dòng, gửi lần lượt
+  let allSent = true;
+  for (const chunk of splitZaloText(text, ZALO_TEXT_MAX_CHARS)) {
+    try {
+      const res = await fetch(`https://bot-api.zaloplatforms.com/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: chunk,
+        }),
+        cache: 'no-store',
+      });
 
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      console.error('[ZaloBot] Gửi tin thất bại từ API Zalo:', data);
-      return false;
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.ok === false) {
+        console.error('[ZaloBot] Gửi tin thất bại từ API Zalo:', data);
+        recordDebugEvent({
+          time: new Date().toISOString(),
+          body: null,
+          extractedChatId: chatId,
+          error: `sendMessage thất bại (HTTP ${res.status}, ${chunk.length} ký tự): ${JSON.stringify(data)?.slice(0, 300)}`,
+        });
+        allSent = false;
+      }
+    } catch (err) {
+      console.error('[ZaloBot] Exception khi gửi tin:', err);
+      allSent = false;
     }
-    return true;
-  } catch (err) {
-    console.error('[ZaloBot] Exception khi gửi tin:', err);
-    return false;
   }
+  return allSent;
+}
+
+const ZALO_TEXT_MAX_CHARS = 1900;
+
+function splitZaloText(text: string, maxChars: number): string[] {
+  if (text.length <= maxChars) return [text];
+  const chunks: string[] = [];
+  let current = '';
+  for (const rawLine of text.split('\n')) {
+    // Dòng đơn lẻ dài hơn giới hạn thì cắt cứng
+    const pieces: string[] = [];
+    for (let i = 0; i < rawLine.length || i === 0; i += maxChars) pieces.push(rawLine.slice(i, i + maxChars));
+    for (const line of pieces) {
+      const next = current ? `${current}\n${line}` : line;
+      if (next.length > maxChars && current) {
+        chunks.push(current);
+        current = line;
+      } else {
+        current = next;
+      }
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks;
 }
 
 const FRAME_CAPTURE_UA =
@@ -2830,9 +2866,9 @@ export async function sendZaloPhoto(
 }
 
 const TIKTOK_URL_REGEX =
-  /(https?:\/\/(?:vt\.tiktok\.com|vm\.tiktok\.com|m\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s"'\\<>{}]+)/i;
+  /((?:https?:\/\/)?(?:vt\.tiktok\.com|vm\.tiktok\.com|m\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s"'\\<>{}]+)/i;
 const TIKTOK_URL_GLOBAL_REGEX =
-  /https?:\/\/(?:vt\.tiktok\.com|vm\.tiktok\.com|m\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s"'\\<>{}]+/gi;
+  /(?:https?:\/\/)?(?:vt\.tiktok\.com|vm\.tiktok\.com|m\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s"'\\<>{}]+/gi;
 const DRAFT_URL_REGEX = /(https?:\/\/(?:drive\.google\.com|docs\.google\.com|www\.capcut\.com|capcut\.com)\/[^\s]+)/i;
 const WAYBILL_AUTO_REGEX =
   /(?:mã\s*vận\s*đơn|mvđ|mvd|vận\s*đơn|tracking)\s*[:=-]?\s*([A-Z0-9]{8,22})|\b((?:SPXVN|GHN|GHTK|VTP|VT|JT|BEST)[A-Z0-9]{6,18})\b/i;
@@ -2844,8 +2880,10 @@ export function extractAllTikTokUrls(text: string): string[] {
   const unique: string[] = [];
   for (const raw of matches) {
     const cleaned = raw.replace(/[.,;!?)"'\\\]}>]+$/, '').trim();
-    if (cleaned && !unique.includes(cleaned)) {
-      unique.push(cleaned);
+    if (!cleaned) continue;
+    const normalized = /^https?:\/\//i.test(cleaned) ? cleaned : `https://${cleaned}`;
+    if (!unique.includes(normalized)) {
+      unique.push(normalized);
     }
   }
   return unique.slice(0, 8);
@@ -4424,6 +4462,34 @@ export async function processZaloWebhookEvent(
       '⛔ BẢO MẬT NHÓM: Nhóm chat này đã bị khóa quyền tương tác với Bot trên hệ thống quản trị Upbase B2C.';
     await replyToChat(blockedMsg);
     return { handled: true, reply: blockedMsg, extractedChatId: chatId };
+  }
+
+  // Zalo gửi tin đã biến thành thẻ xem trước link (hoặc loại tin Bot API chưa hỗ trợ) với text rỗng, không kèm URL.
+  // Trước đây bot bỏ qua im lặng nên trông như "chập chờn": cùng một link lúc gửi dạng chữ thì chạy, lúc thành thẻ thì không.
+  if (!rawText || !cleanText) {
+    const eventName = String(body?.event_name || '');
+    const messageType = String(message?.message_type || '');
+    recordDebugEvent({
+      time: new Date().toISOString(),
+      body,
+      extractedChatId: chatId,
+      error: `Tin không có chữ/link đọc được (event=${eventName || '?'}, type=${messageType || '?'})`,
+    });
+    const isUnreadableLinkCard =
+      /unsupported|link/i.test(eventName) || /unsupported|link/i.test(messageType);
+    const lastHintAt = unreadableHintSentAt.get(chatId) || 0;
+    if ((isUnreadableLinkCard || chatId.startsWith('zgr-')) && !isSimulatedFromWeb && Date.now() - lastHintAt > 5_000) {
+      unreadableHintSentAt.set(chatId, Date.now());
+      const hintMsg = [
+        `⚠️ Bot chưa đọc được link trong tin vừa gửi (do Zalo tự gắn khung xem trước video làm ẩn đường dẫn trên Bot API).`,
+        `👉 Bạn hãy gửi lại theo 1 trong 2 cách sau:`,
+        `1. Dán link rồi bấm dấu [✕] tắt khung xem trước (Preview) trên ô nhập Zalo trước khi ấn Gửi.`,
+        `2. Hoặc xóa chữ https:// ở đầu link (ví dụ: vt.tiktok.com/ZSgt5oDdK/).`,
+      ].join('\n');
+      await replyToChat(hintMsg);
+      return { handled: true, reply: hintMsg, extractedChatId: chatId };
+    }
+    return { handled: false, extractedChatId: chatId };
   }
 
   // CTV Self-channel (nhận diện theo Zalo ID trên hồ sơ danh bạ CTV): nộp kịch bản / nháp / link đăng vào việc của mình.
