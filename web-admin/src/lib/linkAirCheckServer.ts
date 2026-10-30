@@ -1,4 +1,5 @@
 import {
+  type LinkAirAffiliateVerification,
   type LinkAirCheckItem,
   type LinkAirExpectation,
   type LinkAirPlatform,
@@ -62,16 +63,27 @@ function extractMentions(caption: string): string[] {
 
 function parseCompactNumber(raw?: string | null): number | null {
   if (!raw) return null;
-  const cleaned = raw.trim().replace(/,/g, '');
-  const m = cleaned.match(/^([\d.]+)\s*([KMB])?$/i);
+  const trimmed = raw.trim();
+  const normalized =
+    /^\d+,\d{1,2}\s*(?:[KMBN]|Tr)$/i.test(trimmed)
+      ? trimmed.replace(',', '.')
+      : trimmed.replace(/,/g, '');
+  const m = normalized.match(/^([\d.]+)\s*([KMBN]|Tr)?$/i);
   if (!m) {
-    const digits = Number(cleaned.replace(/[^\d]/g, ''));
+    const digits = Number(normalized.replace(/[^\d]/g, ''));
     return Number.isFinite(digits) && digits > 0 ? digits : null;
   }
   const num = parseFloat(m[1]);
   if (!Number.isFinite(num)) return null;
   const unit = (m[2] || '').toUpperCase();
-  const mult = unit === 'B' ? 1_000_000_000 : unit === 'M' ? 1_000_000 : unit === 'K' ? 1_000 : 1;
+  const mult =
+    unit === 'B'
+      ? 1_000_000_000
+      : unit === 'M' || unit === 'TR'
+      ? 1_000_000
+      : unit === 'K' || unit === 'N'
+      ? 1_000
+      : 1;
   return Math.round(num * mult);
 }
 
@@ -123,6 +135,50 @@ export function formatVnDateTimeFromUnixSec(
   if (fallbackYmd && /^\d{4}-\d{2}-\d{2}/.test(fallbackYmd)) {
     const [y, m, d] = fallbackYmd.slice(0, 10).split('-');
     return `${d}/${m}/${y}`;
+  }
+  return null;
+}
+
+/**
+ * Giải mã trực tiếp 11 ký tự đầu của shortcode Meta (Instagram / Threads) ra Unix Timestamp (giây).
+ * Cấu trúc Snowflake 64-bit của Meta: (id >> 23n) + 1314220021721n (ms).
+ */
+function decodeMetaShortcodeTimestampSec(shortcode?: string | null): number | null {
+  if (!shortcode || shortcode.length < 9 || /^\d+$/.test(shortcode)) return null;
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  let id = BigInt(0);
+  const six = BigInt(6);
+  const shift23 = BigInt(23);
+  const epochMs = BigInt('1314220021721');
+  for (const ch of shortcode.slice(0, 11)) {
+    const idx = alphabet.indexOf(ch);
+    if (idx < 0) return null;
+    id = (id << six) | BigInt(idx);
+  }
+  const ms = Number((id >> shift23) + epochMs);
+  const sec = Math.floor(ms / 1000);
+  return sec > 1_400_000_000 && sec < 2_200_000_000 ? sec : null;
+}
+
+/**
+ * Giải mã thời điểm tải lên từ URL media Shopee MMS (vn-11110124-6vasd-mtxhco9p48ay4f.16003551791183408...).
+ * - 8 ký tự đầu của định danh MMS (VD: "mtxhco9p") là Unix timestamp (ms) hệ cơ số 36.
+ * - Hoặc chuỗi ".1600355<10_chữ_số_unix_sec>." trong tên file MP4.
+ */
+function decodeShopeeMmsTimestampSec(...urls: Array<string | null | undefined>): number | null {
+  for (const raw of urls) {
+    if (!raw) continue;
+    const directSecMatch = raw.match(/\.\d{7}(1[6789]\d{8})\./);
+    if (directSecMatch) {
+      const sec = Number(directSecMatch[1]);
+      if (sec > 1_500_000_000 && sec < 2_200_000_000) return sec;
+    }
+    const mmsMatch = raw.match(/vn-\d+-[0-9a-z]+-([0-9a-z]{8})[0-9a-z]{4,}/i);
+    if (mmsMatch) {
+      const ms = parseInt(mmsMatch[1].toLowerCase(), 36);
+      const sec = Math.floor(ms / 1000);
+      if (sec > 1_500_000_000 && sec < 2_200_000_000) return sec;
+    }
   }
   return null;
 }
@@ -279,6 +335,29 @@ function parseLink(raw: string): ParsedLink | null {
   }
 
   if (hostMatches(host, 'instagram.com') || host === 'instagr.am') {
+    const shareMatch = path.match(/^\/share\/(?:(p|reel|reels)\/)?([\w-]{5,})/i);
+    if (shareMatch) {
+      const kind = shareMatch[1] === 'p' ? 'post' : 'reel';
+      return {
+        platform: 'instagram',
+        url: url.toString(),
+        contentId: shareMatch[2],
+        contentType: kind,
+        handle: null,
+        isShortLink: true,
+      };
+    }
+    const storyMatch = path.match(/^\/stories\/([\w.]+)\/(\d{6,})/i);
+    if (storyMatch) {
+      return {
+        platform: 'instagram',
+        url: `https://www.instagram.com/stories/${storyMatch[1]}/${storyMatch[2]}/`,
+        contentId: storyMatch[2],
+        contentType: 'reel',
+        handle: storyMatch[1].toLowerCase(),
+        isShortLink: false,
+      };
+    }
     const m = path.match(/^\/(?:([\w.]+)\/)?(p|reel|reels|tv)\/([\w-]{5,})/);
     if (m && !['p', 'reel', 'reels', 'tv', 'stories'].includes(m[1] ?? '')) {
       const kind = m[2] === 'p' ? 'post' : 'reel';
@@ -291,12 +370,16 @@ function parseLink(raw: string): ParsedLink | null {
         isShortLink: false,
       };
     }
+    const handleOnly = path.match(/^\/([\w.]+)\/?$/);
     return {
       platform: 'instagram',
       url: url.toString(),
       contentId: null,
       contentType: null,
-      handle: null,
+      handle:
+        handleOnly && !['explore', 'accounts', 'direct', 'reels'].includes(handleOnly[1].toLowerCase())
+          ? handleOnly[1].toLowerCase()
+          : null,
       isShortLink: false,
     };
   }
@@ -307,19 +390,43 @@ function parseLink(raw: string): ParsedLink | null {
     host === 'fb.com' ||
     hostMatches(host, 'fb.com')
   ) {
-    if (host === 'fb.watch' || /^\/share\//.test(path)) {
+    // Nếu URL bị chuyển hướng về /login/?next=... thì bóc URL gốc bên trong tham số next
+    if (/^\/login(\.php)?\/?$/i.test(path)) {
+      const nextParam = url.searchParams.get('next');
+      if (nextParam && /^https?:\/\//i.test(nextParam)) {
+        const innerFb = parseLink(nextParam);
+        if (innerFb) return innerFb;
+      }
+    }
+    if (host === 'fb.watch') {
+      const watchToken = path.replace(/^\/+|\/+$/g, '').split('/')[0] || null;
       return {
         platform: 'facebook',
         url: url.toString(),
-        contentId: null,
-        contentType: null,
+        contentId: watchToken,
+        contentType: 'video',
+        handle: null,
+        isShortLink: true,
+      };
+    }
+    const shareMatch =
+      path.match(/^\/share\/(r|v|p)\/([\w-]{4,})/i) ||
+      path.match(/^\/share\/([\w-]{4,})/i);
+    if (shareMatch) {
+      const shareKind = shareMatch[2] ? shareMatch[1].toLowerCase() : 'p';
+      const shareCode = shareMatch[2] || shareMatch[1];
+      return {
+        platform: 'facebook',
+        url: url.toString(),
+        contentId: shareCode,
+        contentType: shareKind === 'r' ? 'reel' : shareKind === 'v' ? 'video' : 'post',
         handle: null,
         isShortLink: true,
       };
     }
     const canonical = new URL(url.toString());
     canonical.hostname = 'www.facebook.com';
-    const reel = path.match(/^\/reel\/(\d{6,})/);
+    const reel = path.match(/^\/reel\/([\w-]{6,})/);
     if (reel) {
       canonical.search = '';
       canonical.hash = '';
@@ -332,16 +439,20 @@ function parseLink(raw: string): ParsedLink | null {
         isShortLink: false,
       };
     }
-    const video = path.match(/^\/([^/]+)\/videos\/(?:[^/]+\/)?(\d{6,})/);
+    const video =
+      path.match(/^\/([^/]+)\/videos\/(?:[^/]+\/)?(\d{6,})/) ||
+      path.match(/^\/videos\/(\d{6,})/);
     if (video) {
       canonical.search = '';
       canonical.hash = '';
+      const vidId = video[2] || video[1];
+      const owner = video[2] ? video[1] : null;
       return {
         platform: 'facebook',
         url: canonical.toString(),
-        contentId: video[2],
+        contentId: vidId,
         contentType: 'video',
-        handle: !/^\d+$/.test(video[1]) ? video[1].toLowerCase() : null,
+        handle: owner && !/^\d+$/.test(owner) ? owner.toLowerCase() : null,
         isShortLink: false,
       };
     }
@@ -356,7 +467,20 @@ function parseLink(raw: string): ParsedLink | null {
         isShortLink: false,
       };
     }
-    const post = path.match(/^\/([^/]+)\/posts\/([\w]+)/);
+    const groupPost = path.match(/^\/groups\/([^/]+)\/(?:posts|permalink)\/([\w.-]+)/i);
+    if (groupPost) {
+      canonical.search = '';
+      canonical.hash = '';
+      return {
+        platform: 'facebook',
+        url: canonical.toString(),
+        contentId: groupPost[2],
+        contentType: 'post',
+        handle: !/^\d+$/.test(groupPost[1]) ? groupPost[1].toLowerCase() : null,
+        isShortLink: false,
+      };
+    }
+    const post = path.match(/^\/([^/]+)\/posts\/([\w.-]+)/);
     if (post) {
       canonical.search = '';
       canonical.hash = '';
@@ -390,14 +514,60 @@ function parseLink(raw: string): ParsedLink | null {
     };
   }
 
-  if (host === 'shp.ee' || hostMatches(host, 'shp.ee')) {
+  if (
+    host === 'shp.ee' ||
+    hostMatches(host, 'shp.ee') ||
+    host === 's.shopee.vn' ||
+    hostMatches(host, 's.shopee.vn')
+  ) {
+    const cleanSegments = path.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+    const shortCode = cleanSegments[cleanSegments.length - 1] || null;
     return {
       platform: 'shopee',
       url: url.toString(),
-      contentId: null,
-      contentType: null,
+      contentId: shortCode,
+      contentType: 'video',
       handle: null,
       isShortLink: true,
+    };
+  }
+
+  // Threads: threads.net/@<handle>/post/<id>, threads.com/@<handle>/post/<id>, threads.net/t/<id>
+  if (hostMatches(host, 'threads.net') || hostMatches(host, 'threads.com')) {
+    const postMatch =
+      path.match(/^\/@([^/]+)\/post\/([\w-]+)/i) ||
+      path.match(/^\/([^/@]+)\/post\/([\w-]+)/i);
+    if (postMatch && !['t', 'post', 'login', 'search', 'settings'].includes(postMatch[1].toLowerCase())) {
+      const handle = decodeURIComponent(postMatch[1]).replace(/^@/, '').toLowerCase();
+      const postId = postMatch[2];
+      return {
+        platform: 'threads',
+        url: `https://www.threads.net/@${handle}/post/${postId}`,
+        contentId: postId,
+        contentType: 'post',
+        handle,
+        isShortLink: false,
+      };
+    }
+    const shortThread = path.match(/^\/(?:t|post)\/([\w-]+)/i);
+    if (shortThread) {
+      return {
+        platform: 'threads',
+        url: `https://www.threads.net/t/${shortThread[1]}`,
+        contentId: shortThread[1],
+        contentType: 'post',
+        handle: null,
+        isShortLink: false,
+      };
+    }
+    const handleOnly = path.match(/^\/@?([^/]+)\/?$/);
+    return {
+      platform: 'threads',
+      url: url.toString(),
+      contentId: null,
+      contentType: 'post',
+      handle: handleOnly ? decodeURIComponent(handleOnly[1]).replace(/^@/, '').toLowerCase() : null,
+      isShortLink: false,
     };
   }
 
@@ -421,15 +591,52 @@ function parseLink(raw: string): ParsedLink | null {
   }
 
   if (/(^|\.)shopee\.[a-z.]+$/.test(host)) {
-    const m = path.match(/\/share-video\/([\w-]+)/);
-    if (m) {
+    const rawRedir =
+      url.searchParams.get('redir') ||
+      url.searchParams.get('deep_and_deferred') ||
+      url.searchParams.get('url');
+    if (rawRedir) {
+      let decodedRedir = rawRedir;
+      try {
+        if (decodedRedir.startsWith('http%3A') || decodedRedir.startsWith('https%3A')) {
+          decodedRedir = decodeURIComponent(decodedRedir);
+        }
+      } catch {
+        // ignore decode error
+      }
+      if (decodedRedir.startsWith('http') && decodedRedir !== url.toString()) {
+        const innerParsed = parseLink(decodedRedir);
+        if (innerParsed && innerParsed.contentId) return innerParsed;
+      }
+    }
+    const m =
+      path.match(/\/(?:share-video|video)\/([\w=-]+)/i) ||
+      path.match(/\/universal-link\/(?:share-video|video)\/([\w=-]+)/i);
+    const queryVid =
+      url.searchParams.get('videoId') ||
+      url.searchParams.get('share_video_id') ||
+      url.searchParams.get('vid') ||
+      url.searchParams.get('svid');
+    const contentId = m?.[1] || queryVid || null;
+    if (contentId) {
+      const cleanHost = host.startsWith('sv.') ? host : `sv.${host.replace(/^www\./, '')}`;
       return {
         platform: 'shopee',
-        url: `https://${host}/share-video/${m[1]}`,
-        contentId: m[1],
+        url: `https://${cleanHost}/share-video/${contentId}`,
+        contentId,
+        contentType: 'video',
+        handle: url.searchParams.get('username')?.toLowerCase() || null,
+        isShortLink: false,
+      };
+    }
+    if (/\/universal-link\//i.test(path)) {
+      return {
+        platform: 'shopee',
+        url: url.toString(),
+        contentId: null,
         contentType: 'video',
         handle: null,
-        isShortLink: false,
+        isShortLink: true,
       };
     }
     return {
@@ -450,20 +657,255 @@ async function resolveRedirectUrl(url: string, userAgent = BROWSER_UA): Promise<
     const res = await fetch(url, {
       method: 'GET',
       redirect: 'follow',
-      headers: { 'User-Agent': userAgent },
+      headers: {
+        'User-Agent': userAgent,
+        'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
+      },
       signal: AbortSignal.timeout(7000),
       cache: 'no-store',
     });
-    const finalUrl = res.url || url;
+    let finalUrl = res.url || url;
     try {
       await res.body?.cancel();
     } catch {
       // ignore stream cancel error
     }
+    // Bóc tiếp nếu finalUrl là universal-link của Shopee hoặc /login/?next=... của Facebook
+    try {
+      const parsedFinal = new URL(finalUrl);
+      const nextOrRedir =
+        parsedFinal.searchParams.get('redir') ||
+        parsedFinal.searchParams.get('next') ||
+        parsedFinal.searchParams.get('ulp');
+      if (nextOrRedir && /^https?:\/\//i.test(nextOrRedir)) {
+        finalUrl = nextOrRedir;
+      }
+    } catch {
+      // ignore URL parse error
+    }
     return finalUrl;
   } catch {
     return url;
   }
+}
+
+/**
+ * Xác thực & bóc tách trực tiếp Link Affiliate đích (s.shopee.vn, shp.ee, shopee.vn, lazada, linktr.ee...)
+ * phục vụ nghiệm thu đa sàn (Threads, Facebook Comment đầu, Instagram Bio).
+ */
+export async function verifyAffiliateTargetUrl(
+  rawInputUrl?: string | null,
+  expect: LinkAirExpectation = {}
+): Promise<LinkAirAffiliateVerification | undefined> {
+  const cleaned = (rawInputUrl || '').trim();
+  if (!cleaned || !/^(https?:\/\/|[a-z0-9-]+\.(shopee|shp|lazada|tiktok|linktr|beacons|bio))/i.test(cleaned)) {
+    return undefined;
+  }
+  const inputObj = toUrl(cleaned);
+  if (!inputObj) return undefined;
+
+  const host = inputObj.hostname.toLowerCase();
+  const isShortLink =
+    host === 's.shopee.vn' ||
+    hostMatches(host, 's.shopee.vn') ||
+    host === 'shp.ee' ||
+    hostMatches(host, 'shp.ee') ||
+    host === 'vt.tiktok.com' ||
+    host === 'vm.tiktok.com' ||
+    host === 's.lazada.vn' ||
+    host === 'bit.ly' ||
+    host === 'tinyurl.com' ||
+    /\/universal-link\//i.test(inputObj.pathname);
+
+  let resolvedUrl = inputObj.toString();
+  let isLive = true;
+
+  // Thử giải mã redirect thực tế cho link rút gọn
+  if (isShortLink) {
+    try {
+      const res = await fetch(inputObj.toString(), {
+        method: 'GET',
+        redirect: 'follow',
+        headers: {
+          'User-Agent': BROWSER_UA,
+          'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
+        },
+        signal: AbortSignal.timeout(5500),
+        cache: 'no-store',
+      });
+      if (res.status === 404 || res.status === 410) {
+        isLive = false;
+      }
+      if (res.url) {
+        resolvedUrl = res.url;
+      }
+      try {
+        await res.body?.cancel();
+      } catch {
+        // ignore
+      }
+    } catch {
+      // Nếu mạng chặn outbound tới shortener thì vẫn phân tích cấu trúc link gốc
+    }
+  }
+
+  // Nếu resolvedUrl chứa tham số redir=... (Shopee universal-link), bóc URL đích thực sự
+  const trackingParams: string[] = [];
+  const collectTrackingFromUrl = (uStr: string) => {
+    try {
+      const u = new URL(uStr);
+      const keys = [
+        'uls_trackid',
+        'utm_source',
+        'utm_medium',
+        'utm_campaign',
+        'mmp_pid',
+        'af_siteid',
+        'sub_id',
+        'aff_sid',
+        'gads_t_sig',
+      ];
+      for (const k of keys) {
+        const val = u.searchParams.get(k);
+        if (val) {
+          trackingParams.push(`${k}=${val.slice(0, 28)}`);
+        }
+      }
+      const innerRedir = u.searchParams.get('redir') || u.searchParams.get('ulp');
+      if (innerRedir && /^https?:\/\//i.test(innerRedir)) {
+        collectTrackingFromUrl(innerRedir);
+        resolvedUrl = innerRedir;
+      }
+    } catch {
+      // ignore
+    }
+  };
+  collectTrackingFromUrl(inputObj.toString());
+  if (resolvedUrl !== inputObj.toString()) {
+    collectTrackingFromUrl(resolvedUrl);
+  }
+
+  const finalObj = toUrl(resolvedUrl) || inputObj;
+  const finalHost = finalObj.hostname.toLowerCase();
+  const finalPath = finalObj.pathname;
+
+  let platform: LinkAirAffiliateVerification['platform'] = 'external';
+  if (
+    finalHost.includes('shopee') ||
+    finalHost.includes('shp.ee') ||
+    host.includes('shopee') ||
+    host.includes('shp.ee')
+  ) {
+    platform = 'shopee';
+  } else if (finalHost.includes('tiktok')) {
+    platform = 'tiktok';
+  } else if (finalHost.includes('lazada')) {
+    platform = 'lazada';
+  } else if (/(linktr\.ee|beacons\.ai|bio\.link|instabio\.cc)/i.test(finalHost)) {
+    platform = 'bio_aggregator';
+  }
+
+  // Trích xuất Shop ID & Item ID nếu là link Shopee / TikTok Shop
+  let shopId: string | null = null;
+  let itemId: string | null = null;
+  const shopeeSlugMatch = finalPath.match(/-i\.(\d{5,})\.(\d{6,})/);
+  const shopeeProdMatch = finalPath.match(/\/product\/(\d{5,})\/(\d{6,})/i);
+  const tiktokPdpMatch = finalPath.match(/\/pdp\/(?:[^/]+\/)?(\d{15,22})/i);
+
+  if (shopeeSlugMatch) {
+    shopId = shopeeSlugMatch[1];
+    itemId = shopeeSlugMatch[2];
+  } else if (shopeeProdMatch) {
+    shopId = shopeeProdMatch[1];
+    itemId = shopeeProdMatch[2];
+  } else if (tiktokPdpMatch) {
+    itemId = tiktokPdpMatch[1];
+  } else {
+    shopId = finalObj.searchParams.get('shopid') || finalObj.searchParams.get('shop_id') || null;
+    itemId = finalObj.searchParams.get('itemid') || finalObj.searchParams.get('item_id') || null;
+  }
+
+  const hasAffiliateTracking =
+    trackingParams.length > 0 ||
+    host === 's.shopee.vn' ||
+    hostMatches(host, 's.shopee.vn') ||
+    host === 'shp.ee' ||
+    hostMatches(host, 'shp.ee') ||
+    host === 's.lazada.vn';
+
+  if (!isLive) {
+    return {
+      inputUrl: cleaned,
+      resolvedUrl,
+      isLive: false,
+      isShortLink,
+      platform,
+      shopId,
+      itemId,
+      hasAffiliateTracking,
+      trackingParams: [...new Set(trackingParams)],
+      status: 'FAIL',
+      detail: `Link Affiliate (${cleaned}) trả về lỗi 404 hoặc đã hết hạn.`,
+    };
+  }
+
+  if (platform === 'shopee' || platform === 'tiktok' || platform === 'lazada') {
+    const idSummary =
+      shopId && itemId
+        ? ` · Shop ID: ${shopId} · Mã SP: ${itemId}`
+        : itemId
+        ? ` · Mã SP: ${itemId}`
+        : '';
+    const trackSummary =
+      trackingParams.length > 0
+        ? ` · Tracking: ${[...new Set(trackingParams)].slice(0, 2).join(', ')}`
+        : hasAffiliateTracking
+        ? ` · Shortlink Affiliate hợp lệ (${host})`
+        : '';
+    return {
+      inputUrl: cleaned,
+      resolvedUrl,
+      isLive: true,
+      isShortLink,
+      platform,
+      shopId,
+      itemId,
+      hasAffiliateTracking,
+      trackingParams: [...new Set(trackingParams)],
+      status: 'PASS',
+      detail: `Đã xác thực Link ${platform === 'shopee' ? 'Shopee Affiliate' : platform === 'lazada' ? 'Lazada Affiliate' : 'TikTok Shop'}${idSummary}${trackSummary}.`,
+    };
+  }
+
+  if (platform === 'bio_aggregator') {
+    return {
+      inputUrl: cleaned,
+      resolvedUrl,
+      isLive: true,
+      isShortLink,
+      platform,
+      shopId: null,
+      itemId: null,
+      hasAffiliateTracking: true,
+      trackingParams: [...new Set(trackingParams)],
+      status: 'PASS',
+      detail: `Đã xác thực trang Bio tổng hợp link (${finalHost})${expect.linkPlacement ? ` đúng vị trí ${expect.linkPlacement}` : ''}.`,
+    };
+  }
+
+  return {
+    inputUrl: cleaned,
+    resolvedUrl,
+    isLive: true,
+    isShortLink,
+    platform,
+    shopId,
+    itemId,
+    hasAffiliateTracking,
+    trackingParams: [...new Set(trackingParams)],
+    status: 'WARN',
+    detail: `Link đích (${finalHost}) hoạt động nhưng không phải định dạng Shopee / Lazada / TikTok Affiliate tiêu chuẩn.`,
+  };
 }
 
 export function buildLinkAirChecks(
@@ -490,6 +932,7 @@ export function buildLinkAirChecks(
     | 'firstProductMentionTerm'
     | 'firstProductMentionQuote'
     | 'policyViolations'
+    | 'affiliateVerification'
   >,
   expect: LinkAirExpectation = {}
 ): LinkAirCheckItem[] {
@@ -500,7 +943,7 @@ export function buildLinkAirChecks(
       key: 'link_format',
       label: 'Định dạng link',
       status: 'FAIL',
-      detail: 'Không nhận ra nền tảng. Hỗ trợ TikTok, Shopee Video, Facebook, Instagram, YouTube.',
+      detail: 'Không nhận ra nền tảng. Hỗ trợ TikTok, Threads, Shopee Video, Facebook, Instagram, YouTube.',
     });
     return checks;
   }
@@ -724,6 +1167,15 @@ export function buildLinkAirChecks(
     });
   }
 
+  if (input.affiliateVerification) {
+    checks.push({
+      key: 'affiliate_target_verify',
+      label: 'Xác thực Link Affiliate đích',
+      status: input.affiliateVerification.status,
+      detail: input.affiliateVerification.detail,
+    });
+  }
+
   if (expect.expectedProductUrl && expect.expectedProductUrl.trim()) {
     const cartComp = compareCartProductLinks({
       expectedCartInput: expect.expectedProductUrl,
@@ -741,27 +1193,31 @@ export function buildLinkAirChecks(
     });
   } else if (expect.requireProductLink) {
     checks.push(
-      input.hasProductLink === true
+      input.hasProductLink === true || input.affiliateVerification?.status === 'PASS'
         ? {
             key: 'product_link',
-            label: 'Gắn link sản phẩm',
+            label: expect.linkPlacement ? `Vị trí gắn link (${expect.linkPlacement})` : 'Gắn link sản phẩm / Affiliate',
             status: 'PASS',
-            detail: `Bài có gắn giỏ hàng${input.productTitle ? `: ${input.productTitle}` : ''}${
-              input.productUrl ? ` (${input.productUrl})` : ''
-            }.`,
+            detail:
+              input.affiliateVerification?.status === 'PASS'
+                ? input.affiliateVerification.detail
+                : `Đã phát hiện gắn link/giỏ hàng${input.productTitle ? `: ${input.productTitle}` : ''}${
+                    input.productUrl ? ` (${input.productUrl})` : ''
+                  }.`,
           }
         : input.hasProductLink === false
         ? {
             key: 'product_link',
-            label: 'Gắn link sản phẩm',
+            label: expect.linkPlacement ? `Vị trí gắn link (${expect.linkPlacement})` : 'Gắn link sản phẩm / Affiliate',
             status: 'FAIL',
             detail: 'Bài chưa gắn giỏ hàng / link sản phẩm.',
           }
         : {
             key: 'product_link',
-            label: 'Gắn link sản phẩm',
+            label: expect.linkPlacement ? `Vị trí gắn link (${expect.linkPlacement})` : 'Gắn link sản phẩm / Affiliate',
             status: 'WARN',
-            detail: 'Nền tảng không công khai thông tin gắn sản phẩm. Cần kiểm tra tay.',
+            detail:
+              'Không thấy link sản phẩm công khai trong HTML bài đăng (nếu KOC gắn ở Comment đầu / Bio, hãy dán Link Affiliate đích vào cột bên cạnh hoặc bấm Ghi nhận trên Extension trình duyệt).',
           }
     );
   }
@@ -821,29 +1277,110 @@ async function checkYoutubeVideo(
   let authorName: string | null = null;
   let profileUrl: string | null = null;
   let thumbnail: string | null = null;
+  let views: number | null = null;
+  let likes: number | null = null;
+  let comments: number | null = null;
+  let durationSeconds: number | null = null;
+  let publishedAt: string | null = null;
+  let publishedTimeSec: number | null = null;
+  let description = '';
+
+  const watchUrl = contentId ? `https://www.youtube.com/watch?v=${contentId}` : canonicalUrl;
+
   try {
-    const res = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(canonicalUrl)}`, {
-      headers: { 'User-Agent': BROWSER_UA },
-      cache: 'no-store',
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (res.ok) {
-      const json = (await res.json().catch(() => null)) as { title?: string; author_name?: string; author_url?: string; thumbnail_url?: string } | null;
+    const [oembedRes, watchRes] = await Promise.all([
+      fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(canonicalUrl)}`, {
+        headers: { 'User-Agent': BROWSER_UA },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10_000),
+      }).catch(() => null),
+      fetch(watchUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+          'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10_000),
+      }).catch(() => null),
+    ]);
+
+    if (oembedRes?.ok) {
+      const json = (await oembedRes.json().catch(() => null)) as {
+        title?: string;
+        author_name?: string;
+        author_url?: string;
+        thumbnail_url?: string;
+      } | null;
       thumbnail = json?.thumbnail_url || null;
       status = 'LIVE';
       title = json?.title || '';
       authorName = json?.author_name || null;
       profileUrl = json?.author_url || null;
-    } else if (res.status === 401 || res.status === 403 || res.status === 404) {
+    } else if (oembedRes && (oembedRes.status === 401 || oembedRes.status === 403 || oembedRes.status === 404)) {
       status = 'UNAVAILABLE';
       statusDetail = 'Video đã bị xoá, để riêng tư hoặc không cho nhúng.';
-    } else {
-      statusDetail = `YouTube trả lỗi HTTP ${res.status}.`;
+    } else if (oembedRes) {
+      statusDetail = `YouTube trả lỗi HTTP ${oembedRes.status}.`;
+    }
+
+    if (watchRes?.ok) {
+      const html = await watchRes.text();
+      const rawViews =
+        html.match(/"viewCount":"(\d+)"/)?.[1] ||
+        html.match(/itemprop="interactionCount"\s+content="(\d+)"/i)?.[1];
+      if (rawViews) views = Number(rawViews);
+      const rawLen = html.match(/"lengthSeconds":"(\d+)"/)?.[1];
+      if (rawLen && Number(rawLen) > 0) durationSeconds = Number(rawLen);
+      const rawPub =
+        html.match(/"publishDate":"([^"]+)"/)?.[1] ||
+        html.match(/"uploadDate":"([^"]+)"/)?.[1] ||
+        html.match(/itemprop="datePublished"\s+content="([^"]+)"/i)?.[1];
+      if (rawPub) {
+        const parsedMs = Date.parse(rawPub);
+        if (Number.isFinite(parsedMs)) {
+          publishedTimeSec = Math.floor(parsedMs / 1000);
+          publishedAt = new Date(parsedMs).toISOString();
+        } else {
+          publishedAt = rawPub;
+        }
+      }
+      const rawLikes =
+        html.match(/"likeCount":"?(\d+)"?/)?.[1] ||
+        html.match(/"topLevelButtons":\[\{"segmentedLikeDislikeButtonViewModel":[\s\S]{0,600}?"title":"([\d.,]+\s?[KMBN]?)"/i)?.[1];
+      if (rawLikes) {
+        likes = parseCompactNumber(rawLikes.replace(/N$/i, 'K'));
+      }
+      const rawComments = html.match(/"commentCount":\{"simpleText":"([\d.,]+\s?[KMBN]?)"/i)?.[1];
+      if (rawComments) {
+        comments = parseCompactNumber(rawComments.replace(/N$/i, 'K'));
+      }
+      const shortDescMatch = html.match(/"shortDescription":"((?:[^"\\]|\\.)*)"/);
+      if (shortDescMatch?.[1]) {
+        try {
+          description = JSON.parse(`"${shortDescMatch[1]}"`) as string;
+        } catch {
+          description = shortDescMatch[1];
+        }
+      }
+      if (status !== 'LIVE' && views !== null) {
+        status = 'LIVE';
+        statusDetail = null;
+      }
     }
   } catch (err) {
     statusDetail = err instanceof Error ? err.message : 'Không kết nối được YouTube.';
   }
+
   const handleFromUrl = profileUrl?.match(/youtube\.com\/@([^/?#]+)/i)?.[1];
+  const combinedCaption = [title, description].filter(Boolean).join('\n').trim();
+  const detectedShopUrls = extractShoppingUrlsFromText(combinedCaption);
+  const affiliateVerification = expect.affiliateTargetUrl
+    ? await verifyAffiliateTargetUrl(expect.affiliateTargetUrl, expect)
+    : detectedShopUrls[0]
+    ? await verifyAffiliateTargetUrl(detectedShopUrls[0], expect)
+    : undefined;
+  const hasShopLink = detectedShopUrls.length > 0 || affiliateVerification?.status === 'PASS';
+
   const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
     inputUrl,
     platform: 'youtube',
@@ -852,18 +1389,36 @@ async function checkYoutubeVideo(
     canonicalUrl,
     status,
     statusDetail,
-    author: { handle: handleFromUrl ? decodeURIComponent(handleFromUrl).toLowerCase() : null, name: authorName, profileUrl, followers: null },
-    publishedAt: null,
-    caption: title,
-    hashtags: extractHashtags(title),
-    mentions: extractMentions(title),
-    durationSeconds: null,
-    metrics: { views: null, likes: null, comments: null, shares: null, saves: null },
-    hasProductLink: null,
-    productTitle: null,
+    author: {
+      handle: handleFromUrl ? decodeURIComponent(handleFromUrl).toLowerCase() : null,
+      name: authorName,
+      profileUrl,
+      followers: null,
+    },
+    publishedAt,
+    publishedTimeSec,
+    airedAtVn: formatVnDateTimeFromUnixSec(publishedTimeSec, publishedAt),
+    caption: title || description.slice(0, 280),
+    hashtags: extractHashtags(combinedCaption),
+    mentions: extractMentions(combinedCaption),
+    durationSeconds,
+    metrics: { views, likes, comments, shares: null, saves: null },
+    hasProductLink: hasShopLink ? true : null,
+    productTitle: hasShopLink ? 'Link mua hàng gắn trong mô tả YouTube' : null,
+    productUrl: detectedShopUrls[0] || affiliateVerification?.resolvedUrl || null,
+    productId: affiliateVerification?.itemId || null,
+    sellerId: affiliateVerification?.shopId || null,
+    cartProducts: detectedShopUrls.map((url) => ({
+      productId: affiliateVerification?.itemId || '',
+      sellerId: affiliateVerification?.shopId || undefined,
+      title: 'Link mua hàng trong mô tả YouTube',
+      productUrl: url,
+      source: 'YouTube Description',
+    })),
+    affiliateVerification,
     coverUrl: thumbnail,
-    limitations: ['YouTube oEmbed không có ngày đăng và lượt xem: đối chiếu tay khi cần.'],
-    source: 'youtube-oembed',
+    limitations: [],
+    source: 'youtube-watch-oembed',
     fetchedAt,
     fromCache: false,
     durationMs: Date.now() - started,
@@ -1254,6 +1809,87 @@ async function resolveCartViaVietnamBridge(
   }
 }
 
+export const MULTI_PLATFORM_AIR_CACHE_KEY = 'multi-platform-air-cache-v1';
+
+export interface MultiPlatformAirCacheItem {
+  contentId: string;
+  platform: 'threads' | 'facebook' | 'shopee' | 'instagram';
+  postUrl: string;
+  handle: string;
+  displayName?: string;
+  publishedAt?: string;
+  publishedTimeSec?: number;
+  caption: string;
+  hashtags?: string[];
+  views?: number | null;
+  likes?: number | null;
+  comments?: number | null;
+  shares?: number | null;
+  hasProductLink?: boolean;
+  productTitle?: string | null;
+  productUrl?: string | null;
+  productId?: string | null;
+  sellerId?: string | null;
+  cartProducts?: Array<{
+    productId: string;
+    sellerId?: string;
+    title: string;
+    productUrl: string;
+    source?: string;
+  }>;
+  source?: string;
+  updatedAt: string;
+}
+
+export interface MultiPlatformAirCacheState {
+  items: Record<string, MultiPlatformAirCacheItem>;
+}
+
+const multiPlatformMemoryCache: Record<string, MultiPlatformAirCacheItem> = {};
+
+export async function saveMultiPlatformExtensionCapture(
+  item: MultiPlatformAirCacheItem
+): Promise<void> {
+  if (!item?.contentId || !item?.platform) return;
+  const cacheKey = `${item.platform}:${item.contentId}`;
+  multiPlatformMemoryCache[cacheKey] = item;
+  await upsertRecord<MultiPlatformAirCacheState>(
+    MULTI_PLATFORM_AIR_CACHE_KEY,
+    { items: {} },
+    (cur) => ({
+      items: {
+        ...(cur?.items || {}),
+        [cacheKey]: item,
+      },
+    })
+  ).catch(() => {});
+}
+
+export async function getMultiPlatformExtensionCapture(
+  platform: string,
+  contentId: string | null
+): Promise<MultiPlatformAirCacheItem | null> {
+  if (!contentId) return null;
+  const cacheKey = `${platform}:${contentId}`;
+  if (multiPlatformMemoryCache[cacheKey]) {
+    return multiPlatformMemoryCache[cacheKey];
+  }
+  try {
+    const rec = await readRecord<MultiPlatformAirCacheState>(
+      MULTI_PLATFORM_AIR_CACHE_KEY,
+      { items: {} },
+      { skipCache: true }
+    );
+    const found = rec.data?.items?.[cacheKey] || null;
+    if (found) {
+      multiPlatformMemoryCache[cacheKey] = found;
+    }
+    return found;
+  } catch {
+    return null;
+  }
+}
+
 export async function checkSingleLinkServerless(
   inputUrl: string,
   expect: LinkAirExpectation = {}
@@ -1263,15 +1899,27 @@ export async function checkSingleLinkServerless(
   let parsed = parseLink(inputUrl);
 
   if (parsed?.isShortLink) {
+    const fallbackContentId = parsed.contentId;
+    const fallbackContentType = parsed.contentType;
     const resolvedUrl = await resolveRedirectUrl(
       parsed.url,
       parsed.platform === 'facebook' ? LINK_PREVIEW_UA : BROWSER_UA
     );
     const reParsed = parseLink(resolvedUrl);
     if (reParsed) {
-      parsed = reParsed;
+      parsed = {
+        ...reParsed,
+        contentId: reParsed.contentId || fallbackContentId,
+        contentType: reParsed.contentType || fallbackContentType,
+      };
     } else {
-      parsed = { ...parsed, url: resolvedUrl, isShortLink: false };
+      parsed = {
+        ...parsed,
+        url: resolvedUrl,
+        contentId: fallbackContentId,
+        contentType: fallbackContentType,
+        isShortLink: false,
+      };
     }
   }
 
@@ -1517,20 +2165,119 @@ export async function checkSingleLinkServerless(
     return { ...base, checks, verdict: verdictOf(checks) };
   }
 
-  // Shopee Video / Facebook / Instagram dedicated parsers
+  // Xác thực trực tiếp Link Affiliate đích (nếu người dùng đính kèm ở cột Link Affiliate / Đích)
+  let affiliateVerification = await verifyAffiliateTargetUrl(expect.affiliateTargetUrl, expect);
+
+  // Kiểm tra bộ nhớ đệm DOM từ UpBase Chrome Extension trước (dành cho Threads, Facebook, Shopee Video, Instagram)
+  if (
+    parsed.platform === 'threads' ||
+    parsed.platform === 'facebook' ||
+    parsed.platform === 'shopee' ||
+    parsed.platform === 'instagram'
+  ) {
+    const extCached = await getMultiPlatformExtensionCapture(parsed.platform, parsed.contentId);
+    if (extCached) {
+      if (!affiliateVerification && extCached.productUrl) {
+        affiliateVerification = await verifyAffiliateTargetUrl(extCached.productUrl, expect);
+      }
+      const hashtags =
+        extCached.hashtags && extCached.hashtags.length > 0
+          ? extCached.hashtags
+          : extractHashtags(extCached.caption || '');
+      const hasVerifiedLink =
+        Boolean(extCached.hasProductLink) || affiliateVerification?.status === 'PASS';
+      const policyViolations = scanBlacklistViolations(extCached.caption || '');
+      const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
+        inputUrl,
+        platform: parsed.platform,
+        contentType: parsed.contentType ?? (parsed.platform === 'shopee' ? 'video' : 'post'),
+        contentId: extCached.contentId || parsed.contentId,
+        canonicalUrl: extCached.postUrl || parsed.url,
+        status: 'LIVE',
+        statusDetail: null,
+        author: {
+          handle: extCached.handle || parsed.handle,
+          name: extCached.displayName || extCached.handle || parsed.handle,
+          profileUrl: null,
+          followers: null,
+        },
+        publishedAt: extCached.publishedAt || null,
+        publishedTimeSec: extCached.publishedTimeSec || null,
+        airedAtVn: formatVnDateTimeFromUnixSec(extCached.publishedTimeSec, extCached.publishedAt),
+        caption: extCached.caption || '',
+        hashtags,
+        mentions: extractMentions(extCached.caption || ''),
+        durationSeconds: null,
+        metrics: {
+          views: extCached.views ?? null,
+          likes: extCached.likes ?? null,
+          comments: extCached.comments ?? null,
+          shares: extCached.shares ?? null,
+          saves: null,
+        },
+        hasProductLink: hasVerifiedLink ? true : null,
+        productTitle:
+          extCached.productTitle ||
+          (affiliateVerification?.status === 'PASS'
+            ? `Đã xác thực Link Affiliate (${affiliateVerification.platform.toUpperCase()})`
+            : null),
+        productUrl:
+          extCached.productUrl ||
+          affiliateVerification?.resolvedUrl ||
+          affiliateVerification?.inputUrl ||
+          null,
+        productId: extCached.productId || affiliateVerification?.itemId || null,
+        sellerId: extCached.sellerId || affiliateVerification?.shopId || null,
+        cartProducts: extCached.cartProducts || [],
+        policyViolations: policyViolations.length > 0 ? policyViolations : undefined,
+        affiliateVerification,
+        limitations: [],
+        source: extCached.source || 'extension-dom-verified',
+        fetchedAt,
+        fromCache: true,
+        durationMs: Date.now() - started,
+      };
+      const checks = buildLinkAirChecks(base, expect);
+      return { ...base, checks, verdict: verdictOf(checks) };
+    }
+  }
+
+  // Hàm giải mã các link bọc chuyển hướng của Meta (l.threads.net, l.facebook.com, l.instagram.com)
+  const unpackMetaRedirectLinksInHtml = (rawHtml: string): string => {
+    let unpacked = rawHtml;
+    const metaRedirectMatches = [
+      ...rawHtml.matchAll(
+        /https?:\/\/l\.(?:threads\.net|threads\.com|facebook\.com|instagram\.com)\/(?:l\.php)?\?[^"'\s<>]*?u=(https?%3A%2F%2F[^"&'\s<>]+)/gi
+      ),
+    ];
+    const decodedUrls: string[] = [];
+    for (const m of metaRedirectMatches) {
+      try {
+        decodedUrls.push(decodeURIComponent(m[1]));
+      } catch {
+        // ignore
+      }
+    }
+    if (decodedUrls.length > 0) {
+      unpacked += ' ' + decodedUrls.join(' ');
+    }
+    return unpacked;
+  };
+
+  // Shopee Video / Threads / Facebook / Instagram dedicated parsers
   try {
     const res = await fetch(parsed.url, {
       method: 'GET',
       redirect: 'follow',
       headers: {
         'User-Agent': parsed.platform === 'shopee' ? BROWSER_UA : LINK_PREVIEW_UA,
-        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
       },
       signal: AbortSignal.timeout(9000),
       cache: 'no-store',
     });
     const finalUrl = res.url || parsed.url;
-    const html = await res.text();
+    const html = unpackMetaRedirectLinksInHtml(await res.text());
 
     if (parsed.platform === 'shopee') {
       const nextDataRaw = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)?.[1];
@@ -1552,6 +2299,7 @@ export async function checkSingleLinkServerless(
           metrics: { views: null, likes: null, comments: null, shares: null, saves: null },
           hasProductLink: null,
           productTitle: null,
+          affiliateVerification,
           limitations: [],
           source: 'shopee-share-page',
           fetchedAt,
@@ -1563,7 +2311,8 @@ export async function checkSingleLinkServerless(
       }
       if (nextDataRaw) {
         try {
-          const media = JSON.parse(nextDataRaw)?.props?.pageProps?.mediaInfo;
+          const parsedNext = JSON.parse(nextDataRaw);
+          const media = parsedNext?.props?.pageProps?.mediaInfo;
           if (!media?.video) {
             const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
               inputUrl,
@@ -1582,6 +2331,7 @@ export async function checkSingleLinkServerless(
               metrics: { views: null, likes: null, comments: null, shares: null, saves: null },
               hasProductLink: null,
               productTitle: null,
+              affiliateVerification,
               limitations: [],
               source: 'shopee-share-page',
               fetchedAt,
@@ -1591,12 +2341,95 @@ export async function checkSingleLinkServerless(
             const checks = buildLinkAirChecks(base, expect);
             return { ...base, checks, verdict: verdictOf(checks) };
           }
-          const handle = media.userInfo?.videoUserName?.toLowerCase() ?? parsed.handle ?? null;
+          const handle =
+            media.userInfo?.videoUserName?.toLowerCase() ??
+            media.userInfo?.userName?.toLowerCase() ??
+            parsed.handle ??
+            null;
+          const displayName = media.userInfo?.nickName || handle;
           const host = new URL(parsed.url).hostname.replace(/^sv\./, '');
           const count = media.count ?? {};
           const caption = String(media.video.caption ?? '').trim();
+          const shopeePlayableUrl =
+            media.video?.watermarkVideoUrl || media.video?.videoUrl || media.video?.playUrl || null;
+          const shopeeCoverUrl =
+            media.video?.watermarkCoverUrl ||
+            media.video?.coverUrl ||
+            media.video?.watermarkShareImageUrl ||
+            readMeta(html, 'og:image') ||
+            null;
+          const createSecRaw =
+            Number(media.video.createTime || media.video.ctime || media.createTime || 0) ||
+            decodeShopeeMmsTimestampSec(shopeePlayableUrl, shopeeCoverUrl);
+          const createSec =
+            createSecRaw && createSecRaw > 1_000_000_000_000
+              ? Math.floor(createSecRaw / 1000)
+              : createSecRaw;
+
+          // Trích xuất Giỏ hàng Cam Shopee Video (itemList / items / products / anchors)
+          const rawProductArray =
+            media.itemList ||
+            media.items ||
+            media.products ||
+            media.video?.itemList ||
+            media.video?.items ||
+            media.anchors ||
+            [];
+          const orangeCartItems: Array<{
+            productId: string;
+            sellerId?: string;
+            title: string;
+            productUrl: string;
+            source: string;
+          }> = [];
+          if (Array.isArray(rawProductArray)) {
+            for (const item of rawProductArray) {
+              const itemId = String(item?.itemId || item?.itemid || item?.productId || '').trim();
+              const shopId = String(item?.shopId || item?.shopid || item?.sellerId || '').trim();
+              const itemTitle = String(
+                item?.name || item?.title || item?.itemName || 'Sản phẩm Giỏ cam Shopee Video'
+              ).trim();
+              const itemUrl =
+                item?.productUrl ||
+                item?.url ||
+                (shopId && itemId
+                  ? `https://shopee.vn/product/${shopId}/${itemId}`
+                  : `https://shopee.vn/search?keyword=${encodeURIComponent(itemTitle)}`);
+              if (itemId || itemTitle) {
+                orangeCartItems.push({
+                  productId: itemId,
+                  sellerId: shopId || undefined,
+                  title: itemTitle,
+                  productUrl: itemUrl,
+                  source: 'Giỏ hàng Cam Shopee Video',
+                });
+              }
+            }
+          }
+
           const captionShoppingUrls = extractShoppingUrlsFromText(caption);
+          const allCartProducts = [
+            ...orangeCartItems,
+            ...captionShoppingUrls.map((url) => ({
+              productId: '',
+              sellerId: undefined as string | undefined,
+              title: 'Link Shopee gắn trong mô tả video',
+              productUrl: url,
+              source: 'Caption Link',
+            })),
+          ];
+          if (!affiliateVerification && allCartProducts[0]?.productUrl) {
+            affiliateVerification = await verifyAffiliateTargetUrl(allCartProducts[0].productUrl, expect);
+          }
+          const hasOrangeCartFlag =
+            allCartProducts.length > 0 ||
+            affiliateVerification?.status === 'PASS' ||
+            Boolean(media.hasItem || media.video?.hasItem || /"itemId"\s*:\s*"?\d{6,}/i.test(nextDataRaw));
           const policyViolations = scanBlacklistViolations(caption);
+          const rawHashtags = Array.isArray(media.video?.hashtagContent)
+            ? media.video.hashtagContent.map((h: string) => `#${String(h).replace(/^#+/, '').toLowerCase()}`)
+            : [];
+          const mergedHashtags = [...new Set([...extractHashtags(caption), ...rawHashtags])];
           const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
             inputUrl,
             platform: 'shopee',
@@ -1607,38 +2440,49 @@ export async function checkSingleLinkServerless(
             statusDetail: null,
             author: {
               handle,
-              name: handle,
+              name: displayName,
               profileUrl: handle ? `https://${host}/${handle}` : null,
-              followers: null,
+              followers: media.userInfo?.followerCount ?? null,
             },
-            publishedAt: null,
+            publishedAt: unixSecondsToIso(createSec),
+            publishedTimeSec: createSec,
+            airedAtVn: formatVnDateTimeFromUnixSec(createSec),
             caption,
-            hashtags: extractHashtags(caption),
+            hashtags: mergedHashtags,
             mentions: extractMentions(caption),
             durationSeconds: media.video.duration ? Math.round(media.video.duration / 1000) : null,
             metrics: {
-              views: count.viewCount ?? null,
+              views: count.viewCount ?? count.playCount ?? null,
               likes: count.likeCount ?? null,
               comments: count.commentCount ?? null,
               shares: count.shareCount ?? null,
               saves: null,
             },
-            hasProductLink: captionShoppingUrls.length > 0 ? true : null,
+            hasProductLink: hasOrangeCartFlag ? true : null,
             productTitle:
-              captionShoppingUrls.length > 0 ? 'Link mua hàng gắn trong bài đăng' : null,
-            productUrl: captionShoppingUrls[0] || null,
-            cartProducts: captionShoppingUrls.map((url) => ({
-              productId: '',
-              title: 'Link mua hàng gắn trong bài đăng',
-              productUrl: url,
-              source: 'Caption Link',
-            })),
+              allCartProducts[0]?.title ||
+              (hasOrangeCartFlag ? 'Giỏ hàng Cam Shopee Video' : null),
+            productUrl:
+              allCartProducts[0]?.productUrl ||
+              affiliateVerification?.resolvedUrl ||
+              null,
+            productId:
+              allCartProducts[0]?.productId ||
+              affiliateVerification?.itemId ||
+              null,
+            sellerId:
+              allCartProducts[0]?.sellerId ||
+              affiliateVerification?.shopId ||
+              null,
+            cartProducts: allCartProducts,
+            playableUrl: shopeePlayableUrl,
+            coverUrl: shopeeCoverUrl,
             policyViolations: policyViolations.length > 0 ? policyViolations : undefined,
+            affiliateVerification,
             limitations: [
-              'Trang chia sẻ Shopee Video không công khai lượt xem, ngày đăng và sản phẩm gắn kèm.',
-              'Ngày air và GMV cần đối chiếu trong Shopee Affiliate / Seller Center.',
+              'Số đơn hàng và GMV phát sinh từ Shopee Video cần đối chiếu báo cáo Shopee Affiliate hoặc đồng bộ từ Extension.',
             ],
-            source: 'shopee-share-page',
+            source: 'shopee-next-data',
             fetchedAt,
             fromCache: false,
             durationMs: Date.now() - started,
@@ -1649,25 +2493,127 @@ export async function checkSingleLinkServerless(
           // Rơi xuống nhánh meta nếu JSON lỗi
         }
       }
-    }
-
-    if (parsed.platform === 'facebook') {
-      const ogUrl = readMeta(html, 'og:url') ?? finalUrl;
-      const ogTitle = readMeta(html, 'og:title');
-      const ogDescription = readMeta(html, 'og:description') ?? '';
-
-      if (res.status === 404 || !ogTitle || /\/login(\.php)?|checkpoint/.test(finalUrl)) {
-        const isBlocked = /\/login|checkpoint/.test(finalUrl) || (res.status >= 400 && res.status !== 404);
+      // Nhánh dự phòng khi Shopee Video trả về HTML SPA nhưng URL hợp lệ có mã share-video/<id>
+      if (res.ok && parsed.contentId) {
+        const ogTitle = readMeta(html, 'og:title') || '';
+        const ogDesc = readMeta(html, 'og:description') || readMeta(html, 'description') || '';
+        const caption = (ogDesc || ogTitle || '').trim();
+        const likes =
+          readJsonNumber(html, 'likeCount') ??
+          parseCompactNumber(caption.match(/([\d.,]+\s?[KMB]?)\s+likes?/i)?.[1]);
+        const comments = readJsonNumber(html, 'commentCount');
+        const views = readJsonNumber(html, 'viewCount') ?? readJsonNumber(html, 'playCount');
+        const hasItemInHtml =
+          /"itemId"\s*:\s*"?\d{6,}|shopee\.vn\/product\//i.test(html) ||
+          affiliateVerification?.status === 'PASS';
         const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
           inputUrl,
-          platform: 'facebook',
-          contentType: parsed.contentType,
+          platform: 'shopee',
+          contentType: 'video',
           contentId: parsed.contentId,
           canonicalUrl: parsed.url,
-          status: isBlocked ? 'BLOCKED' : 'UNAVAILABLE',
-          statusDetail: isBlocked
-            ? 'Facebook yêu cầu đăng nhập để xem bài này (bài riêng tư hoặc bị chặn IP).'
-            : 'Bài đã bị xoá, ẩn hoặc chỉ bạn bè xem được.',
+          status: 'LIVE',
+          statusDetail: null,
+          author: {
+            handle: parsed.handle || expect.handle || null,
+            name: parsed.handle || expect.handle || null,
+            profileUrl: null,
+            followers: null,
+          },
+          publishedAt: null,
+          caption,
+          hashtags: extractHashtags(caption),
+          mentions: extractMentions(caption),
+          durationSeconds: null,
+          metrics: { views, likes, comments, shares: null, saves: null },
+          hasProductLink: hasItemInHtml ? true : null,
+          productTitle: hasItemInHtml ? 'Giỏ hàng Cam Shopee Video' : null,
+          productUrl: affiliateVerification?.resolvedUrl || null,
+          productId: affiliateVerification?.itemId || null,
+          sellerId: affiliateVerification?.shopId || null,
+          affiliateVerification,
+          limitations: [
+            'Shopee Video render phía trình duyệt (CSR); để lấy đủ danh sách SP trong Giỏ cam hãy mở link trên trình duyệt có bật UpBase Extension.',
+          ],
+          source: 'shopee-csr-fallback',
+          fetchedAt,
+          fromCache: false,
+          durationMs: Date.now() - started,
+        };
+        const checks = buildLinkAirChecks(base, expect);
+        return { ...base, checks, verdict: verdictOf(checks) };
+      }
+    }
+
+    if (parsed.platform === 'threads') {
+      let threadsHtml = html;
+      const initialOgTitle = readMeta(html, 'og:title') || '';
+      const initialOgImage = readMeta(html, 'og:image') || readMeta(html, 'twitter:image') || null;
+      let ogTitle = initialOgTitle;
+      let ogDesc = readMeta(threadsHtml, 'og:description') || readMeta(threadsHtml, 'description') || '';
+      let usedEmbed = false;
+
+      // Luôn thử gọi thêm endpoint /embed công khai của Threads khi trang chính chỉ trả về vỏ "Threads", thiếu nội dung hoặc thiếu chỉ số tương tác
+      const isGenericShell =
+        !ogDesc || /^threads$/i.test(ogTitle.trim()) || readJsonNumber(threadsHtml, 'like_count') === null;
+      if (isGenericShell && parsed.contentId && res.status !== 404) {
+        const embedUrls = parsed.handle
+          ? [
+              `https://www.threads.net/@${parsed.handle}/post/${parsed.contentId}/embed`,
+              `https://www.threads.com/@${parsed.handle}/post/${parsed.contentId}/embed`,
+            ]
+          : [
+              `https://www.threads.net/t/${parsed.contentId}/embed`,
+              `https://www.threads.com/t/${parsed.contentId}/embed`,
+            ];
+        for (const embedUrl of embedUrls) {
+          try {
+            const embedRes = await fetch(embedUrl, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+              },
+              signal: AbortSignal.timeout(6000),
+              cache: 'no-store',
+            });
+            if (embedRes.ok) {
+              const rawEmbedBody = await embedRes.text();
+              if (rawEmbedBody && !/Page Not Found/i.test(rawEmbedBody)) {
+                threadsHtml = unpackMetaRedirectLinksInHtml(rawEmbedBody);
+                usedEmbed = true;
+                ogTitle =
+                  readMeta(threadsHtml, 'og:title') ||
+                  initialOgTitle ||
+                  threadsHtml
+                    .match(/class="[^"]*Name[^"]*"[^>]*>([\s\S]*?)<\//i)?.[1]
+                    ?.replace(/<[^>]+>/g, '')
+                    .trim() ||
+                  ogTitle;
+                ogDesc =
+                  readMeta(threadsHtml, 'og:description') ||
+                  threadsHtml
+                    .match(/class="[^"]*BodyText[^"]*"[^>]*>([\s\S]*?)<\/div>/i)?.[1]
+                    ?.replace(/<[^>]+>/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim() ||
+                  ogDesc;
+                if (ogDesc) break;
+              }
+            }
+          } catch {
+            // Bỏ qua nếu endpoint embed lỗi
+          }
+        }
+      }
+
+      if (res.status === 404 || /Page Not Found/i.test(threadsHtml)) {
+        const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
+          inputUrl,
+          platform: 'threads',
+          contentType: 'post',
+          contentId: parsed.contentId,
+          canonicalUrl: parsed.url,
+          status: 'UNAVAILABLE',
+          statusDetail: 'Bài đăng Threads đã bị xoá hoặc không tồn tại.',
           author: { handle: parsed.handle, name: null, profileUrl: null, followers: null },
           publishedAt: null,
           caption: '',
@@ -1677,6 +2623,253 @@ export async function checkSingleLinkServerless(
           metrics: { views: null, likes: null, comments: null, shares: null, saves: null },
           hasProductLink: null,
           productTitle: null,
+          affiliateVerification,
+          limitations: [],
+          source: 'threads-meta',
+          fetchedAt,
+          fromCache: false,
+          durationMs: Date.now() - started,
+        };
+        const checks = buildLinkAirChecks(base, expect);
+        return { ...base, checks, verdict: verdictOf(checks) };
+      }
+
+      // Trích xuất @handle và Tên hiển thị từ og:title (VD: "Hồng Ánh (@honganh.daily) on Threads")
+      const titleSource = initialOgTitle.includes('(@') ? initialOgTitle : ogTitle;
+      const titleHandleMatch = titleSource.match(/\(@([\w.]+)\)/);
+      const handle =
+        titleHandleMatch?.[1]?.toLowerCase() ||
+        parsed.handle ||
+        readJsonString(threadsHtml, 'username')?.toLowerCase() ||
+        null;
+      const authorName =
+        titleSource.match(/^(.*?)\s*\(@[\w.]+\)/)?.[1]?.trim() ||
+        titleSource.replace(/\s*on Threads.*$/i, '').replace(/^@/, '').trim() ||
+        handle;
+
+      // Trích xuất ảnh chụp đính kèm trong bài đăng Threads hoặc thẻ og:image
+      const embedImgs = [...threadsHtml.matchAll(/<img[^>]+src="([^"]+)"/gi)]
+        .map((m) => decodeHtmlEntities(m[1]))
+        .filter(
+          (u) =>
+            /^https?:\/\//i.test(u) &&
+            !u.includes('rsrc.php') &&
+            !u.includes('s100x100') &&
+            !u.includes('t51.82787-19') &&
+            !u.includes('giphy.com')
+        );
+      const threadsCoverUrl =
+        embedImgs[0] ||
+        (initialOgImage && !initialOgImage.includes('rsrc.php') ? initialOgImage : null);
+      const threadsPlayableUrl =
+        threadsHtml
+          .match(/<video[^>]+src="([^"]+)"/i)?.[1]
+          ?.replace(/&amp;/g, '&') || null;
+
+      // Trích xuất nội dung bài đăng & các bình luận/reply nhúng trong SSR JSON
+      const ssrTextMatches = [...threadsHtml.matchAll(/"text":"((?:[^"\\]|\\.)*)"/g)]
+        .map((m) => {
+          try {
+            return JSON.parse(`"${m[1]}"`) as string;
+          } catch {
+            return m[1];
+          }
+        })
+        .filter((t) => t && t.length > 3);
+      const caption = (ogDesc || ssrTextMatches[0] || '').trim();
+      const combinedPostAndReplies = [caption, ...ssrTextMatches.slice(0, 15), threadsHtml.slice(0, 8000)].join(' ');
+
+      const embedActionCounts = [...threadsHtml.matchAll(/class="[^"]*ActionBarCount[^"]*"[^>]*>([^<]+)</gi)].map(
+        (m) => parseCompactNumber(m[1])
+      );
+      const takenAtSec =
+        readJsonNumber(threadsHtml, 'taken_at') ??
+        readJsonNumber(threadsHtml, 'publish_time') ??
+        readJsonNumber(threadsHtml, 'created_at') ??
+        decodeMetaShortcodeTimestampSec(parsed.contentId);
+      const likes =
+        readJsonNumber(threadsHtml, 'like_count') ??
+        embedActionCounts[0] ??
+        parseCompactNumber(
+          (ogTitle + ' ' + ogDesc + ' ' + threadsHtml).match(
+            /([\d.,]+\s?[KMB]?)\s+(?:likes?|lượt thích)/i
+          )?.[1]
+        );
+      const comments =
+        readJsonNumber(threadsHtml, 'direct_reply_count') ??
+        readJsonNumber(threadsHtml, 'reply_count') ??
+        embedActionCounts[1] ??
+        parseCompactNumber(
+          (ogTitle + ' ' + ogDesc).match(/([\d.,]+\s?[KMB]?)\s+(?:replies|bình luận)/i)?.[1]
+        );
+      const reposts =
+        (readJsonNumber(threadsHtml, 'repost_count') || 0) +
+        (readJsonNumber(threadsHtml, 'quote_count') || 0) +
+        (embedActionCounts[2] || 0) +
+        (embedActionCounts[3] || 0);
+      const views =
+        readJsonNumber(threadsHtml, 'view_count') ??
+        readJsonNumber(threadsHtml, 'play_count') ??
+        readJsonNumber(threadsHtml, 'impression_count') ??
+        parseCompactNumber(
+          (ogTitle + ' ' + ogDesc).match(/([\d.,]+\s?[KMB]?)\s+(?:views|lượt xem)/i)?.[1]
+        );
+
+      const detectedShopUrls = extractShoppingUrlsFromText(combinedPostAndReplies);
+      if (!affiliateVerification && detectedShopUrls[0]) {
+        affiliateVerification = await verifyAffiliateTargetUrl(detectedShopUrls[0], expect);
+      }
+      const hasShopLink =
+        detectedShopUrls.length > 0 ||
+        affiliateVerification?.status === 'PASS' ||
+        /(?:s\.shopee\.vn|shp\.ee|shopee\.vn|vt\.tiktok\.com|lazada\.vn|linktr\.ee|beacons\.ai|bio\.link)/i.test(
+          threadsHtml
+        );
+      const isReplyLink =
+        !extractShoppingUrlsFromText(caption).length &&
+        (detectedShopUrls.length > 0 || affiliateVerification?.status === 'PASS');
+      const policyViolations = scanBlacklistViolations(caption);
+
+      const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
+        inputUrl,
+        platform: 'threads',
+        contentType: 'post',
+        contentId: parsed.contentId,
+        canonicalUrl:
+          handle && parsed.contentId
+            ? `https://www.threads.net/@${handle}/post/${parsed.contentId}`
+            : parsed.url,
+        status: 'LIVE',
+        statusDetail: null,
+        author: {
+          handle,
+          name: authorName,
+          profileUrl: handle ? `https://www.threads.net/@${handle}` : null,
+          followers: readJsonNumber(threadsHtml, 'follower_count'),
+        },
+        publishedAt: unixSecondsToIso(takenAtSec),
+        publishedTimeSec: takenAtSec,
+        airedAtVn: formatVnDateTimeFromUnixSec(takenAtSec),
+        caption,
+        hashtags: extractHashtags(caption),
+        mentions: extractMentions(caption),
+        durationSeconds: null,
+        metrics: {
+          views,
+          likes,
+          comments,
+          shares: reposts > 0 ? reposts : null,
+          saves: null,
+        },
+        hasProductLink: hasShopLink ? true : null,
+        productTitle: hasShopLink
+          ? isReplyLink
+            ? 'Link Affiliate ở Comment đầu (Reply #1) / Đã xác thực'
+            : 'Link mua hàng gắn trực tiếp trong bài Threads'
+          : null,
+        productUrl:
+          detectedShopUrls[0] ||
+          affiliateVerification?.resolvedUrl ||
+          affiliateVerification?.inputUrl ||
+          null,
+        productId: affiliateVerification?.itemId || null,
+        sellerId: affiliateVerification?.shopId || null,
+        cartProducts: detectedShopUrls.map((url) => ({
+          productId: affiliateVerification?.itemId || '',
+          sellerId: affiliateVerification?.shopId || undefined,
+          title: isReplyLink ? 'Link ở Comment đầu Threads' : 'Link trong bài Threads',
+          productUrl: url,
+          source: isReplyLink ? 'First Reply' : 'Thread Post',
+        })),
+        playableUrl: threadsPlayableUrl,
+        coverUrl: threadsCoverUrl,
+        policyViolations: policyViolations.length > 0 ? policyViolations : undefined,
+        affiliateVerification,
+        limitations: [
+          'Lượt xem (Views) và Reply bên dưới trên Threads có thể bị giới hạn khi quét không đăng nhập; hãy dán kèm Link Affiliate đích hoặc bấm Ghi nhận trên Extension để lấy đủ chuỗi tút.',
+        ],
+        source: usedEmbed ? 'threads-embed-ssr' : 'threads-ssr-engine',
+        fetchedAt,
+        fromCache: false,
+        durationMs: Date.now() - started,
+      };
+      const checks = buildLinkAirChecks(base, expect);
+      return { ...base, checks, verdict: verdictOf(checks) };
+    }
+
+    if (parsed.platform === 'facebook') {
+      let fbHtml = html;
+      let ogUrl = readMeta(fbHtml, 'og:url') ?? finalUrl;
+      let ogTitle = readMeta(fbHtml, 'og:title');
+      let ogDescription = readMeta(fbHtml, 'og:description') ?? '';
+      const initialFbCoverUrl = readMeta(fbHtml, 'og:image') || readMeta(fbHtml, 'twitter:image') || null;
+      let usedFbPlugin = false;
+      let fbPluginBody = '';
+
+      // Gọi bổ sung endpoint Social Plugin công khai (/plugins/video.php hoặc /plugins/post.php) để bóc luồng MP4, phụ đề SRT, thời lượng và @handle Fanpage
+      if (res.status !== 404) {
+        try {
+          const pluginKind =
+            parsed.contentType === 'reel' || parsed.contentType === 'video' ? 'video.php' : 'post.php';
+          const pluginUrl = `https://www.facebook.com/plugins/${pluginKind}?href=${encodeURIComponent(
+            parsed.url
+          )}&show_text=true`;
+          const pluginRes = await fetch(pluginUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+              'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
+            },
+            signal: AbortSignal.timeout(6000),
+            cache: 'no-store',
+          });
+          if (pluginRes.ok) {
+            fbPluginBody = unpackMetaRedirectLinksInHtml(await pluginRes.text());
+            if (!ogTitle || /\/login(\.php)?|checkpoint/.test(finalUrl)) {
+              const textFromPlugin = fbPluginBody
+                .match(/<p[^>]*>([\s\S]*?)<\/p>/i)?.[1]
+                ?.replace(/<[^>]+>/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+              if (textFromPlugin && textFromPlugin.length > 3) {
+                fbHtml = fbPluginBody;
+                ogDescription = decodeHtmlEntities(textFromPlugin);
+                ogTitle = ogTitle || parsed.handle || 'Facebook Post';
+                ogUrl = parsed.url;
+                usedFbPlugin = true;
+              }
+            }
+          }
+        } catch {
+          // ignore plugin fallback error
+        }
+      }
+
+      if (res.status === 404 || (!ogTitle && !usedFbPlugin) || (/\/login(\.php)?|checkpoint/.test(finalUrl) && !usedFbPlugin)) {
+        const isBlocked = /\/login|checkpoint/.test(finalUrl) || (res.status >= 400 && res.status !== 404);
+        const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
+          inputUrl,
+          platform: 'facebook',
+          contentType: parsed.contentType,
+          contentId: parsed.contentId,
+          canonicalUrl: parsed.url,
+          status: isBlocked ? 'BLOCKED' : 'UNAVAILABLE',
+          statusDetail: isBlocked
+            ? 'Facebook yêu cầu đăng nhập để xem bài này (bài riêng tư hoặc bị chặn IP). Hãy mở bài trên trình duyệt có UpBase Extension để đồng bộ.'
+            : 'Bài đã bị xoá, ẩn hoặc chỉ bạn bè xem được.',
+          author: { handle: parsed.handle, name: null, profileUrl: null, followers: null },
+          publishedAt: null,
+          caption: '',
+          hashtags: [],
+          mentions: [],
+          durationSeconds: null,
+          metrics: { views: null, likes: null, comments: null, shares: null, saves: null },
+          hasProductLink: affiliateVerification?.status === 'PASS' ? true : null,
+          productTitle:
+            affiliateVerification?.status === 'PASS' ? 'Đã xác thực Link Affiliate đính kèm' : null,
+          productUrl: affiliateVerification?.resolvedUrl || null,
+          productId: affiliateVerification?.itemId || null,
+          sellerId: affiliateVerification?.shopId || null,
+          affiliateVerification,
           limitations: [],
           source: 'facebook-html',
           fetchedAt,
@@ -1690,7 +2883,7 @@ export async function checkSingleLinkServerless(
       const idFromUrl =
         ogUrl.match(/\/(?:reel|videos)\/(\d{6,})/)?.[1] ??
         ogUrl.match(/[?&]v=(\d{6,})/)?.[1] ??
-        ogUrl.match(/\/posts\/([\w]+)/)?.[1] ??
+        ogUrl.match(/\/posts\/([\w.-]+)/)?.[1] ??
         null;
       const contentId = idFromUrl ?? parsed.contentId;
       const contentType = /\/reel\//.test(ogUrl)
@@ -1700,29 +2893,84 @@ export async function checkSingleLinkServerless(
         : parsed.contentType ?? 'post';
 
       const anchor = contentId
-        ? html.indexOf(
+        ? fbHtml.indexOf(
             `"associated_video":{"is_live_streaming":false,"is_profile_video":false,"id":"${contentId}"`
           )
         : -1;
       const fromAnchor = anchor >= 0 ? anchor : 0;
-      const titleStats = parseFacebookOgTitle(ogTitle);
+      const titleStats = parseFacebookOgTitle(ogTitle || '');
 
       const views =
-        readJsonNumber(html, 'video_view_count', fromAnchor) ??
-        readJsonNumber(html, 'play_count') ??
+        readJsonNumber(fbHtml, 'video_view_count', fromAnchor) ??
+        readJsonNumber(fbHtml, 'play_count') ??
         titleStats.views;
-      const reactionsMatch = html.match(/"reaction_count":\{"count":(\d+)/);
-      const reactions = reactionsMatch ? Number(reactionsMatch[1]) : titleStats.reactions;
-      const comments = readJsonNumber(html, 'total_comment_count');
+      const pluginSource = fbPluginBody || fbHtml;
+      const reactionsMatch = fbHtml.match(/"reaction_count":\{"count":(\d+)/);
+      const pluginReactionText = pluginSource.match(/class="_5n6h _2pih"[^>]*>([\d.,KMB]+)</i)?.[1];
+      const reactions = reactionsMatch
+        ? Number(reactionsMatch[1])
+        : titleStats.reactions ?? parseCompactNumber(pluginReactionText);
+      const comments = readJsonNumber(fbHtml, 'total_comment_count');
       const shareMatch =
-        html.match(/"share_count":\{"count":(\d+)/) ??
-        html.match(/"share_count_reduced":"([\d.,KMB]+)"/);
+        fbHtml.match(/"share_count":\{"count":(\d+)/) ??
+        fbHtml.match(/"share_count_reduced":"([\d.,KMB]+)"/);
       const shares = shareMatch ? parseCompactNumber(shareMatch[1]) : null;
-      const publishTime =
-        readJsonNumber(html, 'publish_time') ?? readJsonNumber(html, 'creation_time');
-      const durationMs = readJsonNumber(html, 'playable_duration_in_ms');
+      let publishTime =
+        readJsonNumber(fbHtml, 'publish_time') ?? readJsonNumber(fbHtml, 'creation_time');
+      let durationSec = readJsonNumber(fbHtml, 'playable_duration_in_ms')
+        ? Math.round(Number(readJsonNumber(fbHtml, 'playable_duration_in_ms')) / 1000)
+        : null;
 
-      const pageMatch = html.match(
+      // Trích xuất luồng MP4 (hd_src / sd_src), thời lượng (efg.duration_s), phụ đề SRT (subtitles_src) và @handle từ /plugins/video.php
+      const fbPlayableUrl =
+        readJsonString(pluginSource, 'hd_src') ||
+        readJsonString(pluginSource, 'sd_src') ||
+        readJsonString(pluginSource, 'browser_native_hd_url') ||
+        readJsonString(pluginSource, 'browser_native_sd_url') ||
+        readJsonString(pluginSource, 'playable_url') ||
+        null;
+      const fbCoverUrl = initialFbCoverUrl || readMeta(fbHtml, 'og:image') || null;
+
+      // Lấy thời điểm đăng chính xác tới từng giây từ header Last-Modified của ảnh thumbnail gốc trên CDN Facebook
+      if (fbCoverUrl && !publishTime) {
+        try {
+          const headRes = await fetch(fbCoverUrl, {
+            method: 'HEAD',
+            signal: AbortSignal.timeout(3500),
+            cache: 'no-store',
+          });
+          const lastMod = headRes.headers.get('last-modified');
+          if (lastMod) {
+            const parsedMs = Date.parse(lastMod);
+            if (Number.isFinite(parsedMs) && parsedMs > 1_400_000_000_000) {
+              publishTime = Math.floor(parsedMs / 1000);
+            }
+          }
+        } catch {
+          // ignore HEAD error
+        }
+      }
+
+      if (fbPlayableUrl && (!durationSec || !publishTime)) {
+        try {
+          const efgParam = fbPlayableUrl.match(/[?&]efg=([^&]+)/)?.[1];
+          if (efgParam) {
+            const efgJson = JSON.parse(
+              Buffer.from(decodeURIComponent(efgParam), 'base64').toString('utf8')
+            );
+            if (!durationSec && typeof efgJson?.duration_s === 'number' && efgJson.duration_s > 0) {
+              durationSec = Math.round(efgJson.duration_s);
+            }
+            if (!publishTime && typeof efgJson?.asset_age_days === 'number') {
+              publishTime = Math.floor(Date.now() / 1000) - efgJson.asset_age_days * 86400;
+            }
+          }
+        } catch {
+          // ignore efg decode error
+        }
+      }
+
+      const pageMatch = fbHtml.match(
         /"owner_as_page":\{"id":"(\d+)","name":"((?:[^"\\]|\\.)*)"/
       );
       let ownerName = titleStats.ownerName;
@@ -1733,17 +2981,77 @@ export async function checkSingleLinkServerless(
           ownerName = pageMatch[2];
         }
       }
-      const vanity = readJsonString(html, 'vanity') ?? parsed.handle;
-      const messageAt = html.indexOf('"message":{"text"');
+      const pluginVanityMatch =
+        pluginSource.match(/https:\/\/www\.facebook\.com\/([\w.]+)\?(?:ref=embed_video|fref=)/i)?.[1] ||
+        pluginSource.match(/\/(?:watch|stories)\/(\d{8,})\/\?(?:source=EMBED_VIDEO&)?ref=embed_video/i)?.[1] ||
+        null;
+      const vanity =
+        readJsonString(fbHtml, 'vanity') ??
+        parsed.handle ??
+        (pluginVanityMatch && !['help', 'reel', 'watch', 'sharer'].includes(pluginVanityMatch.toLowerCase())
+          ? pluginVanityMatch
+          : null);
+      const messageAt = fbHtml.indexOf('"message":{"text"');
       const caption = (
-        (messageAt >= 0 ? readJsonString(html, 'text', messageAt) : null) ?? ogDescription
+        (messageAt >= 0 ? readJsonString(fbHtml, 'text', messageAt) : null) ?? ogDescription
       ).trim();
+
+      // Trích xuất phụ đề tự động (.srt) của Facebook Reels nếu có subtitles_src
+      let fbTranscriptText: string | null = null;
+      let fbSubtitleSegments: TikTokSubtitleSegment[] = [];
+      const fbSubtitlesUrl = readJsonString(pluginSource, 'subtitles_src');
+      if (fbSubtitlesUrl && /^https?:\/\//i.test(fbSubtitlesUrl)) {
+        try {
+          const subRes = await fetch(fbSubtitlesUrl, {
+            signal: AbortSignal.timeout(3500),
+            cache: 'no-store',
+          });
+          if (subRes.ok) {
+            const srtRaw = await subRes.text();
+            fbSubtitleSegments = parseWebVttToSegments(srtRaw);
+            if (fbSubtitleSegments.length > 0) {
+              fbTranscriptText = fbSubtitleSegments.map((s) => `[${s.timeLabel}] ${s.text}`).join(' ');
+            }
+          }
+        } catch {
+          // ignore subtitle fetch error
+        }
+      }
+
+      const fbHashtags = extractHashtags(caption);
+      const fbMentionDetection = detectProductMentionMoments({
+        segments: fbSubtitleSegments,
+        productName: expect.requiredKeywords?.[0],
+        caption,
+        hashtags: fbHashtags,
+        uspKeywords: expect.requiredKeywords,
+      });
+
+      // Quét thêm các bình luận đầu tiên nhúng trong HTML Facebook để phát hiện link đặt ở Comment đầu
+      const embeddedTexts = [...fbHtml.matchAll(/"text":"((?:[^"\\]|\\.)*)"/g)]
+        .slice(0, 20)
+        .map((m) => {
+          try {
+            return JSON.parse(`"${m[1]}"`) as string;
+          } catch {
+            return m[1];
+          }
+        });
       const hasProductTag =
-        /"comet_product_tag_feed_overlay_renderer":\{/.test(html) ||
-        /"product_item":\{/.test(html);
+        /"comet_product_tag_feed_overlay_renderer":\{/.test(fbHtml) ||
+        /"product_item":\{/.test(fbHtml);
       const captionShoppingUrls = extractShoppingUrlsFromText(caption);
-      const hasAnyShopLink = hasProductTag || captionShoppingUrls.length > 0;
-      const policyViolations = scanBlacklistViolations(caption);
+      const commentShoppingUrls = extractShoppingUrlsFromText(embeddedTexts.join(' '));
+      const allFbShopUrls = [...new Set([...captionShoppingUrls, ...commentShoppingUrls])];
+      if (!affiliateVerification && allFbShopUrls[0]) {
+        affiliateVerification = await verifyAffiliateTargetUrl(allFbShopUrls[0], expect);
+      }
+      const hasAnyShopLink =
+        hasProductTag || allFbShopUrls.length > 0 || affiliateVerification?.status === 'PASS';
+      const isCommentShopLink =
+        captionShoppingUrls.length === 0 &&
+        (commentShoppingUrls.length > 0 || affiliateVerification?.status === 'PASS');
+      const policyViolations = scanBlacklistViolations([caption, fbTranscriptText || ''].join(' '));
 
       const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
         inputUrl,
@@ -1760,31 +3068,52 @@ export async function checkSingleLinkServerless(
           followers: null,
         },
         publishedAt: unixSecondsToIso(publishTime),
+        publishedTimeSec: publishTime,
+        airedAtVn: formatVnDateTimeFromUnixSec(publishTime),
         caption,
-        hashtags: extractHashtags(caption),
+        hashtags: fbHashtags,
         mentions: extractMentions(caption),
-        durationSeconds: durationMs ? Math.round(durationMs / 1000) : null,
+        durationSeconds: durationSec,
         metrics: { views, likes: reactions, comments, shares, saves: null },
         hasProductLink: hasAnyShopLink ? true : null,
         productTitle:
-          captionShoppingUrls.length > 0
-            ? 'Link mua hàng gắn trong bài đăng'
+          allFbShopUrls.length > 0 || affiliateVerification?.status === 'PASS'
+            ? isCommentShopLink
+              ? 'Link Affiliate ở Comment đầu Facebook (Đã xác thực)'
+              : 'Link mua hàng gắn trong bài đăng Facebook'
             : hasProductTag
             ? 'Sản phẩm gắn thẻ trên Facebook'
             : null,
-        productUrl: captionShoppingUrls[0] || null,
-        cartProducts: captionShoppingUrls.map((url) => ({
-          productId: '',
-          title: 'Link mua hàng gắn trong bài đăng',
+        productUrl:
+          allFbShopUrls[0] ||
+          affiliateVerification?.resolvedUrl ||
+          affiliateVerification?.inputUrl ||
+          null,
+        productId: affiliateVerification?.itemId || null,
+        sellerId: affiliateVerification?.shopId || null,
+        cartProducts: allFbShopUrls.map((url) => ({
+          productId: affiliateVerification?.itemId || '',
+          sellerId: affiliateVerification?.shopId || undefined,
+          title: isCommentShopLink
+            ? 'Link mua hàng ở Comment đầu Facebook'
+            : 'Link mua hàng trong bài đăng Facebook',
           productUrl: url,
-          source: 'Caption Link',
+          source: isCommentShopLink ? 'First Comment' : 'Caption Link',
         })),
+        transcriptText: fbTranscriptText,
+        playableUrl: fbPlayableUrl,
+        coverUrl: fbCoverUrl,
+        firstProductAppearanceSec: fbMentionDetection.firstProductAppearanceSec,
+        firstProductMentionTimeLabel: fbMentionDetection.firstProductMentionTimeLabel || null,
+        firstProductMentionTerm: fbMentionDetection.firstProductMentionTerm || null,
+        firstProductMentionQuote: fbMentionDetection.firstProductMentionQuote || null,
+        productMentionMoments: fbMentionDetection.productMentionMoments,
         policyViolations: policyViolations.length > 0 ? policyViolations : undefined,
+        affiliateVerification,
         limitations: [
-          '"Likes" là tổng reactions (thích, yêu thích, haha...).',
-          'Không đọc được số follower của trang.',
+          'Facebook ẩn danh sách bình luận với máy chủ không đăng nhập; để xác thực link ở Comment đầu hãy dán Link Affiliate vào cột bên cạnh hoặc bấm Ghi nhận từ UpBase Chrome Extension.',
         ],
-        source: 'facebook-html',
+        source: usedFbPlugin || fbPluginBody ? 'facebook-plugin-embed' : 'facebook-html',
         fetchedAt,
         fromCache: false,
         durationMs: Date.now() - started,
@@ -1813,6 +3142,7 @@ export async function checkSingleLinkServerless(
           metrics: { views: null, likes: null, comments: null, shares: null, saves: null },
           hasProductLink: null,
           productTitle: null,
+          affiliateVerification,
           limitations: [],
           source: 'instagram-meta',
           fetchedAt,
@@ -1823,8 +3153,77 @@ export async function checkSingleLinkServerless(
         return { ...base, checks, verdict: verdictOf(checks) };
       }
 
-      const description = readMeta(html, 'og:description') ?? readMeta(html, 'description');
-      const ogUrl = readMeta(html, 'og:url');
+      const initialIgTitle = readMeta(html, 'og:title') ?? '';
+      const initialIgCover = readMeta(html, 'og:image') ?? readMeta(html, 'twitter:image') ?? null;
+      let igHtml = html;
+      let description = readMeta(igHtml, 'og:description') ?? readMeta(igHtml, 'description');
+      let ogUrl = readMeta(igHtml, 'og:url');
+      let usedIgEmbed = false;
+      let igEmbedMedia: Record<string, any> | null = null;
+      let igEmbedFollowers: number | null = null;
+      let igEmbedCoverUrl: string | null = null;
+
+      // Luôn gọi thêm /embed/captioned/ với User-Agent gọn nhẹ để lấy contextJSON (video_view_count, video_duration, video_url, followers)
+      if (parsed.contentId && res.status !== 404) {
+        try {
+          const embedRes = await fetch(
+            `https://www.instagram.com/p/${parsed.contentId}/embed/captioned/`,
+            {
+              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+              signal: AbortSignal.timeout(6000),
+              cache: 'no-store',
+            }
+          );
+          if (embedRes.ok) {
+            const rawEmbedBody = await embedRes.text();
+            if (rawEmbedBody && !/Page Not Found/i.test(rawEmbedBody)) {
+              const unpackedEmbed = unpackMetaRedirectLinksInHtml(rawEmbedBody);
+              usedIgEmbed = true;
+              const followerText = unpackedEmbed.match(
+                /class="FollowerCountText"[^>]*>([\d.,]+\s?[KMB]?)\s+followers/i
+              )?.[1];
+              if (followerText) {
+                igEmbedFollowers = parseCompactNumber(followerText);
+              }
+              igEmbedCoverUrl =
+                unpackedEmbed
+                  .match(/class="EmbeddedMediaImage"[^>]+src="([^"]+)"/i)?.[1]
+                  ?.replace(/&amp;/g, '&') || null;
+              const ctxMatch = unpackedEmbed.match(/"contextJSON":"((?:[^"\\]|\\.)*)"/);
+              if (ctxMatch) {
+                try {
+                  const ctxStr = JSON.parse(`"${ctxMatch[1]}"`) as string;
+                  const ctxParsed = JSON.parse(ctxStr);
+                  igEmbedMedia = ctxParsed?.gql_data?.shortcode_media || ctxParsed?.shortcode_media || null;
+                } catch {
+                  // ignore contextJSON parse error
+                }
+              }
+              if (!description || !ogUrl) {
+                igHtml = unpackedEmbed;
+                const embedUser =
+                  unpackedEmbed.match(/class="UsernameText"[^>]*>([\s\S]*?)<\//i)?.[1]?.trim() ||
+                  igEmbedMedia?.owner?.username ||
+                  parsed.handle ||
+                  '';
+                const embedCaption =
+                  unpackedEmbed
+                    .match(/class="Caption"[^>]*>([\s\S]*?)<\/div>/i)?.[1]
+                    ?.replace(/<[^>]+>/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim() || '';
+                if (embedUser || embedCaption) {
+                  description = `${embedUser}: "${embedCaption}"`;
+                  ogUrl = parsed.url;
+                }
+              }
+            }
+          }
+        } catch {
+          // Bỏ qua nếu endpoint embed Instagram lỗi
+        }
+      }
+
       if (res.status === 429 || !description || !ogUrl) {
         const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
           inputUrl,
@@ -1836,7 +3235,7 @@ export async function checkSingleLinkServerless(
           statusDetail:
             res.status === 429
               ? 'Instagram giới hạn tần suất truy cập (HTTP 429). Thử lại sau.'
-              : 'Instagram trả trang đăng nhập thay vì bài đăng.',
+              : 'Instagram yêu cầu đăng nhập để xem bài đăng này. Hãy mở trên trình duyệt có UpBase Extension.',
           author: { handle: parsed.handle, name: null, profileUrl: null, followers: null },
           publishedAt: null,
           caption: '',
@@ -1844,8 +3243,13 @@ export async function checkSingleLinkServerless(
           mentions: [],
           durationSeconds: null,
           metrics: { views: null, likes: null, comments: null, shares: null, saves: null },
-          hasProductLink: null,
-          productTitle: null,
+          hasProductLink: affiliateVerification?.status === 'PASS' ? true : null,
+          productTitle:
+            affiliateVerification?.status === 'PASS' ? 'Đã xác thực Link Bio / Affiliate đính kèm' : null,
+          productUrl: affiliateVerification?.resolvedUrl || null,
+          productId: affiliateVerification?.itemId || null,
+          sellerId: affiliateVerification?.shopId || null,
+          affiliateVerification,
           limitations: [],
           source: 'instagram-meta',
           fetchedAt,
@@ -1859,10 +3263,57 @@ export async function checkSingleLinkServerless(
       const igParsed = parseInstagramDescription(description);
       const ownerFromUrl =
         ogUrl.match(/instagram\.com\/([\w.]+)\/(?:p|reel)\//)?.[1]?.toLowerCase() ?? null;
-      const handle = igParsed.handle ?? ownerFromUrl ?? parsed.handle;
-      const ogTitle = readMeta(html, 'og:title') ?? '';
-      const displayName = ogTitle.match(/^(.*?) on Instagram/)?.[1]?.trim() || null;
+      const handle =
+        igParsed.handle ??
+        igEmbedMedia?.owner?.username?.toLowerCase() ??
+        ownerFromUrl ??
+        parsed.handle;
+      const ogTitle = initialIgTitle || readMeta(igHtml, 'og:title') || '';
+      const displayName =
+        ogTitle.match(/^(.*?) on Instagram/)?.[1]?.trim() ||
+        igEmbedMedia?.owner?.full_name ||
+        handle;
+      const igViews =
+        (typeof igEmbedMedia?.video_view_count === 'number' ? igEmbedMedia.video_view_count : null) ??
+        readJsonNumber(igHtml, 'video_view_count') ??
+        readJsonNumber(igHtml, 'play_count') ??
+        readJsonNumber(igHtml, 'view_count');
+      const igDurationSec =
+        typeof igEmbedMedia?.video_duration === 'number' && igEmbedMedia.video_duration > 0
+          ? Math.round(igEmbedMedia.video_duration)
+          : null;
+      const igLikes =
+        igParsed.likes ??
+        igEmbedMedia?.edge_media_preview_like?.count ??
+        igEmbedMedia?.edge_liked_by?.count ??
+        null;
+      const igComments =
+        igParsed.comments ??
+        igEmbedMedia?.edge_media_to_comment?.count ??
+        null;
+      const igFollowers =
+        igEmbedMedia?.owner?.edge_followed_by?.count ?? igEmbedFollowers ?? null;
+      const igPlayableUrl =
+        typeof igEmbedMedia?.video_url === 'string' ? igEmbedMedia.video_url : null;
+      const igCoverUrl =
+        (typeof igEmbedMedia?.display_url === 'string' ? igEmbedMedia.display_url : null) ||
+        igEmbedCoverUrl ||
+        initialIgCover;
+      const igTakenAt =
+        (typeof igEmbedMedia?.taken_at_timestamp === 'number' ? igEmbedMedia.taken_at_timestamp : null) ??
+        readJsonNumber(igHtml, 'taken_at_timestamp') ??
+        readJsonNumber(igHtml, 'taken_at') ??
+        decodeMetaShortcodeTimestampSec(parsed.contentId);
       const captionShoppingUrls = extractShoppingUrlsFromText(igParsed.caption);
+      if (!affiliateVerification && captionShoppingUrls[0]) {
+        affiliateVerification = await verifyAffiliateTargetUrl(captionShoppingUrls[0], expect);
+      }
+      const hasBioOrStoryHint =
+        captionShoppingUrls.length > 0 ||
+        affiliateVerification?.status === 'PASS' ||
+        /(?:link\s+in\s+bio|link\s+ở\s+bio|link\s+bio|trên\s+bio|story\s+mình|xem\s+story)/i.test(
+          igParsed.caption
+        );
       const policyViolations = scanBlacklistViolations(igParsed.caption);
 
       const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
@@ -1877,37 +3328,53 @@ export async function checkSingleLinkServerless(
           handle,
           name: displayName,
           profileUrl: handle ? `https://www.instagram.com/${handle}/` : null,
-          followers: null,
+          followers: igFollowers,
         },
-        publishedAt: igParsed.publishedAt,
+        publishedAt: igParsed.publishedAt || unixSecondsToIso(igTakenAt),
+        publishedTimeSec: igTakenAt,
+        airedAtVn: formatVnDateTimeFromUnixSec(igTakenAt, igParsed.publishedAt),
         caption: igParsed.caption,
         hashtags: extractHashtags(igParsed.caption),
         mentions: extractMentions(igParsed.caption),
-        durationSeconds: null,
+        durationSeconds: igDurationSec,
         metrics: {
-          views: null,
-          likes: igParsed.likes,
-          comments: igParsed.comments,
+          views: igViews,
+          likes: igLikes,
+          comments: igComments,
           shares: null,
           saves: null,
         },
-        hasProductLink: captionShoppingUrls.length > 0 ? true : null,
+        hasProductLink: hasBioOrStoryHint ? true : null,
         productTitle:
-          captionShoppingUrls.length > 0 ? 'Link mua hàng gắn trong bài đăng' : null,
-        productUrl: captionShoppingUrls[0] || null,
+          affiliateVerification?.status === 'PASS'
+            ? 'Đã xác thực Link Bio / Affiliate đính kèm'
+            : captionShoppingUrls.length > 0
+            ? 'Link mua hàng gắn trong bài đăng'
+            : hasBioOrStoryHint
+            ? 'Đã điều hướng Link Bio / Story Sticker trong Caption'
+            : null,
+        productUrl:
+          captionShoppingUrls[0] ||
+          affiliateVerification?.resolvedUrl ||
+          affiliateVerification?.inputUrl ||
+          null,
+        productId: affiliateVerification?.itemId || null,
+        sellerId: affiliateVerification?.shopId || null,
         cartProducts: captionShoppingUrls.map((url) => ({
-          productId: '',
+          productId: affiliateVerification?.itemId || '',
+          sellerId: affiliateVerification?.shopId || undefined,
           title: 'Link mua hàng gắn trong bài đăng',
           productUrl: url,
           source: 'Caption Link',
         })),
+        playableUrl: igPlayableUrl,
+        coverUrl: igCoverUrl,
         policyViolations: policyViolations.length > 0 ? policyViolations : undefined,
+        affiliateVerification,
         limitations: [
-          'Instagram không công khai lượt xem reel khi chưa đăng nhập.',
-          'Không đọc được nhãn "Paid partnership" và link sản phẩm.',
-          'Likes và bình luận là số làm tròn (VD 1.2K).',
+          'Link Bio Instagram cần dán vào cột Link Affiliate đích để hệ thống kiểm tra tự động.',
         ],
-        source: 'instagram-meta',
+        source: usedIgEmbed ? 'instagram-embed' : 'instagram-meta',
         fetchedAt,
         fromCache: false,
         durationMs: Date.now() - started,

@@ -419,15 +419,18 @@ export function parseWebVttToSegments(vttRaw: string): TikTokSubtitleSegment[] {
     const cleanText = line.replace(/<[^>]+>/g, '').trim();
     if (cleanText) {
       const prev = result[result.length - 1];
+      const nextEnd = Math.max(startSec + 1, endSec);
       if (prev && prev.text === cleanText) {
         prev.endSec = Math.max(prev.endSec, endSec);
         const startFloor = Math.floor(prev.startSec);
         const endCeil = Math.max(startFloor + 1, Math.round(prev.endSec));
         prev.timeLabel = `${formatSecToMmSs(startFloor)} - ${formatSecToMmSs(endCeil)}`;
+      } else if (prev && prev.startSec === startSec && prev.endSec === nextEnd) {
+        prev.text = `${prev.text} ${cleanText}`.replace(/\s+/g, ' ').trim();
       } else {
         result.push({
           startSec,
-          endSec: Math.max(startSec + 1, endSec),
+          endSec: nextEnd,
           timeLabel: timeLabel || '00:00',
           text: cleanText,
         });
@@ -501,6 +504,9 @@ const PRODUCT_CATEGORY_PHRASES = [
   'dung dịch vệ sinh',
   'lăn khử mùi',
   'nước hoa',
+  'mùi hương',
+  'xịt thơm',
+  'thớt gỗ',
   'viên uống',
   'cây đèn',
   'bộ đèn',
@@ -873,7 +879,10 @@ export function detectProductMentionMoments(params: {
       (spacelessPhrase.length >= 5 && spacelessAllTitles.includes(spacelessPhrase))
     ) {
       addCandidate(phrase, 2);
-    } else if (hasTopicOverlap && foldedAllSegments.includes(foldedPhrase)) {
+    } else if (
+      (hasTopicOverlap || (!productName && !cartAnchorTitle && cartProducts.length === 0)) &&
+      foldedAllSegments.includes(foldedPhrase)
+    ) {
       addCandidate(phrase, 3);
     }
   }

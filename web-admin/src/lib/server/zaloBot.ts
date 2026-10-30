@@ -1458,9 +1458,13 @@ function extractSingleFrameWithFfmpeg(streamUrl: string, sec: number): Promise<B
       getSharedCrawlerStore().wafSessionCookie!.expiresAt > Date.now()
         ? getSharedCrawlerStore().wafSessionCookie!.cookie
         : undefined;
-    const headerLines = ['Referer: https://www.tiktok.com/'];
-    if (storeCookie) {
-      headerLines.push(`Cookie: ${storeCookie}`);
+    const isTikTokCdn = /tiktok|byteimg|musical\.ly/i.test(streamUrl);
+    const headerLines: string[] = [];
+    if (isTikTokCdn) {
+      headerLines.push('Referer: https://www.tiktok.com/');
+      if (storeCookie) {
+        headerLines.push(`Cookie: ${storeCookie}`);
+      }
     }
     const args = [
       '-hide_banner',
@@ -1470,8 +1474,7 @@ function extractSingleFrameWithFfmpeg(streamUrl: string, sec: number): Promise<B
       safeSec.toFixed(2),
       '-user_agent',
       FRAME_CAPTURE_UA,
-      '-headers',
-      `${headerLines.join('\r\n')}\r\n`,
+      ...(headerLines.length > 0 ? ['-headers', `${headerLines.join('\r\n')}\r\n`] : []),
       '-i',
       streamUrl,
       '-frames:v',
@@ -2390,14 +2393,64 @@ export async function captureTikTokProductFrameBuffer(params: {
   let tikwmJpegCoverUrl: string | null = null;
   const isWebpCoverUrl = (u?: string | null) => Boolean(u && /\.webp(?:[?#]|$)/i.test(u));
   const mergedMeta: TikTokFrameOverlayMeta = { ...(params.overlayMeta || {}) };
+  const isTikTokTarget = /tiktok\.com/i.test(targetVideoUrl);
 
   if (
-    !streamUrl ||
-    !coverUrl ||
-    isWebpCoverUrl(coverUrl) ||
-    !mergedMeta.kocHandle ||
-    !mergedMeta.productTitle ||
-    !mergedMeta.avatarUrl
+    !isTikTokTarget &&
+    (!streamUrl || !coverUrl || !mergedMeta.kocHandle || !mergedMeta.caption)
+  ) {
+    try {
+      const airRes = await checkSingleLinkServerless(targetVideoUrl);
+      if (airRes) {
+        if (!streamUrl && airRes.playableUrl) streamUrl = airRes.playableUrl;
+        if (!coverUrl && airRes.coverUrl) coverUrl = airRes.coverUrl;
+        if (!mergedMeta.kocHandle && (airRes.author?.handle || airRes.author?.name)) {
+          mergedMeta.kocHandle = airRes.author.handle || airRes.author.name || undefined;
+        }
+        if (!mergedMeta.kocName && airRes.author?.name) {
+          mergedMeta.kocName = airRes.author.name;
+        }
+        if (!mergedMeta.caption && airRes.caption) {
+          mergedMeta.caption = airRes.caption;
+        }
+        if (!mergedMeta.airedAt && airRes.airedAtVn) {
+          mergedMeta.airedAt = airRes.airedAtVn;
+        }
+        if (mergedMeta.views === undefined && airRes.metrics?.views !== null) {
+          mergedMeta.views = airRes.metrics?.views;
+        }
+        if (mergedMeta.likes === undefined && airRes.metrics?.likes !== null) {
+          mergedMeta.likes = airRes.metrics?.likes;
+        }
+        if (mergedMeta.comments === undefined && airRes.metrics?.comments !== null) {
+          mergedMeta.comments = airRes.metrics?.comments;
+        }
+        if (mergedMeta.shares === undefined && airRes.metrics?.shares !== null) {
+          mergedMeta.shares = airRes.metrics?.shares;
+        }
+        if (!mergedMeta.durationSeconds && airRes.durationSeconds) {
+          mergedMeta.durationSeconds = airRes.durationSeconds;
+        }
+        if (!mergedMeta.productTitle && airRes.productTitle) {
+          mergedMeta.productTitle = airRes.productTitle;
+        }
+        if (!mergedMeta.hashtags && airRes.hashtags?.length) {
+          mergedMeta.hashtags = airRes.hashtags.slice(0, 5).join(' ');
+        }
+      }
+    } catch {
+      // ignore non-fatal
+    }
+  }
+
+  if (
+    isTikTokTarget &&
+    (!streamUrl ||
+      !coverUrl ||
+      isWebpCoverUrl(coverUrl) ||
+      !mergedMeta.kocHandle ||
+      !mergedMeta.productTitle ||
+      !mergedMeta.avatarUrl)
   ) {
     try {
       const inspected = await inspectLiveTikTokVideoPage(targetVideoUrl);
@@ -2460,7 +2513,7 @@ export async function captureTikTokProductFrameBuffer(params: {
   }
 
   // Bổ sung luồng MP4 H.264 và ảnh cover JPEG từ TikWM nếu chưa có sẵn (ưu tiên data.cover JPEG vì next/og không nhận WebP)
-  if (!streamUrl || !coverUrl || isWebpCoverUrl(coverUrl)) {
+  if (isTikTokTarget && (!streamUrl || !coverUrl || isWebpCoverUrl(coverUrl))) {
     try {
       const tikwmRes = await fetch(
         `https://www.tikwm.com/api/?url=${encodeURIComponent(targetVideoUrl)}&hd=1`,
@@ -2638,11 +2691,12 @@ export async function captureTikTokProductFrameBuffer(params: {
   for (const candidateUrl of coverCandidates) {
     if (rawBuffer) break;
     try {
+      const isTikTokImg = /tiktok|byteimg|musical\.ly/i.test(candidateUrl);
       const imgRes = await fetch(candidateUrl, {
         headers: {
           'User-Agent': FRAME_CAPTURE_UA,
           Accept: 'image/jpeg,image/png,image/*;q=0.8',
-          Referer: 'https://www.tiktok.com/',
+          ...(isTikTokImg ? { Referer: 'https://www.tiktok.com/' } : {}),
         },
         signal: AbortSignal.timeout(4500),
         cache: 'no-store',
@@ -2663,7 +2717,7 @@ export async function captureTikTokProductFrameBuffer(params: {
   }
 
   // Nếu coverUrl ban đầu trả về WebP và chưa gọi TikWM lấy data.cover JPEG, gọi bổ sung để lấy đúng JPEG
-  if (!rawBuffer && !tikwmJpegCoverUrl && targetVideoUrl) {
+  if (isTikTokTarget && !rawBuffer && !tikwmJpegCoverUrl && targetVideoUrl) {
     try {
       const tikwmFallback = await fetch(
         `https://www.tikwm.com/api/?url=${encodeURIComponent(targetVideoUrl)}&hd=1`,
@@ -2865,10 +2919,10 @@ export async function sendZaloPhoto(
   return false;
 }
 
-const TIKTOK_URL_REGEX =
-  /((?:https?:\/\/)?(?:vt\.tiktok\.com|vm\.tiktok\.com|m\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s"'\\<>{}]+)/i;
-const TIKTOK_URL_GLOBAL_REGEX =
-  /(?:https?:\/\/)?(?:vt\.tiktok\.com|vm\.tiktok\.com|m\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s"'\\<>{}]+/gi;
+const SOCIAL_AIR_HOSTS =
+  '(?:vt\\.tiktok\\.com|vm\\.tiktok\\.com|m\\.tiktok\\.com|www\\.tiktok\\.com|tiktok\\.com|(?:www\\.|m\\.)?facebook\\.com|fb\\.watch|fb\\.com|(?:www\\.)?instagram\\.com|instagr\\.am|(?:www\\.)?threads\\.(?:net|com)|(?:www\\.|m\\.)?youtube\\.com|youtu\\.be|sv\\.shopee\\.vn|s\\.shopee\\.vn|(?:vn\\.)?shp\\.ee|(?:www\\.)?shopee\\.vn\\/(?:share-video|video|universal-link))';
+const TIKTOK_URL_REGEX = new RegExp(`((?:https?:\\/\\/)?${SOCIAL_AIR_HOSTS}\\/[^\\s"'\\\\<>{}]+)`, 'i');
+const TIKTOK_URL_GLOBAL_REGEX = new RegExp(`(?:https?:\\/\\/)?${SOCIAL_AIR_HOSTS}\\/[^\\s"'\\\\<>{}]+`, 'gi');
 const DRAFT_URL_REGEX = /(https?:\/\/(?:drive\.google\.com|docs\.google\.com|www\.capcut\.com|capcut\.com)\/[^\s]+)/i;
 const WAYBILL_AUTO_REGEX =
   /(?:mã\s*vận\s*đơn|mvđ|mvd|vận\s*đơn|tracking)\s*[:=-]?\s*([A-Z0-9]{8,22})|\b((?:SPXVN|GHN|GHTK|VTP|VT|JT|BEST)[A-Z0-9]{6,18})\b/i;
