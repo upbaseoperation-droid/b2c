@@ -2316,6 +2316,7 @@ export default function App() {
               onKocUpdated={handleKocUpdated}
               onUpdateDeal={handleUpdateDeal}
               onOpenContractForDeal={openContractForDeal}
+              onOpenContractForKoc={openContractForKoc}
               onOpenKocMaster={(kocId: string | null) => {
                 setSelectedKocContext(kocId);
                 setKocMasterReturnTab('koc-hub');

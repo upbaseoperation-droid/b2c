@@ -59,10 +59,14 @@ import {
   legalIdOf,
   hasLegalId,
   LEGAL_TYPE_LABEL,
-  formatFollowers
+  formatFollowers,
+  getKocLegalProfiles
 } from '../koc/kocUtils';
 import { contractApi, type ContractBootstrap } from '../contracts/api';
 import type { ContractRecord } from '../../lib/contracts/types';
+import { computeSigningProgress } from '../contracts/contractUi';
+import { documentOfTemplate } from '../../lib/planDealLink';
+import type { KocLegalProfile } from '../../lib/types';
 
 export interface KocKolHubViewProps {
   currentUser?: UserProfile;
@@ -72,7 +76,8 @@ export interface KocKolHubViewProps {
   selectedKocId?: string | null;
   onKocUpdated?: (updatedKoc: KocItem) => void;
   onUpdateDeal?: (updatedDeal: BookingDealItem) => void;
-  onOpenContractForDeal?: (deal: BookingDealItem) => void;
+  onOpenContractForDeal?: (deal: BookingDealItem, document?: 'HDNT' | 'SOW' | 'BBNT') => void;
+  onOpenContractForKoc?: (koc: KocItem, legalProfileId?: string) => void;
   onOpenKocMaster?: (kocId: string) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onNavigateToBrandHub?: () => void;
@@ -127,6 +132,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
   onKocUpdated,
   onUpdateDeal,
   onOpenContractForDeal,
+  onOpenContractForKoc,
   onOpenKocMaster,
   onNotify,
   onNavigateToBrandHub,
@@ -273,6 +279,8 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
         c.partner.toLowerCase() === (activeKoc.realName || '').toLowerCase()
     );
   }, [apiContracts, activeKoc]);
+
+  const kocLegalProfiles: KocLegalProfile[] = useMemo(() => getKocLegalProfiles(activeKoc), [activeKoc]);
 
   const [profileForm, setProfileForm] = useState(() => buildProfileForm(activeKoc));
   const [syncedProfileKoc, setSyncedProfileKoc] = useState<KocItem>(activeKoc);
@@ -2260,12 +2268,186 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                 </div>
               </div>
 
+              {/* KHỐI 1: LAYER HỒ SƠ PHÁP LÝ — HỢP ĐỒNG NGUYÊN TẮC (HĐNT KHUNG) */}
+              <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+                <div className="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-900 text-white text-3xs font-bold">1</span>
+                      <h3 className="text-sm font-semibold text-slate-900">
+                        Layer 1: Hồ sơ pháp lý &amp; Hợp đồng nguyên tắc khung ({kocLegalProfiles.length})
+                      </h3>
+                    </div>
+                  </div>
+                  {onOpenContractForKoc && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenContractForKoc(activeKoc)}
+                      className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium inline-flex items-center gap-1.5 transition self-start sm:self-auto"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Soạn HĐNT Khung</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50/75 text-slate-500 border-b border-slate-200 font-semibold text-2xs">
+                      <tr>
+                        <th className="py-2.5 px-4">Tên Hồ Sơ &amp; Nhãn Pháp Lý</th>
+                        <th className="py-2.5 px-3">Chủ Thể Bên B</th>
+                        <th className="py-2.5 px-3">Tài Khoản Ngân Hàng</th>
+                        <th className="py-2.5 px-3">Số HĐNT Khung</th>
+                        <th className="py-2.5 px-3 text-center">Tiến Độ Ký Số WeSign</th>
+                        <th className="py-2.5 px-3 text-center">Trạng Thái HĐNT</th>
+                        <th className="py-2.5 px-4 text-right">Thao Tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {kocLegalProfiles.map((profile, pIdx) => {
+                        const linkedHdnt = kocContracts.find(
+                          c => (documentOfTemplate(c.templateId) === 'HDNT' || c.templateId.includes('HDNT')) &&
+                               (c.values?.['LEGAL_PROFILE_ID'] === profile.id || (!c.dealId && !c.dealCode))
+                        );
+                        const hdntCode = profile.frameworkContractCode || linkedHdnt?.id || (profile.frameworkContractStatus === 'ĐÃ_KÝ' ? `HĐNT-${activeKoc.id}-${profile.id}` : undefined);
+                        const hdntStatus = profile.frameworkContractStatus || (linkedHdnt ? (linkedHdnt.approval === 'APPROVED' ? 'ĐÃ_KÝ' : 'CHỜ_KÝ') : 'CHƯA_CÓ_HĐNT');
+                        const latestAttempt = linkedHdnt?.signing && linkedHdnt.signing.length > 0 ? linkedHdnt.signing[linkedHdnt.signing.length - 1] : undefined;
+                        const progress = latestAttempt ? computeSigningProgress(latestAttempt) : null;
+                        const isSigned = hdntStatus === 'ĐÃ_KÝ';
+
+                        const legalTypeTag = profile.legalType === 'COMPANY'
+                          ? { label: 'Doanh nghiệp / MCN', cls: 'bg-purple-50 text-purple-700 border-purple-200' }
+                          : profile.legalType === 'HOUSEHOLD'
+                            ? { label: 'Hộ kinh doanh', cls: 'bg-blue-50 text-blue-700 border-blue-200' }
+                            : { label: 'Cá nhân', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+
+                        return (
+                          <tr key={profile.id || `profile-${pIdx}`} className="hover:bg-slate-50/60 transition">
+                            <td className="py-3 px-4 font-medium text-slate-900">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold">{profile.holderName || profile.profileCode || `Hồ sơ #${pIdx + 1}`}</span>
+                                <span className={`text-3xs px-2 py-0.5 rounded border font-medium ${legalTypeTag.cls}`}>
+                                  {legalTypeTag.label}
+                                </span>
+                              </div>
+                              <span className="text-3xs text-slate-400 block mt-0.5 font-mono">
+                                Mã hồ sơ: {profile.profileCode || profile.id}
+                              </span>
+                            </td>
+
+                            <td className="py-3 px-3 text-slate-700">
+                              <div className="font-medium">{profile.holderName || activeKoc.realName || activeKoc.stageName}</div>
+                              <div className="text-3xs text-slate-400 font-mono mt-0.5">
+                                {profile.legalType === 'INDIVIDUAL' && profile.cccd && (
+                                  <span>CCCD: {profile.cccd}</span>
+                                )}
+                                {(profile.legalType === 'HOUSEHOLD' || profile.legalType === 'COMPANY') && profile.taxCode && (
+                                  <span>MST: {profile.taxCode}</span>
+                                )}
+                              </div>
+                            </td>
+
+                            <td className="py-3 px-3 text-slate-700">
+                              <div className="font-mono text-2xs font-medium">
+                                {profile.bankAccount || profile.bankAccountNumber || activeKoc.bankAccount || '—'}
+                              </div>
+                              <div className="text-3xs text-slate-400">
+                                {profile.bankName || activeKoc.bankName || '—'}
+                              </div>
+                            </td>
+
+                            <td className="py-3 px-3">
+                              {hdntCode ? (
+                                <div className="font-mono text-xs font-semibold text-slate-900">
+                                  {hdntCode}
+                                </div>
+                              ) : (
+                                <span className="text-3xs text-slate-400 italic">Chưa ký HĐNT Khung</span>
+                              )}
+                              {profile.frameworkContractSignedAt && (
+                                <div className="text-3xs text-slate-400 mt-0.5">
+                                  Ký ngày: {profile.frameworkContractSignedAt}
+                                </div>
+                              )}
+                            </td>
+
+                            <td className="py-3 px-3 text-center">
+                              {progress ? (
+                                <div className="inline-flex flex-col items-center gap-1">
+                                  <div className="w-20 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                    <div
+                                      className={`h-full ${progress.progressPercent === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                      style={{ width: `${progress.progressPercent}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-3xs font-medium text-slate-600">
+                                    {progress.completedCount}/{progress.totalCount} bên ký ({progress.progressPercent}%)
+                                  </span>
+                                </div>
+                              ) : isSigned ? (
+                                <span className="inline-flex items-center gap-1 text-3xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                  <span>2/2 bên đã ký</span>
+                                </span>
+                              ) : (
+                                <span className="text-3xs text-slate-400">—</span>
+                              )}
+                            </td>
+
+                            <td className="py-3 px-3 text-center">
+                              {isSigned ? (
+                                <Status tone="ok">Đã ký HĐNT</Status>
+                              ) : hdntStatus === 'CHỜ_KÝ' ? (
+                                <Status tone="warn">Chờ WeSign</Status>
+                              ) : (
+                                <Status tone="neutral">Chưa có HĐNT</Status>
+                              )}
+                            </td>
+
+                            <td className="py-3 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {profile.frameworkContractDriveUrl && (
+                                  <a
+                                    href={profile.frameworkContractDriveUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-2xs font-semibold transition"
+                                  >
+                                    Xem file
+                                  </a>
+                                )}
+                                {onOpenContractForKoc && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onOpenContractForKoc(activeKoc, profile.id)}
+                                    className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-2xs font-medium transition inline-flex items-center gap-1"
+                                    title="Mở soạn / xem HĐNT Khung tại phân hệ Hợp đồng"
+                                  >
+                                    <span>{isSigned ? 'Mở HĐNT' : 'Soạn HĐNT'}</span>
+                                    <ExternalLink className="w-2.5 h-2.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* KHỐI 2: LAYER DEAL & BOOKING — PHỤ LỤC SOW & BIÊN BẢN NGHIỆM THU (BBNT) */}
               <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
                 <div className="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-900">
-                      Danh Sách Hợp Đồng Dịch Vụ, Phụ Lục &amp; Tiến Độ Duyệt Chi ({currentKocDeals.filter(d => d.status !== 'CANCELLED').length})
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-900 text-white text-3xs font-bold">2</span>
+                      <h3 className="text-sm font-semibold text-slate-900">
+                        Layer 2: Phụ lục SOW &amp; Nghiệm thu BBNT theo Booking / Deal ({currentKocDeals.filter(d => d.status !== 'CANCELLED').length})
+                      </h3>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -2283,78 +2465,116 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-50/75 text-slate-500 border-b border-slate-200 font-semibold text-2xs">
                       <tr>
-                        <th className="py-3 px-4">Số Hợp Đồng / Mã Deal</th>
-                        <th className="py-3 px-3">Nhãn Hàng &amp; Chiến Dịch</th>
-                        <th className="py-3 px-3 text-right">Giá Trị Gross</th>
-                        <th className="py-3 px-3 text-right">Thực Nhận Net (90%)</th>
-                        <th className="py-3 px-3">Tạm Ứng &amp; Quyết Toán</th>
-                        <th className="py-3 px-3 text-center">Trạng Thái HĐ</th>
-                        <th className="py-3 px-4 text-right">Thao Tác</th>
+                        <th className="py-2.5 px-4">Mã Deal / Chiến Dịch</th>
+                        <th className="py-2.5 px-3">Hồ Sơ Pháp Lý Bên B</th>
+                        <th className="py-2.5 px-3">HĐNT Khung Kế Thừa</th>
+                        <th className="py-2.5 px-3 text-right">Giá Trị Gross</th>
+                        <th className="py-2.5 px-3 text-right">Thực Nhận Net (90%)</th>
+                        <th className="py-2.5 px-3 text-center">Tiến Độ Ký Phụ Lục SOW</th>
+                        <th className="py-2.5 px-3 text-center">Trạng Thái BBNT</th>
+                        <th className="py-2.5 px-4 text-right">Thao Tác</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {currentKocDeals
                         .filter(d => d.status !== 'CANCELLED')
                         .map((deal, idx) => {
-                          const linkedContract = kocContracts.find(c => c.dealId === deal.id || c.dealCode === deal.dealCode);
-                          const contractCode = linkedContract?.id || `HĐ-B2C-2026/${deal.dealCode || `0${idx + 1}`}`;
-                          const gross = deal.totalValue || 0;
-                          const isFoc = gross === 0;
-                          const net = Math.round(gross * 0.9);
-                          const isSigned =
-                            !!deal.contractCreatedAt ||
-                            deal.status === 'CONTRACT_GENERATED' ||
-                            deal.status === 'COMPLETED' ||
-                            deal.status === 'FINAL_PAID' ||
-                            linkedContract?.signing.at(-1)?.status === 'COMPLETED' ||
-                            linkedContract?.approval === 'APPROVED';
-                          const payStatusLabel =
-                            deal.status === 'FINAL_PAID' || deal.status === 'COMPLETED'
-                              ? 'ĐÃ_THANH_TOÁN_ĐỦ'
-                              : deal.status === 'ADVANCE_PAID'
-                              ? 'ĐÃ_TẠM_ỨNG'
-                              : 'CHỜ_NGHIỆM_THU';
+                          const linkedSow = kocContracts.find(
+                            c => (documentOfTemplate(c.templateId) === 'SOW' || c.templateId.includes('SOW')) &&
+                                 (c.dealId === deal.id || c.dealCode === deal.dealCode)
+                          );
+                          const linkedBbnt = kocContracts.find(
+                            c => (documentOfTemplate(c.templateId) === 'BBNT' || c.templateId.includes('BBNT')) &&
+                                 (c.dealId === deal.id || c.dealCode === deal.dealCode)
+                          );
+
+                          // Resolve active legal profile for this deal
+                          const dealProfile = kocLegalProfiles.find(p => p.id === deal.legalProfileId) || kocLegalProfiles[0];
+                          const inheritedHdntCode = deal.masterContractCode || dealProfile?.frameworkContractCode || `HĐNT-${activeKoc.id}`;
+
+                          const sowLatestAttempt = linkedSow?.signing && linkedSow.signing.length > 0 ? linkedSow.signing[linkedSow.signing.length - 1] : undefined;
+                          const sowProgress = sowLatestAttempt ? computeSigningProgress(sowLatestAttempt) : null;
+                          const isSowSigned = linkedSow?.approval === 'APPROVED' || deal.status === 'COMPLETED' || deal.status === 'FINAL_PAID';
+                          const isBbntSigned = linkedBbnt?.approval === 'APPROVED' || deal.status === 'COMPLETED';
+
+                          const grossValue = deal.totalValue || 0;
+                          const netValue = Math.round(grossValue * 0.9);
 
                           return (
-                            <tr key={deal.id} className="hover:bg-slate-50/50 transition">
+                            <tr key={deal.id || `deal-${idx}`} className="hover:bg-slate-50/60 transition">
                               <td className="py-3 px-4">
-                                <div className="font-mono font-semibold text-slate-900">{contractCode}</div>
-                                <div className="text-2xs text-slate-500 font-mono mt-0.5">
-                                  Deal: {deal.dealCode} • Ngày lập: {deal.contractCreatedAt || deal.deadlinePost || '10/2026'}
+                                <div className="font-mono text-xs font-semibold text-slate-900">
+                                  {deal.dealCode || `DEAL-${idx + 1}`}
+                                </div>
+                                <div className="text-2xs text-slate-600 mt-0.5 line-clamp-1 font-medium">
+                                  {deal.brandName || 'Nhãn hàng'} — {deal.campaignTitle || deal.campaignCode || 'Chiến dịch'}
                                 </div>
                               </td>
 
                               <td className="py-3 px-3">
-                                <div className="font-semibold text-slate-900">{deal.brandName} — {deal.productName}</div>
-                                <div className="text-2xs text-slate-500">{deal.campaignTitle} • PIC: {deal.bookingPic || deal.assignedStaff}</div>
-                              </td>
-
-                              <td className="py-3 px-3 text-right font-mono font-semibold text-slate-900">
-                                {isFoc ? '0 đ (FOC)' : formatVnd(gross)}
-                              </td>
-
-                              <td className="py-3 px-3 text-right font-mono font-semibold text-emerald-700">
-                                {isFoc ? '0 đ' : formatVnd(net)}
-                              </td>
-
-                              <td className="py-3 px-3">
-                                <div className="space-y-0.5 text-2xs">
+                                {dealProfile ? (
                                   <div>
-                                    Tạm ứng: <strong className="font-mono text-slate-800">{formatVndShort(deal.advanceAmount || 0)}</strong>
-                                    {deal.larkAdvanceApprovalCode && (
-                                      <span className="ml-1 font-mono text-blue-600">({deal.larkAdvanceApprovalCode})</span>
-                                    )}
+                                    <div className="font-medium text-slate-900">{dealProfile.holderName || dealProfile.profileCode}</div>
+                                    <div className="text-3xs text-slate-400 mt-0.5">
+                                      {dealProfile.legalType === 'INDIVIDUAL'
+                                        ? `Cá nhân (${dealProfile.cccd ? `CCCD: ${dealProfile.cccd}` : 'Chưa có CCCD'})`
+                                        : `HKD/DN (${dealProfile.taxCode ? `MST: ${dealProfile.taxCode}` : 'Chưa có MST'})`}
+                                    </div>
                                   </div>
-                                  <div className="text-slate-500">
-                                    Trạng thái chi: <strong className="text-slate-700">{payStatusLabel}</strong>
-                                  </div>
+                                ) : (
+                                  <span className="text-3xs text-slate-400 italic">Mặc định theo KOC</span>
+                                )}
+                              </td>
+
+                              <td className="py-3 px-3">
+                                <div className="font-mono text-2xs font-medium text-slate-700">
+                                  {inheritedHdntCode}
                                 </div>
+                                <div className="text-3xs text-emerald-600 flex items-center gap-0.5 mt-0.5">
+                                  <Check className="w-2.5 h-2.5" />
+                                  <span>HĐNT Khung hợp lệ</span>
+                                </div>
+                              </td>
+
+                              <td className="py-3 px-3 text-right font-mono text-xs font-semibold text-slate-900">
+                                {formatVnd(grossValue)}
+                              </td>
+
+                              <td className="py-3 px-3 text-right font-mono text-xs font-semibold text-emerald-700">
+                                {formatVnd(netValue)}
                               </td>
 
                               <td className="py-3 px-3 text-center">
-                                <Status tone={isFoc ? 'neutral' : isSigned ? 'ok' : 'warn'}>
-                                  {isFoc ? 'Thỏa thuận FOC' : isSigned ? 'Đã ký xác nhận' : 'Chờ KOC ký'}
-                                </Status>
+                                {sowProgress ? (
+                                  <div className="inline-flex flex-col items-center gap-1">
+                                    <div className="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                      <div
+                                        className={`h-full ${sowProgress.progressPercent === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                        style={{ width: `${sowProgress.progressPercent}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-3xs font-medium text-slate-600">
+                                      {sowProgress.completedCount}/{sowProgress.totalCount} bên ({sowProgress.progressPercent}%)
+                                    </span>
+                                  </div>
+                                ) : isSowSigned ? (
+                                  <span className="inline-flex items-center gap-1 text-3xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                                    <Check className="w-3 h-3 text-emerald-600" />
+                                    <span>Đã ký SOW</span>
+                                  </span>
+                                ) : (
+                                  <Status tone="warn">Chờ ký SOW</Status>
+                                )}
+                              </td>
+
+                              <td className="py-3 px-3 text-center">
+                                {isBbntSigned ? (
+                                  <Status tone="ok">Đã nghiệm thu ✓</Status>
+                                ) : isSowSigned ? (
+                                  <Status tone="warn">Chờ nghiệm thu</Status>
+                                ) : (
+                                  <span className="text-3xs text-slate-400">—</span>
+                                )}
                               </td>
 
                               <td className="py-3 px-4 text-right">
@@ -2362,30 +2582,20 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => setPreviewContractDeal(deal)}
-                                    className="px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-2xs font-semibold transition"
+                                    className="px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-2xs font-semibold transition"
                                   >
-                                    Xem hợp đồng
+                                    Xem
                                   </button>
-
-                                  {!isSigned && !isFoc && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleKocSignContract(deal)}
-                                      className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-2xs font-semibold transition"
-                                    >
-                                      Ký xác nhận
-                                    </button>
-                                  )}
 
                                   {onOpenContractForDeal && (
                                     <button
                                       type="button"
-                                      onClick={() => onOpenContractForDeal(deal)}
-                                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-2xs font-medium transition inline-flex items-center gap-1"
-                                      title="Mở tại phân hệ Hợp đồng & Thanh toán"
+                                      onClick={() => onOpenContractForDeal(deal, isSowSigned ? 'BBNT' : 'SOW')}
+                                      className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-2xs font-medium transition inline-flex items-center gap-1"
+                                      title={isSowSigned ? 'Lập Biên bản nghiệm thu BBNT' : 'Soạn Phụ lục SOW'}
                                     >
-                                      <span>Soạn hợp đồng</span>
-                                      <ExternalLink className="w-3 h-3" />
+                                      <span>{isSowSigned ? 'Nghiệm thu' : 'Soạn SOW'}</span>
+                                      <ExternalLink className="w-2.5 h-2.5" />
                                     </button>
                                   )}
                                 </div>
