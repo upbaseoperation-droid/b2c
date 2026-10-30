@@ -2829,8 +2829,10 @@ export async function sendZaloPhoto(
   return false;
 }
 
-const TIKTOK_URL_REGEX = /(https?:\/\/(?:vt\.tiktok\.com|vm\.tiktok\.com|m\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s]+)/i;
-const TIKTOK_URL_GLOBAL_REGEX = /https?:\/\/(?:vt\.tiktok\.com|vm\.tiktok\.com|m\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s]+/gi;
+const TIKTOK_URL_REGEX =
+  /(https?:\/\/(?:vt\.tiktok\.com|vm\.tiktok\.com|m\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s"'\\<>{}]+)/i;
+const TIKTOK_URL_GLOBAL_REGEX =
+  /https?:\/\/(?:vt\.tiktok\.com|vm\.tiktok\.com|m\.tiktok\.com|www\.tiktok\.com|tiktok\.com)\/[^\s"'\\<>{}]+/gi;
 const DRAFT_URL_REGEX = /(https?:\/\/(?:drive\.google\.com|docs\.google\.com|www\.capcut\.com|capcut\.com)\/[^\s]+)/i;
 const WAYBILL_AUTO_REGEX =
   /(?:mã\s*vận\s*đơn|mvđ|mvd|vận\s*đơn|tracking)\s*[:=-]?\s*([A-Z0-9]{8,22})|\b((?:SPXVN|GHN|GHTK|VTP|VT|JT|BEST)[A-Z0-9]{6,18})\b/i;
@@ -2841,7 +2843,7 @@ export function extractAllTikTokUrls(text: string): string[] {
   const matches = text.match(TIKTOK_URL_GLOBAL_REGEX) || [];
   const unique: string[] = [];
   for (const raw of matches) {
-    const cleaned = raw.replace(/[.,;!?)]+$/, '').trim();
+    const cleaned = raw.replace(/[.,;!?)"'\\\]}>]+$/, '').trim();
     if (cleaned && !unique.includes(cleaned)) {
       unique.push(cleaned);
     }
@@ -4271,16 +4273,21 @@ export async function processZaloWebhookEvent(
     if (att?.payload?.description) textCandidates.push(String(att.payload.description));
   }
 
-    // Quét sâu toàn bộ JSON payload để bắt URL TikTok dù Zalo bọc trong attachment, card preview hay object con
-  try {
-    const fullBodyStr = typeof body === 'object' ? JSON.stringify(body) : String(body);
-    const deepMatches = extractAllTikTokUrls(fullBodyStr);
-    for (const u of deepMatches) {
-      if (!textCandidates.some(c => c.includes(u))) {
-        textCandidates.push(u);
+  // Nếu chưa tìm thấy URL TikTok từ các trường tiêu chuẩn, quét đệ quy các trường văn bản trong payload
+  if (extractAllTikTokUrls(textCandidates.join(' ')).length === 0 && body && typeof body === 'object') {
+    const collectStrings = (obj: any, depth = 0) => {
+      if (depth > 6 || !obj) return;
+      if (typeof obj === 'string') {
+        const found = extractAllTikTokUrls(obj);
+        if (found.length > 0) textCandidates.push(...found);
+      } else if (Array.isArray(obj)) {
+        for (const item of obj) collectStrings(item, depth + 1);
+      } else if (typeof obj === 'object') {
+        for (const key of Object.keys(obj)) collectStrings(obj[key], depth + 1);
       }
-    }
-  } catch {}
+    };
+    collectStrings(body);
+  }
 
   const rawText = textCandidates.join(' ').trim();
   const senderId = String(
