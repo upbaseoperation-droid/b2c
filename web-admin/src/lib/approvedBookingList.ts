@@ -21,7 +21,7 @@ import {
   saveStaffSheetCollection,
   type StaffListingSheetRow,
 } from './staffBrandListingSheet';
-import { getVietnamDateYmd } from './format';
+import { getVietnamDateYmd, maskSensitivePii } from './format';
 import { pushSharedStateToDb } from './sharedStateClient';
 
 export const APPROVED_BOOKING_LIST_STORAGE_KEY = 'upbase_b2c_approved_booking_list_v2';
@@ -124,6 +124,9 @@ export interface ApprovedBookingListItem {
   nguoiNhanHang: string;
   sdtNhanHang: string;
   diaChiNhanHang: string;
+  sampleStatus?: BookingDealItem['sampleStatus'];
+  sampleTrackingCode?: string;
+  sampleCarrier?: string;
   tenTaiKhoanNganHang: string;         // Cột 23: Tên tài khoản ngân hàng
   soTaiKhoan: string;                  // Cột 24: Số tài khoản
   nganHang: string;                    // Cột 25: Ngân hàng
@@ -194,16 +197,17 @@ export function mapTepBookingToSalaryGrade(netFee: number): SalaryGrade {
   return tep as SalaryGrade;
 }
 
+let autoBoSeqCounter = 1;
+
 /**
- * Sinh mã Booking chuẩn File 3.2: BO + YYMM + 5 chữ số
+ * Sinh mã Booking chuẩn File 3.2: BO + YYMM + 5 chữ số (Tất định theo seqHint hoặc bộ đếm tuần tự)
  */
 export function generateBookingOrderCode(monthKey: string, seqHint?: number): string {
   const cleanMonth = (monthKey || '2026/10').replace(/[^0-9]/g, '');
   const yy = cleanMonth.slice(2, 4) || '26';
   const mm = cleanMonth.slice(4, 6) || '10';
-  const suffix = seqHint
-    ? String(35000 + (seqHint % 60000)).padStart(5, '0')
-    : String(Math.floor(10000 + Math.random() * 89999));
+  const seq = seqHint ?? ++autoBoSeqCounter;
+  const suffix = String(35000 + (seq % 60000)).padStart(5, '0');
   return `BO${yy}${mm}${suffix}`;
 }
 
@@ -534,7 +538,7 @@ export function recalculateApprovedBookingItem(
   const finalNet = hasExplicitMultiJobs
     ? sumJobsPlannedNet
     : Math.max(0, Number(item.chiPhiBookingNetCuoi) || 0);
-  const grossWithTax = computeGrossFeeWithTax(finalNet);
+  const grossWithTax = computeGrossFeeWithTax(finalNet, item.loaiTaiKhoanThanhToan);
   const klGrade = mapTepBookingToSalaryGrade(finalNet);
   const tamUng = Math.max(0, Number(item.soTienTamUngTruoc) || 0);
 
@@ -686,9 +690,9 @@ export function recalculateApprovedBookingItem(
   const gpm30 = views30 > 0 ? Math.round((gmv30 / views30) * 1000) : 0;
   const roi30 = finalNet > 0 ? Number((gmv30 / finalNet).toFixed(2)) : 0;
 
-  const views14 = Math.max(0, Number(item.views14d) || Math.round(views30 * 0.75));
-  const gmv14 = Math.max(0, Number(item.gmv14d) || Math.round(gmv30 * 0.75));
-  const orders14 = Math.max(0, Number(item.orders14d) || Math.round(orders30 * 0.75));
+  const views14 = Math.max(0, Number(item.views14d) || 0);
+  const gmv14 = Math.max(0, Number(item.gmv14d) || 0);
+  const orders14 = Math.max(0, Number(item.orders14d) || 0);
   const gpm14 = views14 > 0 ? Math.round((gmv14 / views14) * 1000) : 0;
   const roi14 = finalNet > 0 ? Number((gmv14 / finalNet).toFixed(2)) : 0;
 
@@ -793,8 +797,13 @@ export function buildApprovedBookingItemFromSheetRow(params: {
   const hinhThucHopTac: 'New' | 'Rebook' | 'FOC' =
     finalNet === 0 ? 'FOC' : isRebook ? 'Rebook' : 'New';
 
+  const loaiTaiKhoanThanhToan =
+    finalNet === 0
+      ? 'FOC / Gửi mẫu 0đ (Không phát sinh thanh toán)'
+      : '(Thuế TNCN 10%) Tài khoản cá nhân';
+
   const baseItem: ApprovedBookingListItem = {
-    id: `ABL-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    id: row.id ? `ABL-${row.id}` : `ABL-${sheetKey}-${normalizeTikTokId(row.idKenh)}`,
     sourceSheetRowId: row.id,
     sourceSheetKey: sheetKey,
     createdAt: nowIso,
@@ -821,17 +830,14 @@ export function buildApprovedBookingItemFromSheetRow(params: {
     hinhThucHopTac,
     giaDeXuatNet: Number(row.giaNetVideo) || 0,
     chiPhiBookingNetCuoi: finalNet,
-    chiPhiGrossKemThue: computeGrossFeeWithTax(finalNet),
+    chiPhiGrossKemThue: computeGrossFeeWithTax(finalNet, loaiTaiKhoanThanhToan),
     klGrade: mapTepBookingToSalaryGrade(finalNet),
     plannedAirDate: plannedAir,
     plannedSendSampleDate: '',
     plannedScriptDate: '',
     plannedDemoDate: '',
     soTienTamUngTruoc: 0,
-    loaiTaiKhoanThanhToan:
-      finalNet === 0
-        ? 'FOC / Gửi mẫu 0đ (Không phát sinh thanh toán)'
-        : '(Thuế TNCN 10%) Tài khoản cá nhân',
+    loaiTaiKhoanThanhToan,
     ghiChu: row.leaderNote || '',
     pipelineStatus: 'Sẵn sàng tạo BO',
     acceptanceStatus: row.linkAirNghiemThu ? 'DA_NGHIEM_THU' : 'CHUA_NGHIEM_THU',
@@ -844,9 +850,9 @@ export function buildApprovedBookingItemFromSheetRow(params: {
     trangThaiSlaAir: row.trangThaiSlaAir || 'Chưa lên sóng',
     diffDaysAir: 0,
     sparkAdsCode: row.maSparkAds || '',
-    views14d: Math.round((Number(row.viewsNghiemThu) || 0) * 0.75),
-    orders14d: Math.round((Number(row.donHangNghiemThu) || 0) * 0.75),
-    gmv14d: Math.round((Number(row.gmvNghiemThu) || 0) * 0.75),
+    views14d: 0,
+    orders14d: 0,
+    gmv14d: 0,
     gpm14d: 0,
     roi14d: 0,
     views30d: Number(row.viewsNghiemThu) || 0,
@@ -886,45 +892,24 @@ export function buildInitialApprovedBookingList(
   const items: ApprovedBookingListItem[] = [];
 
   Object.entries(sheetCollection.sheets).forEach(([sheetKey, rows]) => {
-    rows.slice(0, 2).forEach((row, idx) => {
-      const storeObj = storeMap.get(row.store);
-      const base = buildApprovedBookingItemFromSheetRow({
-        row: {
-          ...row,
-          brandChon: 'Yes',
-        },
-        sheetKey,
-        store: storeObj,
-      });
-
-      // Dòng đầu tiên minh họa đã tạo mã BO & đã nghiệm thu; dòng thứ 2 đang chờ chốt tạo BO
-      if (idx === 0) {
-        const boCode = generateBookingOrderCode(row.thang, items.length + 101);
-        const actualAir = row.ngayAirPlan || '2026-10-16';
-        const views = Math.max(18500, row.viewTrungBinh || 24000);
-        const gmv = Math.max(14500000, Math.round((row.giaNetVideo || 2000000) * 3.2));
-        const orders = Math.max(42, Math.round(gmv / 265000));
-        items.push(
-          recalculateApprovedBookingItem({
-            ...base,
-            maBooking: boCode,
-            bookingOrderCreated: true,
-            bookingOrderCreatedAt: new Date().toISOString(),
-            linkAir: `https://www.tiktok.com/@${base.idKenh}/video/742619820192837${items.length + 1}`,
-            videoId: `742619820192837${items.length + 1}`,
-            actualAirDate: actualAir,
-            ngayDienLinkAir: actualAir,
-            sparkAdsCode: `#SPARK-${base.idKenh.slice(0, 6).toUpperCase()}-2610`,
-            views30d: views,
-            gmv30d: gmv,
-            orders30d: orders,
-            trangThaiPhieuThanhToan: 'Đủ điều kiện ĐNTT',
-          })
-        );
-      } else {
+    rows
+      .filter(
+        (row) =>
+          row &&
+          row.brandChon === 'Yes' &&
+          row.trangThai !== 'Từ chối' &&
+          row.trangThai !== 'Không phản hồi'
+      )
+      .slice(0, 2)
+      .forEach((row) => {
+        const storeObj = storeMap.get(row.store);
+        const base = buildApprovedBookingItemFromSheetRow({
+          row,
+          sheetKey,
+          store: storeObj,
+        });
         items.push(base);
-      }
-    });
+      });
   });
 
   return items;
@@ -992,6 +977,9 @@ function mergeDealsAndKocsIntoApprovedList(
         rawItem.soCccd || matchedDeal?.kocIdCardNumber || matchedKoc?.cccd || '',
       sdtNhanHang: rawItem.sdtNhanHang || matchedKoc?.shippingPhone || matchedKoc?.phone || '',
       diaChiNhanHang: rawItem.diaChiNhanHang || matchedKoc?.shippingAddress || '',
+      sampleStatus: rawItem.sampleStatus || matchedDeal?.sampleStatus,
+      sampleTrackingCode: rawItem.sampleTrackingCode || matchedDeal?.sampleTrackingCode,
+      sampleCarrier: rawItem.sampleCarrier || matchedDeal?.sampleCarrier,
       masterContractCode:
         matchedDeal?.masterContractCode || rawItem.masterContractCode,
       contractAppendixCode:
@@ -1023,7 +1011,13 @@ function buildRealBrandApprovedListFromSheets(
   Object.entries(sheetCollection.sheets).forEach(([sheetKey, rows]) => {
     if (!Array.isArray(rows)) return;
     rows
-      .filter((r) => r && r.brandChon === 'Yes')
+      .filter(
+        (r) =>
+          r &&
+          r.brandChon === 'Yes' &&
+          r.trangThai !== 'Từ chối' &&
+          r.trangThai !== 'Không phản hồi'
+      )
       .forEach((row) => {
         const storeObj = storeMap.get(row.store);
         const created = buildApprovedBookingItemFromSheetRow({
@@ -1451,6 +1445,9 @@ export function buildBookingDealFromApprovedItem(
     kocBankHolder: normalized.tenTaiKhoanNganHang || undefined,
     kocIdCardNumber: normalized.soCccd || undefined,
     hasIdCardScan: Boolean(normalized.soCccd?.trim()),
+    sampleStatus: normalized.sampleStatus,
+    sampleTrackingCode: normalized.sampleTrackingCode,
+    sampleCarrier: (['GHN', 'ViettelPost', 'J&T', 'ShopeeExpress'].includes(normalized.sampleCarrier || '') ? (normalized.sampleCarrier as 'GHN' | 'ViettelPost' | 'J&T' | 'ShopeeExpress') : undefined),
     contractScanUrl: undefined,
     larkFinalApprovalCode: normalized.larkApprovalInstanceCode || undefined,
     committedOutputsCount: dealJobs.reduce((s, j) => s + Math.max(1, Number(j.quantity) || 1), 0),
@@ -1715,7 +1712,8 @@ export function autoMapVideoAcceptanceByKocChannel(params: {
  */
 export function formatApprovedBookingListToTsv(
   items: ApprovedBookingListItem[],
-  includeHeaders = true
+  includeHeaders = true,
+  canViewFullPii = false
 ): string {
   const headers = [
     'Mã Booking',
@@ -1813,10 +1811,10 @@ export function formatApprovedBookingListToTsv(
       it.roi30d,
       it.danhGiaHieuQuaVideo,
       it.tenTaiKhoanNganHang,
-      it.soTaiKhoan,
+      canViewFullPii ? it.soTaiKhoan : maskSensitivePii(it.soTaiKhoan, false),
       it.nganHang,
-      it.soCccd,
-      it.sdtNhanHang,
+      canViewFullPii ? it.soCccd : maskSensitivePii(it.soCccd, false),
+      canViewFullPii ? it.sdtNhanHang : maskSensitivePii(it.sdtNhanHang, false),
       it.diaChiNhanHang,
       it.masterContractCode || '',
       it.masterContractStatus || '',
@@ -1845,10 +1843,11 @@ export function formatApprovedBookingListToTsv(
 export function downloadApprovedBookingListCsv(
   items: ApprovedBookingListItem[],
   monthKey: string,
-  storeFilter: string
+  storeFilter: string,
+  canViewFullPii = false
 ): void {
   if (typeof window === 'undefined') return;
-  const tsv = formatApprovedBookingListToTsv(items, true);
+  const tsv = formatApprovedBookingListToTsv(items, true, canViewFullPii);
   const csvLines = tsv.split('\n').map((line) =>
     line
       .split('\t')

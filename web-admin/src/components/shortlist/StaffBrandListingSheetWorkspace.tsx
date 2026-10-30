@@ -43,7 +43,7 @@ import {
 import { filterScopedStores } from '../../lib/rbacScope';
 import { isPersonInField } from '../../lib/staffIdentity';
 import { resolveBrandBookingSheetUrl } from '../../lib/bookingList';
-import { formatNumber, formatVnd, formatVndShort } from '../../lib/format';
+import { formatNumber, formatVnd, formatVndShort, maskSensitivePii } from '../../lib/format';
 import {
   BRAND_CHON_OPTIONS,
   CONTENT_TAG_OPTIONS,
@@ -1513,7 +1513,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             forceRefreshBrandTimestamp: brandDecisionChanged,
           }
         );
-        if (key === 'brandChon' && String(value) === 'Yes') {
+        if (
+          key === 'brandChon' &&
+          String(value) === 'Yes' &&
+          updated.trangThai !== 'Từ chối' &&
+          updated.trangThai !== 'Không phản hồi'
+        ) {
           approvedRowToSync = updated;
         }
         return updated;
@@ -2796,16 +2801,21 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     }
   };
 
-  // Mở hộp thoại Tạo các Deal từ danh sách KOC Brand đã duyệt (Yes) để chuyển sang Bảng Deal
+  // Mở hộp thoại Tạo các Deal từ danh sách KOC Brand đã duyệt (Yes) và KOC không từ chối để chuyển sang Bảng Deal
   const handleOpenCreateDealsModal = (
     overrideRowsSource?: StaffListingSheetRow[],
     preferredSelectedRowIds?: string[]
   ) => {
     const sourceRows = overrideRowsSource || rows;
-    const approvedRows = sourceRows.filter((r) => r.brandChon === 'Yes');
+    const approvedRows = sourceRows.filter(
+      (r) =>
+        r.brandChon === 'Yes' &&
+        r.trangThai !== 'Từ chối' &&
+        r.trangThai !== 'Không phản hồi'
+    );
     if (approvedRows.length === 0) {
       onNotify?.(
-        'Hiện chưa có dòng KOC nào có trạng thái "Brand chọn = Yes" trên bảng này để tạo Deal.',
+        'Hiện chưa có dòng KOC nào đạt điều kiện "Brand chọn = Yes" và KOC không từ chối trên bảng này để tạo Deal.',
         'warning'
       );
       return;
@@ -4936,6 +4946,22 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           );
                         }
 
+                        // Bảo vệ dữ liệu nhạy cảm (GEMINI.md §3): Che mờ Số CCCD, Số tài khoản, SĐT nếu không phải Kế toán / Quản lý
+                        const isPiiCol =
+                          col.key === 'sdtNhanHang' ||
+                          col.key === 'soTaiKhoan' ||
+                          col.key === 'soCccd';
+                        const canViewFullPii = isAdminOrManager || currentRole === 'FINANCE';
+                        if (isPiiCol && !canViewFullPii) {
+                          return (
+                            <td key={col.key} className={cellBaseClass} title="Dữ liệu nhạy cảm đã che mờ (Chỉ Kế toán / Quản lý xem đầy đủ)">
+                              <div className="px-2 py-1 font-code text-xs text-ink-2 truncate">
+                                {maskSensitivePii(String(row[col.key] ?? ''), false)}
+                              </div>
+                            </td>
+                          );
+                        }
+
                         // Các cột văn bản chung (contentNote, leaderNote, lyDoTuChoi, thanhQuaHopTac, ngayAirPlan, thông tin liên hệ/ngân hàng/CCCD...)
                         return (
                           <td key={col.key} className={cellBaseClass} title={cellTitle}>
@@ -5177,7 +5203,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           Tệp: {k.tepKenh || k.creatorCategory || 'Beauty'} · Follower:{' '}
                           {(k.followers || 0).toLocaleString('vi-VN')} · View TB:{' '}
                           {(k.avgViews || 0).toLocaleString('vi-VN')} · Nữ:{' '}
-                          {k.femaleRatio ?? 75}%
+                          {k.femaleRatio !== undefined ? `${k.femaleRatio}%` : '—'}
                         </div>
                       </div>
                     </div>

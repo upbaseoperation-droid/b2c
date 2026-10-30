@@ -51,7 +51,8 @@ import type { PaymentRequestType } from '../../lib/larkPaymentRequestEngine';
 import SampleTrackerView from './SampleTrackerView';
 import { ActionMenu, Avatar, Button, Chips, ConfirmDialog, DataTable, EmptyState, Field, FilterBar, Input, Modal, PageActions, Pagination, Panel, Person, Segmented, Select, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
 import type { StatusTone } from '../ui';
-import { formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
+import { formatDate, formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
+import { loadApprovedBookingList, saveApprovedBookingList } from '../../lib/approvedBookingList';
 
 type PipelineStageKey =
   | '1_PLAN_SOURCING'
@@ -252,6 +253,32 @@ export const BookingView: React.FC<BookingViewProps> = ({
     if (onUpdateDeal) {
       onUpdateDeal(updatedDeal);
     }
+    try {
+      const currentList = loadApprovedBookingList(kocs || [], REAL_B2C_69_STORES, deals, currentUserName || '');
+      let changed = false;
+      const nextList = currentList.map(it => {
+        const isMatch =
+          (it.maBooking && it.maBooking.toUpperCase() === (updatedDeal.dealCode || updatedDeal.id).toUpperCase()) ||
+          it.id === updatedDeal.jobId;
+        if (!isMatch) return it;
+        changed = true;
+        return {
+          ...it,
+          sampleStatus: updatedDeal.sampleStatus ?? it.sampleStatus,
+          sampleTrackingCode: updatedDeal.sampleTrackingCode ?? it.sampleTrackingCode,
+          sampleCarrier: updatedDeal.sampleCarrier ?? it.sampleCarrier,
+          sdtNhanHang: updatedDeal.sampleRecipientPhone || it.sdtNhanHang,
+          diaChiNhanHang: updatedDeal.sampleShippingAddress || it.diaChiNhanHang,
+          sparkAdsCode: updatedDeal.sparkAdsCode || it.sparkAdsCode,
+          linkAir: updatedDeal.tiktokVideoUrl || updatedDeal.videoUrl || it.linkAir,
+        };
+      });
+      if (changed) {
+        saveApprovedBookingList(nextList, true);
+      }
+    } catch {
+      // ignore local storage sync error
+    }
   };
 
   const handleAdvanceDealStage = (deal: BookingDealItem, targetStage: PipelineStageKey) => {
@@ -449,27 +476,32 @@ export const BookingView: React.FC<BookingViewProps> = ({
     sampleStatus: 'ĐANG_GIAO',
     carrier: 'GHN',
     trackingCode: '',
-    sentDate: '18/10/2026',
+    sentDate: '',
     deliveredDate: '',
-    recipientPhone: '0981.234.567',
-    shippingAddress: 'Địa chỉ nhận mẫu KOC trên hệ thống',
+    recipientPhone: '',
+    shippingAddress: '',
   });
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
 
   const handleOpenSampleModal = (deal: BookingDealItem) => {
+    const matchedKoc = localKocs.find(
+      k =>
+        (deal.kocId && k.id === deal.kocId) ||
+        (deal.kocChannelId &&
+          k.channelId.replace(/^@/, '').toLowerCase() ===
+            deal.kocChannelId.replace(/^@/, '').toLowerCase())
+    );
     setSampleModalDeal(deal);
     setSampleForm({
       sampleStatus: deal.sampleStatus || 'ĐANG_GIAO',
       carrier: deal.sampleCarrier || 'GHN',
-      trackingCode:
-        deal.sampleTrackingCode ||
-        `GHN-${deal.dealCode.replace(/[^0-9]/g, '').slice(-8) || '00000001'}`,
-      sentDate: deal.sampleSentDate || '18/10/2026',
-      deliveredDate:
-        deal.sampleDeliveredDate || (deal.sampleStatus === 'ĐÃ_NHẬN' ? '20/10/2026' : ''),
-      recipientPhone: deal.sampleRecipientPhone || '0981.234.567',
+      trackingCode: deal.sampleTrackingCode || '',
+      sentDate: deal.sampleSentDate || formatDate(new Date()),
+      deliveredDate: deal.sampleDeliveredDate || '',
+      recipientPhone:
+        deal.sampleRecipientPhone || matchedKoc?.shippingPhone || matchedKoc?.phone || '',
       shippingAddress:
-        deal.sampleShippingAddress || 'Địa chỉ nhận mẫu KOC đã xác nhận trên hệ thống',
+        deal.sampleShippingAddress || matchedKoc?.shippingAddress || matchedKoc?.permanentAddress || '',
     });
   };
 
@@ -488,7 +520,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       sampleTrackingCode: sampleForm.trackingCode.trim(),
       sampleSentDate: sampleForm.sentDate,
       sampleDeliveredDate: isReceived
-        ? sampleForm.deliveredDate || '20/10/2026'
+        ? sampleForm.deliveredDate || formatDate(new Date())
         : sampleForm.deliveredDate || undefined,
       sampleRecipientPhone: sampleForm.recipientPhone,
       sampleShippingAddress: sampleForm.shippingAddress,
@@ -532,8 +564,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const handleOpenGrowthHandoff = (deal: BookingDealItem) => {
     setHandoffDeal(deal);
     setHandoffForm({
-      sparkAdsCode: deal.sparkAdsCode || `SPARK-TT-${deal.dealCode.slice(-6)}-${Date.now().toString().slice(-4)}`,
-      tiktokVideoUrl: deal.tiktokVideoUrl || deal.videoUrl || 'https://www.tiktok.com/@creator/video/7418920192',
+      sparkAdsCode: deal.sparkAdsCode || '',
+      tiktokVideoUrl: deal.tiktokVideoUrl || deal.videoUrl || '',
       authDuration: deal.sparkAdsExpiryDays ? `${deal.sparkAdsExpiryDays} ngày` : '60 ngày',
       clientCommitmentStatus: 'ĐÃ_CHỐT_NGÂN_SÁCH_ADS',
       growthNote: ''
@@ -1610,7 +1642,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 }`}
               >
                 <div className="flex items-center justify-between gap-1.5">
-                  <span className="text-2xs font-semibold uppercase tracking-wider text-ink-3">
+                  <span className="text-2xs font-semibold text-ink-3">
                     Bước {st.step} · {st.team}
                   </span>
                   <span className="text-2xs font-mono text-ink-3">{sharePct}%</span>

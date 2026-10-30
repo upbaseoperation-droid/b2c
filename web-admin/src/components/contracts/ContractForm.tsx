@@ -1625,6 +1625,12 @@ export function ContractForm({
                 ...values,
                 [SOW_TASKS_META_KEY]: JSON.stringify(draftAddons),
                 [SOW_JOBS_META_KEY]: JSON.stringify(draftJobTables),
+                [PAYMENT_SCHEDULE_META_KEY]: paymentScheduleOption,
+                'token:[Số tiền tạm ứng đợt 1]':
+                  paymentScheduleOption === 'TWO_TIMES'
+                    ? formatMoneyInput(String(draftAdvanceAmount || 0))
+                    : '0',
+                sowAdvanceAmount: String(paymentScheduleOption === 'TWO_TIMES' ? draftAdvanceAmount : 0),
               }
             : values;
         const nextValues = isKocOwnForm && customContractValue.trim()

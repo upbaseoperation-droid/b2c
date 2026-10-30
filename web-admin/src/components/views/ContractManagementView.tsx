@@ -16,7 +16,7 @@ import { Button, Chips, DataTable, EmptyState, FilterBar, Modal, PageActions, Pa
 import type { Column } from '../ui';
 import { ApiError, contractApi, type ContractBootstrap } from '../contracts/api';
 import { browserDemoEnabled, downloadBrowserDemo, enableBrowserDemo } from '../contracts/browserDemo';
-import { computeSigningProgress, contractStatus, isAcceptance, OFFICIAL_3STAGE_TEMPLATE_IDS, resolveActiveLegalProfile } from '../contracts/contractUi';
+import { computeSigningProgress, contractStatus, isAcceptance, OFFICIAL_3STAGE_TEMPLATE_IDS, PAYMENT_SCHEDULE_META_KEY, resolveActiveLegalProfile } from '../contracts/contractUi';
 import { ContractCatalogView, CATEGORY_LABELS } from '../contracts/ContractCatalogView';
 import { ContractDetail } from '../contracts/ContractDetail';
 import { ContractDocumentViewer } from '../contracts/ContractDocumentViewer';
@@ -236,6 +236,19 @@ export function ContractManagementView({
           result.record.contractSystem?.signedFileUrl ||
           (isCompleted ? `/api/contracts/${result.record.id}/document?version=${result.record.version}` : undefined);
         if (docKind === 'SOW') {
+          const schedMode = vMap[PAYMENT_SCHEDULE_META_KEY];
+          const hasSched = Boolean(schedMode);
+          const advNum =
+            schedMode === 'ONE_TIME'
+              ? 0
+              : Number(
+                  String(
+                    vMap['sowAdvanceAmount'] ||
+                    vMap['token:[Số tiền tạm ứng đợt 1]'] ||
+                    vMap['token:[advanceAmount]'] ||
+                    ''
+                  ).replace(/\D/g, '')
+                ) || 0;
           onSyncDealContractStatus(targetDealId, {
             dealCode: result.record.dealCode,
             contractAppendixCode:
@@ -243,6 +256,7 @@ export function ContractManagementView({
             contractAppendixStatus: isCompleted ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
             contractAppendixGoogleDocsUrl: result.record.contractSystem?.googleDocsUrl,
             contractAppendixSignedUrl: signedUrl,
+            ...(hasSched ? { advanceAmount: advNum } : {}),
           });
         } else if (docKind === 'HDNT') {
           onSyncDealContractStatus(targetDealId, {
@@ -555,6 +569,19 @@ export function ContractManagementView({
                         result.record.contractSystem?.signedFileUrl ||
                         `/api/contracts/${result.record.id}/document?version=${result.record.version}`;
                       if (docKind === 'SOW') {
+                        const schedMode = vMap[PAYMENT_SCHEDULE_META_KEY];
+                        const hasSched = Boolean(schedMode);
+                        const advNum =
+                          schedMode === 'ONE_TIME'
+                            ? 0
+                            : Number(
+                                String(
+                                  vMap['sowAdvanceAmount'] ||
+                                  vMap['token:[Số tiền tạm ứng đợt 1]'] ||
+                                  vMap['token:[advanceAmount]'] ||
+                                  ''
+                                ).replace(/\D/g, '')
+                              ) || 0;
                         onSyncDealContractStatus(targetDealId, {
                           dealCode: result.record.dealCode,
                           contractAppendixCode:
@@ -562,6 +589,7 @@ export function ContractManagementView({
                           contractAppendixStatus: 'ĐÃ_KÝ',
                           contractAppendixGoogleDocsUrl: result.record.contractSystem?.googleDocsUrl,
                           contractAppendixSignedUrl: signedUrl,
+                          ...(hasSched ? { advanceAmount: advNum } : {}),
                         });
                       } else if (docKind === 'HDNT') {
                         onSyncDealContractStatus(targetDealId, {
