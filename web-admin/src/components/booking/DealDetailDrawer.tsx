@@ -32,6 +32,7 @@ import type {
   MediaChannelPlatform,
 } from '../../lib/types';
 import type { ContractRecord } from '../../lib/contracts/types';
+import { extractSowPaymentScheduleAndAdvance } from '../../lib/contracts/contractRules';
 import {
   formatDate,
   formatNumber,
@@ -52,7 +53,7 @@ import {
   recalculateApprovedBookingItem,
   type ApprovedBookingListItem,
 } from '../../lib/approvedBookingList';
-import { normalizeTikTokId } from '../../lib/staffBrandListingSheet';
+import { computeGrossFeeWithTax, normalizeTikTokId } from '../../lib/staffBrandListingSheet';
 import { documentOfTemplate } from '../../lib/planDealLink';
 import {
   computeSigningProgress,
@@ -102,6 +103,7 @@ export interface DealDetailDrawerProps {
   onUpdateDealFields?: (dealId: string, patch: Partial<ApprovedBookingListItem>) => void;
   onPullContractLinks?: () => void;
   isPullingContractLinks?: boolean;
+  canViewFullPii?: boolean;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
@@ -132,6 +134,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
   onUpdateDealFields,
   onPullContractLinks,
   isPullingContractLinks,
+  canViewFullPii = false,
   onNotify,
 }) => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -166,48 +169,54 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
   const [quickAirLink, setQuickAirLink] = useState<string>('');
   const [quickAirDate, setQuickAirDate] = useState<string>('');
 
-  useEffect(() => {
+  const [prevTabKey, setPrevTabKey] = useState<string>('');
+  const currentTabKey = `${isOpen ? '1' : '0'}:${initialTab || ''}`;
+  if (currentTabKey !== prevTabKey) {
+    setPrevTabKey(currentTabKey);
     if (isOpen && initialTab) {
       setActiveTab(initialTab);
     }
-  }, [isOpen, initialTab]);
+  }
 
   // Đồng bộ dữ liệu Deal đang chọn vào bộ soạn thảo Deal & Bảng công việc
-  useEffect(() => {
-    if (!deal) return;
-    const seqIdx = allDeals.findIndex((x) => x.id === deal.id);
-    const maBo =
-      deal.maBooking ||
-      generateBookingOrderCode(deal.thangPlan, (seqIdx >= 0 ? seqIdx : 0) + 201);
-    const masterCode =
-      deal.masterContractCode || generateMasterContractCode(deal.idKenh, deal.kocId);
-    const appendixCode =
-      deal.contractAppendixCode || generateDealAppendixCode(maBo, 1);
-    const initialJobs = ensureDealJobsForApprovedItem({
-      ...deal,
-      maBooking: maBo,
-    });
-    const safeIdx = Math.min(activeDealDraftJobIdx, Math.max(0, initialJobs.length - 1));
-    const currentJob = initialJobs[safeIdx] || initialJobs[0];
+  const [prevDealKey, setPrevDealKey] = useState<string>('');
+  const currentDealKey = deal ? `${deal.id}:${deal.updatedAt || ''}` : '';
+  if (currentDealKey !== prevDealKey) {
+    setPrevDealKey(currentDealKey);
+    if (deal) {
+      const seqIdx = allDeals.findIndex((x) => x.id === deal.id);
+      const maBo =
+        deal.maBooking ||
+        generateBookingOrderCode(deal.thangPlan, (seqIdx >= 0 ? seqIdx : 0) + 201);
+      const masterCode =
+        deal.masterContractCode || generateMasterContractCode(deal.idKenh, deal.kocId);
+      const appendixCode =
+        deal.contractAppendixCode || generateDealAppendixCode(maBo, 1);
+      const initialJobs = ensureDealJobsForApprovedItem({
+        ...deal,
+        maBooking: maBo,
+      });
+      const safeIdx = Math.min(activeDealDraftJobIdx, Math.max(0, initialJobs.length - 1));
+      const currentJob = initialJobs[safeIdx] || initialJobs[0];
 
-    setDealDraftCode(maBo);
-    setDealDraftMasterContract(masterCode);
-    setDealDraftAppendixCode(appendixCode);
-    setDealDraftAppendixStatus(
-      deal.contractAppendixStatus && deal.contractAppendixStatus !== 'CHƯA_LẬP'
-        ? deal.contractAppendixStatus
-        : 'CHỜ_KÝ'
-    );
-    setDealDraftJobs(initialJobs);
-    setActiveDealDraftJobIdx(safeIdx);
-    setDealDraftPlannedAirDate(
-      currentJob?.plannedAirDate || deal.plannedAirDate || `${deal.thangPlan.replace('/', '-')}-20`
-    );
-    setDealDraftVideoNetCost(currentJob?.videoAssetNetCost ?? deal.chiPhiBookingNetCuoi ?? 0);
-    setDealDraftAdvanceAmount(deal.soTienTamUngTruoc || 0);
-    setDealDraftAddons(currentJob?.addonServices || []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deal?.id, deal?.updatedAt]);
+      setDealDraftCode(maBo);
+      setDealDraftMasterContract(masterCode);
+      setDealDraftAppendixCode(appendixCode);
+      setDealDraftAppendixStatus(
+        deal.contractAppendixStatus && deal.contractAppendixStatus !== 'CHƯA_LẬP'
+          ? deal.contractAppendixStatus
+          : 'CHỜ_KÝ'
+      );
+      setDealDraftJobs(initialJobs);
+      setActiveDealDraftJobIdx(safeIdx);
+      setDealDraftPlannedAirDate(
+        currentJob?.plannedAirDate || deal.plannedAirDate || `${deal.thangPlan.replace('/', '-')}-20`
+      );
+      setDealDraftVideoNetCost(currentJob?.videoAssetNetCost ?? deal.chiPhiBookingNetCuoi ?? 0);
+      setDealDraftAdvanceAmount(deal.soTienTamUngTruoc || 0);
+      setDealDraftAddons(currentJob?.addonServices || []);
+    }
+  }
 
   useEffect(() => {
     if (!isOpen) return;
@@ -361,7 +370,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
     const nextJobCode = `${baseBo}-J${String(nextIdx + 1).padStart(2, '0')}`;
     const defaultAddons = buildDefaultAddonServicesForDeal({
       maBooking: nextJobCode,
-      totalNet: dealDraftVideoNetCost || 2000000,
+      totalNet: dealDraftVideoNetCost || 0,
       includeDefaultAddons: true,
     });
     const newJob: DealSowJobItem = {
@@ -377,7 +386,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
         dealDraftPlannedAirDate ||
         deal.plannedAirDate ||
         `${deal.thangPlan.replace('/', '-')}-20`,
-      videoAssetNetCost: dealDraftVideoNetCost || 2000000,
+      videoAssetNetCost: dealDraftVideoNetCost || 0,
       quantity: 1,
       addonServices: defaultAddons,
       acceptanceStatus: 'CHUA_NGHIEM_THU',
@@ -421,7 +430,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
       : [
           ...currentAddons,
           {
-            id: `${activeJob?.jobCode || dealDraftCode || 'DEAL'}-ADDON-${termType}-${Date.now().toString().slice(-3)}`,
+            id: `${activeJob?.jobCode || dealDraftCode || 'DEAL'}-ADDON-${termType}-${currentAddons.length + 1}`,
             termType,
             termLabel: defaultLabel,
             scopeType: 'ASSET' as const,
@@ -732,7 +741,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
   const draftTotalVideoNet = draftSubtotals.reduce((s, x) => s + x.videoNet, 0);
   const draftTotalAddonsNet = draftSubtotals.reduce((s, x) => s + x.addonsNet, 0);
   const draftGrandDealNet = draftTotalVideoNet + draftTotalAddonsNet;
-  const draftGrossWithTax = Math.round(draftGrandDealNet / 0.9);
+  const draftGrossWithTax = computeGrossFeeWithTax(draftGrandDealNet, deal.loaiTaiKhoanThanhToan);
   const draftRemainingPayable = Math.max(0, draftGrandDealNet - (dealDraftAdvanceAmount || 0));
 
   const activeDraftJob = dealDraftJobs[activeDealDraftJobIdx];
@@ -1712,7 +1721,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                 <div>
                   <dt className="text-2xs text-ink-3">Điện thoại nhận mẫu</dt>
                   <dd className="font-code text-ink mt-0.5">
-                    {maskSensitive(deal.sdtNhanHang || matchedKoc?.phone, showSensitive)}
+                    {maskSensitive(deal.sdtNhanHang || matchedKoc?.phone, canViewFullPii && showSensitive)}
                   </dd>
                 </div>
                 <div className="col-span-2">
@@ -1747,13 +1756,15 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                     Kéo HĐ · PL · BBNT &amp; Link
                   </Button>
                 )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowSensitive((v) => !v)}
-                >
-                  {showSensitive ? 'Che CCCD / MST' : 'Hiện đầy đủ CCCD / MST'}
-                </Button>
+                {canViewFullPii && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowSensitive((v) => !v)}
+                  >
+                    {showSensitive ? 'Che CCCD / MST' : 'Hiện đầy đủ CCCD / MST'}
+                  </Button>
+                )}
               </div>
             }
           >
@@ -2205,7 +2216,7 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                   <div>
                     <dt className="text-2xs text-ink-3">Ngân hàng &amp; Số tài khoản</dt>
                     <dd className="font-code text-ink mt-0.5">
-                      {maskSensitive(deal.soTaiKhoan, showSensitive)} · {deal.nganHang || '—'}
+                      {maskSensitive(deal.soTaiKhoan, canViewFullPii && showSensitive)} · {deal.nganHang || '—'}
                     </dd>
                   </div>
                 </dl>
@@ -2719,103 +2730,171 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
               {/* CỘT PHẢI (4 CỘT): Kết nối Lark 3 Luồng — (1) Tạm ứng QNvp · (2) Nghiệm thu & Khóa sổ WORKDAY 3 · (3) Tất toán ĐNTT KN8A & Bill UNC */}
               <div className="lg:col-span-4 space-y-5">
                 {/* LUỒNG 1: Tạm ứng Deal trên Lark Approval (Whiteboard QNvp) */}
-                <Panel
-                  title="1. Luồng Tạm ứng Lark (QNvp)"
-                  actions={
-                    <Status
-                      tone={
-                        deal.larkAdvanceStatus === 'ĐÃ_CHI_TẠM_ỨNG' ||
-                        deal.larkAdvanceStatus === 'ĐÃ_DUYỆT_TẠM_ỨNG'
-                          ? 'positive'
-                          : deal.larkAdvanceStatus === 'TỪ_CHỐI_TẠM_ỨNG'
-                          ? 'critical'
-                          : deal.larkAdvanceStatus === 'CHỜ_DUYỆT_TẠM_ỨNG' ||
-                            (deal.soTienTamUngTruoc || 0) > 0
-                          ? 'warning'
-                          : 'neutral'
-                      }
-                    >
-                      {deal.larkAdvanceStatus === 'ĐÃ_CHI_TẠM_ỨNG'
-                        ? 'Đã chi tạm ứng'
-                        : deal.larkAdvanceStatus === 'ĐÃ_DUYỆT_TẠM_ỨNG'
-                        ? 'Đã duyệt tạm ứng'
-                        : deal.larkAdvanceStatus === 'TỪ_CHỐI_TẠM_ỨNG'
-                        ? 'Từ chối tạm ứng'
-                        : deal.larkAdvanceStatus === 'CHỜ_DUYỆT_TẠM_ỨNG'
-                        ? 'Chờ duyệt QNvp'
-                        : (deal.soTienTamUngTruoc || 0) > 0
-                        ? 'Có thỏa thuận ứng'
-                        : 'Không tạm ứng'}
-                    </Status>
-                  }
-                >
-                  <div className="space-y-3 text-xs">
-                    <div className="p-2.5 rounded-lg bg-sunken border border-line space-y-1.5 text-2xs text-ink-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span>Điều kiện Phụ lục SOW (Bước 2.4):</span>
-                        <strong
-                          className={
-                            deal.contractAppendixStatus === 'ĐÃ_KÝ'
-                              ? 'text-positive'
-                              : 'text-warning'
+                {(() => {
+                  const sowExtracted = linkedContracts.sow
+                    ? extractSowPaymentScheduleAndAdvance(
+                        linkedContracts.sow.values,
+                        linkedContracts.sow.templateId
+                      )
+                    : undefined;
+                  const effectiveSowSchedule: 'ONE_TIME' | 'TWO_TIMES' =
+                    sowExtracted?.paymentScheduleOption ||
+                    deal.paymentScheduleOption ||
+                    ((deal.soTienTamUngTruoc || 0) > 0 ? 'TWO_TIMES' : 'ONE_TIME');
+                  const isTwoTimesSow = effectiveSowSchedule === 'TWO_TIMES';
+                  const effectiveAdvanceAmount = isTwoTimesSow
+                    ? deal.soTienTamUngTruoc || sowExtracted?.advanceAmount || 0
+                    : 0;
+
+                  return (
+                    <Panel
+                      title="1. Luồng Tạm ứng Lark (QNvp)"
+                      actions={
+                        <Status
+                          tone={
+                            deal.larkAdvanceStatus === 'ĐÃ_CHI_TẠM_ỨNG' ||
+                            deal.larkAdvanceStatus === 'ĐÃ_DUYỆT_TẠM_ỨNG'
+                              ? 'positive'
+                              : deal.larkAdvanceStatus === 'TỪ_CHỐI_TẠM_ỨNG'
+                              ? 'critical'
+                              : !isTwoTimesSow
+                              ? 'neutral'
+                              : deal.larkAdvanceStatus === 'CHỜ_DUYỆT_TẠM_ỨNG' ||
+                                effectiveAdvanceAmount > 0
+                              ? 'warning'
+                              : 'neutral'
                           }
                         >
-                          {deal.contractAppendixStatus === 'ĐÃ_KÝ'
-                            ? 'Đã ký 2 bên (Đủ điều kiện)'
-                            : 'Chờ ký Phụ lục SOW'}
-                        </strong>
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <span>Mã phiếu tạm ứng (6.1):</span>
-                        <span className="font-code font-semibold text-ink">
-                          {deal.larkAdvanceSlipCode ||
-                            deal.larkAdvanceInstanceCode ||
-                            'Chưa tạo phiếu'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-2.5">
-                      <Field label="Số tiền tạm ứng trước (Net VND)">
-                        <Input
-                          type="number"
-                          className="font-code"
-                          value={deal.soTienTamUngTruoc || 0}
-                          onChange={(e) => {
-                            const nextAdv = Math.max(0, Number(e.target.value) || 0);
-                            onUpdateDealFields?.(deal.id, {
-                              soTienTamUngTruoc: nextAdv,
-                            });
-                          }}
-                          placeholder="Nhập số tiền tạm ứng Net..."
-                        />
-                      </Field>
-                      {(deal.loaiTaiKhoanThanhToan.includes('Công ty') ||
-                        deal.loaiTaiKhoanThanhToan.includes('Hộ kinh doanh')) && (
-                        <Field label="Số / Link Hóa đơn nháp đợt 1 (HKD / Công ty)">
-                          <Input
-                            className="font-code"
-                            value={deal.draftInvoiceCode || ''}
-                            onChange={(e) =>
-                              onUpdateDealFields?.(deal.id, {
-                                draftInvoiceCode: e.target.value,
-                              })
-                            }
-                            placeholder="HD-NHAP-001..."
-                          />
-                        </Field>
-                      )}
-                    </div>
-
-                    <Button
-                      variant="secondary"
-                      icon={Send}
-                      onClick={() => onOpenLarkPaymentModal?.(deal, 'ADVANCE')}
+                          {deal.larkAdvanceStatus === 'ĐÃ_CHI_TẠM_ỨNG'
+                            ? 'Đã chi tạm ứng'
+                            : deal.larkAdvanceStatus === 'ĐÃ_DUYỆT_TẠM_ỨNG'
+                            ? 'Đã duyệt tạm ứng'
+                            : deal.larkAdvanceStatus === 'TỪ_CHỐI_TẠM_ỨNG'
+                            ? 'Từ chối tạm ứng'
+                            : !isTwoTimesSow
+                            ? 'Thanh toán 1 lần (Khóa tạm ứng)'
+                            : deal.larkAdvanceStatus === 'CHỜ_DUYỆT_TẠM_ỨNG'
+                            ? 'Chờ duyệt QNvp'
+                            : effectiveAdvanceAmount > 0
+                            ? 'Đủ điều kiện ứng (2 đợt)'
+                            : 'Chờ nhập số tạm ứng'}
+                        </Status>
+                      }
                     >
-                      Lập phiếu Tạm ứng trên Lark (QNvp)
-                    </Button>
-                  </div>
-                </Panel>
+                      <div className="space-y-3 text-xs">
+                        <div className="p-2.5 rounded-lg bg-sunken border border-line space-y-1.5 text-2xs text-ink-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span>Phương thức TT trên SOW:</span>
+                            <strong
+                              className={
+                                isTwoTimesSow ? 'text-positive' : 'text-ink-2'
+                              }
+                            >
+                              {isTwoTimesSow
+                                ? 'Thanh toán 2 đợt (Cho phép tạm ứng)'
+                                : 'Thanh toán 1 lần (100% sau nghiệm thu)'}
+                            </strong>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <span>Điều kiện Phụ lục SOW (Bước 2.4):</span>
+                            <strong
+                              className={
+                                deal.contractAppendixStatus === 'ĐÃ_KÝ'
+                                  ? 'text-positive'
+                                  : 'text-warning'
+                              }
+                            >
+                              {deal.contractAppendixStatus === 'ĐÃ_KÝ'
+                                ? 'Đã ký 2 bên (Đủ điều kiện)'
+                                : 'Chờ ký Phụ lục SOW'}
+                            </strong>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <span>Mã phiếu tạm ứng (6.1):</span>
+                            <span className="font-code font-semibold text-ink">
+                              {deal.larkAdvanceSlipCode ||
+                                deal.larkAdvanceInstanceCode ||
+                                'Chưa tạo phiếu'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {!isTwoTimesSow && (
+                          <div className="p-2.5 rounded-lg bg-warning-soft border border-line text-2xs text-ink-2">
+                            Phụ lục SOW của Deal đang chọn <strong className="font-semibold text-ink">Thanh toán 1 lần (100% sau nghiệm thu)</strong>. Chỉ khi Phụ lục SOW cấu hình <strong className="font-semibold text-ink">Thanh toán 2 đợt (Có tạm ứng)</strong> mới được phép đẩy luồng Tạm ứng trên Lark.
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 gap-2.5">
+                          <Field label="Số tiền tạm ứng trước (Net VND)">
+                            <Input
+                              type="number"
+                              className="font-code"
+                              disabled={!isTwoTimesSow}
+                              value={effectiveAdvanceAmount}
+                              onChange={(e) => {
+                                if (!isTwoTimesSow) return;
+                                const nextAdv = Math.max(0, Number(e.target.value) || 0);
+                                onUpdateDealFields?.(deal.id, {
+                                  paymentScheduleOption: 'TWO_TIMES',
+                                  soTienTamUngTruoc: nextAdv,
+                                });
+                              }}
+                              placeholder={
+                                isTwoTimesSow
+                                  ? 'Nhập số tiền tạm ứng Net...'
+                                  : 'Khóa do SOW thanh toán 1 lần'
+                              }
+                            />
+                          </Field>
+                          {isTwoTimesSow &&
+                            (deal.loaiTaiKhoanThanhToan.includes('Công ty') ||
+                              deal.loaiTaiKhoanThanhToan.includes('Hộ kinh doanh')) && (
+                              <Field label="Số / Link Hóa đơn nháp đợt 1 (HKD / Công ty)">
+                                <Input
+                                  className="font-code"
+                                  value={deal.draftInvoiceCode || ''}
+                                  onChange={(e) =>
+                                    onUpdateDealFields?.(deal.id, {
+                                      draftInvoiceCode: e.target.value,
+                                    })
+                                  }
+                                  placeholder="HD-NHAP-001..."
+                                />
+                              </Field>
+                            )}
+                        </div>
+
+                        <Button
+                          variant="secondary"
+                          icon={Send}
+                          disabled={!isTwoTimesSow}
+                          onClick={() => {
+                            if (!isTwoTimesSow) {
+                              onNotify?.(
+                                'Chỉ khi Phụ lục SOW có Thanh toán 2 đợt mới được phép đẩy luồng Tạm ứng.',
+                                'warning'
+                              );
+                              return;
+                            }
+                            onOpenLarkPaymentModal?.(
+                              {
+                                ...deal,
+                                paymentScheduleOption: 'TWO_TIMES',
+                                soTienTamUngTruoc: effectiveAdvanceAmount,
+                              },
+                              'ADVANCE'
+                            );
+                          }}
+                        >
+                          {isTwoTimesSow
+                            ? 'Lập phiếu Tạm ứng trên Lark (QNvp)'
+                            : 'Không hỗ trợ Tạm ứng (SOW TT 1 lần)'}
+                        </Button>
+                      </div>
+                    </Panel>
+                  );
+                })()}
 
                 {/* LUỒNG 2: Nghiệm thu tháng, Khóa sổ WORKDAY 3 & Mở khóa 2 đợt (GĐ7 B-54..B-65, S40) */}
                 <Panel
@@ -2987,87 +3066,24 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                       )}
                     </div>
 
-                    {/* Khép kín bước cuối KT Handle: Đã đi tiền + Gửi Bill UNC 100% trong 7 ngày (P-07) */}
-                    <div className="pt-3 border-t border-line space-y-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-ink">
-                          Bước cuối KT Handle (Bảng 6.1):
-                        </span>
-                        <Status tone={deal.daDiTien ? 'positive' : 'neutral'}>
-                          {deal.daDiTien ? 'Đã đi tiền & Có UNC' : 'Chờ Kế toán giải ngân'}
-                        </Status>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Input
-                          className="font-code flex-1"
-                          value={deal.uncBillCode || ''}
-                          onChange={(e) =>
-                            onUpdateDealFields?.(deal.id, {
-                              uncBillCode: e.target.value,
-                            })
-                          }
-                          placeholder="Mã lệnh chi / Link ảnh Bill UNC..."
-                        />
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => {
-                            const nextPaid = !deal.daDiTien;
-                            const billCode =
-                              (deal.uncBillCode || '').trim() ||
-                              (nextPaid ? `UNC-${deal.maBooking || 'DEAL'}` : '');
-                            onUpdateDealFields?.(deal.id, {
-                              daDiTien: nextPaid,
-                              uncBillCode: billCode,
-                              uncSentToKocAt: nextPaid
-                                ? new Date().toISOString()
-                                : undefined,
-                              trangThaiPhieuThanhToan: nextPaid
-                                ? 'Đã thanh toán'
-                                : deal.trangThaiPhieuThanhToan,
-                              soTienDaThanhToan: nextPaid
-                                ? deal.chiPhiBookingNetCuoi - (deal.khauTruHangMucHuy || 0)
-                                : deal.soTienDaThanhToan,
-                            });
-                            onNotify?.(
-                              nextPaid
-                                ? `KT Handle: Đã xác nhận đi tiền và lưu Bill UNC (${billCode}) gửi KOC.`
-                                : `Đã hoàn tác trạng thái đi tiền của ${deal.maBooking}.`,
-                              nextPaid ? 'success' : 'info'
-                            );
-                          }}
-                        >
-                          {deal.daDiTien ? 'Đã gửi UNC' : 'Xác nhận UNC'}
-                        </Button>
-                      </div>
+                    {/* Trạng thái đi tiền & Bill UNC đồng bộ từ Lark */}
+                    <div className="pt-3 border-t border-line flex items-center justify-between gap-2">
+                      <span className="text-ink-2">
+                        Trạng thái giải ngân &amp; UNC (Từ Lark):
+                      </span>
+                      <Status tone={deal.daDiTien ? 'positive' : 'neutral'}>
+                        {deal.daDiTien
+                          ? `Đã đi tiền (${deal.uncBillCode || 'Đã có UNC'})`
+                          : 'Duyệt & giải ngân trên Lark'}
+                      </Status>
                     </div>
                   </div>
                 </Panel>
 
                 <Panel
-                  title="Tài khoản thụ hưởng &amp; Chuẩn hóa P-02"
+                  title="Tài khoản thụ hưởng (Hồ sơ pháp lý KOC)"
                   actions={
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => {
-                          const normalizedHolder = normalizeBankHolderUpperNoAccent(
-                            deal.tenTaiKhoanNganHang || deal.tenKenh
-                          );
-                          const normalizedAcc = (deal.soTaiKhoan || '').replace(/\s+/g, '');
-                          onUpdateDealFields?.(deal.id, {
-                            tenTaiKhoanNganHang: normalizedHolder,
-                            soTaiKhoan: normalizedAcc,
-                          });
-                          onNotify?.(
-                            `Đã chuẩn hóa Tên TK "${normalizedHolder}" (IN HOA không dấu) và xóa khoảng trắng STK.`,
-                            'success'
-                          );
-                        }}
-                      >
-                        Chuẩn hóa TK
-                      </Button>
+                    canViewFullPii ? (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -3075,20 +3091,20 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({
                       >
                         {showSensitive ? 'Che STK' : 'Hiện đầy đủ'}
                       </Button>
-                    </div>
+                    ) : undefined
                   }
                 >
                   <dl className="space-y-3 text-xs">
                     <div>
-                      <dt className="text-2xs text-ink-3">Chủ tài khoản thụ hưởng (IN HOA không dấu)</dt>
-                      <dd className="font-medium text-ink mt-0.5 uppercase">
+                      <dt className="text-2xs text-ink-3">Chủ tài khoản thụ hưởng (Theo Hồ sơ pháp lý)</dt>
+                      <dd className="font-medium text-ink mt-0.5">
                         {deal.tenTaiKhoanNganHang || 'Chưa cập nhật'}
                       </dd>
                     </div>
                     <div>
                       <dt className="text-2xs text-ink-3">Ngân hàng &amp; Số tài khoản</dt>
                       <dd className="font-code text-ink mt-0.5">
-                        {maskSensitive(deal.soTaiKhoan, showSensitive)} · {deal.nganHang || '—'}
+                        {maskSensitive(deal.soTaiKhoan, canViewFullPii && showSensitive)} · {deal.nganHang || '—'}
                       </dd>
                     </div>
                     <div>

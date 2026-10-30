@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { Button, ConfirmDialog, Field, Input, Modal, Progress, Select, Status, Textarea } from '../ui';
 import { getVietnamDateYmd } from '../../lib/format';
+import { executeOperationalReport } from '../../lib/operationalReportService';
+import { getEffectiveConfigForPurpose } from '../../lib/apiKeyConfig';
 import { usePlanRecord } from '../../lib/usePlanRecord';
 import { AirCheckResult, BrandChannelHandlesBar } from './self-channel/SelfChannelAirCheck';
 import { fetchClientMonthlyPlans, getCachedClientMonthlyPlans } from '../../lib/useMonthlyPlanSync';
@@ -31,6 +33,8 @@ import { resolveWeekRows } from '../../lib/planBreakdownRules';
 import {
   EMPTY_SELF_CHANNEL_BOARD,
   SELF_ACCEPTANCE_LABEL,
+  SELF_CONTRACT_THRESHOLD,
+  SELF_CTV_CONFIRM_LABEL,
   SELF_FORMAT_LABEL,
   SELF_PAYMENT_LABEL,
   SELF_PLATFORM_LABEL,
@@ -48,12 +52,14 @@ import {
   createSelfChannelJob,
   generateSelfJobsFromPlanAndContent,
   selfJobAcceptanceBlocker,
+  selfJobHandoverPassed,
   selfJobPaymentBlocker,
   selfJobStageOf,
   summarizeSelfChannelBoard,
   type SelfAcceptanceStatus,
   type SelfChannelBoardData,
   type SelfChannelJob,
+  type SelfContentCheck,
   type SelfFormatKey,
   type SelfJobStage,
   type SelfPublishPlatform,
@@ -68,7 +74,7 @@ export interface PlanSelfChannelBoardProps {
   currentUserName?: string;
   onNotify?: (message: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   /** Mở đúng kế hoạch này (bấm từ Tổng quan / Hàng chờ duyệt); nonce đổi để mở lại cùng kế hoạch */
-  focus?: { planId: string; nonce: number } | null;
+  focus?: { planId: string; nonce: number; jobCode?: string } | null;
   /** Mở tab Quyết toán (BBNT tháng, ĐNTT Lark, Kế toán xác nhận đã chi) */
   onOpenSettlement?: () => void;
 }
@@ -126,6 +132,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
   const [month, setMonth] = useState('');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [pendingJobCode, setPendingJobCode] = useState<string | null>(null);
 
   // Nhảy tới kế hoạch được chọn từ màn khác, khi danh sách kế hoạch đã tải
   const [appliedFocusNonce, setAppliedFocusNonce] = useState<number | null>(null);
@@ -136,6 +143,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
       setMonth(target.month);
       setSearch('');
       setSelectedId(target.id);
+      setPendingJobCode(focus.jobCode || null);
     }
   }
 
@@ -202,6 +210,18 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
     EMPTY_SELF_CHANNEL_BOARD,
     msg => notify(msg, 'warning')
   );
+
+  // Mở thẳng việc được chọn từ Hàng chờ duyệt / Video tháng khi bảng công việc đã tải
+  useEffect(() => {
+    if (!pendingJobCode) return;
+    const found = board.jobs.find(j => j.code === pendingJobCode);
+    if (found) {
+      queueMicrotask(() => {
+        setActiveJobId(found.id);
+        setPendingJobCode(null);
+      });
+    }
+  }, [pendingJobCode, board.jobs]);
 
   // 3. Tính toán tổng hợp & Cảnh báo ngân sách
   const summary = useMemo(
@@ -432,6 +452,51 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
     }
   };
 
+  // Đối chiếu nội dung bài đăng với brief: luật từ khóa luôn chạy; đối chiếu thêm bằng mô hình chỉ khi bấm nút và có khóa
+  const [checkingContentJobId, setCheckingContentJobId] = useState<string | null>(null);
+  const handleContentCheck = async (job: SelfChannelJob, withModel: boolean) => {
+    if (!activePlan) return;
+    setCheckingContentJobId(job.id);
+    try {
+      const call = (payload: Record<string, unknown>) =>
+        fetch('/api/self-channel-board/content-check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ planId: activePlan.id, jobId: job.id, ...payload }),
+        });
+      const res = await call({});
+      const body = (await res.json().catch(() => null)) as { contentCheck?: SelfContentCheck; modelInput?: string; error?: string } | null;
+      if (!res.ok || !body?.contentCheck) {
+        notify(body?.error || 'Không đối chiếu được nội dung.', 'error');
+        return;
+      }
+      let check = body.contentCheck;
+      if (withModel && body.modelInput) {
+        const out = await executeOperationalReport({
+          purposeId: 'SELF_VIDEO_ACCEPTANCE',
+          moduleTitle: 'Đối chiếu nội dung video kênh Brand',
+          sourceTag: 'QA',
+          inputContextText: body.modelInput,
+        });
+        if (out.ok) {
+          const res2 = await call({ modelOutput: out.outputText });
+          const body2 = (await res2.json().catch(() => null)) as { contentCheck?: SelfContentCheck; error?: string } | null;
+          if (res2.ok && body2?.contentCheck) check = body2.contentCheck;
+          else notify(body2?.error || 'Chưa nhận được kết quả đối chiếu thêm, giữ kết quả từ khóa.', 'warning');
+        } else {
+          notify('Chưa chạy được đối chiếu thêm, giữ kết quả từ khóa.', 'warning');
+        }
+      }
+      setActiveJobDraft(d => (d && d.id === job.id ? { ...d, contentCheck: check } : d));
+      await reloadBoard();
+      notify(check.verdict === 'PASS' ? `Nội dung ${job.code} khớp brief.` : `Nội dung ${job.code}: ${check.items.find(i => i.status !== 'PASS')?.detail || 'cần xem lại'}`, check.verdict === 'PASS' ? 'success' : 'warning');
+    } catch {
+      notify('Lỗi mạng khi đối chiếu nội dung.', 'error');
+    } finally {
+      setCheckingContentJobId(null);
+    }
+  };
+
   const applyAndPersistDraft = useCallback(
     (nextDraft: SelfChannelJob, successMsg?: string) => {
       const fin = computeJobFinancials(
@@ -460,7 +525,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
   );
 
   // Lưu chi tiết Job từ Modal & Tự động đồng bộ Hồ sơ pháp lý/ngân hàng cho các Job cùng CTV
-  const handleSaveActiveDraft = () => {
+  const handleSaveActiveDraft = (keepOpen = false) => {
     if (!activeJobDraft) return;
     const fin = computeJobFinancials(
       activeJobDraft.feeGross,
@@ -503,7 +568,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
       ...board,
       jobs: nextJobs,
     });
-    setActiveJobId(null);
+    if (!keepOpen) setActiveJobId(null);
     notify(`Đã lưu thay đổi cho công việc ${finalizedDraft.code}.`, 'success');
   };
 
@@ -1139,17 +1204,22 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                         >
                           {job.productionMode === 'CTV_OUTSOURCE' ? 'Thuê CTV' : 'Nội bộ'}
                         </span>
-                        {job.productionMode === 'CTV_OUTSOURCE' && job.feeGross > 0 && (
-                          <span
-                            className={`rounded px-1 py-0.5 text-2xs font-medium ${
-                              job.contractNo
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : 'bg-rose-50 text-rose-700'
-                            }`}
-                          >
-                            {job.contractNo ? 'Đủ HĐ' : 'Thiếu HĐ'}
-                          </span>
-                        )}
+                        {job.productionMode === 'CTV_OUTSOURCE' && job.feeGross > 0 && (() => {
+                          const needContract = job.feeGross >= SELF_CONTRACT_THRESHOLD;
+                          return (
+                            <span
+                              className={`rounded px-1 py-0.5 text-2xs font-medium ${
+                                job.contractNo
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : needContract
+                                  ? 'bg-rose-50 text-rose-700'
+                                  : 'bg-sunken text-ink-3'
+                              }`}
+                            >
+                              {job.contractNo ? 'Đủ HĐ' : needContract ? 'Thiếu HĐ (video ≥10tr)' : 'Miễn HĐ (video <10tr)'}
+                            </span>
+                          );
+                        })()}
                       </div>
                       {job.productionMode === 'CTV_OUTSOURCE' && !isFinancialLocked ? (
                         <div className="mt-1">
@@ -1176,6 +1246,21 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                       ) : (
                         <div className="mt-1 font-medium text-ink">
                           {job.contributorName || job.contentPic || '—'}
+                        </div>
+                      )}
+                      {job.productionMode === 'CTV_OUTSOURCE' && job.contributorName.trim() && !job.contributorId && (
+                        <div className="mt-1">
+                          <Status tone="warning">Chưa chọn từ danh bạ: CTV không thấy việc</Status>
+                        </div>
+                      )}
+                      {job.productionMode === 'CTV_OUTSOURCE' && job.ctvConfirmStatus && job.ctvConfirmStatus !== 'CONFIRMED' && (
+                        <div className="mt-1">
+                          <Status tone={job.ctvConfirmStatus === 'DECLINED' ? 'critical' : 'warning'}>
+                            {SELF_CTV_CONFIRM_LABEL[job.ctvConfirmStatus]}
+                          </Status>
+                          {job.ctvConfirmStatus === 'DECLINED' && job.ctvDeclineReason && (
+                            <div className="text-2xs text-ink-3 mt-0.5 max-w-[160px] truncate" title={job.ctvDeclineReason}>{job.ctvDeclineReason}</div>
+                          )}
                         </div>
                       )}
                     </td>
@@ -1350,6 +1435,7 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                         >
                           {SELF_ACCEPTANCE_LABEL[job.acceptanceStatus]}
                         </span>
+                        {selfJobHandoverPassed(job) && <Status tone="info">Đạt bàn giao</Status>}
                       </div>
                       {job.bbntCode && <div className="text-2xs text-ink-3 mt-0.5">{job.bbntCode}</div>}
                       {job.acceptanceStatus !== 'PASSED' && (
@@ -1447,8 +1533,11 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                 <Button size="sm" variant="secondary" onClick={() => setActiveJobId(null)}>
                   Đóng
                 </Button>
-                <Button size="sm" variant="primary" onClick={handleSaveActiveDraft}>
-                  Lưu thay đổi
+                <Button size="sm" variant="secondary" onClick={() => handleSaveActiveDraft(true)}>
+                  Lưu và tiếp tục
+                </Button>
+                <Button size="sm" variant="primary" onClick={() => handleSaveActiveDraft(false)}>
+                  Lưu và đóng
                 </Button>
               </div>
             </div>
@@ -1676,11 +1765,11 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                         onChange={e => setActiveJobDraft({ ...activeJobDraft, contributorName: e.target.value })}
                       />
                     </Field>
-                    <Field label="Số Hợp đồng CTV">
+                    <Field label="Số Hợp đồng CTV (bắt buộc khi video ≥ 10tr)">
                       <Input
                         value={activeJobDraft.contractNo || ''}
                         onChange={e => setActiveJobDraft({ ...activeJobDraft, contractNo: e.target.value })}
-                        placeholder="HD-CTV-2026-..."
+                        placeholder="Không bắt buộc nếu video < 10tr..."
                       />
                     </Field>
                     <Field label="Số CCCD / Mã số thuế">
@@ -2028,6 +2117,64 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                 );
               })()}
 
+              {(() => {
+                const savedLink = board.jobs.find(j => j.id === activeJobDraft.id)?.airLink.trim() || '';
+                const linkSaved = Boolean(activeJobDraft.airLink.trim()) && savedLink === activeJobDraft.airLink.trim();
+                const cc = activeJobDraft.contentCheck;
+                const current = Boolean(cc && cc.checkedLink === activeJobDraft.airLink.trim());
+                const modelReady = getEffectiveConfigForPurpose('SELF_VIDEO_ACCEPTANCE').hasActiveExternalKey;
+                const busyContent = checkingContentJobId !== null;
+                const tone = (s: 'PASS' | 'WARN' | 'FAIL') => (s === 'PASS' ? 'positive' : s === 'WARN' ? 'warning' : 'critical');
+                const label = (s: 'PASS' | 'WARN' | 'FAIL') => (s === 'PASS' ? 'Khớp' : s === 'WARN' ? 'Cần xem' : 'Không đạt');
+                return (
+                  <div className="rounded border border-line bg-sunken/40 p-2.5 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-ink">Đối chiếu nội dung với brief</span>
+                      <div className="flex items-center gap-1.5">
+                        <Button size="sm" variant="secondary" disabled={!linkSaved || busyContent} onClick={() => handleContentCheck(activeJobDraft, false)}>
+                          {checkingContentJobId === activeJobDraft.id ? 'Đang đối chiếu…' : 'Đối chiếu từ khóa'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={!linkSaved || busyContent || !modelReady}
+                          title={modelReady ? undefined : 'Chưa nhập khóa mô hình cho mục đích này ở Cấu hình API'}
+                          onClick={() => handleContentCheck(activeJobDraft, true)}
+                        >
+                          Đối chiếu sâu hơn
+                        </Button>
+                      </div>
+                    </div>
+                    {!linkSaved && activeJobDraft.airLink.trim() && <div className="text-2xs text-ink-3">Lưu thay đổi trước khi đối chiếu.</div>}
+                    {cc && !current && <div className="text-2xs text-warning">Kết quả cũ, link đăng đã đổi. Đối chiếu lại.</div>}
+                    {cc && current && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 text-2xs text-ink-3">
+                          <Status tone={cc.verdict === 'PASS' ? 'positive' : cc.verdict === 'REVIEW' ? 'warning' : 'critical'}>
+                            {cc.verdict === 'PASS' ? 'Khớp brief' : cc.verdict === 'REVIEW' ? 'Cần xem lại' : 'Không đạt'}
+                          </Status>
+                          <span>{cc.source === 'MODEL' ? 'Từ khóa + đối chiếu sâu' : 'Từ khóa'} · {cc.checkedBy} · {cc.checkedAt.slice(0, 16).replace('T', ' ')}</span>
+                        </div>
+                        <ul className="space-y-1">
+                          {cc.items.map(it => (
+                            <li key={it.key} className="flex items-start gap-2 text-xs">
+                              <Status tone={tone(it.status)}>{label(it.status)}</Status>
+                              <div className="min-w-0">
+                                <div className="font-medium text-ink">{it.label}</div>
+                                <div className="text-ink-2">{it.detail}</div>
+                                {it.evidence && <div className="text-2xs text-ink-3 italic">“{it.evidence}”</div>}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                        {cc.suggestion && <div className="rounded border border-line bg-surface p-2 text-xs text-ink-2">Gợi ý phản hồi CTV: {cc.suggestion}</div>}
+                        <div className="text-2xs text-ink-3">Kết quả chỉ để tham khảo. Người nghiệm thu quyết định Đạt / Sửa / Không đạt.</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <Field label="Ngày đăng (Lên sóng)">
                   <Input
@@ -2109,6 +2256,20 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                     </Button>
                   </div>
                 </div>
+
+                {selfJobHandoverPassed(activeJobDraft) && (
+                  <div className="text-2xs text-ink-2">
+                    <Status tone="info">Đạt bàn giao</Status> Video đã đạt QA nhưng chưa đăng lên kênh Brand nên chưa nghiệm thu tính công.
+                  </div>
+                )}
+
+                <Field label="Ghi chú nghiệm thu (bắt buộc khi kiểm link hoặc đối chiếu nội dung báo cần xem lại)">
+                  <Input
+                    value={activeJobDraft.acceptanceNote || ''}
+                    onChange={e => setActiveJobDraft({ ...activeJobDraft, acceptanceNote: e.target.value })}
+                    placeholder="Lý do vẫn nghiệm thu Đạt, hoặc yêu cầu CTV sửa gì"
+                  />
+                </Field>
 
                 {selfJobAcceptanceBlocker(activeJobDraft) && (
                   <div className="rounded border border-amber-200 bg-amber-50 p-2 text-2xs text-amber-800 flex items-center gap-1.5">
@@ -2256,15 +2417,18 @@ export const PlanSelfChannelBoard: React.FC<PlanSelfChannelBoardProps> = ({
                 </div>
               </div>
 
-              {selfJobPaymentBlocker(activeJobDraft) && (
-                <div className="rounded border border-amber-200 bg-amber-50 p-2 text-2xs text-amber-800 flex items-center gap-1.5">
-                  <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
-                  <span>Điều kiện lập ĐNTT chưa đạt: {selfJobPaymentBlocker(activeJobDraft)}</span>
-                </div>
-              )}
+              {(() => {
+                const payBlocker = selfJobPaymentBlocker(activeJobDraft);
+                return payBlocker ? (
+                  <div className="rounded border border-amber-200 bg-amber-50 p-2 text-2xs text-amber-800 flex items-center gap-1.5">
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+                    <span>Điều kiện lập ĐNTT chưa đạt: {payBlocker}</span>
+                  </div>
+                ) : null;
+              })()}
 
               <div className="pt-2 border-t border-line text-xs text-ink-3">
-                BBNT sản lượng tháng, ĐNTT Lark và xác nhận đã chi (Kế toán) làm ở tab <strong>Quyết toán</strong>, gom theo CTV qua mọi gian.
+                Phiếu ĐNTT (dùng chung luồng Lark với Booking video), duyệt và xác nhận đã đi tiền (Kế toán) làm ở tab <strong>Thanh toán</strong>, mỗi video một phiếu.
                 {activeJobDraft.dnttSlipCode && <span className="ml-1 text-ink">Mã phiếu: {activeJobDraft.dnttSlipCode}</span>}
                 {activeJobDraft.bbntCode && <span className="ml-1 text-ink">· BBNT: {activeJobDraft.bbntCode}</span>}
                 {activeJobDraft.uncRef && <span className="ml-1 text-ink">· UNC: {activeJobDraft.uncRef}</span>}

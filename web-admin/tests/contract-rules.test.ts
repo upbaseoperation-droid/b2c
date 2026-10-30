@@ -5,6 +5,11 @@ import {
   evaluateContractRules,
   numberToVietnameseWords,
 } from '../src/lib/contracts/contractRules';
+import {
+  evaluateLegalProfileSigningHistory,
+  resolveContractLegalAttachments,
+} from '../src/lib/contracts/legalProfileHistory';
+import type { ContractRecord } from '../src/lib/contracts/types';
 
 test('Tax calculation: TNCN 10% for individual >= 2M, VAT for company', () => {
   // Case 1: Individual net 10M -> Gross is round(10M / 0.9) = 11,111,111
@@ -119,4 +124,139 @@ test('Number to Vietnamese words conversion', () => {
   assert.equal(numberToVietnameseWords(0), 'Không đồng');
   assert.equal(numberToVietnameseWords(10_000_000), 'Mười triệu đồng');
   assert.equal(numberToVietnameseWords(55_500_000), 'Năm mươi lăm triệu năm trăm nghìn đồng');
+});
+
+test('Gợi ý Kế toán: Đối chiếu lịch sử ký theo Hồ sơ pháp lý của KOC & kế thừa CCCD/ĐKKD (RULE-SYNC-01)', () => {
+  const now = new Date().toISOString();
+  const baseSignedRecord: ContractRecord = {
+    id: 'CTR-SIGNED-01',
+    title: 'Hợp đồng nguyên tắc · Chanh Beauty · Kutieskin',
+    brand: 'Kutieskin',
+    partner: 'Đặng Mai Phương (Chanh Beauty)',
+    templateId: 'IND-HDNT',
+    templateHash: 'hash-1',
+    kocId: 'koc-1',
+    ownerId: 'u-1',
+    ownerName: 'Chuyên viên A',
+    version: 1,
+    revision: 1,
+    approval: 'APPROVED',
+    legalAttachments: [
+      {
+        id: 'doc-1',
+        docType: 'CCCD_FRONT',
+        label: 'CCCD mặt trước',
+        fileKey: 'legal-docs/chanh-beauty/2026-10/0001-cccd.svg',
+        fileName: 'cccd-mat-truoc.svg',
+        fileSize: 120000,
+        mimeType: 'image/svg+xml',
+        storage: 'R2',
+        url: '/api/contracts/legal-docs?key=legal-docs%2Fchanh-beauty%2F2026-10%2F0001-cccd.svg',
+        uploadedAt: now,
+      },
+    ],
+    steps: [
+      {
+        role: 'FINANCE',
+        reviewerId: 'fin-1',
+        reviewerName: 'Lê Thị Thu Hà',
+        version: 1,
+        status: 'APPROVED',
+        decidedAt: now,
+      },
+    ],
+    values: {
+      'src:cccd': '001198012345',
+      'src:taxCode': '8451239876',
+      'src:bankAccount': '19036789123456',
+      'src:bankName': 'Techcombank',
+    },
+    versions: [],
+    signing: [
+      {
+        documentId: 'ws-01',
+        version: 1,
+        provider: 'DEMO',
+        status: 'COMPLETED',
+        sourceStatus: 2,
+        linkedBy: 'u-1',
+        linkedAt: now,
+        syncedAt: now,
+        evidenceConfirmedBy: 'fin-1',
+        evidenceHash: 'h-1',
+        people: [],
+      },
+    ],
+    checks: [],
+    createdAt: now,
+    updatedAt: now,
+    history: [],
+  };
+
+  const pendingSameProfile: ContractRecord = {
+    ...baseSignedRecord,
+    id: 'CTR-PENDING-02',
+    title: 'Phụ lục SOW Đợt 2 · Chanh Beauty · Kutieskin',
+    templateId: 'IND-SOW',
+    approval: 'IN_REVIEW',
+    legalAttachments: undefined,
+    signing: [],
+    steps: [
+      {
+        role: 'FINANCE',
+        reviewerId: 'fin-1',
+        reviewerName: 'Lê Thị Thu Hà',
+        version: 1,
+        status: 'PENDING',
+      },
+    ],
+  };
+
+  const pendingChangedBank: ContractRecord = {
+    ...pendingSameProfile,
+    id: 'CTR-PENDING-03',
+    values: {
+      ...pendingSameProfile.values,
+      'src:bankAccount': '99998888777766',
+      'src:bankName': 'Vietcombank',
+    },
+  };
+
+  const pendingFirstTime: ContractRecord = {
+    ...pendingSameProfile,
+    id: 'CTR-PENDING-04',
+    kocId: 'koc-new-99',
+    partner: 'Nguyễn Ngọc Ánh',
+    values: {
+      'src:cccd': '079200001122',
+      'src:bankAccount': '1029384756',
+      'src:bankName': 'MBBank',
+    },
+  };
+
+  const allRecords = [
+    baseSignedRecord,
+    pendingSameProfile,
+    pendingChangedBank,
+    pendingFirstTime,
+  ];
+
+  const verifiedHist = evaluateLegalProfileSigningHistory(pendingSameProfile, allRecords);
+  assert.equal(verifiedHist.status, 'SIGNED_VERIFIED');
+  assert.equal(verifiedHist.isSkipDeepCheckEligible, true);
+  assert.equal(verifiedHist.signedCount, 1);
+  assert.equal(verifiedHist.latestMatch?.id, 'CTR-SIGNED-01');
+
+  const inheritedDocs = resolveContractLegalAttachments(pendingSameProfile, undefined, undefined, allRecords);
+  assert.equal(inheritedDocs.length, 1);
+  assert.equal(inheritedDocs[0].docType, 'CCCD_FRONT');
+
+  const changedHist = evaluateLegalProfileSigningHistory(pendingChangedBank, allRecords);
+  assert.equal(changedHist.status, 'PROFILE_CHANGED');
+  assert.equal(changedHist.isSkipDeepCheckEligible, false);
+  assert.ok(changedHist.changedFields.some(f => f.includes('Số tài khoản')));
+
+  const firstTimeHist = evaluateLegalProfileSigningHistory(pendingFirstTime, allRecords);
+  assert.equal(firstTimeHist.status, 'FIRST_TIME');
+  assert.equal(firstTimeHist.isSkipDeepCheckEligible, false);
 });

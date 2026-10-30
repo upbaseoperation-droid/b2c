@@ -9,6 +9,7 @@ import {
   EMPTY_SETTLEMENT_MONTH,
   isOpenSettlement,
   monthlyPitOf,
+  requiresSelfContract,
   selfBbntCodeOf,
   SELF_PIT_RATE,
   type SelfMonthlySettlement,
@@ -60,12 +61,16 @@ function buildCandidates(
 ): SelfSettlementCandidate[] {
   const held = new Set(settlements.filter(isOpenSettlement).flatMap(s => s.jobs.map(j => `${j.planId}::${j.jobId}`)));
   const groups = new Map<string, SelfSettlementJobRef[]>();
+  const monthGrossByCtv = new Map<string, number>();
   const names = new Map<string, string>();
   for (const { planId, storeName, brandName, job } of jobs) {
     if (job.productionMode !== 'CTV_OUTSOURCE' || job.lifecycleStatus === 'CANCELLED') continue;
+    const key = job.contributorId || '';
+    if (job.acceptanceStatus === 'PASSED' && job.feeGross > 0) {
+      monthGrossByCtv.set(key, (monthGrossByCtv.get(key) || 0) + job.feeGross);
+    }
     if (job.acceptanceStatus !== 'PASSED' || job.paymentStatus !== 'NONE' || job.feeGross <= 0) continue;
     if (held.has(`${planId}::${job.id}`)) continue;
-    const key = job.contributorId || '';
     groups.set(key, [
       ...(groups.get(key) || []),
       { planId, jobId: job.id, jobCode: job.code, storeName, brandName, formatKey: job.formatKey, feeGross: job.feeGross, airLink: job.airLink, airedAt: job.airedAt },
@@ -75,16 +80,23 @@ function buildCandidates(
   const today = getVietnamDateYmd();
   return Array.from(groups.entries()).map(([contributorId, refs]) => {
     const ctv = contributorId ? directory.contributors.find(c => c.id === contributorId) : undefined;
+    const grossTotal = refs.reduce((s, r) => s + r.feeGross, 0);
+    const cumulativeMonthGross = Math.max(grossTotal, monthGrossByCtv.get(contributorId) || 0);
+    const contractRequired = requiresSelfContract(cumulativeMonthGross);
     const blockers: string[] = [];
     if (!contributorId) blockers.push('Các việc này chưa gắn CTV từ danh bạ (chọn lại CTV trên việc).');
     else if (!ctv) blockers.push('CTV không còn trong danh bạ.');
     if (ctv) {
-      if (!ctv.contractCode?.trim() || ctv.contractStatus !== 'ACTIVE') blockers.push('Chưa có Hợp đồng khung đang hiệu lực.');
-      else if (ctv.contractExpiryDate && ctv.contractExpiryDate < today) blockers.push(`Hợp đồng khung hết hạn ${ctv.contractExpiryDate}.`);
+      if (contractRequired) {
+        if (!ctv.contractCode?.trim() || ctv.contractStatus !== 'ACTIVE') {
+          blockers.push('Tổng thù lao tháng từ 10.000.000đ trở lên bắt buộc có Hợp đồng khung đang hiệu lực.');
+        } else if (ctv.contractExpiryDate && ctv.contractExpiryDate < today) {
+          blockers.push(`Hợp đồng khung hết hạn ${ctv.contractExpiryDate}.`);
+        }
+      }
       if (!(ctv.cccd || ctv.taxCode)?.trim()) blockers.push('Thiếu CCCD / MST.');
       if (!ctv.bankName?.trim() || !ctv.bankAccount?.trim() || !ctv.bankAccountName?.trim()) blockers.push('Thiếu thông tin ngân hàng.');
     }
-    const grossTotal = refs.reduce((s, r) => s + r.feeGross, 0);
     const pitTax = monthlyPitOf(grossTotal);
     return {
       contributorId,
@@ -189,118 +201,8 @@ export async function POST(request: NextRequest) {
     const nowIso = new Date().toISOString();
 
     if (body.op === 'create') {
-      if (!access.manage) return fail('Chỉ Partnership hoặc Giám đốc / Admin lập quyết toán CTV.', 403);
-      const monthRec = await readRecord<SelfSettlementMonthData>(monthKey(body.month), EMPTY_SETTLEMENT_MONTH);
-      const candidate = buildCandidates(await loadMonthJobs(body.month), directory, monthRec.data.settlements || []).find(
-        c => c.contributorId === body.contributorId
-      );
-      if (!candidate || !candidate.contributorId) return fail('CTV này không có việc đã nghiệm thu chờ quyết toán trong tháng.', 404);
-      if (candidate.blockers.length) return fail(`Chưa lập được: ${candidate.blockers.join(' ')}`, 422);
-      const ctv = directory.contributors.find(c => c.id === candidate.contributorId)!;
-      const ctvCode = ctv.code || ctv.id;
-      const seq = (monthRec.data.settlements || []).filter(s => s.contributorId === ctv.id).length + 1;
-      const slipCode = `DNTT-SC-${body.month.replace(/\D/g, '')}-${ctvCode}-${seq}`;
-      const bbntCode = selfBbntCodeOf(body.month, ctvCode);
-      const payee = { legalId: (ctv.cccd || ctv.taxCode || '').trim(), bankName: ctv.bankName, bankAccount: ctv.bankAccount, bankHolder: ctv.bankAccountName };
-
-      // Gửi Lark trước; production thiếu cấu hình thì dừng, không ghi nhận gì (không "thành công giả")
-      let larkMode: SelfMonthlySettlement['larkMode'] = 'SANDBOX';
-      let larkInstanceCode: string | undefined;
-      let larkWarning: string | undefined;
-      if (hasLiveLarkApproval()) {
-        try {
-          const r = await submitLarkPaymentApproval({
-            form: [
-              { id: 'slip_code', type: 'input', value: slipCode },
-              { id: 'request_type', type: 'input', value: 'Quyết toán CTV video kênh Brand (tháng)' },
-              { id: 'deal_codes', type: 'input', value: candidate.jobs.map(j => j.jobCode).join(', ') },
-              { id: 'master_contract_codes', type: 'input', value: ctv.contractCode || '' },
-              { id: 'appendix_codes', type: 'input', value: bbntCode },
-              { id: 'video_asset_net_amount', type: 'amount', value: String(candidate.grossTotal) },
-              { id: 'addon_services_net_amount', type: 'amount', value: '0' },
-              { id: 'dropped_deduction_amount', type: 'amount', value: '0' },
-              { id: 'koc_name', type: 'input', value: ctv.name },
-              { id: 'payee_holder', type: 'input', value: payee.bankHolder },
-              { id: 'bank_info', type: 'input', value: `${payee.bankName} - ${payee.bankAccount}` },
-              { id: 'legal_id', type: 'input', value: payee.legalId },
-              { id: 'net_transfer_amount', type: 'amount', value: String(candidate.netTotal) },
-              { id: 'gross_contract_amount', type: 'amount', value: String(candidate.grossTotal) },
-              { id: 'tax_amount', type: 'amount', value: String(candidate.pitTax) },
-            ],
-            bitableFields: {
-              'Mã phiếu ĐNTT': slipCode,
-              'Loại thanh toán': 'Quyết toán CTV Self-channel (tháng)',
-              'Danh sách Mã BO': candidate.jobs.map(j => j.jobCode).join(', '),
-              'Thương hiệu': Array.from(new Set(candidate.jobs.map(j => j.brandName))).join(', '),
-              'Gian hàng': Array.from(new Set(candidate.jobs.map(j => j.storeName))).join(', '),
-              KOC: ctv.name,
-              'Chủ thể thuế': 'Cá nhân (CTV)',
-              'CCCD / MST': payee.legalId,
-              'Ngân hàng': payee.bankName,
-              'Số tài khoản': payee.bankAccount,
-              'Chủ tài khoản': payee.bankHolder,
-              'Thuế TNCN 10%': candidate.pitTax,
-              'Tổng Gross hợp đồng': candidate.grossTotal,
-              'Số tiền thực chuyển': candidate.netTotal,
-              'Link Air nghiệm thu': candidate.jobs.map(j => j.airLink).filter(Boolean).join('\n'),
-              'Biên bản nghiệm thu': bbntCode,
-              'Người tạo phiếu': actor.name,
-            },
-          });
-          larkMode = 'LIVE';
-          larkInstanceCode = r.instanceCode;
-          larkWarning = r.warning;
-        } catch (err) {
-          return fail(`Không gửi được phiếu sang Lark: ${err instanceof Error ? err.message : 'lỗi kết nối'}. Chưa ghi nhận gì, có thể thử lại.`, 502);
-        }
-      } else if (process.env.NODE_ENV === 'production') {
-        return fail('Chưa cấu hình Lark Approval (LARK_APPROVAL_DEFINITION_CODE, LARK_BASE_APP_TOKEN). Phiếu chưa được gửi.', 503);
-      }
-
-      const settlement: SelfMonthlySettlement = {
-        id: `scs-${Date.now()}`,
-        month: body.month,
-        contributorId: ctv.id,
-        contributorName: ctv.name,
-        contributorCode: ctvCode,
-        contractCode: ctv.contractCode || '',
-        bbntCode,
-        slipCode,
-        jobs: candidate.jobs,
-        grossTotal: candidate.grossTotal,
-        pitTax: candidate.pitTax,
-        netTotal: candidate.netTotal,
-        payee,
-        status: 'REQUESTED',
-        larkMode,
-        larkInstanceCode,
-        larkWarning,
-        requestedAt: nowIso,
-        requestedBy: actor.name,
-      };
-      await mutateMonth(body.month, data => {
-        const held = new Set(data.settlements.filter(isOpenSettlement).flatMap(s => s.jobs.map(j => `${j.planId}::${j.jobId}`)));
-        if (settlement.jobs.some(j => held.has(`${j.planId}::${j.jobId}`))) throw new RecordError('Một số việc vừa được người khác lập quyết toán. Tải lại để xem.', 409);
-        return { ...data, settlements: [settlement, ...data.settlements] };
-      });
-      // Thuế TNCN theo tổng tháng: có khấu trừ thì mọi việc trong đợt đều trừ 10%
-      const withhold = settlement.pitTax > 0;
-      const warnings = await applyToBoards(settlement.jobs, j =>
-        j.paymentStatus !== 'NONE'
-          ? null
-          : {
-              ...j,
-              paymentStatus: 'REQUESTED',
-              dnttSlipCode: slipCode,
-              bbntCode,
-              requestedAt: nowIso,
-              requestedBy: actor.name,
-              withholdPit10: withhold,
-              pitTaxAmount: withhold ? Math.round(j.feeGross * SELF_PIT_RATE) : 0,
-              netPayout: j.feeGross - (withhold ? Math.round(j.feeGross * SELF_PIT_RATE) : 0),
-            }
-      );
-      return NextResponse.json({ settlement, warnings: [...(larkWarning ? [larkWarning] : []), ...warnings] }, { headers });
+      // Đã chuyển sang phiếu từng video dùng chung sổ phiếu và kết nối Lark với Booking video
+      return fail('Không lập đợt quyết toán tháng nữa. Lập phiếu thanh toán từng video ở tab Thanh toán (POST /api/integrations/larkbase/payment-requests, source SELF_CHANNEL).', 410);
     }
 
     const monthRec = await readRecord<SelfSettlementMonthData>(monthKey(body.month), EMPTY_SETTLEMENT_MONTH);

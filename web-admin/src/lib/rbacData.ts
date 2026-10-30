@@ -1929,10 +1929,12 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'zalo-bot'
   ],
   LEGAL: [
+    'cockpit',
     'contracts',
     'zalo-bot'
   ],
   FINANCE: [
+    'cockpit',
     'self-channel-hub',
     'store-air-plan-report',
     'contracts',

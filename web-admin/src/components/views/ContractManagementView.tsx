@@ -9,23 +9,25 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Download, Eye, FilePlus2, FileText, FolderKanban, Plus, RefreshCw, Upload } from 'lucide-react';
-import type { BookingDealItem, KocItem } from '../../lib/types';
+import { Download, Eye, FileText, FolderKanban, Plus, RefreshCw, Upload } from 'lucide-react';
+import type { BookingDealItem, KocItem, LegalDocAttachment } from '../../lib/types';
+import { saveSyncedKocLegalAttachments } from '../koc/kocUtils';
 import type { ContractField, ContractRecord, DocBlock, LegalTemplate } from '../../lib/contracts/types';
 import { formatDate } from '../../lib/format';
-import { Button, Chips, DataTable, EmptyState, FilterBar, Modal, PageActions, Pagination, Panel, Person, Segmented, Stat, StatRow, Status } from '../ui';
+import { Button, Chips, DataTable, EmptyState, FilterBar, Modal, PageActions, Pagination, Panel, Person, Select, Stat, StatRow, Status, Tabs } from '../ui';
 import type { Column } from '../ui';
 import { ApiError, contractApi, type ContractBootstrap } from '../contracts/api';
 import { browserDemoEnabled, downloadBrowserDemo, enableBrowserDemo } from '../contracts/browserDemo';
-import { computeSigningProgress, contractStatus, isAcceptance, OFFICIAL_3STAGE_TEMPLATE_IDS, PAYMENT_SCHEDULE_META_KEY, resolveActiveLegalProfile } from '../contracts/contractUi';
+import { computeSigningProgress, contractStatus, isAcceptance, OFFICIAL_3STAGE_TEMPLATE_IDS, resolveActiveLegalProfile } from '../contracts/contractUi';
 import { ContractCatalogView } from '../contracts/ContractCatalogView';
 import { ContractApprovalPortalView } from '../contracts/ContractApprovalPortalView';
+import { computeFinanceReminderItems } from '../contracts/FinanceReminderInboxView';
 import { ContractDetail } from '../contracts/ContractDetail';
 import { ContractDocumentViewer } from '../contracts/ContractDocumentViewer';
 import { ContractForm, type ContractFormInit, type ContractFormPayload } from '../contracts/ContractForm';
 import { ContractSetReconciliationView } from '../contracts/ContractSetReconciliationView';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
-import { detectSubjectKind } from '../../lib/contracts/contractRules';
+import { detectSubjectKind, extractSowPaymentScheduleAndAdvance } from '../../lib/contracts/contractRules';
 import { documentOfTemplate, type ContractDocument } from '../../lib/planDealLink';
 
 /** Yêu cầu mở hồ sơ của một booking hoặc KOC / Hồ sơ pháp lý (từ màn Booking hoặc Danh bạ KOC). `nonce` đổi mỗi lần bấm. */
@@ -44,6 +46,8 @@ type Screen =
   | { mode: 'list' }
   | { mode: 'legal_portal' }
   | { mode: 'finance_portal' }
+  | { mode: 'finance_payment_portal' }
+  | { mode: 'finance_reminders' }
   | { mode: 'sets' }
   | { mode: 'catalog' }
   | { mode: 'detail'; id: string }
@@ -71,10 +75,11 @@ export function ContractManagementView({
     legalProfileId: string | undefined,
     frameworkData: {
       contractCode?: string;
-      status: 'CHƯA_KÝ' | 'ĐANG_TRÌNH_KÝ' | 'ĐÃ_KÝ';
+      status?: 'CHƯA_KÝ' | 'ĐANG_TRÌNH_KÝ' | 'ĐÃ_KÝ';
       signedAt?: string;
       driveUrl?: string;
       googleDocsUrl?: string;
+      legalAttachments?: LegalDocAttachment[];
     }
   ) => void;
   onBackToBooking?: () => void;
@@ -107,6 +112,11 @@ export function ContractManagementView({
   const refresh = useCallback(async () => {
     if (demoMode) enableBrowserDemo();
     const result = await contractApi<ContractBootstrap>('/api/contracts');
+    for (const r of result.records || []) {
+      if (r.kocId && r.legalAttachments && r.legalAttachments.length > 0) {
+        saveSyncedKocLegalAttachments(r.kocId, r.legalProfileId, r.legalAttachments);
+      }
+    }
     setData(result);
     setLoadError(null);
     return result;
@@ -186,7 +196,7 @@ export function ContractManagementView({
               : baseSubject;
       const sameDeal = (r: ContractRecord) => r.dealId === intent.dealId || Boolean(deal?.dealCode && r.dealCode === deal.dealCode);
       const sameKocForDoc = (r: ContractRecord) => sameDeal(r) || Boolean(deal?.kocId && r.kocId === deal.kocId);
-      const existing = latest(data.records.filter(r => documentOfTemplate(r.templateId) === doc && (doc === 'HDNT' ? sameKocForDoc(r) : sameDeal(r))));
+      const existing = latest(data.records.filter(r => documentOfTemplate(r.templateId) === doc && (doc === 'HDNT' ? sameKocForDoc(r) && r.templateId.startsWith(`${subject}-`) : sameDeal(r))));
       if (existing) setScreen({ mode: 'detail', id: existing.id });
       else {
         const templateId = doc === 'HDNT' ? `${subject}-HDNT` : doc === 'SOW' ? `${subject}-SOW` : `${subject}-VID-BBNT`;
@@ -195,7 +205,7 @@ export function ContractManagementView({
           setScreen({ mode: 'list' });
         } else {
           const sameKoc = (r: ContractRecord) => sameDeal(r) || Boolean(deal?.kocId && r.kocId === deal.kocId);
-          const framework = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && sameKoc(r)));
+          const framework = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && r.templateId.startsWith(`${subject}-`) && sameKoc(r)));
           const sow = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'SOW' && sameDeal(r)));
           const parentId = doc === 'SOW' ? framework?.id : doc === 'BBNT' ? sow?.id || framework?.id : undefined;
           setScreen({ mode: 'form', init: { dealId: intent.dealId, kocId: intent.kocId || deal?.kocId, legalProfileId: intent.legalProfileId || deal?.legalProfileId || activeProf?.id, kind: doc === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', docStage: doc, templateId, parentId } });
@@ -216,7 +226,7 @@ export function ContractManagementView({
             : activeProf?.legalType === 'HOUSEHOLD'
               ? 'HKD'
               : baseSubject;
-      const framework = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && (sameDeal(r) || Boolean(deal?.kocId && r.kocId === deal.kocId))));
+      const framework = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && r.templateId.startsWith(`${subject}-`) && (sameDeal(r) || Boolean(deal?.kocId && r.kocId === deal.kocId))));
       const nextStage = subject === 'CTV' ? 'HDNT' : 'SOW';
       const nextTemplateId = nextStage === 'SOW' ? `${subject}-SOW` : `${subject}-HDNT`;
       setScreen(
@@ -255,32 +265,39 @@ export function ContractManagementView({
     const frameworkCode =
       updatedRec.contractSystem?.contractCode || `${docDate || '26'}/${kocCode}/HĐNT-UPB`;
 
-    if (docKind === 'HDNT' && updatedRec.kocId && onSyncKocLegalProfileContract) {
-      onSyncKocLegalProfileContract(updatedRec.kocId, updatedRec.legalProfileId, {
-        contractCode: frameworkCode,
-        status: isCompleted ? 'ĐÃ_KÝ' : 'ĐANG_TRÌNH_KÝ',
-        signedAt: isCompleted ? new Date().toISOString() : undefined,
-        driveUrl: signedUrl,
-        googleDocsUrl: updatedRec.contractSystem?.googleDocsUrl,
+    const resolvedKocId =
+      updatedRec.kocId ||
+      effectiveDeals.find(
+        d => d.id === updatedRec.dealId || (updatedRec.dealCode && d.dealCode === updatedRec.dealCode),
+      )?.kocId;
+
+    if (resolvedKocId && updatedRec.legalAttachments && updatedRec.legalAttachments.length > 0) {
+      saveSyncedKocLegalAttachments(resolvedKocId, updatedRec.legalProfileId, updatedRec.legalAttachments);
+    }
+
+    if (
+      resolvedKocId &&
+      onSyncKocLegalProfileContract &&
+      (docKind === 'HDNT' || (updatedRec.legalAttachments && updatedRec.legalAttachments.length > 0))
+    ) {
+      onSyncKocLegalProfileContract(resolvedKocId, updatedRec.legalProfileId, {
+        ...(docKind === 'HDNT'
+          ? {
+              contractCode: frameworkCode,
+              status: isCompleted ? 'ĐÃ_KÝ' : 'ĐANG_TRÌNH_KÝ',
+              signedAt: isCompleted ? new Date().toISOString() : undefined,
+              driveUrl: signedUrl,
+              googleDocsUrl: updatedRec.contractSystem?.googleDocsUrl,
+            }
+          : {}),
+        legalAttachments: updatedRec.legalAttachments,
       });
     }
 
     if (!(updatedRec.dealId || updatedRec.dealCode) || !onSyncDealContractStatus) return;
     const targetDealId = updatedRec.dealId || effectiveDeals.find(d => d.dealCode === updatedRec.dealCode)?.id || updatedRec.dealCode || '';
     if (docKind === 'SOW') {
-      const schedMode = vMap[PAYMENT_SCHEDULE_META_KEY];
-      const hasSched = Boolean(schedMode);
-      const advNum =
-        schedMode === 'ONE_TIME'
-          ? 0
-          : Number(
-              String(
-                vMap['sowAdvanceAmount'] ||
-                vMap['token:[Số tiền tạm ứng đợt 1]'] ||
-                vMap['token:[advanceAmount]'] ||
-                ''
-              ).replace(/\D/g, '')
-            ) || 0;
+      const sowPay = extractSowPaymentScheduleAndAdvance(vMap, updatedRec.templateId);
       onSyncDealContractStatus(targetDealId, {
         dealCode: updatedRec.dealCode,
         contractAppendixCode:
@@ -288,7 +305,9 @@ export function ContractManagementView({
         contractAppendixStatus: isCompleted ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
         contractAppendixGoogleDocsUrl: updatedRec.contractSystem?.googleDocsUrl,
         contractAppendixSignedUrl: signedUrl,
-        ...(hasSched ? { advanceAmount: advNum, soTienTamUngTruoc: advNum } : {}),
+        paymentScheduleOption: sowPay.paymentScheduleOption,
+        advanceAmount: sowPay.paymentScheduleOption === 'TWO_TIMES' ? sowPay.advanceAmount : 0,
+        soTienTamUngTruoc: sowPay.paymentScheduleOption === 'TWO_TIMES' ? sowPay.advanceAmount : 0,
       });
     } else if (docKind === 'HDNT') {
       onSyncDealContractStatus(targetDealId, {
@@ -401,27 +420,22 @@ export function ContractManagementView({
   const columns: Column<ContractRecord>[] = [
     {
       key: 'title',
-      header: 'Hồ sơ & Giai đoạn',
-      width: 230,
+      header: 'Hồ sơ',
+      width: 240,
       render: r => {
         const tpl = data?.templates.find(t => t.id === r.templateId);
         const docStage = documentOfTemplate(r.templateId);
-        const stageBadge =
+        const stageName =
           docStage === 'HDNT'
-            ? { label: '1. HĐNT Khung', cls: 'bg-sunken border-line text-ink-2' }
+            ? 'Hợp đồng nguyên tắc'
             : docStage === 'SOW'
-              ? { label: '2. Phụ lục SOW', cls: 'bg-accent-soft/50 border-accent/30 text-accent' }
-              : { label: '3. Nghiệm thu BBNT', cls: 'bg-positive-soft/60 border-positive/30 text-positive' };
+              ? 'Phụ lục SOW'
+              : 'Biên bản nghiệm thu';
         return (
-          <div className="min-w-0 max-w-[270px] leading-tight space-y-1">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className={`text-2xs font-semibold px-1.5 py-0.5 rounded border shrink-0 ${stageBadge.cls}`}>
-                {stageBadge.label}
-              </span>
-              <span className="block truncate font-semibold text-ink">{r.title}</span>
-            </div>
+          <div className="min-w-0 max-w-[260px] leading-snug space-y-0.5">
+            <span className="block truncate font-medium text-ink">{r.title}</span>
             <span className="block truncate text-2xs text-ink-3">
-              {r.isKocOwnForm && r.customFile ? `Tệp KOC: ${r.customFile.filename}` : (tpl?.name || r.templateId)} · v{r.version}
+              {stageName} · {r.isKocOwnForm && r.customFile ? r.customFile.filename : (tpl?.id || r.templateId)} · v{r.version}
             </span>
           </div>
         );
@@ -429,20 +443,20 @@ export function ContractManagementView({
     },
     {
       key: 'partner',
-      header: 'Đối tác KOC · Booking',
-      width: 170,
+      header: 'KOC & nhãn hàng',
+      width: 190,
       render: r => (
-        <div className="min-w-0 max-w-[210px] leading-tight space-y-0.5">
+        <div className="min-w-0 max-w-[210px] leading-snug space-y-0.5">
           <span className="block truncate font-medium text-ink">{r.partner}</span>
           <span className="block truncate text-2xs text-ink-3">
             {r.brand}
             {r.dealCode ? (
               <>
                 {' · '}
-                <span className="font-code font-medium text-ink-2">{r.dealCode}</span>
+                <span className="font-code text-ink-2">{r.dealCode}</span>
               </>
             ) : (
-              ' · Hợp đồng khung'
+              ' · HĐ khung'
             )}
           </span>
         </div>
@@ -450,11 +464,10 @@ export function ContractManagementView({
     },
     {
       key: 'links',
-      header: 'Mã HĐ / PL / BBNT & Đường link',
+      header: 'Mã chứng từ & văn bản',
       width: 215,
       render: r => {
         const code = r.contractSystem?.contractCode || r.signing.at(-1)?.contractCode || r.title;
-        const parentCode = r.contractSystem?.parentContractCode;
         const gdocsUrl = r.googleDocsUrl || r.contractSystem?.googleDocsUrl;
         const docxUrl = r.contractSystem?.exportedDocxUrl || `/api/contracts/${r.id}/document?version=${r.version}`;
         const signedUrl =
@@ -462,43 +475,52 @@ export function ContractManagementView({
           r.contractSystem?.signedFileUrl ||
           (r.signing.at(-1)?.status === 'COMPLETED' ? `/api/contracts/${r.id}/document?version=${r.version}` : undefined);
         return (
-          <div className="min-w-0 max-w-[225px] leading-tight space-y-1" onClick={e => e.stopPropagation()}>
-            <div className="font-code text-xs font-semibold text-ink truncate" title={code}>
+          <div className="min-w-0 max-w-[230px] leading-snug space-y-0.5" onClick={e => e.stopPropagation()}>
+            <div className="font-code text-xs font-medium text-ink truncate" title={code}>
               {code}
             </div>
-            {parentCode && (
-              <div className="font-code text-2xs text-ink-3 truncate" title={`Kế thừa: ${parentCode}`}>
-                Kế thừa: {parentCode}
-              </div>
-            )}
-            <div className="flex flex-wrap items-center gap-2 text-2xs">
-              {gdocsUrl && (
-                <a
-                  href={gdocsUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-medium text-accent hover:underline"
-                >
-                  Google Docs ↗
-                </a>
-              )}
+            <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3">
+              <button
+                type="button"
+                onClick={() => setQuickViewRecord(r)}
+                className="font-medium text-accent hover:underline"
+              >
+                Xem văn bản
+              </button>
+              <span>·</span>
               <a
                 href={docxUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="font-medium text-ink-2 hover:text-ink hover:underline"
+                className="hover:text-ink hover:underline"
               >
-                File .docx ↗
+                .docx ↗
               </a>
+              {gdocsUrl && (
+                <>
+                  <span>·</span>
+                  <a
+                    href={gdocsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-ink hover:underline"
+                  >
+                    Docs ↗
+                  </a>
+                </>
+              )}
               {signedUrl && (
-                <a
-                  href={signedUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-medium text-positive hover:underline"
-                >
-                  Bản đã ký ↗
-                </a>
+                <>
+                  <span>·</span>
+                  <a
+                    href={signedUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-positive font-medium hover:underline"
+                  >
+                    Bản ký ↗
+                  </a>
+                </>
               )}
             </div>
           </div>
@@ -506,80 +528,50 @@ export function ContractManagementView({
       },
     },
     {
+      key: 'owner',
+      header: 'Phụ trách',
+      width: 140,
+      render: r => <Person name={r.ownerName} size={20} />,
+    },
+    {
       key: 'status',
-      header: 'Trạng thái duyệt',
-      width: 130,
+      header: 'Trạng thái & ký số',
+      width: 170,
       render: r => {
         const s = contractStatus(r);
-        return (
-          <div className="grid gap-0.5 justify-items-start leading-tight">
-            <Status tone={s.tone}>{s.label}</Status>
-            {s.note && <span className="text-2xs text-ink-3 truncate max-w-[130px]">{s.note}</span>}
-          </div>
-        );
-      },
-    },
-    {
-      key: 'signing',
-      header: 'Ký số 2 bên (weSign)',
-      width: 185,
-      render: r => {
         const attempt = r.signing.at(-1);
         const prog = computeSigningProgress(attempt);
-        if (!attempt || !prog) {
-          return (
-            <span className="text-2xs text-ink-3">
-              {r.approval === 'APPROVED' ? 'Sẵn sàng trình ký' : 'Chưa trình ký'}
-            </span>
-          );
+        let signSummary = s.note || '';
+        if (attempt && prog) {
+          const pA = attempt.people[0];
+          const pB = attempt.people[1];
+          const aDone = pA?.action === 2 || attempt.status === 'COMPLETED';
+          const bDone = pB?.action === 2 || attempt.status === 'COMPLETED';
+          signSummary =
+            aDone && bDone
+              ? 'Đã ký đủ 2/2 bên'
+              : aDone
+                ? 'Bên A đã ký · Chờ Bên B'
+                : bDone
+                  ? 'Bên B đã ký · Chờ Bên A'
+                  : 'Đang chờ 2 bên ký';
         }
-        const pA = attempt.people[0];
-        const pB = attempt.people[1];
-        const aDone = pA?.action === 2 || attempt.status === 'COMPLETED';
-        const bDone = pB?.action === 2 || attempt.status === 'COMPLETED';
         return (
-          <div className="grid gap-1 min-w-[155px] max-w-[190px] leading-tight">
-            <div className="flex items-center justify-between gap-1 text-2xs">
-              <div className="flex items-center gap-1">
-                <span
-                  className={`px-1.5 py-0.5 rounded border text-2xs font-medium ${
-                    aDone ? 'border-positive/30 bg-positive-soft text-positive' : 'border-line bg-sunken text-ink-3'
-                  }`}
-                >
-                  Bên A {aDone ? '✓' : '…'}
-                </span>
-                <span
-                  className={`px-1.5 py-0.5 rounded border text-2xs font-medium ${
-                    bDone ? 'border-positive/30 bg-positive-soft text-positive' : 'border-line bg-sunken text-ink-3'
-                  }`}
-                >
-                  Bên B {bDone ? '✓' : '…'}
-                </span>
-              </div>
-              <span className="font-code text-ink-2 tabular-nums">{prog.progressPercent}%</span>
-            </div>
-            <div className="h-1.5 w-full rounded-full bg-line overflow-hidden">
-              <div
-                className={`h-full ${
-                  attempt.status === 'COMPLETED'
-                    ? 'bg-positive'
-                    : attempt.status === 'REJECTED'
-                      ? 'bg-critical'
-                      : 'bg-accent'
-                }`}
-                style={{ width: `${Math.max(6, prog.progressPercent)}%` }}
-              />
-            </div>
+          <div className="leading-snug space-y-0.5">
+            <Status tone={s.tone}>{s.label}</Status>
+            {signSummary && (
+              <span className="block text-2xs text-ink-3 truncate max-w-[165px]">
+                {signSummary}
+              </span>
+            )}
           </div>
         );
       },
     },
-    { key: 'owner', header: 'Người phụ trách', width: 130, render: r => <Person name={r.ownerName} size={20} /> },
-    { key: 'updated', header: 'Cập nhật', width: 85, align: 'right', render: r => <span className="text-ink-2 tabular-nums text-xs">{formatDate(r.updatedAt)}</span> },
     {
-      key: 'preview',
-      header: 'Thao tác nhanh',
-      width: 175,
+      key: 'updated',
+      header: 'Cập nhật',
+      width: 135,
       align: 'right',
       render: r => {
         const isSigned = r.signing.at(-1)?.status === 'COMPLETED';
@@ -587,16 +579,55 @@ export function ContractManagementView({
         const isHdnt = r.templateId.endsWith('-HDNT') && r.templateId !== 'CTV-HDNT';
         const hasChild = (data?.records || []).some(c => c.parentId === r.id);
         return (
-          <div className="inline-flex items-center justify-end gap-1.5" onClick={e => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={() => setQuickViewRecord(r)}
-              className="inline-flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-2xs font-medium text-ink hover:bg-sunken"
-            >
-              <Eye className="w-3.5 h-3.5 text-accent" />
-              Xem A4
-            </button>
-            {!isSigned && (data?.demoActors.length ?? 0) > 0 && (
+          <div
+            className="leading-snug space-y-0.5 text-right"
+            onClick={e => e.stopPropagation()}
+          >
+            <span className="block text-ink-2 tabular-nums text-xs">
+              {formatDate(r.updatedAt)}
+            </span>
+            {isSigned && isHdnt ? (
+              <button
+                type="button"
+                onClick={() =>
+                  setScreen({
+                    mode: 'form',
+                    init: {
+                      dealId: r.dealId,
+                      kocId: r.kocId,
+                      legalProfileId: r.legalProfileId,
+                      kind: 'CONTRACT',
+                      docStage: 'SOW',
+                      parentId: r.id,
+                      templateId: r.templateId.replace(/-HDNT$/, '-SOW'),
+                    },
+                  })
+                }
+                className="text-2xs font-medium text-accent hover:underline"
+              >
+                Lập SOW →
+              </button>
+            ) : isSigned && isSow && !hasChild ? (
+              <button
+                type="button"
+                onClick={() =>
+                  setScreen({
+                    mode: 'form',
+                    init: {
+                      dealId: r.dealId,
+                      kocId: r.kocId,
+                      legalProfileId: r.legalProfileId,
+                      kind: 'ACCEPTANCE',
+                      docStage: 'BBNT',
+                      parentId: r.id,
+                    },
+                  })
+                }
+                className="text-2xs font-medium text-accent hover:underline"
+              >
+                Lập BBNT →
+              </button>
+            ) : !isSigned && (data?.demoActors.length ?? 0) > 0 ? (
               <button
                 type="button"
                 disabled={busy}
@@ -610,68 +641,18 @@ export function ContractManagementView({
                     });
                     await refresh();
                     syncDealStatusForRecord(result.record);
-                    onNotify?.(
-                      isSow
-                        ? `Đã ký đủ 2 bên Phụ lục SOW (${r.title}) — Đã khóa cấu hình Deal`
-                        : `Đã ký đủ 2 bên (${r.title})`,
-                      'success',
-                    );
+                    onNotify?.(`Đã ký đủ 2 bên (${r.title})`, 'success');
                   } catch (err) {
                     onNotify?.((err as Error).message, 'error');
                   } finally {
                     setBusy(false);
                   }
                 }}
-                className="inline-flex items-center gap-1 rounded-md border border-positive/40 bg-positive-soft/70 px-2 py-1 text-2xs font-semibold text-positive hover:bg-positive-soft"
-                title="Xác nhận đã ký đủ 2 bên (Bên A & Bên B)"
+                className="text-2xs font-medium text-positive hover:underline"
               >
-                <CheckCircle2 className="w-3.5 h-3.5" />
                 Ký 2 bên
               </button>
-            )}
-            {isSigned && isHdnt && (
-              <button
-                type="button"
-                onClick={() =>
-                  setScreen({
-                    mode: 'form',
-                    init: {
-                      dealId: r.dealId,
-                      kocId: r.kocId,
-                      kind: 'CONTRACT',
-                      docStage: 'SOW',
-                      parentId: r.id,
-                      templateId: r.templateId.replace(/-HDNT$/, '-SOW'),
-                    },
-                  })
-                }
-                className="inline-flex items-center gap-1 rounded-md border border-accent/40 bg-accent-soft/60 px-2 py-1 text-2xs font-semibold text-accent hover:bg-accent-soft"
-              >
-                <FilePlus2 className="w-3.5 h-3.5" />
-                Lập SOW
-              </button>
-            )}
-            {isSigned && isSow && !hasChild && (
-              <button
-                type="button"
-                onClick={() =>
-                  setScreen({
-                    mode: 'form',
-                    init: {
-                      dealId: r.dealId,
-                      kocId: r.kocId,
-                      kind: 'ACCEPTANCE',
-                      docStage: 'BBNT',
-                      parentId: r.id,
-                    },
-                  })
-                }
-                className="inline-flex items-center gap-1 rounded-md border border-accent/40 bg-accent-soft/60 px-2 py-1 text-2xs font-semibold text-accent hover:bg-accent-soft"
-              >
-                <FilePlus2 className="w-3.5 h-3.5" />
-                Lập BBNT
-              </button>
-            )}
+            ) : null}
           </div>
         );
       },
@@ -711,6 +692,12 @@ export function ContractManagementView({
       (Boolean(r.googleDocsUrl) && r.approval !== 'APPROVED' && !r.signing.some(s => s.status === 'COMPLETED')),
   ).length;
 
+  const financeReminderCount = computeFinanceReminderItems({
+    data,
+    deals: effectiveDeals,
+    kocs,
+  }).filter(item => item.urgency === 'critical' || item.urgency === 'warning').length;
+
   return (
     <div className="space-y-3.5" onClickCapture={e => {
       if (!browserDemoEnabled()) return;
@@ -720,6 +707,8 @@ export function ContractManagementView({
       {(screen.mode === 'list' ||
         screen.mode === 'legal_portal' ||
         screen.mode === 'finance_portal' ||
+        screen.mode === 'finance_payment_portal' ||
+        screen.mode === 'finance_reminders' ||
         screen.mode === 'sets' ||
         screen.mode === 'catalog') && (
         <>
@@ -743,16 +732,13 @@ export function ContractManagementView({
                   }
                 }}
               >
-                Đồng bộ tiến độ weSign
+                Đồng bộ weSign
               </Button>
             )}
-            <Button size="sm" variant="secondary" icon={FileText} onClick={() => setIsContractReportOpen(true)}>
-              Kiểm tra điều khoản & thuế
-            </Button>
             {canCreate && (
               <>
                 <Button size="sm" variant="secondary" icon={Upload} onClick={() => setScreen({ mode: 'form', init: { isKocOwnForm: true } })}>
-                  Tải hợp đồng (.docx)
+                  Tải file (.docx)
                 </Button>
                 <Button
                   size="sm"
@@ -765,7 +751,7 @@ export function ContractManagementView({
                     })
                   }
                 >
-                  Ký Phụ lục SOW (Bắt đầu Deal)
+                  Ký phụ lục SOW
                 </Button>
                 <Button size="sm" variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>
                   Tạo hợp đồng
@@ -774,93 +760,132 @@ export function ContractManagementView({
             )}
           </PageActions>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Segmented
-              value={
-                screen.mode === 'catalog'
-                  ? 'CATALOG'
-                  : screen.mode === 'sets'
-                    ? 'SETS'
-                    : screen.mode === 'legal_portal'
-                      ? 'LEGAL_PORTAL'
-                      : screen.mode === 'finance_portal'
-                        ? 'FINANCE_PORTAL'
-                        : 'RECORDS'
-              }
-              onChange={v =>
-                setScreen(
-                  v === 'CATALOG'
-                    ? { mode: 'catalog' }
-                    : v === 'SETS'
-                      ? { mode: 'sets' }
-                      : v === 'LEGAL_PORTAL'
-                        ? { mode: 'legal_portal' }
-                        : v === 'FINANCE_PORTAL'
-                          ? { mode: 'finance_portal' }
-                          : { mode: 'list' },
-                )
-              }
-              items={[
-                { key: 'RECORDS', label: `Hồ sơ hợp đồng (${data.records.length})` },
-                { key: 'LEGAL_PORTAL', label: `Portal Pháp chế (${pendingLegalCount})` },
-                { key: 'FINANCE_PORTAL', label: `Portal Kế toán (${pendingFinanceCount})` },
-                { key: 'SETS', label: 'Bộ hồ sơ (HĐNT ↔ SOW ↔ BBNT)' },
-                { key: 'CATALOG', label: `Bộ 11 biểu mẫu chuẩn (${data.templates.filter(t => t.scope === 'KOC_CUSTOM' || OFFICIAL_3STAGE_TEMPLATE_IDS.includes(t.id as never)).length})` },
-              ]}
-            />
-
-            {data.demoActors.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-2xs">
-                <span className="text-ink-3 font-medium">Vai trò thao tác:</span>
-                {data.demoActors.map(actorItem => {
-                  const isActive = data.actor.id === actorItem.id;
-                  return (
-                    <button
-                      key={actorItem.id}
-                      type="button"
-                      disabled={busy}
-                      onClick={async () => {
-                        setBusy(true);
-                        try {
-                          await contractApi('/api/contracts/demo', { id: actorItem.id });
-                          const nextData = await refresh();
-                          if (nextData.actor.roles.includes('LEGAL') && !nextData.actor.roles.includes('LEAD')) {
-                            setScreen({ mode: 'legal_portal' });
-                          } else if (nextData.actor.roles.includes('FINANCE') && !nextData.actor.roles.includes('LEAD')) {
-                            setScreen({ mode: 'finance_portal' });
-                          }
-                          onNotify?.(`Đã chuyển sang góc nhìn: ${actorItem.name}`, 'info');
-                        } catch (err) {
-                          onNotify?.((err as Error).message, 'error');
-                        } finally {
-                          setBusy(false);
+          <Tabs
+            value={
+              screen.mode === 'catalog'
+                ? 'CATALOG'
+                : screen.mode === 'sets'
+                  ? 'SETS'
+                  : screen.mode === 'legal_portal'
+                    ? 'LEGAL_PORTAL'
+                    : screen.mode === 'finance_portal'
+                      ? 'FINANCE_PORTAL'
+                      : screen.mode === 'finance_payment_portal'
+                        ? 'FINANCE_PAYMENT_PORTAL'
+                        : screen.mode === 'finance_reminders'
+                          ? 'FINANCE_REMINDERS'
+                          : 'RECORDS'
+            }
+            onChange={v =>
+              setScreen(
+                v === 'CATALOG'
+                  ? { mode: 'catalog' }
+                  : v === 'SETS'
+                    ? { mode: 'sets' }
+                    : v === 'LEGAL_PORTAL'
+                      ? { mode: 'legal_portal' }
+                      : v === 'FINANCE_PORTAL'
+                        ? { mode: 'finance_portal' }
+                        : v === 'FINANCE_PAYMENT_PORTAL'
+                          ? { mode: 'finance_payment_portal' }
+                          : v === 'FINANCE_REMINDERS'
+                            ? { mode: 'finance_reminders' }
+                            : { mode: 'list' },
+              )
+            }
+            items={[
+              { key: 'RECORDS', label: 'Hợp đồng', count: data.records.length },
+              {
+                key: 'LEGAL_PORTAL',
+                label: 'Duyệt pháp chế',
+                count: pendingLegalCount,
+                tone: pendingLegalCount > 0 ? 'critical' : 'default',
+              },
+              {
+                key: 'FINANCE_PORTAL',
+                label: 'Duyệt kế toán',
+                count: pendingFinanceCount,
+                tone: pendingFinanceCount > 0 ? 'critical' : 'default',
+              },
+              {
+                key: 'FINANCE_REMINDERS',
+                label: 'Nhắc việc kế toán',
+                count: financeReminderCount,
+                tone: financeReminderCount > 0 ? 'critical' : 'default',
+              },
+              { key: 'FINANCE_PAYMENT_PORTAL', label: 'Tra cứu deal' },
+              { key: 'SETS', label: 'Theo bộ' },
+              {
+                key: 'CATALOG',
+                label: 'Biểu mẫu',
+                count: data.templates.filter(
+                  t => t.scope === 'KOC_CUSTOM' || OFFICIAL_3STAGE_TEMPLATE_IDS.includes(t.id as never),
+                ).length,
+              },
+            ]}
+            actions={
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="ghost" icon={FileText} onClick={() => setIsContractReportOpen(true)}>
+                  Báo cáo thuế &amp; điều khoản
+                </Button>
+                {demoMode && data.demoActors.length > 0 && (
+                  <Select
+                    value={data.actor.id}
+                    disabled={busy}
+                    onChange={async e => {
+                      const nextId = e.target.value;
+                      setBusy(true);
+                      try {
+                        await contractApi('/api/contracts/demo', { id: nextId });
+                        const nextData = await refresh();
+                        if (nextData.actor.roles.includes('LEGAL') && !nextData.actor.roles.includes('LEAD')) {
+                          setScreen({ mode: 'legal_portal' });
+                        } else if (nextData.actor.roles.includes('FINANCE') && !nextData.actor.roles.includes('LEAD')) {
+                          setScreen({ mode: 'finance_reminders' });
                         }
-                      }}
-                      className={`px-2 py-0.5 rounded border font-medium transition-colors ${
-                        isActive
-                          ? 'bg-primary text-surface border-primary'
-                          : 'bg-sunken text-ink-2 border-line hover:text-ink'
-                      }`}
-                    >
-                      {actorItem.name}
-                    </button>
-                  );
-                })}
+                        const actorName = data.demoActors.find(a => a.id === nextId)?.name || nextId;
+                        onNotify?.(`Đã chuyển góc nhìn: ${actorName}`, 'info');
+                      } catch (err) {
+                        onNotify?.((err as Error).message, 'error');
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                    className="w-44"
+                  >
+                    {data.demoActors.map(actorItem => (
+                      <option key={actorItem.id} value={actorItem.id}>
+                        Góc nhìn: {actorItem.name}
+                      </option>
+                    ))}
+                  </Select>
+                )}
               </div>
-            )}
-          </div>
+            }
+          />
         </>
       )}
 
-      {screen.mode === 'legal_portal' || screen.mode === 'finance_portal' ? (
+      {screen.mode === 'legal_portal' ||
+      screen.mode === 'finance_portal' ||
+      screen.mode === 'finance_payment_portal' ||
+      screen.mode === 'finance_reminders' ? (
         <ContractApprovalPortalView
           mode={screen.mode === 'legal_portal' ? 'LEGAL_PORTAL' : 'FINANCE_PORTAL'}
+          initialFinanceSection={
+            screen.mode === 'finance_payment_portal'
+              ? 'ADVANCE_PAYMENT_REPORT'
+              : screen.mode === 'finance_reminders'
+                ? 'FINANCE_REMINDERS'
+                : 'CONTRACT_REVIEW'
+          }
           data={data}
           deals={effectiveDeals}
           kocs={kocs}
           busy={busy}
           onOpenRecord={id => setScreen({ mode: 'detail', id })}
           onQuickViewRecord={rec => setQuickViewRecord(rec)}
+          onOpenDealLookup={() => setScreen({ mode: 'finance_payment_portal' })}
           onRefresh={refresh}
           onNotify={onNotify}
         />
@@ -895,6 +920,16 @@ export function ContractManagementView({
                 templateId: targetRecord.templateId,
                 values: nextValues,
                 kocId: targetRecord.kocId,
+                legalProfileId: targetRecord.legalProfileId,
+                legalAttachments: targetRecord.legalAttachments,
+                googleDocsUrl: targetRecord.googleDocsUrl,
+                googleDocsId: targetRecord.googleDocsId,
+                googleDocsSource: targetRecord.googleDocsSource,
+                googleDocsReviewRouting: targetRecord.googleDocsReviewRouting,
+                googleDocsComments: targetRecord.googleDocsComments,
+                googleDocsAuditTrail: targetRecord.googleDocsAuditTrail,
+                internalNotes: targetRecord.internalNotes,
+                isKocOwnForm: targetRecord.isKocOwnForm,
                 dealId: targetRecord.dealId,
                 dealCode: targetRecord.dealCode,
                 parentId: targetRecord.parentId,
@@ -923,6 +958,10 @@ export function ContractManagementView({
           onCancel={() => setScreen(screen.editId ? { mode: 'detail', id: screen.editId } : { mode: 'list' })}
           onBackToBooking={intent?.fromBooking ? onBackToBooking : undefined}
           onQuickFrameworkCreated={() => { void refresh(); }}
+          onSyncKocLegalAttachments={(kId, profId, attachments) => {
+            saveSyncedKocLegalAttachments(kId, profId, attachments);
+            onSyncKocLegalProfileContract?.(kId, profId, { legalAttachments: attachments });
+          }}
           onSave={(p: ContractFormPayload) => act({ action: screen.editId ? 'EDIT' : 'CREATE', ...p }, screen.editId ? 'Đã lưu phiên bản mới' : 'Đã lưu nháp hợp đồng')}
         />
       ) : screen.mode === 'detail' && record ? (
@@ -945,37 +984,37 @@ export function ContractManagementView({
               onAction={act}
               onEdit={() => setScreen({ mode: 'form', editId: record.id })}
               onOpen={id => setScreen({ mode: 'detail', id })}
-              onCreateAcceptance={() => setScreen({ mode: 'form', init: { dealId: record.dealId, kind: 'ACCEPTANCE', parentId: record.id } })}
-              onCreateSow={() => setScreen({ mode: 'form', init: { dealId: record.dealId, kind: 'CONTRACT', parentId: record.id, templateId: record.templateId.replace(/-HDNT$/, '-SOW') } })}
+              onCreateAcceptance={() => setScreen({ mode: 'form', init: { dealId: record.dealId, kocId: record.kocId, legalProfileId: record.legalProfileId, kind: 'ACCEPTANCE', docStage: 'BBNT', parentId: record.id } })}
+              onCreateSow={() => setScreen({ mode: 'form', init: { dealId: record.dealId, kocId: record.kocId, legalProfileId: record.legalProfileId, kind: 'CONTRACT', docStage: 'SOW', parentId: record.id, templateId: record.templateId.replace(/-HDNT$/, '-SOW') } })}
               kocs={kocs}
             />
           );
         })()
       ) : (
         <div className="space-y-4">
-          <StatRow>
+          <StatRow size="sm">
             <Stat
               label="Tổng hồ sơ pháp lý"
               value={`${data.records.length} bộ`}
-              note={`${data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT').length} HĐNT · ${data.records.filter(r => documentOfTemplate(r.templateId) === 'SOW').length} Phụ lục SOW · ${data.records.filter(r => documentOfTemplate(r.templateId) === 'BBNT').length} BBNT`}
+              note={`${data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT').length} HĐNT · ${data.records.filter(r => documentOfTemplate(r.templateId) === 'SOW').length} SOW · ${data.records.filter(r => documentOfTemplate(r.templateId) === 'BBNT').length} BBNT`}
             />
             <Stat
               label="Đang chờ duyệt nội bộ"
               value={`${data.records.filter(r => r.approval === 'IN_REVIEW').length} bộ`}
               tone={data.records.some(waitingMe) ? 'warning' : undefined}
-              note={`${data.records.filter(waitingMe).length} hồ sơ đang chờ lượt duyệt của bạn`}
+              note={`${data.records.filter(waitingMe).length} hồ sơ chờ lượt duyệt của bạn`}
             />
             <Stat
-              label="Đang trình ký weSign 2 bên"
+              label="Đang trình ký weSign"
               value={`${data.records.filter(awaitingSign).length} bộ`}
               tone={data.records.some(awaitingSign) ? 'warning' : undefined}
-              note="Theo dõi chữ ký Bên A (UpBase) & Bên B (KOC)"
+              note="Ký số 2 bên Bên A & Bên B"
             />
             <Stat
               label="Đã ký hoàn tất"
               value={`${data.records.filter(done).length} bộ`}
               tone="positive"
-              note={`${data.records.filter(needAcceptance).length} Phụ lục SOW đã ký chờ lập BBNT`}
+              note={`${data.records.filter(needAcceptance).length} phụ lục SOW chờ lập BBNT`}
             />
           </StatRow>
 
@@ -996,7 +1035,6 @@ export function ContractManagementView({
                 data.records.length === 0 ? (
                   <EmptyState
                     title="Chưa có hợp đồng nào"
-                    description="Tạo hợp đồng từ danh mục mẫu pháp chế, hoặc bấm “HĐ” ở một booking để tạo hợp đồng đã điền sẵn."
                     action={
                       <div className="flex items-center gap-2">
                         <Button variant="secondary" icon={FolderKanban} onClick={() => setScreen({ mode: 'catalog' })}>
@@ -1071,7 +1109,7 @@ export function ContractManagementView({
         isOpen={isContractReportOpen}
         onClose={() => setIsContractReportOpen(false)}
         purposeId="CONTRACT_DRAFTING"
-        moduleTitle="Báo Cáo Rà Soát Hồ Sơ Hợp Đồng, Điều Khoản Pháp Chế & Khấu Trừ Thuế TNCN"
+        moduleTitle="Báo cáo rà soát hồ sơ hợp đồng, điều khoản pháp chế & khấu trừ thuế TNCN"
         contextDataText={[
           `[DỮ LIỆU PHÂN HỆ: Quản Lý Hợp Đồng, Biên Bản Nghiệm Thu & Thuế TNCN]`,
           `- Tổng quan hồ sơ pháp lý B2C: ${data.records.length} hồ sơ, ${data.templates.length} mẫu hợp đồng & biên bản nghiệm thu chuẩn.`,

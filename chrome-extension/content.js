@@ -3049,6 +3049,169 @@
     );
   }
 
+  const autoSyncedPostKeys = new Set();
+  let autoSyncTimer = null;
+
+  function unpackMetaOutboundLink(rawHref) {
+    const href = String(rawHref || '').trim();
+    if (!href) return '';
+    try {
+      const u = new URL(href, window.location.origin);
+      if (
+        u.hostname.includes('l.facebook.com') ||
+        u.hostname.includes('lm.facebook.com') ||
+        u.hostname.includes('l.threads.net') ||
+        u.hostname.includes('l.threads.com') ||
+        u.hostname.includes('l.instagram.com')
+      ) {
+        const target = u.searchParams.get('u') || u.searchParams.get('url');
+        if (target) return decodeURIComponent(target);
+      }
+    } catch {
+      // ignore
+    }
+    return href;
+  }
+
+  function scanLiveDomShoppingLinksAndText() {
+    const anchors = Array.from(document.querySelectorAll('a[href]')).filter(
+      (a) => !a.closest('#upbase-b2c-ext-root')
+    );
+    const shoppingUrls = [];
+    for (const a of anchors) {
+      const unpacked = unpackMetaOutboundLink(a.getAttribute('href') || a.href || '');
+      if (
+        /(?:s\.shopee\.vn|shp\.ee|shopee\.vn|lazada\.vn|s\.lazada\.vn|vt\.tiktok\.com|tiktok\.com\/@[^/\s]+\/video|linktr\.ee|beacons\.ai)/i.test(
+          unpacked
+        )
+      ) {
+        if (!shoppingUrls.includes(unpacked)) {
+          shoppingUrls.push(unpacked);
+        }
+      }
+    }
+
+    const bodyText = String(document.body?.innerText || '');
+    const textUrlMatches =
+      bodyText.match(
+        /https?:\/\/(?:s\.shopee\.vn|shp\.ee|shopee\.vn|s\.lazada\.vn|vt\.tiktok\.com|linktr\.ee|beacons\.ai)\/[^\s"'<>)]+/gi
+      ) || [];
+    for (const m of textUrlMatches) {
+      const clean = m.replace(/[.,;!?]+$/, '');
+      if (!shoppingUrls.includes(clean)) {
+        shoppingUrls.push(clean);
+      }
+    }
+
+    return {
+      shoppingUrls,
+      hasProductLink: shoppingUrls.length > 0,
+      firstProductUrl: shoppingUrls[0] || '',
+    };
+  }
+
+  function scheduleAutoSyncCurrentPost() {
+    const isAutoVerifyHash =
+      window.location.hash.includes('ub_auto_verify=1') ||
+      window.location.search.includes('ub_auto_verify=1');
+    const isMultiPlatformHost = isThreadsHost || isFacebookHost || isInstagramHost || isShopeeHost;
+    if (!isMultiPlatformHost && !isAutoVerifyHash) return;
+
+    const path = window.location.pathname;
+    const isPostPage =
+      isAutoVerifyHash ||
+      uiState.pageType === 'video' ||
+      /\/(?:post|reel|reels|videos|watch|share|p|tv|sv)\b/i.test(path) ||
+      path.includes('permalink.php') ||
+      path.includes('story.php');
+    if (!isPostPage) return;
+
+    if (autoSyncTimer) clearTimeout(autoSyncTimer);
+    autoSyncTimer = setTimeout(() => {
+      const activeVid =
+        uiState.currentVideo ||
+        (uiState.videos && uiState.videos[0]) ||
+        null;
+      const domScan = scanLiveDomShoppingLinksAndText();
+      const postUrlClean = window.location.href.split('#')[0];
+      const vidId = activeVid?.videoId || uiState.videoId || postUrlClean;
+      const dedupeKey = `${vidId}__${domScan.firstProductUrl}`;
+
+      if (!isAutoVerifyHash && autoSyncedPostKeys.has(dedupeKey)) return;
+      autoSyncedPostKeys.add(dedupeKey);
+
+      const mergedCaption = [
+        activeVid?.caption || '',
+        uiState.threadsTree?.fullMergedText || '',
+        domScan.shoppingUrls.length > 0 ? `Links: ${domScan.shoppingUrls.join(' ')}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n')
+        .slice(0, 2000);
+
+      const cartProducts = Array.isArray(activeVid?.cartProducts)
+        ? [...activeVid.cartProducts]
+        : [];
+      for (const u of domScan.shoppingUrls) {
+        if (!cartProducts.some((c) => c.productUrl === u)) {
+          cartProducts.push({
+            productId: `aff-${cartProducts.length + 1}`,
+            title: 'Link Affiliate trong bài đăng / Comment đầu',
+            productUrl: u,
+          });
+        }
+      }
+
+      safeRuntimeSendMessage(
+        {
+          type: 'UPBASE_SYNC_ACTION',
+          payload: {
+            action: 'VERIFY_AIR_LINK',
+            platform: normalizeSyncPlatform(uiState.platform),
+            handle: uiState.handle || activeVid?.handle || 'koc',
+            displayName: uiState.profile?.displayName || uiState.handle || 'KOC',
+            videoId: String(vidId),
+            videoUrl: activeVid?.videoUrl || postUrlClean,
+            caption: mergedCaption,
+            hashtags: activeVid?.hashtags || [],
+            publishedAt: activeVid?.publishedAt || new Date().toISOString().slice(0, 10),
+            views: Number(activeVid?.views || 0),
+            likes: Number(activeVid?.likes || 0),
+            comments: Number(activeVid?.comments || 0),
+            shares: Number(activeVid?.shares || 0),
+            hasYellowCart: Boolean(
+              activeVid?.hasYellowCart || cartProducts.length > 0 || domScan.hasProductLink
+            ),
+            cartAnchorTitle:
+              activeVid?.cartAnchorTitle ||
+              cartProducts[0]?.title ||
+              (domScan.hasProductLink ? 'Link Affiliate thu thập từ DOM trình duyệt' : ''),
+            cartAnchorUrl:
+              activeVid?.cartAnchorUrl ||
+              cartProducts[0]?.productUrl ||
+              domScan.firstProductUrl ||
+              '',
+            cartProducts,
+            storeName: uiState.selectedStoreName,
+            picName: uiState.picNameInput,
+          },
+        },
+        (resp) => {
+          if (isAutoVerifyHash) {
+            safeRuntimeSendMessage({
+              type: 'UPBASE_TAB_AUTO_VERIFIED',
+              result: {
+                ok: Boolean(resp?.ok),
+                hasProductLink: domScan.hasProductLink || cartProducts.length > 0,
+                firstProductUrl: domScan.firstProductUrl,
+              },
+            });
+          }
+        }
+      );
+    }, isAutoVerifyHash ? 1800 : 2200);
+  }
+
   function exportCsv() {
     const stats = computeChannelStats();
     const rows = [
@@ -7865,6 +8028,7 @@
       } else if (isAdsHost && !uiState.lookupResult) {
         lookupKocOnServer('');
       }
+      scheduleAutoSyncCurrentPost();
       // Focus Guard: Không ghi đè DOM khi người dùng đang gõ trong ô input/textarea hoặc đang xem kết quả Quét Kịch bản mà không đổi kênh
       if (!isUserTypingInExtension()) {
         const isReadingBatchScripts =

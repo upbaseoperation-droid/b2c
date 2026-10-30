@@ -206,24 +206,20 @@ export function DashboardScheduleReport({
           label="Video air trong tháng"
           value={formatNumber(stats.airedMonth)}
           progress={stats.planMonth > 0 ? { value: stats.airedMonth, max: stats.planMonth } : undefined}
-          note={stats.planMonth > 0 ? `Kế hoạch Paid + Brand: ${formatNumber(stats.planMonth)} · đạt ${formatPercent(stats.airedMonth / stats.planMonth)}` : 'Chưa có kế hoạch tháng'}
         />
         <Stat
           label="7 ngày gần nhất"
           value={formatNumber(stats.last7)}
           trend={daily.slice(-14).map((d) => d.value)}
-          note={weekDelta === null ? `${ddmm(addDays(lastSync, -6))} – ${ddmm(lastSync)}` : `${weekDelta >= 0 ? '+' : ''}${formatPercent(weekDelta)} so với 7 ngày trước (${formatNumber(stats.prev7)})`}
           tone={weekDelta !== null && weekDelta < 0 ? 'warning' : undefined}
         />
         <Stat
-          label="Air dồn vào 3 ngày đỉnh"
+          label="Mật độ 3 ngày đỉnh"
           value={formatPercent(stats.peakShare)}
-          note={stats.peaks.map(([d, v]) => `${ddmm(d)} (${v})`).join(' · ')}
         />
         <Stat
           label="Đơn trễ lịch hẹn"
           value={formatNumber(stats.late + stats.overdue)}
-          note={`${formatNumber(stats.late)} air trễ ngày hẹn · ${formatNumber(stats.overdue)} quá hẹn chưa air`}
           tone={stats.late + stats.overdue > 0 ? 'critical' : undefined}
         />
       </StatRow>
@@ -239,8 +235,8 @@ export function DashboardScheduleReport({
           actions={
             <Segmented<ChartCompare>
               items={[
-                { key: 'NONE', label: 'Không so' },
-                { key: 'PLAN', label: 'Kế hoạch' },
+                { key: 'NONE', label: 'Thực tế' },
+                { key: 'PLAN', label: 'So kế hoạch' },
               ]}
               value={compare}
               onChange={setCompare}
@@ -259,10 +255,6 @@ export function DashboardScheduleReport({
           ) : (
             <p className="text-sm text-ink-3 py-16 text-center">Chưa đủ dữ liệu để vẽ xu hướng.</p>
           )}
-          <p className="mt-2 text-2xs text-ink-3">
-            {compare === 'PLAN' ? 'Nét đứt = số đơn hẹn air trong ngày. ' : ''}
-            {syncNote}
-          </p>
         </Panel>
 
         <Panel
@@ -273,12 +265,6 @@ export function DashboardScheduleReport({
             </span>
           }
         >
-          {weekGrid.best && (
-            <p className="mb-3 text-xs text-ink">
-              Nhiều nhất: <strong>{WEEKDAYS[weekGrid.best.col]} {ddmm(weekGrid.dateOf(weekGrid.best.row, weekGrid.best.col))}</strong>
-              <span className="text-ink-3"> · {formatNumber(weekGrid.best.v)} video</span>
-            </p>
-          )}
           <HeatGrid
             rows={WEEKS.map((w) => w.code)}
             cols={WEEKDAYS}
@@ -289,7 +275,6 @@ export function DashboardScheduleReport({
               return `${WEEKDAYS[c]} ${ddmm(d)}: ${v === null ? 'chưa đồng bộ' : `${formatNumber(v)} air`} · hẹn ${formatNumber(counts.planned.get(d) ?? 0)}`;
             }}
           />
-          <p className="mt-2 text-2xs text-ink-3">Tuần kế hoạch chạy từ thứ Sáu đến thứ Năm ({WEEKS[0].range} là {WEEKS[0].code}). Ô = số video air thực tế.</p>
         </Panel>
       </div>
 
@@ -329,12 +314,6 @@ export function DashboardScheduleReport({
               />
             </div>
           )}
-          <p className="mt-2 text-2xs text-ink-3">
-            {storeView === 'GAP'
-              ? `${formatNumber(Math.min(STORE_GAP_LIMIT, storeGrid.totalGap))}/${formatNumber(storeGrid.totalGap)} gian air thiếu nhiều nhất so với kế hoạch tuần (Paid + Brand hoặc đơn đã hẹn, lấy số lớn hơn). `
-              : ''}
-            Rê chuột xem kế hoạch, bấm ô để mở hồ sơ gian hàng.
-          </p>
         </Panel>
 
         <Panel
@@ -360,7 +339,6 @@ export function DashboardScheduleReport({
               <BarList items={flows} max={1} />
             </div>
           )}
-          <p className="mt-3 text-2xs text-ink-3">Đúng hẹn = (đúng ngày + sớm) / số video air có ngày hẹn. Tính trên {formatNumber(deals.length)} đơn book.</p>
         </Panel>
       </div>
     </div>

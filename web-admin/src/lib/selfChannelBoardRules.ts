@@ -157,6 +157,12 @@ export interface SelfChannelJob {
   bbntCode?: string;
   bbntUrl?: string;
   acceptanceNote?: string;
+  /** CTV xác nhận nhận việc: ASSIGNED (chờ), CONFIRMED (nhận), DECLINED (từ chối). Thiếu = việc cũ, coi như đã nhận. */
+  ctvConfirmStatus?: SelfCtvConfirmStatus;
+  ctvConfirmedAt?: string;
+  ctvDeclineReason?: string;
+  /** Kết quả đối chiếu nội dung bài đăng với brief (máy đề xuất, người quyết định) */
+  contentCheck?: SelfContentCheck;
   feeGross: number;
   withholdPit10: boolean;
   pitTaxAmount: number;
@@ -170,6 +176,35 @@ export interface SelfChannelJob {
   paymentNote?: string;
   lifecycleStatus?: 'ACTIVE' | 'CANCELLED';
   updatedAt: string;
+}
+
+export type SelfCtvConfirmStatus = 'ASSIGNED' | 'CONFIRMED' | 'DECLINED';
+
+export const SELF_CTV_CONFIRM_LABEL: Record<SelfCtvConfirmStatus, string> = {
+  ASSIGNED: 'Chờ CTV xác nhận',
+  CONFIRMED: 'CTV đã nhận việc',
+  DECLINED: 'CTV từ chối',
+};
+
+export interface SelfContentCheckItem {
+  key: string;
+  label: string;
+  status: 'PASS' | 'WARN' | 'FAIL';
+  detail: string;
+  /** Trích dẫn từ caption / lời thoại làm bằng chứng */
+  evidence?: string;
+}
+
+export interface SelfContentCheck {
+  verdict: 'PASS' | 'REVIEW' | 'FAIL';
+  checkedAt: string;
+  checkedBy: string;
+  checkedLink: string;
+  /** RULES: chỉ luật từ khóa; MODEL: có thêm đối chiếu nội dung bằng mô hình */
+  source: 'RULES' | 'MODEL';
+  items: SelfContentCheckItem[];
+  /** Gợi ý phản hồi cho CTV khi cần sửa */
+  suggestion?: string;
 }
 
 export interface SelfAirCheck {
@@ -341,6 +376,13 @@ export function sanitizeSelfChannelBoard(raw?: Partial<SelfChannelBoardData> | n
       bbntCode: j.bbntCode ? String(j.bbntCode) : undefined,
       bbntUrl: j.bbntUrl ? String(j.bbntUrl) : undefined,
       acceptanceNote: j.acceptanceNote ? String(j.acceptanceNote) : undefined,
+      ctvConfirmStatus: j.ctvConfirmStatus && j.ctvConfirmStatus in SELF_CTV_CONFIRM_LABEL ? j.ctvConfirmStatus : undefined,
+      ctvConfirmedAt: j.ctvConfirmedAt ? String(j.ctvConfirmedAt) : undefined,
+      ctvDeclineReason: j.ctvDeclineReason ? String(j.ctvDeclineReason) : undefined,
+      contentCheck:
+        j.contentCheck && typeof j.contentCheck === 'object' && j.contentCheck.verdict
+          ? { ...j.contentCheck, items: Array.isArray(j.contentCheck.items) ? j.contentCheck.items : [] }
+          : undefined,
       feeGross: financials.feeGross,
       withholdPit10: financials.withholdPit10,
       pitTaxAmount: financials.pitTaxAmount,
@@ -431,6 +473,22 @@ export function selfBrandScriptBlocker(prev: SelfChannelJob | undefined, next: S
   return null;
 }
 
+/** Đã đạt QA nội bộ nhưng chưa đăng lên kênh Brand: "Đạt bàn giao", chưa nghiệm thu tính công. */
+export function selfJobHandoverPassed(job: SelfChannelJob): boolean {
+  return (
+    (job.videoQaStatus === 'INTERNAL_QA_PASSED' || job.videoQaStatus === 'BRAND_APPROVED') &&
+    !job.airLink.trim() &&
+    job.acceptanceStatus !== 'PASSED'
+  );
+}
+
+/** CTV chưa nhận việc hoặc đã từ chối thì không được nộp bài. Việc cũ (không có trạng thái) coi như đã nhận. */
+export function selfCtvConfirmBlocker(job: Pick<SelfChannelJob, 'ctvConfirmStatus' | 'code'>): string | null {
+  if (job.ctvConfirmStatus === 'ASSIGNED') return `Bạn cần xác nhận nhận việc ${job.code} trước khi nộp bài.`;
+  if (job.ctvConfirmStatus === 'DECLINED') return `Việc ${job.code} bạn đã từ chối.`;
+  return null;
+}
+
 export function selfJobAcceptanceBlocker(job: SelfChannelJob): string | null {
   // Link đăng phải được máy chủ kiểm (đúng kênh Brand, còn hiển thị) và khớp link hiện tại
   if (!job.airCheck || job.airCheck.checkedLink !== job.airLink.trim()) {
@@ -443,6 +501,14 @@ export function selfJobAcceptanceBlocker(job: SelfChannelJob): string | null {
   if (job.videoQaStatus !== 'INTERNAL_QA_PASSED' && job.videoQaStatus !== 'BRAND_APPROVED') {
     return 'Video nháp chưa được duyệt QA nội bộ.';
   }
+  if (job.contentCheck && job.contentCheck.checkedLink === job.airLink.trim()) {
+    if (job.contentCheck.verdict === 'FAIL' && !job.acceptanceNote?.trim()) {
+      return 'Đối chiếu nội dung báo không đạt: yêu cầu CTV sửa hoặc ghi lý do nếu vẫn nghiệm thu.';
+    }
+    if (job.contentCheck.verdict === 'REVIEW' && !job.acceptanceNote?.trim()) {
+      return 'Đối chiếu nội dung cần xem lại: ghi chú lý do vẫn nghiệm thu Đạt.';
+    }
+  }
   if (!job.airLink.trim()) {
     return 'Chưa nhập link video đăng trên kênh Brand.';
   }
@@ -452,6 +518,12 @@ export function selfJobAcceptanceBlocker(job: SelfChannelJob): string | null {
   return null;
 }
 
+/** Ngưỡng bắt buộc ký Hợp đồng đối với Cá nhân / CTV theo BR-03 §2 (tổng thù lao từ 10.000.000đ trở lên). Dưới ngưỡng này không bắt buộc HĐ. */
+export const SELF_CONTRACT_THRESHOLD = 10_000_000;
+/** Ngưỡng bắt buộc ký Biên bản nghiệm thu (BBNT) thanh lý riêng theo BR-04 §3 (từ 20.000.000đ trở lên). */
+export const SELF_BBNT_THRESHOLD = 20_000_000;
+
+/** Điều kiện lập phiếu thanh toán cho một video (BR-03, BR-04 tính theo giá trị từng video). */
 export function selfJobPaymentBlocker(job: SelfChannelJob): string | null {
   if (job.feeGross <= 0) {
     return 'Job không phát sinh chi phí (0đ) nên không cần lập Đề nghị thanh toán.';
@@ -462,15 +534,18 @@ export function selfJobPaymentBlocker(job: SelfChannelJob): string | null {
   if (!job.contributorName.trim()) {
     return 'Thiếu họ tên CTV / người thụ hưởng.';
   }
-  if (!job.contractNo?.trim() || !job.legalId?.trim()) {
-    return 'Thiếu số Hợp đồng CTV hoặc số CCCD/MST của CTV.';
+  if (!job.legalId?.trim()) {
+    return 'Thiếu số CCCD/MST của CTV.';
+  }
+  const effectiveGross = job.feeGross;
+  if (effectiveGross >= SELF_CONTRACT_THRESHOLD && !job.contractNo?.trim()) {
+    return 'Giá trị video từ 10.000.000đ trở lên bắt buộc có số Hợp đồng CTV.';
   }
   if (!job.bankName?.trim() || !job.bankAccount?.trim() || !job.bankHolder?.trim()) {
     return 'Thiếu thông tin tài khoản ngân hàng (Ngân hàng, Số TK, Chủ TK).';
   }
-  // BBNT sản lượng tháng của CTV (thay cho BBNT từng video lúc nghiệm thu)
-  if (job.productionMode === 'CTV_OUTSOURCE' && !job.bbntCode?.trim()) {
-    return 'Chưa có Biên bản nghiệm thu (BBNT) sản lượng tháng của CTV.';
+  if (job.productionMode === 'CTV_OUTSOURCE' && effectiveGross >= SELF_BBNT_THRESHOLD && !job.bbntCode?.trim()) {
+    return 'Tổng giá trị từ 20.000.000đ trở lên bắt buộc có Biên bản nghiệm thu (BBNT).';
   }
   return null;
 }
@@ -645,6 +720,10 @@ export function createSelfChannelJob(
     bbntCode: partial.bbntCode,
     bbntUrl: partial.bbntUrl,
     acceptanceNote: partial.acceptanceNote,
+    ctvConfirmStatus: partial.ctvConfirmStatus || (productionMode === 'CTV_OUTSOURCE' && partial.contributorId ? 'ASSIGNED' : undefined),
+    ctvConfirmedAt: partial.ctvConfirmedAt,
+    ctvDeclineReason: partial.ctvDeclineReason,
+    contentCheck: partial.contentCheck,
     feeGross: financials.feeGross,
     withholdPit10: financials.withholdPit10,
     pitTaxAmount: financials.pitTaxAmount,
@@ -696,6 +775,9 @@ export function applyContributorToSelfJob(job: SelfChannelJob, ctv: Contributor)
     ...job,
     productionMode: 'CTV_OUTSOURCE',
     contributorId: ctv.id,
+    ctvConfirmStatus: job.contributorId === ctv.id && job.ctvConfirmStatus ? job.ctvConfirmStatus : 'ASSIGNED',
+    ctvConfirmedAt: job.contributorId === ctv.id ? job.ctvConfirmedAt : undefined,
+    ctvDeclineReason: undefined,
     contributorName: ctv.name,
     channelOrPhone: ctv.phone || ctv.channelLink || job.channelOrPhone,
     contractNo: ctv.contractCode || job.contractNo || '',
@@ -1006,13 +1088,12 @@ export function summarizeSelfChannelBoard(
     const paidJobs = cJobs.filter(j => j.paymentStatus === 'PAID');
 
     const pendingGross = acceptedUnpaidJobs.reduce((s, j) => s + j.feeGross, 0);
-    const effectivePitTax =
-      pendingGross >= 2000000
-        ? Math.round(pendingGross * 0.1)
-        : acceptedUnpaidJobs.reduce((s, j) => s + j.pitTaxAmount, 0);
+    // Thuế TNCN tính theo từng video (BR-09): từ 2.000.000đ khấu trừ 10%
+    const effectivePitTax = acceptedUnpaidJobs.reduce((s, j) => s + (j.feeGross >= 2000000 ? Math.round(j.feeGross * 0.1) : 0), 0);
     const pendingPitTax = effectivePitTax;
     const pendingNet = Math.max(0, pendingGross - effectivePitTax);
     const paidGross = paidJobs.reduce((s, j) => s + j.feeGross, 0);
+    const contractRequired = cJobs.some(j => j.feeGross >= SELF_CONTRACT_THRESHOLD);
 
     const hasContract = Boolean(firstWithDetails.contractNo?.trim());
     const hasLegalId = Boolean(firstWithDetails.legalId?.trim());
@@ -1021,10 +1102,10 @@ export function summarizeSelfChannelBoard(
       firstWithDetails.bankAccount?.trim() &&
       firstWithDetails.bankHolder?.trim()
     );
-    const legalReady = hasContract && hasLegalId && hasBank;
+    const legalReady = (!contractRequired || hasContract) && hasLegalId && hasBank;
 
     const missingParts: string[] = [];
-    if (!hasContract) missingParts.push('Hợp đồng');
+    if (contractRequired && !hasContract) missingParts.push('Hợp đồng (video ≥ 10tr)');
     if (!hasLegalId) missingParts.push('CCCD/MST');
     if (!hasBank) missingParts.push('Tài khoản ngân hàng');
 

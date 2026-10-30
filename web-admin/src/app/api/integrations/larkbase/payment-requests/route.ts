@@ -17,6 +17,7 @@ import { assertCanViewBooking, resolvePlanContext } from '@/lib/server/monthlyPl
 import { EMPTY_DEAL_BOARD, jobPaymentBlocker, sanitizeDealBoard, type DealBoardData, type DealJob } from '@/lib/dealBoardRules';
 import { getPlanActor } from '@/app/api/monthly-plans/_shared';
 import { applySlipStatusToJobs } from '@/lib/server/slipJobSync';
+import { prepareSelfChannelSlip } from '@/lib/server/selfChannelPaymentSlipServer';
 import { getLarkPaymentIntegrationConfig } from '@/lib/server/larkPaymentApproval';
 
 export const dynamic = 'force-dynamic';
@@ -280,6 +281,10 @@ export async function POST(request: NextRequest) {
         existingRecordId?: string;
       }>;
       requestType?: PaymentRequestType;
+      /** SELF_CHANNEL: lập phiếu cho một video Content kênh Brand ({ planId, jobId }), dùng chung sổ phiếu và kết nối Lark */
+      source?: 'SELF_CHANNEL';
+      planId?: string;
+      jobId?: string;
       deals?: BookingDealItem[];
       kocs?: KocItem[];
       overridesByDealId?: Record<string, DealPaymentOverrides>;
@@ -357,13 +362,28 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Content kênh Brand: mỗi video nghiệm thu Đạt lập một phiếu (tất toán), dựng từ việc thật trên máy chủ
+    let selfPrepared: Extract<Awaited<ReturnType<typeof prepareSelfChannelSlip>>, { ok: true }> | null = null;
+    if (body.source === 'SELF_CHANNEL') {
+      const prepared = await prepareSelfChannelSlip(request, { planId: body.planId, jobId: body.jobId }, existingSlips);
+      if (!prepared.ok) {
+        return NextResponse.json(
+          { success: false, error: prepared.error, message: prepared.message, issues: prepared.issues },
+          { status: prepared.status }
+        );
+      }
+      selfPrepared = prepared;
+      body.requestType = 'SETTLEMENT';
+      body.month = prepared.month;
+    }
+
     const requestType: PaymentRequestType = body.requestType === 'ADVANCE' ? 'ADVANCE' : 'SETTLEMENT';
     const deals = Array.isArray(body.deals) ? body.deals : [];
     const kocs = Array.isArray(body.kocs) ? body.kocs : [];
     const actorName = user.name;
     const month = (body.month || '2026/10').trim();
 
-    if (deals.length === 0) {
+    if (!selfPrepared && deals.length === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -450,7 +470,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Chạy động cơ kiểm tra chặn cứng 100% ngay trên máy chủ
-    const built = buildLarkPaymentRequestSlip({
+    const built = selfPrepared?.built ?? buildLarkPaymentRequestSlip({
       requestType,
       deals,
       kocs,
@@ -721,7 +741,8 @@ export async function POST(request: NextRequest) {
 
     const slip: LarkPaymentRequestSlip = {
       planJobRefs: refs.length ? refs : undefined,
-      id: `SLIP-${Date.now()}`,
+      selfJobRefs: selfPrepared ? [selfPrepared.ref] : undefined,
+      id: `SLIP-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       slipCode,
       requestType,
       requestTypeLabel:
@@ -775,6 +796,9 @@ export async function POST(request: NextRequest) {
       }
       throw e;
     }
+
+    // Phiếu Content kênh: ghi trạng thái "Đã lập ĐNTT" về việc trên bảng Self-channel
+    if (selfPrepared) await applySlipStatusToJobs(slip).catch(() => 0);
 
     return NextResponse.json(
       {
@@ -856,6 +880,19 @@ export async function PATCH(request: NextRequest) {
 
     // Xử lý từ chối / thu hồi phiếu trên Lark Approval (P-09: đồng bộ ngược về Deal/Job)
     if (body.action === 'REJECT_SLIP') {
+      // Phiếu đã đi tiền hoặc đã từ chối thì không đổi trạng thái nữa (tránh mở khóa việc đã thanh toán)
+      if (currentStatus === 'PAID' || currentStatus === 'REJECTED') {
+        return NextResponse.json({ success: false, error: 'SLIP_CLOSED', message: 'Phiếu đã đi tiền hoặc đã bị từ chối, không từ chối lại được.' }, { status: 409 });
+      }
+      // Chỉ người duyệt bước hiện tại, quản lý, hoặc chính người lập phiếu (thu hồi) được từ chối
+      const canReject =
+        (APPROVER_ROLES_BY_STATUS[currentStatus] || []).includes(user.role) ||
+        isStaffGlobalAdminOrManager(user) ||
+        Boolean(user.permissions?.includes('canApprovePayment')) ||
+        target.createdBy.trim().toLowerCase() === (user.name || '').trim().toLowerCase();
+      if (!canReject) {
+        return NextResponse.json({ success: false, error: 'FORBIDDEN_REJECT', message: 'Bạn không có quyền từ chối hoặc thu hồi phiếu này.' }, { status: 403 });
+      }
       const updatedRejected: LarkPaymentRequestSlip = {
         ...target,
         larkSync: {

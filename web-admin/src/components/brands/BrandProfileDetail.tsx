@@ -1294,18 +1294,7 @@ export function BrandProfileDetail({
                             rel="noreferrer"
                             className="px-2.5 py-1 rounded border border-line bg-surface hover:bg-sunken text-xs text-accent font-medium inline-flex items-center gap-1"
                           >
-                            <span>Bảng theo dõi Booking</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
-                        {p.workflowRules.operationFileUrl && (
-                          <a
-                            href={p.workflowRules.operationFileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-2.5 py-1 rounded border border-line bg-surface hover:bg-sunken text-xs text-accent font-medium inline-flex items-center gap-1"
-                          >
-                            <span>Bảng vận hành &amp; Kịch bản</span>
+                            <span>Link Google Sheet</span>
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         )}
@@ -1320,21 +1309,8 @@ export function BrandProfileDetail({
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         )}
-                        {p.workflowRules.handoverFileUrl && (
-                          <a
-                            href={p.workflowRules.handoverFileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-2.5 py-1 rounded border border-line bg-surface hover:bg-sunken text-xs text-accent font-medium inline-flex items-center gap-1"
-                          >
-                            <span>Hồ sơ bàn giao gốc</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
                         {!p.workflowRules.bookingSheetUrl &&
-                          !p.workflowRules.operationFileUrl &&
-                          !p.workflowRules.canvaBriefUrl &&
-                          !p.workflowRules.handoverFileUrl && (
+                          !p.workflowRules.canvaBriefUrl && (
                             <span className="text-xs text-ink-3">Xem trong tab Tài liệu</span>
                           )}
                       </div>

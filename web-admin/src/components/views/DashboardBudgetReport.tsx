@@ -400,27 +400,17 @@ export function DashboardBudgetReport({
   return (
     <div className="space-y-4">
       <StatRow size="sm">
-        <Stat
-          label="Mục tiêu NMV"
-          value={formatVndShort(totals.targetGmv)}
-          note={`${stores.length} gian hàng · ${totals.tiktok} TikTok · ${totals.shopee} Shopee`}
-        />
-        <Stat
-          label="Hạn mức Net"
-          value={formatVndShort(totals.net)}
-          note={`Gross ${formatVndShort(totals.gross)} · thuế, phí ${formatVndShort(Math.max(0, totals.gross - totals.net))}`}
-        />
+        <Stat label="Mục tiêu NMV" value={formatVndShort(totals.targetGmv)} />
+        <Stat label="Hạn mức Net" value={formatVndShort(totals.net)} />
         <Stat
           label="Đã chi Net"
           value={formatVndShort(totals.spent)}
           progress={{ value: totals.spent, max: Math.max(1, totals.net), invert: true }}
-          note={totals.net > 0 ? `${formatPercent(totals.spent / totals.net)} hạn mức` : '—'}
         />
         <Stat
           label="Còn được chi"
           value={formatVndShort(Math.max(0, totals.net - totals.spent))}
           tone={alertCount > 0 ? 'critical' : undefined}
-          note={`${totals.risk.UNBUDGETED} gian hạn mức 0đ · ${totals.risk.OVERBUDGET} vượt trần`}
         />
       </StatRow>
 
@@ -440,11 +430,6 @@ export function DashboardBudgetReport({
             }
           >
             <StackBar parts={mixParts} />
-            <p className="mt-3 text-2xs text-ink-3">
-              {mixView === 'BUDGET'
-                ? `Gross ${formatVndShort(totals.gross)} · thuế, phí sàn ${formatVndShort(Math.max(0, totals.gross - totals.net))} · ${formatNumber(totals.liveSessions)} ca live`
-                : `Đã air ${formatNumber(totals.aired)} video · ${formatNumber(totals.storesWithAired)}/${formatNumber(stores.length)} gian hàng đã có video lên sóng`}
-            </p>
           </Panel>
 
           <Panel title={<PanelTitle icon={Wallet}>Dòng tiền ĐNTT</PanelTitle>}>
@@ -460,9 +445,6 @@ export function DashboardBudgetReport({
                 <span className="text-ink-3"> · {alertCount} gian hàng</span>
               </span>
             </div>
-            <p className="mt-2 text-2xs text-ink-3">
-              {formatNumber(cash.orders)} đơn book · nguồn: {cash.source}.
-            </p>
           </Panel>
         </div>
 
@@ -485,10 +467,6 @@ export function DashboardBudgetReport({
           ) : (
             <BarList items={brandBars} />
           )}
-          <p className="mt-3 text-2xs text-ink-3">
-            Top 10 / {brands.length} thương hiệu · màu đỏ là hạn mức 0đ hoặc vượt trần · bấm để xem gian hàng
-            {topBrand ? ` · cao nhất: ${topBrand.label} (${topBrand.display})` : ''}.
-          </p>
         </Panel>
       </div>
 

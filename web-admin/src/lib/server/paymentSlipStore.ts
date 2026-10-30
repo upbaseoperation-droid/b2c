@@ -11,10 +11,11 @@ export async function listPaymentSlips(): Promise<LarkPaymentRequestSlip[]> {
   return Array.isArray(rec.data.slips) ? rec.data.slips : [];
 }
 
-/** Sổ theo mã đơn: đã tạm ứng bao nhiêu, đã lập tất toán chưa. */
+/** Sổ theo mã đơn: đã tạm ứng bao nhiêu, đã lập tất toán chưa (bỏ qua phiếu bị từ chối trên Lark). */
 export function ledgerByDealCode(slips: LarkPaymentRequestSlip[]): Record<string, DealPaymentLedgerEntry> {
   const ledger: Record<string, DealPaymentLedgerEntry> = {};
   for (const slip of slips) {
+    if (slip.larkSync?.approvalStatus === 'REJECTED') continue;
     for (const item of slip.lineItems) {
       const entry = (ledger[item.dealCode] ??= { advanceRequestedAmount: 0, settlementRequested: false });
       if (slip.requestType === 'ADVANCE') entry.advanceRequestedAmount += item.requestBaseNetAmount;

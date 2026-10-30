@@ -43,7 +43,6 @@ import { B2C_STORE_WEEKLY_AIR_SYNC_LIST } from '../../lib/b2cWeeklyAirSyncDatase
 import { StorePipelineFunnelOverview } from './StorePipelineFunnelOverview';
 import { PlanActualReportView } from './PlanActualReportView';
 import { DashboardSummaryView } from './DashboardSummaryView';
-import { DashboardAnalysisView } from './DashboardAnalysisView';
 import { DashboardBudgetReport } from './DashboardBudgetReport';
 import { DashboardStaffReport } from './DashboardStaffReport';
 import { DashboardScheduleReport } from './DashboardScheduleReport';
@@ -58,6 +57,19 @@ interface ExecutiveDashboardReportsViewProps {
   activeSidebarTab?: string;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onNavigateToTab?: (tabKey: string) => void;
+  onOpenPlanForStore?: (params: {
+    planId?: string;
+    storeId?: string;
+    storeName?: string;
+    brandName?: string;
+    month: string;
+  }) => void;
+  onOpenListingForStore?: (params: {
+    planId?: string;
+    storeName?: string;
+    brandName?: string;
+    month: string;
+  }) => void;
 }
 
 type DashboardMainTab =
@@ -76,6 +88,7 @@ const SIDEBAR_TO_DASHBOARD_TAB: Record<string, DashboardMainTab> = {
   'dashboard-brand': 'OVERVIEW_FINANCE',
   'dashboard-finance': 'OVERVIEW_FINANCE',
   overview: 'STORE_PIPELINE',
+  'store-air-plan-report': 'PLAN_ACTUAL',
   // Gian hàng & Sàn đã gộp vào báo cáo Ngân sách (Segmented Theo gian hàng)
   'dashboard-store': 'OVERVIEW_FINANCE',
   'dashboard-video': 'VIDEO_CREATIVE',
@@ -97,13 +110,12 @@ const DASHBOARD_TO_SIDEBAR_TAB: Partial<Record<DashboardMainTab, string>> = {
 // Danh mục các tab báo cáo Dashboard điều hành (1 tầng phẳng chuẩn UI)
 const DASHBOARD_TABS: { key: DashboardMainTab; label: string }[] = [
   { key: 'SUMMARY', label: 'Tổng quan' },
+  { key: 'PLAN_ACTUAL', label: 'Kế hoạch & Thực thi tuần' },
   { key: 'OVERVIEW_FINANCE', label: 'Ngân sách & PnL' },
   { key: 'STORE_PIPELINE', label: 'Tiến độ gian hàng' },
-  { key: 'PLAN_ACTUAL', label: 'Kế hoạch vs Thực tế' },
   { key: 'VIDEO_CREATIVE', label: 'Hiệu quả video' },
   { key: 'TEAM_SLA', label: 'Lịch đăng video' },
   { key: 'STAFF_EFFICIENCY', label: 'Hiệu suất nhân sự' },
-  { key: 'ANALYSIS', label: 'Phân tích' },
 ];
 
 
@@ -115,7 +127,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
   storePortfolios,
   activeSidebarTab,
   onNotify,
-  onNavigateToTab
+  onNavigateToTab,
+  onOpenPlanForStore,
+  onOpenListingForStore,
 }) => {
   const isGlobalViewer = useMemo(() => isStaffGlobalAdminOrManager(currentUser), [currentUser]);
   const isLeaderViewer = useMemo(() => isStaffLeader(currentUser), [currentUser]);
@@ -1079,8 +1093,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         onChange={handleSelectDashboardSection}
       />
 
-      {activeTab === 'ANALYSIS' && <DashboardAnalysisView stores={stores} bookedVideos={scopedBookedVideos} />}
-
       {/* ========================================================================= */}
       {/* TAB TIẾN ĐỘ PHỄU GIAN HÀNG (QUY TRÌNH 0 → 18)                             */}
       {/* ========================================================================= */}
@@ -1090,6 +1102,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           bookedVideos={scopedBookedVideos}
           isGlobalViewer={isGlobalViewer}
           onOpenFinance={() => handleSelectDashboardSection('OVERVIEW_FINANCE')}
+          onOpenPlanActual={() => handleSelectDashboardSection('PLAN_ACTUAL')}
         />
       )}
 
@@ -1106,6 +1119,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
       {activeTab === 'PLAN_ACTUAL' && (
         <PlanActualReportView
+          allowedStoreNames={isGlobalViewer ? undefined : stores.map((s) => s.storeName)}
+          onOpenPlanForStore={onOpenPlanForStore}
+          onOpenListingForStore={onOpenListingForStore}
           onNotify={onNotify}
         />
       )}
@@ -1150,122 +1166,102 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         <Modal
           open={Boolean(inspectStore)}
           onClose={() => setInspectStore(null)}
-          title={`Hồ Sơ Đối Soát Gian Hàng: ${inspectStore.storeName}`}
+          title={`Gian hàng: ${inspectStore.storeName}`}
           size="lg"
         >
           <div className="space-y-4 text-xs">
-            <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-canvas border border-line">
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-sunken border border-line">
               <div>
-                <span className="text-ink-3">Thương hiệu (Brand):</span>{' '}
+                <span className="text-ink-3">Thương hiệu:</span>{' '}
                 <strong className="text-ink">{inspectStore.brandName}</strong> ·{' '}
                 <span className="text-ink-3">Sàn:</span>{' '}
                 <strong className="text-ink">{inspectStore.platform}</strong> ·{' '}
-                <span className="text-ink-3">Mã VH:</span>{' '}
-                <strong className="font-mono">{inspectStore.storeOperationId}</strong>
+                <span className="text-ink-3">Phụ trách:</span>{' '}
+                <strong className="text-ink">{inspectStore.primaryPic || inspectStore.assignedStaff}</strong>
+                {inspectStore.hasBookingLeader && inspectStore.bookingLeader && (
+                  <>
+                    {' '}· <span className="text-ink-3">Leader:</span>{' '}
+                    <strong className="text-ink">{inspectStore.bookingLeader}</strong>
+                  </>
+                )}
               </div>
               {renderRiskBadge(inspectStore.financialRiskStatus)}
             </div>
 
-            {/* Cơ cấu nhân sự phụ trách gian hàng */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3 rounded-lg border border-line">
-                <span className="text-2xs text-ink-3 block">Giám Đốc Marketing B2C (Duyệt cuối)</span>
-                <strong className="text-ink text-sm">Đặng Thị Yến Nhi</strong>
-              </div>
-              <div className="p-3 rounded-lg border border-line">
-                <span className="text-2xs text-ink-3 block">Trưởng Nhóm Booking (Cột 55)</span>
-                <strong className="text-accent text-sm">
-                  {inspectStore.hasBookingLeader && inspectStore.bookingLeader
-                    ? inspectStore.bookingLeader
-                    : 'Không có leader (Trực tiếp TP)'}
-                </strong>
-              </div>
-              <div className="p-3 rounded-lg border border-line">
-                <span className="text-2xs text-ink-3 block">Chuyên Viên Thực Thi (PIC)</span>
-                <strong className="text-positive text-sm">
-                  {inspectStore.primaryPic || inspectStore.assignedStaff}
-                </strong>
-              </div>
-            </div>
+            <StatRow size="sm">
+              <Stat
+                label="Hạn mức Gross"
+                value={formatVndShort(inspectStore.budgetGross || 0)}
+              />
+              <Stat
+                label="Hạn mức Net"
+                value={formatVndShort(inspectStore.budgetNet || inspectStore.monthlyBudget || 0)}
+              />
+              <Stat
+                label="Đã chi Net"
+                value={formatVndShort(inspectStore.actualSpentNet || 0)}
+              />
+              <Stat
+                label="Video đã air / Kế hoạch"
+                value={`${inspectStore.actualAiredVideos || 0} / ${(inspectStore.targetPaidVideos || 0) + (inspectStore.targetFocVideos || 0)}`}
+              />
+            </StatRow>
 
-            {/* Bóc tách Tài chính Gross / Net / Thực chi */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="p-3 rounded-lg bg-canvas border border-line">
-                <span className="text-2xs text-ink-3 block">Hạn Mức Order Gross</span>
-                <strong className="text-sm font-mono text-ink">
-                  {formatVndShort(inspectStore.budgetGross || 0)}
-                </strong>
-              </div>
-              <div className="p-3 rounded-lg bg-accent-soft border border-accent/20">
-                <span className="text-2xs text-accent block">Trần Order Net (Kế toán)</span>
-                <strong className="text-sm font-mono text-accent">
-                  {formatVndShort(inspectStore.budgetNet || inspectStore.monthlyBudget || 0)}
-                </strong>
-              </div>
-              <div className="p-3 rounded-lg bg-positive-soft border border-positive/20">
-                <span className="text-2xs text-positive block">Thực Chi Duyệt Book (3.2)</span>
-                <strong className="text-sm font-mono text-positive">
-                  {formatVndShort(inspectStore.actualSpentNet || 0)}
-                </strong>
-              </div>
-              <div className="p-3 rounded-lg bg-warning-soft border border-warning/20">
-                <span className="text-2xs text-warning block">Video Đã Air / Kế Hoạch</span>
-                <strong className="text-sm font-mono text-warning">
-                  {inspectStore.actualAiredVideos || 0} video (Paid: {inspectStore.targetPaidVideos || 0} · FOC: {inspectStore.targetFocVideos || 0})
-                </strong>
-              </div>
-            </div>
-
-            {/* Danh sách các video đã book thuộc gian hàng này */}
-            <div>
-              <h4 className="font-semibold text-ink mb-2">
-                Danh Sách Video Đã Booking Của Gian Hàng Trong Tháng 10/2026
-              </h4>
+            <Panel
+              title="Danh sách video đã booking"
+              flush
+            >
               {(() => {
                 const storeVids = B2C_BOOKED_VIDEOS_OCT_2026.filter(
                   (v) =>
                     v.storeName.toLowerCase() === inspectStore.storeName.toLowerCase() ||
                     v.brandName.toLowerCase() === inspectStore.brandName.toLowerCase()
                 );
-                if (storeVids.length === 0) {
-                  return (
-                    <p className="text-ink-3 py-4 text-center bg-canvas rounded-lg">
-                      Chưa có bản ghi video mẫu trong danh sách rút gọn cho gian hàng này.
-                    </p>
-                  );
-                }
                 return (
-                  <div className="overflow-x-auto max-h-60 border border-line rounded-lg">
-                    <table className="w-full text-xs text-left">
-                      <thead className="bg-canvas border-b border-line">
-                        <tr>
-                          <th className="py-2 px-3">Mã Book</th>
-                          <th className="py-2 px-3">Kênh KOC</th>
-                          <th className="py-2 px-3">PIC</th>
-                          <th className="py-2 px-3">Khung Lương</th>
-                          <th className="py-2 px-3 text-right">Chi Phí</th>
-                          <th className="py-2 px-3 text-right">GMV Seller</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-line">
-                        {storeVids.slice(0, 100).map((v) => (
-                          <tr key={v.code}>
-                            <td className="py-2 px-3 font-mono font-semibold text-accent">{v.code}</td>
-                            <td className="py-2 px-3 font-semibold">@{v.channelId}</td>
-                            <td className="py-2 px-3">{v.pic}</td>
-                            <td className="py-2 px-3 font-mono">{v.kl}</td>
-                            <td className="py-2 px-3 text-right font-mono font-semibold">{formatVndShort(v.cost)}</td>
-                            <td className="py-2 px-3 text-right font-mono text-positive">
-                              {formatVndShort(v.sellerGmv)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="max-h-64 overflow-y-auto">
+                    <DataTable
+                      rows={storeVids.slice(0, 100)}
+                      rowKey={(v) => v.code}
+                      empty="Chưa có bản ghi video cho gian hàng này"
+                      columns={[
+                        {
+                          key: 'code',
+                          header: 'Mã Book',
+                          render: (v) => <span className="font-mono font-semibold text-ink">{v.code}</span>,
+                        },
+                        {
+                          key: 'channelId',
+                          header: 'Kênh KOC',
+                          render: (v) => <span className="font-medium text-ink">@{v.channelId}</span>,
+                        },
+                        {
+                          key: 'pic',
+                          header: 'PIC',
+                          render: (v) => v.pic,
+                        },
+                        {
+                          key: 'kl',
+                          header: 'Khung KL',
+                          render: (v) => <span className="font-mono">{v.kl}</span>,
+                        },
+                        {
+                          key: 'cost',
+                          header: 'Chi phí',
+                          align: 'right',
+                          render: (v) => <span className="font-mono">{formatVndShort(v.cost)}</span>,
+                        },
+                        {
+                          key: 'gmv',
+                          header: 'GMV Seller',
+                          align: 'right',
+                          render: (v) => <span className="font-mono text-positive">{formatVndShort(v.sellerGmv)}</span>,
+                        },
+                      ]}
+                    />
                   </div>
                 );
               })()}
-            </div>
+            </Panel>
           </div>
         </Modal>
       )}
@@ -1277,11 +1273,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         <Modal
           open={Boolean(inspectedStaffProfile)}
           onClose={() => setInspectStaff(null)}
-          title={`Chi tiết hiệu suất: ${inspectedStaffProfile.name}`}
+          title={`Nhân sự: ${inspectedStaffProfile.name}`}
           size="xl"
         >
           <div className="space-y-4 text-xs">
-            <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-canvas border border-line">
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-sunken border border-line">
               <div>
                 <span className="text-ink-3">Vai trò:</span>{' '}
                 <strong className="text-ink">{inspectedStaffProfile.roleTitle}</strong> ·{' '}
@@ -1292,10 +1288,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <Status tone="critical">{`${inspectedStaffProfile.unbudgetedStoresCount} gian chi ngoài KH`}</Status>
               ) : inspectedStaffProfile.overbudgetStoresCount > 0 ? (
                 <Status tone="warning">{`${inspectedStaffProfile.overbudgetStoresCount} gian vượt Net`}</Status>
-              ) : inspectedStaffProfile.staffQuadrant === 'STAR' ? (
-                <Status tone="positive">Đạt chỉ tiêu</Status>
               ) : (
-                <Status tone="info">{inspectedStaffProfile.kpiGradeLabel}</Status>
+                <Status tone="positive">Trong hạn mức</Status>
               )}
             </div>
 
@@ -1303,45 +1297,20 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               <Stat
                 label="Gian hàng phụ trách"
                 value={`${inspectedStaffProfile.storesCount} gian`}
-                note={`TikTok ${inspectedStaffProfile.tiktokStoresCount} · Shopee ${inspectedStaffProfile.shopeeStoresCount}`}
               />
               <Stat
-                label="Thực chi / Trần Net"
+                label="Đã chi / Trần Net"
                 value={`${formatVndShort(inspectedStaffProfile.actualSpentNet)} / ${formatVndShort(inspectedStaffProfile.orderBudgetNet)}`}
-                note={`Giải ngân ${inspectedStaffProfile.burnNetPct}% · Gross ${formatVndShort(inspectedStaffProfile.orderBudgetGross)}`}
               />
               <Stat
-                label="Video đã đăng / Đơn book"
+                label="Video đăng / Đơn book"
                 value={`${inspectedStaffProfile.actualAiredVideos} / ${inspectedStaffProfile.actualBookedVideos}`}
-                note={`Tỷ lệ đăng ${inspectedStaffProfile.airVsBookPct}% · Chờ đăng ${inspectedStaffProfile.pendingAirVideos} đơn`}
               />
               <Stat
-                label="Doanh thu GMV & Điểm"
-                value={formatVndShort(inspectedStaffProfile.attributedGmv)}
-                note={`ROAS ${inspectedStaffProfile.effectiveRoas}x · Điểm ${inspectedStaffProfile.kpiScore}/100 (Hạng ${inspectedStaffProfile.kpiGrade})`}
+                label="Doanh thu GMV & SLA"
+                value={`${formatVndShort(inspectedStaffProfile.attributedGmv)} · SLA ${inspectedStaffProfile.slaRate}%`}
               />
             </StatRow>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-lg bg-canvas border border-line font-mono">
-              <div>
-                <span className="text-2xs text-ink-3 font-sans block">Sản lượng video đăng</span>
-                <strong className="text-xs text-ink">{inspectedStaffProfile.scoreAir}/35 điểm</strong>
-              </div>
-              <div>
-                <span className="text-2xs text-ink-3 font-sans block">Kỷ luật ngân sách Net</span>
-                <strong className="text-xs text-ink">{inspectedStaffProfile.scoreSpend}/25 điểm</strong>
-              </div>
-              <div>
-                <span className="text-2xs text-ink-3 font-sans block">Hiệu quả chuyển đổi</span>
-                <strong className="text-xs text-ink">{inspectedStaffProfile.scoreEfficiency}/20 điểm</strong>
-              </div>
-              <div>
-                <span className="text-2xs text-ink-3 font-sans block">Đúng hạn SLA & ĐNTT</span>
-                <strong className="text-xs text-ink">
-                  {inspectedStaffProfile.scoreSla}/20 điểm ({inspectedStaffProfile.slaRate}%)
-                </strong>
-              </div>
-            </div>
 
             {inspectedStaffProfile.staffStores.length > 0 && (
               <Panel
@@ -1393,13 +1362,13 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             )}
 
             <Panel
-              title={`Đơn booking video trực tiếp (${inspectedStaffProfile.staffVideos.length})`}
+              title={`Đơn booking video (${inspectedStaffProfile.staffVideos.length})`}
               flush
             >
               <DataTable
                 rows={inspectedStaffProfile.staffVideos.slice(0, 25)}
                 rowKey={(v) => v.code}
-                empty="Chưa có bản ghi đơn book mẫu"
+                empty="Chưa có bản ghi đơn book"
                 columns={[
                   {
                     key: 'code',
@@ -1447,21 +1416,28 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         <Modal
           open={Boolean(inspectVideo)}
           onClose={() => setInspectVideo(null)}
-          title={`Chi Tiết Đơn Booking Video: ${inspectVideo.code}`}
+          title={`Đơn Booking Video: ${inspectVideo.code}`}
           size="md"
         >
           <div className="space-y-3 text-xs">
-            <div className="p-3 rounded-lg bg-canvas border border-line space-y-1.5">
+            <StatRow size="sm">
+              <Stat label="Chi phí duyệt chi" value={formatVndShort(inspectVideo.cost)} />
+              <Stat label="GMV Seller" value={formatVndShort(inspectVideo.sellerGmv)} />
+              <Stat label="Đơn hàng" value={String(inspectVideo.sellerOrders)} />
+              <Stat label="ROAS" value={`${inspectVideo.roas}x`} />
+            </StatRow>
+
+            <div className="p-3 rounded-lg bg-sunken border border-line space-y-1.5">
               <div className="flex justify-between">
                 <span className="text-ink-3">Gian hàng:</span>
                 <strong className="text-ink">{inspectVideo.storeName} ({inspectVideo.brandName})</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-ink-3">Kênh KOC / Creator:</span>
+                <span className="text-ink-3">Kênh KOC:</span>
                 <strong className="text-accent">@{inspectVideo.channelId}</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-ink-3">Chuyên viên Booking (PIC):</span>
+                <span className="text-ink-3">Chuyên viên (PIC):</span>
                 <strong className="text-ink">{inspectVideo.pic}</strong>
               </div>
               <div className="flex justify-between">
@@ -1469,34 +1445,24 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <strong className="text-ink">{inspectVideo.productName}</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-ink-3">Hạng mục & Định dạng:</span>
+                <span className="text-ink-3">Định dạng &amp; Khung KL:</span>
                 <strong className="text-ink">{inspectVideo.format} · {inspectVideo.videoType} ({inspectVideo.kl})</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-ink-3">Chi phí duyệt chi:</span>
-                <strong className="font-mono text-critical">{formatVndShort(inspectVideo.cost)}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-ink-3">Doanh thu đối soát TikTok Seller:</span>
-                <strong className="font-mono text-positive">
-                  {formatVndShort(inspectVideo.sellerGmv)} ({inspectVideo.sellerOrders} đơn · ROAS {inspectVideo.roas}x)
-                </strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-ink-3">Trạng thái chứng từ Kế toán:</span>
-                <strong className="text-warning">{inspectVideo.pipeline} · {inspectVideo.paymentSlipStatus}</strong>
+                <span className="text-ink-3">Trạng thái ĐNTT:</span>
+                <strong className="text-ink">{inspectVideo.pipeline} · {inspectVideo.paymentSlipStatus}</strong>
               </div>
             </div>
 
             {inspectVideo.linkAir && (
-              <div className="pt-2 flex justify-end">
+              <div className="pt-1 flex justify-end">
                 <a
                   href={inspectVideo.linkAir}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent text-white font-semibold hover:bg-accent transition"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-fg font-semibold hover:bg-primary-hover transition"
                 >
-                  Mở xem Video trên TikTok <ExternalLink className="w-3.5 h-3.5" />
+                  Mở video trên TikTok <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </div>
             )}

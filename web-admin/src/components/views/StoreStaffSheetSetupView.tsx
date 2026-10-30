@@ -167,6 +167,8 @@ export interface StoreStaffSheetDraft {
   pic: string;
   supportStaff: string[];
   bookingLeader: string;
+  planSheetTab: string;
+  reportSheetTab: string;
   storeUrl: string;
   bookingSheetUrl: string;
   defaultSheetTab: string;
@@ -230,7 +232,9 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
   const [quickBrand, setQuickBrand] = useState('');
   const [quickStoreId, setQuickStoreId] = useState('');
   const [quickSheetUrl, setQuickSheetUrl] = useState('');
+  const [quickPlanSheetTab, setQuickPlanSheetTab] = useState('');
   const [quickSheetTab, setQuickSheetTab] = useState('');
+  const [quickReportSheetTab, setQuickReportSheetTab] = useState('');
   const [quickStoreUrl, setQuickStoreUrl] = useState('');
   const [applySheetToEntireBrand, setApplySheetToEntireBrand] = useState(false);
   const [availableSheetTabs, setAvailableSheetTabs] = useState<string[]>([]);
@@ -342,7 +346,9 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
         resolveBrandBookingSheetUrl(st.brandName, st.storeName, st) ||
         ''
       ).trim();
+      const planSheetTabVal = (ov.planSheetTab ?? st.planSheetTab ?? '').trim();
       const defaultSheetTabVal = (ov.defaultSheetTab ?? st.defaultSheetTab ?? '').trim();
+      const reportSheetTabVal = (ov.reportSheetTab ?? st.reportSheetTab ?? '').trim();
 
       nextDrafts[st.id] = {
         storeId: st.id,
@@ -355,7 +361,9 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
           st.hasBookingLeader && st.bookingLeader ? st.bookingLeader.trim() : '',
         storeUrl: storeUrlVal,
         bookingSheetUrl: bookingSheetUrlVal,
+        planSheetTab: planSheetTabVal,
         defaultSheetTab: defaultSheetTabVal,
+        reportSheetTab: reportSheetTabVal,
       };
     }
     setDrafts(nextDrafts);
@@ -488,7 +496,9 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
       setQuickBrand(first.brandName);
       setQuickStoreId(first.storeId);
       setQuickSheetUrl(first.bookingSheetUrl);
+      setQuickPlanSheetTab(first.planSheetTab);
       setQuickSheetTab(first.defaultSheetTab);
+      setQuickReportSheetTab(first.reportSheetTab);
       setQuickStoreUrl(first.storeUrl);
     }
   }, [drafts, quickStoreId]);
@@ -502,7 +512,9 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
       const first = matching[0];
       setQuickStoreId(first.storeId);
       setQuickSheetUrl(first.bookingSheetUrl);
+      setQuickPlanSheetTab(first.planSheetTab);
       setQuickSheetTab(first.defaultSheetTab);
+      setQuickReportSheetTab(first.reportSheetTab);
       setQuickStoreUrl(first.storeUrl);
       setAvailableSheetTabs([]);
     }
@@ -514,7 +526,9 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
     if (d) {
       setQuickBrand(d.brandName);
       setQuickSheetUrl(d.bookingSheetUrl);
+      setQuickPlanSheetTab(d.planSheetTab);
       setQuickSheetTab(d.defaultSheetTab);
+      setQuickReportSheetTab(d.reportSheetTab);
       setQuickStoreUrl(d.storeUrl);
       setAvailableSheetTabs([]);
     }
@@ -548,8 +562,13 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
       if (Array.isArray(data.tabsDetail)) {
         setQuickTabsDetail(data.tabsDetail);
       }
-      if (tabs.length > 0 && !quickSheetTab) {
-        setQuickSheetTab(tabs[0]);
+      if (tabs.length > 0) {
+        const planCandidate = tabs.find(t => /plan|ke\s*hoach|kế\s*hoạch/i.test(t));
+        const listingCandidate = tabs.find(t => /list|de\s*xuat|đề\s*xuất|koc/i.test(t));
+        const reportCandidate = tabs.find(t => /report|ket\s*qua|kết\s*quả|nghiem\s*thu|nghiệm\s*thu|air|bao\s*cao|báo\s*cáo/i.test(t));
+        if (planCandidate && !quickPlanSheetTab) setQuickPlanSheetTab(planCandidate);
+        if (!quickSheetTab) setQuickSheetTab(listingCandidate || tabs[0]);
+        if (reportCandidate && !quickReportSheetTab) setQuickReportSheetTab(reportCandidate);
       }
       onNotify?.(`Đã kết nối Google Sheet và tìm thấy ${tabs.length} Tab.`, 'success');
     } catch (err) {
@@ -713,7 +732,9 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
         overrides[id] = {
           ...(overrides[id] || {}),
           ...(patch.bookingSheetUrl !== undefined ? { bookingSheetUrl: patch.bookingSheetUrl } : {}),
+          ...(patch.planSheetTab !== undefined ? { planSheetTab: patch.planSheetTab } : {}),
           ...(patch.defaultSheetTab !== undefined ? { defaultSheetTab: patch.defaultSheetTab } : {}),
+          ...(patch.reportSheetTab !== undefined ? { reportSheetTab: patch.reportSheetTab } : {}),
           ...(patch.storeUrl !== undefined ? { storeUrl: patch.storeUrl } : {}),
         };
       }
@@ -736,7 +757,9 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
               assignment: {
                 storeUrl: patch.storeUrl ?? '',
                 bookingSheetUrl: patch.bookingSheetUrl ?? '',
+                planSheetTab: patch.planSheetTab ?? '',
                 defaultSheetTab: patch.defaultSheetTab ?? '',
+                reportSheetTab: patch.reportSheetTab ?? '',
               },
             }),
           });
@@ -775,13 +798,17 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
       const isPrimaryTarget = d.storeId === targetDraft.storeId;
       const updatedStoreUrl = isPrimaryTarget ? quickStoreUrl.trim() : d.storeUrl;
       const updatedSheetUrl = quickSheetUrl.trim();
+      const updatedPlanTab = isPrimaryTarget ? quickPlanSheetTab.trim() : d.planSheetTab || quickPlanSheetTab.trim();
       const updatedTab = isPrimaryTarget ? quickSheetTab.trim() : d.defaultSheetTab || quickSheetTab.trim();
+      const updatedReportTab = isPrimaryTarget ? quickReportSheetTab.trim() : d.reportSheetTab || quickReportSheetTab.trim();
 
       nextDrafts[d.storeId] = {
         ...d,
         storeUrl: updatedStoreUrl,
         bookingSheetUrl: updatedSheetUrl,
+        planSheetTab: updatedPlanTab,
         defaultSheetTab: updatedTab,
+        reportSheetTab: updatedReportTab,
       };
 
       patchesByStoreId[d.storeId] = {
@@ -789,7 +816,9 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
         storeName: d.storeName,
         storeUrl: updatedStoreUrl || undefined,
         bookingSheetUrl: updatedSheetUrl || undefined,
+        planSheetTab: updatedPlanTab || undefined,
         defaultSheetTab: updatedTab || undefined,
+        reportSheetTab: updatedReportTab || undefined,
       };
     }
 
@@ -822,7 +851,9 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
         storeName: d.storeName,
         storeUrl: d.storeUrl.trim() || undefined,
         bookingSheetUrl: d.bookingSheetUrl.trim() || undefined,
+        planSheetTab: d.planSheetTab.trim() || undefined,
         defaultSheetTab: d.defaultSheetTab.trim() || undefined,
+        reportSheetTab: d.reportSheetTab.trim() || undefined,
       };
     }
     await persistStorePatches(patches);
@@ -1439,8 +1470,8 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
       },
       {
         key: 'sheetUrl',
-        header: 'Link Google Sheet (Listing & Air Video)',
-        width: 320,
+        header: 'Link Google Sheet',
+        width: 300,
         render: row => (
           <div className="flex items-center gap-1.5">
             <Input
@@ -1464,14 +1495,35 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
       },
       {
         key: 'sheetTab',
-        header: 'Tab Sheet mặc định',
-        width: 150,
+        header: 'Cấu hình 3 Sheet (Plan · Listing · Kết quả)',
+        width: 280,
         render: row => (
-          <Input
-            value={row.defaultSheetTab}
-            onChange={e => updateRowDraft(row.storeId, { defaultSheetTab: e.target.value })}
-            placeholder="Tự động theo đợt"
-          />
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              <span className="w-14 shrink-0 text-2xs font-medium text-ink-3">1. Plan:</span>
+              <Input
+                value={row.planSheetTab}
+                onChange={e => updateRowDraft(row.storeId, { planSheetTab: e.target.value })}
+                placeholder="Plan tháng"
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-14 shrink-0 text-2xs font-medium text-ink-3">2. Listing:</span>
+              <Input
+                value={row.defaultSheetTab}
+                onChange={e => updateRowDraft(row.storeId, { defaultSheetTab: e.target.value })}
+                placeholder="Listing KOC"
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-14 shrink-0 text-2xs font-medium text-ink-3">3. Kết quả:</span>
+              <Input
+                value={row.reportSheetTab}
+                onChange={e => updateRowDraft(row.storeId, { reportSheetTab: e.target.value })}
+                placeholder="Báo cáo & Nghiệm thu"
+              />
+            </div>
+          </div>
         ),
       },
       {
@@ -1578,7 +1630,9 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                           storeName: row.storeName,
                           storeUrl: row.storeUrl.trim() || undefined,
                           bookingSheetUrl: row.bookingSheetUrl.trim() || undefined,
+                          planSheetTab: row.planSheetTab.trim() || undefined,
                           defaultSheetTab: row.defaultSheetTab.trim() || undefined,
+                          reportSheetTab: row.reportSheetTab.trim() || undefined,
                         },
                       });
                     }}
@@ -1754,8 +1808,8 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
           </div>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-            <div className="md:col-span-6">
-              <Field label="3. Link Google Sheet (Dùng để Đẩy & Kéo kết quả duyệt KOC)">
+            <div className="md:col-span-7">
+              <Field label="3. Link Google Sheet">
                 <div className="flex items-center gap-1.5">
                   <Input
                     value={quickSheetUrl}
@@ -1777,29 +1831,8 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
               </Field>
             </div>
 
-            <div className="md:col-span-3">
-              <Field label="4. Tên Tab mặc định trên Sheet">
-                {availableSheetTabs.length > 0 ? (
-                  <Select value={quickSheetTab} onChange={e => setQuickSheetTab(e.target.value)}>
-                    <option value="">-- Tự động theo đợt --</option>
-                    {availableSheetTabs.map(t => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </Select>
-                ) : (
-                  <Input
-                    value={quickSheetTab}
-                    onChange={e => setQuickSheetTab(e.target.value)}
-                    placeholder="VD: Listing T10 / Booking"
-                  />
-                )}
-              </Field>
-            </div>
-
-            <div className="md:col-span-3">
-              <Field label="5. Link Gian hàng trên sàn">
+            <div className="md:col-span-5">
+              <Field label="4. Link Gian hàng trên sàn">
                 <div className="flex items-center gap-1.5">
                   <Input
                     value={quickStoreUrl}
@@ -1818,6 +1851,77 @@ export const StoreStaffSheetSetupView: React.FC<StoreStaffSheetSetupViewProps> =
                     </a>
                   )}
                 </div>
+              </Field>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-line bg-sunken/50 p-3 space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-ink">
+                5. Cấu hình 3 Sheet chuẩn trên File Google Sheet (Plan tháng · Listing · Kết quả)
+              </span>
+              {availableSheetTabs.length > 0 && (
+                <span className="text-2xs text-positive font-medium">
+                  Đã đọc {availableSheetTabs.length} tab từ file Google Sheet
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <Field label="Sheet 1 — Plan tháng">
+                {availableSheetTabs.length > 0 ? (
+                  <Select value={quickPlanSheetTab} onChange={e => setQuickPlanSheetTab(e.target.value)}>
+                    <option value="">-- Mặc định (Plan tháng) --</option>
+                    {availableSheetTabs.map(t => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <Input
+                    value={quickPlanSheetTab}
+                    onChange={e => setQuickPlanSheetTab(e.target.value)}
+                    placeholder="VD: Plan tháng"
+                  />
+                )}
+              </Field>
+
+              <Field label="Sheet 2 — Listing KOC">
+                {availableSheetTabs.length > 0 ? (
+                  <Select value={quickSheetTab} onChange={e => setQuickSheetTab(e.target.value)}>
+                    <option value="">-- Tự động theo đợt / Listing --</option>
+                    {availableSheetTabs.map(t => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <Input
+                    value={quickSheetTab}
+                    onChange={e => setQuickSheetTab(e.target.value)}
+                    placeholder="VD: Listing KOC"
+                  />
+                )}
+              </Field>
+
+              <Field label="Sheet 3 — Kết quả (Report & Nghiệm thu)">
+                {availableSheetTabs.length > 0 ? (
+                  <Select value={quickReportSheetTab} onChange={e => setQuickReportSheetTab(e.target.value)}>
+                    <option value="">-- Mặc định (Báo cáo & Nghiệm thu) --</option>
+                    {availableSheetTabs.map(t => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <Input
+                    value={quickReportSheetTab}
+                    onChange={e => setQuickReportSheetTab(e.target.value)}
+                    placeholder="VD: Báo cáo & Nghiệm thu"
+                  />
+                )}
               </Field>
             </div>
           </div>

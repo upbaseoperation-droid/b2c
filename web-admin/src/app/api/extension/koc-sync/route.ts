@@ -4,7 +4,11 @@ import { getSalaryGradeFromRate, getSegmentFromSalaryGrade } from '@/lib/types';
 import { UPBASE_FULL_KOC_MASTER } from '@/lib/kocMasterDataset';
 import { REAL_KOC_COOPERATION_DEALS } from '@/lib/realKocDealsData';
 import { REAL_B2C_69_STORES } from '@/lib/realB2cPlanData';
-import { USERS } from '@/lib/mockData';
+import {
+  buildStaffListingRowFromKoc,
+  makeSheetKey,
+  type StaffBrandSheetCollection,
+} from '@/lib/staffBrandListingSheet';
 import { requestActor } from '@/lib/server/requestActor';
 import { readRecord, upsertRecord } from '@/lib/server/sharedRecords';
 import type { KocDirectoryChangesData } from '@/app/api/kocs/route';
@@ -23,6 +27,7 @@ import {
   inspectLiveTikTokVideoPage,
   type TikTokCartProductItem,
 } from '@/lib/tiktokOpenSourceEngines';
+import { saveMultiPlatformExtensionCapture } from '@/lib/linkAirCheckServer';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,18 +41,7 @@ const CORS_HEADERS: Record<string, string> = {
   'Cache-Control': 'no-store',
 };
 
-const LEADER_NGOC_TAM_KEYWORDS = [
-  'clubclio',
-  'cindy bloom',
-  'cindybloom',
-  'mine',
-  'eupc',
-  'loccitane',
-  "l'occitane",
-  'bye bye blemish',
-  'byebyeblemish',
-  'rejuran',
-];
+let extShotSeq = 0;
 
 function resolveStoreApprover(storeName: string, brandName: string): {
   leaderName: string;
@@ -55,14 +49,21 @@ function resolveStoreApprover(storeName: string, brandName: string): {
   marketingDirector: string;
   routingLabel: string;
 } {
-  const combined = `${storeName} ${brandName}`.toLowerCase();
-  const hasNgocTam = LEADER_NGOC_TAM_KEYWORDS.some((kw) => combined.includes(kw));
-  if (hasNgocTam) {
+  const sNorm = storeName.toLowerCase();
+  const bNorm = brandName.toLowerCase();
+  const matchedStore = REAL_B2C_69_STORES.find(
+    (s) =>
+      s.storeName.toLowerCase() === sNorm ||
+      (bNorm && s.brandName.toLowerCase() === bNorm)
+  );
+  const hasLeader = Boolean(matchedStore?.hasBookingLeader && matchedStore?.bookingLeader);
+  const leaderName = matchedStore?.bookingLeader || 'Nguyễn Thị Ngọc Tâm';
+  if (hasLeader) {
     return {
-      leaderName: 'Nguyễn Thị Ngọc Tâm',
+      leaderName,
       directorName: 'Đặng Thị Yến Nhi',
       marketingDirector: 'Đặng Thị Yến Nhi',
-      routingLabel: 'Leader Nguyễn Thị Ngọc Tâm → GĐ Marketing Đặng Thị Yến Nhi',
+      routingLabel: `Leader ${leaderName} → GĐ Marketing Đặng Thị Yến Nhi`,
     };
   }
   return {
@@ -171,9 +172,7 @@ function resolveMasterKocByHandle(handle: string): KocItem | undefined {
 }
 
 async function resolveActor(req: NextRequest) {
-  const actor = await requestActor(req).catch(() => null);
-  if (actor) return actor;
-  return USERS[0];
+  return requestActor(req).catch(() => null);
 }
 
 export async function OPTIONS() {
@@ -209,16 +208,14 @@ export async function GET(req: NextRequest) {
     const registeredVideos = allRegisteredList.slice(0, 40).map((v, idx) => ({
       videoId: v.videoId,
       systemVideoId: v.videoId,
-      dealCode: v.dealCode || `BO2610-${v.videoId.slice(-5)}`,
+      dealCode: v.dealCode || '',
       kocChannelId: v.kocChannelId,
       kocStageName: v.kocStageName,
       brandName: v.brandName,
       storeName: v.storeName,
       productName: v.productName,
       bookingCostNet: Math.round(Number(v.bookingCostNet || 0)),
-      sparkAdsCode:
-        v.sparkAdsCode ||
-        `#${v.kocChannelId.slice(0, 6).toUpperCase()}2610${String(idx + 11).padStart(2, '0')}Q`,
+      sparkAdsCode: v.sparkAdsCode || '',
       authorizationType: v.authorizationType || 'Chờ nạp mã Ads (30 ngày)',
       pic: v.pic || '—',
     }));
@@ -325,7 +322,7 @@ export async function GET(req: NextRequest) {
             videoUrl: regVid.linkAir || `https://www.tiktok.com/@${regVid.kocChannelId}/video/${regVid.videoId}`,
             handle: regVid.kocChannelId,
             caption: regVid.videoTitle || regVid.productName || '',
-            publishedAt: regVid.airDate || '2026-10-20',
+            publishedAt: regVid.airDate || '',
             hasYellowCart: Boolean(regVid.productName || regVid.productId),
             cartAnchorTitle: regVid.productName || '',
             cartProductId: regVid.productId || '',
@@ -410,9 +407,11 @@ export async function GET(req: NextRequest) {
               phoneMasked: maskSensitive(mergedKoc.phone || mergedKoc.zalo),
               cccdMasked: maskSensitive(mergedKoc.cccd || mergedKoc.taxCode),
               bankAccountMasked: mergedKoc.bankAccount
-                ? (mergedKoc.bankAccount.includes('·')
-                    ? mergedKoc.bankAccount
-                    : `${mergedKoc.bankName || 'NH'} · ${maskSensitive(mergedKoc.bankAccount)}`)
+                ? `${mergedKoc.bankName || 'NH'} · ${maskSensitive(
+                    mergedKoc.bankAccount.includes('·')
+                      ? mergedKoc.bankAccount.split('·').pop()
+                      : mergedKoc.bankAccount
+                  )}`
                 : '—',
               sharedMcnInfo: mergedKoc.sharedMcnInfo || null,
               metricsUpdatedAt: mergedKoc.metricsUpdatedAt || null,
@@ -421,15 +420,15 @@ export async function GET(req: NextRequest) {
               itemsSold: Math.round(Number(mergedKoc.itemsSold || 0)),
               gpm: Math.round(Number(mergedKoc.gpm || 0)),
               aov: Math.round(Number(mergedKoc.aov || 0)),
-              gmvShareVideo: Number(mergedKoc.gmvShareVideo ?? 80),
-              gmvShareLive: Number(mergedKoc.gmvShareLive ?? 14),
-              gmvShareProductCard: Number(mergedKoc.gmvShareProductCard ?? 6),
-              maleRatio: Number(mergedKoc.maleRatio ?? 22),
-              femaleRatio: Number(mergedKoc.femaleRatio ?? 78),
-              age18_24: Number(mergedKoc.age18_24 ?? 35),
-              age25_34: Number(mergedKoc.age25_34 ?? 45),
-              age35Plus: Number(mergedKoc.age35Plus ?? 20),
-              location: mergedKoc.location || 'Việt Nam',
+              gmvShareVideo: Number(mergedKoc.gmvShareVideo ?? 0),
+              gmvShareLive: Number(mergedKoc.gmvShareLive ?? 0),
+              gmvShareProductCard: Number(mergedKoc.gmvShareProductCard ?? 0),
+              maleRatio: Number(mergedKoc.maleRatio ?? 0),
+              femaleRatio: Number(mergedKoc.femaleRatio ?? 0),
+              age18_24: Number(mergedKoc.age18_24 ?? 0),
+              age25_34: Number(mergedKoc.age25_34 ?? 0),
+              age35Plus: Number(mergedKoc.age35Plus ?? 0),
+              location: mergedKoc.location || '',
             }
           : null,
         recentDeals: historyDeals.slice(0, 8).map((d) => ({
@@ -653,6 +652,18 @@ export async function POST(req: NextRequest) {
   try {
     ensureMasterIndexes();
     const actor = await resolveActor(req);
+    if (!actor) {
+      return NextResponse.json(
+        { success: false, error: 'Chưa xác thực phiên làm việc. Vui lòng đăng nhập Web-Admin.' },
+        { status: 401, headers: CORS_HEADERS }
+      );
+    }
+    if (actor.partnerType || String(actor.role || '').includes('_PARTNER')) {
+      return NextResponse.json(
+        { success: false, error: 'Tài khoản đối tác không có quyền ghi dữ liệu qua Extension.' },
+        { status: 403, headers: CORS_HEADERS }
+      );
+    }
     const body = (await req.json()) as ExtensionSyncPayload;
     const nowIso = new Date().toISOString();
     const vnDate = new Intl.DateTimeFormat('en-CA', {
@@ -810,7 +821,7 @@ export async function POST(req: NextRequest) {
       }
 
       const pidMatch = rawQuery.match(/\b(\d{15,22})\b/);
-      const productId = pidMatch ? pidMatch[1] : rawQuery.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 22) || '1729854120938101234';
+      const productId = pidMatch ? pidMatch[1] : rawQuery.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 22);
       const recentVids = Array.isArray(body.recentVideos) ? body.recentVideos : [];
 
       let matchedTitle = String(body.productTitle || '').trim();
@@ -845,23 +856,16 @@ export async function POST(req: NextRequest) {
             ? `Sản phẩm TikTok Shop #${productId.slice(-6)}`
             : rawQuery;
       }
-      if (matchedPrice <= 0) {
-        matchedPrice = 289000;
-      }
-
       const commRatePct = Math.max(
-        1,
-        Math.min(50, Number(body.commissionRatePct || body.commissionPct || 12))
+        0,
+        Math.min(50, Number(body.commissionRatePct || body.commissionPct || 0))
       );
-      const estimatedCommissionVnd = Math.round(matchedPrice * (commRatePct / 100));
-      const effectiveVideos = Math.max(1, matchedVideosCount);
-      const effectiveViews = totalViews > 0 ? totalViews : 48500 * effectiveVideos;
-      const estimatedSold =
-        Number(body.soldCount || 0) > 0
-          ? Math.round(Number(body.soldCount))
-          : Math.max(18, Math.round(effectiveViews * 0.0022));
-      const dailySalesVelocity = Math.max(2, Math.round(estimatedSold / 14));
-      const stockCount = 450 + (Number(productId.slice(-3)) || 120);
+      const estimatedCommissionVnd = matchedPrice > 0 && commRatePct > 0 ? Math.round(matchedPrice * (commRatePct / 100)) : 0;
+      const effectiveVideos = matchedVideosCount;
+      const effectiveViews = totalViews;
+      const estimatedSold = Math.max(0, Math.round(Number(body.soldCount || 0)));
+      const dailySalesVelocity = estimatedSold > 0 ? Math.round(estimatedSold / 14) : 0;
+      const stockCount = 0;
 
       const scoreRaw =
         Math.min(35, effectiveVideos * 7) +
@@ -888,8 +892,8 @@ export async function POST(req: NextRequest) {
       const productPayload = {
         productId,
         title: matchedTitle,
-        sellerId: matchedSellerId || '7495820192837401920',
-        shopName: matchedSellerId ? `Gian hàng #${matchedSellerId.slice(-6)}` : 'Gian hàng Chính hãng B2C',
+        sellerId: matchedSellerId || '',
+        shopName: matchedSellerId ? `Gian hàng #${matchedSellerId.slice(-6)}` : 'Chưa xác nhận',
         priceVnd: matchedPrice,
         commissionRatePct: commRatePct,
         commissionPct: commRatePct,
@@ -898,7 +902,7 @@ export async function POST(req: NextRequest) {
         soldCount: estimatedSold,
         dailySalesVelocity,
         stockCount,
-        stockStatusLabel: `Sẵn hàng (${new Intl.NumberFormat('vi-VN').format(stockCount)} tồn kho)`,
+        stockStatusLabel: stockCount > 0 ? `Sẵn hàng (${new Intl.NumberFormat('vi-VN').format(stockCount)} tồn kho)` : 'Chưa xác nhận tồn kho',
         videoCountOnChannel: effectiveVideos,
         totalViewsOnChannel: effectiveViews,
         totalLikesOnChannel: totalLikes,
@@ -1189,7 +1193,7 @@ export async function POST(req: NextRequest) {
       }
 
       const screenshotItem = {
-        id: `shot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        id: `shot-${Date.now()}-${(++extShotSeq).toString(36).padStart(4, '0')}`,
         videoUrl: videoUrl || `https://www.tiktok.com/@${handle}/video/${videoId}`,
         videoId,
         authorHandle: handle,
@@ -1261,6 +1265,46 @@ export async function POST(req: NextRequest) {
       const storeName = String(body.storeName || 'ClubClio_TikTok_E2E-S').trim();
       const brandName = String(body.brandName || storeName.split('_')[0] || 'ClubClio').trim();
       const picName = String(body.picName || actor?.name || 'Chuyên viên B2C').trim();
+      const rawPlat = String(body.platform || '').toLowerCase();
+      const detectedPlat: 'tiktok' | 'threads' | 'facebook' | 'shopee' | 'instagram' =
+        rawPlat.includes('thread') || /threads\.(net|com)/i.test(videoUrl)
+          ? 'threads'
+          : rawPlat.includes('facebook') || rawPlat === 'fb' || /facebook\.com|fb\.watch/i.test(videoUrl)
+          ? 'facebook'
+          : rawPlat.includes('shopee') || /shopee\.|shp\.ee/i.test(videoUrl)
+          ? 'shopee'
+          : rawPlat.includes('instagram') || rawPlat === 'ig' || /instagram\.com/i.test(videoUrl)
+          ? 'instagram'
+          : 'tiktok';
+
+      if (detectedPlat !== 'tiktok') {
+        await saveMultiPlatformExtensionCapture({
+          contentId: videoId,
+          platform: detectedPlat,
+          postUrl: videoUrl,
+          handle,
+          displayName: body.displayName || handle,
+          publishedAt: body.publishedAt || vnDate,
+          caption: String(body.caption || ''),
+          hashtags: Array.isArray(body.hashtags) ? body.hashtags : [],
+          views,
+          likes,
+          comments,
+          shares,
+          hasProductLink: Boolean(
+            body.hasYellowCart ||
+              body.cartAnchorUrl ||
+              (Array.isArray(body.cartProducts) && body.cartProducts.length > 0)
+          ),
+          productTitle: body.cartAnchorTitle || body.cartProducts?.[0]?.title || null,
+          productUrl: body.cartAnchorUrl || body.cartProducts?.[0]?.productUrl || null,
+          productId: body.cartProductId || body.cartProducts?.[0]?.productId || null,
+          sellerId: body.cartSellerId || body.cartProducts?.[0]?.sellerId || null,
+          cartProducts: Array.isArray(body.cartProducts) ? body.cartProducts : [],
+          source: 'extension-dom-verified',
+          updatedAt: new Date().toISOString(),
+        });
+      }
 
       // Đẩy toàn bộ dữ liệu Giỏ hàng (cartProducts), Phụ đề (transcriptText) và MP4 (playableUrl) từ trình duyệt vào bộ nhớ đệm Server
       injectExtensionCapturedVideoToCache({
@@ -1439,7 +1483,7 @@ export async function POST(req: NextRequest) {
             followers,
             avgViews,
             rateCardVideo: effectiveRate,
-            reliabilityScore: 9.0,
+            reliabilityScore: 0,
           }),
           channelId: handle,
           channelLink:
@@ -1503,7 +1547,7 @@ export async function POST(req: NextRequest) {
           age18_24: body.age18_24 !== undefined ? Number(body.age18_24) : prev?.age18_24,
           age25_34: body.age25_34 !== undefined ? Number(body.age25_34) : prev?.age25_34,
           age35Plus: body.age35Plus !== undefined ? Number(body.age35Plus) : prev?.age35Plus,
-          location: body.location || prev?.location || 'Việt Nam',
+          location: body.location || prev?.location || '',
           tiktokSellerSyncedAt:
             body.recentRevenue !== undefined ? nowIso : prev?.tiktokSellerSyncedAt,
           brandName: brandName || prev?.brandName,
@@ -1540,6 +1584,47 @@ export async function POST(req: NextRequest) {
     );
 
     const savedKoc = updatedRecord.data.itemsByHandle[handle];
+
+    if (body.action === 'CREATE_DEAL_PROPOSAL' && storeName) {
+      const monthKey = String(body.planMonth || vnDate.slice(0, 7).replace('-', '/')).trim();
+      const sheetKey = makeSheetKey(monthKey, storeName);
+      const proposalRow = buildStaffListingRowFromKoc({
+        koc: savedKoc,
+        monthKey,
+        staffName: savedKoc.bookingPic || actor.name || 'Chuyên viên B2C',
+        storeName,
+        dot: 'Đợt 1',
+      });
+      if (body.note || savedKoc.contentNote) {
+        proposalRow.contentNote = body.note || savedKoc.contentNote || '';
+      }
+      await upsertRecord<StaffBrandSheetCollection>(
+        'staff-brand-listing-sheets-v1',
+        { sheets: {}, googleSheetUrls: {} },
+        (col) => {
+          const sheets = { ...(col?.sheets || {}) };
+          const existingRows = Array.isArray(sheets[sheetKey]) ? [...sheets[sheetKey]] : [];
+          const dupIdx = existingRows.findIndex(
+            (r) => normalizeHandle(r.idKenh) === handle
+          );
+          if (dupIdx >= 0) {
+            existingRows[dupIdx] = {
+              ...existingRows[dupIdx],
+              giaNetVideo: effectiveRate || existingRows[dupIdx].giaNetVideo,
+              contentNote: body.note || existingRows[dupIdx].contentNote,
+            };
+          } else {
+            existingRows.unshift(proposalRow);
+          }
+          sheets[sheetKey] = existingRows;
+          return {
+            sheets,
+            googleSheetUrls: col?.googleSheetUrls || {},
+            fieldEditPolicy: col?.fieldEditPolicy,
+          };
+        }
+      );
+    }
 
     return NextResponse.json(
       {

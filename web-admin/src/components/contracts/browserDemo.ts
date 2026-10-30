@@ -8,6 +8,7 @@ import {
   createStandaloneRequestSignAttempt,
   enrichTemplateWithSignFlow,
 } from '../../lib/contracts/contractSystemRules';
+import { isTwoTimePaymentField, resolvePaymentScheduleOption } from '../../lib/contracts/contractRules';
 
 // Kho thử riêng trên trình duyệt; đồng bộ 100% bộ biểu mẫu chuẩn từ Quản lý hợp đồng
 const KEY = 'b2c-contract-browser-demo-v1';
@@ -299,6 +300,50 @@ function createInitialDemoRecords(): ContractRecord[] {
       history: [
         { at: now, actorId: 'demo-owner', actorName: 'Chuyên viên B2C', action: 'CREATE', note: 'Lập Biên bản nghiệm thu hoàn tất 01 video TikTok', version: 1 },
         { at: now, actorId: 'demo-owner', actorName: 'Chuyên viên B2C', action: 'SUBMIT', note: 'Trình Kế toán duyệt quyết toán', version: 1 },
+      ],
+    },
+    {
+      id: 'CTR-DEMO-2026-000',
+      title: 'Hợp đồng nguyên tắc KOC · Chanh Beauty · Kutieskin',
+      brand: 'Kutieskin',
+      partner: 'Đặng Mai Phương (Chanh Beauty)',
+      templateId: 'IND-HDNT',
+      templateHash: indTpl.hash,
+      dealCode: 'BO260511200',
+      kocId: 'koc-1',
+      ownerId: 'demo-owner',
+      ownerName: 'Người tạo (kiểm thử)',
+      version: 1,
+      revision: 2,
+      approval: 'APPROVED',
+      steps: [
+        { role: 'FINANCE', reviewerId: 'demo-finance', reviewerName: 'Lê Thị Thu Hà (Kế toán B2C)', version: 1, status: 'APPROVED', decidedAt: now, note: 'Đã kiểm tra CCCD gốc, MST và tài khoản Techcombank hợp lệ.' },
+      ],
+      values: sampleValues,
+      versions: [],
+      signing: [
+        {
+          documentId: 'ws-demo-000-completed',
+          version: 1,
+          provider: 'DEMO',
+          status: 'COMPLETED',
+          sourceStatus: 2,
+          linkedBy: 'demo-owner',
+          linkedAt: now,
+          syncedAt: now,
+          evidenceConfirmedBy: 'demo-finance',
+          evidenceHash: 'sha256:demo000',
+          people: [
+            { name: 'Đặng Thị Yến Nhi', email: 'marketing-lead@upbase.vn', role: 1, level: 1, action: 2, status: 'SIGNED', at: now },
+            { name: 'Đặng Mai Phương (Chanh Beauty)', email: 'chanhbeauty.booking@gmail.com', role: 1, level: 2, action: 2, status: 'SIGNED', at: now },
+          ],
+        },
+      ],
+      checks: [],
+      createdAt: now,
+      updatedAt: now,
+      history: [
+        { at: now, actorId: 'demo-finance', actorName: 'Lê Thị Thu Hà (Kế toán B2C)', action: 'APPROVE', note: 'Đã thẩm định Hồ sơ pháp lý & duyệt FINAL', version: 1 },
       ],
     },
   ];
@@ -693,12 +738,15 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
     requireCondition(body.values && typeof body.values === 'object' && !Array.isArray(body.values), 'Dữ liệu điền không hợp lệ.');
     const rawValues = body.values as Record<string, string>;
     const tplFields = new Set(template.fields.map(f => f.key));
+    const allowedSpecialKeys = new Set(['sowAdvanceAmount', 'KOC_ID', 'LEGAL_PROFILE_ID', 'CHANNEL_ID', 'partnerEmail']);
     const values: Record<string, string> = {};
     for (const [key, value] of Object.entries(rawValues)) {
-      if (!tplFields.has(key) && !key.startsWith('token:') && !key.startsWith('src:')) continue;
-      if (typeof value === 'string' && value.length <= 4000) values[key] = value;
+      const isMeta = key.startsWith('meta:') || key.startsWith('__meta:');
+      if (!tplFields.has(key) && !key.startsWith('token:') && !key.startsWith('src:') && !isMeta && !allowedSpecialKeys.has(key)) continue;
+      const maxLen = isMeta ? 32000 : 4000;
+      if (typeof value === 'string' && value.length <= maxLen) values[key] = value;
     }
-    const isKocOwnForm = Boolean(body.isKocOwnForm);
+    const isKocOwnForm = typeof body.isKocOwnForm === 'boolean' ? body.isKocOwnForm : Boolean(existing?.isKocOwnForm);
     let customFile = existing?.customFile;
     if (typeof body.customFilename === 'string' && body.customFilename.trim()) {
       const blocks = Array.isArray(body.customFileBlocks) ? (body.customFileBlocks as DocBlock[]) : customFile?.blocks || [];
@@ -728,13 +776,13 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       templateId: template.id,
       templateHash: template.hash,
       values,
-      parentId: body.parentId as string | undefined,
-      dealId: body.dealId as string | undefined,
-      dealCode: body.dealCode as string | undefined,
-      kocId: body.kocId as string | undefined,
-      hasCustomTerms: isKocOwnForm ? true : Boolean(body.hasCustomTerms),
-      customTermsSummary: typeof body.customTermsSummary === 'string' ? body.customTermsSummary.trim() : undefined,
-      internalNotes: typeof body.internalNotes === 'string' ? body.internalNotes.trim() : undefined,
+      parentId: (body.parentId as string | undefined) || existing?.parentId,
+      dealId: body.dealId !== undefined ? (body.dealId as string | undefined) : existing?.dealId,
+      dealCode: body.dealCode !== undefined ? (body.dealCode as string | undefined) : existing?.dealCode,
+      kocId: body.kocId !== undefined ? (body.kocId as string | undefined) : existing?.kocId,
+      hasCustomTerms: isKocOwnForm ? true : (typeof body.hasCustomTerms === 'boolean' ? body.hasCustomTerms : Boolean(existing?.hasCustomTerms)),
+      customTermsSummary: typeof body.customTermsSummary === 'string' ? body.customTermsSummary.trim() : existing?.customTermsSummary,
+      internalNotes: typeof body.internalNotes === 'string' ? body.internalNotes.trim() : existing?.internalNotes,
       isKocOwnForm,
       customFile: isKocOwnForm ? customFile : undefined,
       acceptanceScreenshots,
@@ -798,7 +846,10 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
     }
   } else if (body.action === 'SUBMIT') {
     if (!record.isKocOwnForm) {
-      const requiredFields = template?.fields.filter(f => f.required) || [];
+      const payOption = resolvePaymentScheduleOption(record.values, record.templateId, template?.fields);
+      const requiredFields = (template?.fields || []).filter(
+        f => f.required && (payOption === 'TWO_TIMES' || !isTwoTimePaymentField(f)),
+      );
       requireCondition(
         requiredFields.every(f => record.values[f.key]?.trim()),
         'Còn ô bắt buộc chưa điền.',
@@ -876,7 +927,10 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
         (record.ownerId === actor.id || record.steps.some(s => s.reviewerId === actor.id) || actor.roles.some(r => ['LEGAL', 'FINANCE', 'LEAD'].includes(r))),
       'Không có quyền kiểm tra hồ sơ.',
     );
-    const requiredFields = template?.fields.filter(f => f.required) || [];
+    const payOption = resolvePaymentScheduleOption(record.values, record.templateId, template?.fields);
+    const requiredFields = (template?.fields || []).filter(
+      f => f.required && (payOption === 'TWO_TIMES' || !isTwoTimePaymentField(f)),
+    );
     next.checks.push({
       version: record.version,
       at: new Date().toISOString(),
@@ -907,6 +961,13 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       });
     }
     next.approval = 'APPROVED';
+    const partyBEmail =
+      next.values['src:email'] ||
+      next.values['token:[ĐIỀN EMAIL]'] ||
+      next.values['token:[EMAIL]'] ||
+      next.values['partnerEmail'] ||
+      next.values['word/document.xml:p48:cell'] ||
+      '';
     next.signing.push({
       documentId: crypto.randomUUID(),
       name: next.title,
@@ -924,7 +985,7 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       evidenceHash: '',
       people: [
         { name: 'Upbase (Công ty CP Công nghệ UpBase)', email: 'hddt@upbase.asia', role: 0, roleLabel: 'Đại diện Bên A', level: 1, action: 2, status: 'Đã ký', at: at },
-        { name: next.partner, email: 'partner@booking.upbase.vn', role: 0, roleLabel: 'Đại diện Bên B (KOC)', level: 2, action: 2, status: 'Đã ký', at: at },
+        { name: next.partner, email: partyBEmail, role: 0, roleLabel: 'Đại diện Bên B (KOC)', level: 2, action: 2, status: 'Đã ký', at: at },
       ],
     });
     event(next, actor, 'DEMO_FAST_SIGN', 'Đã hoàn tất ký số đủ 2 bên (UpBase & KOC) và khóa cấu hình Deal');
@@ -934,6 +995,13 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
     const at = new Date().toISOString();
     if (body.action === 'DEMO_SIGN_START') {
       requireCondition(!attempt || ['REJECTED', 'CANCELLED'].includes(attempt.status), 'Đã có lượt ký hoạt động hoặc hoàn tất.');
+      const partyBEmail =
+        record.values['src:email'] ||
+        record.values['token:[ĐIỀN EMAIL]'] ||
+        record.values['token:[EMAIL]'] ||
+        record.values['partnerEmail'] ||
+        record.values['word/document.xml:p48:cell'] ||
+        '';
       next.signing.push({
         documentId: crypto.randomUUID(),
         name: record.title,
@@ -953,7 +1021,7 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
         evidenceHash: '',
         people: [
           { name: 'Upbase (Công ty CP Công nghệ UpBase)', email: 'hddt@upbase.asia', role: 0, roleLabel: 'Người ký', level: 1, action: 1, status: 'Chờ ký' },
-          { name: record.partner, email: record.values['word/document.xml:p48:cell'] || 'partner@booking.upbase.vn', role: 0, roleLabel: 'Người ký', level: 2, action: 0, status: 'Chưa đến lượt' },
+          { name: record.partner, email: partyBEmail, role: 0, roleLabel: 'Người ký', level: 2, action: 0, status: 'Chưa đến lượt' },
         ],
       });
     } else {

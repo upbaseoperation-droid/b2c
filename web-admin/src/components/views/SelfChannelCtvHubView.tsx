@@ -14,7 +14,10 @@ import {
   type HubJob,
   type HubPlanSummary,
 } from './self-channel/SelfChannelMonthPanels';
-import { SelfChannelSettlementPanel } from './self-channel/SelfChannelSettlementPanel';
+import { SelfChannelAirReportPanel, SelfChannelVideoListPanel } from './self-channel/SelfChannelVideoPanels';
+import { SelfChannelProgressPanel } from './self-channel/SelfChannelProgressPanel';
+import { SelfChannelPaymentPanel } from './self-channel/SelfChannelPaymentPanel';
+import { SelfChannelLegacySettlementPanel } from './self-channel/SelfChannelLegacySettlementPanel';
 import { CtvPortalPanel } from './self-channel/CtvPortalPanel';
 import type { CtvDirectoryAccess } from '../../lib/ctvDirectory';
 import type { BrandDetail, Contributor, UserProfile } from '../../lib/types';
@@ -33,7 +36,7 @@ export interface SelfChannelCtvHubViewProps {
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
-type HubTab = 'WORK' | 'OVERVIEW' | 'QUEUE' | 'SETTLEMENT' | 'CONTRIBUTORS' | 'DISCUSSION';
+type HubTab = 'WORK' | 'PROGRESS' | 'VIDEOS' | 'OVERVIEW' | 'QUEUE' | 'AIR_REPORT' | 'SETTLEMENT' | 'CONTRIBUTORS' | 'DISCUSSION';
 
 const NO_CONTRIBUTORS: Contributor[] = [];
 
@@ -61,9 +64,9 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
   }
 
   // Bấm "Mở" ở Tổng quan / Hàng chờ duyệt: chuyển sang Việc theo gian đúng kế hoạch
-  const [planFocus, setPlanFocus] = useState<{ planId: string; nonce: number } | null>(null);
-  const openPlan = (planId: string) => {
-    setPlanFocus({ planId, nonce: Date.now() });
+  const [planFocus, setPlanFocus] = useState<{ planId: string; nonce: number; jobCode?: string } | null>(null);
+  const openPlan = (planId: string, jobCode?: string) => {
+    setPlanFocus({ planId, nonce: Date.now(), jobCode });
     setActiveTab('WORK');
   };
 
@@ -90,7 +93,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
   // Tải lại số liệu mỗi lần mở Tổng quan / Hàng chờ duyệt
   const selectTab = (tab: HubTab) => {
     setActiveTab(tab);
-    if (tab === 'OVERVIEW' || tab === 'QUEUE') void loadHub();
+    if (tab === 'OVERVIEW' || tab === 'QUEUE' || tab === 'VIDEOS' || tab === 'PROGRESS') void loadHub();
   };
 
   if (isCtvPartner) {
@@ -104,9 +107,12 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
 
   const tabs: TabItem<HubTab>[] = [
     { key: 'WORK', label: 'Việc theo gian' },
+    { key: 'PROGRESS', label: 'Tiến độ' },
+    { key: 'VIDEOS', label: 'Video trong tháng' },
     { key: 'OVERVIEW', label: 'Tổng quan tháng' },
     { key: 'QUEUE', label: 'Hàng chờ duyệt' },
-    { key: 'SETTLEMENT', label: 'Quyết toán' },
+    { key: 'AIR_REPORT', label: 'Báo cáo air' },
+    { key: 'SETTLEMENT', label: 'Thanh toán' },
     { key: 'CONTRIBUTORS', label: 'Danh bạ CTV', count: contributors.length || undefined },
     { key: 'DISCUSSION', label: 'Trao đổi' },
   ];
@@ -125,6 +131,16 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
         />
       )}
 
+      {activeTab === 'PROGRESS' && (
+        <SelfChannelProgressPanel plans={hubData.plans} jobs={hubData.jobs} loading={hubLoading} onOpenPlan={openPlan} />
+      )}
+
+      {activeTab === 'VIDEOS' && (
+        <SelfChannelVideoListPanel plans={hubData.plans} jobs={hubData.jobs} loading={hubLoading} onOpenPlan={openPlan} />
+      )}
+
+      {activeTab === 'AIR_REPORT' && <SelfChannelAirReportPanel onNotify={onNotify} />}
+
       {activeTab === 'OVERVIEW' && (
         <SelfChannelOverviewPanel plans={hubData.plans} jobs={hubData.jobs} loading={hubLoading} onOpenPlan={openPlan} />
       )}
@@ -133,7 +149,12 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
         <SelfChannelQueuePanel jobs={hubData.jobs} loading={hubLoading} today={getVietnamDateYmd()} onOpenPlan={openPlan} />
       )}
 
-      {activeTab === 'SETTLEMENT' && <SelfChannelSettlementPanel onNotify={onNotify} />}
+      {activeTab === 'SETTLEMENT' && (
+        <div className="space-y-4">
+          <SelfChannelPaymentPanel onNotify={onNotify} contributors={contributors} />
+          <SelfChannelLegacySettlementPanel onNotify={onNotify} />
+        </div>
+      )}
 
       {activeTab === 'CONTRIBUTORS' && (
         // Danh bạ CTV dùng chung lưu trên máy chủ (Partnership quản lý; người khác chỉ xem)

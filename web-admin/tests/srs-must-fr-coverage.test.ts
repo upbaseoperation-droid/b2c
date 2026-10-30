@@ -373,7 +373,7 @@ test('TC-022 (FR-082): Danh bạ KOC 2 bảng (COOPERATED vs NEW) và đồng b�
   assert.equal(getKocLegalProfiles(syncedKoc).length, 2);
 
   // Kiểm tra che số nhạy cảm và phân quyền xem số đầy đủ (NFR-04)
-  assert.equal(mask('8899001122'), '•••• 1122');
+  assert.equal(mask('8899001122'), '****1122');
   assert.equal(
     canRevealSensitive(
       { id: 'u-fin', name: 'Kế toán', email: 'fin@upbase.vn', role: 'FINANCE', avatar: 'KT', assignedBrands: [] },

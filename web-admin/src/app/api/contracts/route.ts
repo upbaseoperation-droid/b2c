@@ -17,6 +17,7 @@ import {
   syncTemplatesWithContractSystem,
 } from '@/lib/contracts/contractSystemClient';
 import { buildStableContractCode } from '@/lib/contracts/contractSystemRules';
+import { isTwoTimePaymentField, resolvePaymentScheduleOption } from '@/lib/contracts/contractRules';
 import type { AcceptanceScreenshotItem, ContractActor, ContractRecord, LegalDocAttachment, ReviewStep } from '@/lib/contracts/types';
 import { simulateSigning } from '@/lib/contracts/demo';
 export const runtime = 'nodejs';
@@ -54,15 +55,19 @@ async function parseInput(body: Record<string, unknown>, actor: ContractActor, e
   if (existing) requireCondition(body.templateId === existing.templateId, 'Không thể đổi mẫu của hồ sơ đã tạo.');
   const { template } = await loadTemplate(body.templateId, existing?.templateHash);
   requireCondition(typeof body.values === 'object' && body.values && !Array.isArray(body.values), 'Dữ liệu điền không hợp lệ.');
-  const fields = new Set(template.fields.map(f => f.key)); const values: Record<string, string> = {};
+  const fields = new Set(template.fields.map(f => f.key));
+  const allowedSpecialKeys = new Set(['sowAdvanceAmount', 'KOC_ID', 'LEGAL_PROFILE_ID', 'CHANNEL_ID', 'partnerEmail']);
+  const values: Record<string, string> = {};
   for (const [key, value] of Object.entries(body.values)) {
-    if (!fields.has(key) && !key.startsWith('token:')) continue;
-    requireCondition(typeof value === 'string' && value.length <= 4000 && !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(value), 'Trường điền không hợp lệ.');
+    const isMeta = key.startsWith('meta:') || key.startsWith('__meta:');
+    if (!fields.has(key) && !key.startsWith('token:') && !key.startsWith('src:') && !isMeta && !allowedSpecialKeys.has(key)) continue;
+    const maxLen = isMeta ? 32000 : 4000;
+    requireCondition(typeof value === 'string' && value.length <= maxLen && !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(value), 'Trường điền không hợp lệ.');
     values[key] = value;
   }
   const ref = (v: unknown) => { if (v === undefined || v === null || v === '') return undefined; requireCondition(typeof v === 'string' && /^[\w.@-]{1,80}$/.test(v), 'Mã booking hoặc KOC không hợp lệ.'); return v; };
 
-  const isKocOwnForm = Boolean(body.isKocOwnForm);
+  const isKocOwnForm = typeof body.isKocOwnForm === 'boolean' ? body.isKocOwnForm : Boolean(existing?.isKocOwnForm);
   let customFile = existing?.customFile;
   if (typeof body.customFileBase64 === 'string' && body.customFileBase64.trim()) {
     const filename = typeof body.customFilename === 'string' && body.customFilename.trim() ? body.customFilename.trim() : 'hop-dong-koc.docx';
@@ -89,11 +94,13 @@ async function parseInput(body: Record<string, unknown>, actor: ContractActor, e
 
   return {
     title, brand, partner, templateId: template.id, templateHash: template.hash, values,
-    parentId: typeof body.parentId === 'string' && body.parentId ? body.parentId : undefined,
-    dealId: ref(body.dealId), dealCode: ref(body.dealCode), kocId: ref(body.kocId),
-    hasCustomTerms: isKocOwnForm ? true : Boolean(body.hasCustomTerms),
-    customTermsSummary: typeof body.customTermsSummary === 'string' ? body.customTermsSummary.trim().slice(0, 2000) : undefined,
-    internalNotes: typeof body.internalNotes === 'string' ? body.internalNotes.trim().slice(0, 4000) : undefined,
+    parentId: typeof body.parentId === 'string' && body.parentId ? body.parentId : existing?.parentId,
+    dealId: body.dealId !== undefined ? ref(body.dealId) : existing?.dealId,
+    dealCode: body.dealCode !== undefined ? ref(body.dealCode) : existing?.dealCode,
+    kocId: body.kocId !== undefined ? ref(body.kocId) : existing?.kocId,
+    hasCustomTerms: isKocOwnForm ? true : (typeof body.hasCustomTerms === 'boolean' ? body.hasCustomTerms : Boolean(existing?.hasCustomTerms)),
+    customTermsSummary: typeof body.customTermsSummary === 'string' ? body.customTermsSummary.trim().slice(0, 2000) : existing?.customTermsSummary,
+    internalNotes: typeof body.internalNotes === 'string' ? body.internalNotes.trim().slice(0, 4000) : existing?.internalNotes,
     isKocOwnForm,
     customFile: isKocOwnForm ? customFile : undefined,
     acceptanceScreenshots,
@@ -106,9 +113,9 @@ async function parseInput(body: Record<string, unknown>, actor: ContractActor, e
     googleDocsUrl: typeof body.googleDocsUrl === 'string' && body.googleDocsUrl.trim() ? body.googleDocsUrl.trim() : existing?.googleDocsUrl,
     googleDocsId: typeof body.googleDocsId === 'string' && body.googleDocsId.trim() ? body.googleDocsId.trim() : existing?.googleDocsId,
     googleDocsSource: body.googleDocsSource === 'KOC_CUSTOM_DOC' ? 'KOC_CUSTOM_DOC' : (body.googleDocsUrl ? 'TEMPLATE_AMENDED' : existing?.googleDocsSource),
-    googleDocsReviewRouting: (typeof body.googleDocsReviewRouting === 'object' && body.googleDocsReviewRouting !== null ? body.googleDocsReviewRouting : existing?.googleDocsReviewRouting) as any,
-    googleDocsComments: (Array.isArray(body.googleDocsComments) ? body.googleDocsComments : existing?.googleDocsComments) as any,
-    googleDocsAuditTrail: (typeof body.googleDocsAuditTrail === 'object' && body.googleDocsAuditTrail !== null ? body.googleDocsAuditTrail : existing?.googleDocsAuditTrail) as any,
+    googleDocsReviewRouting: (typeof body.googleDocsReviewRouting === 'object' && body.googleDocsReviewRouting !== null ? body.googleDocsReviewRouting : existing?.googleDocsReviewRouting) as ContractRecord['googleDocsReviewRouting'],
+    googleDocsComments: (Array.isArray(body.googleDocsComments) ? body.googleDocsComments : existing?.googleDocsComments) as ContractRecord['googleDocsComments'],
+    googleDocsAuditTrail: (typeof body.googleDocsAuditTrail === 'object' && body.googleDocsAuditTrail !== null ? body.googleDocsAuditTrail : existing?.googleDocsAuditTrail) as ContractRecord['googleDocsAuditTrail'],
   };
 }
 export async function POST(req: NextRequest) {
@@ -154,7 +161,9 @@ export async function POST(req: NextRequest) {
       const { template } = await loadTemplate(record.templateId, record.templateHash);
       requireCondition(template.hash === record.templateHash, 'Mẫu nguồn đã thay đổi.', 409);
       if (!record.isKocOwnForm) {
-        requireCondition(template.fields.filter(f => f.required).every(f => record.values[f.key]?.trim()), 'Còn trường bắt buộc chưa điền.');
+        const payOption = resolvePaymentScheduleOption(record.values, record.templateId, template.fields);
+        const requiredFields = template.fields.filter(f => f.required && (payOption === 'TWO_TIMES' || !isTwoTimePaymentField(f)));
+        requireCondition(requiredFields.every(f => record.values[f.key]?.trim()), 'Còn trường bắt buộc chưa điền.');
       }
       requireCondition(Array.isArray(body.reviewers) && body.reviewers.every(id => typeof id === 'string'), 'Cần chọn người duyệt.');
       const reviewers = configuredActors().filter(a => (body.reviewers as string[]).includes(a.id));

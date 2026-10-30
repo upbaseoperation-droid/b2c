@@ -99,14 +99,14 @@ const ASSIGNMENT_FIELDS = [
   'b2cOwnerName', 'primaryPic', 'assignedStaff', 'assignedPic', 'b2cOwners', 'assignedMembers',
   'bookingLeader', 'hasBookingLeader', 'backupOwnerName', 'backupOwnerId', 'isBackupActive', 'backupReason', 'backupFrom', 'backupTo',
   'previousPic', 'handoverEffectiveDate', 'assignmentNotes', 'staffCodes', 'contentPic', 'accountOwnerName',
-  'storeUrl', 'bookingSheetUrl', 'defaultSheetTab', 'selfChannelHandles',
+  'storeUrl', 'bookingSheetUrl', 'planSheetTab', 'defaultSheetTab', 'reportSheetTab', 'selfChannelHandles',
 ] as const;
 /** Leader của gian chỉ đổi người cùng làm, dự phòng và link Sheet/Gian hàng; Booking chính / Leader do Giám đốc đặt. */
 const LEADER_FIELDS = new Set<string>([
   'b2cOwners', 'assignedMembers', 'backupOwnerName', 'backupOwnerId', 'isBackupActive', 'backupReason', 'backupFrom', 'backupTo', 'assignmentNotes', 'staffCodes',
-  'storeUrl', 'bookingSheetUrl', 'defaultSheetTab', 'selfChannelHandles',
+  'storeUrl', 'bookingSheetUrl', 'planSheetTab', 'defaultSheetTab', 'reportSheetTab', 'selfChannelHandles',
 ]);
-const PIC_LINK_FIELDS = new Set<string>(['storeUrl', 'bookingSheetUrl', 'defaultSheetTab', 'selfChannelHandles']);
+const PIC_LINK_FIELDS = new Set<string>(['storeUrl', 'bookingSheetUrl', 'planSheetTab', 'defaultSheetTab', 'reportSheetTab', 'selfChannelHandles']);
 
 // PATCH /api/master-data — lưu phân công một gian (bàn giao, người cùng làm, dự phòng) lên máy chủ, ghi nhật ký phân công
 export async function PATCH(req: NextRequest) {

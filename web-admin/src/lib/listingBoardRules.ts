@@ -1087,6 +1087,23 @@ export interface KocDuplicateAndPriceCheck {
   priceHikeWarning: string | null;
 }
 
+const kocHandleMapCache = new WeakMap<KocItem[], Map<string, KocItem>>();
+
+function getKocHandleMap(kocs: KocItem[]): Map<string, KocItem> {
+  let map = kocHandleMapCache.get(kocs);
+  if (!map) {
+    map = new Map<string, KocItem>();
+    for (const k of kocs) {
+      const h = (k.channelId || '').replace(/^@/, '').trim().toLowerCase();
+      if (h && !map.has(h)) {
+        map.set(h, k);
+      }
+    }
+    kocHandleMapCache.set(kocs, map);
+  }
+  return map;
+}
+
 export function checkKocDuplicateAndPriceWarning(
   paramsOrHandle:
     | {
@@ -1116,7 +1133,7 @@ export function checkKocDuplicateAndPriceWarning(
         }
       : paramsOrHandle;
   const clean = (params.handle || '').replace(/^@/, '').trim().toLowerCase();
-  const matchedKoc = params.kocs.find(k => (k.channelId || '').replace(/^@/, '').trim().toLowerCase() === clean);
+  const matchedKoc = clean ? getKocHandleMap(params.kocs).get(clean) : undefined;
   const sameHandleItems = params.currentItems.filter(
     i =>
       i.id !== params.excludeItemId &&

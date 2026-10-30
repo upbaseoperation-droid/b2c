@@ -3,7 +3,7 @@
  * (giữ khớp với crawler-worker/src/core/types.ts).
  */
 
-export type LinkAirPlatform = 'tiktok' | 'instagram' | 'facebook' | 'shopee' | 'youtube';
+export type LinkAirPlatform = 'tiktok' | 'instagram' | 'facebook' | 'shopee' | 'youtube' | 'threads';
 export type LinkAirStatus = 'LIVE' | 'UNAVAILABLE' | 'INVALID_LINK' | 'BLOCKED' | 'ERROR';
 export type LinkAirVerdict = 'PASS' | 'REVIEW' | 'FAIL';
 export type LinkAirCheckStatus = 'PASS' | 'WARN' | 'FAIL';
@@ -16,7 +16,23 @@ export interface LinkAirExpectation {
   requiredKeywords?: string[];
   requireProductLink?: boolean;
   expectedProductUrl?: string;
+  affiliateTargetUrl?: string;
+  linkPlacement?: string;
   minViews?: number;
+}
+
+export interface LinkAirAffiliateVerification {
+  inputUrl: string;
+  resolvedUrl: string;
+  isLive: boolean;
+  isShortLink: boolean;
+  platform: 'shopee' | 'tiktok' | 'lazada' | 'bio_aggregator' | 'external' | 'unknown';
+  shopId: string | null;
+  itemId: string | null;
+  hasAffiliateTracking: boolean;
+  trackingParams: string[];
+  status: LinkAirCheckStatus;
+  detail: string;
 }
 
 export interface LinkAirCheckItem {
@@ -84,6 +100,7 @@ export interface LinkAirResult {
     category: string;
     suggestion: string;
   }>;
+  affiliateVerification?: LinkAirAffiliateVerification;
   checks: LinkAirCheckItem[];
   verdict: LinkAirVerdict;
   limitations: string[];
@@ -107,6 +124,7 @@ export const LINK_AIR_PLATFORM_LABEL: Record<LinkAirPlatform, string> = {
   facebook: 'Facebook',
   instagram: 'Instagram',
   youtube: 'YouTube',
+  threads: 'Threads',
 };
 
 export const LINK_AIR_VERDICT_LABEL: Record<LinkAirVerdict, string> = {

@@ -147,7 +147,7 @@ export function mapRecordValuesToTemplateVariables(
   for (const [key, val] of Object.entries(record.values || {})) {
     const trimmed = (val || '').trim();
     if (!trimmed) continue;
-    if (key === '__meta:sowTasksJson') {
+    if (key === 'meta:sowTasksJson' || key === '__meta:sowTasksJson') {
       try {
         const parsed = JSON.parse(trimmed) as {
           videoFeeNetVnd?: number;
@@ -338,8 +338,12 @@ export function createStandaloneRequestSignAttempt(
   const partyAEmail = customSigners?.partyAEmail?.trim() || 'hddt@upbase.asia';
   const partyBEmail =
     customSigners?.partyBEmail?.trim() ||
+    record.values['src:email']?.trim() ||
+    record.values['token:[ĐIỀN EMAIL]']?.trim() ||
+    record.values['token:[EMAIL]']?.trim() ||
+    record.values['partnerEmail']?.trim() ||
     record.values['word/document.xml:p48:cell']?.trim() ||
-    'partner@booking.upbase.vn';
+    '';
 
   return {
     documentId: crypto.randomUUID(),

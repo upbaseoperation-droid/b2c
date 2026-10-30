@@ -122,6 +122,26 @@ export async function PUT(request: NextRequest) {
 
           const old = prevJobs.get(j.id);
 
+          // Kết quả kiểm link / đối chiếu nội dung chỉ máy chủ ghi: đặt lại trước khi kiểm điều kiện nghiệm thu
+          j.airCheck = old?.airCheck;
+          j.contentCheck = old?.contentCheck;
+
+          // Xác nhận nhận việc là của CTV: PIC không tự đặt. Đổi CTV hoặc giao mới thì chờ xác nhận lại.
+          const sameCtv = Boolean(old && old.contributorId === j.contributorId);
+          if (j.productionMode !== 'CTV_OUTSOURCE' || !j.contributorId) {
+            j.ctvConfirmStatus = undefined;
+            j.ctvConfirmedAt = undefined;
+            j.ctvDeclineReason = undefined;
+          } else if (sameCtv && old) {
+            j.ctvConfirmStatus = old.ctvConfirmStatus;
+            j.ctvConfirmedAt = old.ctvConfirmedAt;
+            j.ctvDeclineReason = old.ctvDeclineReason;
+          } else {
+            j.ctvConfirmStatus = 'ASSIGNED';
+            j.ctvConfirmedAt = undefined;
+            j.ctvDeclineReason = undefined;
+          }
+
           // Brand duyệt kịch bản: đúng thứ tự, mốc thời gian do máy chủ ghi (tính SLA 72h, không tự duyệt)
           const brandBlocker = selfBrandScriptBlocker(old, j);
           if (brandBlocker) throw new RecordError(`Job ${j.code}: ${brandBlocker}`, 400);
@@ -148,7 +168,6 @@ export async function PUT(request: NextRequest) {
             j.paymentStatus = serverPaymentStatus || (j.feeGross > 0 || j.productionMode === 'CTV_OUTSOURCE' ? 'NONE' : 'NOT_APPLICABLE');
           }
           // Kết quả kiểm link đăng chỉ máy chủ ghi (đổi link thì kết quả cũ tự hết hiệu lực vì không khớp link)
-          j.airCheck = old?.airCheck;
           j.dnttSlipCode = old?.dnttSlipCode;
           j.requestedAt = old?.requestedAt;
           j.requestedBy = old?.requestedBy;

@@ -31,7 +31,14 @@ export function GoogleDocsFinanceApproveDialog({
     'Kế toán đã kiểm tra và thẩm định toàn bộ các điều khoản tài chính & đối soát thảo luận trên Google Docs. Phê duyệt gửi ký WeSign.',
   );
   const [partyAEmail, setPartyAEmail] = useState('marketing-lead@upbase.vn');
-  const [partyBEmail, setPartyBEmail] = useState(record.values['partnerEmail'] || '');
+  const [partyBEmail, setPartyBEmail] = useState(
+    record.values['src:email'] ||
+      record.values['token:[ĐIỀN EMAIL]'] ||
+      record.values['token:[EMAIL]'] ||
+      record.values['partnerEmail'] ||
+      record.values['word/document.xml:p48:cell'] ||
+      '',
+  );
 
   const routing = record.googleDocsReviewRouting;
   const commentsCount = record.googleDocsComments?.length || 0;

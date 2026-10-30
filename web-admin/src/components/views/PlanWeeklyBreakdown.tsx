@@ -6,19 +6,27 @@ import {
   AlertTriangle,
   Copy,
   Eraser,
-  Layers,
-  Radio,
-  Share2,
-  Sparkles,
-  TrendingUp,
-  Video,
 } from 'lucide-react';
 import type {
   InputPlanBreakdownState,
   PlanMultiPlatformKey,
+  PlanStaffWeeklySlice,
   PlanTierKey,
   PlanWeekRow,
 } from '../../lib/types';
+import { REAL_BOOKING_TEAMS_STRUCTURE } from '../../lib/realB2cPlanData';
+
+const STAFF_SLICE_PIC_OPTIONS = Array.from(
+  new Set(
+    [
+      'Trần Thị Hảo',
+      'Nguyễn Thị Mai Anh',
+      'Quỳnh Như',
+      'Hồng Bảo Ngọc',
+      ...REAL_BOOKING_TEAMS_STRUCTURE.flatMap(t => [t.leaderName, ...t.members.map(m => m.name)]),
+    ].filter(Boolean)
+  )
+);
 import {
   FOC_TYPES,
   MULTI_PLATFORMS,
@@ -233,6 +241,87 @@ const parseNumber = (raw: string): number => {
   return digits ? parseInt(digits, 10) : 0;
 };
 
+function buildSliceRoleLabel(staffName: string, primaryPic: string, rows: PlanWeekRow[], existingRoleLabel?: string): string {
+  const t = sumBreakdown(rows);
+  const isMain = staffName.trim() !== '' && staffName.trim() === primaryPic.trim();
+  const existingPrefix = (existingRoleLabel || '').split('·')[0].trim();
+  const liveTotal = t.liveSessions + t.liveSelfInhouse + t.liveSelfCtv + t.liveSelfBrand;
+  const baseRole = isMain
+    ? 'PIC chính'
+    : existingPrefix && existingPrefix !== 'PIC chính'
+    ? existingPrefix
+    : t.focQty > 0 && t.castQty === 0
+    ? 'Phụ trách FOC'
+    : t.selfQty > 0 && t.castQty === 0 && t.focQty === 0
+    ? 'Phụ trách Self'
+    : liveTotal > 0 && t.castQty === 0 && t.focQty === 0
+    ? 'Phụ trách Live'
+    : 'Phụ';
+  const parts: string[] = [];
+  if (t.castQty > 0) parts.push(`${t.castQty} Cast`);
+  if (t.focQty > 0) parts.push(`${t.focQty} FOC`);
+  if (t.selfQty > 0) parts.push(`${t.selfQty} Self`);
+  if (liveTotal > 0) parts.push(`${liveTotal} Live`);
+  return parts.length > 0 ? `${baseRole} · ${parts.join(' + ')}` : baseRole;
+}
+
+function sumSlicesToStoreRows(slices: PlanStaffWeeklySlice[], month: string): PlanWeekRow[] {
+  const baseRows = resolveWeekRows({ month, weeklyBreakdown: [] });
+  const byWeek = new Map<string, PlanWeekRow>();
+  baseRows.forEach(r => byWeek.set(r.week, emptyWeekRow(r.week)));
+  for (const sl of slices) {
+    const resolved = resolveWeekRows({ month, weeklyBreakdown: sl.weeklyBreakdown });
+    for (const r of resolved) {
+      let acc = byWeek.get(r.week);
+      if (!acc) {
+        acc = emptyWeekRow(r.week);
+        byWeek.set(r.week, acc);
+      }
+      for (const k of TIER_KEYS) {
+        const src = r.tiers?.[k];
+        if (src && (src.qty || src.budgetNet)) {
+          const cur = acc.tiers[k] || { qty: 0, budgetNet: 0 };
+          acc.tiers[k] = { qty: cur.qty + (src.qty || 0), budgetNet: cur.budgetNet + (src.budgetNet || 0) };
+        }
+      }
+      acc.foc.tapBrand += r.foc?.tapBrand || 0;
+      acc.foc.tap += r.foc?.tap || 0;
+      acc.foc.tapUp += r.foc?.tapUp || 0;
+      acc.self.reviewVoice += r.self?.reviewVoice || 0;
+      acc.self.videoAi += r.self?.videoAi || 0;
+      acc.self.videoRemix += r.self?.videoRemix || 0;
+      acc.self.videoToLive += r.self?.videoToLive || 0;
+      acc.self.nhacText += r.self?.nhacText || 0;
+      acc.self.budgetNet += r.self?.budgetNet || 0;
+      acc.live.sessions += r.live?.sessions || 0;
+      acc.live.budgetNet += r.live?.budgetNet || 0;
+      for (const mp of MULTI_PLATFORMS) {
+        const pk = mp.key;
+        const srcMp = r.multiPlatform?.[pk];
+        if (srcMp && (srcMp.affQty || srcMp.budgetNet || srcMp.reupQty)) {
+          if (!acc.multiPlatform) acc.multiPlatform = {};
+          const curMp = acc.multiPlatform[pk] || { affQty: 0, budgetNet: 0, reupQty: 0 };
+          acc.multiPlatform[pk] = {
+            affQty: curMp.affQty + (srcMp.affQty || 0),
+            budgetNet: curMp.budgetNet + (srcMp.budgetNet || 0),
+            reupQty: curMp.reupQty + (srcMp.reupQty || 0),
+          };
+        }
+      }
+      if (r.liveSelf) {
+        const curLs = acc.liveSelf || { inhouse3h: 0, ctv2h: 0, brand2h: 0, budgetNet: 0 };
+        acc.liveSelf = {
+          inhouse3h: curLs.inhouse3h + (r.liveSelf.inhouse3h || 0),
+          ctv2h: curLs.ctv2h + (r.liveSelf.ctv2h || 0),
+          brand2h: (curLs.brand2h || 0) + (r.liveSelf.brand2h || 0),
+          budgetNet: curLs.budgetNet + (r.liveSelf.budgetNet || 0),
+        };
+      }
+    }
+  }
+  return Array.from(byWeek.values());
+}
+
 export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
   plan,
   readOnly = false,
@@ -274,7 +363,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     return storeRows;
   }, [activeSliceObj, plan.month, storeRows]);
 
-  const effectiveReadOnly = readOnly || Boolean(activeSliceObj);
+  const effectiveReadOnly = Boolean(readOnly);
   const totals = useMemo(() => sumBreakdown(rows), [rows]);
   const storeTotals = useMemo(() => sumBreakdown(storeRows), [storeRows]);
   const ref41 = plan.reference41;
@@ -290,10 +379,106 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
 
   const commit = (next: PlanWeekRow[]) => {
     if (effectiveReadOnly) return;
+    const primaryPicName = (plan.primaryPic || plan.pic || '').trim();
+    if (activeSliceObj) {
+      const nextSlices = (plan.staffWeeklySlices || []).map(s =>
+        s.staffName === activeSliceObj.staffName
+          ? {
+              ...s,
+              weeklyBreakdown: next,
+              rowCount: Math.max(1, next.filter(r => hasBreakdownData([r])).length),
+              roleLabel: buildSliceRoleLabel(s.staffName, primaryPicName, next, s.roleLabel),
+            }
+          : s
+      );
+      const combinedStoreRows = sumSlicesToStoreRows(nextSlices, plan.month);
+      onChange({
+        staffWeeklySlices: nextSlices,
+        weeklyBreakdown: combinedStoreRows,
+        items: mergeBreakdownItems({ ...plan, weeklyBreakdown: combinedStoreRows }, combinedStoreRows),
+      });
+      return;
+    }
+    if ((plan.staffWeeklySlices || []).length === 1) {
+      const only = plan.staffWeeklySlices![0];
+      const nextSlices: PlanStaffWeeklySlice[] = [
+        {
+          ...only,
+          weeklyBreakdown: next,
+          rowCount: Math.max(1, next.filter(r => hasBreakdownData([r])).length),
+          roleLabel: buildSliceRoleLabel(only.staffName, primaryPicName, next, only.roleLabel),
+        },
+      ];
+      onChange({
+        staffWeeklySlices: nextSlices,
+        weeklyBreakdown: next,
+        items: mergeBreakdownItems({ ...plan, weeklyBreakdown: next }, next),
+      });
+      return;
+    }
     onChange({
       weeklyBreakdown: next,
       items: mergeBreakdownItems({ ...plan, weeklyBreakdown: next }, next),
     });
+  };
+
+  const handleToggleSliceComplete = (staffName: string) => {
+    if (effectiveReadOnly) return;
+    const currentSlices = plan.staffWeeklySlices || [];
+    const target = currentSlices.find(s => s.staffName === staffName);
+    if (!target) return;
+    const nextDone = !target.isCompleted;
+    const nextSlices = currentSlices.map(s =>
+      s.staffName === staffName
+        ? { ...s, isCompleted: nextDone, completedAt: nextDone ? new Date().toISOString() : undefined }
+        : s
+    );
+    onChange({ staffWeeklySlices: nextSlices });
+    if (onNotify) {
+      onNotify(
+        nextDone
+          ? `Đã xác nhận hoàn tất phần nhập 4.1.1 của ${staffName}.`
+          : `Đã mở lại trạng thái đang nhập cho ${staffName}.`
+      );
+    }
+  };
+
+  const handleAddCollaboratorSlice = (newStaffName: string, defaultRolePrefix?: string) => {
+    const trimmed = newStaffName.trim();
+    if (!trimmed || effectiveReadOnly) return;
+    const primaryPicName = (plan.primaryPic || plan.pic || '').trim();
+    const existing = plan.staffWeeklySlices || [];
+    if (existing.some(s => s.staffName.trim() === trimmed)) {
+      setSelectedStaffSlice(trimmed);
+      return;
+    }
+    const baseSlices: PlanStaffWeeklySlice[] =
+      existing.length > 0
+        ? existing
+        : primaryPicName
+        ? [
+            {
+              staffName: primaryPicName,
+              roleLabel: buildSliceRoleLabel(primaryPicName, primaryPicName, storeRows, 'PIC chính'),
+              rowCount: Math.max(1, storeRows.filter(r => hasBreakdownData([r])).length),
+              weeklyBreakdown: clone(storeRows),
+            },
+          ]
+        : [];
+    const emptyRows = resolveWeekRows({ month: plan.month, weeklyBreakdown: [] });
+    const newSlice: PlanStaffWeeklySlice = {
+      staffName: trimmed,
+      roleLabel: defaultRolePrefix || 'Phụ',
+      rowCount: emptyRows.length,
+      weeklyBreakdown: emptyRows,
+      isCompleted: false,
+    };
+    const nextSlices = [...baseSlices, newSlice];
+    onChange({ staffWeeklySlices: nextSlices });
+    setSelectedStaffSlice(trimmed);
+    if (onNotify) {
+      onNotify(`Đã mở phần nhập tuần 4.1.1 cho ${trimmed}.`);
+    }
   };
 
   const handleDistributeFromStep2 = (mode: WeeklyDistributionMode) => {
@@ -328,7 +513,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
   };
 
   const setCell = (wi: number, def: RowDef, sub: 0 | 1, value: number) => {
-    const next = clone(storeRows);
+    const next = clone(rows);
     writeCellWithAutoBudget(next[wi], def, sub, value, plan, true);
     commit(next);
   };
@@ -340,7 +525,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     value: number
   ) => {
     if (effectiveReadOnly) return;
-    const next = clone(storeRows);
+    const next = clone(rows);
     if (!next[wi].multiPlatform) next[wi].multiPlatform = {};
     const cur = next[wi].multiPlatform![platformKey] || { affQty: 0, budgetNet: 0, reupQty: 0 };
     next[wi].multiPlatform![platformKey] = {
@@ -356,7 +541,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     value: number
   ) => {
     if (effectiveReadOnly) return;
-    const next = clone(storeRows);
+    const next = clone(rows);
     const cur = next[wi].liveSelf || { inhouse3h: 0, ctv2h: 0, brand2h: 0, budgetNet: 0 };
     next[wi].liveSelf = {
       ...cur,
@@ -367,15 +552,15 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
 
   const copyPrevious = (wi: number) => {
     if (wi <= 0 || effectiveReadOnly) return;
-    const next = clone(storeRows);
-    next[wi] = { ...clone([storeRows[wi - 1]])[0], week: storeRows[wi].week };
+    const next = clone(rows);
+    next[wi] = { ...clone([rows[wi - 1]])[0], week: rows[wi].week };
     commit(next);
   };
 
   const clearWeek = (wi: number) => {
     if (effectiveReadOnly) return;
-    const next = clone(storeRows);
-    next[wi] = emptyWeekRow(storeRows[wi].week);
+    const next = clone(rows);
+    next[wi] = emptyWeekRow(rows[wi].week);
     commit(next);
   };
 
@@ -397,7 +582,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
       .split('\n')
       .filter((line, idx, arr) => line !== '' || idx < arr.length - 1)
       .map(line => line.split('\t'));
-    const next = clone(storeRows);
+    const next = clone(rows);
     grid.forEach((cols, i) => {
       cols.forEach((raw, j) => {
         const def = ROWS[r + i];
@@ -841,7 +1026,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
-            {staffSlices.length > 1 && (
+            {(staffSlices.length > 0 || !effectiveReadOnly) && (
               <div className="flex flex-wrap items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5 text-2xs">
                 <button
                   type="button"
@@ -871,6 +1056,11 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                           : 'text-slate-600 hover:bg-slate-100'
                       }`}
                     >
+                      {slice.isCompleted && (
+                        <CheckCircle2
+                          className={`h-3 w-3 shrink-0 ${isSelected ? 'text-emerald-200' : 'text-emerald-600'}`}
+                        />
+                      )}
                       <span>{slice.staffName}</span>
                       <span
                         className={`rounded px-1.5 py-0 text-2xs font-medium ${
@@ -886,7 +1076,62 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                     </button>
                   );
                 })}
+                {!effectiveReadOnly && (() => {
+                  const existingNames = new Set(staffSlices.map(s => s.staffName.trim()));
+                  const roleCandidates: { name: string; rolePrefix: string }[] = [];
+                  const pushCand = (names: string[] | undefined, rolePrefix: string) => {
+                    (names || []).forEach(n => {
+                      const clean = (n || '').trim();
+                      if (clean && !existingNames.has(clean) && !roleCandidates.some(c => c.name === clean)) {
+                        roleCandidates.push({ name: clean, rolePrefix });
+                      }
+                    });
+                  };
+                  pushCand(rolePics?.bookingPics, 'Phụ');
+                  pushCand(rolePics?.focPics, 'Phụ trách FOC');
+                  pushCand(rolePics?.contentPics, 'Phụ trách Self');
+                  pushCand(rolePics?.livePics, 'Phụ trách Live');
+                  STAFF_SLICE_PIC_OPTIONS.forEach((n: string) => {
+                    const clean = (n || '').trim();
+                    if (clean && !existingNames.has(clean) && !roleCandidates.some(c => c.name === clean)) {
+                      roleCandidates.push({ name: clean, rolePrefix: 'Phụ' });
+                    }
+                  });
+                  if (roleCandidates.length === 0) return null;
+                  return (
+                    <select
+                      value=""
+                      onChange={e => {
+                        const picked = roleCandidates.find(c => c.name === e.target.value);
+                        if (picked) handleAddCollaboratorSlice(picked.name, picked.rolePrefix);
+                      }}
+                      className="h-6 rounded border border-dashed border-slate-300 bg-slate-50/80 px-1.5 text-2xs font-medium text-slate-600 hover:border-slate-400 hover:bg-slate-100 focus:outline-none cursor-pointer"
+                      title="Thêm phần nhập tuần 4.1.1 cho chuyên viên phối hợp (FOC, Content, Live, Booking phụ)"
+                    >
+                      <option value="">+ Thêm người nhập</option>
+                      {roleCandidates.map(c => (
+                        <option key={c.name} value={c.name}>
+                          {c.name} ({c.rolePrefix})
+                        </option>
+                      ))}
+                    </select>
+                  );
+                })()}
               </div>
+            )}
+            {activeSliceObj && !effectiveReadOnly && (
+              <button
+                type="button"
+                onClick={() => handleToggleSliceComplete(activeSliceObj.staffName)}
+                className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-2xs font-semibold transition cursor-pointer ${
+                  activeSliceObj.isCompleted
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <CheckCircle2 className={`h-3.5 w-3.5 ${activeSliceObj.isCompleted ? 'text-emerald-600' : 'text-slate-400'}`} />
+                <span>{activeSliceObj.isCompleted ? 'Đã chốt phần việc' : 'Xác nhận xong phần việc'}</span>
+              </button>
             )}
 
             <Button size="sm" variant="ghost" onClick={() => setPullModalOpen(true)}>
@@ -1014,7 +1259,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                     onClick={() => handleSelectWorkstreamFromOverview(row.id)}
                     className={`cursor-pointer transition ${
                       isFocused
-                        ? 'bg-blue-50/60'
+                        ? 'border-l-2 border-l-accent bg-blue-50/70'
                         : 'hover:bg-slate-50/70'
                     }`}
                   >
@@ -1091,7 +1336,10 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               })}
             </tbody>
             <tfoot>
-              <tr className="border-t border-slate-200 bg-slate-50/90 font-semibold text-slate-900">
+              <tr
+                onClick={() => setActiveTab('ALL')}
+                className="cursor-pointer border-t border-slate-200 bg-slate-50/90 font-semibold text-slate-900 hover:bg-slate-100/80 transition"
+              >
                 <td className="px-4 py-2" colSpan={2}>
                   Tổng cộng
                 </td>
@@ -1172,62 +1420,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
 
       {/* TẦNG 2: BẢNG CHI TIẾT PHÂN RÃ TUẦN 4.1.1 (CHUẨN SPREADSHEET) */}
       <div ref={detailAnchorRef} className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-slate-200 bg-slate-100/80 p-1">
-            {(
-              [
-                {
-                  id: 'ALL' as WorkstreamTab,
-                  label: 'Tất cả',
-                  icon: Layers,
-                },
-                {
-                  id: 'CAST_KL' as WorkstreamTab,
-                  label: '1. Cast KL1–KL7',
-                  icon: Video,
-                },
-                {
-                  id: 'FOC_SAMPLE' as WorkstreamTab,
-                  label: '2. Mẫu FOC',
-                  icon: Sparkles,
-                },
-                {
-                  id: 'SELF_CHANNEL' as WorkstreamTab,
-                  label: '3. Kênh Brand',
-                  icon: TrendingUp,
-                },
-                {
-                  id: 'MULTI_PLATFORM' as WorkstreamTab,
-                  label: '4. Đa sàn',
-                  icon: Share2,
-                },
-                {
-                  id: 'LIVE_GMV' as WorkstreamTab,
-                  label: '5. Livestream',
-                  icon: Radio,
-                },
-              ] as const
-            ).map(tab => {
-              const Icon = tab.icon;
-              const active = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition cursor-pointer ${
-                    active
-                      ? 'bg-white text-slate-900 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {!effectiveReadOnly && (
               <div className="flex flex-wrap items-center gap-1">

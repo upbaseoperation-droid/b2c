@@ -1,6 +1,6 @@
 // Lệnh Zalo cho CTV Self-channel: bot nhận diện CTV qua Zalo ID trên hồ sơ danh bạ,
 // CTV nộp kịch bản / video nháp / link đăng thẳng vào việc của mình.
-import { ctvNextStep, findContributor, findCtvJobs, readCtvDirectory, submitCtvWork, type CtvSubmissionKind } from './selfChannelCtvWork';
+import { ctvNextStep, findContributor, findCtvJobs, readCtvDirectory, respondCtvJob, submitCtvWork, type CtvSubmissionKind } from './selfChannelCtvWork';
 
 const URL_RE = /https?:\/\/\S+/i;
 const JOB_CODE_RE = /\b([A-Z]{1,6}-[A-Z0-9][\w-]*)\b/i;
@@ -8,6 +8,8 @@ const JOB_CODE_RE = /\b([A-Z]{1,6}-[A-Z0-9][\w-]*)\b/i;
 const HELP = [
   'Lệnh cho CTV:',
   '• /viec — xem việc đang giao và bước tiếp theo',
+  '• /nhan <mã việc> — nhận việc được giao',
+  '• /tuchoi <mã việc> <lý do> — từ chối việc',
   '• /kichban <mã việc> <link> — nộp kịch bản',
   '• /nhap <mã việc> <link> — nộp video nháp',
   '• /dang <mã việc> <link> — gửi link đã đăng trên kênh Brand',
@@ -40,6 +42,15 @@ export async function handleCtvZaloMessage(params: { senderId: string; senderNam
       .join('\n');
   }
 
+  const decision = ['/nhan', '/nhận'].includes(command) ? 'CONFIRM' : ['/tuchoi', '/từchối', '/tuchối'].includes(command) ? 'DECLINE' : null;
+  if (decision) {
+    const jobCode = text.match(JOB_CODE_RE)?.[1];
+    if (!jobCode) return `Cú pháp: ${decision === 'CONFIRM' ? '/nhan <mã việc>' : '/tuchoi <mã việc> <lý do>'}. Gõ /viec để xem mã việc.`;
+    const reason = text.replace(command, ' ').replace(jobCode, ' ').trim();
+    const answer = await respondCtvJob({ contributor: ctv, jobCode, decision, reason });
+    return `${answer.ok ? '✅' : '⚠️'} ${answer.message}`;
+  }
+
   const url = text.match(URL_RE)?.[0];
   const explicit: Record<string, CtvSubmissionKind> = { '/kichban': 'SCRIPT', '/kịchbản': 'SCRIPT', '/nhap': 'DRAFT', '/nháp': 'DRAFT', '/nopnhap': 'DRAFT', '/dang': 'AIR', '/đăng': 'AIR' };
   const explicitKind = explicit[command];
@@ -54,7 +65,8 @@ export async function handleCtvZaloMessage(params: { senderId: string; senderNam
   let kind: CtvSubmissionKind | undefined = explicitKind;
   if (!kind) {
     const row = (await findCtvJobs(ctv.id)).find(r => r.job.code.toUpperCase() === code.toUpperCase());
-    kind = row ? ctvNextStep(row.job).kind : undefined;
+    const nextKind = row ? ctvNextStep(row.job).kind : undefined;
+    kind = nextKind && nextKind !== 'CONFIRM' ? nextKind : undefined;
     if (!kind) return `Việc ${code.toUpperCase()} hiện không chờ bạn nộp gì. Gõ /viec để xem bước tiếp theo.`;
   }
   const result = await submitCtvWork({ contributor: ctv, jobCode: code, kind, link: url, actorName: `${ctv.name} (Zalo)` });

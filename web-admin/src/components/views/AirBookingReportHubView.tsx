@@ -64,6 +64,7 @@ import {
   formatVnd,
   formatVndShort,
 } from '../../lib/format';
+import { SelfChannelAirPlanPanel } from './self-channel/SelfChannelAirPlanPanel';
 
 interface AirBookingReportHubViewProps {
   currentUser: UserProfile;
@@ -1174,6 +1175,9 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
               icon={CheckCircle2}
             />
           </StatRow>
+
+          {/* B0. Video kênh Brand (Content kênh): chỉ tiêu theo kế hoạch so với số video đã air */}
+          <SelfChannelAirPlanPanel month={selectedMonth} store={selectedStore || undefined} pic={selectedPic || undefined} />
 
           {/* B. Bảng Đối soát chi tiết theo Phân Tầng KL (Key Level Table) */}
           <Panel

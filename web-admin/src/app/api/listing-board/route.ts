@@ -42,9 +42,7 @@ function resolveBoardItems(
     for (const item of dbItems) {
       if (!item || !item.id) continue;
       const cId = canonicalListingId(item.id);
-      if (!byCanonical.has(cId)) {
-        byCanonical.set(cId, item);
-      }
+      byCanonical.set(cId, item);
     }
     return Array.from(byCanonical.values());
   }

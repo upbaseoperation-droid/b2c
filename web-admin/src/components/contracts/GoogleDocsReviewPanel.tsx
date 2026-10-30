@@ -479,7 +479,7 @@ export function GoogleDocsReviewPanel({
                         className="w-5 h-5 rounded-full object-cover shrink-0"
                       />
                     ) : (
-                      <div className="w-5 h-5 rounded-full bg-accent-soft text-accent text-2xs flex items-center justify-center font-bold">
+                      <div className="w-5 h-5 rounded-full bg-accent-soft text-accent text-2xs flex items-center justify-center font-semibold">
                         {c.author.charAt(0)}
                       </div>
                     )}

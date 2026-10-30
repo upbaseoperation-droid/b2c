@@ -69,8 +69,14 @@ import {
   loadStaffSheetCollection,
   normalizeTikTokId,
 } from '../../lib/staffBrandListingSheet';
+import { resolveBrandBookingSheetUrl } from '../../lib/bookingList';
+import {
+  BOOKING_REPORT_COLUMNS,
+  buildReportSheetRowFromApprovedItem,
+} from '../../lib/bookingReportSheet';
 import type { TikTokVideoInspectionResult } from '../../lib/tiktokVideoInspector';
 import type { ContractRecord } from '../../lib/contracts/types';
+import { extractSowPaymentScheduleAndAdvance } from '../../lib/contracts/contractRules';
 import { documentOfTemplate } from '../../lib/planDealLink';
 import { contractApi, type ContractBootstrap } from '../contracts/api';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
@@ -271,8 +277,30 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
           matchedBbnt?.contractSystem?.signedFileUrl ||
           (isBbntSigned && matchedBbnt ? `/api/contracts/${matchedBbnt.id}/document?version=${matchedBbnt.version}` : undefined);
 
+        const sowPay = matchedSow
+          ? extractSowPaymentScheduleAndAdvance(matchedSow.values, matchedSow.templateId)
+          : undefined;
+        const isAdvAlreadyProcessed =
+          it.larkAdvanceStatus === 'ĐÃ_CHI_TẠM_ỨNG' ||
+          it.larkAdvanceStatus === 'ĐÃ_DUYỆT_TẠM_ỨNG' ||
+          it.larkAdvanceStatus === 'CHỜ_DUYỆT_TẠM_ỨNG';
+        const syncedTamUng =
+          sowPay?.paymentScheduleOption === 'ONE_TIME' && !isAdvAlreadyProcessed
+            ? 0
+            : sowPay?.paymentScheduleOption === 'TWO_TIMES' && sowPay.advanceAmount > 0
+            ? sowPay.advanceAmount
+            : it.soTienTamUngTruoc;
+
         return {
           ...it,
+          paymentScheduleOption: sowPay?.paymentScheduleOption || it.paymentScheduleOption,
+          soTienTamUngTruoc: syncedTamUng,
+          soTienCanThanhToan: Math.max(
+            0,
+            (Number(it.chiPhiBookingNetCuoi) || 0) -
+              (Number(it.khauTruHangMucHuy) || 0) -
+              syncedTamUng
+          ),
           masterContractCode:
             matchedHdnt?.contractSystem?.contractCode || matchedHdnt?.title || it.masterContractCode,
           masterContractStatus: isHdntSigned
@@ -603,8 +631,194 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     }
   };
 
-  // Kéo tất cả các dòng Brand chọn = Yes (và KOC không từ chối) từ Sheet Listing Cá nhân sang List Duyệt Book
+  // ============================================================================
+  // BỘ ĐỐI SOÁT 3 BƯỚC: ĐỌC → SO SÁNH → BÁO CÁO (CHO MỌI THAO TÁC KÉO / ĐẨY SHEET)
+  // ============================================================================
+  interface SheetSyncDiffRow {
+    id: string;
+    dealCode: string;
+    store: string;
+    idKenh: string;
+    tenKoc: string;
+    sanPham: string;
+    status: 'ADDED' | 'UPDATED' | 'UNCHANGED' | 'PRESERVED_SHEET' | 'UNMATCHED_SHEET';
+    fieldDiffs: Array<{ field: string; oldVal: string; newVal: string }>;
+    preservedMetricsNote?: string;
+  }
+
+  interface SheetSyncComparisonReportState {
+    mode: 'PUSH_REPORT_SHEET' | 'PULL_REPORT_SHEET' | 'PULL_LISTING_SHEET';
+    stage: 'PREVIEW' | 'COMPLETED';
+    title: string;
+    targetStoresLabel: string;
+    addedCount: number;
+    updatedCount: number;
+    unchangedCount: number;
+    extraCount: number;
+    extraLabel: string;
+    diffRows: SheetSyncDiffRow[];
+    missingSheetStores?: string[];
+  }
+
+  const [syncComparisonReport, setSyncComparisonReport] =
+    useState<SheetSyncComparisonReportState | null>(null);
+  const [syncDiffFilter, setSyncDiffFilter] = useState<
+    'ALL' | 'CHANGED' | 'ADDED' | 'UPDATED' | 'UNCHANGED' | 'EXTRA'
+  >('ALL');
+  const [pendingPullReportMap, setPendingPullReportMap] = useState<
+    Map<
+      string,
+      Array<{
+        dealCode: string;
+        idKenh: string;
+        tenKoc?: string;
+        sanPham?: string;
+        ngayAirReal: string;
+        linkVideo: string;
+        videoId?: string;
+        sparkAds: string;
+        views14d?: number;
+        gmv14d?: number;
+        views30d: number;
+        orders30d: number;
+        gmv30d: number;
+        gpm30d?: number;
+        roi30d: number;
+        danhGia?: string;
+        rowId: string;
+      }>
+    >
+  >(new Map());
+
+  // 1. KÉO TỪ SHEET 2 (LISTING BRAND): ĐỌC → SO SÁNH → BÁO CÁO → XÁC NHẬN
   const handlePullBrandApprovedFromSheets = () => {
+    const collection = loadStaffSheetCollection(kocs, stores, deals, currentUserName);
+    const diffRows: SheetSyncDiffRow[] = [];
+    let addedCount = 0;
+    let updatedCount = 0;
+    let unchangedCount = 0;
+    const storeSet = new Set<string>();
+
+    Object.entries(collection.sheets).forEach(([sheetKey, rows]) => {
+      const approvedRows = rows.filter(
+        (r) =>
+          r.brandChon === 'Yes' &&
+          r.trangThai !== 'Từ chối' &&
+          r.trangThai !== 'Không phản hồi' &&
+          (b2cStoreNameSet.size === 0 || b2cStoreNameSet.has(r.store))
+      );
+      if (approvedRows.length === 0) return;
+
+      approvedRows.forEach((r, idx) => {
+        storeSet.add(r.store || 'Chưa rõ gian');
+        const cleanHandle = normalizeTikTokId(r.idKenh).toLowerCase();
+        const existing = items.find(
+          (it) =>
+            it.sourceSheetRowId === r.id ||
+            (it.storeName === r.store &&
+              normalizeTikTokId(it.idKenh).toLowerCase() === cleanHandle &&
+              (it.thangPlan || '') === (r.thang || ''))
+        );
+
+        const netPrice = Number(r.giaChotCuoi || r.giaNetVideo || 0);
+        if (!existing) {
+          addedCount += 1;
+          diffRows.push({
+            id: `listing-add-${sheetKey}-${r.id || idx}`,
+            dealCode: 'Cấp mới khi tạo BO',
+            store: r.store || '—',
+            idKenh: r.idKenh || '—',
+            tenKoc: r.tenKenh || r.idKenh || '—',
+            sanPham: r.sanPham || '—',
+            status: 'ADDED',
+            fieldDiffs: [
+              {
+                field: 'KOC được Brand chọn = Yes',
+                oldVal: 'Chưa có trong Quản lý Deal',
+                newVal: `${r.tenKenh || r.idKenh} · Net: ${formatVnd(netPrice)}`,
+              },
+            ],
+          });
+        } else {
+          const fieldDiffs: Array<{ field: string; oldVal: string; newVal: string }> = [];
+          const plannedAir = r.ngayAirChot || r.ngayAirPlan || '';
+          const airUrl = r.linkAirNghiemThu || '';
+          if (r.sanPham && r.sanPham !== existing.sanPham) {
+            fieldDiffs.push({
+              field: 'Sản phẩm',
+              oldVal: existing.sanPham || '—',
+              newVal: r.sanPham,
+            });
+          }
+          if (netPrice > 0 && netPrice !== existing.chiPhiBookingNetCuoi) {
+            fieldDiffs.push({
+              field: 'Giá Booking Net',
+              oldVal: formatVnd(existing.chiPhiBookingNetCuoi || 0),
+              newVal: formatVnd(netPrice),
+            });
+          }
+          if (plannedAir && plannedAir !== existing.plannedAirDate) {
+            fieldDiffs.push({
+              field: 'Ngày Air dự kiến',
+              oldVal: existing.plannedAirDate || '—',
+              newVal: plannedAir,
+            });
+          }
+          if (airUrl && airUrl !== existing.linkAir) {
+            fieldDiffs.push({
+              field: 'Link video Air',
+              oldVal: existing.linkAir || '—',
+              newVal: airUrl,
+            });
+          }
+
+          if (fieldDiffs.length > 0) {
+            updatedCount += 1;
+            diffRows.push({
+              id: `listing-upd-${sheetKey}-${r.id || idx}`,
+              dealCode: existing.maBooking || 'Chưa cấp BO',
+              store: r.store || existing.storeName || '—',
+              idKenh: r.idKenh || existing.idKenh || '—',
+              tenKoc: r.tenKenh || existing.tenKenh || '—',
+              sanPham: r.sanPham || existing.sanPham || '—',
+              status: 'UPDATED',
+              fieldDiffs,
+            });
+          } else {
+            unchangedCount += 1;
+            diffRows.push({
+              id: `listing-same-${sheetKey}-${r.id || idx}`,
+              dealCode: existing.maBooking || 'Chưa cấp BO',
+              store: r.store || existing.storeName || '—',
+              idKenh: r.idKenh || existing.idKenh || '—',
+              tenKoc: r.tenKenh || existing.tenKenh || '—',
+              sanPham: r.sanPham || existing.sanPham || '—',
+              status: 'UNCHANGED',
+              fieldDiffs: [],
+              preservedMetricsNote: 'Đã khớp 100% giữa Sheet Listing & Bảng Deal',
+            });
+          }
+        }
+      });
+    });
+
+    setSyncDiffFilter(addedCount + updatedCount > 0 ? 'CHANGED' : 'ALL');
+    setSyncComparisonReport({
+      mode: 'PULL_LISTING_SHEET',
+      stage: 'PREVIEW',
+      title: 'Báo cáo Đối soát Kéo KOC từ Sheet 2 (Listing Brand)',
+      targetStoresLabel:
+        storeSet.size > 0 ? `${storeSet.size} gian hàng có KOC duyệt` : 'Tất cả gian hàng',
+      addedCount,
+      updatedCount,
+      unchangedCount,
+      extraCount: 0,
+      extraLabel: 'Dòng ngoại lệ',
+      diffRows,
+    });
+  };
+
+  const confirmExecutePullListingSheets = () => {
     const collection = loadStaffSheetCollection(kocs, stores, deals, currentUserName);
     let totalAdded = 0;
     let totalUpdated = 0;
@@ -632,17 +846,560 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     });
 
     setItems(loadApprovedBookingList(kocs, stores, deals, currentUserName));
-    if (totalAdded === 0 && totalUpdated === 0) {
+    setSyncComparisonReport((prev) => (prev ? { ...prev, stage: 'COMPLETED' } : null));
+    onNotify?.(
+      `Đã hoàn tất đồng bộ từ Sheet Listing Brand: thêm mới ${totalAdded} dòng, cập nhật ${totalUpdated} dòng.`,
+      'success'
+    );
+  };
+
+  // ============================================================================
+  // ĐỒNG BỘ 2 CHIỀU VỚI SHEET 3 — KẾT QUẢ / REPORT TRÊN GOOGLE SHEET (reportSheetTab)
+  // NGUYÊN TẮC BẮT BUỘC: ĐỌC → SO SÁNH (DIFF) → BÁO CÁO ĐỐI SOÁT → XÁC NHẬN THỰC THI
+  // ============================================================================
+  const [isSyncingReportSheet, setIsSyncingReportSheet] = useState(false);
+  const [isReportSchemaModalOpen, setIsReportSchemaModalOpen] = useState(false);
+  const [reportSchemaGroupFilter, setReportSchemaGroupFilter] = useState<string>('ALL');
+
+  const resolveStoreReportSheetConfig = (storeName: string) => {
+    const st = stores.find((s) => s.storeName === storeName);
+    let ov: Partial<StorePortfolioItem> = {};
+    if (typeof window !== 'undefined' && st?.id) {
+      try {
+        const raw = window.localStorage.getItem('upbase_store_overrides_v1');
+        if (raw) {
+          const parsed = JSON.parse(raw) as Record<string, Partial<StorePortfolioItem>>;
+          ov = parsed[st.id] || {};
+        }
+      } catch {
+        ov = {};
+      }
+    }
+    const sheetUrl = (
+      ov.bookingSheetUrl ||
+      st?.bookingSheetUrl ||
+      (st ? resolveBrandBookingSheetUrl(st.brandName, st.storeName, st) : '') ||
+      ''
+    ).trim();
+    const reportTab = (ov.reportSheetTab || st?.reportSheetTab || 'Báo cáo & Nghiệm thu').trim() || 'Báo cáo & Nghiệm thu';
+    return { store: st, sheetUrl, reportTab };
+  };
+
+  const selectedStoreSheetMeta = useMemo(() => {
+    if (selectedStore === 'ALL') return null;
+    return resolveStoreReportSheetConfig(selectedStore);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStore, stores]);
+
+  const buildDealsPayloadForStore = (storeRows: ApprovedBookingListItem[]) =>
+    storeRows.map((r) => {
+      const reportRow = buildReportSheetRowFromApprovedItem(r);
+      return {
+        thang: r.thangPlan || '',
+        store: r.storeName || '',
+        brand: r.brandName || '',
+        dot: r.dot || '',
+        dealCode: r.maBooking || '',
+        pic: r.nguoiPhuTrach || '',
+        kocTier: r.klGrade || '',
+        hinhThucHopTac: r.hinhThucHopTac || 'New',
+        idKenh: r.idKenh || '',
+        tenKoc: r.tenKenh || '',
+        sanPham: r.sanPham || '',
+        contentAngle: r.contentAngle || '',
+        contentPillar: r.pillarContent || '',
+        giaNet: r.chiPhiBookingNetCuoi || 0,
+        giaGross: r.chiPhiGrossKemThue || 0,
+        ngayAirPlan: r.plannedAirDate || '',
+        ngayAirReal: r.actualAirDate || '',
+        tienDoAir: r.trangThaiSlaAir || '',
+        linkVideo: r.linkAir || '',
+        videoId: r.videoId || reportRow.videoId || '',
+        sparkAds: r.sparkAdsCode || '',
+        sparkExpiry: '',
+        views14d: r.views14d || 0,
+        gmv14d: r.gmv14d || 0,
+        views30d: r.views30d || 0,
+        orders30d: r.orders30d || 0,
+        gmv30d: r.gmv30d || 0,
+        gpm30d: r.gpm30d || 0,
+        roi30d: Number((r.roi30d || 0).toFixed(2)),
+        danhGia: r.danhGiaHieuQuaVideo || '',
+        rowId: r.id,
+        reportRow,
+      };
+    });
+
+  // 2A. BƯỚC 1 ĐẨY SHEET 3: ĐỌC SHEET HIỆN TẠI, SO SÁNH TỪNG DÒNG & MỞ BÁO CÁO ĐỐI SOÁT (dryRun = true)
+  const handlePushReportSheetToGoogle = async () => {
+    const targetRows =
+      selectedIds.length > 0
+        ? filteredItems.filter((i) => selectedIds.includes(i.id))
+        : filteredItems;
+    if (targetRows.length === 0) {
+      onNotify?.('Chưa có dòng Deal nào trong danh sách hiện tại để đẩy lên Sheet Kết quả.', 'warning');
+      return;
+    }
+
+    const byStore = new Map<string, ApprovedBookingListItem[]>();
+    for (const r of targetRows) {
+      const list = byStore.get(r.storeName) || [];
+      list.push(r);
+      byStore.set(r.storeName, list);
+    }
+
+    setIsSyncingReportSheet(true);
+    let totalAdded = 0;
+    let totalUpdated = 0;
+    let totalUnchanged = 0;
+    let totalPreserved = 0;
+    const allDiffRows: SheetSyncDiffRow[] = [];
+    const missingSheetStores: string[] = [];
+    const validStoreNames: string[] = [];
+
+    try {
+      for (const [storeName, storeRows] of byStore.entries()) {
+        const { sheetUrl, reportTab } = resolveStoreReportSheetConfig(storeName);
+        if (!sheetUrl) {
+          missingSheetStores.push(storeName);
+          continue;
+        }
+        validStoreNames.push(`${storeName} (${reportTab})`);
+        const dealsPayload = buildDealsPayloadForStore(storeRows);
+
+        const res = await fetch('/api/booking-report/sync-sheet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sheetUrl,
+            tabName: reportTab,
+            deals: dealsPayload,
+            formatTemplate: true,
+            dryRun: true,
+          }),
+        });
+        const data = (await res.json().catch(() => null)) as {
+          success?: boolean;
+          addedCount?: number;
+          updatedCount?: number;
+          unchangedCount?: number;
+          preservedSheetOnlyCount?: number;
+          diffItems?: Array<{
+            dealCode: string;
+            store: string;
+            idKenh: string;
+            tenKoc: string;
+            sanPham: string;
+            status: 'ADDED' | 'UPDATED' | 'UNCHANGED' | 'PRESERVED_SHEET';
+            fieldDiffs: Array<{ field: string; oldVal: string; newVal: string }>;
+            preservedMetricsNote?: string;
+          }>;
+          error?: string;
+        } | null;
+
+        if (!res.ok || !data?.success) {
+          throw new Error(data?.error || `Không đọc đối soát được Sheet Kết quả cho gian ${storeName}`);
+        }
+
+        totalAdded += data.addedCount || 0;
+        totalUpdated += data.updatedCount || 0;
+        totalUnchanged += data.unchangedCount || 0;
+        totalPreserved += data.preservedSheetOnlyCount || 0;
+
+        (data.diffItems || []).forEach((d, idx) => {
+          allDiffRows.push({
+            id: `push-diff-${storeName}-${d.dealCode || idx}`,
+            dealCode: d.dealCode || '—',
+            store: d.store || storeName,
+            idKenh: d.idKenh || '—',
+            tenKoc: d.tenKoc || '—',
+            sanPham: d.sanPham || '—',
+            status: d.status,
+            fieldDiffs: d.fieldDiffs || [],
+            preservedMetricsNote: d.preservedMetricsNote,
+          });
+        });
+      }
+
+      if (validStoreNames.length === 0) {
+        onNotify?.(
+          'Gian hàng đang chọn chưa gắn Link Google Sheet. Vui lòng gắn link tại Hồ sơ gian hàng hoặc mục Thiết lập.',
+          'warning'
+        );
+        return;
+      }
+
+      setSyncDiffFilter(totalAdded + totalUpdated > 0 ? 'CHANGED' : 'ALL');
+      setSyncComparisonReport({
+        mode: 'PUSH_REPORT_SHEET',
+        stage: 'PREVIEW',
+        title: 'Báo cáo Đối soát trước khi Đẩy lên Sheet 3 (Kết quả — 28 cột)',
+        targetStoresLabel: validStoreNames.join(', '),
+        addedCount: totalAdded,
+        updatedCount: totalUpdated,
+        unchangedCount: totalUnchanged,
+        extraCount: totalPreserved,
+        extraLabel: 'Dòng sẵn có trên Sheet (Bảo toàn)',
+        diffRows: allDiffRows,
+        missingSheetStores,
+      });
+    } catch (err) {
       onNotify?.(
-        'Chưa có dòng nào đánh dấu "Brand chọn = Yes" trên các Sheet Listing Brand.',
-        'info'
+        err instanceof Error ? err.message : 'Lỗi khi đọc & đối soát Sheet Kết quả.',
+        'error'
       );
-    } else {
+    } finally {
+      setIsSyncingReportSheet(false);
+    }
+  };
+
+  // 2B. BƯỚC 2 ĐẨY SHEET 3: XÁC NHẬN GHI THẬT LÊN GOOGLE SHEET & HIỂN THỊ BÁO CÁO KẾT QUẢ
+  const confirmExecutePushReportSheet = async () => {
+    const targetRows =
+      selectedIds.length > 0
+        ? filteredItems.filter((i) => selectedIds.includes(i.id))
+        : filteredItems;
+    const byStore = new Map<string, ApprovedBookingListItem[]>();
+    for (const r of targetRows) {
+      const list = byStore.get(r.storeName) || [];
+      list.push(r);
+      byStore.set(r.storeName, list);
+    }
+
+    setIsSyncingReportSheet(true);
+    let pushedStoresCount = 0;
+    let pushedRowsCount = 0;
+
+    try {
+      for (const [storeName, storeRows] of byStore.entries()) {
+        const { sheetUrl, reportTab } = resolveStoreReportSheetConfig(storeName);
+        if (!sheetUrl) continue;
+        const dealsPayload = buildDealsPayloadForStore(storeRows);
+
+        const res = await fetch('/api/booking-report/sync-sheet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sheetUrl,
+            tabName: reportTab,
+            deals: dealsPayload,
+            formatTemplate: true,
+            dryRun: false,
+          }),
+        });
+        const data = (await res.json().catch(() => null)) as {
+          success?: boolean;
+          syncedRows?: number;
+          error?: string;
+        } | null;
+        if (!res.ok || !data?.success) {
+          throw new Error(data?.error || `Không đẩy được Sheet Kết quả cho gian ${storeName}`);
+        }
+        pushedStoresCount += 1;
+        pushedRowsCount += data.syncedRows || dealsPayload.length;
+      }
+
+      setSyncComparisonReport((prev) => (prev ? { ...prev, stage: 'COMPLETED' } : null));
       onNotify?.(
-        `Đã đồng bộ từ Sheet Listing Brand: thêm mới ${totalAdded} dòng, cập nhật ${totalUpdated} dòng.`,
+        `Đã đối soát & đẩy thành công ${pushedRowsCount} dòng (28 cột) lên Sheet Kết quả của ${pushedStoresCount} gian hàng.`,
         'success'
       );
+    } catch (err) {
+      onNotify?.(
+        err instanceof Error ? err.message : 'Lỗi khi ghi dữ liệu lên Sheet Kết quả.',
+        'error'
+      );
+    } finally {
+      setIsSyncingReportSheet(false);
     }
+  };
+
+  // 3A. BƯỚC 1 ĐỌC KQ TỪ SHEET 3: ĐỌC DỮ LIỆU TRÊN SHEET, SO SÁNH VỚI WEB & MỞ BÁO CÁO ĐỐI SOÁT
+  const handlePullReportSheetFromGoogle = async () => {
+    const targetStoreNames =
+      selectedStore !== 'ALL'
+        ? [selectedStore]
+        : Array.from(new Set(filteredItems.map((i) => i.storeName).filter(Boolean)));
+    if (targetStoreNames.length === 0) {
+      onNotify?.('Vui lòng chọn gian hàng để kéo dữ liệu từ Sheet Kết quả.', 'warning');
+      return;
+    }
+
+    setIsSyncingReportSheet(true);
+    try {
+      const pulledByStore = new Map<
+        string,
+        Array<{
+          dealCode: string;
+          idKenh: string;
+          tenKoc?: string;
+          sanPham?: string;
+          ngayAirReal: string;
+          linkVideo: string;
+          videoId?: string;
+          sparkAds: string;
+          views14d?: number;
+          gmv14d?: number;
+          views30d: number;
+          orders30d: number;
+          gmv30d: number;
+          gpm30d?: number;
+          roi30d: number;
+          danhGia?: string;
+          rowId: string;
+        }>
+      >();
+      const validStoreLabels: string[] = [];
+
+      for (const stName of targetStoreNames) {
+        const { sheetUrl, reportTab } = resolveStoreReportSheetConfig(stName);
+        if (!sheetUrl) continue;
+        const res = await fetch(
+          `/api/booking-report/sync-sheet?sheetUrl=${encodeURIComponent(sheetUrl)}&tab=${encodeURIComponent(reportTab)}`
+        );
+        const data = (await res.json().catch(() => null)) as {
+          exists?: boolean;
+          deals?: Array<{
+            dealCode: string;
+            idKenh: string;
+            tenKoc?: string;
+            sanPham?: string;
+            ngayAirReal: string;
+            linkVideo: string;
+            videoId?: string;
+            sparkAds: string;
+            views14d?: number;
+            gmv14d?: number;
+            views30d: number;
+            orders30d: number;
+            gmv30d: number;
+            gpm30d?: number;
+            roi30d: number;
+            danhGia?: string;
+            rowId: string;
+          }>;
+          error?: string;
+        } | null;
+        if (res.ok && data?.exists && Array.isArray(data.deals)) {
+          pulledByStore.set(stName, data.deals);
+          validStoreLabels.push(`${stName} (${reportTab})`);
+        }
+      }
+
+      if (pulledByStore.size === 0) {
+        onNotify?.('Chưa tìm thấy dữ liệu trên Sheet Kết quả của gian hàng đang chọn.', 'info');
+        return;
+      }
+
+      // So sánh từng dòng trên Sheet 3 với danh sách Deal trên Web
+      let updatedCount = 0;
+      let unchangedCount = 0;
+      let unmatchedSheetCount = 0;
+      const diffRows: SheetSyncDiffRow[] = [];
+
+      for (const [stName, sheetDeals] of pulledByStore.entries()) {
+        const storeWebItems = items.filter((i) => i.storeName === stName);
+
+        sheetDeals.forEach((sd, idx) => {
+          const normSheetHandle = normalizeTikTokId(sd.idKenh).toLowerCase();
+          const matchedWeb = storeWebItems.find(
+            (item) =>
+              (sd.rowId && sd.rowId === item.id) ||
+              (sd.dealCode &&
+                item.maBooking &&
+                sd.dealCode.toUpperCase() === item.maBooking.toUpperCase()) ||
+              (normSheetHandle &&
+                normalizeTikTokId(item.idKenh).toLowerCase() === normSheetHandle)
+          );
+
+          if (!matchedWeb) {
+            unmatchedSheetCount += 1;
+            diffRows.push({
+              id: `pull-unmatched-${stName}-${sd.dealCode || idx}`,
+              dealCode: sd.dealCode || 'Chưa rõ mã BO',
+              store: stName,
+              idKenh: sd.idKenh || '—',
+              tenKoc: sd.tenKoc || sd.idKenh || '—',
+              sanPham: sd.sanPham || '—',
+              status: 'UNMATCHED_SHEET',
+              fieldDiffs: [
+                {
+                  field: 'Chưa khớp Deal trên Web',
+                  oldVal: 'Không tìm thấy Mã Booking / ID kênh trên bảng Web',
+                  newVal: `Sheet có Views: ${formatNumber(sd.views30d || 0)} · GMV: ${formatVnd(sd.gmv30d || 0)}`,
+                },
+              ],
+            });
+            return;
+          }
+
+          const fieldDiffs: Array<{ field: string; oldVal: string; newVal: string }> = [];
+          if (sd.ngayAirReal && sd.ngayAirReal !== (matchedWeb.actualAirDate || '')) {
+            fieldDiffs.push({
+              field: 'Ngày Air thực tế',
+              oldVal: matchedWeb.actualAirDate || '—',
+              newVal: sd.ngayAirReal,
+            });
+          }
+          if (sd.linkVideo && sd.linkVideo !== (matchedWeb.linkAir || '')) {
+            fieldDiffs.push({
+              field: 'Link video Air',
+              oldVal: matchedWeb.linkAir || 'Chưa có link',
+              newVal: sd.linkVideo,
+            });
+          }
+          if (sd.videoId && sd.videoId !== (matchedWeb.videoId || '')) {
+            fieldDiffs.push({
+              field: 'ID video',
+              oldVal: matchedWeb.videoId || '—',
+              newVal: sd.videoId,
+            });
+          }
+          if (sd.sparkAds && sd.sparkAds !== (matchedWeb.sparkAdsCode || '')) {
+            fieldDiffs.push({
+              field: 'Mã Spark Ads',
+              oldVal: matchedWeb.sparkAdsCode || '—',
+              newVal: sd.sparkAds,
+            });
+          }
+          if (sd.views30d > 0 && sd.views30d !== (matchedWeb.views30d || 0)) {
+            fieldDiffs.push({
+              field: 'Views',
+              oldVal: formatNumber(matchedWeb.views30d || 0),
+              newVal: formatNumber(sd.views30d),
+            });
+          }
+          if (sd.orders30d > 0 && sd.orders30d !== (matchedWeb.orders30d || 0)) {
+            fieldDiffs.push({
+              field: 'Đơn hàng',
+              oldVal: formatNumber(matchedWeb.orders30d || 0),
+              newVal: formatNumber(sd.orders30d),
+            });
+          }
+          if (sd.gmv30d > 0 && sd.gmv30d !== (matchedWeb.gmv30d || 0)) {
+            fieldDiffs.push({
+              field: 'GMV video',
+              oldVal: formatVnd(matchedWeb.gmv30d || 0),
+              newVal: formatVnd(sd.gmv30d),
+            });
+          }
+          if ((sd.gpm30d || 0) > 0 && sd.gpm30d !== (matchedWeb.gpm30d || 0)) {
+            fieldDiffs.push({
+              field: 'GPM',
+              oldVal: formatVnd(matchedWeb.gpm30d || 0),
+              newVal: formatVnd(sd.gpm30d || 0),
+            });
+          }
+
+          if (fieldDiffs.length > 0) {
+            updatedCount += 1;
+            diffRows.push({
+              id: `pull-upd-${stName}-${matchedWeb.id}`,
+              dealCode: matchedWeb.maBooking || sd.dealCode || '—',
+              store: stName,
+              idKenh: matchedWeb.idKenh || sd.idKenh || '—',
+              tenKoc: matchedWeb.tenKenh || sd.tenKoc || '—',
+              sanPham: matchedWeb.sanPham || sd.sanPham || '—',
+              status: 'UPDATED',
+              fieldDiffs,
+              preservedMetricsNote: sd.danhGia ? `Đánh giá: ${sd.danhGia} (ROI ${sd.roi30d}x)` : undefined,
+            });
+          } else {
+            unchangedCount += 1;
+            diffRows.push({
+              id: `pull-same-${stName}-${matchedWeb.id}`,
+              dealCode: matchedWeb.maBooking || sd.dealCode || '—',
+              store: stName,
+              idKenh: matchedWeb.idKenh || sd.idKenh || '—',
+              tenKoc: matchedWeb.tenKenh || sd.tenKoc || '—',
+              sanPham: matchedWeb.sanPham || sd.sanPham || '—',
+              status: 'UNCHANGED',
+              fieldDiffs: [],
+              preservedMetricsNote: `Đã khớp (Views: ${formatNumber(sd.views30d || 0)} · GMV: ${formatVnd(sd.gmv30d || 0)})`,
+            });
+          }
+        });
+      }
+
+      setPendingPullReportMap(pulledByStore);
+      setSyncDiffFilter(updatedCount + unmatchedSheetCount > 0 ? 'CHANGED' : 'ALL');
+      setSyncComparisonReport({
+        mode: 'PULL_REPORT_SHEET',
+        stage: 'PREVIEW',
+        title: 'Báo cáo Đối soát Đọc kết quả từ Sheet 3 (Google Sheet → Web)',
+        targetStoresLabel: validStoreLabels.join(', '),
+        addedCount: 0,
+        updatedCount,
+        unchangedCount,
+        extraCount: unmatchedSheetCount,
+        extraLabel: 'Dòng Sheet chưa khớp mã trên Web',
+        diffRows,
+      });
+    } catch (err) {
+      onNotify?.(
+        err instanceof Error ? err.message : 'Lỗi khi đọc & đối soát dữ liệu từ Sheet Kết quả.',
+        'error'
+      );
+    } finally {
+      setIsSyncingReportSheet(false);
+    }
+  };
+
+  // 3B. BƯỚC 2 ĐỌC KQ TỪ SHEET 3: XÁC NHẬN CẬP NHẬT VÀO BẢNG DEAL TRÊN WEB
+  const confirmExecutePullReportSheet = () => {
+    if (pendingPullReportMap.size === 0) return;
+    let updatedCount = 0;
+
+    updateItemsAndSync((prev) =>
+      prev.map((item) => {
+        const storeDeals = pendingPullReportMap.get(item.storeName);
+        if (!storeDeals || storeDeals.length === 0) return item;
+        const normHandle = normalizeTikTokId(item.idKenh).toLowerCase();
+        const matched = storeDeals.find(
+          (d) =>
+            (d.rowId && d.rowId === item.id) ||
+            (d.dealCode && item.maBooking && d.dealCode.toUpperCase() === item.maBooking.toUpperCase()) ||
+            (d.idKenh && normalizeTikTokId(d.idKenh).toLowerCase() === normHandle)
+        );
+        if (!matched) return item;
+        const hasChange =
+          (matched.linkVideo && matched.linkVideo !== item.linkAir) ||
+          (matched.videoId && matched.videoId !== item.videoId) ||
+          (matched.ngayAirReal && matched.ngayAirReal !== item.actualAirDate) ||
+          (matched.sparkAds && matched.sparkAds !== item.sparkAdsCode) ||
+          ((matched.views14d || 0) > 0 && matched.views14d !== item.views14d) ||
+          ((matched.gmv14d || 0) > 0 && matched.gmv14d !== item.gmv14d) ||
+          (matched.views30d > 0 && matched.views30d !== item.views30d) ||
+          (matched.orders30d > 0 && matched.orders30d !== item.orders30d) ||
+          (matched.gmv30d > 0 && matched.gmv30d !== item.gmv30d) ||
+          ((matched.gpm30d || 0) > 0 && matched.gpm30d !== item.gpm30d);
+        if (!hasChange) return item;
+        updatedCount += 1;
+        const nextLinkAir = matched.linkVideo || item.linkAir;
+        return recalculateApprovedBookingItem({
+          ...item,
+          linkAir: nextLinkAir,
+          videoId: matched.videoId || item.videoId,
+          actualAirDate: matched.ngayAirReal || item.actualAirDate,
+          sparkAdsCode: matched.sparkAds || item.sparkAdsCode,
+          views14d: (matched.views14d || 0) > 0 ? matched.views14d! : item.views14d,
+          gmv14d: (matched.gmv14d || 0) > 0 ? matched.gmv14d! : item.gmv14d,
+          views30d: matched.views30d > 0 ? matched.views30d : item.views30d,
+          orders30d: matched.orders30d > 0 ? matched.orders30d : item.orders30d,
+          gmv30d: matched.gmv30d > 0 ? matched.gmv30d : item.gmv30d,
+          gpm30d: (matched.gpm30d || 0) > 0 ? matched.gpm30d! : item.gpm30d,
+          acceptanceStatus: nextLinkAir ? 'DA_NGHIEM_THU' : item.acceptanceStatus,
+        });
+      })
+    );
+
+    setSyncComparisonReport((prev) => (prev ? { ...prev, stage: 'COMPLETED' } : null));
+    onNotify?.(
+      updatedCount > 0
+        ? `Đã xác nhận & cập nhật số liệu nghiệm thu (28 cột) cho ${updatedCount} Deal từ Sheet Kết quả.`
+        : 'Dữ liệu trên bảng đã khớp hoàn toàn với Sheet Kết quả.',
+      updatedCount > 0 ? 'success' : 'info'
+    );
   };
 
   // ============================================================================
@@ -773,7 +1530,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       : [
           ...currentAddons,
           {
-            id: `${activeJob?.jobCode || dealDraftCode || 'DEAL'}-ADDON-${termType}-${Date.now().toString().slice(-3)}`,
+            id: `${activeJob?.jobCode || dealDraftCode || 'DEAL'}-ADDON-${termType}-${currentAddons.length + 1}`,
             termType,
             termLabel: defaultLabel,
             scopeType: 'ASSET' as const,
@@ -1031,10 +1788,10 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       phanLoaiVideo: 'Affiliate KOC',
       dinhDangNghiemThu: 'Booking Video KOC',
       hinhThucHopTac: 'New',
-      giaDeXuatNet: 1500000,
-      chiPhiBookingNetCuoi: 1500000,
-      chiPhiGrossKemThue: Math.round(1500000 / 0.9),
-      klGrade: 'KL3',
+      giaDeXuatNet: 0,
+      chiPhiBookingNetCuoi: 0,
+      chiPhiGrossKemThue: 0,
+      klGrade: 'TAP UpAffiliate',
       plannedAirDate: `${targetMonth.replace('/', '-')}-22`,
       plannedSendSampleDate: '',
       plannedScriptDate: '',
@@ -1064,7 +1821,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       gpm30d: 0,
       roi30d: 0,
       danhGiaHieuQuaVideo: 'Chờ lên sóng',
-      soTienCanThanhToan: 1500000,
+      soTienCanThanhToan: 0,
       soTienDaThanhToan: 0,
       trangThaiPhieuThanhToan: 'Chờ nghiệm thu',
       noiDungChuyenKhoan: '',
@@ -2357,123 +3114,124 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       {!(isDrawerOpen && activeDrawerItem) && (
         <>
           <PageActions>
-        {onNavigateTab && (
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={ArrowLeft}
-            onClick={() =>
-              onNavigateTab('koc-listing', {
-                storeName: selectedStore !== 'ALL' ? selectedStore : undefined,
-                monthKey: selectedMonth !== 'ALL' ? selectedMonth : undefined,
-              })
-            }
-          >
-            Về Bảng Listing
-          </Button>
-        )}
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={RefreshCw}
-          onClick={handlePullBrandApprovedFromSheets}
-        >
-          Đồng bộ từ Sheet
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={FileText}
-          disabled={isPullingContractLinks}
-          onClick={() => void handlePullContractInfoAndLinks()}
-        >
-          Kéo HĐ · PL · BBNT &amp; Link
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={Video}
-          onClick={() => openAcceptanceModalForRow()}
-        >
-          Nghiệm thu video
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={Send}
-          onClick={() => openLarkPaymentModalForItem()}
-        >
-          Lập phiếu Lark
-        </Button>
-        <Button
-          variant="primary"
-          size="sm"
-          icon={FileCheck}
-          onClick={() => handleCreateBookingOrders()}
-        >
-          Tạo Deal &amp; SOW ({selectedIds.length > 0 ? selectedIds.length : stats.pendingBoCount})
-        </Button>
-        <ActionMenu
-          label="Tiện ích khác"
-          items={[
-            {
-              label: 'Thêm dòng trực tiếp',
-              icon: Plus,
-              onSelect: handleAddDirectApprovedRow,
-            },
-            {
-              label: 'Sao chép Google Sheet (Kèm tiêu đề)',
-              icon: Copy,
-              onSelect: () => void handleCopyTsv(true),
-            },
-            {
-              label: 'Sao chép Google Sheet (Chỉ dữ liệu)',
-              icon: Copy,
-              onSelect: () => void handleCopyTsv(false),
-            },
-            {
-              label: 'Xuất file CSV (Chuẩn File 3.2)',
-              icon: Download,
-              onSelect: () =>
-                downloadApprovedBookingListCsv(
-                  filteredItems,
-                  selectedMonth,
-                  selectedStore,
-                  canViewFullPii
-                ),
-            },
-          ]}
-        />
-      </PageActions>
+            {onNavigateTab && (
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={ArrowLeft}
+                onClick={() =>
+                  onNavigateTab('koc-listing', {
+                    storeName: selectedStore !== 'ALL' ? selectedStore : undefined,
+                    monthKey: selectedMonth !== 'ALL' ? selectedMonth : undefined,
+                  })
+                }
+              >
+                Về Listing
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={RefreshCw}
+              disabled={isSyncingReportSheet}
+              onClick={() => void handlePullReportSheetFromGoogle()}
+            >
+              Kéo Sheet Kết quả
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={FileSpreadsheet}
+              disabled={isSyncingReportSheet}
+              onClick={() => void handlePushReportSheetToGoogle()}
+            >
+              {isSyncingReportSheet ? 'Đang đồng bộ…' : 'Đẩy Sheet Kết quả'}
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              icon={FileCheck}
+              onClick={() => handleCreateBookingOrders()}
+            >
+              Tạo Deal &amp; SOW ({selectedIds.length > 0 ? selectedIds.length : stats.pendingBoCount})
+            </Button>
+            <ActionMenu
+              label="Tác vụ khác"
+              items={[
+                {
+                  label: 'Kéo KOC duyệt từ Sheet Listing',
+                  icon: RefreshCw,
+                  onSelect: handlePullBrandApprovedFromSheets,
+                },
+                {
+                  label: 'Kéo thông tin HĐ · PL SOW · BBNT',
+                  icon: FileText,
+                  disabled: isPullingContractLinks,
+                  onSelect: () => void handlePullContractInfoAndLinks(),
+                },
+                {
+                  label: 'Nghiệm thu video & chỉ số',
+                  icon: Video,
+                  onSelect: () => openAcceptanceModalForRow(),
+                },
+                {
+                  label: 'Lập phiếu thanh toán Lark',
+                  icon: Send,
+                  onSelect: () => openLarkPaymentModalForItem(),
+                },
+                {
+                  label: 'Xem cấu trúc Sheet Kết quả (28 cột)',
+                  icon: Eye,
+                  onSelect: () => setIsReportSchemaModalOpen(true),
+                },
+                {
+                  label: 'Thêm dòng trực tiếp',
+                  icon: Plus,
+                  onSelect: handleAddDirectApprovedRow,
+                },
+                {
+                  label: 'Sao chép bảng (Kèm tiêu đề)',
+                  icon: Copy,
+                  onSelect: () => void handleCopyTsv(true),
+                },
+                {
+                  label: 'Xuất file CSV',
+                  icon: Download,
+                  onSelect: () =>
+                    downloadApprovedBookingListCsv(
+                      filteredItems,
+                      selectedMonth,
+                      selectedStore,
+                      canViewFullPii
+                    ),
+                },
+              ]}
+            />
+          </PageActions>
 
-      {/* Hàng 4 chỉ số tổng quan chuẩn DESIGN_SYSTEM.md §5 & §7 */}
-      <StatRow size="sm">
-        <Stat
-          label="Tổng deal duyệt"
-          value={stats.total}
-          numeric={stats.total}
-          note={`${stats.boCreatedCount} đã cấp mã BO · ${stats.pendingBoCount} chờ tạo deal`}
-        />
-        <Stat
-          label="Ngân sách Net chốt"
-          value={formatVnd(stats.totalFinalNet)}
-          numeric={stats.totalFinalNet}
-          note={`Gross kèm thuế ${formatVndShort(stats.totalGross)}`}
-        />
-        <Stat
-          label="Phụ lục SOW & Nghiệm thu"
-          value={`${stats.acceptedCount} / ${stats.total}`}
-          progress={{ value: stats.acceptedCount, max: Math.max(1, stats.total) }}
-          note={`${stats.sowSignedCount} đã ký SOW · ${stats.acceptedCount} đã nghiệm thu video`}
-        />
-        <Stat
-          label="Doanh số GMV 30 ngày"
-          value={formatVnd(stats.totalGmv30d)}
-          numeric={stats.totalGmv30d}
-          tone={stats.avgRoi >= 2 ? 'positive' : undefined}
-          note={`ROI trung bình ${stats.avgRoi}x`}
-        />
-      </StatRow>
+          <StatRow size="sm">
+            <Stat
+              label="Tổng deal duyệt"
+              value={stats.total}
+              numeric={stats.total}
+            />
+            <Stat
+              label="Ngân sách Net chốt"
+              value={formatVnd(stats.totalFinalNet)}
+              numeric={stats.totalFinalNet}
+            />
+            <Stat
+              label="Đã nghiệm thu / Tổng deal"
+              value={`${stats.acceptedCount} / ${stats.total}`}
+              progress={{ value: stats.acceptedCount, max: Math.max(1, stats.total) }}
+            />
+            <Stat
+              label="Doanh số GMV 30 ngày"
+              value={formatVnd(stats.totalGmv30d)}
+              numeric={stats.totalGmv30d}
+              tone={stats.avgRoi >= 2 ? 'positive' : undefined}
+            />
+          </StatRow>
 
       {/* Khung bảng chính chuẩn Panel flush + FilterBar + Chips + DataTable + Pagination */}
       <Panel flush>
@@ -2581,6 +3339,40 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               />
             }
           />
+          {selectedStoreSheetMeta && (
+            <div className="mt-2.5 pt-2.5 border-t border-line flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 font-medium text-ink">
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span>Sheet 3:</span>
+                  <code className="rounded bg-sunken border border-line px-1.5 py-0.5 font-mono text-ink">
+                    {selectedStoreSheetMeta.reportTab}
+                  </code>
+                </span>
+                {selectedStoreSheetMeta.sheetUrl ? (
+                  <a
+                    href={selectedStoreSheetMeta.sheetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-accent font-medium hover:underline"
+                  >
+                    <span>Mở Google Sheet</span>
+                    <ExternalLink className="w-3 h-3 shrink-0" />
+                  </a>
+                ) : (
+                  <span className="text-warning font-medium">Chưa gắn Link Google Sheet</span>
+                )}
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                icon={Eye}
+                onClick={() => setIsReportSchemaModalOpen(true)}
+              >
+                Cấu trúc 28 cột (A → AB)
+              </Button>
+            </div>
+          )}
         </div>
 
         {viewLayout === 'LIST_DRAWER' ? (
@@ -4997,6 +5789,312 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         onNotify={onNotify}
       />
 
+      <Modal
+        open={isReportSchemaModalOpen}
+        onClose={() => setIsReportSchemaModalOpen(false)}
+        title="Cấu trúc Sheet 3 — Kết quả (28 cột A → AB)"
+        size="lg"
+        footer={
+          <div className="flex items-center justify-between w-full gap-2">
+            <div className="text-xs text-ink-2">
+              Tab: <code className="font-mono text-ink">Template Report Video - đã chốt</code> · <code className="font-mono text-ink">Báo cáo &amp; Nghiệm thu</code>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setIsReportSchemaModalOpen(false)}>
+                Đóng
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={FileSpreadsheet}
+                disabled={isSyncingReportSheet}
+                onClick={() => {
+                  setIsReportSchemaModalOpen(false);
+                  void handlePushReportSheetToGoogle();
+                }}
+              >
+                Đẩy Sheet Kết quả
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <Segmented
+            value={reportSchemaGroupFilter}
+            onChange={setReportSchemaGroupFilter}
+            items={[
+              { key: 'ALL', label: `Tất cả (${BOOKING_REPORT_COLUMNS.length})` },
+              ...Array.from(new Set(BOOKING_REPORT_COLUMNS.map((c) => c.group))).map((grp) => ({
+                key: grp,
+                label: grp,
+              })),
+            ]}
+          />
+
+          <div className="max-h-[440px] overflow-y-auto border border-line rounded-lg">
+            <DataTable
+              columns={[
+                {
+                  key: 'col',
+                  header: 'Cột',
+                  width: 85,
+                  render: (r) => (
+                    <span className="font-mono text-xs font-semibold text-ink">
+                      #{r.index} ({r.excelCol})
+                    </span>
+                  ),
+                },
+                {
+                  key: 'header',
+                  header: 'Tên cột',
+                  render: (r) => (
+                    <span className="font-medium text-xs text-ink">
+                      {r.header.replace(/\n/g, ' ')}
+                    </span>
+                  ),
+                },
+                {
+                  key: 'group',
+                  header: 'Nhóm',
+                  width: 170,
+                  render: (r) => <span className="text-xs text-ink-2">{r.group}</span>,
+                },
+                {
+                  key: 'source',
+                  header: 'Nguồn dữ liệu / Công thức',
+                  render: (r) =>
+                    r.formulaBuilder ? (
+                      <code className="text-2xs font-mono bg-sunken px-1.5 py-0.5 rounded border border-line text-ink">
+                        {r.formulaBuilder(3)}
+                      </code>
+                    ) : (
+                      <span className="text-xs text-ink-2">
+                        {r.fillMode === 'BOOKING_MASTER'
+                          ? 'Đẩy từ Quản lý Deal & Booking'
+                          : r.fillMode === 'SELLER_DATA'
+                            ? 'TikTok Seller / Nghiệm thu'
+                            : 'Báo cáo Ads TikTok'}
+                      </span>
+                    ),
+                },
+              ]}
+              rows={BOOKING_REPORT_COLUMNS.filter(
+                (c) => reportSchemaGroupFilter === 'ALL' || c.group === reportSchemaGroupFilter
+              )}
+              rowKey={(r) => r.key}
+            />
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={Boolean(syncComparisonReport)}
+        onClose={() => setSyncComparisonReport(null)}
+        title={syncComparisonReport?.title || 'Đối soát đồng bộ Google Sheet'}
+        size="lg"
+        footer={
+          syncComparisonReport ? (
+            <div className="flex items-center justify-between w-full gap-2">
+              <div className="text-xs text-ink-2">
+                Phạm vi: <span className="font-medium text-ink">{syncComparisonReport.targetStoresLabel}</span>
+                {syncComparisonReport.missingSheetStores &&
+                  syncComparisonReport.missingSheetStores.length > 0 && (
+                    <span className="text-warning ml-2">
+                      ({syncComparisonReport.missingSheetStores.length} gian chưa gắn Link Sheet)
+                    </span>
+                  )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setSyncComparisonReport(null)}
+                >
+                  {syncComparisonReport.stage === 'COMPLETED' ? 'Đóng' : 'Hủy'}
+                </Button>
+                {syncComparisonReport.stage === 'PREVIEW' && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={
+                      isSyncingReportSheet
+                        ? Loader2
+                        : syncComparisonReport.mode === 'PUSH_REPORT_SHEET'
+                          ? FileSpreadsheet
+                          : Check
+                    }
+                    disabled={isSyncingReportSheet}
+                    onClick={() => {
+                      if (syncComparisonReport.mode === 'PUSH_REPORT_SHEET') {
+                        void confirmExecutePushReportSheet();
+                      } else if (syncComparisonReport.mode === 'PULL_REPORT_SHEET') {
+                        confirmExecutePullReportSheet();
+                      } else {
+                        confirmExecutePullListingSheets();
+                      }
+                    }}
+                  >
+                    {isSyncingReportSheet
+                      ? 'Đang đồng bộ…'
+                      : syncComparisonReport.mode === 'PUSH_REPORT_SHEET'
+                        ? `Xác nhận Đẩy (${syncComparisonReport.addedCount + syncComparisonReport.updatedCount + syncComparisonReport.unchangedCount} dòng)`
+                        : syncComparisonReport.mode === 'PULL_REPORT_SHEET'
+                          ? `Xác nhận Cập nhật (${syncComparisonReport.updatedCount} dòng)`
+                          : `Xác nhận Đồng bộ (${syncComparisonReport.addedCount + syncComparisonReport.updatedCount} dòng)`}
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : undefined
+        }
+      >
+        {syncComparisonReport && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Segmented
+                value={
+                  syncDiffFilter === 'CHANGED' || syncDiffFilter === 'UNCHANGED' || syncDiffFilter === 'ALL'
+                    ? syncDiffFilter
+                    : 'ALL'
+                }
+                onChange={(val) => setSyncDiffFilter(val as typeof syncDiffFilter)}
+                items={[
+                  {
+                    key: 'CHANGED',
+                    label: `Thay đổi (${
+                      syncComparisonReport.addedCount +
+                      syncComparisonReport.updatedCount +
+                      (syncComparisonReport.mode === 'PULL_REPORT_SHEET'
+                        ? syncComparisonReport.extraCount
+                        : 0)
+                    })`,
+                  },
+                  {
+                    key: 'UNCHANGED',
+                    label: `Đã khớp (${syncComparisonReport.unchangedCount})`,
+                  },
+                  {
+                    key: 'ALL',
+                    label: `Tất cả (${syncComparisonReport.diffRows.length})`,
+                  },
+                ]}
+              />
+              {syncComparisonReport.stage === 'COMPLETED' && (
+                <Status tone="positive">Đã đồng bộ</Status>
+              )}
+            </div>
+
+            <StatRow size="sm">
+              <Stat
+                label="Thêm mới"
+                value={syncComparisonReport.addedCount}
+                numeric={syncComparisonReport.addedCount}
+                tone={syncComparisonReport.addedCount > 0 ? 'positive' : undefined}
+              />
+              <Stat
+                label="Cập nhật"
+                value={syncComparisonReport.updatedCount}
+                numeric={syncComparisonReport.updatedCount}
+                tone={syncComparisonReport.updatedCount > 0 ? 'warning' : undefined}
+              />
+              <Stat
+                label="Đã khớp"
+                value={syncComparisonReport.unchangedCount}
+                numeric={syncComparisonReport.unchangedCount}
+              />
+              <Stat
+                label={syncComparisonReport.extraLabel}
+                value={syncComparisonReport.extraCount}
+                numeric={syncComparisonReport.extraCount}
+              />
+            </StatRow>
+
+            <div className="max-h-[380px] overflow-y-auto border border-line rounded-lg">
+              <DataTable
+                columns={[
+                  {
+                    key: 'deal',
+                    header: 'Mã BO & Gian hàng',
+                    width: 155,
+                    render: (r) => (
+                      <div>
+                        <div className="font-mono text-xs font-semibold text-ink">
+                          {r.dealCode || '—'}
+                        </div>
+                        <div className="text-2xs text-ink-2">{r.store}</div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'koc',
+                    header: 'KOC & Sản phẩm',
+                    width: 190,
+                    render: (r) => (
+                      <div>
+                        <div className="text-xs font-medium text-ink">
+                          {r.tenKoc} <span className="text-ink-2">(@{r.idKenh.replace(/^@/, '')})</span>
+                        </div>
+                        <div className="text-2xs text-ink-2 truncate max-w-[180px]">
+                          {r.sanPham || '—'}
+                        </div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'status',
+                    header: 'Trạng thái',
+                    width: 120,
+                    render: (r) => {
+                      if (r.status === 'ADDED') return <Status tone="positive">Thêm mới</Status>;
+                      if (r.status === 'UPDATED') return <Status tone="warning">Cập nhật</Status>;
+                      if (r.status === 'PRESERVED_SHEET') return <Status tone="info">Giữ trên Sheet</Status>;
+                      if (r.status === 'UNMATCHED_SHEET') return <Status tone="critical">Chưa khớp</Status>;
+                      return <Status tone="neutral">Đã khớp</Status>;
+                    },
+                  },
+                  {
+                    key: 'diffs',
+                    header: 'Đối soát dữ liệu (Trước → Sau)',
+                    render: (r) => (
+                      <div className="space-y-1">
+                        {r.fieldDiffs.length > 0 ? (
+                          r.fieldDiffs.map((fd, i) => (
+                            <div key={i} className="text-xs flex flex-wrap items-center gap-1.5">
+                              <span className="font-medium text-ink">{fd.field}:</span>
+                              <span className="text-ink-2 font-mono">{fd.oldVal}</span>
+                              <span className="text-ink-3">→</span>
+                              <span className="font-semibold text-accent font-mono">{fd.newVal}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-xs text-ink-2">
+                            {r.preservedMetricsNote || 'Không thay đổi'}
+                          </span>
+                        )}
+                      </div>
+                    ),
+                  },
+                ]}
+                rows={syncComparisonReport.diffRows.filter((r) => {
+                  if (syncDiffFilter === 'ALL') return true;
+                  if (syncDiffFilter === 'CHANGED') {
+                    return (
+                      r.status === 'ADDED' ||
+                      r.status === 'UPDATED' ||
+                      r.status === 'UNMATCHED_SHEET'
+                    );
+                  }
+                  if (syncDiffFilter === 'UNCHANGED') return r.status === 'UNCHANGED';
+                  return true;
+                })}
+                rowKey={(r) => r.id}
+              />
+            </div>
+          </div>
+        )}
+      </Modal>
+
       <DealDetailDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
@@ -5033,6 +6131,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         }}
         onPullContractLinks={handlePullContractInfoAndLinks}
         isPullingContractLinks={isPullingContractLinks}
+        canViewFullPii={canViewFullPii}
         onNotify={onNotify}
       />
     </div>

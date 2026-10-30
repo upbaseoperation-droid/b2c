@@ -421,27 +421,11 @@ export function DashboardVideoReport({
         )}
       </div>
 
-      <StatRow>
-        <Stat
-          label="Đơn book video"
-          value={formatNumber(totals.orders)}
-          note={`Đã air ${formatNumber(totals.aired)} · ${totals.orders > 0 ? formatPercent(totals.aired / totals.orders, 0) : '—'}`}
-        />
-        <Stat
-          label="Chi phí booking"
-          value={formatVndShort(totals.cost)}
-          note={`Đơn giá TB ${totals.orders > 0 ? formatVndShort(totals.cost / totals.orders) : '—'} / video`}
-        />
-        <Stat
-          label="GMV seller từ video"
-          value={totals.gmvVideos > 0 ? formatVndShort(totals.gmv) : '—'}
-          note={`Từ ${formatNumber(totals.gmvVideos)} video có link air`}
-        />
-        <Stat
-          label="ROAS video"
-          value={times(ratio(totals.gmv, totals.gmvCost))}
-          note={`Quảng cáo seller: ${times(ads.roas)}`}
-        />
+      <StatRow size="sm">
+        <Stat label="Đơn book video" value={`${formatNumber(totals.aired)} / ${formatNumber(totals.orders)}`} />
+        <Stat label="Chi phí booking" value={formatVndShort(totals.cost)} />
+        <Stat label="GMV seller từ video" value={totals.gmvVideos > 0 ? formatVndShort(totals.gmv) : '—'} />
+        <Stat label="ROAS video" value={times(ratio(totals.gmv, totals.gmvCost))} />
       </StatRow>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-4 items-start">
@@ -465,10 +449,6 @@ export function DashboardVideoReport({
           ) : (
             <BarList items={klItems} max={klMax} />
           )}
-          <p className="mt-3 text-2xs text-ink-3">
-            {topKlByCost ? `Chi nhiều nhất: ${klLabel(topKlByCost.key)} · ${formatVndShort(topKlByCost.totalCost)} cho ${formatNumber(topKlByCost.count)} đơn. ` : ''}
-            Bấm một khung để lọc bảng video.
-          </p>
         </Panel>
 
         <Panel
@@ -489,11 +469,6 @@ export function DashboardVideoReport({
           ) : (
             <BarList items={formatItems} />
           )}
-          <p className="mt-3 text-2xs text-ink-3">
-            {topFormat
-              ? `Nhiều nhất: ${topFormat.key} · ${formatNumber(topFormat.count)} đơn, ${formatNumber(topFormat.airedCount)} đã air, chi ${formatVndShort(topFormat.totalCost)}.`
-              : ''}
-          </p>
         </Panel>
       </div>
 
@@ -509,10 +484,6 @@ export function DashboardVideoReport({
               </div>
             </div>
           )}
-          <p className="mt-3 text-2xs text-ink-3">
-            Nguồn: TikTok Shop Seller Center · {TIKTOK_SELLER_ADS_SUMMARY.reportPeriod} · tỷ lệ xem trung bình trên {formatNumber(creatives.length)} creative có số
-            {useMonthTotals ? ` (tổng ${formatNumber(ads.creativeCount)} dòng)` : ''}.
-          </p>
         </Panel>
 
         <Panel
@@ -534,9 +505,6 @@ export function DashboardVideoReport({
           ) : (
             <BarList items={campaignItems} />
           )}
-          <p className="mt-3 text-2xs text-ink-3">
-            Chi ads {formatVndShort(ads.spend)} · GMV {formatVndShort(ads.gmv)} · ROAS {times(ads.roas)} · {formatNumber(ads.orders)} đơn.
-          </p>
         </Panel>
       </div>
 
@@ -572,9 +540,6 @@ export function DashboardVideoReport({
         ) : (
           <BarList items={productItems} />
         )}
-        <p className={`text-2xs text-ink-3 ${showProductTable ? 'px-4 py-3 border-t border-line' : 'mt-3'}`}>
-          SKU đơn lẻ: {formatNumber(products.single.videos)} video, ROAS {times(ratio(products.single.gmv, products.single.cost))} · Combo: {formatNumber(products.combo.videos)} video, ROAS {times(ratio(products.combo.gmv, products.combo.cost))}.
-        </p>
       </Panel>
 
       <Panel

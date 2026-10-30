@@ -27,7 +27,8 @@ export type LarkPaymentCategory =
   | 'Tạm ứng trước Booking KOC'
   | 'Thanh toán Booking KOC'
   | 'Tạm ứng trước Booking Livestream'
-  | 'Thanh toán Booking Livestream';
+  | 'Thanh toán Booking Livestream'
+  | 'Thanh toán CTV Content kênh';
 
 export type ValidationGroupKey =
   | 'DEAL_BUDGET'
@@ -203,6 +204,8 @@ export interface LarkPaymentRequestSlip {
   };
   /** Job trên bảng Deal của từng dòng phiếu, để trạng thái phiếu tự cập nhật về Job */
   planJobRefs?: Array<{ planId: string; dealId: string; jobId: string }>;
+  /** Việc Content kênh Brand của phiếu (mỗi phiếu một video): trạng thái phiếu tự cập nhật về bảng Self-channel */
+  selfJobRefs?: Array<{ planId: string; jobId: string }>;
 }
 
 /**
@@ -337,7 +340,24 @@ export function resolvePayeeProfileForDeal(
   koc?: KocItem,
   override?: DealPaymentOverrides
 ): ResolvedPayeeProfile {
-  const detectedKind = override?.taxAccountType || detectSubjectKind(koc, deal);
+  const activeProfile =
+    deal.legalProfileSnapshot ||
+    (koc?.legalProfiles && deal.legalProfileId
+      ? koc.legalProfiles.find(p => p.id === deal.legalProfileId)
+      : undefined) ||
+    koc?.legalProfiles?.find(p => p.isDefault) ||
+    koc?.legalProfiles?.[0];
+
+  const profileKind: SubjectKind | undefined =
+    activeProfile?.legalType === 'COMPANY'
+      ? 'COM'
+      : activeProfile?.legalType === 'HOUSEHOLD'
+      ? 'HKD'
+      : activeProfile?.legalType === 'INDIVIDUAL'
+      ? 'IND'
+      : undefined;
+
+  const detectedKind = override?.taxAccountType || profileKind || detectSubjectKind(koc, deal);
   const subjectLabel = {
     IND: 'Cá nhân (Khấu trừ 10% TNCN khi ≥ 2M)',
     HKD: 'Hộ kinh doanh (Trọn gói thuế)',
@@ -349,6 +369,8 @@ export function resolvePayeeProfileForDeal(
 
   const legalId = (
     override?.legalId ??
+    activeProfile?.taxCode ??
+    activeProfile?.cccd ??
     deal.kocIdCardNumber ??
     (detectedKind === 'COM' || detectedKind === 'HKD' ? koc?.taxCode || koc?.cccd : koc?.cccd || koc?.taxCode) ??
     altPayee?.legalId ??
@@ -357,6 +379,7 @@ export function resolvePayeeProfileForDeal(
 
   const bankName = (
     override?.bankName ??
+    activeProfile?.bankName ??
     deal.kocBankName ??
     koc?.bankName ??
     altPayee?.bankName ??
@@ -365,6 +388,8 @@ export function resolvePayeeProfileForDeal(
 
   const bankAccount = (
     override?.bankAccount ??
+    activeProfile?.bankAccountNumber ??
+    activeProfile?.bankAccount ??
     deal.kocBankAccount ??
     koc?.bankAccount ??
     altPayee?.bankAccount ??
@@ -374,25 +399,22 @@ export function resolvePayeeProfileForDeal(
     .trim();
 
   const defaultHolder =
-    detectedKind === 'COM' || detectedKind === 'HKD'
+    activeProfile?.bankHolderName ||
+    activeProfile?.holderName ||
+    (detectedKind === 'COM' || detectedKind === 'HKD'
       ? koc?.companyName || altPayee?.holderName || koc?.realName || deal.kocStageName
-      : koc?.realName || altPayee?.holderName || deal.kocStageName;
+      : koc?.realName || altPayee?.holderName || deal.kocStageName);
 
-  const rawHolder = (
+  const bankHolder = (
     override?.bankHolder ??
     deal.kocBankHolder ??
     defaultHolder ??
     ''
   ).trim();
 
-  // Nếu nguồn mặc định có dấu thì chuẩn hóa tự động sang IN HOA KHÔNG DẤU; nếu override do người dùng đang gõ thì giữ để kiểm tra
-  const bankHolder =
-    override?.bankHolder !== undefined
-      ? rawHolder
-      : normalizeBankHolderUpperNoAccent(rawHolder);
-
   const hasIdCardScan = Boolean(
     override?.hasIdCardScan ??
+    (activeProfile?.legalAttachments && activeProfile.legalAttachments.length > 0) ??
     deal.hasIdCardScan ??
     koc?.isOcrVerified ??
     Boolean(legalId.length >= 9)
@@ -411,8 +433,8 @@ export function resolvePayeeProfileForDeal(
     kocChannelId: deal.kocChannelId || koc?.channelId || '',
     legalEntityName:
       detectedKind === 'COM' || detectedKind === 'HKD'
-        ? koc?.companyName || bankHolder || deal.kocStageName
-        : koc?.realName || bankHolder || deal.kocStageName,
+        ? activeProfile?.holderName || koc?.companyName || bankHolder || deal.kocStageName
+        : activeProfile?.holderName || koc?.realName || bankHolder || deal.kocStageName,
     legalId,
     hasIdCardScan,
     bankName,
@@ -480,13 +502,15 @@ export function evaluateDealForPaymentRequest(
 
   const effectiveSettledNetAmount = Math.max(0, agreedNetAmount - droppedDeductionAmount);
 
-  // Tạm ứng: ưu tiên override.advanceAmount -> deal.advanceAmount -> tính theo advanceRatePct (mặc định 50%)
-  const defaultAdvance =
-    override?.advanceAmount !== undefined && override.advanceAmount > 0
-      ? Math.round(override.advanceAmount)
-      : deal.advanceAmount && deal.advanceAmount > 0
-      ? Math.round(deal.advanceAmount)
-      : Math.round(agreedNetAmount * ((override?.advanceRatePct ?? 50) / 100));
+  // Tạm ứng: chỉ cho phép khi Phụ lục SOW cấu hình Thanh toán 2 đợt (TWO_TIMES); nếu SOW là ONE_TIME thì chặn = 0đ
+  const isExplicitOneTime = deal.paymentScheduleOption === 'ONE_TIME';
+  const defaultAdvance = isExplicitOneTime
+    ? 0
+    : override?.advanceAmount !== undefined && override.advanceAmount > 0
+    ? Math.round(override.advanceAmount)
+    : deal.advanceAmount && deal.advanceAmount > 0
+    ? Math.round(deal.advanceAmount)
+    : Math.round(agreedNetAmount * ((override?.advanceRatePct ?? 50) / 100));
 
   // Tất toán trừ phần đã tạm ứng (Giải quyết P-03: tự động lấy từ phiếu tạm ứng đã duyệt, không nhập tay sai lệch)
   const advanceFromDeal =
@@ -652,16 +676,7 @@ export function evaluateDealForPaymentRequest(
       group: 'PAYEE_TAX',
       fieldKey: 'bankHolder',
       fieldLabel: 'Tên chủ tài khoản',
-      message: `Thiếu Tên chủ tài khoản ngân hàng khớp với CCCD/Hợp đồng.`,
-      canQuickFix: true,
-    });
-  } else if (!isBankHolderValidUpperNoAccent(payee.bankHolder)) {
-    issues.push({
-      code: 'INVALID_BANK_HOLDER_FORMAT',
-      group: 'PAYEE_TAX',
-      fieldKey: 'bankHolder',
-      fieldLabel: 'Định dạng Tên chủ tài khoản (P-02)',
-      message: `Tên chủ tài khoản "${payee.bankHolder}" đang có dấu hoặc chữ thường. Quy định Kế toán bắt buộc viết IN HOA KHÔNG DẤU (Gợi ý: "${normalizeBankHolderUpperNoAccent(payee.bankHolder)}").`,
+      message: `Thiếu Tên chủ tài khoản ngân hàng khớp với Hồ sơ pháp lý KOC.`,
       canQuickFix: true,
     });
   }
@@ -726,6 +741,21 @@ export function evaluateDealForPaymentRequest(
 
   // NHÓM 4: CHỨNG TỪ PHÁP LÝ HỢP ĐỒNG, BBNT & HÓA ĐƠN (LEGAL_DOCS theo BR-03, BR-04, P-05, P-06)
   if (requestType === 'ADVANCE') {
+    const isTwoTimesAllowed =
+      deal.paymentScheduleOption === 'TWO_TIMES' ||
+      (deal.paymentScheduleOption !== 'ONE_TIME' &&
+        ((deal.advanceAmount || 0) > 0 || (deal.soTienTamUngTruoc || 0) > 0 || (override?.advanceAmount || 0) > 0));
+    if (!isTwoTimesAllowed) {
+      issues.push({
+        code: 'SOW_NOT_TWO_TIME_PAYMENT',
+        group: 'LEGAL_DOCS',
+        fieldKey: 'dealValue',
+        fieldLabel: 'Phương thức thanh toán Phụ lục SOW',
+        message: `Đơn ${deal.dealCode} đang cấu hình Phụ lục SOW "Thanh toán 1 lần (100% sau nghiệm thu)". Chỉ khi Phụ lục SOW chọn "Thanh toán 2 đợt (Có tạm ứng)" mới được phép đẩy luồng Tạm ứng (QNvp).`,
+        canQuickFix: false,
+      });
+    }
+
     const isSowSigned =
       deal.contractAppendixStatus === 'ĐÃ_KÝ' ||
       Boolean(contractUrl);
@@ -854,6 +884,44 @@ export function evaluateDealForPaymentRequest(
 }
 
 /**
+ * Tuyến duyệt chung của phiếu ĐNTT / Tạm ứng (Booking video và Content kênh): Leader (nếu gian có Trưởng nhóm) → Giám đốc MKT → Kế toán → KT Handle.
+ * Mức duyệt theo số thực chuyển (< 1M, 1–5M, > 5M) và mã whiteboard theo loại phiếu.
+ */
+export function buildSlipApprovalRoute(params: {
+  lineItems: DealPaymentLineBreakdown[];
+  requestType: PaymentRequestType;
+  larkPaymentCategory: LarkPaymentCategory;
+  netTransferTotal: number;
+}): LarkPaymentRequestSlip['approvalRoute'] {
+  const { lineItems, requestType, larkPaymentCategory, netTransferTotal } = params;
+  const hasBookingLeader = lineItems.some(i => Boolean(i.bookingLeader));
+  const bookingLeaderName = hasBookingLeader ? 'Nguyễn Thị Ngọc Tâm' : undefined;
+  const b2cAmountTier: '< 1.000.000 đ' | '1.000.000 – 5.000.000 đ' | '> 5.000.000 đ' =
+    netTransferTotal < 1_000_000
+      ? '< 1.000.000 đ'
+      : netTransferTotal <= 5_000_000
+      ? '1.000.000 – 5.000.000 đ'
+      : '> 5.000.000 đ';
+  const isLivestreamSlip = larkPaymentCategory.includes('Livestream');
+  const larkWhiteboardCode: 'QNvp' | 'KN8A / Le27' | 'VvoF' =
+    requestType === 'ADVANCE' ? 'QNvp' : isLivestreamSlip ? 'VvoF' : 'KN8A / Le27';
+
+  const approvalRoute: LarkPaymentRequestSlip['approvalRoute'] = {
+    hasBookingLeader,
+    bookingLeaderName,
+    marketingDirectorName: 'Đặng Thị Yến Nhi',
+    financeApproverName: 'Phòng Tài chính - Kế toán (TCKT)',
+    b2cAmountTier,
+    larkWhiteboardCode,
+    routeSummary: hasBookingLeader
+      ? `Chuyên viên (${lineItems[0]?.bookingPic || 'PIC'}) → Trưởng nhóm (Nguyễn Thị Ngọc Tâm) → Giám đốc MKT (Đặng Thị Yến Nhi · Mức ${b2cAmountTier}) → Kế toán Approval → KT Handle (Chi tiền & Bill UNC)`
+      : `Chuyên viên (${lineItems[0]?.bookingPic || 'PIC'}) → Giám đốc MKT (Đặng Thị Yến Nhi · Mức ${b2cAmountTier}) → Kế toán Approval → KT Handle (Chi tiền & Bill UNC)`,
+  };
+
+  return approvalRoute;
+}
+
+/**
  * Tổng hợp danh sách các dòng Booking đã chọn thành 1 Phiếu ĐNTT / Tạm ứng chuẩn
  */
 export function buildLarkPaymentRequestSlip(params: {
@@ -976,29 +1044,7 @@ export function buildLarkPaymentRequestSlip(params: {
 
   payee.vietQrUrl = vietQrUrl;
 
-  const hasBookingLeader = lineItems.some(i => Boolean(i.bookingLeader));
-  const bookingLeaderName = hasBookingLeader ? 'Nguyễn Thị Ngọc Tâm' : undefined;
-  const b2cAmountTier: '< 1.000.000 đ' | '1.000.000 – 5.000.000 đ' | '> 5.000.000 đ' =
-    netTransferTotal < 1_000_000
-      ? '< 1.000.000 đ'
-      : netTransferTotal <= 5_000_000
-      ? '1.000.000 – 5.000.000 đ'
-      : '> 5.000.000 đ';
-  const isLivestreamSlip = larkPaymentCategory.includes('Livestream');
-  const larkWhiteboardCode: 'QNvp' | 'KN8A / Le27' | 'VvoF' =
-    requestType === 'ADVANCE' ? 'QNvp' : isLivestreamSlip ? 'VvoF' : 'KN8A / Le27';
-
-  const approvalRoute: LarkPaymentRequestSlip['approvalRoute'] = {
-    hasBookingLeader,
-    bookingLeaderName,
-    marketingDirectorName: 'Đặng Thị Yến Nhi',
-    financeApproverName: 'Phòng Tài chính - Kế toán (TCKT)',
-    b2cAmountTier,
-    larkWhiteboardCode,
-    routeSummary: hasBookingLeader
-      ? `Chuyên viên (${lineItems[0]?.bookingPic || 'PIC'}) → Trưởng nhóm (Nguyễn Thị Ngọc Tâm) → Giám đốc MKT (Đặng Thị Yến Nhi · Mức ${b2cAmountTier}) → Kế toán Approval → KT Handle (Chi tiền & Bill UNC)`
-      : `Chuyên viên (${lineItems[0]?.bookingPic || 'PIC'}) → Giám đốc MKT (Đặng Thị Yến Nhi · Mức ${b2cAmountTier}) → Kế toán Approval → KT Handle (Chi tiền & Bill UNC)`,
-  };
+  const approvalRoute = buildSlipApprovalRoute({ lineItems, requestType, larkPaymentCategory, netTransferTotal });
 
   const allIssues: Array<{ dealCode: string; issue: PaymentValidationIssue }> = [];
   for (const item of lineItems) {
@@ -1028,4 +1074,27 @@ export function buildLarkPaymentRequestSlip(params: {
       amountInWords: numberToVietnameseWords(netTransferTotal),
     },
   };
+}
+
+export const LARK_PAYMENT_SLIPS_STORAGE_KEY = 'upbase_b2c_lark_payment_slips_v1';
+
+export function loadLarkPaymentSlipsFromStorage(): LarkPaymentRequestSlip[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(LARK_PAYMENT_SLIPS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as LarkPaymentRequestSlip[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveLarkPaymentSlipsToStorage(slips: LarkPaymentRequestSlip[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(LARK_PAYMENT_SLIPS_STORAGE_KEY, JSON.stringify(slips));
+  } catch {
+    // Bỏ qua lỗi quota trình duyệt
+  }
 }

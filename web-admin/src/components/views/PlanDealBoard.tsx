@@ -5,7 +5,7 @@ import { Camera, ChevronDown, ChevronRight, FileText, Plus, Search, Send, Trash2
 import type { BookingDealItem, InputPlanBreakdownState, KocItem } from '../../lib/types';
 import { isPersonInField } from '../../lib/staffIdentity';
 import { SheetPullPreviewModal, type SheetPullChange } from './SheetPullPreviewModal';
-import { getVietnamDateYmd } from '../../lib/format';
+import { getVietnamDateYmd, maskSensitivePii } from '../../lib/format';
 import { Button, Field, Input, Modal, Select, Textarea } from '../ui';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
 import { VideoProductScreenshotModal } from '../contracts/VideoProductScreenshotModal';
@@ -17,6 +17,7 @@ import { useListingBoard } from '../../lib/useListingBoard';
 import { fetchClientMonthlyPlans, getCachedClientMonthlyPlans } from '../../lib/useMonthlyPlanSync';
 import { contractApi, type ContractBootstrap } from '../contracts/api';
 import type { ContractRecord } from '../../lib/contracts/types';
+import { extractSowPaymentScheduleAndAdvance } from '../../lib/contracts/contractRules';
 import type { DealPaymentOverrides } from '../../lib/larkPaymentRequestEngine';
 import {
   DOCUMENT_LABEL,
@@ -77,6 +78,7 @@ import {
   isAirLinkLocked,
   isJobAcceptanceCleared,
   jobAddonsFee,
+  jobAdvancePaymentBlocker,
   jobDroppedFee,
   jobPaymentBlocker,
   jobStageOf,
@@ -1092,12 +1094,22 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
   /** Đẩy Phiếu Tạm ứng trước Air (Pipeline 8) sang Lark 6.1 */
   const pushAdvancePaymentToLark = async (d: PlanDeal, job: DealJob) => {
     if (!plan) return;
-    if (!job.appendixNo.trim()) {
-      notify('Cần điền số phụ lục đã ký trước khi đẩy phiếu Tạm ứng.', 'warning');
+    const jobDocs = documentsOfJob(d, job, contractRecords, contractRecords);
+    const sowRecord = jobDocs.find(x => x.document === 'SOW')?.record;
+    const sowPay = sowRecord
+      ? extractSowPaymentScheduleAndAdvance(sowRecord.values, sowRecord.templateId)
+      : undefined;
+    const advBlocker = jobAdvancePaymentBlocker(job, sowPay?.paymentScheduleOption);
+    if (advBlocker) {
+      notify(advBlocker, 'warning');
       return;
     }
     const jobAmounts = computeJobContractAmounts(job);
-    const advAmt = job.advancePayment?.amount ?? Math.round(jobAmounts.netAmount * 0.5);
+    const advAmt =
+      job.advancePayment?.amount ??
+      (sowPay?.advanceAmount && sowPay.advanceAmount > 0
+        ? sowPay.advanceAmount
+        : Math.round(jobAmounts.netAmount * 0.5));
     if (advAmt <= 0) {
       notify('Số tiền tạm ứng phải lớn hơn 0đ.', 'warning');
       return;
@@ -1112,7 +1124,9 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     // totalValue giữ tổng thù lao (để xét BR-03 đúng giá trị HĐ); số tạm ứng truyền qua advanceAmount.
     const dealPayload: BookingDealItem = {
       ...bookingDeal,
+      paymentScheduleOption: 'TWO_TIMES',
       advanceAmount: advAmt,
+      soTienTamUngTruoc: advAmt,
       finalAmount: advAmt,
       contractScanUrl: job.appendixUrl || fw?.fileUrl || '',
       signedContractUrl: job.appendixUrl || fw?.fileUrl || '',
@@ -1950,7 +1964,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                 <option value="">-- Nhập tay hoặc chọn Hồ sơ pháp lý đã lưu --</option>
                 {kocLegalProfiles.map(lp => (
                   <option key={lp.id} value={lp.id}>
-                    {lp.profileCode} · {LEGAL_ENTITY_LABEL[lp.legalType]} · {lp.holderName} · {lp.bankName} {lp.bankAccount}
+                    {lp.profileCode} · {LEGAL_ENTITY_LABEL[lp.legalType]} · {lp.holderName} · {lp.bankName} {maskSensitivePii(lp.bankAccount)}
                     {lp.isDefault ? ' [Mặc định]' : ''}
                   </option>
                 ))}
@@ -2216,94 +2230,169 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
           )}
 
           {/* Pipeline 8: Tạm ứng trước Air */}
-          <div className="space-y-2 rounded-md border border-line bg-sunken/50 p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-xs font-semibold text-ink">
-                Tạm ứng thù lao trước khi Air (Pipeline 8 · Trường hợp KOC/KOL có điều khoản tạm ứng)
+          {(() => {
+            const jobDocs = documentsOfJob(d, job, contractRecords, contractRecords);
+            const sowRecord = jobDocs.find(x => x.document === 'SOW')?.record;
+            const sowPay = sowRecord
+              ? extractSowPaymentScheduleAndAdvance(sowRecord.values, sowRecord.templateId)
+              : undefined;
+            const effectiveSowSchedule: 'ONE_TIME' | 'TWO_TIMES' =
+              sowPay?.paymentScheduleOption ||
+              job.paymentScheduleOption ||
+              (job.advancePayment?.status &&
+              job.advancePayment.status !== 'NONE' &&
+              (job.advancePayment.amount || 0) > 0
+                ? 'TWO_TIMES'
+                : 'ONE_TIME');
+            const isTwoTimesSow = effectiveSowSchedule === 'TWO_TIMES';
+            const advBlocker = jobAdvancePaymentBlocker(job, effectiveSowSchedule);
+
+            return (
+              <div className="space-y-2 rounded-md border border-line bg-sunken/50 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-semibold text-ink">
+                      Tạm ứng thù lao trước khi Air (Pipeline 8 · Chỉ mở khi Phụ lục SOW thanh toán 2 đợt)
+                    </span>
+                    <span
+                      className={`rounded border px-2 py-0.5 text-2xs font-medium ${
+                        isTwoTimesSow
+                          ? 'border-positive/40 bg-positive-soft text-positive'
+                          : 'border-line bg-surface text-ink-2'
+                      }`}
+                    >
+                      {isTwoTimesSow
+                        ? 'SOW: Thanh toán 2 đợt (Cho phép tạm ứng)'
+                        : 'SOW: Thanh toán 1 lần (Khóa tạm ứng)'}
+                    </span>
+                  </div>
+                  {isTwoTimesSow &&
+                    job.advancePayment?.status &&
+                    job.advancePayment.status !== 'NONE' && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={
+                          pushingLarkJobId === job.id ||
+                          !job.appendixNo.trim() ||
+                          Boolean(advBlocker)
+                        }
+                        onClick={() => void pushAdvancePaymentToLark(d, job)}
+                      >
+                        <Send className="mr-1 h-3.5 w-3.5" />
+                        {job.advancePayment.larkSlipCode
+                          ? `Đẩy lại Phiếu Tạm ứng (${job.advancePayment.larkSlipCode})`
+                          : 'Đẩy Phiếu Tạm ứng Lark 6.1'}
+                      </Button>
+                    )}
+                </div>
+                {!isTwoTimesSow && (
+                  <div className="rounded border border-line bg-surface px-2.5 py-1.5 text-2xs text-ink-2">
+                    Phụ lục SOW của {job.code} chưa chọn phương thức <strong className="font-semibold text-ink">Thanh toán 2 đợt (Có tạm ứng)</strong>. Để mở khóa và đẩy luồng Tạm ứng sang Lark, vui lòng chọn &ldquo;Thanh toán 2 đợt&rdquo; trên Phụ lục SOW của Job.
+                  </div>
+                )}
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <Field label="Trạng thái tạm ứng trước Air">
+                    <Select
+                      disabled={!isTwoTimesSow}
+                      value={isTwoTimesSow ? job.advancePayment?.status || 'NONE' : 'NONE'}
+                      onChange={e => {
+                        if (!isTwoTimesSow) return;
+                        const st = e.target.value as AdvancePaymentStatus;
+                        setJob(x => ({
+                          ...x,
+                          paymentScheduleOption: 'TWO_TIMES',
+                          advancePayment: {
+                            status: st,
+                            amount:
+                              x.advancePayment?.amount ??
+                              (st !== 'NONE'
+                                ? sowPay?.advanceAmount && sowPay.advanceAmount > 0
+                                  ? sowPay.advanceAmount
+                                  : Math.round(taxCalc.contractDisplayValue * 0.5)
+                                : null),
+                            requestedAt:
+                              st === 'REQUESTED' && !x.advancePayment?.requestedAt
+                                ? getVietnamDateYmd()
+                                : x.advancePayment?.requestedAt || '',
+                            paidAt:
+                              st === 'PAID'
+                                ? getVietnamDateYmd()
+                                : x.advancePayment?.paidAt || '',
+                            larkSlipCode: x.advancePayment?.larkSlipCode || '',
+                            uncBillUrl: x.advancePayment?.uncBillUrl || '',
+                          },
+                        }));
+                      }}
+                    >
+                      <option value="NONE">Không tạm ứng (Thanh toán 100% sau nghiệm thu)</option>
+                      <option value="REQUIRED">8.1 Cần làm đề nghị tạm ứng</option>
+                      <option value="REQUESTED">8.2 Đã gửi ĐNTT tạm ứng (Chờ KT duyệt &amp; chi)</option>
+                      <option value="PAID">8.4 Đã hoàn tất tạm ứng cho KOC</option>
+                    </Select>
+                  </Field>
+                  <Field label="Số tiền tạm ứng (VNĐ)">
+                    <Input
+                      type="number"
+                      min={0}
+                      disabled={
+                        !isTwoTimesSow ||
+                        !job.advancePayment?.status ||
+                        job.advancePayment.status === 'NONE'
+                      }
+                      value={
+                        isTwoTimesSow
+                          ? (job.advancePayment?.amount ??
+                            (sowPay?.advanceAmount && sowPay.advanceAmount > 0
+                              ? sowPay.advanceAmount
+                              : ''))
+                          : 0
+                      }
+                      placeholder="0"
+                      onChange={e =>
+                        setJob(x => ({
+                          ...x,
+                          paymentScheduleOption: 'TWO_TIMES',
+                          advancePayment: {
+                            status: x.advancePayment?.status || 'REQUIRED',
+                            amount: e.target.value === '' ? null : Number(e.target.value),
+                            requestedAt: x.advancePayment?.requestedAt || '',
+                            paidAt: x.advancePayment?.paidAt || '',
+                            larkSlipCode: x.advancePayment?.larkSlipCode || '',
+                            uncBillUrl: x.advancePayment?.uncBillUrl || '',
+                          },
+                        }))
+                      }
+                    />
+                  </Field>
+                  <Field label="Link Bill UNC tạm ứng (Gửi KOC giữ lịch quay)">
+                    <Input
+                      disabled={
+                        !isTwoTimesSow ||
+                        !job.advancePayment?.status ||
+                        job.advancePayment.status === 'NONE'
+                      }
+                      value={job.advancePayment?.uncBillUrl || ''}
+                      placeholder="https://drive.google.com/..."
+                      onChange={e =>
+                        setJob(x => ({
+                          ...x,
+                          advancePayment: {
+                            status: x.advancePayment?.status || 'REQUIRED',
+                            amount: x.advancePayment?.amount ?? null,
+                            requestedAt: x.advancePayment?.requestedAt || '',
+                            paidAt: x.advancePayment?.paidAt || '',
+                            larkSlipCode: x.advancePayment?.larkSlipCode || '',
+                            uncBillUrl: e.target.value,
+                          },
+                        }))
+                      }
+                    />
+                  </Field>
+                </div>
               </div>
-              {job.advancePayment?.status && job.advancePayment.status !== 'NONE' && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  disabled={pushingLarkJobId === job.id || !job.appendixNo.trim()}
-                  onClick={() => void pushAdvancePaymentToLark(d, job)}
-                >
-                  <Send className="mr-1 h-3.5 w-3.5" />
-                  {job.advancePayment.larkSlipCode
-                    ? `Đẩy lại Phiếu Tạm ứng (${job.advancePayment.larkSlipCode})`
-                    : 'Đẩy Phiếu Tạm ứng Lark 6.1'}
-                </Button>
-              )}
-            </div>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <Field label="Trạng thái tạm ứng trước Air">
-                <Select
-                  value={job.advancePayment?.status || 'NONE'}
-                  onChange={e => {
-                    const st = e.target.value as AdvancePaymentStatus;
-                    setJob(x => ({
-                      ...x,
-                      advancePayment: {
-                        status: st,
-                        amount: x.advancePayment?.amount ?? (st !== 'NONE' ? Math.round(taxCalc.contractDisplayValue * 0.5) : null),
-                        requestedAt: st === 'REQUESTED' && !x.advancePayment?.requestedAt ? getVietnamDateYmd() : x.advancePayment?.requestedAt || '',
-                        paidAt: st === 'PAID' ? getVietnamDateYmd() : x.advancePayment?.paidAt || '',
-                        larkSlipCode: x.advancePayment?.larkSlipCode || '',
-                        uncBillUrl: x.advancePayment?.uncBillUrl || '',
-                      },
-                    }));
-                  }}
-                >
-                  <option value="NONE">Không tạm ứng (Thanh toán 100% sau nghiệm thu)</option>
-                  <option value="REQUIRED">8.1 Cần làm đề nghị tạm ứng</option>
-                  <option value="REQUESTED">8.2 Đã gửi ĐNTT tạm ứng (Chờ KT duyệt &amp; chi)</option>
-                  <option value="PAID">8.4 Đã hoàn tất tạm ứng cho KOC</option>
-                </Select>
-              </Field>
-              <Field label="Số tiền tạm ứng (VNĐ)">
-                <Input
-                  type="number"
-                  min={0}
-                  disabled={!job.advancePayment?.status || job.advancePayment.status === 'NONE'}
-                  value={job.advancePayment?.amount ?? ''}
-                  placeholder="0"
-                  onChange={e =>
-                    setJob(x => ({
-                      ...x,
-                      advancePayment: {
-                        status: x.advancePayment?.status || 'REQUIRED',
-                        amount: e.target.value === '' ? null : Number(e.target.value),
-                        requestedAt: x.advancePayment?.requestedAt || '',
-                        paidAt: x.advancePayment?.paidAt || '',
-                        larkSlipCode: x.advancePayment?.larkSlipCode || '',
-                        uncBillUrl: x.advancePayment?.uncBillUrl || '',
-                      },
-                    }))
-                  }
-                />
-              </Field>
-              <Field label="Link Bill UNC tạm ứng (Gửi KOC giữ lịch quay)">
-                <Input
-                  disabled={!job.advancePayment?.status || job.advancePayment.status === 'NONE'}
-                  value={job.advancePayment?.uncBillUrl || ''}
-                  placeholder="https://drive.google.com/..."
-                  onChange={e =>
-                    setJob(x => ({
-                      ...x,
-                      advancePayment: {
-                        status: x.advancePayment?.status || 'REQUIRED',
-                        amount: x.advancePayment?.amount ?? null,
-                        requestedAt: x.advancePayment?.requestedAt || '',
-                        paidAt: x.advancePayment?.paidAt || '',
-                        larkSlipCode: x.advancePayment?.larkSlipCode || '',
-                        uncBillUrl: e.target.value,
-                      },
-                    }))
-                  }
-                />
-              </Field>
-            </div>
-          </div>
+            );
+          })()}
 
           {contractsState === 'error' && <div className="text-xs text-ink-3">Không tải được hồ sơ từ mô-đun Hợp đồng.</div>}
           <div className="overflow-x-auto rounded-lg border border-line">

@@ -365,6 +365,8 @@ export interface DealJob {
   financeReviewStatus?: ContractReviewStatus;
   /** Giải trình ký muộn (Mục 3.5) khi ký < 1 ngày trước Air hoặc ký sau Air */
   lateSigningExplanation?: LateSigningExplanation;
+  /** Phương thức thanh toán cấu hình trên Phụ lục SOW (`ONE_TIME`: 1 lần sau nghiệm thu | `TWO_TIMES`: 2 đợt có tạm ứng) */
+  paymentScheduleOption?: 'ONE_TIME' | 'TWO_TIMES';
   /** Đề nghị Tạm ứng trước Air cho KOL lớn (Pipeline 8) */
   advancePayment?: JobAdvancePayment;
   // Vận hành theo Job (Pipeline 9 -> 13)
@@ -472,9 +474,11 @@ export const EMPTY_DEAL_BOARD: DealBoardData = { deals: [] };
 
 const emptyPerf = (): DealPerformance => ({ views: null, orders: null, gmv: null });
 
-export const newDealId = () => `DL-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-export const newJobId = () => `JB-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-export const newAddonId = () => `AD-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+let dealRuleIdSeq = 0;
+const nextRuleSeq = () => (++dealRuleIdSeq).toString(36).padStart(4, '0');
+export const newDealId = () => `DL-${Date.now().toString(36)}-${nextRuleSeq()}`;
+export const newJobId = () => `JB-${Date.now().toString(36)}-${nextRuleSeq()}`;
+export const newAddonId = () => `AD-${Date.now().toString(36)}-${nextRuleSeq()}`;
 
 /** Tổng phí Net của các dịch vụ gia tăng đang hoạt động (không tính mục đã Hủy/Khấu trừ DROPPED) trong Job. */
 export function jobAddonsFee(job: DealJob): number {
@@ -562,9 +566,10 @@ export function computeJobContractAmounts(job: DealJob): JobContractAmountBreakd
       ruleSummary: `Hộ kinh doanh: Điền tổng giá trị hợp đồng (${netAmount.toLocaleString('vi-VN')}đ)${advSuffix}`,
     };
   }
-  // INDIVIDUAL (Mặc định)
-  const grossFromNet = netAmount > 0 ? Math.round(netAmount / 0.9) : 0;
-  const pitTaxAmount = Math.max(0, grossFromNet - netAmount);
+  // INDIVIDUAL (Mặc định) — chỉ khấu trừ 10% TNCN khi thù lao Net >= 2.000.000đ (BR-09)
+  const hasPit = netAmount >= 2_000_000;
+  const grossFromNet = hasPit ? Math.round(netAmount / 0.9) : netAmount;
+  const pitTaxAmount = hasPit ? Math.max(0, grossFromNet - netAmount) : 0;
   return {
     entityType: 'INDIVIDUAL',
     netAmount,
@@ -575,7 +580,9 @@ export function computeJobContractAmounts(job: DealJob): JobContractAmountBreakd
     contractDisplayValue: netAmount,
     advancePaidAmount,
     remainingSettlementAmount,
-    ruleSummary: `Cá nhân: Điền giá trị Net (${netAmount.toLocaleString('vi-VN')}đ · Chưa gồm 10% TNCN ${pitTaxAmount.toLocaleString('vi-VN')}đ · Tổng chi Gross ${grossFromNet.toLocaleString('vi-VN')}đ)${advSuffix}`,
+    ruleSummary: hasPit
+      ? `Cá nhân: Điền giá trị Net (${netAmount.toLocaleString('vi-VN')}đ · Chưa gồm 10% TNCN ${pitTaxAmount.toLocaleString('vi-VN')}đ · Tổng chi Gross ${grossFromNet.toLocaleString('vi-VN')}đ)${advSuffix}`
+      : `Cá nhân (< 2.000.000đ): Điền giá trị Net (${netAmount.toLocaleString('vi-VN')}đ · Không khấu trừ 10% TNCN)${advSuffix}`,
   };
 }
 
@@ -855,7 +862,7 @@ export function createPostAirUpsellJob(deal: PlanDeal, sourceJob: DealJob, actor
         id: newAddonId(),
         type: 'ADS_CODE',
         label: 'Mua thêm Mã quảng cáo Spark Ads phát sinh sau Air',
-        fee: 300000,
+        fee: 0,
         status: 'PENDING',
         evidence: '',
       },
@@ -876,12 +883,12 @@ export function createPostAirUpsellJob(deal: PlanDeal, sourceJob: DealJob, actor
     airedAt: sourceJob.airedAt,
     acceptance: {
       ...base.acceptance,
-      status: 'PASSED',
-      summary: `Kế thừa video đã nghiệm thu từ ${sourceJob.code}. Chỉ cần nghiệm thu dịch vụ gia tăng phát sinh.`,
+      status: 'PENDING',
+      summary: `Kế thừa video từ ${sourceJob.code}. Chờ nghiệm thu dịch vụ gia tăng phát sinh.`,
       views: sourceJob.acceptance.views,
-      isOnTime: true,
-      daysDelayed: 0,
-      checkedAt: new Date().toISOString(),
+      isOnTime: null,
+      daysDelayed: null,
+      checkedAt: '',
     },
   };
 }
@@ -1142,6 +1149,35 @@ export function createDealBlocker(
   if (deals.some(d => d.listingItemId === item.id || (d.jobs || []).some(j => j.listingItemId === item.id))) return 'KOC này đã được tạo Deal/Job.';
   const g = itemGrade(item);
   if (g !== 'TAP UpAffiliate' && !(itemFee(item) > 0)) return 'Chưa có giá chốt.';
+  return '';
+}
+
+/** Lý do không cho mở hoặc đẩy phiếu Tạm ứng trước Air (Pipeline 8) của 1 Job; chuỗi rỗng nghĩa là đủ điều kiện. */
+export function jobAdvancePaymentBlocker(
+  job: DealJob,
+  sowScheduleOption?: 'ONE_TIME' | 'TWO_TIMES',
+): string {
+  if (job.lifecycleStatus && job.lifecycleStatus !== 'ACTIVE') {
+    return `Job đang ở trạng thái ${job.lifecycleStatus} (Đã đổi KOC / Dời tháng / Hủy).`;
+  }
+  const isFoc = jobTotalFee(job) === 0;
+  if (isFoc) return 'Job FOC 0đ không thuộc diện tạm ứng.';
+  const effectiveSchedule = sowScheduleOption || job.paymentScheduleOption;
+  const hasLegacyAdvance =
+    effectiveSchedule === undefined &&
+    job.advancePayment?.status &&
+    job.advancePayment.status !== 'NONE' &&
+    (job.advancePayment.amount || 0) > 0;
+  if (effectiveSchedule !== 'TWO_TIMES' && !hasLegacyAdvance) {
+    return 'Phụ lục SOW của Job đang chọn "Thanh toán 1 lần (100% sau nghiệm thu)" — chỉ khi Phụ lục SOW cấu hình "Thanh toán 2 đợt (Có tạm ứng)" mới được phép đẩy luồng Tạm ứng.';
+  }
+  if (!job.appendixNo.trim() || !job.appendixDate) {
+    return 'Cần ký Phụ lục SOW 2 bên trước khi đẩy phiếu Tạm ứng.';
+  }
+  if (requiresLegalFinanceReview(job)) {
+    if (job.legalReviewStatus !== 'APPROVED') return 'Hợp đồng >= 50M (hoặc sửa điều khoản) chưa được Pháp chế duyệt (SLA 24h).';
+    if (job.financeReviewStatus !== 'APPROVED') return 'Hợp đồng >= 50M (hoặc sửa điều khoản) chưa được Tài chính duyệt (SLA 48h).';
+  }
   return '';
 }
 
@@ -1879,6 +1915,12 @@ export function sanitizeDealBoard(input: Partial<DealBoardData> | undefined): De
                 leadConfirmedAt: s(j.lateSigningExplanation.leadConfirmedAt, 40) || undefined,
               }
             : undefined,
+          paymentScheduleOption:
+            j?.paymentScheduleOption === 'TWO_TIMES'
+              ? 'TWO_TIMES'
+              : j?.paymentScheduleOption === 'ONE_TIME'
+                ? 'ONE_TIME'
+                : undefined,
           advancePayment: j?.advancePayment
             ? {
                 status: oneOf(j.advancePayment.status, ['NONE', 'REQUIRED', 'REQUESTED', 'APPROVED', 'PAID'] as const, 'NONE'),

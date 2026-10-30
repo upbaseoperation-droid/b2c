@@ -152,7 +152,7 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
         approvedItem?.chiPhiBookingNetCuoi ||
         approvedItem?.giaDeXuatNet ||
         baseKoc?.rateCardVideo ||
-        1500000
+        0
     );
     const klGrade = (sheetRow?.tepBooking ||
       approvedItem?.klGrade ||
@@ -160,7 +160,7 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
       computeTepBookingFromNetFee(netFee)) as SalaryGrade;
 
     const followers = Number(
-      sheetRow?.follower || approvedItem?.follower || baseKoc?.followers || 65000
+      sheetRow?.follower || approvedItem?.follower || baseKoc?.followers || 0
     );
     const tier: KocTier =
       baseKoc?.tier ||
@@ -221,7 +221,7 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
       kocCategory: categoryVal,
       niche: tepKenhVal,
       followers,
-      avgViews: Number(sheetRow?.viewTrungBinh || 25000),
+      avgViews: Number(sheetRow?.viewTrungBinh || 0),
       rateCardVideo: netFee,
       bookingFormat: 'Booking Video KOC',
       platforms: ['TIKTOK'],
@@ -240,18 +240,18 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
       itemsSold: Number(sheetRow?.soMonBanRa || 0),
       gpm: Number(sheetRow?.gpm || 0),
       aov: Number(sheetRow?.aov || 0),
-      gmvShareVideo: Number(sheetRow?.gmvTuVideoPct ?? 72),
-      gmvShareLive: Number(sheetRow?.gmvTuLivePct ?? 18),
-      gmvShareProductCard: Number(sheetRow?.gmvTuTheSanPhamPct ?? 10),
-      maleRatio: Number(sheetRow?.namPct ?? 22),
-      femaleRatio: Number(sheetRow?.nuPct ?? 78),
-      age18_24: Number(sheetRow?.tuoi18_24Pct ?? 35),
-      age25_34: Number(sheetRow?.tuoi25_34Pct ?? 45),
-      age35Plus: Number(sheetRow?.tuoiTren35Pct ?? 20),
+      gmvShareVideo: Number(sheetRow?.gmvTuVideoPct ?? 0),
+      gmvShareLive: Number(sheetRow?.gmvTuLivePct ?? 0),
+      gmvShareProductCard: Number(sheetRow?.gmvTuTheSanPhamPct ?? 0),
+      maleRatio: Number(sheetRow?.namPct ?? 0),
+      femaleRatio: Number(sheetRow?.nuPct ?? 0),
+      age18_24: Number(sheetRow?.tuoi18_24Pct ?? 0),
+      age25_34: Number(sheetRow?.tuoi25_34Pct ?? 0),
+      age35Plus: Number(sheetRow?.tuoiTren35Pct ?? 0),
       brandName: sheetRow?.store || approvedItem?.brandName || '',
       bookingPic: sheetRow?.nhanSuDien || approvedItem?.nguoiPhuTrach || '',
       contentNote: sheetRow?.contentNote || '',
-      reliabilityScore: 92,
+      reliabilityScore: 0,
     };
   }, [
     open,
@@ -636,7 +636,7 @@ export const KocQuickViewModal: React.FC<KocQuickViewModalProps> = ({
                           </div>
                           {item.maBooking && (
                             <div className="mt-1">
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-2xs font-semibold text-emerald-800">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-positive-soft border border-positive/30 font-mono text-2xs font-semibold text-positive">
                                 {item.maBooking}
                               </span>
                             </div>

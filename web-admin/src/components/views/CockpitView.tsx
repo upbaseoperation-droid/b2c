@@ -20,14 +20,7 @@ import {
   StatRow,
   Status,
 } from '../ui';
-import { SlaTask, UserProfile, BookingDealItem, TaskAssignmentRoleKey } from '../../lib/types';
-
-const ROLE_SHORT_LABELS: Record<TaskAssignmentRoleKey, string> = {
-  PIC_OWNER: 'PIC / Owner',
-  CO_PIC: 'Co-PIC',
-  EXECUTION: 'Execution',
-  SUPPORT: 'Support',
-};
+import { SlaTask, UserProfile, BookingDealItem } from '../../lib/types';
 
 interface CockpitViewProps {
   currentUser: UserProfile;
@@ -56,7 +49,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
   const userFirstToken = React.useMemo(() => currentUser.name.split(' ')[0], [currentUser.name]);
 
   const relevantTasks = React.useMemo(() => {
-    return tasks.filter(t => {
+    return tasks.filter((t) => {
       if (currentUser.role === 'MANAGER' || currentUser.role === 'ADMIN') return true;
       return (
         t.targetRole === currentUser.role ||
@@ -81,9 +74,10 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
   const [filterTab, setFilterTab] = React.useState<'ALL' | 'CRITICAL' | 'WARNING' | 'DONE'>('ALL');
 
   const displayedTasks = React.useMemo(() => {
-    if (filterTab === 'CRITICAL') return relevantTasks.filter(t => t.urgency === 'critical');
-    if (filterTab === 'WARNING') return relevantTasks.filter(t => t.urgency === 'warning' || t.urgency === 'normal');
-    if (filterTab === 'DONE') return relevantTasks.filter(t => t.urgency === 'done');
+    if (filterTab === 'CRITICAL') return relevantTasks.filter((t) => t.urgency === 'critical');
+    if (filterTab === 'WARNING')
+      return relevantTasks.filter((t) => t.urgency === 'warning' || t.urgency === 'normal');
+    if (filterTab === 'DONE') return relevantTasks.filter((t) => t.urgency === 'done');
     return relevantTasks;
   }, [relevantTasks, filterTab]);
 
@@ -173,10 +167,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
       >
         <div className="divide-y divide-line">
           {displayedTasks.length === 0 ? (
-            <EmptyState
-              title="Không có công việc trong mục này"
-              description="Các đầu việc thuộc trạng thái đã chọn đã được xử lý xong."
-            />
+            <EmptyState title="Không có công việc trong mục này" />
           ) : (
             displayedTasks.map((task) => {
               const matchedDeal = task.dealCode ? dealsMap.get(task.dealCode) : undefined;
@@ -203,7 +194,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                     </button>
 
                     <div className="min-w-0 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span
                           onClick={() => onTaskActionClick && onTaskActionClick(task)}
                           className={`text-xs font-semibold cursor-pointer hover:text-accent transition truncate ${
@@ -215,8 +206,8 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                           {task.title}
                         </span>
                         {task.storeName && (
-                          <span className="text-2xs font-medium text-ink-2 bg-canvas px-1.5 py-0.5 rounded border border-line">
-                            {task.storeName}
+                          <span className="text-2xs text-ink-3">
+                            · {task.storeName}
                           </span>
                         )}
                       </div>
@@ -226,7 +217,9 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                         <span>·</span>
                         <span>{task.team}</span>
                         <span>·</span>
-                        <span>Hạn xử lý: <strong className="font-medium text-ink-2">{task.deadline}</strong></span>
+                        <span>
+                          Hạn xử lý: <strong className="font-medium text-ink-2">{task.deadline}</strong> ({task.remainingText})
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -237,13 +230,19 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                         task.urgency === 'critical'
                           ? 'critical'
                           : task.urgency === 'warning'
-                          ? 'warning'
-                          : task.urgency === 'done'
-                          ? 'positive'
-                          : 'neutral'
+                            ? 'warning'
+                            : task.urgency === 'done'
+                              ? 'positive'
+                              : 'info'
                       }
                     >
-                      {task.remainingText}
+                      {task.urgency === 'critical'
+                        ? 'Quá hạn'
+                        : task.urgency === 'warning'
+                          ? 'Chờ duyệt'
+                          : task.urgency === 'done'
+                            ? 'Hoàn tất'
+                            : 'Đang chạy'}
                     </Status>
 
                     {matchedDeal ? (

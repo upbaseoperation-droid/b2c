@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requestActor } from '@/lib/server/requestActor';
 import { readRecordsBatch, RecordError } from '@/lib/server/sharedRecords';
-import { activeMonths, ctvNextStep, findContributor, findCtvJobs, readCtvDirectory, submitCtvWork, type CtvSubmissionKind } from '@/lib/server/selfChannelCtvWork';
+import { activeMonths, ctvNextStep, findContributor, findCtvJobs, readCtvDirectory, respondCtvJob, submitCtvWork, type CtvSubmissionKind } from '@/lib/server/selfChannelCtvWork';
 import { EMPTY_SETTLEMENT_MONTH, type SelfSettlementMonthData } from '@/lib/selfChannelSettlement';
+import { SELF_CONTRACT_THRESHOLD } from '@/lib/selfChannelBoardRules';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +51,20 @@ export async function GET(request: NextRequest) {
         airCheck: job.airCheck ? { verdict: job.airCheck.verdict, issues: job.airCheck.issues, checkedLink: job.airCheck.checkedLink } : undefined,
         feeGross: job.feeGross,
         paymentStatus: job.paymentStatus,
+        // Phản hồi của người duyệt để CTV biết cần sửa gì (không lộ ghi chú nội bộ khác)
+        ctvConfirmStatus: job.ctvConfirmStatus,
+        pillar: job.pillar,
+        scriptStatus: job.scriptStatus,
+        brandScriptStatus: job.brandScriptStatus,
+        videoQaStatus: job.videoQaStatus,
+        acceptanceStatus: job.acceptanceStatus,
+        feedback: [job.scriptNote && job.scriptStatus === 'REVISION' ? `Kịch bản: ${job.scriptNote}` : '', job.brandScriptNote && job.brandScriptStatus === 'REVISION' ? `Brand: ${job.brandScriptNote}` : '', job.qaNote && job.videoQaStatus === 'REVISION' ? `Video: ${job.qaNote}` : '', job.acceptanceNote && job.acceptanceStatus !== 'PASSED' ? `Nghiệm thu: ${job.acceptanceNote}` : ''].filter(Boolean),
+        acceptedAt: job.acceptedAt,
+        pitTaxAmount: job.pitTaxAmount,
+        netPayout: job.netPayout,
+        dnttSlipCode: job.dnttSlipCode,
+        paidAt: job.paidAt,
+        uncRef: job.uncRef,
         nextStep: step.label,
         waitingOnCtv: step.waitingOnCtv,
         submitKind: step.kind,
@@ -65,7 +80,21 @@ export async function GET(request: NextRequest) {
       .flatMap(rec => rec.data?.settlements || [])
       .filter(s => s.contributorId === r.ctv.id && s.status !== 'CANCELLED')
       .map(s => ({ slipCode: s.slipCode, month: s.month, bbntCode: s.bbntCode, videos: s.jobs.length, grossTotal: s.grossTotal, pitTax: s.pitTax, netTotal: s.netTotal, status: s.status, paidAt: s.paidAt }));
-    return NextResponse.json({ contributor: { name: r.ctv.name, code: r.ctv.code }, jobs, settlements }, { headers });
+    // Hồ sơ của CTV: che số, chỉ cho biết còn thiếu gì để được thanh toán
+    const mask = (v?: string) => (v && v.trim() ? `****${v.trim().slice(-4)}` : '');
+    // Hợp đồng bắt buộc theo giá trị từng video (BR-03): video từ 10.000.000đ
+    const contractNeededJobs = rows
+      .filter(({ job }) => job.ctvConfirmStatus !== 'DECLINED' && job.feeGross >= SELF_CONTRACT_THRESHOLD)
+      .map(({ job }) => job.code);
+    const profile = {
+      legalMasked: mask(r.ctv.cccd || r.ctv.taxCode),
+      bankName: r.ctv.bankName || '',
+      bankMasked: mask(r.ctv.bankAccount),
+      contractCode: r.ctv.contractCode || '',
+      contractStatus: r.ctv.contractStatus || '',
+      contractNeededJobs,
+    };
+    return NextResponse.json({ contributor: { name: r.ctv.name, code: r.ctv.code }, profile, jobs, settlements }, { headers });
   } catch (err) {
     if (err instanceof RecordError) return fail(err.message, err.status);
     throw err;
@@ -77,7 +106,11 @@ export async function POST(request: NextRequest) {
   const r = await resolveCtv(request);
   if ('error' in r) return r.error;
   try {
-    const body = (await request.json().catch(() => null)) as { planId?: string; jobCode?: string; kind?: CtvSubmissionKind; link?: string } | null;
+    const body = (await request.json().catch(() => null)) as { planId?: string; jobCode?: string; kind?: CtvSubmissionKind | 'CONFIRM' | 'DECLINE'; link?: string; reason?: string } | null;
+    if (body?.jobCode && (body.kind === 'CONFIRM' || body.kind === 'DECLINE')) {
+      const answer = await respondCtvJob({ contributor: r.ctv, jobCode: body.jobCode, planId: body.planId, decision: body.kind, reason: body.reason });
+      return NextResponse.json({ ok: answer.ok, message: answer.message }, { status: answer.ok ? 200 : 400, headers });
+    }
     if (!body?.jobCode || !body.link || !['SCRIPT', 'DRAFT', 'AIR'].includes(body.kind || '')) return fail('Dữ liệu gửi lên không hợp lệ.', 400);
     const result = await submitCtvWork({
       contributor: r.ctv,

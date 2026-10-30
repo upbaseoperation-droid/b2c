@@ -466,3 +466,92 @@ export function calculateContractTax({
     amountInWords,
   };
 }
+
+
+import type { ContractField } from './types';
+
+export const PAYMENT_SCHEDULE_META_KEY = 'meta:paymentScheduleOption';
+
+export type PaymentScheduleOption = 'ONE_TIME' | 'TWO_TIMES' | 'BY_SOW';
+
+export function isTwoTimePaymentField(f: ContractField): boolean {
+  if (f.source === 'advanceAmount') return true;
+  const t = `${f.title || ''} ${f.label || ''} ${f.context || ''}`.toLowerCase();
+  return (
+    t.includes('tạm ứng lần 1') ||
+    t.includes('lần 1 tạm ứng') ||
+    t.includes('hạn tạm ứng') ||
+    t.includes('hạn thanh toán lần 2')
+  );
+}
+
+export function resolvePaymentScheduleOption(
+  values: Record<string, string>,
+  templateId?: string,
+  fields: ContractField[] = [],
+): PaymentScheduleOption {
+  const explicit = values[PAYMENT_SCHEDULE_META_KEY];
+  if (explicit === 'ONE_TIME' || explicit === 'TWO_TIMES' || explicit === 'BY_SOW') {
+    return explicit;
+  }
+  const advField = fields.find(
+    f => f.source === 'advanceAmount' || (f.title || f.label || '').toLowerCase().includes('tạm ứng lần 1'),
+  );
+  const rawAdv = advField ? values[advField.key] || '' : '';
+  const advDigits = Number(String(rawAdv).replace(/\D/g, '')) || 0;
+  if (advDigits > 0) return 'TWO_TIMES';
+  if (templateId && templateId.endsWith('-HDNT') && templateId !== 'CTV-HDNT') {
+    return 'BY_SOW';
+  }
+  return 'ONE_TIME';
+}
+
+/**
+ * Trích xuất phương thức thanh toán trên Phụ lục SOW (`ONE_TIME` | `TWO_TIMES`) và số tiền tạm ứng đợt 1 (VNĐ).
+ * Quy chuẩn nghiệp vụ: Chỉ khi Phụ lục SOW cấu hình `TWO_TIMES` (Thanh toán 2 đợt) mới mở khóa luồng Tạm ứng.
+ */
+export function extractSowPaymentScheduleAndAdvance(
+  values: Record<string, string> | undefined,
+  templateId?: string,
+  fields: ContractField[] = [],
+): { paymentScheduleOption: 'ONE_TIME' | 'TWO_TIMES'; advanceAmount: number } {
+  const v = values || {};
+  const explicit = v[PAYMENT_SCHEDULE_META_KEY];
+  if (explicit === 'ONE_TIME') {
+    return { paymentScheduleOption: 'ONE_TIME', advanceAmount: 0 };
+  }
+
+  const advField = fields.find(
+    f => f.source === 'advanceAmount' || (f.title || f.label || '').toLowerCase().includes('tạm ứng lần 1'),
+  );
+  let rawAdv =
+    (advField ? v[advField.key] : '') ||
+    v['sowAdvanceAmount'] ||
+    v['token:[Số tiền tạm ứng đợt 1]'] ||
+    v['token:[advanceAmount]'] ||
+    '';
+
+  if (!rawAdv) {
+    for (const [k, val] of Object.entries(v)) {
+      const kl = k.toLowerCase();
+      if (kl.includes('tạm ứng lần 1') || kl.includes('tạm ứng đợt 1') || kl.includes('advanceamount')) {
+        if (val) {
+          rawAdv = val;
+          break;
+        }
+      }
+    }
+  }
+
+  const advanceAmount = Math.max(0, Number(String(rawAdv).replace(/\D/g, '')) || 0);
+  if (explicit === 'TWO_TIMES') {
+    return { paymentScheduleOption: 'TWO_TIMES', advanceAmount };
+  }
+  if (advanceAmount > 0) {
+    return { paymentScheduleOption: 'TWO_TIMES', advanceAmount };
+  }
+  if (templateId && templateId.endsWith('-SOW')) {
+    return { paymentScheduleOption: 'ONE_TIME', advanceAmount: 0 };
+  }
+  return { paymentScheduleOption: 'ONE_TIME', advanceAmount: 0 };
+}

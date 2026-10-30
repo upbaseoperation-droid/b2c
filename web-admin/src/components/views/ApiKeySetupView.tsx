@@ -111,6 +111,7 @@ const PURPOSE_ICONS: Record<OperationalApiPurposeId, React.ComponentType<{ class
   BRAND_GUIDELINE_EXTRACT: FileText,
   CONTENT_PROPOSAL: Layers,
   CONTENT_PERFORMANCE_REVIEW: BarChart3,
+  SELF_VIDEO_ACCEPTANCE: FileText,
 };
 
 const DEPT_SCOPE_LABELS: Record<SavedNamedApiKey['departmentScope'], string> = {

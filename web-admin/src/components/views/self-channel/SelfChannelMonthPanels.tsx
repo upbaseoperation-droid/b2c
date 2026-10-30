@@ -180,8 +180,14 @@ export function SelfChannelOverviewPanel({
     <div className="space-y-4">
       <Panel
         title="Chỉ tiêu và thực tế theo gian"
-        description={`Tổng: ${formatNumber(total.jobs)}/${formatNumber(total.targetQty)} video đã giao việc · ${formatNumber(total.aired)} đã đăng · ${formatNumber(total.accepted)} nghiệm thu đạt · cam kết ${formatVnd(total.committed)} / ngân sách ${formatVnd(total.budget)}`}
-        actions={months.length > 0 ? <MonthSelect months={months} value={month} onChange={setMonth} /> : undefined}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Status tone="neutral">
+              {formatNumber(total.jobs)}/{formatNumber(total.targetQty)} video giao · {formatNumber(total.aired)} đăng · {formatNumber(total.accepted)} đạt · {formatVnd(total.committed)}/{formatVnd(total.budget)}
+            </Status>
+            {months.length > 0 ? <MonthSelect months={months} value={month} onChange={setMonth} /> : null}
+          </div>
+        }
         flush
       >
         <DataTable
@@ -226,7 +232,7 @@ export function SelfChannelQueuePanel({
   jobs: HubJob[];
   loading: boolean;
   today: string;
-  onOpenPlan: (planId: string) => void;
+  onOpenPlan: (planId: string, jobCode?: string) => void;
 }) {
   const [nowMs] = useState(() => Date.now());
   const [kind, setKind] = useState<QueueKind | 'ALL'>('ALL');
@@ -260,7 +266,7 @@ export function SelfChannelQueuePanel({
       header: '',
       align: 'right',
       render: r => (
-        <Button size="sm" variant="ghost" onClick={() => onOpenPlan(r.job.planId)}>
+        <Button size="sm" variant="ghost" onClick={() => onOpenPlan(r.job.planId, r.job.code)}>
           Mở
         </Button>
       ),
@@ -270,18 +276,20 @@ export function SelfChannelQueuePanel({
   return (
     <Panel
       title="Hàng chờ duyệt"
-      description={`${formatNumber(rows.length)} việc đang chờ xử lý trên các gian bạn được xem`}
       actions={
-        <Field label="Loại việc" className="w-44">
-          <Select value={kind} onChange={e => setKind(e.target.value as QueueKind | 'ALL')} aria-label="Lọc loại việc">
-            <option value="ALL">Tất cả</option>
-            {(Object.keys(QUEUE_LABEL) as QueueKind[]).map(k => (
-              <option key={k} value={k}>
-                {QUEUE_LABEL[k].label}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        <div className="flex flex-wrap items-center gap-2">
+          <Status tone="neutral">{formatNumber(rows.length)} việc chờ xử lý</Status>
+          <Field label="Loại việc" className="w-44">
+            <Select value={kind} onChange={e => setKind(e.target.value as QueueKind | 'ALL')} aria-label="Lọc loại việc">
+              <option value="ALL">Tất cả</option>
+              {(Object.keys(QUEUE_LABEL) as QueueKind[]).map(k => (
+                <option key={k} value={k}>
+                  {QUEUE_LABEL[k].label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
       }
       flush
     >

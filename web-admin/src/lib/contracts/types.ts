@@ -314,3 +314,5 @@ export interface ContractRecord {
   googleDocsComments?: import('./googleDocsTypes').GoogleDocCommentItem[];
   googleDocsAuditTrail?: import('./googleDocsTypes').GoogleDocsAuditTrail;
 }
+
+export type TemplateFieldSource = FieldSource | string;

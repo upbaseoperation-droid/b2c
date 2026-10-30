@@ -15,6 +15,7 @@ import type {
 import { PageHeaderNav, Segmented } from '../ui';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 import { StaffBrandListingSheetWorkspace } from '../shortlist/StaffBrandListingSheetWorkspace';
+import { MultiPlatformListingWorkspace } from '../shortlist/MultiPlatformListingWorkspace';
 import type { StoreSheetSetupTabKey } from './StoreStaffSheetSetupView';
 import { ApprovedBookingListView } from './ApprovedBookingListView';
 import type { ContractDocument } from '../../lib/planDealLink';
@@ -130,8 +131,8 @@ export function KocListingBatchHubView({
     currentRole === 'MANAGER' ||
     currentRole === 'FINANCE';
 
-  const [activeSubTab, setActiveSubTab] = useState<
-    'STAFF_BRAND_SHEET' | 'APPROVED_DEAL_BOARD'
+    const [activeSubTab, setActiveSubTab] = useState<
+    'STAFF_BRAND_SHEET' | 'APPROVED_DEAL_BOARD' | 'MULTI_PLATFORM_WORKSPACE'
   >('STAFF_BRAND_SHEET');
 
   const defaultInitialStore = useMemo(() => {
@@ -339,15 +340,16 @@ export function KocListingBatchHubView({
     <div className="space-y-2">
       <PageHeaderNav>
         <Segmented
-          value={
-            activeSubTab === 'APPROVED_DEAL_BOARD'
-              ? 'APPROVED_DEAL_BOARD'
-              : 'STAFF_BRAND_SHEET'
+          value={activeSubTab}
+          onChange={(val) =>
+            setActiveSubTab(
+              val as 'STAFF_BRAND_SHEET' | 'APPROVED_DEAL_BOARD' | 'MULTI_PLATFORM_WORKSPACE'
+            )
           }
-          onChange={(val) => setActiveSubTab(val as 'STAFF_BRAND_SHEET' | 'APPROVED_DEAL_BOARD')}
           items={[
-            { key: 'STAFF_BRAND_SHEET', label: 'Bảng Listing KOC' },
-            { key: 'APPROVED_DEAL_BOARD', label: 'Quản lý Deal & Booking' },
+            { key: 'STAFF_BRAND_SHEET', label: 'Listing TikTok' },
+            { key: 'APPROVED_DEAL_BOARD', label: 'Deal & Nghiệm thu TikTok' },
+            { key: 'MULTI_PLATFORM_WORKSPACE', label: 'Listing & Nghiệm thu Đa sàn' },
           ]}
         />
       </PageHeaderNav>
@@ -378,6 +380,20 @@ export function KocListingBatchHubView({
               onNotify?.('Vui lòng mở menu "Tích hợp & Kết nối API" để cấu hình Google Sheet.', 'info');
             }
           }}
+          onNotify={onNotify}
+        />
+      )}
+
+      {activeSubTab === 'MULTI_PLATFORM_WORKSPACE' && (
+        <MultiPlatformListingWorkspace
+          kocs={kocs}
+          stores={stores}
+          monthlyPlans={monthlyPlans}
+          currentUserName={currentUserName}
+          selectedMonth={selectedMonth === 'ALL' ? '2026/11' : selectedMonth}
+          onChangeMonth={setSelectedMonth}
+          selectedStore={selectedStore}
+          onChangeStore={setSelectedStore}
           onNotify={onNotify}
         />
       )}

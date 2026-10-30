@@ -320,7 +320,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     | 'ALL_SUMMARY'
     | 'EXCEL_PREVIEW'
     | 'BRAND_ONE_SHEET'
-  >('OVERVIEW');
+  >('WEEKLY_MATRIX');
 
   // View Mode: 'CARDS' (Intuitive & Visual) or 'TABLE' (Clean & Fast)
   const [viewMode, setViewMode] = useState<'CARDS' | 'TABLE'>('TABLE');
@@ -1614,9 +1614,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             else setActiveTab('ALL_SUMMARY');
           } else {
             setFocusedStaffFilter('ALL');
-            if (selected.reference41 || (selected.weeklyBreakdown && selected.weeklyBreakdown.length > 0)) {
-              setActiveTab('WEEKLY_MATRIX');
-            }
+            setActiveTab('WEEKLY_MATRIX');
           }
           setIsShowingStudio(true);
         }}
@@ -1863,6 +1861,20 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               <div role="menu" className="absolute right-0 mt-1.5 w-60 z-40 bg-surface border border-line rounded-xl shadow-lg py-1 text-xs">
                 {[
                   {
+                    label: 'Phân bổ theo bậc KOC & kênh',
+                    icon: <Sliders className="w-3.5 h-3.5" />,
+                    onClick: () => setActiveTab('ALL_SUMMARY'),
+                    disabled: false,
+                    hint: isDetailBreakdownTab ? 'Đang mở' : undefined as string | undefined
+                  },
+                  {
+                    label: 'Đối chiếu biểu mẫu Sheet 4.1.1',
+                    icon: <FileSpreadsheet className="w-3.5 h-3.5" />,
+                    onClick: () => setActiveTab('EXCEL_PREVIEW'),
+                    disabled: false,
+                    hint: activeTab === 'EXCEL_PREVIEW' ? 'Đang mở' : undefined as string | undefined
+                  },
+                  {
                     label: 'Báo cáo thẩm định kế hoạch',
                     icon: <FileText className="w-3.5 h-3.5" />,
                     onClick: () => setIsPlanReportOpen(true),
@@ -2075,56 +2087,36 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         <div className="inline-flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
-            onClick={() => setActiveTab('OVERVIEW')}
-            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer shrink-0 ${
-              activeTab === 'OVERVIEW'
-                ? 'bg-white text-blue-700 shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <span className="2xl:hidden">1. Chỉ tiêu</span>
-            <span className="hidden 2xl:inline">1. Chỉ tiêu tháng</span>
-            <span className="hidden 2xl:inline text-2xs font-normal text-slate-500">
-              · {isLayer1Locked ? 'Đã chốt' : 'Đang điền'}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (!isDetailBreakdownTab) setActiveTab('ALL_SUMMARY');
-            }}
-            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer shrink-0 ${
-              isDetailBreakdownTab
-                ? 'bg-white text-blue-700 shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <span className="2xl:hidden">2. Phân bổ</span>
-            <span className="hidden 2xl:inline">2. Phân bổ kênh &amp; KOC</span>
-          </button>
-          <button
-            type="button"
             onClick={handleOpenWeeklyMatrixStep}
-            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
+            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
               activeTab === 'WEEKLY_MATRIX'
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <span className="2xl:hidden">3. Lịch tuần</span>
-            <span className="hidden 2xl:inline">3. Phân rã tuần</span>
+            <span className="2xl:hidden">1. Phân rã 4.1 &amp; 4.1.1</span>
+            <span className="hidden 2xl:inline">1. Phân rã kế hoạch (4.1 &amp; 4.1.1)</span>
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('EXCEL_PREVIEW')}
-            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
-              activeTab === 'EXCEL_PREVIEW'
+            onClick={() => setActiveTab('OVERVIEW')}
+            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
+              activeTab === 'OVERVIEW'
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <span className="2xl:hidden">4. Tổng hợp</span>
-            <span className="hidden 2xl:inline">4. Biểu mẫu tổng hợp</span>
+            <span className="2xl:hidden">2. Phê duyệt &amp; Trao đổi</span>
+            <span className="hidden 2xl:inline">2. Phê duyệt &amp; Chỉ tiêu 4.1</span>
+            {revisionChatCount > 0 ? (
+              <span className="px-1.5 py-0 rounded-full bg-rose-100 text-rose-700 font-mono text-2xs font-semibold">
+                {revisionChatCount}
+              </span>
+            ) : (
+              <span className="hidden 2xl:inline text-2xs font-normal text-slate-500">
+                · {isLayer1Locked ? 'Đã chốt' : 'Đang điền'}
+              </span>
+            )}
           </button>
           <button
             type="button"
@@ -2136,9 +2128,27 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             }`}
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span className="2xl:hidden">5. Brand</span>
-            <span className="hidden 2xl:inline">5. Bản duyệt Brand</span>
+            <span className="2xl:hidden">3. Brand</span>
+            <span className="hidden 2xl:inline">3. Bản duyệt Brand</span>
           </button>
+          {isDetailBreakdownTab && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('ALL_SUMMARY')}
+              className="px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-blue-700 shadow-2xs inline-flex items-center gap-1 cursor-pointer shrink-0"
+            >
+              <span>Phân bổ KOC</span>
+            </button>
+          )}
+          {activeTab === 'EXCEL_PREVIEW' && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('EXCEL_PREVIEW')}
+              className="px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-blue-700 shadow-2xs inline-flex items-center gap-1 cursor-pointer shrink-0"
+            >
+              <span>Sheet 4.1.1</span>
+            </button>
+          )}
         </div>
 
         {/* Bên phải thanh bước: Trạng thái 4.1, Cụm PIC thông minh (Popover chi tiết đội ngũ) & lối tắt Listing KOC */}

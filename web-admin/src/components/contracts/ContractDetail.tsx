@@ -7,7 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, ArrowLeft, Camera, CheckCircle2, ChevronLeft, ChevronRight, Download, ExternalLink, FileCheck2, FileCode2, FilePlus2, Pencil, RefreshCw, RotateCcw, Scale, ScanSearch, Send } from 'lucide-react';
-import type { BookingDealItem, KocItem } from '../../lib/types';
+import type { BookingDealItem, KocItem, LegalDocAttachment } from '../../lib/types';
 import type { ContractField, ContractRecord, ContractRole, DocBlock } from '../../lib/contracts/types';
 import { ActionMenu, Button, ConfirmDialog, EmptyState, Field, Input, Modal, Person, SectionHeader, Segmented, Select, Status, StepMark, Textarea } from '../ui';
 import type { ActionMenuItem, StatusTone } from '../ui';
@@ -16,7 +16,12 @@ import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { GoogleDocsReviewPanel } from './GoogleDocsReviewPanel';
 import { GoogleDocsFinanceApproveDialog } from './GoogleDocsFinanceApproveDialog';
-import { LegalAttachmentsPanel } from './LegalAttachmentsPanel';
+import { LegalAttachmentsPanel, LegalProfileSigningHistoryBanner } from './LegalAttachmentsPanel';
+import {
+  evaluateLegalProfileSigningHistory,
+  resolveContractLegalAttachments,
+  type LegalProfileSigningHistorySummary,
+} from '../../lib/contracts/legalProfileHistory';
 import { getKocLegalProfiles } from '../koc/kocUtils';
 import type { GoogleDocCommentItem } from '../../lib/contracts/googleDocsTypes';
 import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
@@ -225,7 +230,7 @@ export function ContractDetail({
       : record.versions.find(v => v.version === selectedVersion)?.acceptanceScreenshots || [];
 
   const isSowDoc = record.templateId.endsWith('-SOW');
-  const [workspaceTab, setWorkspaceTab] = useState<'DOCUMENT' | 'APPROVAL' | 'GOOGLE_DOCS'>(
+  const [workspaceTab, setWorkspaceTab] = useState<'DOCUMENT' | 'LEGAL_DOCS' | 'APPROVAL' | 'GOOGLE_DOCS'>(
     record.googleDocsUrl ? 'GOOGLE_DOCS' : 'DOCUMENT'
   );
 
@@ -806,151 +811,11 @@ export function ContractDetail({
         </div>
       </div>
 
-      {/* LUỒNG ĐIỀU PHỐI TRUNG TÂM CONTRACT-SYSTEM (BƯỚC 4 -> BƯỚC 13) */}
-      <div className="bg-surface border border-line rounded-xl p-4 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-ink">
-              Luồng điều phối trung tâm · contract-system ({isAcceptanceDoc ? 'Biên bản nghiệm thu BBNT' : record.templateId.endsWith('-SOW') ? 'Phụ lục SOW' : 'Hợp đồng nguyên tắc HĐNT'})
-            </span>
-            <span className="text-2xs font-code px-2 py-0.5 rounded bg-sunken border border-line text-ink-2">
-              Mã idempotent: {stableContractCode}
-            </span>
-            {(record.contractSystem?.parentContractCode || parent?.contractSystem?.contractCode) && (
-              <span className="text-2xs font-code px-2 py-0.5 rounded bg-surface border border-line text-ink-3">
-                Kế thừa: {record.contractSystem?.parentContractCode || parent?.contractSystem?.contractCode}
-              </span>
-            )}
-            {templateSignTags.map(tag => (
-              <span key={tag} className="text-2xs font-code px-1.5 py-0.5 rounded bg-accent-soft/50 border border-accent/25 text-accent">
-                {tag}
-              </span>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            {!activeSigning && (
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={FileCode2}
-                disabled={busy}
-                onClick={() =>
-                  onAction(
-                    { action: 'GENERATE_CONTRACT_SYSTEM' },
-                    `Đã render .docx và đồng bộ lên Google Docs (${stableContractCode})`,
-                  )
-                }
-              >
-                {record.contractSystem?.googleDocsUrl ? 'Cập nhật lại Google Docs' : 'Gen .docx & Đồng bộ Google Docs'}
-              </Button>
-            )}
-            {record.contractSystem?.googleDocsUrl && (
-              <a
-                href={record.contractSystem.googleDocsUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line-strong bg-surface text-xs font-medium text-accent hover:bg-sunken"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Mở bản sửa Google Docs
-              </a>
-            )}
-            {record.contractSystem?.googleDocsUrl && !activeSigning && (
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={RefreshCw}
-                disabled={busy}
-                onClick={() =>
-                  onAction(
-                    { action: 'SYNC_GOOGLE_DOCS' },
-                    'Đã xuất lại bản .docx mới nhất từ Google Docs sẵn sàng gửi ký',
-                  )
-                }
-              >
-                Xuất lại .docx từ Google Docs
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
-          <div className="rounded-lg border border-line bg-sunken/30 px-3 py-2 space-y-0.5">
-            <div className="flex items-center justify-between gap-1">
-              <span className="text-2xs font-semibold text-ink">Bước 4 · Lấy Template &amp; Snapshot</span>
-              <Status tone="positive">Đã khóa</Status>
-            </div>
-            <span className="text-2xs text-ink-2 block truncate">
-              {template?.id || record.templateId} · {record.contractSystem?.templateSnapshot?.version || template?.version || `v${record.version}`}
-            </span>
-            <span className="text-2xs text-ink-3 block truncate">
-              Luồng ký: {enrichedTemplate?.signingFlowConfig?.mode === 'PARALLEL' ? 'Song song' : 'Tuần tự'} ({enrichedTemplate?.signingFlowConfig?.deadlineDays || 7} ngày)
-            </span>
-          </div>
-
-          <div className="rounded-lg border border-line bg-sunken/30 px-3 py-2 space-y-0.5">
-            <div className="flex items-center justify-between gap-1">
-              <span className="text-2xs font-semibold text-ink">Bước 5–6 · Google Docs &amp; .docx</span>
-              <Status tone={record.contractSystem?.googleDocsSyncedAt ? 'positive' : 'neutral'}>
-                {record.contractSystem?.googleDocsSyncedAt ? 'Đã đồng bộ' : 'Bản cục bộ'}
-              </Status>
-            </div>
-            <span className="text-2xs text-ink-2 block truncate">
-              {record.contractSystem?.googleDocsId ? `Doc ID: ${record.contractSystem.googleDocsId}` : 'Bấm Gen .docx để tạo bản Google Docs'}
-            </span>
-            <span className="text-2xs text-ink-3 block truncate">
-              {record.contractSystem?.googleDocsSyncedAt
-                ? `Xuất lúc ${dateTime(record.contractSystem.googleDocsSyncedAt)}`
-                : 'Xuất lại .docx khi sửa điều khoản'}
-            </span>
-          </div>
-
-          <div className="rounded-lg border border-line bg-sunken/30 px-3 py-2 space-y-0.5">
-            <div className="flex items-center justify-between gap-1">
-              <span className="text-2xs font-semibold text-ink">Bước 7–8 · Gửi ký WeSign</span>
-              <Status tone={signing ? 'positive' : record.approval === 'APPROVED' ? 'warning' : 'neutral'}>
-                {signing ? 'Đã tạo signflow' : record.approval === 'APPROVED' ? 'Sẵn sàng gửi' : 'Chờ duyệt'}
-              </Status>
-            </div>
-            <span className="text-2xs text-ink-2 block truncate">
-              {signing ? `UUID: ${signing.documentId.slice(0, 18)}…` : 'Đổi thẻ {{SIGN_*}} sang ô ký WeSign'}
-            </span>
-            <span className="text-2xs text-ink-3 block truncate">
-              Khóa chống trùng: {stableContractCode}
-            </span>
-          </div>
-
-          <div className="rounded-lg border border-line bg-sunken/30 px-3 py-2 space-y-0.5">
-            <div className="flex items-center justify-between gap-1">
-              <span className="text-2xs font-semibold text-ink">Bước 9–13 · Webhook &amp; Tải file</span>
-              <Status
-                tone={
-                  (signing?.signedFileStatus || record.contractSystem?.signedFileStatus) === 'DOWNLOADED' || isFullySigned
-                    ? 'positive'
-                    : (signing?.signedFileStatus || record.contractSystem?.signedFileStatus) === 'QUEUED'
-                      ? 'warning'
-                      : 'neutral'
-                }
-              >
-                {(signing?.signedFileStatus || record.contractSystem?.signedFileStatus) === 'DOWNLOADED' || isFullySigned
-                  ? 'Đã tải bản ký'
-                  : (signing?.signedFileStatus || record.contractSystem?.signedFileStatus) === 'QUEUED'
-                    ? 'Trong queue tải'
-                    : 'Chờ sự kiện ký'}
-              </Status>
-            </div>
-            <span className="text-2xs text-ink-2 block truncate">
-              Chặn ghi đè lùi: Chỉ tiến (Forward-only)
-            </span>
-            <span className="text-2xs text-ink-3 block truncate">
-              {signing?.syncedAt ? `Đồng bộ: ${dateTime(signing.syncedAt)}` : 'Queue: signed-file-download'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* HỒ SƠ PHÁP LÝ ĐÍNH KÈM (CCCD & ĐKKD LƯU TRỮ TRÊN CLOUDFLARE R2) */}
+      {/* HỒ SƠ PHÁP LÝ ĐÍNH KÈM (CCCD & ĐKKD LƯU TRÊN CLOUDFLARE R2) & LỊCH SỬ KÝ */}
+      <LegalProfileSigningHistoryBanner
+        summary={evaluateLegalProfileSigningHistory(record, data.records, deals, kocs)}
+        onOpenPriorContract={id => onOpen(id)}
+      />
       {(() => {
         const profiles = linkedKoc ? getKocLegalProfiles(linkedKoc) : [];
         const activeProf =
@@ -960,7 +825,7 @@ export function ContractDetail({
         const effectiveAttachments =
           record.legalAttachments && record.legalAttachments.length > 0
             ? record.legalAttachments
-            : activeProf?.legalAttachments || linkedDeal?.legalProfileSnapshot?.legalAttachments || [];
+            : resolveContractLegalAttachments(record, deals, kocs, data.records);
         const effectiveLegalType =
           activeProf?.legalType ||
           (record.templateId.startsWith('COM-')
@@ -980,7 +845,8 @@ export function ContractDetail({
                 'Đã cập nhật tệp đính kèm CCCD / ĐKKD trên Cloudflare R2',
               );
             }}
-            title="Hồ sơ pháp lý đính kèm: CCCD & Giấy phép ĐKKD (Cloudflare R2)"
+            title="Giấy tờ pháp lý CCCD & ĐKKD (Cloudflare R2)"
+            defaultExpandPreview={false}
           />
         );
       })()}
@@ -1004,20 +870,24 @@ export function ContractDetail({
       <div className="grid gap-6 items-start lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid gap-4 min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Segmented<'DOCUMENT' | 'APPROVAL' | 'GOOGLE_DOCS'>
+            <Segmented<'DOCUMENT' | 'LEGAL_DOCS' | 'APPROVAL' | 'GOOGLE_DOCS'>
               value={workspaceTab}
               onChange={setWorkspaceTab}
               items={[
-                { key: 'DOCUMENT', label: '1. Văn bản hợp đồng A4 & Chữ ký số' },
+                { key: 'DOCUMENT', label: '1. Văn bản hợp đồng A4' },
+                {
+                  key: 'LEGAL_DOCS',
+                  label: `2. Giấy tờ CCCD & ĐKKD (${resolveContractLegalAttachments(record, deals, kocs, data.records).length} tệp R2)`,
+                },
                 {
                   key: 'APPROVAL',
-                  label: `2. Tiến trình duyệt nội bộ & Quy chuẩn pháp chế (${record.steps.length} bước${current?.findings.length ? ` · ${current.findings.length} lưu ý` : ''})`,
+                  label: `3. Tiến trình duyệt & Ký số (${record.steps.length} bước${current?.findings.length ? ` · ${current.findings.length} lưu ý` : ''})`,
                 },
                 ...(record.googleDocsUrl
                   ? [
                       {
                         key: 'GOOGLE_DOCS' as const,
-                        label: `3. Hồ sơ sửa đổi Google Docs (${record.googleDocsReviewRouting?.clauseDiffs.length || 0} điều khoản)`,
+                        label: `4. Điều khoản Google Docs (${record.googleDocsReviewRouting?.clauseDiffs.length || 0})`,
                       },
                     ]
                   : []),
@@ -1120,8 +990,105 @@ export function ContractDetail({
                 />
               )}
             </section>
+          ) : workspaceTab === 'LEGAL_DOCS' ? (
+            <section className="grid gap-3">
+              {(() => {
+                const profiles = linkedKoc ? getKocLegalProfiles(linkedKoc) : [];
+                const activeProf =
+                  (record.legalProfileId ? profiles.find(p => p.id === record.legalProfileId) : undefined) ||
+                  profiles.find(p => p.isDefault) ||
+                  profiles[0];
+                const effectiveAttachments =
+                  record.legalAttachments && record.legalAttachments.length > 0
+                    ? record.legalAttachments
+                    : resolveContractLegalAttachments(record, deals, kocs, data.records);
+                const effectiveLegalType =
+                  activeProf?.legalType ||
+                  (record.templateId.startsWith('COM-')
+                    ? 'COMPANY'
+                    : record.templateId.startsWith('HKD-')
+                      ? 'HOUSEHOLD'
+                      : 'INDIVIDUAL');
+                return (
+                  <LegalAttachmentsPanel
+                    attachments={effectiveAttachments}
+                    entitySlug={linkedKoc?.channelId || linkedKoc?.id || record.partner || record.id}
+                    legalType={effectiveLegalType}
+                    editable={!isFullySigned}
+                    defaultExpandPreview={true}
+                    onChange={nextAttachments => {
+                      void onAction(
+                        { action: 'ATTACH_LEGAL_DOCS', legalAttachments: nextAttachments },
+                        'Đã cập nhật tệp đính kèm CCCD / ĐKKD trên Cloudflare R2',
+                      );
+                    }}
+                    title="Đối chiếu trực tiếp CCCD & Giấy phép ĐKKD (Cloudflare R2)"
+                  />
+                );
+              })()}
+            </section>
           ) : (
             <div className="grid gap-5">
+              {/* Luồng đồng bộ Google Docs & contract-system (khi cần thao tác kỹ thuật) */}
+              <section className="bg-surface border border-line rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold text-ink">Đồng bộ contract-system &amp; Google Docs</span>
+                  <span className="text-2xs font-code px-2 py-0.5 rounded bg-sunken border border-line text-ink-2">
+                    {stableContractCode}
+                  </span>
+                  {templateSignTags.map(tag => (
+                    <span key={tag} className="text-2xs font-code px-1.5 py-0.5 rounded bg-accent-soft/50 border border-accent/25 text-accent">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {!activeSigning && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={FileCode2}
+                      disabled={busy}
+                      onClick={() =>
+                        onAction(
+                          { action: 'GENERATE_CONTRACT_SYSTEM' },
+                          `Đã render .docx và đồng bộ lên Google Docs (${stableContractCode})`,
+                        )
+                      }
+                    >
+                      {record.contractSystem?.googleDocsUrl ? 'Cập nhật lại Google Docs' : 'Gen .docx & Đồng bộ Google Docs'}
+                    </Button>
+                  )}
+                  {record.contractSystem?.googleDocsUrl && (
+                    <a
+                      href={record.contractSystem.googleDocsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line-strong bg-surface text-xs font-medium text-accent hover:bg-sunken"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Mở Google Docs
+                    </a>
+                  )}
+                  {record.contractSystem?.googleDocsUrl && !activeSigning && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={RefreshCw}
+                      disabled={busy}
+                      onClick={() =>
+                        onAction(
+                          { action: 'SYNC_GOOGLE_DOCS' },
+                          'Đã xuất lại bản .docx mới nhất từ Google Docs sẵn sàng gửi ký',
+                        )
+                      }
+                    >
+                      Xuất lại .docx
+                    </Button>
+                  )}
+                </div>
+              </section>
+
               {/* Tiến trình phê duyệt nội bộ & chi tiết bước ký */}
               <section className="grid gap-3">
                 <SectionHeader title="Tiến trình phê duyệt nội bộ & Ký số" />
@@ -1414,7 +1381,26 @@ export function ContractDetail({
           ).then(r => r && setDialog(null))
         }
       />
-      {myStep?.role === 'LEGAL' ? (
+      {myStep?.role === 'FINANCE' ? (
+        <FinanceApproveDialog
+          open={dialog === 'approve'}
+          record={record}
+          signingHistory={evaluateLegalProfileSigningHistory(record, data.records, deals, kocs)}
+          attachments={resolveContractLegalAttachments(record, deals, kocs, data.records)}
+          busy={busy}
+          onClose={() => setDialog(null)}
+          onOpenPriorContract={id => {
+            setDialog(null);
+            onOpen(id);
+          }}
+          onSubmit={note =>
+            onAction(
+              { action: 'DECIDE', decision: 'APPROVED', note: note || '' },
+              'Đã duyệt hồ sơ',
+            ).then(r => r && setDialog(null))
+          }
+        />
+      ) : myStep?.role === 'LEGAL' ? (
         <LegalApproveDialog
           open={dialog === 'approve'}
           record={record}
@@ -1838,6 +1824,81 @@ function LegalApproveDialog({
             </Field>
           )}
         </div>
+      </div>
+    </Modal>
+  );
+}
+
+function FinanceApproveDialog({
+  open,
+  record,
+  signingHistory,
+  attachments,
+  busy,
+  onClose,
+  onOpenPriorContract,
+  onSubmit,
+}: {
+  open: boolean;
+  record: ContractRecord;
+  signingHistory: LegalProfileSigningHistorySummary;
+  attachments: LegalDocAttachment[];
+  busy: boolean;
+  onClose: () => void;
+  onOpenPriorContract?: (id: string) => void;
+  onSubmit: (note: string) => Promise<unknown>;
+}) {
+  const [note, setNote] = useState(
+    signingHistory.recommendedFinanceNote ||
+      'Đã kiểm tra khớp hạn mức Booking, thuế khấu trừ và thông tin tài khoản thụ hưởng.',
+  );
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={`Duyệt hồ sơ (Kế toán) · ${record.title}`}
+      size="lg"
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            Hủy
+          </Button>
+          <Button variant="primary" disabled={busy} onClick={() => onSubmit(note)}>
+            Xác nhận duyệt FINAL
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-4 text-xs">
+        <LegalProfileSigningHistoryBanner
+          summary={signingHistory}
+          onOpenPriorContract={onOpenPriorContract}
+        />
+
+        <LegalAttachmentsPanel
+          attachments={attachments}
+          entitySlug={record.kocId || record.partner || record.id}
+          legalType={
+            record.templateId.startsWith('COM-')
+              ? 'COMPANY'
+              : record.templateId.startsWith('HKD-')
+                ? 'HOUSEHOLD'
+                : 'INDIVIDUAL'
+          }
+          defaultExpandPreview={true}
+          title="Xem đối chiếu trực tiếp CCCD & ĐKKD của KOC (Cloudflare R2)"
+        />
+
+        <Field label="Nhận xét phê duyệt của Kế toán" htmlFor="detail-finance-approve-note">
+          <Textarea
+            id="detail-finance-approve-note"
+            rows={2}
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            placeholder="Nhập nhận xét kiểm soát ngân sách, thuế khấu trừ & hồ sơ pháp lý..."
+          />
+        </Field>
       </div>
     </Modal>
   );

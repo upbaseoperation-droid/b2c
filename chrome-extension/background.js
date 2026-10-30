@@ -1,4 +1,5 @@
 const DEFAULT_SERVER_URL = 'http://localhost:3000';
+const pendingAutoVerifyTabWaiters = new Map();
 
 function normalizeHandle(raw) {
   return String(raw || '')
@@ -520,6 +521,92 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       } catch {
         sendResponse({ ok: false, text: '' });
       }
+    })();
+    return true;
+  }
+
+  if (message.type === 'UPBASE_TAB_AUTO_VERIFIED') {
+    const senderTabId = _sender?.tab?.id;
+    if (senderTabId && pendingAutoVerifyTabWaiters.has(senderTabId)) {
+      const resolver = pendingAutoVerifyTabWaiters.get(senderTabId);
+      pendingAutoVerifyTabWaiters.delete(senderTabId);
+      resolver(message.result || { ok: true });
+    }
+    sendResponse({ ok: true });
+    return false;
+  }
+
+  if (message.type === 'UPBASE_BATCH_VERIFY_TAB_QUEUE') {
+    (async () => {
+      const rawUrls = Array.isArray(message.urls) ? message.urls : [];
+      const cleanUrls = rawUrls
+        .map((u) => String(u || '').trim())
+        .filter((u) => /^https?:\/\//i.test(u))
+        .slice(0, 12);
+
+      if (cleanUrls.length === 0) {
+        sendResponse({ ok: false, syncedCount: 0, results: [] });
+        return;
+      }
+
+      const results = [];
+      let syncedCount = 0;
+
+      for (const rawUrl of cleanUrls) {
+        const sep = rawUrl.includes('#') ? '&' : '#';
+        const targetUrl = `${rawUrl}${sep}ub_auto_verify=1`;
+        let tabId = null;
+        try {
+          const createdTab = await new Promise((resolve) => {
+            chrome.tabs.create({ url: targetUrl, active: false }, (tab) => {
+              void chrome.runtime?.lastError;
+              resolve(tab || null);
+            });
+          });
+          tabId = createdTab?.id || null;
+          if (!tabId) {
+            results.push({ url: rawUrl, ok: false, reason: 'TAB_CREATE_FAILED' });
+            continue;
+          }
+
+          const tabResult = await new Promise((resolve) => {
+            const timeoutId = setTimeout(() => {
+              if (pendingAutoVerifyTabWaiters.has(tabId)) {
+                pendingAutoVerifyTabWaiters.delete(tabId);
+              }
+              resolve({ ok: false, reason: 'TIMEOUT' });
+            }, 8500);
+
+            pendingAutoVerifyTabWaiters.set(tabId, (resObj) => {
+              clearTimeout(timeoutId);
+              resolve(resObj || { ok: true });
+            });
+          });
+
+          if (tabResult && tabResult.ok) {
+            syncedCount += 1;
+          }
+          results.push({ url: rawUrl, ...tabResult });
+        } catch (err) {
+          results.push({
+            url: rawUrl,
+            ok: false,
+            reason: err instanceof Error ? err.message : 'ERROR',
+          });
+        } finally {
+          if (tabId) {
+            try {
+              chrome.tabs.remove(tabId, () => {
+                void chrome.runtime?.lastError;
+              });
+            } catch {
+              // ignore
+            }
+          }
+        }
+      }
+
+      sendResponse({ ok: true, syncedCount, results });
     })();
     return true;
   }

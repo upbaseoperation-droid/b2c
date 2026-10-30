@@ -1112,7 +1112,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
             <div className="grid gap-3 md:grid-cols-3">
               {/* Cột 1: Thông tin bài đăng */}
               <div className="rounded-lg border border-line bg-surface-2/40 p-2.5 space-y-1">
-                <span className="text-2xs font-semibold text-ink-2 uppercase tracking-wide block">
+                <span className="text-2xs font-semibold text-ink-2 block">
                   1. Thông tin bài đăng
                 </span>
                 <p className="text-ink">
@@ -1143,42 +1143,42 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
 
               {/* Cột 2: Chỉ số tương tác thực tế */}
               <div className="rounded-lg border border-line bg-surface-2/40 p-2.5 space-y-1.5">
-                <span className="text-2xs font-semibold text-ink-2 uppercase tracking-wide block">
+                <span className="text-2xs font-semibold text-ink-2 block">
                   2. Chỉ số tương tác tại thời điểm nghiệm thu
                 </span>
                 <div className="grid grid-cols-3 gap-1.5 text-center pt-0.5">
                   <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
-                    <span className="text-3xs text-ink-3 block">Lượt xem</span>
+                    <span className="text-2xs text-ink-3 block">Lượt xem</span>
                     <strong className="font-code text-ink text-xs tabular-nums">
                       {formatNumber(activeInspectionMeta.viewsCount)}
                     </strong>
                   </div>
                   <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
-                    <span className="text-3xs text-ink-3 block">Thả tim</span>
+                    <span className="text-2xs text-ink-3 block">Thả tim</span>
                     <strong className="font-code text-ink text-xs tabular-nums">
                       {formatNumber(activeInspectionMeta.likesCount)}
                     </strong>
                   </div>
                   <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
-                    <span className="text-3xs text-ink-3 block">Bình luận</span>
+                    <span className="text-2xs text-ink-3 block">Bình luận</span>
                     <strong className="font-code text-ink text-xs tabular-nums">
                       {formatNumber(activeInspectionMeta.commentsCount)}
                     </strong>
                   </div>
                   <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
-                    <span className="text-3xs text-ink-3 block">Chia sẻ</span>
+                    <span className="text-2xs text-ink-3 block">Chia sẻ</span>
                     <strong className="font-code text-ink text-xs tabular-nums">
                       {formatNumber(activeInspectionMeta.sharesCount)}
                     </strong>
                   </div>
                   <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
-                    <span className="text-3xs text-ink-3 block">Lượt lưu</span>
+                    <span className="text-2xs text-ink-3 block">Lượt lưu</span>
                     <strong className="font-code text-ink text-xs tabular-nums">
                       {formatNumber(activeInspectionMeta.savesCount)}
                     </strong>
                   </div>
                   <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
-                    <span className="text-3xs text-ink-3 block">Tương tác (ER)</span>
+                    <span className="text-2xs text-ink-3 block">Tương tác (ER)</span>
                     <strong className="font-code text-accent text-xs tabular-nums">
                       {activeInspectionMeta.engagementRate}%
                     </strong>
@@ -1188,7 +1188,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
 
               {/* Cột 3: Đối soát kịch bản, lời thoại & từ cấm */}
               <div className="rounded-lg border border-line bg-surface-2/40 p-2.5 space-y-1">
-                <span className="text-2xs font-semibold text-ink-2 uppercase tracking-wide block">
+                <span className="text-2xs font-semibold text-ink-2 block">
                   3. Đối soát kịch bản & Từ khóa
                 </span>
                 <p className="text-ink font-medium">{activeInspectionMeta.scriptSummaryNote}</p>
@@ -1378,7 +1378,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                           </span>
                           <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between gap-1 pointer-events-none">
                             <Status tone={badge.tone}>{badge.label}</Status>
-                            <span className="px-1.5 py-0.5 rounded bg-black/70 text-white text-3xs font-code">
+                            <span className="px-1.5 py-0.5 rounded bg-black/70 text-white text-2xs font-code">
                               Nét {cand.sharpnessScore}%
                             </span>
                           </div>
@@ -1400,7 +1400,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                                   e.stopPropagation();
                                   seekVideoTo(cand.timestampSec);
                                 }}
-                                className="text-3xs text-ink-2 hover:text-ink font-medium"
+                                className="text-2xs text-ink-2 hover:text-ink font-medium"
                               >
                                 Xem mốc này
                               </button>
@@ -1413,7 +1413,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                                     cand.matchedTerm
                                   );
                                 }}
-                                className="text-3xs text-accent hover:underline font-semibold"
+                                className="text-2xs text-accent hover:underline font-semibold"
                               >
                                 Quét ±2s
                               </button>

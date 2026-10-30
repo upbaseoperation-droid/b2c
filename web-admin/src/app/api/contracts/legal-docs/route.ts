@@ -33,7 +33,88 @@ const VALID_DOC_TYPES = new Set<LegalDocCategory>([
   'TAX_COMMITMENT',
 ]);
 
-function renderDemoLegalDocSvg(rawKey: string): { svg: string; fileName: string } | null {
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function renderDemoLegalDocSvg(
+  rawKey: string,
+  params?: URLSearchParams,
+): { svg: string; fileName: string } | null {
+  if (!rawKey.startsWith('legal-docs/demo-')) return null;
+  const demoIsDkkd = rawKey.includes('dkkd');
+  const demoIsBack = rawKey.includes('mat-sau');
+  const holder = escapeXml(
+    (params?.get('holder') || '').trim() ||
+      (demoIsDkkd
+        ? 'CÔNG TY TNHH TRUYỀN THÔNG & QUẢNG CÁO CREATOR VIỆT'
+        : 'NGUYỄN THU TRANG'),
+  );
+  const idNo = escapeXml(
+    (params?.get('idNo') || '').trim() || (demoIsDkkd ? '0109876543' : '001201019876'),
+  );
+  const rep = escapeXml((params?.get('rep') || '').trim() || holder);
+  const repTitle = escapeXml((params?.get('repTitle') || '').trim() || 'Người đại diện pháp luật');
+  const address = escapeXml(
+    (params?.get('address') || '').trim() ||
+      'Phường Dịch Vọng Hậu, Quận Cầu Giấy, TP. Hà Nội',
+  );
+  const issueDate = escapeXml((params?.get('issueDate') || '').trim() || '15/05/2022');
+  const issuePlace = escapeXml(
+    (params?.get('issuePlace') || '').trim() || 'Cục Cảnh sát QLHC về TTXH',
+  );
+  const taxMode = escapeXml(
+    (params?.get('taxMode') || '').trim() || 'Xuất hóa đơn GTGT / Hộ kinh doanh',
+  );
+
+  if (demoIsDkkd) {
+    const dkkdSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="760" height="520" viewBox="0 0 760 520">
+      <rect width="760" height="520" rx="16" fill="#FAF8F4" stroke="#D8D2C5" stroke-width="2"/>
+      <rect x="28" y="28" width="704" height="464" rx="10" fill="#FFFFFF" stroke="#E5E0D5"/>
+      <text x="380" y="72" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#2B2B2B">SỞ KẾ HOẠCH VÀ ĐẦU TƯ — PHÒNG ĐĂNG KÝ KINH DOANH</text>
+      <text x="380" y="106" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="800" fill="#24457A">GIẤY CHỨNG NHẬN ĐĂNG KÝ DOANH NGHIỆP / HỘ KINH DOANH</text>
+      <line x1="160" y1="122" x2="600" y2="122" stroke="#24457A" stroke-width="1.5"/>
+      <text x="72" y="166" font-family="sans-serif" font-size="14" font-weight="700" fill="#2B2B2B">1. Tên đơn vị: ${holder}</text>
+      <text x="72" y="200" font-family="sans-serif" font-size="14" fill="#4A4A4A">2. Mã số doanh nghiệp / Mã số thuế: <tspan font-weight="700" fill="#2B2B2B">${idNo}</tspan></text>
+      <text x="72" y="234" font-family="sans-serif" font-size="14" fill="#4A4A4A">3. Địa chỉ trụ sở đăng ký: ${address}</text>
+      <text x="72" y="268" font-family="sans-serif" font-size="14" fill="#4A4A4A">4. Người đại diện: <tspan font-weight="700" fill="#2B2B2B">${rep}</tspan> — Chức danh: ${repTitle}</text>
+      <text x="72" y="302" font-family="sans-serif" font-size="14" fill="#4A4A4A">5. Ngày cấp / Xác thực: <tspan font-weight="700" fill="#2B2B2B">${issueDate}</tspan></text>
+      <text x="72" y="336" font-family="sans-serif" font-size="14" fill="#4A4A4A">6. Chế độ thuế: ${taxMode}</text>
+      <rect x="72" y="376" width="250" height="72" rx="8" fill="#F0F5FF" stroke="#B8CEFF"/>
+      <text x="88" y="404" font-family="sans-serif" font-size="12" font-weight="700" fill="#24457A">LƯU TRỮ CLOUDFLARE R2</text>
+      <text x="88" y="426" font-family="sans-serif" font-size="11" fill="#4A4A4A">Đã đối chiếu hợp lệ phục vụ ký HĐ</text>
+      <circle cx="580" cy="410" r="46" fill="none" stroke="#C93B2B" stroke-width="2.5" stroke-dasharray="6,3"/>
+      <text x="580" y="406" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#C93B2B">ĐÃ ĐỐI CHIẾU</text>
+      <text x="580" y="422" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#C93B2B">BẢN SCAN ĐKKD</text>
+    </svg>`;
+    return { svg: dkkdSvg, fileName: 'giay-phep-dkkd.svg' };
+  }
+  const demoSideTitle = demoIsBack
+    ? 'CĂN CƯỚC CÔNG DÂN GẮN CHIP — MẶT SAU (ĐẶC ĐIỂM NHẬN DẠNG &amp; NGÀY CẤP)'
+    : 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM — CĂN CƯỚC CÔNG DÂN (MẶT TRƯỚC)';
+  const dynamicSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="440" viewBox="0 0 720 440">
+    <rect width="720" height="440" rx="20" fill="#F4F7FB" stroke="#C5D2E3" stroke-width="2"/>
+    <rect x="24" y="24" width="672" height="64" rx="10" fill="#24457A"/>
+    <text x="360" y="62" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="700" fill="#FFFFFF">${demoSideTitle}</text>
+    <rect x="44" y="114" width="148" height="196" rx="10" fill="#E3EAF3" stroke="#B6C4D6"/>
+    <text x="118" y="210" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#24457A">${demoIsBack ? 'CHIP ĐIỆN TỬ' : 'ẢNH CHÂN DUNG'}</text>
+    <text x="118" y="232" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5A6878">CCCD GẮN CHIP</text>
+    <text x="220" y="142" font-family="sans-serif" font-size="13" fill="#5A6878">Số Căn cước công dân / Personal ID No:</text>
+    <text x="220" y="170" font-family="monospace" font-size="22" font-weight="700" fill="#2B2B2B">${idNo}</text>
+    <text x="220" y="208" font-family="sans-serif" font-size="14" fill="#4A4A4A">Họ và tên: <tspan font-weight="700" fill="#2B2B2B">${holder}</tspan></text>
+    <text x="220" y="238" font-family="sans-serif" font-size="14" fill="#4A4A4A">Quốc tịch: <tspan font-weight="700" fill="#2B2B2B">Việt Nam</tspan> · Trạng thái: Đã đối chiếu bản gốc</text>
+    <text x="220" y="268" font-family="sans-serif" font-size="14" fill="#4A4A4A">Nơi thường trú: ${address}</text>
+    <text x="220" y="298" font-family="sans-serif" font-size="14" fill="#4A4A4A">Ngày cấp: <tspan font-weight="700" fill="#2B2B2B">${issueDate}</tspan> · Nơi cấp: ${issuePlace}</text>
+    <rect x="44" y="338" width="632" height="64" rx="8" fill="#FFFFFF" stroke="#D5DFEC"/>
+    <text x="64" y="366" font-family="monospace" font-size="13" fill="#2B2B2B">IDVNM${idNo}&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</text>
+    <text x="64" y="388" font-family="monospace" font-size="13" fill="#24457A">${holder}&lt;&lt;&lt;&lt;&lt;&lt;&lt;CLOUDFLARE&lt;R2</text>
+  </svg>`;
+  if (dynamicSvg) return { svg: dynamicSvg, fileName: demoIsBack ? 'cccd-mat-sau.svg' : 'cccd-mat-truoc.svg' };
   if (!rawKey.startsWith('legal-docs/demo-')) return null;
   const isDkkd = rawKey.includes('dkkd');
   const isBack = rawKey.includes('mat-sau');
@@ -91,7 +172,7 @@ export async function GET(req: NextRequest) {
     const download = req.nextUrl.searchParams.get('download') === '1';
     requireCondition(key.length > 0, 'Thiếu khóa tệp hồ sơ pháp lý (key).', 400);
 
-    const demoDoc = renderDemoLegalDocSvg(key);
+    const demoDoc = renderDemoLegalDocSvg(key, req.nextUrl.searchParams);
     if (demoDoc) {
       const buf = Buffer.from(demoDoc.svg, 'utf8');
       return new NextResponse(new Uint8Array(buf), {

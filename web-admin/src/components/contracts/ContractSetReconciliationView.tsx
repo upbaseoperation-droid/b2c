@@ -850,6 +850,7 @@ export function ContractSetReconciliationView({
                 onCreateStageDoc({
                   dealId: s.dealId,
                   kocId: s.kocId,
+                  legalProfileId: s.hdnt?.legalProfileId || s.sow?.legalProfileId || s.deal?.legalProfileId,
                   kind: 'CONTRACT',
                   docStage: 'HDNT',
                 });
@@ -901,9 +902,11 @@ export function ContractSetReconciliationView({
                 onCreateStageDoc({
                   dealId: s.dealId,
                   kocId: s.kocId,
+                  legalProfileId: s.hdnt?.legalProfileId || s.deal?.legalProfileId,
                   kind: 'CONTRACT',
                   docStage: 'SOW',
                   parentId: s.hdnt?.id,
+                  templateId: s.hdnt?.templateId ? s.hdnt.templateId.replace(/-HDNT$/, '-SOW') : undefined,
                 });
               }}
               className="inline-flex items-center gap-1 px-2 py-1 rounded border border-dashed border-line-strong text-2xs text-accent hover:bg-sunken"
@@ -957,6 +960,7 @@ export function ContractSetReconciliationView({
                 onCreateStageDoc({
                   dealId: s.dealId,
                   kocId: s.kocId,
+                  legalProfileId: s.sow?.legalProfileId || s.hdnt?.legalProfileId || s.deal?.legalProfileId,
                   kind: 'ACCEPTANCE',
                   docStage: 'BBNT',
                   parentId: s.sow?.id || s.hdnt?.id,
@@ -1184,6 +1188,10 @@ export function ContractSetReconciliationView({
                           onCreateStageDoc({
                             dealId: activeSet.dealId,
                             kocId: activeSet.kocId,
+                            legalProfileId:
+                              activeSet.sow?.legalProfileId ||
+                              activeSet.hdnt?.legalProfileId ||
+                              activeSet.deal?.legalProfileId,
                             kind: card.stage === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT',
                             docStage: card.stage,
                             parentId:
@@ -1192,6 +1200,10 @@ export function ContractSetReconciliationView({
                                 : card.stage === 'BBNT'
                                   ? activeSet.sow?.id || activeSet.hdnt?.id
                                   : undefined,
+                            templateId:
+                              card.stage === 'SOW' && activeSet.hdnt?.templateId
+                                ? activeSet.hdnt.templateId.replace(/-HDNT$/, '-SOW')
+                                : undefined,
                           })
                         }
                       >

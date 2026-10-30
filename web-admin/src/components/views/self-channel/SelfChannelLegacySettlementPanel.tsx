@@ -6,16 +6,13 @@ import type { Column } from '../../ui';
 import { formatNumber, formatVnd } from '../../../lib/format';
 import { SELF_FORMAT_LABEL } from '../../../lib/selfChannelBoardRules';
 import {
-  SELF_PIT_MONTHLY_THRESHOLD,
   SELF_SETTLEMENT_STATUS_LABEL,
   type SelfMonthlySettlement,
-  type SelfSettlementCandidate,
 } from '../../../lib/selfChannelSettlement';
 
 type Notify = (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 
 interface SettlementResponse {
-  candidates?: SelfSettlementCandidate[];
   settlements?: SelfMonthlySettlement[];
   access?: { manage: boolean; finance: boolean; view: boolean };
   larkLive?: boolean;
@@ -38,7 +35,7 @@ function downloadBbntCsv(s: SelfMonthlySettlement) {
     ['BIÊN BẢN NGHIỆM THU SẢN LƯỢNG THÁNG', s.bbntCode],
     ['Tháng', s.month],
     ['CTV', `${s.contributorName} (${s.contributorCode})`],
-    ['Hợp đồng khung', s.contractCode],
+    ['Hợp đồng khung', s.contractCode || 'Miễn HĐ (< 10.000.000đ)'],
     ['CCCD / MST', s.payee.legalId],
     [],
     ['STT', 'Mã việc', 'Gian hàng', 'Loại video', 'Link đăng', 'Ngày đăng', 'Thù lao (Gross)'],
@@ -70,8 +67,8 @@ function recentMonths(from: string) {
   });
 }
 
-/** Quyết toán CTV theo tháng: gom việc đã nghiệm thu qua mọi gian → BBNT tháng → ĐNTT Lark → Kế toán xác nhận chi. */
-export function SelfChannelSettlementPanel({ onNotify }: { onNotify?: Notify }) {
+/** Đợt quyết toán tháng lập theo cách cũ (trước khi chuyển sang phiếu từng video): chỉ để theo dõi và xử lý nốt các đợt còn mở. */
+export function SelfChannelLegacySettlementPanel({ onNotify }: { onNotify?: Notify }) {
   const [month, setMonth] = useState(defaultMonth);
   const [data, setData] = useState<SettlementResponse>({});
   const [loading, setLoading] = useState(true);
@@ -132,38 +129,7 @@ export function SelfChannelSettlementPanel({ onNotify }: { onNotify?: Notify }) 
   };
 
   const access = data.access || { manage: false, finance: false, view: false };
-  const candidates = data.candidates || [];
   const settlements = data.settlements || [];
-
-  const candidateColumns: Column<SelfSettlementCandidate>[] = [
-    { key: 'ctv', header: 'CTV', render: c => <span className="font-medium text-ink">{c.contributorName}</span> },
-    { key: 'jobs', header: 'Video đạt', align: 'right', render: c => formatNumber(c.jobs.length) },
-    { key: 'stores', header: 'Số gian', align: 'right', render: c => formatNumber(new Set(c.jobs.map(j => j.planId)).size) },
-    { key: 'gross', header: 'Thù lao', align: 'right', render: c => formatVnd(c.grossTotal) },
-    { key: 'pit', header: 'TNCN (tháng)', align: 'right', render: c => formatVnd(c.pitTax) },
-    { key: 'net', header: 'Thực nhận', align: 'right', render: c => formatVnd(c.netTotal) },
-    {
-      key: 'state',
-      header: 'Điều kiện',
-      render: c => (c.blockers.length ? <span className="text-xs text-critical">{c.blockers.join(' ')}</span> : <Status tone="positive">Đủ hồ sơ</Status>),
-    },
-    {
-      key: 'act',
-      header: '',
-      align: 'right',
-      render: c =>
-        access.manage ? (
-          <Button
-            size="sm"
-            variant="primary"
-            disabled={c.blockers.length > 0 || busyId !== null}
-            onClick={() => run(`c-${c.contributorId}`, { op: 'create', contributorId: c.contributorId }, `Đã lập BBNT và ĐNTT cho ${c.contributorName}.`)}
-          >
-            {busyId === `c-${c.contributorId}` ? 'Đang lập…' : 'Lập BBNT & ĐNTT'}
-          </Button>
-        ) : null,
-    },
-  ];
 
   const settlementColumns: Column<SelfMonthlySettlement>[] = [
     {
@@ -226,14 +192,15 @@ export function SelfChannelSettlementPanel({ onNotify }: { onNotify?: Notify }) 
     },
   ];
 
+  if (!loading && settlements.length === 0) return null;
+
   return (
     <div className="space-y-4">
       <Panel
-        title="CTV chờ quyết toán"
-        description={`Gộp video đã nghiệm thu Đạt, chưa lập ĐNTT, qua mọi gian trong tháng. Thuế TNCN 10% tính trên tổng thu nhập tháng của CTV (từ ${formatVnd(SELF_PIT_MONTHLY_THRESHOLD)}).${data.larkLive === false ? ' Chưa cấu hình Lark Approval: đợt lập ở môi trường thử sẽ không gửi Lark.' : ''}`}
+        title="Đợt quyết toán tháng đã lập trước đây"
         actions={
           <Field label="Tháng" className="w-36">
-            <Select value={month} onChange={e => setMonth(e.target.value)} aria-label="Chọn tháng quyết toán">
+            <Select value={month} onChange={e => setMonth(e.target.value)} aria-label="Chọn tháng">
               {recentMonths(defaultMonth()).map(m => (
                 <option key={m} value={m}>
                   {m}
@@ -244,17 +211,7 @@ export function SelfChannelSettlementPanel({ onNotify }: { onNotify?: Notify }) 
         }
         flush
       >
-        <DataTable
-          columns={candidateColumns}
-          rows={candidates}
-          rowKey={c => c.contributorId || 'unassigned'}
-          loading={loading}
-          empty={access.view || loading ? 'Không có CTV nào chờ quyết toán trong tháng.' : 'Chỉ Partnership, Giám đốc / Admin hoặc Kế toán xem quyết toán CTV.'}
-        />
-      </Panel>
-
-      <Panel title="Đợt quyết toán đã lập" flush>
-        <DataTable columns={settlementColumns} rows={settlements} rowKey={s => s.id} loading={loading} empty="Chưa lập đợt quyết toán nào trong tháng." />
+        <DataTable columns={settlementColumns} rows={settlements} rowKey={s => s.id} loading={loading} empty="Không có đợt quyết toán tháng nào trong tháng này." />
       </Panel>
 
       <Modal

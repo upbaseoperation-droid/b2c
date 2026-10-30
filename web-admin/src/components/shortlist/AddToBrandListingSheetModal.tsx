@@ -106,11 +106,7 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
 
   const handleConfirm = (openSheetAfter: boolean) => {
     if (!targetKocs.length) return;
-    const finalProduct =
-      sanPham.trim() ||
-      catalogOptions.flatOptions[0]?.name ||
-      activeStoreObj?.mainProducts?.[0] ||
-      (activeStoreObj?.brandName ? `Sản phẩm ${activeStoreObj.brandName}` : '');
+    const finalProduct = sanPham.trim();
 
     const { addedCount, skippedDuplicateCount } = appendKocsToStaffBrandSheet({
       kocsToAdd: targetKocs,

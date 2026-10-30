@@ -105,6 +105,7 @@ export function planJobToBookingDeal(
   const sparkCode = (job.sparkAdsCode || adsAddon?.evidence || '').trim();
   const effectiveEntity = job.entityType || amountBreakdown.entityType || 'INDIVIDUAL';
   const advanceFromPipeline8 =
+    job.paymentScheduleOption !== 'ONE_TIME' &&
     job.advancePayment?.status &&
     job.advancePayment.status !== 'NONE' &&
     typeof job.advancePayment.amount === 'number' &&
@@ -112,12 +113,15 @@ export function planJobToBookingDeal(
       ? job.advancePayment.amount
       : 0;
   const advanceFromPayment =
+    job.paymentScheduleOption !== 'ONE_TIME' &&
     job.payment.status !== 'NONE' &&
     typeof job.payment.amount === 'number' &&
     job.payment.amount > 0 &&
     job.payment.amount < amountBreakdown.contractDisplayValue
       ? job.payment.amount
       : 0;
+  const effectiveScheduleOption: 'ONE_TIME' | 'TWO_TIMES' | undefined =
+    job.paymentScheduleOption || (advanceFromPipeline8 > 0 || advanceFromPayment > 0 ? 'TWO_TIMES' : undefined);
   const commPct = job.commissionPct ?? deal.commissionPct ?? undefined;
 
   return {
@@ -135,12 +139,24 @@ export function planJobToBookingDeal(
     kocId: kocId || `KOC-${handle}`,
     kocStageName: deal.kocName || handle,
     kocChannelId: handle,
-    kocTier: 'TIER_3_MICRO',
+    kocTier:
+      grade === 'KL7'
+        ? 'TIER_1_CELEB'
+        : grade === 'KL6'
+        ? 'TIER_2_MACRO'
+        : grade === 'KL5' || grade === 'KL4'
+        ? 'TIER_3_MICRO'
+        : 'TIER_4_AFFILIATE',
     salaryGrade: grade,
-    segment: 'Mid Creator',
-    tepKenh: 'Mẹ bé (bé)',
-    kocCategory: 'Mom and baby',
-    contentPillar: job.pillar || 'Review trực tiếp',
+    segment:
+      grade === 'KL7'
+        ? 'Top Creator'
+        : grade === 'KL6'
+        ? 'Key Creator'
+        : grade === 'KL5' || grade === 'KL4'
+        ? 'Mid Creator'
+        : 'Massive Creator',
+    contentPillar: job.pillar || undefined,
     brandApprovalStatus: 'ĐÃ_DUYỆT',
     status:
       job.payment.status === 'PAID'
@@ -157,7 +173,9 @@ export function planJobToBookingDeal(
     videoAssetCostVnd: isPackageAllIn ? totalNet : videoNet,
     addonsCostVnd: isPackageAllIn ? 0 : addonsNet,
     droppedCostVnd: droppedNet,
-    advanceAmount: advanceFromPipeline8 || advanceFromPayment,
+    paymentScheduleOption: effectiveScheduleOption,
+    advanceAmount: effectiveScheduleOption === 'ONE_TIME' ? 0 : advanceFromPipeline8 || advanceFromPayment,
+    soTienTamUngTruoc: effectiveScheduleOption === 'ONE_TIME' ? 0 : advanceFromPipeline8 || advanceFromPayment,
     finalAmount: amountBreakdown.contractDisplayValue,
     deadlinePost: job.deadline,
     tiktokVideoUrl: job.airLink || undefined,
@@ -165,7 +183,7 @@ export function planJobToBookingDeal(
     postedDate: job.airedAt || undefined,
     postDate: job.airedAt || undefined,
     sparkAdsCode: sparkCode || undefined,
-    adsCodeStatus: adsAddon ? (adsAddon.status === 'VERIFIED' || Boolean(sparkCode) ? 'ĐÃ_NGHIỆM_THU' : 'CHƯA_CẤP') : 'KHÔNG_DÙNG',
+    adsCodeStatus: adsAddon ? (adsAddon.status === 'VERIFIED' ? 'ĐÃ_NGHIỆM_THU' : 'CHƯA_CẤP') : 'KHÔNG_DÙNG',
     masterContractCode: frameworkContractNo || undefined,
     contractAppendixCode: job.appendixNo || `PL-${job.code}`,
     contractScanUrl: job.appendixUrl || undefined,
@@ -333,19 +351,34 @@ const pickBestContractRecord = (pool: ContractRecord[]): ContractRecord | undefi
  */
 export function documentsOfJob(deal: PlanDeal, job: DealJob, records: ContractRecord[], frameworkRecords: ContractRecord[] = []): DealDocumentState[] {
   const isFirstJob = (deal.jobs || [])[0]?.id === job.id;
-  const own = records.filter(
-    r =>
+  const own = records.filter(r => {
+    if (
+      r.id === job.sowContractId ||
+      r.id === job.bbntContractId ||
       r.dealCode === job.code ||
       r.dealId === `PJ-${job.id}` ||
-      (isFirstJob && (r.dealCode === deal.code || r.dealId === `PD-${deal.id}`))
-  );
+      (isFirstJob && (r.dealCode === deal.code || r.dealId === `PD-${deal.id}` || r.dealId === deal.id))
+    ) {
+      return true;
+    }
+    const rawSowJobs = r.values?.['meta:sowJobsJson'];
+    if (rawSowJobs && (rawSowJobs.includes(`"${job.id}"`) || (job.code && rawSowJobs.includes(`"${job.code}"`)))) {
+      return true;
+    }
+    return false;
+  });
   const kocKey = normHandle(deal.kocHandle);
   return (['HDNT', 'SOW', 'BBNT'] as ContractDocument[]).map(document => {
     let pool = own.filter(r => documentOfTemplate(r.templateId) === document);
     // Hợp đồng nguyên tắc dùng chung cho KOC: nhận cả hồ sơ soạn từ deal/job khác của cùng KOC (chỉ khớp theo mã/handle KOC chuẩn)
     if (document === 'HDNT' && pool.length === 0) {
-      pool = frameworkRecords.filter(
-        r => documentOfTemplate(r.templateId) === 'HDNT' && [r.kocId, r.partner].some(v => v && normHandle(v) === kocKey)
+      const candidates = frameworkRecords.length > 0 ? frameworkRecords : records;
+      pool = candidates.filter(
+        r =>
+          documentOfTemplate(r.templateId) === 'HDNT' &&
+          [r.kocId, r.partner, r.values?.['token:[ID KOC]'], r.values?.['CHANNEL_ID'], r.values?.['KOC_ID']].some(
+            v => v && normHandle(v) === kocKey
+          )
       );
     }
     const record = pickBestContractRecord(pool);
@@ -359,12 +392,19 @@ export function documentsOfJob(deal: PlanDeal, job: DealJob, records: ContractRe
 export function documentsOfDeal(deal: PlanDeal, records: ContractRecord[], frameworkRecords: ContractRecord[] = []): DealDocumentState[] {
   const firstJob = deal.jobs && deal.jobs.length > 0 ? deal.jobs[0] : null;
   if (firstJob) return documentsOfJob(deal, firstJob, records, frameworkRecords);
-  const own = records.filter(r => r.dealCode === deal.code);
+  const own = records.filter(r => r.dealCode === deal.code || r.dealId === `PD-${deal.id}` || r.dealId === deal.id);
   const kocKey = normHandle(deal.kocHandle);
   return (['HDNT', 'SOW', 'BBNT'] as ContractDocument[]).map(document => {
     let pool = own.filter(r => documentOfTemplate(r.templateId) === document);
     if (document === 'HDNT' && pool.length === 0) {
-      pool = frameworkRecords.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && [r.kocId, r.partner].some(v => v && normHandle(v) === kocKey));
+      const candidates = frameworkRecords.length > 0 ? frameworkRecords : records;
+      pool = candidates.filter(
+        r =>
+          documentOfTemplate(r.templateId) === 'HDNT' &&
+          [r.kocId, r.partner, r.values?.['token:[ID KOC]'], r.values?.['CHANNEL_ID'], r.values?.['KOC_ID']].some(
+            v => v && normHandle(v) === kocKey
+          )
+      );
     }
     const record = pickBestContractRecord(pool);
     if (!record) return { document, label: 'Chưa soạn', signed: false, signedAt: '' };

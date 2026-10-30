@@ -1,5 +1,23 @@
 import type { BookingDealItem, KocItem, KocLegalProfile, LegalDocAttachment } from '../types';
-import type { ContractRecord } from './types';
+import { OFFICIAL_TEMPLATES_SNAPSHOT } from './builtInTemplatesSnapshot';
+import type { ContractRecord, FieldSource } from './types';
+
+function findValueByFieldSource(
+  record: ContractRecord,
+  ...sources: (FieldSource | string)[]
+): string {
+  const v = record.values || {};
+  const snap = OFFICIAL_TEMPLATES_SNAPSHOT[record.templateId];
+  if (!snap?.fields) return '';
+  for (const src of sources) {
+    for (const f of snap.fields) {
+      if (f.source === src && v[f.key]?.trim()) {
+        return v[f.key].trim();
+      }
+    }
+  }
+  return '';
+}
 
 export type LegalProfileVerificationStatus =
   | 'SIGNED_VERIFIED'
@@ -113,9 +131,9 @@ function lookupKoc(
     if (!normPartner) return undefined;
     for (const k of kocs.values()) {
       if (
-        normalizeText(k.fullName) === normPartner ||
+        normalizeText(k.realName) === normPartner ||
         normalizeText(k.stageName) === normPartner ||
-        normPartner.includes(normalizeText(k.stageName))
+        (k.stageName && normPartner.includes(normalizeText(k.stageName)))
       ) {
         return k;
       }
@@ -130,7 +148,7 @@ function lookupKoc(
   if (!normPartner) return undefined;
   return kocs.find(
     k =>
-      normalizeText(k.fullName) === normPartner ||
+      normalizeText(k.realName) === normPartner ||
       normalizeText(k.stageName) === normPartner ||
       (k.stageName && normPartner.includes(normalizeText(k.stageName))),
   );
@@ -163,7 +181,6 @@ export function resolveContractLegalAttachments(
   ) {
     return deal.legalProfileSnapshot.legalAttachments;
   }
-  // Kế thừa tệp đính kèm từ hợp đồng trước đó của cùng KOC / Hồ sơ pháp lý nếu có
   if (allRecords && allRecords.length > 0) {
     const normPartner = normalizeText(record.partner);
     const siblingWithDocs = allRecords.find(
@@ -191,16 +208,24 @@ export function extractRecordLegalIdentity(
   const deal = lookupDeal(record, deals);
   const koc = lookupKoc(record, deal, kocs);
   const profiles = extractKocProfiles(koc);
+  const targetProfileId =
+    record.legalProfileId ||
+    v['LEGAL_PROFILE_ID'] ||
+    deal?.legalProfileId;
   const matchedProfile =
-    (record.legalProfileId ? profiles.find(p => p.id === record.legalProfileId) : undefined) ||
+    (targetProfileId ? profiles.find(p => p.id === targetProfileId) : undefined) ||
     profiles.find(p => p.isDefault) ||
     profiles[0];
 
   const cccdOrTaxCodeRaw =
     v['src:cccd'] ||
     v['src:taxCode'] ||
+    findValueByFieldSource(record, 'cccd', 'taxCode', 'businessLicenseNo') ||
     v['word/document.xml:p39:cell'] ||
+    matchedProfile?.cccd ||
     matchedProfile?.taxCode ||
+    deal?.legalProfileSnapshot?.legalId ||
+    deal?.legalProfileSnapshot?.cccd ||
     deal?.legalProfileSnapshot?.taxCode ||
     koc?.cccd ||
     koc?.taxCode ||
@@ -208,14 +233,18 @@ export function extractRecordLegalIdentity(
 
   const bankAccountRaw =
     v['src:bankAccount'] ||
+    findValueByFieldSource(record, 'bankAccountNumber') ||
     v['SO_TAI_KHOAN'] ||
+    matchedProfile?.bankAccount ||
     matchedProfile?.bankAccountNumber ||
+    deal?.legalProfileSnapshot?.bankAccount ||
     deal?.legalProfileSnapshot?.bankAccountNumber ||
     koc?.bankAccount ||
     '';
 
   const bankNameRaw =
     v['src:bankName'] ||
+    findValueByFieldSource(record, 'bankName') ||
     v['NGAN_HANG'] ||
     matchedProfile?.bankName ||
     deal?.legalProfileSnapshot?.bankName ||
@@ -229,15 +258,15 @@ export function extractRecordLegalIdentity(
     '';
 
   const legalEntityName =
-    matchedProfile?.entityName ||
-    deal?.legalProfileSnapshot?.entityName ||
+    matchedProfile?.holderName ||
+    deal?.legalProfileSnapshot?.holderName ||
     record.partner ||
     '';
 
   return {
     kocId: record.kocId || deal?.kocId || koc?.id || '',
-    partnerName: record.partner || koc?.fullName || koc?.stageName || '',
-    normalizedPartner: normalizeText(record.partner || koc?.fullName || koc?.stageName),
+    partnerName: record.partner || koc?.realName || koc?.stageName || '',
+    normalizedPartner: normalizeText(record.partner || koc?.realName || koc?.stageName),
     legalProfileId,
     legalEntityName,
     cccdOrTaxCode: cccdOrTaxCodeRaw.trim(),
@@ -252,7 +281,7 @@ export function extractRecordLegalIdentity(
 function isContractFullySigned(r: ContractRecord): boolean {
   return (
     r.signing.some(s => s.status === 'COMPLETED') ||
-    r.contractSystem?.status === 'COMPLETED'
+    r.contractSystem?.signedFileStatus === 'DOWNLOADED'
   );
 }
 
@@ -266,11 +295,11 @@ function isContractFinanceApproved(r: ContractRecord): boolean {
 
 function getContractSignedOrApprovedDate(r: ContractRecord): string | undefined {
   const completedSign = r.signing.find(s => s.status === 'COMPLETED');
-  if (completedSign?.updatedAt) return completedSign.updatedAt;
-  if (r.contractSystem?.completedAt) return r.contractSystem.completedAt;
+  if (completedSign?.syncedAt) return completedSign.syncedAt;
+  if (r.contractSystem?.lastSyncedAt) return r.contractSystem.lastSyncedAt;
   const finStep = r.steps.find(s => s.role === 'FINANCE' && s.status === 'APPROVED');
   if (finStep?.decidedAt) return finStep.decidedAt;
-  if (r.googleDocsAuditTrail?.approvedByFinanceAt) return r.googleDocsAuditTrail.approvedByFinanceAt;
+  if (r.googleDocsAuditTrail?.approvedAtFinance) return r.googleDocsAuditTrail.approvedAtFinance;
   return r.updatedAt;
 }
 
@@ -281,11 +310,6 @@ function getFinanceApproverName(r: ContractRecord): string | undefined {
   return undefined;
 }
 
-/**
- * Đánh giá lịch sử ký hợp đồng theo đúng Hồ sơ pháp lý của KOC (RULE-SYNC-01 & RULE-DATA-01).
- * Giúp Kế toán nhận biết ngay hợp đồng này đã từng ký với đúng bộ hồ sơ pháp lý (CCCD/ĐKKD, MST, STK) của KOC
- * để không phải kiểm tra lại giấy tờ gốc từ đầu.
- */
 export function evaluateLegalProfileSigningHistory(
   record: ContractRecord,
   allRecords: ContractRecord[],
@@ -325,7 +349,6 @@ export function evaluateLegalProfileSigningHistory(
       continue;
     }
 
-    // Kiểm tra độ khớp Hồ sơ pháp lý (CCCD/MST & Số tài khoản ngân hàng)
     const profileIdMatch =
       !currentId.legalProfileId ||
       !otherId.legalProfileId ||
@@ -369,7 +392,6 @@ export function evaluateLegalProfileSigningHistory(
     }
   }
 
-  // Ưu tiên sắp xếp các hợp đồng đã ký hoàn tất 2 bên lên đầu
   exactMatches.sort((a, b) => {
     if (a.isFullySigned !== b.isFullySigned) return a.isFullySigned ? -1 : 1;
     return (b.signedAt || '').localeCompare(a.signedAt || '');

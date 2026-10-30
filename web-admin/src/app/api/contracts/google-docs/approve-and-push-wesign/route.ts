@@ -116,13 +116,21 @@ export async function POST(req: NextRequest) {
     const { template } = await loadTemplate(updated.templateId, updated.templateHash);
     const rendered = await renderTemplate(updated.templateId, updated.templateHash, updated.values);
 
+    const resolvedPartyBEmail =
+      partyBEmail ||
+      updated.values['src:email'] ||
+      updated.values['token:[ĐIỀN EMAIL]'] ||
+      updated.values['token:[EMAIL]'] ||
+      updated.values['partnerEmail'] ||
+      '';
+
     const { meta, attempt, reusedExisting } = await requestSignOnSystem({
       record: updated,
       actor,
       renderedParagraphs: rendered.paragraphs,
       template,
       partyAEmail: partyAEmail || 'marketing-lead@upbase.vn',
-      partyBEmail: partyBEmail || updated.values['partnerEmail'] || 'koc-partner@upbase.vn',
+      partyBEmail: resolvedPartyBEmail,
     });
 
     updated.contractSystem = meta;

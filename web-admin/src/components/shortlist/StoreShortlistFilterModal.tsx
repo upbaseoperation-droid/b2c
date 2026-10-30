@@ -358,10 +358,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
     const totalCost = list.reduce((sum, r) => sum + (r.koc.rateCardVideo || 0), 0);
     const estimatedGmv = list.reduce(
       (sum, r) =>
-        sum +
-        (r.koc.tiktokGmv30d || r.koc.recentRevenue
-          ? (r.koc.tiktokGmv30d || r.koc.recentRevenue || 0) * 0.6
-          : (r.koc.rateCardVideo || 500_000) * Math.max(2.2, r.history.systemAvgRoi || 2.5)),
+        sum + Number(r.koc.tiktokGmv30d || r.koc.recentRevenue || r.koc.gmvBestCase || 0),
       0
     );
     const avgScore =
@@ -1202,13 +1199,13 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                           {/* Cụm chỉ số thương mại */}
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center w-full md:w-auto bg-sunken px-2.5 py-1.5 rounded-lg border border-line">
                             <div>
-                              <span className="text-3xs text-ink-3 block">Follower</span>
+                              <span className="text-2xs text-ink-3 block">Follower</span>
                               <span className="text-2xs font-semibold text-ink tabular-nums">
                                 {formatVndShort(koc.followers).replace('đ', '')}
                               </span>
                             </div>
                             <div>
-                              <span className="text-3xs text-ink-3 block">GMV 30d</span>
+                              <span className="text-2xs text-ink-3 block">GMV 30d</span>
                               <span className="text-2xs font-semibold text-primary tabular-nums">
                                 {koc.tiktokGmv30d || koc.recentRevenue
                                   ? formatVndShort(koc.tiktokGmv30d || koc.recentRevenue || 0)
@@ -1216,7 +1213,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                               </span>
                             </div>
                             <div>
-                              <span className="text-3xs text-ink-3 block">ROI lịch sử</span>
+                              <span className="text-2xs text-ink-3 block">ROI lịch sử</span>
                               <span className="text-2xs font-semibold text-positive tabular-nums">
                                 {history.brandApprovedDealsCount > 0
                                   ? `${history.brandAvgRoi}x`
@@ -1226,7 +1223,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                               </span>
                             </div>
                             <div>
-                              <span className="text-3xs text-ink-3 block">Giá Net</span>
+                              <span className="text-2xs text-ink-3 block">Giá Net</span>
                               <span className="text-2xs font-semibold text-ink tabular-nums">
                                 {koc.rateCardVideo ? formatVndShort(koc.rateCardVideo) : '0đ FOC'}
                               </span>
@@ -1237,7 +1234,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                           <div className="flex items-center gap-2.5 justify-between md:justify-end w-full md:w-auto shrink-0">
                             <div className="text-left md:text-right">
                               <span
-                                className={`inline-block px-1.5 py-0.5 rounded text-3xs font-semibold ${
+                                className={`inline-block px-1.5 py-0.5 rounded text-2xs font-semibold ${
                                   matchTier === 'TOP_MATCH'
                                     ? 'bg-positive-soft text-positive'
                                     : matchTier === 'GOOD_MATCH'
@@ -1247,7 +1244,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                               >
                                 {matchTierLabel}
                               </span>
-                              <span className="text-3xs text-ink-3 block mt-0.5 tabular-nums">
+                              <span className="text-2xs text-ink-3 block mt-0.5 tabular-nums">
                                 {estimatedCpv > 0
                                   ? `CPV ~${formatVndShort(estimatedCpv)}`
                                   : 'FOC 0đ'}
@@ -1264,7 +1261,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                               }`}
                             >
                               <span className="text-xs leading-none">{matchPercent}</span>
-                              <span className="text-3xs font-normal opacity-80">/100đ</span>
+                              <span className="text-2xs font-normal opacity-80">/100đ</span>
                             </div>
                           </div>
                         </div>

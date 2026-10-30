@@ -456,6 +456,8 @@ export interface KocItem {
   // Nền tảng mạng xã hội hoạt động (TikTok, Shopee, Facebook, Instagram, Threads)
   platforms?: ('TIKTOK' | 'SHOPEE' | 'FACEBOOK' | 'INSTAGRAM' | 'THREADS')[];
   tiktokChannel?: string;
+  tiktokChannels?: string[];
+  connectedChannels?: KocConnectedChannel[];
   shopeeChannel?: string;
   facebookChannel?: string;
   instagramChannel?: string;
@@ -610,6 +612,21 @@ export interface KocItem {
   upaffiliateSyncStatus?: 'SYNCED' | 'LOCAL_MODIFIED' | 'PENDING_PUSH' | 'CONFLICT';
   upaffiliateSyncedAt?: string; // Thời điểm đồng bộ gần nhất với UpAffiliate
   upaffiliateRevision?: number; // Phiên bản bản ghi trên UpAffiliate
+}
+
+export type KocPlatformType = 'TIKTOK' | 'SHOPEE' | 'FACEBOOK' | 'INSTAGRAM' | 'THREADS' | 'YOUTUBE';
+
+export interface KocConnectedChannel {
+  id: string;
+  platform: KocPlatformType;
+  handle: string; // @handle hoặc tên tài khoản/trang
+  channelName?: string; // Tên hiển thị kênh
+  url?: string; // Link đầy đủ tới kênh
+  isPrimary?: boolean; // Kênh chính trên nền tảng
+  roleLabel?: string; // VD: 'Kênh TikTok chính', 'Kênh TikTok phụ / Vlog', 'Kênh Review', 'Kênh Livestream'
+  followers?: number;
+  avgViews?: number;
+  linkedKocId?: string; // Nếu được gom từ 1 bản ghi KOC khác thuộc cùng 1 cá nhân chủ sở hữu
 }
 
 export type KocBookingReadiness =
@@ -866,6 +883,7 @@ export interface BookingDealItem {
   kocId: string;
   kocStageName: string;
   kocChannelId?: string;
+  targetChannels?: string[];
   kocTier: KocTier;
   salaryGrade: SalaryGrade; // 1. Khung lương
   segment: CreatorSegment; // 2. Phân nhóm Creator
@@ -1052,6 +1070,7 @@ export interface BookingDealItem {
   contractAppendixCode?: string; // Mã Phụ lục hợp đồng theo từng Deal (1 HĐNT/KOC + 1 Phụ lục/Deal)
   masterContractCode?: string; // Mã Hợp đồng nguyên tắc (HĐNT) của KOC
   contractAppendixStatus?: DealContractAppendixStatus; // Trạng thái ký Phụ lục của Deal
+  paymentScheduleOption?: 'ONE_TIME' | 'TWO_TIMES'; // Phương thức thanh toán trên Phụ lục SOW: 1 lần (100% sau nghiệm thu) | 2 đợt (Có tạm ứng)
   dealJobs?: DealSowJobItem[]; // Danh sách N Job trong Deal (Mỗi Job = 1 Bảng công việc trong Phụ lục SOW)
   masterContractStatus?: DealContractAppendixStatus; // Trạng thái ký HĐNT của KOC
   masterContractGoogleDocsUrl?: string; // Đường link Google Docs của HĐNT
@@ -2504,8 +2523,10 @@ export interface StorePortfolioItem {
   storeName: string;
   platform: 'TikTok Shop' | 'Shopee Mall' | 'Lazada';
   storeUrl?: string;
-  bookingSheetUrl?: string; // Link Google Sheet Listing / Booking riêng của gian hàng
-  defaultSheetTab?: string; // Tên tab Google Sheet mặc định của gian hàng
+  bookingSheetUrl?: string; // Link Google Sheet chung của gian hàng
+  planSheetTab?: string; // Tên tab Sheet 1: Plan tháng trên Google Sheet
+  defaultSheetTab?: string; // Tên tab Sheet 2: Listing KOC trên Google Sheet
+  reportSheetTab?: string; // Tên tab Sheet 3: Kết quả / Report trên Google Sheet
   /** Kênh của Brand để đăng video Self-channel (handle hoặc link kênh) theo nền tảng; dùng kiểm link đăng đúng kênh */
   selfChannelHandles?: Partial<Record<'tiktok' | 'shopee' | 'facebook' | 'instagram' | 'youtube', string>>;
   serviceModel: ServiceModel;
@@ -3160,6 +3181,8 @@ export interface PlanStaffWeeklySlice {
   roleLabel?: string;
   rowCount: number;
   weeklyBreakdown: PlanWeekRow[];
+  isCompleted?: boolean;
+  completedAt?: string;
 }
 
 /** Số của bảng 4.1 Plan order tổng dùng để đối chiếu với bảng phân rã. Chi phí Net = Gross ÷ 1,08 ÷ 1,10. */
@@ -3552,6 +3575,8 @@ export interface Contributor {
   email?: string;
   channelLink?: string; // TikTok / Portfolio link
   tiktokChannel?: string;
+  tiktokChannels?: string[];
+  connectedChannels?: KocConnectedChannel[];
   driveFolderUrl?: string; // Link Drive tổng gian hàng / Drive nộp video của VJ
   nicheSpecialty: string[]; // Tệp thế mạnh (VD: Mẹ & Bé, Chăm da, Diễn hài...)
   role: ContributorRole;

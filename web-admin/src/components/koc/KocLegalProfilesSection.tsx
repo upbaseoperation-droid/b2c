@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   Building2,
   Check,
-  CheckCircle2,
   Copy,
   CreditCard,
   Edit3,
@@ -19,18 +18,44 @@ import {
   ShieldCheck,
   Star,
   Trash2,
-  UserCheck,
 } from 'lucide-react';
-import type { KocItem, KocLegalProfile, LegalDocAttachment, OcrExtractedFields, UserProfile } from '../../lib/types';
+import type {
+  KocItem,
+  KocLegalProfile,
+  LegalDocAttachment,
+  OcrExtractedFields,
+  UserProfile,
+} from '../../lib/types';
 import { syncKocContactToStaffSheets } from '../../lib/staffBrandListingSheet';
-import { LegalAttachmentsPanel } from '../contracts/LegalAttachmentsPanel';
-import { Button, Field, Input, Modal, Panel, Select, Stat, StatRow, Status, Textarea } from '../ui';
 import {
+  LEGAL_DOC_CATEGORY_LABEL,
+  LegalAttachmentsPanel,
+  LegalDocPreviewModal,
+} from '../contracts/LegalAttachmentsPanel';
+import {
+  ActionMenu,
+  Button,
+  EmptyState,
+  Field,
+  Input,
+  Modal,
+  Panel,
+  Select,
+  Stat,
+  StatRow,
+  Status,
+  Textarea,
+} from '../ui';
+import {
+  KOC_LEGAL_ATTACHMENTS_EVENT,
+  KOC_PLATFORM_LABEL,
   LEGAL_TYPE_LABEL,
   canRevealSensitive,
   evaluateLegalProfileContractReadiness,
+  getKocConnectedChannels,
   getKocLegalProfiles,
   mask,
+  saveSyncedKocLegalAttachments,
   syncKocWithLegalProfiles,
   type LegalType,
 } from './kocUtils';
@@ -68,12 +93,25 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
   onScanDocs,
   onCreateContractForProfile,
 }) => {
+  const [, setAttachmentSyncTick] = useState(0);
   const profiles = getKocLegalProfiles(koc);
   const allowed = canRevealSensitive(currentUser, koc);
   const [revealed, setRevealed] = useState(false);
   const [editingProfile, setEditingProfile] = useState<KocLegalProfile | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [previewState, setPreviewState] = useState<{
+    attachments: LegalDocAttachment[];
+    activeDoc: LegalDocAttachment;
+    profileLabel: string;
+  } | null>(null);
   const [qrTargetProfile, setQrTargetProfile] = useState<KocLegalProfile | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleSync = () => setAttachmentSyncTick((t) => t + 1);
+    window.addEventListener(KOC_LEGAL_ATTACHMENTS_EVENT, handleSync);
+    return () => window.removeEventListener(KOC_LEGAL_ATTACHMENTS_EVENT, handleSync);
+  }, []);
 
   const show = (val?: string) => {
     if (!val) return '—';
@@ -82,7 +120,6 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
 
   const defaultProfile = profiles.find((p) => p.isDefault) || profiles[0];
   const distinctTypes = Array.from(new Set(profiles.map((p) => p.legalType)));
-  const hasMultipleProfiles = profiles.length > 1;
   const signedHdntCount = profiles.filter((p) => p.frameworkContractStatus === 'ĐÃ_KÝ').length;
 
   const handleSetDefault = (profileId: string) => {
@@ -143,17 +180,16 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
   };
 
   return (
-    <div className="space-y-5">
-      {/* Thống kê tổng quan Hồ sơ pháp lý 1:N */}
+    <div className="space-y-4">
       <StatRow>
         <Stat
           label="Tổng số hồ sơ pháp lý"
           value={`${profiles.length} hồ sơ`}
           note={
             distinctTypes.length > 1
-              ? `Đa pháp nhân: ${distinctTypes.map((t) => LEGAL_TYPE_LABEL[t]).join(' + ')}`
+              ? `Đa pháp nhân: ${distinctTypes.map((t) => LEGAL_TYPE_LABEL[t]).join(' · ')}`
               : defaultProfile
-                ? `Loại hình: ${LEGAL_TYPE_LABEL[defaultProfile.legalType]}`
+                ? LEGAL_TYPE_LABEL[defaultProfile.legalType]
                 : 'Chưa khai báo pháp lý'
           }
           tone={profiles.length > 0 ? 'positive' : 'warning'}
@@ -192,34 +228,13 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
         />
       </StatRow>
 
-      {/* Cảnh báo nghiệp vụ khi KOC có nhiều pháp nhân / chuyển đổi thuế */}
-      {hasMultipleProfiles && (
-        <div className="p-3.5 rounded-xl border border-warning/40 bg-warning-soft/40 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-start gap-2.5">
-            <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-            <div className="space-y-0.5">
-              <div className="font-semibold text-ink">
-                KOC có {profiles.length} hồ sơ pháp lý &amp; tài khoản thụ hưởng qua các đợt hợp tác
-              </div>
-              <div className="text-ink-2">
-                Nguyên tắc Kế toán &amp; Thuế: <b>Chủ thể ký hợp đồng ≡ Người đứng tên CCCD/MST ≡ Chủ tài khoản nhận tiền</b>. Khi KOC chuyển đổi giữa Cá nhân (TNCN 10%), Hộ kinh doanh (HKD) và Công ty/MCN (VAT 8%), cần chọn đúng hồ sơ pháp lý mặc định trước khi lập Đề nghị thanh toán (ĐNTT).
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Thanh công cụ quản lý danh sách hồ sơ pháp lý */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-sm font-semibold text-ink">
-            Danh sách Hồ sơ pháp lý &amp; Tài khoản thụ hưởng ({profiles.length})
+            Danh sách hồ sơ pháp lý &amp; tài khoản thụ hưởng ({profiles.length})
           </h3>
-          {koc.sharedMcnInfo && (
-            <span className="px-2 py-0.5 rounded-md bg-warning-soft text-warning border border-warning/30 text-2xs font-medium">
-              {koc.sharedMcnInfo}
-            </span>
-          )}
+          {koc.sharedMcnInfo && <Status tone="warning">{koc.sharedMcnInfo}</Status>}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -230,7 +245,7 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
               icon={revealed ? EyeOff : Eye}
               onClick={() => setRevealed((v) => !v)}
             >
-              {revealed ? 'Ẩn số CCCD / STK' : 'Hiện đầy đủ số CCCD / STK'}
+              {revealed ? 'Ẩn số CCCD / STK' : 'Hiện số CCCD / STK'}
             </Button>
           )}
           {onScanDocs && (
@@ -257,33 +272,30 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
       {/* Danh sách thẻ Hồ sơ pháp lý (1 -> N) */}
       {profiles.length === 0 ? (
         <Panel>
-          <div className="py-8 text-center space-y-3">
-            <p className="text-sm font-semibold text-ink">
-              KOC chưa có hồ sơ pháp lý &amp; tài khoản thụ hưởng
-            </p>
-            <p className="text-xs text-ink-3 max-w-md mx-auto">
-              Bổ sung hồ sơ pháp lý (Cá nhân CCCD, Hộ kinh doanh hoặc Công ty/MCN) kèm số tài khoản ngân hàng chính chủ để phục vụ ký Hợp đồng nguyên tắc và thanh toán.
-            </p>
-            <div className="flex items-center justify-center gap-2 pt-1">
-              {onScanDocs && (
-                <Button variant="secondary" icon={FileScan} onClick={() => onScanDocs(koc)}>
-                  Đọc ảnh CCCD / ĐKKD
-                </Button>
-              )}
-              {onUpdateKoc && (
-                <Button
-                  variant="primary"
-                  icon={Plus}
-                  onClick={() => {
-                    setEditingProfile(null);
-                    setIsCreatingNew(true);
-                  }}
-                >
-                  Thêm hồ sơ pháp lý đầu tiên
-                </Button>
-              )}
-            </div>
-          </div>
+          <EmptyState
+            title="KOC chưa có hồ sơ pháp lý & tài khoản thụ hưởng"
+            action={
+              <div className="flex items-center justify-center gap-2">
+                {onScanDocs && (
+                  <Button variant="secondary" icon={FileScan} onClick={() => onScanDocs(koc)}>
+                    Đọc ảnh CCCD / ĐKKD
+                  </Button>
+                )}
+                {onUpdateKoc && (
+                  <Button
+                    variant="primary"
+                    icon={Plus}
+                    onClick={() => {
+                      setEditingProfile(null);
+                      setIsCreatingNew(true);
+                    }}
+                  >
+                    Thêm hồ sơ pháp lý đầu tiên
+                  </Button>
+                )}
+              </div>
+            }
+          />
         </Panel>
       ) : (
         <div className="grid gap-4">
@@ -291,41 +303,61 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
             const isComp = p.legalType === 'COMPANY';
             const isHkd = p.legalType === 'HOUSEHOLD';
             const readiness = evaluateLegalProfileContractReadiness(p, koc);
+            const docs = p.legalAttachments || [];
+
+            const extraMenuItems = [
+              ...(!p.isDefault && onUpdateKoc
+                ? [
+                    {
+                      label: 'Đặt làm hồ sơ mặc định',
+                      icon: Star,
+                      onSelect: () => handleSetDefault(p.id),
+                    },
+                  ]
+                : []),
+              ...(p.bankAccount
+                ? [
+                    {
+                      label: 'Mã QR thanh toán',
+                      icon: QrCode,
+                      onSelect: () => setQrTargetProfile(p),
+                    },
+                  ]
+                : []),
+              ...(onUpdateKoc && profiles.length > 1
+                ? [
+                    {
+                      label: 'Xóa hồ sơ pháp lý này',
+                      icon: Trash2,
+                      tone: 'critical' as const,
+                      onSelect: () => handleDeleteProfile(p.id),
+                    },
+                  ]
+                : []),
+            ];
+
             return (
               <div
                 key={p.id || idx}
-                className={`rounded-xl border transition-colors ${
-                  p.isDefault
-                    ? 'border-accent bg-accent-soft/15 shadow-xs'
-                    : 'border-line bg-surface hover:border-line-strong'
+                className={`rounded-xl border bg-surface overflow-hidden transition-colors ${
+                  p.isDefault ? 'border-line-strong' : 'border-line'
                 }`}
               >
-                {/* Header của từng Hồ sơ pháp lý */}
-                <div className="px-4 py-3 border-b border-line flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-surface-2 border border-line text-ink">
+                {/* Header gọn gàng: Mã HSPL, Tên chủ thể, Loại pháp nhân, Trạng thái & tối đa 2 nút chính */}
+                <div className="px-4 py-3 border-b border-line bg-sunken/35 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">
+                    <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-surface border border-line text-ink">
                       {p.profileCode || `HSPL-0${idx + 1}`}
                     </span>
-                    <Status tone={isComp ? 'info' : isHkd ? 'warning' : 'positive'}>
+                    <span className="text-sm font-semibold text-ink">{p.holderName}</span>
+                    <Status tone={isComp ? 'info' : isHkd ? 'warning' : 'neutral'}>
                       {LEGAL_TYPE_LABEL[p.legalType]}
                     </Status>
-                    <span className="text-sm font-semibold text-ink">{p.holderName}</span>
-                    {p.relationshipNote && (
-                      <span className="text-2xs px-2 py-0.5 rounded-full bg-sunken text-ink-2 border border-line">
-                        {p.relationshipNote}
-                      </span>
-                    )}
-                    {p.isDefault && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent text-white text-2xs font-semibold">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Mặc định hiện hành
-                      </span>
-                    )}
+                    {p.isDefault && <Status tone="positive">Mặc định</Status>}
                     {readiness.ready ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-positive-soft text-positive border border-positive/30 text-2xs font-semibold">
-                        <Check className="w-3 h-3" />
-                        Đủ trường ký HĐ ({readiness.filledCount}/{readiness.totalRequired})
-                      </span>
+                      <Status tone="positive">
+                        Đủ thông tin ký HĐ ({readiness.filledCount}/{readiness.totalRequired})
+                      </Status>
                     ) : (
                       <button
                         type="button"
@@ -333,19 +365,29 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                           setEditingProfile(p);
                           setIsCreatingNew(false);
                         }}
-                        title={`Thiếu: ${readiness.missingFields.join(', ')}`}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning-soft text-warning border border-warning/30 text-2xs font-semibold hover:bg-warning-soft/80 cursor-pointer"
+                        title={`Cần bổ sung: ${readiness.missingFields.join(', ')}`}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-warning-soft text-warning border border-warning/30 text-2xs font-medium hover:bg-warning-soft/80 cursor-pointer"
                       >
                         <AlertTriangle className="w-3 h-3 shrink-0" />
-                        <span>
-                          Thiếu {readiness.missingFields.length} trường HĐ: {readiness.missingFields.slice(0, 2).join(', ')}
-                          {readiness.missingFields.length > 2 ? '…' : ''}
-                        </span>
+                        <span>Thiếu {readiness.missingFields.length} trường HĐ</span>
                       </button>
                     )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1.5">
+                    {onUpdateKoc && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        icon={Edit3}
+                        onClick={() => {
+                          setEditingProfile(p);
+                          setIsCreatingNew(false);
+                        }}
+                      >
+                        Sửa hồ sơ
+                      </Button>
+                    )}
                     {onCreateContractForProfile && (
                       <Button
                         size="sm"
@@ -353,204 +395,172 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                         icon={FileText}
                         onClick={() => onCreateContractForProfile(koc, p)}
                       >
-                        Ký HĐ theo pháp nhân này
+                        Ký hợp đồng
                       </Button>
                     )}
-                    {!p.isDefault && onUpdateKoc && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        icon={Star}
-                        onClick={() => handleSetDefault(p.id)}
-                      >
-                        Đặt làm mặc định
-                      </Button>
-                    )}
-                    {p.bankAccount && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        icon={QrCode}
-                        onClick={() => setQrTargetProfile(p)}
-                      >
-                        Mã QR
-                      </Button>
-                    )}
-                    {onUpdateKoc && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        icon={Edit3}
-                        onClick={() => {
-                          setEditingProfile(p);
-                          setIsCreatingNew(false);
-                        }}
-                      >
-                        Sửa
-                      </Button>
-                    )}
-                    {onUpdateKoc && profiles.length > 1 && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        icon={Trash2}
-                        onClick={() => handleDeleteProfile(p.id)}
-                      >
-                        Xóa
-                      </Button>
+                    {extraMenuItems.length > 0 && (
+                      <ActionMenu label="Thao tác" items={extraMenuItems} />
                     )}
                   </div>
                 </div>
 
-                {/* Body 3 cột chuẩn ERD: Pháp nhân - Tài khoản ngân hàng - Hợp đồng nguyên tắc */}
-                <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                {/* Body 3 cột rõ ràng, không viết hoa toàn bộ tiêu đề */}
+                <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-line text-xs">
                   {/* Cột 1: Định danh Pháp lý & Thuế */}
-                  <div className="space-y-2 md:border-r md:border-line md:pr-4">
-                    <div className="flex items-center gap-1.5 font-semibold text-ink-2 text-2xs uppercase tracking-wider">
-                      <Building2 className="w-3.5 h-3.5 text-accent" />
-                      <span>1. Định danh Pháp nhân &amp; Thuế</span>
+                  <div className="p-4 space-y-2.5">
+                    <div className="flex items-center gap-1.5 font-semibold text-ink">
+                      <Building2 className="w-3.5 h-3.5 text-accent shrink-0" />
+                      <span>1. Định danh pháp nhân &amp; thuế</span>
                     </div>
-                    <div className="grid gap-1.5 pt-1">
+                    <dl className="grid gap-1.5">
                       <div className="flex justify-between gap-2">
-                        <span className="text-ink-3">Chế độ thuế:</span>
-                        <span className="font-medium text-ink text-right">{p.taxAccountType}</span>
+                        <dt className="text-ink-3">Chế độ thuế</dt>
+                        <dd className="font-medium text-ink text-right">{p.taxAccountType}</dd>
                       </div>
                       {p.cccd && (
                         <div className="flex justify-between gap-2">
-                          <span className="text-ink-3">Số CCCD/CMND:</span>
-                          <CopyableCode text={show(p.cccd)} raw={revealed ? p.cccd : undefined} />
+                          <dt className="text-ink-3">Số CCCD</dt>
+                          <dd>
+                            <CopyableCode text={show(p.cccd)} raw={revealed ? p.cccd : undefined} />
+                          </dd>
                         </div>
                       )}
                       {p.taxCode && (
                         <div className="flex justify-between gap-2">
-                          <span className="text-ink-3">
-                            {p.legalType === 'INDIVIDUAL' ? 'MST cá nhân:' : 'Mã số thuế ĐKKD:'}
-                          </span>
-                          <CopyableCode text={show(p.taxCode)} raw={revealed ? p.taxCode : undefined} />
+                          <dt className="text-ink-3">
+                            {p.legalType === 'INDIVIDUAL' ? 'MST cá nhân' : 'Mã số thuế ĐKKD'}
+                          </dt>
+                          <dd>
+                            <CopyableCode
+                              text={show(p.taxCode)}
+                              raw={revealed ? p.taxCode : undefined}
+                            />
+                          </dd>
                         </div>
                       )}
                       {p.representativeName && (
                         <div className="flex justify-between gap-2">
-                          <span className="text-ink-3">Người đại diện:</span>
-                          <span className="font-medium text-ink text-right">
+                          <dt className="text-ink-3">Người đại diện</dt>
+                          <dd className="font-medium text-ink text-right">
                             {p.representativeName}
                             {p.representativeTitle ? ` (${p.representativeTitle})` : ''}
-                          </span>
-                        </div>
-                      )}
-                      {(p.authorizationNumber || p.authorizationDate) && (
-                        <div className="flex justify-between gap-2">
-                          <span className="text-ink-3">Văn bản ủy quyền:</span>
-                          <span className="text-ink-2 text-right">
-                            {[p.authorizationNumber, p.authorizationDate].filter(Boolean).join(' · ')}
-                          </span>
+                          </dd>
                         </div>
                       )}
                       {(p.cccdIssueDate || p.cccdIssuePlace) && (
                         <div className="flex justify-between gap-2">
-                          <span className="text-ink-3">Ngày &amp; Nơi cấp:</span>
-                          <span className="text-ink-2 text-right">
+                          <dt className="text-ink-3">Ngày &amp; nơi cấp</dt>
+                          <dd className="text-ink-2 text-right">
                             {[p.cccdIssueDate, p.cccdIssuePlace].filter(Boolean).join(' · ')}
-                          </span>
+                          </dd>
                         </div>
                       )}
                       {p.registeredAddress && (
                         <div className="flex justify-between gap-2">
-                          <span className="text-ink-3 shrink-0">Địa chỉ pháp lý:</span>
-                          <span className="text-ink-2 text-right truncate max-w-[180px]" title={p.registeredAddress}>
+                          <dt className="text-ink-3 shrink-0">Địa chỉ đăng ký</dt>
+                          <dd
+                            className="text-ink-2 text-right truncate max-w-[200px]"
+                            title={p.registeredAddress}
+                          >
                             {p.registeredAddress}
-                          </span>
+                          </dd>
                         </div>
                       )}
-                      {p.businessLicenseNo && (
-                        <div className="flex justify-between gap-2">
-                          <span className="text-ink-3">Số GP ĐKKD:</span>
-                          <span className="font-mono text-ink-2 text-right">{p.businessLicenseNo}</span>
-                        </div>
-                      )}
-                      {(p.contactPhone || p.contactEmail) && (
-                        <div className="flex justify-between gap-2">
-                          <span className="text-ink-3 shrink-0">SĐT / Email HĐ:</span>
-                          <span className="text-ink-2 text-right truncate max-w-[180px]" title={[p.contactPhone, p.contactEmail].filter(Boolean).join(' · ')}>
-                            {[p.contactPhone, p.contactEmail].filter(Boolean).join(' · ')}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                    </dl>
                   </div>
 
                   {/* Cột 2: Tài khoản Ngân hàng Thụ hưởng */}
-                  <div className="space-y-2 md:border-r md:border-line md:pr-4">
-                    <div className="flex items-center gap-1.5 font-semibold text-ink-2 text-2xs uppercase tracking-wider">
-                      <CreditCard className="w-3.5 h-3.5 text-positive" />
-                      <span>2. Tài khoản Thụ hưởng Chính chủ</span>
+                  <div className="p-4 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 font-semibold text-ink">
+                        <CreditCard className="w-3.5 h-3.5 text-positive shrink-0" />
+                        <span>2. Tài khoản nhận thanh toán</span>
+                      </div>
+                      {p.bankAccount && (
+                        <button
+                          type="button"
+                          onClick={() => setQrTargetProfile(p)}
+                          className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
+                        >
+                          <QrCode className="w-3 h-3" />
+                          Mã QR
+                        </button>
+                      )}
                     </div>
-                    <div className="grid gap-1.5 pt-1">
+                    <dl className="grid gap-1.5">
                       <div className="flex justify-between gap-2">
-                        <span className="text-ink-3">Ngân hàng:</span>
-                        <span className="font-semibold text-ink">{p.bankName || 'Chưa cập nhật'}</span>
+                        <dt className="text-ink-3">Ngân hàng</dt>
+                        <dd className="font-semibold text-ink">{p.bankName || 'Chưa cập nhật'}</dd>
                       </div>
                       <div className="flex justify-between gap-2">
-                        <span className="text-ink-3">Số tài khoản:</span>
-                        {p.bankAccount ? (
-                          <CopyableCode
-                            text={show(p.bankAccount)}
-                            raw={revealed ? p.bankAccount : undefined}
-                          />
-                        ) : (
-                          <span className="text-warning font-medium">Chưa bổ sung STK</span>
-                        )}
+                        <dt className="text-ink-3">Số tài khoản</dt>
+                        <dd>
+                          {p.bankAccount ? (
+                            <CopyableCode
+                              text={show(p.bankAccount)}
+                              raw={revealed ? p.bankAccount : undefined}
+                            />
+                          ) : (
+                            <span className="text-warning font-medium">Chưa bổ sung STK</span>
+                          )}
+                        </dd>
                       </div>
                       <div className="flex justify-between gap-2">
-                        <span className="text-ink-3">Chủ tài khoản:</span>
-                        <span className="font-medium text-ink text-right">{p.bankHolderName || p.holderName}</span>
+                        <dt className="text-ink-3">Chủ tài khoản</dt>
+                        <dd className="font-medium text-ink text-right">
+                          {p.bankHolderName || p.holderName}
+                        </dd>
                       </div>
                       <div className="flex justify-between gap-2">
-                        <span className="text-ink-3">Xác thực giấy tờ:</span>
-                        <span className={p.isOcrVerified ? 'text-positive font-medium' : 'text-ink-3'}>
-                          {p.isOcrVerified ? 'Đã đối chiếu CCCD/ĐKKD' : 'Chưa đối chiếu ảnh'}
-                        </span>
+                        <dt className="text-ink-3">Quan hệ với KOC</dt>
+                        <dd className="text-ink-2 text-right">
+                          {p.relationshipNote || 'Chính chủ KOC'}
+                        </dd>
                       </div>
-                    </div>
+                    </dl>
                   </div>
 
                   {/* Cột 3: Hợp đồng Nguyên tắc (HĐNT) & Lịch sử sử dụng */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-1.5 font-semibold text-ink-2 text-2xs uppercase tracking-wider">
-                      <ShieldCheck className="w-3.5 h-3.5 text-accent" />
-                      <span>3. Hợp đồng Nguyên tắc &amp; Lịch sử</span>
+                  <div className="p-4 space-y-2.5">
+                    <div className="flex items-center gap-1.5 font-semibold text-ink">
+                      <ShieldCheck className="w-3.5 h-3.5 text-accent shrink-0" />
+                      <span>3. Hợp đồng nguyên tắc (HĐNT)</span>
                     </div>
-                    <div className="grid gap-1.5 pt-1">
+                    <dl className="grid gap-1.5">
                       <div className="flex justify-between items-center gap-2">
-                        <span className="text-ink-3">Trạng thái HĐNT:</span>
-                        <Status
-                          tone={
-                            p.frameworkContractStatus === 'ĐÃ_KÝ'
-                              ? 'positive'
+                        <dt className="text-ink-3">Trạng thái HĐNT</dt>
+                        <dd>
+                          <Status
+                            tone={
+                              p.frameworkContractStatus === 'ĐÃ_KÝ'
+                                ? 'positive'
+                                : p.frameworkContractStatus === 'ĐANG_TRÌNH_KÝ'
+                                  ? 'info'
+                                  : 'warning'
+                            }
+                          >
+                            {p.frameworkContractStatus === 'ĐÃ_KÝ'
+                              ? 'Đã ký HĐNT'
                               : p.frameworkContractStatus === 'ĐANG_TRÌNH_KÝ'
-                                ? 'info'
-                                : 'warning'
-                          }
-                        >
-                          {p.frameworkContractStatus === 'ĐÃ_KÝ'
-                            ? 'Đã ký HĐNT'
-                            : p.frameworkContractStatus === 'ĐANG_TRÌNH_KÝ'
-                              ? 'Đang trình ký'
-                              : 'Chưa ký HĐNT'}
-                        </Status>
+                                ? 'Đang trình ký'
+                                : 'Chưa ký HĐNT'}
+                          </Status>
+                        </dd>
                       </div>
                       {p.frameworkContractCode && (
                         <div className="flex justify-between gap-2">
-                          <span className="text-ink-3">Mã HĐNT:</span>
-                          <span className="font-mono font-semibold text-ink">{p.frameworkContractCode}</span>
+                          <dt className="text-ink-3">Mã HĐNT</dt>
+                          <dd className="font-mono font-semibold text-ink">
+                            {p.frameworkContractCode}
+                          </dd>
                         </div>
                       )}
                       <div className="flex justify-between gap-2">
-                        <span className="text-ink-3">Lịch sử nghiệm thu:</span>
-                        <span className="font-medium text-ink">
+                        <dt className="text-ink-3">Lịch sử sử dụng</dt>
+                        <dd className="font-medium text-ink">
                           {p.dealsUsedCount ? `${p.dealsUsedCount} đợt book` : 'Chưa phát sinh đợt chi'}
                           {p.latestBrandUsed ? ` (${p.latestBrandUsed})` : ''}
-                        </span>
+                        </dd>
                       </div>
                       {p.frameworkContractDriveUrl && (
                         <div className="pt-0.5">
@@ -561,49 +571,39 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
                             className="inline-flex items-center gap-1 text-accent hover:underline font-medium text-2xs"
                           >
                             <FileText className="w-3 h-3" />
-                            Mở thư mục Hợp đồng Drive
+                            Mở thư mục hợp đồng Drive
                             <ExternalLink className="w-2.5 h-2.5" />
                           </a>
                         </div>
                       )}
-                      {onCreateContractForProfile && (
-                        <div className="pt-1">
-                          <button
-                            type="button"
-                            onClick={() => onCreateContractForProfile(koc, p)}
-                            className="inline-flex items-center gap-1 text-accent hover:underline font-semibold text-2xs"
-                          >
-                            <FileText className="w-3 h-3" />
-                            {p.frameworkContractStatus === 'ĐÃ_KÝ'
-                              ? 'Mở / Tạo Phụ lục từ pháp nhân này'
-                              : 'Soạn Hợp đồng nguyên tắc (HĐNT) cho pháp nhân này'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    </dl>
                   </div>
                 </div>
 
-                {/* Khối đính kèm CCCD & ĐKKD lưu trữ trên Cloudflare R2 */}
-                <div className="px-4 pb-4">
-                  <LegalAttachmentsPanel
-                    attachments={p.legalAttachments || []}
-                    entitySlug={`${koc.channelId || koc.id}-${p.profileCode || 'hspl'}`}
-                    legalType={p.legalType}
-                    editable={Boolean(onUpdateKoc)}
-                    onChange={
-                      onUpdateKoc
-                        ? (nextAttachments) => {
-                            handleSaveProfile({
-                              ...p,
-                              legalAttachments: nextAttachments,
-                              isOcrVerified: p.isOcrVerified || nextAttachments.length > 0,
-                            });
-                          }
-                        : undefined
-                    }
-                  />
-                </div>
+                {/* Khối thẻ giấy tờ CCCD / ĐKKD liền mạch ở chân thẻ (Ấn vào từng tệp để xem phóng to) */}
+                <LegalAttachmentsPanel
+                  flush
+                  attachments={docs}
+                  entitySlug={`${koc.channelId || koc.id}-${p.profileCode || 'hspl'}`}
+                  legalType={p.legalType}
+                  editable={Boolean(onUpdateKoc)}
+                  onChange={
+                    onUpdateKoc
+                      ? (nextAttachments) => {
+                          saveSyncedKocLegalAttachments(
+                            koc.id || koc.channelId,
+                            p.id,
+                            nextAttachments,
+                          );
+                          handleSaveProfile({
+                            ...p,
+                            legalAttachments: nextAttachments,
+                            isOcrVerified: p.isOcrVerified || nextAttachments.length > 0,
+                          });
+                        }
+                      : undefined
+                  }
+                />
               </div>
             );
           })}
@@ -624,7 +624,18 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
         />
       )}
 
-      {/* Hộp thoại Mã QR VietQR theo đúng Hồ sơ pháp lý được chọn */}
+      {previewState && (
+        <LegalDocPreviewModal
+          attachments={previewState.attachments}
+          activeDoc={previewState.activeDoc}
+          profileLabel={previewState.profileLabel}
+          onSelectDoc={(doc) =>
+            setPreviewState((prev) => (prev ? { ...prev, activeDoc: doc } : null))
+          }
+          onClose={() => setPreviewState(null)}
+        />
+      )}
+
       {qrTargetProfile && (
         <Modal
           open
@@ -633,7 +644,7 @@ export const KocLegalProfilesSection: React.FC<KocLegalProfilesSectionProps> = (
           size="sm"
         >
           <div className="flex flex-col items-center justify-center p-4 space-y-4">
-            <div className="p-3 bg-white rounded-xl border border-line shadow-xs">
+            <div className="p-3 bg-surface rounded-xl border border-line">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`https://img.vietqr.io/image/${encodeURIComponent(
@@ -817,8 +828,12 @@ function LegalProfileFormModal({
   const handleSubmit = () => {
     const profileCode = initialProfile?.profileCode || `HSPL-0${nextIndex}`;
     const cleanBankAcc = bankAccount.trim() || undefined;
+    const targetId = initialProfile?.id || `${koc.id}-lp-${Date.now()}`;
+    if (legalAttachments.length > 0) {
+      saveSyncedKocLegalAttachments(koc.id || koc.channelId, targetId, legalAttachments);
+    }
     const saved: KocLegalProfile = {
-      id: initialProfile?.id || `${koc.id}-lp-${Date.now()}`,
+      id: targetId,
       profileCode,
       legalType,
       isDefault,
@@ -1152,7 +1167,7 @@ function LegalProfileFormModal({
           legalType={legalType}
           editable
           onExtractOcrFields={(fields) => handleApplyOcrFields(fields)}
-          title="Tải lên & Đính kèm CCCD / ĐKKD (Lưu trữ Cloudflare R2)"
+          title="Giấy tờ pháp lý đính kèm (CCCD / ĐKKD)"
         />
 
         <Field label="Ghi chú vận hành / Ủy quyền thanh toán">
@@ -1188,5 +1203,382 @@ function CopyableCode({ text, raw }: { text: string; raw?: string }) {
         </button>
       )}
     </span>
+  );
+}
+
+export interface KocContractLegalPickerModalProps {
+  open: boolean;
+  onClose: () => void;
+  koc: KocItem | null;
+  currentUser?: UserProfile;
+  onUpdateKoc?: (updated: KocItem, message?: string) => void;
+  onConfirmSelectProfile: (koc: KocItem, legalProfileId: string) => void;
+}
+
+export function KocContractLegalPickerModal({
+  open,
+  onClose,
+  koc,
+  currentUser,
+  onUpdateKoc,
+  onConfirmSelectProfile,
+}: KocContractLegalPickerModalProps) {
+  const profiles = React.useMemo(() => (koc ? getKocLegalProfiles(koc) : []), [koc]);
+  const connectedChannels = React.useMemo(
+    () => (koc ? getKocConnectedChannels(koc) : []),
+    [koc],
+  );
+  const defaultProfile = profiles.find((p) => p.isDefault) || profiles[0];
+  const [selectedProfileId, setSelectedProfileId] = useState<string>('');
+  const [selectedChannelKeys, setSelectedChannelKeys] = useState<string[]>([]);
+  const [isAddingOrEditing, setIsAddingOrEditing] = useState(false);
+  const [editingProfile, setEditingProfile] = useState<KocLegalProfile | null>(null);
+  const [previewState, setPreviewState] = useState<{
+    attachments: LegalDocAttachment[];
+    activeDoc: LegalDocAttachment;
+    profileLabel: string;
+  } | null>(null);
+
+  const activeProfileId =
+    selectedProfileId && profiles.some((p) => p.id === selectedProfileId)
+      ? selectedProfileId
+      : defaultProfile?.id || '';
+
+  const activeChannelKeys =
+    selectedChannelKeys.length > 0
+      ? selectedChannelKeys
+      : connectedChannels.map((c) => `${c.platform}::${c.handle}`);
+
+  if (!open || !koc) return null;
+
+  const canSeeFull = canRevealSensitive(currentUser, koc);
+  const showNumber = (val?: string) => {
+    if (!val) return '—';
+    return canSeeFull ? val : mask(val);
+  };
+
+  const toggleChannelKey = (key: string) => {
+    setSelectedChannelKeys((prev) => {
+      const base =
+        prev.length > 0 ? prev : connectedChannels.map((c) => `${c.platform}::${c.handle}`);
+      if (base.includes(key)) {
+        if (base.length <= 1) return base;
+        return base.filter((k) => k !== key);
+      }
+      return [...base, key];
+    });
+  };
+
+  const handleSaveNewOrEditedProfile = (savedProfile: KocLegalProfile) => {
+    const exists = profiles.some((p) => p.id === savedProfile.id);
+    let nextList: KocLegalProfile[];
+    if (exists) {
+      nextList = profiles.map((p) => (p.id === savedProfile.id ? savedProfile : p));
+    } else {
+      nextList = [...profiles, savedProfile];
+    }
+    if (savedProfile.isDefault) {
+      nextList = nextList.map((p) => ({ ...p, isDefault: p.id === savedProfile.id }));
+    }
+    const updatedKoc = syncKocWithLegalProfiles(koc, nextList);
+    onUpdateKoc?.(
+      updatedKoc,
+      `Đã lưu hồ sơ pháp lý ${savedProfile.profileCode} (${savedProfile.holderName}).`,
+    );
+    setSelectedProfileId(savedProfile.id);
+    setIsAddingOrEditing(false);
+    setEditingProfile(null);
+  };
+
+  const selectedProfile = profiles.find((p) => p.id === activeProfileId) || defaultProfile;
+
+  return (
+    <>
+      <Modal
+        open={open}
+        onClose={onClose}
+        title={`Chọn hồ sơ pháp lý & kênh ký hợp đồng — ${koc.stageName}`}
+        size="lg"
+        footer={
+          <div className="flex items-center justify-between w-full">
+            <Button
+              variant="secondary"
+              icon={Plus}
+              onClick={() => {
+                setEditingProfile(null);
+                setIsAddingOrEditing(true);
+              }}
+            >
+              Thêm hồ sơ pháp lý mới
+            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" onClick={onClose}>
+                Hủy
+              </Button>
+              <Button
+                variant="primary"
+                icon={FileText}
+                disabled={!selectedProfile}
+                onClick={() => {
+                  if (!selectedProfile) return;
+                  onConfirmSelectProfile(koc, selectedProfile.id);
+                  onClose();
+                }}
+              >
+                Tiếp tục soạn hợp đồng ({selectedProfile?.profileCode || 'Chưa chọn'})
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        <div className="space-y-4 text-xs">
+          {/* Bước 1: Chọn Hồ sơ pháp lý đứng tên ký hợp đồng */}
+          <div className="space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-semibold text-ink">
+                1. Chọn hồ sơ pháp lý đứng tên ký hợp đồng ({profiles.length} hồ sơ)
+              </span>
+              <Status tone="info">Chọn đúng pháp nhân &amp; tài khoản thụ hưởng</Status>
+            </div>
+
+            {profiles.length === 0 ? (
+              <EmptyState
+                title="KOC chưa có hồ sơ pháp lý nào được thiết lập"
+                action={
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={Plus}
+                    onClick={() => {
+                      setEditingProfile(null);
+                      setIsAddingOrEditing(true);
+                    }}
+                  >
+                    Tạo hồ sơ pháp lý đầu tiên
+                  </Button>
+                }
+              />
+            ) : (
+              <div className="grid gap-2.5">
+                {profiles.map((p) => {
+                  const isSelected = p.id === selectedProfile?.id;
+                  const readiness = evaluateLegalProfileContractReadiness(p, koc);
+                  const legalIdVal =
+                    p.legalType !== 'INDIVIDUAL' ? p.taxCode || p.cccd : p.cccd || p.taxCode;
+                  const bankAcc = p.bankAccount || p.bankAccountNumber;
+                  const docs = p.legalAttachments || [];
+
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => setSelectedProfileId(p.id)}
+                      className={`p-3.5 rounded-xl border transition-colors cursor-pointer space-y-2.5 ${
+                        isSelected
+                          ? 'border-primary bg-sunken/70'
+                          : 'border-line bg-surface hover:border-line-strong'
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2 min-w-0">
+                          <input
+                            type="radio"
+                            name="koc-contract-legal-profile"
+                            checked={isSelected}
+                            onChange={() => setSelectedProfileId(p.id)}
+                            className="h-4 w-4 text-primary border-line-strong focus:ring-0"
+                          />
+                          <span className="font-mono font-semibold text-ink">{p.profileCode}</span>
+                          <span className="font-semibold text-ink">{p.holderName}</span>
+                          <Status
+                            tone={
+                              p.legalType === 'COMPANY'
+                                ? 'info'
+                                : p.legalType === 'HOUSEHOLD'
+                                  ? 'warning'
+                                  : 'neutral'
+                            }
+                          >
+                            {LEGAL_TYPE_LABEL[p.legalType]}
+                          </Status>
+                          {p.isDefault && <Status tone="positive">Mặc định</Status>}
+                          <Status
+                            tone={
+                              p.frameworkContractStatus === 'ĐÃ_KÝ'
+                                ? 'positive'
+                                : p.frameworkContractStatus === 'ĐANG_TRÌNH_KÝ'
+                                  ? 'info'
+                                  : 'warning'
+                            }
+                          >
+                            {p.frameworkContractStatus === 'ĐÃ_KÝ'
+                              ? `Đã ký HĐNT (${p.frameworkContractCode || 'Còn hiệu lực'})`
+                              : 'Chưa ký HĐNT'}
+                          </Status>
+                        </div>
+
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={Edit3}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingProfile(p);
+                            setIsAddingOrEditing(true);
+                          }}
+                        >
+                          Sửa
+                        </Button>
+                      </div>
+
+                      <div className="pl-6 grid grid-cols-1 sm:grid-cols-3 gap-2 text-2xs text-ink-2">
+                        <div>
+                          <span className="text-ink-3">
+                            {p.legalType === 'INDIVIDUAL' ? 'Số CCCD:' : 'Mã số thuế:'}{' '}
+                          </span>
+                          <strong className="font-mono text-ink">{showNumber(legalIdVal)}</strong>
+                        </div>
+                        <div>
+                          <span className="text-ink-3">Tài khoản: </span>
+                          <strong className="text-ink">{p.bankName || '—'}</strong> ·{' '}
+                          <strong className="font-mono text-ink">{showNumber(bankAcc)}</strong>
+                        </div>
+                        <div>
+                          <span className="text-ink-3">Thuế: </span>
+                          <strong className="text-ink">{p.taxAccountType}</strong>
+                        </div>
+                      </div>
+
+                      {!readiness.ready && (
+                        <div className="pl-6 text-2xs text-warning font-medium">
+                          Cần bổ sung: {readiness.missingFields.join(', ')}
+                        </div>
+                      )}
+
+                      {docs.length > 0 && (
+                        <div className="pl-6 pt-1 flex flex-wrap items-center gap-1.5">
+                          <span className="text-2xs text-ink-3">Giấy tờ đính kèm:</span>
+                          {docs.map((doc) => (
+                            <button
+                              key={doc.id}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewState({
+                                  attachments: docs,
+                                  activeDoc: doc,
+                                  profileLabel: `${p.profileCode} · ${p.holderName}`,
+                                });
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-line bg-surface text-ink hover:border-accent hover:text-accent font-medium text-2xs transition-colors"
+                            >
+                              <Eye className="w-3 h-3 text-accent shrink-0" />
+                              <span>{doc.label || LEGAL_DOC_CATEGORY_LABEL[doc.docType]}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Bước 2: Phạm vi các kênh của KOC kết nối với hợp đồng */}
+          <div className="p-3.5 rounded-xl border border-line bg-surface space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-semibold text-ink">
+                2. Các tài khoản kênh áp dụng trong hợp đồng ({activeChannelKeys.length}/
+                {connectedChannels.length} kênh)
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedChannelKeys(
+                      connectedChannels.map((c) => `${c.platform}::${c.handle}`),
+                    )
+                  }
+                  className="px-2 py-0.5 rounded border border-line bg-canvas text-2xs font-medium text-ink-2 hover:text-ink"
+                >
+                  Chọn tất cả kênh
+                </button>
+                {connectedChannels.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const prim =
+                        connectedChannels.find((c) => c.isPrimary) || connectedChannels[0];
+                      if (prim) setSelectedChannelKeys([`${prim.platform}::${prim.handle}`]);
+                    }}
+                    className="px-2 py-0.5 rounded border border-line bg-canvas text-2xs font-medium text-ink-2 hover:text-ink"
+                  >
+                    Chỉ kênh TikTok chính
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {connectedChannels.map((ch) => {
+                const key = `${ch.platform}::${ch.handle}`;
+                const checked = activeChannelKeys.includes(key);
+                const platLabel = KOC_PLATFORM_LABEL[ch.platform] || ch.platform;
+                return (
+                  <label
+                    key={key}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-2xs cursor-pointer transition-colors ${
+                      checked
+                        ? 'border-primary bg-sunken text-ink font-semibold'
+                        : 'border-line bg-canvas text-ink-2 hover:border-line-strong'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleChannelKey(key)}
+                      className="h-3.5 w-3.5 rounded border-line-strong text-primary focus:ring-0"
+                    />
+                    <span>{platLabel}:</span>
+                    <span className="font-mono">@{ch.handle}</span>
+                    {ch.isPrimary && ch.platform === 'TIKTOK' && (
+                      <span className="text-positive font-medium">(Kênh chính)</span>
+                    )}
+                    {!ch.isPrimary && ch.platform === 'TIKTOK' && (
+                      <span className="text-ink-3">({ch.roleLabel || 'Kênh phụ'})</span>
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {isAddingOrEditing && (
+        <LegalProfileFormModal
+          onClose={() => {
+            setIsAddingOrEditing(false);
+            setEditingProfile(null);
+          }}
+          koc={koc}
+          initialProfile={editingProfile}
+          nextIndex={profiles.length + 1}
+          onSave={handleSaveNewOrEditedProfile}
+        />
+      )}
+
+      {previewState && (
+        <LegalDocPreviewModal
+          attachments={previewState.attachments}
+          activeDoc={previewState.activeDoc}
+          profileLabel={previewState.profileLabel}
+          onSelectDoc={(doc) =>
+            setPreviewState((prev) => (prev ? { ...prev, activeDoc: doc } : null))
+          }
+          onClose={() => setPreviewState(null)}
+        />
+      )}
+    </>
   );
 }

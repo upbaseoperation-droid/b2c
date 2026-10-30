@@ -1,4 +1,5 @@
 import type { ContractRecord } from '../contracts/types';
+import { extractSowPaymentScheduleAndAdvance } from '../contracts/contractRules';
 import type { KocItem } from '../types';
 import { documentOfTemplate, formatContractRecordNumber, recordSigned } from '../planDealLink';
 
@@ -35,12 +36,53 @@ export function applyContractRecordToJob(job: DealJob, record: ContractRecord): 
   if (doc === 'SOW') {
     const legal = reviewOf(record, 'LEGAL');
     const finance = reviewOf(record, 'FINANCE');
+    const sowPay = extractSowPaymentScheduleAndAdvance(record.values, record.templateId);
+    const isAdvProcessed =
+      job.advancePayment?.status === 'REQUESTED' ||
+      job.advancePayment?.status === 'APPROVED' ||
+      job.advancePayment?.status === 'PAID';
+    const nextAdvancePayment: DealJob['advancePayment'] = isAdvProcessed
+      ? {
+          ...job.advancePayment!,
+          amount:
+            job.advancePayment?.amount && job.advancePayment.amount > 0
+              ? job.advancePayment.amount
+              : sowPay.advanceAmount > 0
+                ? sowPay.advanceAmount
+                : job.advancePayment?.amount ?? null,
+        }
+      : sowPay.paymentScheduleOption === 'TWO_TIMES'
+        ? {
+            status:
+              job.advancePayment?.status && job.advancePayment.status !== 'NONE'
+                ? job.advancePayment.status
+                : 'REQUIRED',
+            amount:
+              sowPay.advanceAmount > 0
+                ? sowPay.advanceAmount
+                : job.advancePayment?.amount ?? null,
+            requestedAt: job.advancePayment?.requestedAt || '',
+            paidAt: job.advancePayment?.paidAt || '',
+            larkSlipCode: job.advancePayment?.larkSlipCode || '',
+            uncBillUrl: job.advancePayment?.uncBillUrl || '',
+            note: job.advancePayment?.note,
+          }
+        : {
+            status: 'NONE',
+            amount: null,
+            requestedAt: '',
+            paidAt: '',
+            larkSlipCode: '',
+            uncBillUrl: '',
+          };
     return {
       ...job,
       sowContractId: record.id,
       sowSigned: signed.signed || undefined,
       appendixNo: job.appendixNo.trim() || systemCode,
-      sowGoogleDocsUrl: record.contractSystem?.googleDocsUrl || job.sowGoogleDocsUrl,
+      sowGoogleDocsUrl: record.googleDocsUrl || record.contractSystem?.googleDocsUrl || job.sowGoogleDocsUrl,
+      paymentScheduleOption: sowPay.paymentScheduleOption,
+      advancePayment: nextAdvancePayment,
       ...(legal ? { legalReviewStatus: legal } : {}),
       ...(finance ? { financeReviewStatus: finance } : {}),
       ...(signed.signed
@@ -61,7 +103,7 @@ export function applyContractRecordToJob(job: DealJob, record: ContractRecord): 
       bbntContractId: record.id,
       bbntSigned: signed.signed || undefined,
       bbntNo: job.bbntNo?.trim() || systemCode,
-      bbntGoogleDocsUrl: record.contractSystem?.googleDocsUrl || job.bbntGoogleDocsUrl,
+      bbntGoogleDocsUrl: record.googleDocsUrl || record.contractSystem?.googleDocsUrl || job.bbntGoogleDocsUrl,
       ...(signed.signed
         ? {
             bbntDate: job.bbntDate || signed.at,
@@ -106,7 +148,7 @@ export async function syncFrameworkContractToKoc(record: ContractRecord): Promis
     `/api/contracts/${encodeURIComponent(record.id)}/document?signed=1`;
 
   const targetKocId = record.kocId || record.values?.['KOC_ID'];
-  const targetProfileId = record.values?.['LEGAL_PROFILE_ID'];
+  const targetProfileId = record.legalProfileId || record.values?.['LEGAL_PROFILE_ID'];
   const targetChannel = (record.values?.['CHANNEL_ID'] || record.partner || '').toLowerCase().replace(/^@+/, '');
 
   let kocTouched = 0;

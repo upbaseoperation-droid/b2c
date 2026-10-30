@@ -6,6 +6,7 @@
   "permissions": [
     "storage",
     "activeTab",
+    "tabs",
     "clipboardWrite",
     "declarativeNetRequest",
     "downloads"
@@ -131,6 +132,17 @@
       ],
       "css": [
         "styles.css"
+      ]
+    },
+    {
+      "run_at": "document_start",
+      "matches": [
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*",
+        "https://*.upbase.vn/*"
+      ],
+      "js": [
+        "web-admin-bridge.js"
       ]
     }
   ]

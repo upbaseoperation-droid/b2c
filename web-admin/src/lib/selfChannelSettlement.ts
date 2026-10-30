@@ -6,6 +6,13 @@ import type { SelfFormatKey } from './selfChannelBoardRules';
 export const SELF_PIT_MONTHLY_THRESHOLD = 2_000_000;
 export const SELF_PIT_RATE = 0.1;
 
+/** Ngưỡng bắt buộc ký Hợp đồng đối với Cá nhân / CTV theo quy định BR-03 §2 (từ 10.000.000đ trở lên). Dưới ngưỡng này không bắt buộc HĐ, chỉ cần CCCD/MST + TK ngân hàng. */
+export const SELF_CONTRACT_MONTHLY_THRESHOLD = 10_000_000;
+
+export function requiresSelfContract(grossTotal: number): boolean {
+  return grossTotal >= SELF_CONTRACT_MONTHLY_THRESHOLD;
+}
+
 export function monthlyPitOf(grossTotal: number): number {
   return grossTotal >= SELF_PIT_MONTHLY_THRESHOLD ? Math.round(grossTotal * SELF_PIT_RATE) : 0;
 }

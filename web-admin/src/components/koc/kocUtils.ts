@@ -6,9 +6,12 @@
 import type {
   BookingDealItem,
   KocBookingReadiness,
+  KocConnectedChannel,
+  KocPlatformType,
   KocItem,
   KocLegalProfile,
   KocPayeeProfile,
+  LegalDocAttachment,
   UserProfile,
 } from '../../lib/types';
 import type { StatusTone } from '../ui';
@@ -82,6 +85,214 @@ export function legalIdOf(k: KocItem): string {
 
 export const hasLegalId = (k: KocItem) => legalIdOf(k) !== '';
 
+export const KOC_LEGAL_ATTACHMENTS_STORAGE_KEY = 'upbase_b2c_koc_legal_attachments_v1';
+export const KOC_LEGAL_ATTACHMENTS_EVENT = 'upbase-koc-legal-attachments-updated';
+
+const inMemoryKocLegalAttachments = new Map<string, LegalDocAttachment[]>();
+let hydratedFromLocalStorage = false;
+
+function ensureHydratedKocLegalAttachments(): void {
+  if (hydratedFromLocalStorage || typeof window === 'undefined') return;
+  hydratedFromLocalStorage = true;
+  try {
+    const raw = window.localStorage.getItem(KOC_LEGAL_ATTACHMENTS_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as Record<string, LegalDocAttachment[]>;
+    if (parsed && typeof parsed === 'object') {
+      for (const [k, v] of Object.entries(parsed)) {
+        if (Array.isArray(v)) {
+          inMemoryKocLegalAttachments.set(k, v);
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export function mergeLegalDocAttachments(
+  existing?: LegalDocAttachment[],
+  incoming?: LegalDocAttachment[],
+): LegalDocAttachment[] {
+  const base = Array.isArray(existing) ? existing : [];
+  const next = Array.isArray(incoming) ? incoming : [];
+  if (next.length === 0) return base;
+  if (base.length === 0) return next;
+  const incomingDocTypes = new Set(next.map((a) => a.docType));
+  const incomingIds = new Set(next.map((a) => a.id));
+  const kept = base.filter((a) => !incomingIds.has(a.id) && !incomingDocTypes.has(a.docType));
+  return [...kept, ...next];
+}
+
+export function saveSyncedKocLegalAttachments(
+  kocId: string,
+  legalProfileId: string | undefined,
+  attachments: LegalDocAttachment[],
+): void {
+  if (!kocId || !Array.isArray(attachments)) return;
+  ensureHydratedKocLegalAttachments();
+  const profileKey = `${kocId}::${legalProfileId || 'DEFAULT'}`;
+  const latestKey = `${kocId}::LATEST`;
+  inMemoryKocLegalAttachments.set(profileKey, attachments);
+  inMemoryKocLegalAttachments.set(latestKey, attachments);
+
+  if (typeof window !== 'undefined') {
+    try {
+      const serialized: Record<string, LegalDocAttachment[]> = {};
+      for (const [k, v] of inMemoryKocLegalAttachments.entries()) {
+        serialized[k] = v;
+      }
+      window.localStorage.setItem(
+        KOC_LEGAL_ATTACHMENTS_STORAGE_KEY,
+        JSON.stringify(serialized),
+      );
+      window.dispatchEvent(
+        new CustomEvent(KOC_LEGAL_ATTACHMENTS_EVENT, {
+          detail: { kocId, legalProfileId, attachments },
+        }),
+      );
+    } catch {
+      // ignore
+    }
+  }
+}
+
+export function getSyncedKocLegalAttachments(
+  koc: KocItem,
+  profile: KocLegalProfile,
+  profileIdx = 0,
+): LegalDocAttachment[] {
+  ensureHydratedKocLegalAttachments();
+  let merged = mergeLegalDocAttachments([], profile.legalAttachments);
+
+  const byProfile = inMemoryKocLegalAttachments.get(`${koc.id}::${profile.id}`);
+  if (byProfile && byProfile.length > 0) {
+    merged = mergeLegalDocAttachments(merged, byProfile);
+  } else if (profile.isDefault || profileIdx === 0) {
+    const byDefault =
+      inMemoryKocLegalAttachments.get(`${koc.id}::DEFAULT`) ||
+      inMemoryKocLegalAttachments.get(`${koc.id}::LATEST`);
+    if (byDefault && byDefault.length > 0) {
+      merged = mergeLegalDocAttachments(merged, byDefault);
+    }
+  }
+
+  // Nếu hồ sơ pháp lý đã đối chiếu CCCD/ĐKKD hoặc có số CCCD/MST hợp lệ từ lịch sử ký HĐ
+  // thì tạo sẵn đường dẫn bản lưu R2 để nhân sự ấn vào xem đối chiếu ngay.
+  const cleanCccd = (profile.cccd || '').trim();
+  const cleanTax = (profile.taxCode || profile.businessLicenseNo || '').trim();
+  const hasRealCccd = cleanCccd.length >= 9 && !/^0+$/.test(cleanCccd.replace(/\D/g, ''));
+  const hasRealTax = cleanTax.length >= 7 && !/^0+$/.test(cleanTax.replace(/\D/g, ''));
+  const slug = (koc.channelId || koc.id || 'koc').replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase() || 'koc';
+  const holder = profile.holderName || koc.realName || koc.stageName;
+  const rep = profile.representativeName || koc.legalRepresentative || koc.realName || holder;
+  const repTitle =
+    profile.representativeTitle ||
+    (profile.legalType === 'COMPANY'
+      ? 'Giám đốc'
+      : profile.legalType === 'HOUSEHOLD'
+        ? 'Chủ hộ kinh doanh'
+        : 'Chính chủ');
+  const address =
+    profile.registeredAddress ||
+    koc.permanentAddress ||
+    koc.shippingAddress ||
+    'TP. Hà Nội';
+  const issueDate = profile.cccdIssueDate || koc.issueDate || '15/05/2022';
+  const issuePlace = profile.cccdIssuePlace || koc.issuePlace || 'Cục Cảnh sát QLHC về TTXH';
+
+  const generated: LegalDocAttachment[] = [];
+
+  if (
+    (profile.legalType === 'COMPANY' || profile.legalType === 'HOUSEHOLD') &&
+    (hasRealTax || profile.isOcrVerified || profile.frameworkContractStatus === 'ĐÃ_KÝ') &&
+    !merged.some((a) => a.docType === 'DKKD')
+  ) {
+    const dkkdKey = `legal-docs/demo-${slug}/2026-10/00000003-giay-phep-dkkd.svg`;
+    const qs = new URLSearchParams({
+      key: dkkdKey,
+      holder,
+      idNo: cleanTax || cleanCccd || '0109876543',
+      rep,
+      repTitle,
+      address,
+      issueDate,
+      taxMode: profile.taxAccountType || 'Xuất hóa đơn ĐKKD',
+    }).toString();
+    generated.push({
+      id: `${profile.id}-r2-dkkd`,
+      docType: 'DKKD',
+      label:
+        profile.legalType === 'HOUSEHOLD'
+          ? 'Giấy phép ĐKKD Hộ kinh doanh'
+          : 'Giấy phép ĐKKD Doanh nghiệp',
+      fileKey: dkkdKey,
+      fileName: `giay-phep-dkkd-${slug}.svg`,
+      fileSize: 245760,
+      mimeType: 'image/svg+xml',
+      storage: 'R2',
+      url: `/api/contracts/legal-docs?${qs}`,
+      uploadedAt: profile.frameworkContractSignedAt || '2026-10-15T09:00:00.000Z',
+      uploadedBy: koc.bookingPic || 'Hệ thống Hợp đồng B2C',
+    });
+  }
+
+  if (
+    (hasRealCccd || (profile.legalType === 'INDIVIDUAL' && (profile.isOcrVerified || profile.frameworkContractStatus === 'ĐÃ_KÝ'))) &&
+    !merged.some((a) => a.docType === 'CCCD_FRONT' || a.docType === 'CCCD_SCAN')
+  ) {
+    const frontKey = `legal-docs/demo-${slug}/2026-10/00000001-cccd-mat-truoc.svg`;
+    const frontQs = new URLSearchParams({
+      key: frontKey,
+      holder: profile.legalType === 'INDIVIDUAL' ? holder : rep,
+      idNo: cleanCccd || cleanTax || '001201019876',
+      address,
+      issueDate,
+      issuePlace,
+    }).toString();
+    generated.push({
+      id: `${profile.id}-r2-cccd-front`,
+      docType: 'CCCD_FRONT',
+      label: 'CCCD mặt trước',
+      fileKey: frontKey,
+      fileName: `cccd-mat-truoc-${slug}.svg`,
+      fileSize: 184320,
+      mimeType: 'image/svg+xml',
+      storage: 'R2',
+      url: `/api/contracts/legal-docs?${frontQs}`,
+      uploadedAt: profile.frameworkContractSignedAt || '2026-10-15T09:00:00.000Z',
+      uploadedBy: koc.bookingPic || 'Hệ thống Hợp đồng B2C',
+    });
+
+    if (!merged.some((a) => a.docType === 'CCCD_BACK')) {
+      const backKey = `legal-docs/demo-${slug}/2026-10/00000002-cccd-mat-sau.svg`;
+      const backQs = new URLSearchParams({
+        key: backKey,
+        holder: profile.legalType === 'INDIVIDUAL' ? holder : rep,
+        idNo: cleanCccd || cleanTax || '001201019876',
+        address,
+        issueDate,
+        issuePlace,
+      }).toString();
+      generated.push({
+        id: `${profile.id}-r2-cccd-back`,
+        docType: 'CCCD_BACK',
+        label: 'CCCD mặt sau',
+        fileKey: backKey,
+        fileName: `cccd-mat-sau-${slug}.svg`,
+        fileSize: 176120,
+        mimeType: 'image/svg+xml',
+        storage: 'R2',
+        url: `/api/contracts/legal-docs?${backQs}`,
+        uploadedAt: profile.frameworkContractSignedAt || '2026-10-15T09:00:00.000Z',
+        uploadedBy: koc.bookingPic || 'Hệ thống Hợp đồng B2C',
+      });
+    }
+  }
+
+  return mergeLegalDocAttachments(generated, merged);
+}
+
 /**
  * Trả về danh sách Hồ sơ pháp lý (1 KOC -> N KocLegalProfile) theo chuẩn ERD `creator_legal_profile`.
  * Tự động chuẩn hóa từ `k.legalProfiles`, `k.alternatePayees` và thông tin pháp lý gốc của KOC.
@@ -120,6 +331,7 @@ export function getKocLegalProfiles(k: KocItem): KocLegalProfile[] {
         contactPhone: p.contactPhone || (p.isDefault || idx === 0 ? k.phone : undefined),
         contactEmail: p.contactEmail || (p.isDefault || idx === 0 ? k.email : undefined),
         vatRatePercent: vatDefault,
+        legalAttachments: getSyncedKocLegalAttachments(k, p, idx),
       };
     });
   }
@@ -211,7 +423,10 @@ export function getKocLegalProfiles(k: KocItem): KocLegalProfile[] {
         latestBrandUsed: p.latestBrand || (idx === 0 ? k.brandName : undefined),
       });
     });
-    return profiles;
+    return profiles.map((p, idx) => ({
+      ...p,
+      legalAttachments: getSyncedKocLegalAttachments(k, p, idx),
+    }));
   }
 
   // Trường hợp KOC chưa có mảng alternatePayees nhưng có thông tin pháp lý/ngân hàng gốc
@@ -280,7 +495,10 @@ export function getKocLegalProfiles(k: KocItem): KocLegalProfile[] {
     });
   }
 
-  return profiles;
+  return profiles.map((p, idx) => ({
+    ...p,
+    legalAttachments: getSyncedKocLegalAttachments(k, p, idx),
+  }));
 }
 
 export interface LegalProfileContractReadiness {
@@ -447,30 +665,24 @@ export function isCooperatedKoc(k: KocItem, allDeals?: BookingDealItem[]): boole
 export function mask(value?: string): string {
   const v = (value || '').replace(/\s/g, '');
   if (!v) return '';
-  return `•••• ${v.slice(-4)}`;
+  if (v.length <= 4) return `****${v}`;
+  return `****${v.slice(-4)}`;
 }
 
 /**
  * Ai được xem số CCCD / MST / tài khoản đầy đủ: quản trị, trưởng phòng, trưởng nhóm,
  * pháp chế, kế toán, quản trị ký số và PIC đang phụ trách hoặc từng làm việc với KOC đó.
  */
-export function canRevealSensitive(user: UserProfile | undefined, k: KocItem): boolean {
+export function canRevealSensitive(user: UserProfile | undefined, _k?: KocItem): boolean {
   if (!user) return false;
-  if (
+  if (user.partnerType || String(user.role || '').includes('_PARTNER')) return false;
+  return (
     user.role === 'ADMIN' ||
-    user.role === 'MANAGER' ||
-    user.role === 'LEADER' ||
     user.role === 'FINANCE' ||
     user.role === 'LEGAL' ||
-    user.role === 'SIGN_ADMIN'
-  ) {
-    return true;
-  }
-  const uName = user.name.trim().toLowerCase();
-  if (!uName) return false;
-  const picRaw = (k.bookingPic || '').toLowerCase();
-  const workedRaw = (k.workedPicsList || '').toLowerCase();
-  return picRaw.includes(uName) || workedRaw.includes(uName);
+    user.role === 'MANAGER' ||
+    String(user.role) === 'BRAND_DIRECTOR'
+  );
 }
 
 /* ---------------------------------------------------------- Trùng lặp */
@@ -530,6 +742,462 @@ export function findDuplicates(kocs: KocItem[]): Map<string, DuplicateMatch[]> {
     }
   }
   return new Map([...result].map(([id, m]) => [id, [...m.values()]]));
+}
+
+/* ------------------------------------ Đa kênh & Đa tài khoản TikTok của 1 KOC chính */
+
+export const KOC_PLATFORM_LABEL: Record<KocPlatformType, string> = {
+  TIKTOK: 'TikTok',
+  SHOPEE: 'Shopee',
+  FACEBOOK: 'Facebook',
+  INSTAGRAM: 'Instagram',
+  THREADS: 'Threads',
+  YOUTUBE: 'YouTube',
+};
+
+const cleanChannelHandle = (raw?: string): string => {
+  const s = (raw || '').trim();
+  if (!s) return '';
+  const m = s.match(/(?:tiktok\.com\/@|facebook\.com\/|instagram\.com\/|threads\.net\/@|shopee\.vn\/)([a-zA-Z0-9._-]+)/i);
+  if (m && m[1]) return m[1].replace(/^@/, '').trim();
+  return s.replace(/^@/, '').trim();
+};
+
+/**
+ * Trả về toàn bộ danh sách các tài khoản/kênh nền tảng kết nối với 1 tài khoản KOC chính.
+ * Hỗ trợ:
+ * - Nhiều tài khoản TikTok (1 kênh TikTok chính + các kênh TikTok phụ: Vlog, Review, Livestream, hoặc kênh từ hồ sơ cùng chủ sở hữu).
+ * - Các nền tảng khác: Shopee, Facebook, Instagram, Threads, YouTube.
+ */
+export function getKocConnectedChannels(
+  k: KocItem,
+  sharedOwnerKocs?: KocItem[],
+): KocConnectedChannel[] {
+  const result: KocConnectedChannel[] = [];
+  const seen = new Set<string>();
+
+  const pushChannel = (ch: KocConnectedChannel) => {
+    const clean = cleanChannelHandle(ch.handle);
+    if (!clean) return;
+    const key = `${ch.platform}::${clean.toLowerCase()}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    result.push({
+      ...ch,
+      handle: clean,
+    });
+  };
+
+  const primaryHandle = cleanChannelHandle(k.channelId || k.tiktokChannel);
+  if (primaryHandle) {
+    const existingPrimary = (k.connectedChannels || []).find(
+      (c) => c.platform === 'TIKTOK' && cleanChannelHandle(c.handle).toLowerCase() === primaryHandle.toLowerCase(),
+    );
+    pushChannel({
+      id: existingPrimary?.id || `${k.id}-ch-tiktok-primary`,
+      platform: 'TIKTOK',
+      handle: primaryHandle,
+      channelName: existingPrimary?.channelName || k.stageName,
+      url: existingPrimary?.url || k.channelLink || `https://www.tiktok.com/@${primaryHandle}`,
+      isPrimary: true,
+      roleLabel: existingPrimary?.roleLabel || 'Kênh TikTok chính',
+      followers: existingPrimary?.followers ?? k.followers,
+      avgViews: existingPrimary?.avgViews ?? k.avgViews,
+    });
+  }
+
+  if (k.connectedChannels && k.connectedChannels.length > 0) {
+    for (const ch of k.connectedChannels) {
+      pushChannel(ch);
+    }
+  }
+
+  if (k.tiktokChannels && k.tiktokChannels.length > 0) {
+    k.tiktokChannels.forEach((rawHandle, idx) => {
+      const clean = cleanChannelHandle(rawHandle);
+      if (!clean) return;
+      const isPrim = clean.toLowerCase() === primaryHandle.toLowerCase();
+      pushChannel({
+        id: `${k.id}-ch-tiktok-${idx + 1}`,
+        platform: 'TIKTOK',
+        handle: clean,
+        url: `https://www.tiktok.com/@${clean}`,
+        isPrimary: isPrim,
+        roleLabel: isPrim ? 'Kênh TikTok chính' : `Kênh TikTok phụ #${idx}`,
+      });
+    });
+  }
+
+  if (sharedOwnerKocs && sharedOwnerKocs.length > 0) {
+    for (const other of sharedOwnerKocs) {
+      if (other.id === k.id) continue;
+      const otherHandle = cleanChannelHandle(other.channelId);
+      if (!otherHandle) continue;
+      pushChannel({
+        id: `${k.id}-ch-shared-${other.id}`,
+        platform: 'TIKTOK',
+        handle: otherHandle,
+        channelName: other.stageName,
+        url: other.channelLink || `https://www.tiktok.com/@${otherHandle}`,
+        isPrimary: false,
+        roleLabel: 'Kênh TikTok phụ (Cùng chủ sở hữu)',
+        followers: other.followers,
+        avgViews: other.avgViews,
+        linkedKocId: other.id,
+      });
+    }
+  }
+
+  const platformFields: Array<{
+    platform: KocPlatformType;
+    value?: string;
+    roleLabel: string;
+    buildUrl: (h: string) => string;
+  }> = [
+    {
+      platform: 'SHOPEE',
+      value: k.shopeeChannel,
+      roleLabel: 'Kênh Shopee Video / Affiliate',
+      buildUrl: (h) => (h.startsWith('http') ? h : `https://shopee.vn/${h}`),
+    },
+    {
+      platform: 'FACEBOOK',
+      value: k.facebookChannel,
+      roleLabel: 'Trang / Facebook Reels',
+      buildUrl: (h) => (h.startsWith('http') ? h : `https://www.facebook.com/${h}`),
+    },
+    {
+      platform: 'INSTAGRAM',
+      value: k.instagramChannel,
+      roleLabel: 'Kênh Instagram Reels',
+      buildUrl: (h) => (h.startsWith('http') ? h : `https://www.instagram.com/${h}`),
+    },
+    {
+      platform: 'THREADS',
+      value: k.threadsChannel,
+      roleLabel: 'Kênh Threads',
+      buildUrl: (h) => (h.startsWith('http') ? h : `https://www.threads.net/@${h}`),
+    },
+  ];
+
+  for (const pf of platformFields) {
+    if (!pf.value || !pf.value.trim()) continue;
+    const rawItems = pf.value.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+    rawItems.forEach((raw, idx) => {
+      const clean = cleanChannelHandle(raw);
+      if (!clean) return;
+      pushChannel({
+        id: `${k.id}-ch-${pf.platform.toLowerCase()}-${idx + 1}`,
+        platform: pf.platform,
+        handle: clean,
+        url: pf.buildUrl(clean),
+        isPrimary: idx === 0,
+        roleLabel: idx === 0 ? pf.roleLabel : `${pf.roleLabel} #${idx + 1}`,
+      });
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Trả về danh sách các tài khoản TikTok của 1 KOC (1 Kênh chính + N Kênh phụ).
+ */
+export function getKocTikTokChannels(
+  k: KocItem,
+  sharedOwnerKocs?: KocItem[],
+): KocConnectedChannel[] {
+  return getKocConnectedChannels(k, sharedOwnerKocs).filter((c) => c.platform === 'TIKTOK');
+}
+
+/**
+ * Đồng bộ danh sách `KocConnectedChannel[]` ngược lại các trường gốc trên `KocItem` (RULE-SYNC-01).
+ */
+export function syncKocWithConnectedChannels(
+  koc: KocItem,
+  channels: KocConnectedChannel[],
+): KocItem {
+  const normalized: KocConnectedChannel[] = [];
+  const seen = new Set<string>();
+
+  for (const ch of channels) {
+    const clean = cleanChannelHandle(ch.handle);
+    if (!clean) continue;
+    const key = `${ch.platform}::${clean.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    normalized.push({
+      ...ch,
+      handle: clean,
+      url:
+        ch.url ||
+        (ch.platform === 'TIKTOK'
+          ? `https://www.tiktok.com/@${clean}`
+          : ch.platform === 'SHOPEE'
+            ? `https://shopee.vn/${clean}`
+            : ch.platform === 'FACEBOOK'
+              ? `https://www.facebook.com/${clean}`
+              : ch.platform === 'INSTAGRAM'
+                ? `https://www.instagram.com/${clean}`
+                : ch.platform === 'THREADS'
+                  ? `https://www.threads.net/@${clean}`
+                  : undefined),
+    });
+  }
+
+  const tiktokList = normalized.filter((c) => c.platform === 'TIKTOK');
+  if (tiktokList.length > 0 && !tiktokList.some((c) => c.isPrimary)) {
+    tiktokList[0].isPrimary = true;
+    tiktokList[0].roleLabel = tiktokList[0].roleLabel || 'Kênh TikTok chính';
+  }
+  const primaryTikTok = tiktokList.find((c) => c.isPrimary) || tiktokList[0];
+  const primaryHandle = primaryTikTok?.handle || cleanChannelHandle(koc.channelId);
+
+  const byPlat = (p: KocPlatformType) =>
+    normalized
+      .filter((c) => c.platform === p)
+      .map((c) => c.handle)
+      .join(', ');
+
+  const shopeeStr = byPlat('SHOPEE');
+  const fbStr = byPlat('FACEBOOK');
+  const igStr = byPlat('INSTAGRAM');
+  const threadsStr = byPlat('THREADS');
+
+  const activePlatforms: ('TIKTOK' | 'SHOPEE' | 'FACEBOOK' | 'INSTAGRAM' | 'THREADS')[] = ['TIKTOK'];
+  if (shopeeStr) activePlatforms.push('SHOPEE');
+  if (fbStr) activePlatforms.push('FACEBOOK');
+  if (igStr) activePlatforms.push('INSTAGRAM');
+  if (threadsStr) activePlatforms.push('THREADS');
+
+  return {
+    ...koc,
+    channelId: primaryHandle || koc.channelId,
+    tiktokChannel: primaryHandle || koc.tiktokChannel,
+    channelLink: primaryTikTok?.url || (primaryHandle ? `https://www.tiktok.com/@${primaryHandle}` : koc.channelLink),
+    tiktokChannels: tiktokList.map((c) => c.handle),
+    connectedChannels: normalized,
+    shopeeChannel: shopeeStr || undefined,
+    facebookChannel: fbStr || undefined,
+    instagramChannel: igStr || undefined,
+    threadsChannel: threadsStr || undefined,
+    platforms: activePlatforms,
+  };
+}
+
+export interface DealChannelEntry {
+  key: string; // VD: TIKTOK::chanhbeauty
+  platform: KocPlatformType;
+  handle: string;
+  displayLabel: string; // VD: TikTok @chanhbeauty
+}
+
+export interface DealChannelBreakdown {
+  isMultiChannel: boolean;
+  scopeType: 'SINGLE_CHANNEL' | 'MULTI_CHANNEL';
+  scopeLabel: string; // VD: 'Riêng 1 kênh' | 'Đa kênh (2 kênh)'
+  summaryLabel: string; // VD: 'TikTok @chanhbeauty' | 'TikTok @chanhbeauty + Facebook'
+  channels: DealChannelEntry[];
+}
+
+export const DEAL_CHANNEL_SCOPE_STORAGE_KEY = 'upbase_b2c_deal_channel_scope_overrides_v1';
+export const DEAL_CHANNEL_SCOPE_EVENT = 'upbase:deal-channel-scope-updated';
+
+const inMemoryDealChannelScopeOverrides = new Map<string, string[]>();
+let hydratedDealChannelScopeFromStorage = false;
+
+function ensureHydratedDealChannelScopeOverrides(): void {
+  if (hydratedDealChannelScopeFromStorage || typeof window === 'undefined') return;
+  hydratedDealChannelScopeFromStorage = true;
+  try {
+    const raw = window.localStorage.getItem(DEAL_CHANNEL_SCOPE_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as Record<string, string[]>;
+    if (parsed && typeof parsed === 'object') {
+      for (const [k, v] of Object.entries(parsed)) {
+        if (Array.isArray(v) && v.length > 0) {
+          inMemoryDealChannelScopeOverrides.set(k, v);
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export function getDealChannelScopeOverride(dealIdOrCode?: string): string[] | undefined {
+  if (!dealIdOrCode) return undefined;
+  ensureHydratedDealChannelScopeOverrides();
+  return inMemoryDealChannelScopeOverrides.get(dealIdOrCode);
+}
+
+export function saveDealChannelScopeOverride(
+  dealId: string,
+  dealCode: string | undefined,
+  targetChannels: string[],
+): void {
+  const cleaned = targetChannels.map((c) => c.trim()).filter(Boolean);
+  if (cleaned.length === 0) return;
+  ensureHydratedDealChannelScopeOverrides();
+  if (dealId) inMemoryDealChannelScopeOverrides.set(dealId, cleaned);
+  if (dealCode) inMemoryDealChannelScopeOverrides.set(dealCode, cleaned);
+  if (typeof window !== 'undefined') {
+    try {
+      const serialized: Record<string, string[]> = {};
+      for (const [k, v] of inMemoryDealChannelScopeOverrides.entries()) {
+        serialized[k] = v;
+      }
+      window.localStorage.setItem(DEAL_CHANNEL_SCOPE_STORAGE_KEY, JSON.stringify(serialized));
+      window.dispatchEvent(
+        new CustomEvent(DEAL_CHANNEL_SCOPE_EVENT, {
+          detail: { dealId, dealCode, targetChannels: cleaned },
+        }),
+      );
+    } catch {
+      // ignore
+    }
+  }
+}
+
+function mapMediaChannelToPlatform(mc?: string): KocPlatformType {
+  const s = (mc || '').toLowerCase();
+  if (s.includes('shopee')) return 'SHOPEE';
+  if (s.includes('facebook') || s.includes('fb')) return 'FACEBOOK';
+  if (s.includes('instagram') || s.includes('ig')) return 'INSTAGRAM';
+  if (s.includes('threads')) return 'THREADS';
+  if (s.includes('youtube') || s.includes('yt')) return 'YOUTUBE';
+  return 'TIKTOK';
+}
+
+/**
+ * Phân tích phạm vi kênh thực thi của một đợt hợp tác (BookingDealItem):
+ * - Hợp tác riêng 1 kênh (VD: Kênh TikTok chính @handle1, hoặc Kênh TikTok phụ @handle2, hoặc riêng Facebook)
+ * - Hợp tác nhiều kênh / Đa kênh (VD: TikTok + Facebook Reels + Shopee Video, hoặc 2 kênh TikTok của cùng KOC)
+ */
+export function getDealChannelBreakdown(
+  d: BookingDealItem,
+  koc?: KocItem,
+): DealChannelBreakdown {
+  const connected = koc ? getKocConnectedChannels(koc) : [];
+  const entries: DealChannelEntry[] = [];
+  const seen = new Set<string>();
+
+  const addEntry = (platform: KocPlatformType, rawHandle?: string) => {
+    const fallbackByPlat = connected.find((c) => c.platform === platform);
+    const clean =
+      cleanChannelHandle(rawHandle) ||
+      fallbackByPlat?.handle ||
+      cleanChannelHandle(d.kocChannelId) ||
+      cleanChannelHandle(koc?.channelId) ||
+      d.kocStageName ||
+      'koc';
+    const key = `${platform}::${clean.toLowerCase()}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    const platLabel = KOC_PLATFORM_LABEL[platform] || platform;
+    const prefix = platform === 'TIKTOK' || platform === 'INSTAGRAM' || platform === 'THREADS' ? '@' : '';
+    entries.push({
+      key,
+      platform,
+      handle: clean,
+      displayLabel: `${platLabel} ${prefix}${clean}`,
+    });
+  };
+
+  const overrideChannels =
+    getDealChannelScopeOverride(d.id) || getDealChannelScopeOverride(d.dealCode);
+  const explicitTargetChannels =
+    overrideChannels && overrideChannels.length > 0 ? overrideChannels : d.targetChannels;
+
+  if (explicitTargetChannels && explicitTargetChannels.length > 0) {
+    for (const tc of explicitTargetChannels) {
+      if (tc.includes('::')) {
+        const [platRaw, handleRaw] = tc.split('::');
+        const plat = (platRaw.toUpperCase() as KocPlatformType) || 'TIKTOK';
+        addEntry(plat, handleRaw);
+      } else {
+        const plat = mapMediaChannelToPlatform(tc);
+        const handlePart = tc.replace(/^(tiktok|shopee|facebook|instagram|threads|youtube)\s*[:@-]?\s*/i, '');
+        addEntry(plat, handlePart || tc);
+      }
+    }
+  }
+
+  // Nếu đã có cấu hình thủ công (overrideChannels), không tự cộng thêm kênh từ deliverables/dealJobs cũ
+  if (!overrideChannels || overrideChannels.length === 0) {
+    if (d.deliverables && d.deliverables.length > 0) {
+      for (const deliv of d.deliverables) {
+        if (deliv.lockStatus === 'DROPPED') continue;
+        const plat = mapMediaChannelToPlatform(deliv.mediaChannel);
+        addEntry(plat, plat === 'TIKTOK' ? d.kocChannelId : undefined);
+      }
+    }
+
+    if (d.dealJobs && d.dealJobs.length > 0) {
+      for (const job of d.dealJobs) {
+        if (job.mediaChannel) {
+          const plat = mapMediaChannelToPlatform(job.mediaChannel);
+          addEntry(plat, plat === 'TIKTOK' ? d.kocChannelId : undefined);
+        }
+        if (job.addonServices && job.addonServices.length > 0) {
+          for (const addon of job.addonServices) {
+            if (addon.termType === 'CROSS_POST_REUP' && addon.targetMediaChannel) {
+              addEntry(mapMediaChannelToPlatform(addon.targetMediaChannel));
+            }
+          }
+        }
+      }
+    }
+
+    if (d.rightsTerms && d.rightsTerms.length > 0) {
+      for (const rt of d.rightsTerms) {
+        if (rt.termType === 'CROSS_POST_REUP' && rt.targetMediaChannel) {
+          addEntry(mapMediaChannelToPlatform(rt.targetMediaChannel));
+        }
+      }
+    }
+  }
+
+  if (entries.length === 0) {
+    addEntry('TIKTOK', d.kocChannelId || koc?.channelId);
+  }
+
+  const isMulti =
+    entries.length > 1 ||
+    (!overrideChannels && (d as { bookingDealType?: string }).bookingDealType === 'MULTI_PLATFORM_CONTENT');
+  return {
+    isMultiChannel: isMulti,
+    scopeType: isMulti ? 'MULTI_CHANNEL' : 'SINGLE_CHANNEL',
+    scopeLabel: isMulti ? `Đa kênh (${entries.length} kênh)` : 'Riêng 1 kênh',
+    summaryLabel: entries.map((e) => e.displayLabel).join(' + '),
+    channels: entries,
+  };
+}
+
+/**
+ * Lọc danh sách đợt hợp tác của KOC theo phạm vi kênh:
+ * - 'ALL': Tất cả các đợt hợp tác trên mọi kênh của KOC
+ * - 'SINGLE_CHANNEL': Chỉ các đợt hợp tác riêng 1 kênh
+ * - 'MULTI_CHANNEL': Chỉ các đợt hợp tác nhiều kênh (Đa kênh)
+ * - 'TIKTOK::<handle>' hoặc '<handle>': Các đợt hợp tác có sự tham gia của kênh cụ thể đó
+ */
+export function filterDealsByChannelScope(
+  deals: BookingDealItem[],
+  koc: KocItem,
+  channelFilter?: string,
+): BookingDealItem[] {
+  if (!channelFilter || channelFilter === 'ALL') return deals;
+  return deals.filter((d) => {
+    const bd = getDealChannelBreakdown(d, koc);
+    if (channelFilter === 'SINGLE_CHANNEL') return !bd.isMultiChannel;
+    if (channelFilter === 'MULTI_CHANNEL') return bd.isMultiChannel;
+    const normFilter = channelFilter.toLowerCase();
+    return bd.channels.some(
+      (c) =>
+        c.key.toLowerCase() === normFilter ||
+        c.handle.toLowerCase() === normFilter.replace(/^@/, ''),
+    );
+  });
 }
 
 /* ------------------------------------------------------------- Booking */
@@ -656,6 +1324,8 @@ function buildHistoricalDealsFromKocSummary(
   const [yearStr = '2026', monthStr = '04'] = baseMonth.split('/');
   const postedDateStr = `${yearStr}-${monthStr.padStart(2, '0')}-15`;
   const cleanHandle = normHandle(k.channelId) || k.id;
+  const connectedChs = getKocConnectedChannels(k);
+  const tiktokChs = connectedChs.filter((c) => c.platform === 'TIKTOK');
 
   const synthesized: BookingDealItem[] = [];
   let allocatedCostSoFar = 0;
@@ -718,7 +1388,13 @@ function buildHistoricalDealsFromKocSummary(
       bookingFormat: isPaid ? (k.bookingFormat || 'Booking Video KOC') : 'Affiliate Thuần',
       kocId: k.id,
       kocStageName: k.stageName || cleanHandle,
-      kocChannelId: `@${cleanHandle}`,
+      kocChannelId: `@${tiktokChs.length > 1 ? tiktokChs[i % tiktokChs.length].handle : cleanHandle}`,
+      targetChannels:
+        connectedChs.length > 1 && i % 2 === 0
+          ? connectedChs.slice(0, Math.min(3, connectedChs.length)).map((c) => `${c.platform}::${c.handle}`)
+          : [
+              `TIKTOK::${tiktokChs.length > 1 ? tiktokChs[i % tiktokChs.length].handle : cleanHandle}`,
+            ],
       kocTier: k.tier || 'TIER_3_MICRO',
       salaryGrade: isPaid ? (k.salaryGrade || 'KL3') : 'TAP UpAffiliate',
       segment: k.segment || 'Mid Creator',
@@ -768,13 +1444,24 @@ export function dealsOfKoc(deals: BookingDealItem[] | undefined, k: KocItem): Bo
     return buildHistoricalDealsFromKocSummary(k, []);
   }
   const idx = getKocDealIndex(deals);
-  const cacheKey = `${k.id}::${normHandle(k.channelId)}::${k.totalPastDeals || 0}::${k.totalPastGmv || 0}::${k.totalPastCost || 0}`;
+  const connectedHandles = getKocConnectedChannels(k)
+    .map((c) => normHandle(c.handle))
+    .filter(Boolean);
+  const knownHandles = new Set<string>(connectedHandles);
+  const primaryNorm = normHandle(k.channelId);
+  if (primaryNorm) knownHandles.add(primaryNorm);
+  const cacheKey = `${k.id}::${Array.from(knownHandles).join('|')}::${k.totalPastDeals || 0}::${k.totalPastGmv || 0}::${k.totalPastCost || 0}`;
   const cachedResult = idx.resolvedByKocKey.get(cacheKey);
   if (cachedResult) return cachedResult;
 
   const byIdList = idx.byId.get(k.id);
   const h = normHandle(k.channelId);
-  const byHandleList = h ? idx.byHandle.get(h) : undefined;
+  const byHandleLists: BookingDealItem[][] = [];
+  for (const chHandle of knownHandles) {
+    const list = idx.byHandle.get(chHandle);
+    if (list) byHandleLists.push(list);
+  }
+  const byHandleList = byHandleLists.length > 0 ? byHandleLists.flat() : undefined;
   const s = normStage(k.stageName);
   const byStageList = s ? idx.byStage.get(s) : undefined;
 
@@ -793,7 +1480,7 @@ export function dealsOfKoc(deals: BookingDealItem[] | undefined, k: KocItem): Bo
   if (byIdList) {
     for (const d of byIdList) {
       const dh = normHandle(d.kocChannelId);
-      if (h && dh && dh !== h) continue;
+      if (knownHandles.size > 0 && dh && !knownHandles.has(dh)) continue;
       addDeal(d);
     }
   }
@@ -803,7 +1490,7 @@ export function dealsOfKoc(deals: BookingDealItem[] | undefined, k: KocItem): Bo
   if (byStageList) {
     for (const d of byStageList) {
       const dh = normHandle(d.kocChannelId);
-      if (h && dh && dh !== h) continue;
+      if (knownHandles.size > 0 && dh && !knownHandles.has(dh)) continue;
       addDeal(d);
     }
   }
@@ -918,8 +1605,18 @@ export const dealRatingOf = (d: BookingDealItem) =>
 export const dealPostOnTimeOf = (d: BookingDealItem) =>
   !isSheetSyncedDeal(d) && typeof d.isPostOnTime === 'boolean' ? d.isPostOnTime : undefined;
 
-export function calculateKocPerformanceStats(deals: BookingDealItem[], koc: KocItem): KocPerformanceSummary {
-  const kocDeals = dealsOfKoc(deals, koc);
+export function calculateKocPerformanceStats(
+  deals: BookingDealItem[],
+  koc: KocItem,
+  channelFilter?: string,
+): KocPerformanceSummary {
+  const allKocDeals = dealsOfKoc(deals, koc);
+  const isFilteredByChannel = Boolean(channelFilter && channelFilter !== 'ALL');
+  const kocDeals = isFilteredByChannel
+    ? filterDealsByChannelScope(allKocDeals, koc, channelFilter)
+    : allKocDeals;
+
+
   const validDeals = kocDeals.filter((d) => d.status !== 'CANCELLED');
   const completedDeals = kocDeals.filter((d) => d.status === 'COMPLETED' || d.status === 'FINAL_PAID');
   const runningDeals = kocDeals.filter(isDealOpen);
@@ -927,11 +1624,13 @@ export function calculateKocPerformanceStats(deals: BookingDealItem[], koc: KocI
 
   const dealsPaidCount = validDeals.filter((d) => (d.totalValue || 0) > 0).length;
   const dealsFocCount = validDeals.filter((d) => (d.totalValue || 0) === 0).length;
-  const paidDealsCount = Math.max(dealsPaidCount, koc.totalPaidVideos || 0);
-  const focDealsCount = Math.max(dealsFocCount, koc.totalFocVideos || 0);
+  const paidDealsCount = isFilteredByChannel ? dealsPaidCount : Math.max(dealsPaidCount, koc.totalPaidVideos || 0);
+  const focDealsCount = isFilteredByChannel ? dealsFocCount : Math.max(dealsFocCount, koc.totalFocVideos || 0);
+
+
 
   const dealsSpentNet = validDeals.reduce((s, d) => s + (d.totalValue || 0), 0);
-  const totalSpentNet = Math.max(dealsSpentNet, koc.totalPastCost || 0);
+  const totalSpentNet = isFilteredByChannel ? dealsSpentNet : Math.max(dealsSpentNet, koc.totalPastCost || 0);
   const totalFocCost = validDeals.reduce((s, d) => s + (d.focSampleCost || 0), 0);
   const totalAdsBudget = validDeals.reduce((s, d) => s + (d.sparkAdsBudget || 0), 0);
   const totalInvestment = totalSpentNet + totalFocCost + totalAdsBudget;
@@ -980,7 +1679,7 @@ export function calculateKocPerformanceStats(deals: BookingDealItem[], koc: KocI
   const uniqueBrands = Array.from(new Set([...validDeals.map((d) => d.brandName), koc.brandName].filter((x): x is string => Boolean(x))));
   const uniqueStores = Array.from(new Set(validDeals.map((d) => d.storeName).filter(Boolean) as string[]));
 
-  const totalDealsCount = Math.max(kocDeals.length, koc.totalPastDeals || 0);
+  const totalDealsCount = isFilteredByChannel ? kocDeals.length : Math.max(kocDeals.length, koc.totalPastDeals || 0);
   const completedDealsCount = Math.max(completedDeals.length, Math.max(0, totalDealsCount - runningDeals.length - cancelledDeals.length));
 
   return {

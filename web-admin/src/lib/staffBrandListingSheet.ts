@@ -548,7 +548,7 @@ export interface StaffBrandSheetCollection {
   fieldEditPolicy?: StaffSheetFieldEditPolicy;
 }
 
-const STORAGE_KEY = 'upbase_b2c_staff_brand_listing_sheets_v1';
+const STORAGE_KEY = 'upbase_b2c_staff_brand_listing_sheets_v2';
 export const STAFF_SHEET_UPDATED_EVENT = 'upbase-staff-brand-sheet-updated';
 
 let memoryCollectionCache: StaffBrandSheetCollection | null = null;
@@ -1082,7 +1082,7 @@ export function buildStaffListingRowFromKoc(params: {
   const topCategoriesText =
     koc.tiktokTopCategories && koc.tiktokTopCategories.length > 0
       ? koc.tiktokTopCategories.slice(0, 3).join(', ')
-      : koc.niche || koc.kocCategory || 'Beauty & Chăm sóc cá nhân';
+      : koc.niche || koc.kocCategory || '';
 
   return {
     id: `sheet-row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -1114,7 +1114,7 @@ export function buildStaffListingRowFromKoc(params: {
     thanhQuaHopTac: thanhQuaText,
     thanhQuaBrandNgoai: koc.workedBrands?.length
       ? `Đã hợp tác: ${koc.workedBrands.slice(0, 3).join(', ')}`
-      : 'Kalodata ngành hàng tương đương',
+      : '',
     gmvDaHopTac: maxDealGmv,
     doanhSo: Number(koc.recentRevenue ?? 0),
     doanhSoUocTinh30d: Number(koc.recentRevenue ?? maxDealGmv ?? 0),
@@ -1133,7 +1133,7 @@ export function buildStaffListingRowFromKoc(params: {
     tuoi25_34Pct: age25_34,
     tuoiTren35Pct: ageOver35,
     tuoiOtherPct: ageOver35,
-    location: koc.location || 'Việt Nam',
+    location: koc.location || '',
     ngayAirPlan,
     gmvTarget: gmvTargetVal,
     viewTrungVi: medianViewsVal,
@@ -1266,7 +1266,7 @@ export function buildStaffListingRowFromListingItem(
   const topCategoriesText =
     matchedKoc?.tiktokTopCategories && matchedKoc.tiktokTopCategories.length > 0
       ? matchedKoc.tiktokTopCategories.slice(0, 3).join(', ')
-      : matchedKoc?.niche || matchedKoc?.kocCategory || 'Beauty & Chăm sóc cá nhân';
+      : matchedKoc?.niche || matchedKoc?.kocCategory || '';
 
   let thanhQuaText = '';
   if (matchedKoc?.totalPastDeals && matchedKoc.totalPastDeals > 0) {
@@ -1325,7 +1325,7 @@ export function buildStaffListingRowFromListingItem(
     tuoi25_34Pct: age25_34,
     tuoiTren35Pct: ageOver35,
     tuoiOtherPct: ageOver35,
-    location: matchedKoc?.location || 'Việt Nam',
+    location: matchedKoc?.location || '',
     ngayAirPlan: item.expectedAirDate || '',
     gmvTarget: 0,
     viewTrungVi: medianViewsVal,

@@ -13,6 +13,7 @@ import {
   normalizeStoreCoefficient,
 } from '../../lib/types';
 import { Button, Field, Input, Modal, Select } from '../ui';
+import { resolveBrandBookingSheetUrl } from '../../lib/bookingList';
 
 export interface StoreEditDialogProps {
   open: boolean;
@@ -42,6 +43,9 @@ export function StoreEditDialog({
   const [difficultyTier, setDifficultyTier] = useState<StoreDifficultyTier>(initialTier);
   const [requiresSparkAds, setRequiresSparkAds] = useState(store.requiresSparkAds || false);
   const [storeUrl, setStoreUrl] = useState(store.storeUrl || '');
+  const [bookingSheetUrl, setBookingSheetUrl] = useState(
+    () => (store.bookingSheetUrl || resolveBrandBookingSheetUrl(store.brandName, store.storeName, store) || '').trim()
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +64,7 @@ export function StoreEditDialog({
       difficultyMultiplier: updatedMultiplier,
       requiresSparkAds,
       storeUrl: storeUrl.trim() || undefined,
+      bookingSheetUrl: bookingSheetUrl.trim() || undefined,
       updatedAt: new Date().toISOString(),
     };
 
@@ -144,6 +149,15 @@ export function StoreEditDialog({
               </option>
             ))}
           </Select>
+        </Field>
+
+        <Field label="Link Google Sheet">
+          <Input
+            type="url"
+            placeholder="https://docs.google.com/spreadsheets/d/..."
+            value={bookingSheetUrl}
+            onChange={e => setBookingSheetUrl(e.target.value)}
+          />
         </Field>
 
         <Field label="Link gian hàng sàn (URL)">

@@ -104,9 +104,14 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
       if (seedDeals.length > 0) {
         const firstSeed = seedDeals[0];
         setSelectedDealIds(seedDeals.map(d => d.id));
-        const hasAdvanceAgreed = (firstSeed.advanceAmount || 0) > 0;
+        const hasAdvanceAgreed =
+          firstSeed.paymentScheduleOption !== 'ONE_TIME' &&
+          ((firstSeed.advanceAmount || 0) > 0 || firstSeed.paymentScheduleOption === 'TWO_TIMES');
         const isAdvPaid = firstSeed.status === 'ADVANCE_PAID' || Boolean(firstSeed.larkAdvanceApprovalCode);
-        const resolvedType = initialRequestType ?? (hasAdvanceAgreed && !isAdvPaid ? 'ADVANCE' : 'SETTLEMENT');
+        const resolvedType =
+          initialRequestType === 'ADVANCE' && firstSeed.paymentScheduleOption === 'ONE_TIME'
+            ? 'ADVANCE'
+            : initialRequestType ?? (hasAdvanceAgreed && !isAdvPaid ? 'ADVANCE' : 'SETTLEMENT');
         setRequestType(resolvedType);
         const codesText = seedDeals.map(d => d.dealCode).join(', ');
         setSlipNote(
@@ -559,7 +564,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                   <div className="flex items-center gap-2 flex-wrap">
                     <CheckCircle2 className="w-4 h-4 text-positive shrink-0" />
                     <span className="text-sm font-semibold text-ink">
-                      Đã khởi tạo luồng phê duyệt Lark Approval cho phiếu {createdSlipResult.slipCode}
+                      Đã đẩy phiếu {createdSlipResult.slipCode} sang luồng phê duyệt Lark Approval
                     </span>
                     <Status tone="positive">
                       Mã Lark Approval: {createdSlipResult.larkSync.approvalInstanceCode}
@@ -569,16 +574,6 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                     <span className="text-xs font-code text-ink-2">
                       Bản ghi Larkbase 3.2: {createdSlipResult.larkSync.larkbaseRecordId}
                     </span>
-                    {createdSlipResult.larkSync.approvalStatus !== 'PAID' && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        icon={CheckCircle2}
-                        onClick={() => handleAdvanceLarkApprovalStep(createdSlipResult)}
-                      >
-                        Duyệt bước tiếp theo trên Lark
-                      </Button>
-                    )}
                   </div>
                 </div>
                 {renderLarkApprovalNodes(
@@ -589,7 +584,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                 )}
                 <div className="text-xs text-ink-2 flex flex-wrap items-center gap-x-4 gap-y-1">
                   <span>
-                    Luồng duyệt: <strong>{createdSlipResult.approvalRoute.routeSummary}</strong>
+                    Luồng duyệt trên Lark: <strong>{createdSlipResult.approvalRoute.routeSummary}</strong>
                   </span>
                   <span>
                     Số tiền thực chuyển:{' '}
@@ -608,6 +603,27 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                 <span>{submitError}</span>
               </div>
             )}
+
+            {requestType === 'ADVANCE' &&
+              selectedDeals.some(
+                d =>
+                  d.paymentScheduleOption === 'ONE_TIME' ||
+                  (d.paymentScheduleOption !== 'TWO_TIMES' &&
+                    (d.advanceAmount || 0) <= 0 &&
+                    (d.soTienTamUngTruoc || 0) <= 0),
+              ) && (
+                <div className="rounded-xl border border-critical/40 bg-critical-soft p-3 text-xs text-critical space-y-1">
+                  <div className="font-semibold flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>
+                      Chặn đẩy luồng Tạm ứng: Phụ lục SOW chưa cấu hình &ldquo;Thanh toán 2 đợt (Có tạm ứng)&rdquo;
+                    </span>
+                  </div>
+                  <p className="text-2xs text-ink-2">
+                    Theo quy định tài chính, chỉ khi Phụ lục SOW được chọn phương thức <strong>Thanh toán 2 đợt (Có tạm ứng)</strong> mới được phép tạo luồng Tạm ứng trên Lark Approval (QNvp). Với Phụ lục SOW thanh toán 1 lần, vui lòng chuyển sang tab <strong>ĐNTT Tất toán Deal (Đợt 2 / 100%)</strong> sau khi nghiệm thu.
+                  </p>
+                </div>
+              )}
 
             {/* Hàng chỉ số tổng hợp của phiếu */}
             <StatRow>
@@ -1096,39 +1112,12 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
               </div>
             </Panel>
 
-            {/* Khung 2: Thông tin Thụ hưởng, Pháp lý CCCD/MST & Mã QR Chuyển khoản */}
+            {/* Khung 2: Thông tin Thụ hưởng đồng bộ từ Hồ sơ pháp lý KOC */}
             <Panel
-              title="2. Thông tin thụ hưởng, Pháp lý (CCCD / MST) & Thuế (BR-09)"
+              title="2. Thông tin thụ hưởng & Thuế (Đồng bộ từ Hồ sơ pháp lý KOC)"
               actions={
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      const cleanHolder = normalizeBankHolderUpperNoAccent(
-                        sharedPayeeOverride.bankHolder ?? evaluation.payee.bankHolder
-                      );
-                      const cleanAcc = (
-                        sharedPayeeOverride.bankAccount ?? evaluation.payee.bankAccount
-                      ).replace(/\s+/g, '');
-                      setSharedPayeeOverride(prev => ({
-                        ...prev,
-                        bankHolder: cleanHolder,
-                        bankAccount: cleanAcc,
-                      }));
-                    }}
-                  >
-                    Chuẩn hóa IN HOA không dấu &amp; STK
-                  </Button>
-                  {hasPayeeInfo && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setIsEditingPayee(v => !v)}
-                    >
-                      {isEditingPayee ? 'Đóng sửa' : 'Sửa thông tin thụ hưởng'}
-                    </Button>
-                  )}
+                  <Status tone="positive">Lấy từ Hồ sơ pháp lý KOC</Status>
                   {evaluation.payee.vietQrUrl && (
                     <Button
                       size="sm"
@@ -1369,43 +1358,9 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                     <div className="text-xs font-semibold text-ink tabular-nums">
                       Thực chuyển: {formatVnd(slip.totals.netTransferTotal)}
                     </div>
-                    {slip.larkSync.approvalStatus === 'APPROVED' && (
-                      <Input
-                        className="w-44 font-code"
-                        value={uncBillInputs[slip.id] ?? slip.larkSync.uncBillCode ?? ''}
-                        onChange={e =>
-                          setUncBillInputs(prev => ({ ...prev, [slip.id]: e.target.value }))
-                        }
-                        placeholder="Mã / Link Bill UNC..."
-                      />
-                    )}
-                    {slip.larkSync.approvalStatus !== 'PAID' &&
-                      slip.larkSync.approvalStatus !== 'REJECTED' && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            icon={CheckCircle2}
-                            onClick={() => handleAdvanceLarkApprovalStep(slip)}
-                          >
-                            {slip.larkSync.approvalStatus === 'APPROVED'
-                              ? 'KT Handle: Xác nhận Đã đi tiền & Gửi UNC'
-                              : 'Duyệt bước tiếp theo trên Lark'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              handleAdvanceLarkApprovalStep(slip, {
-                                action: 'REJECT_SLIP',
-                                rejectedReason: 'Từ chối trên Lark Approval để bổ sung chứng từ',
-                              })
-                            }
-                          >
-                            Từ chối phiếu
-                          </Button>
-                        </>
-                      )}
+                    <span className="text-2xs px-2 py-0.5 rounded border border-line bg-sunken text-ink-2">
+                      Phê duyệt &amp; chi tiền trên Lark Approval
+                    </span>
                   </div>
                 </div>
                 {renderLarkApprovalNodes(

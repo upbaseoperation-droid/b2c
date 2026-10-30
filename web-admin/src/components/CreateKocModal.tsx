@@ -39,7 +39,12 @@ import {
   recordApiUsageLog,
   calculateExecutionCost,
 } from '../lib/apiKeyConfig';
-import { getKocLegalProfiles, syncKocWithLegalProfiles } from './koc/kocUtils';
+import {
+  getKocConnectedChannels,
+  getKocLegalProfiles,
+  syncKocWithConnectedChannels,
+  syncKocWithLegalProfiles,
+} from './koc/kocUtils';
 
 interface CreateKocModalProps {
   isOpen: boolean;
@@ -66,6 +71,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
 
   // Kênh Shopee, Facebook, Instagram, Threads
   const [shopeeChannel, setShopeeChannel] = useState('');
+  const [extraTiktokChannels, setExtraTiktokChannels] = useState('');
   const [facebookChannel, setFacebookChannel] = useState('');
   const [instagramChannel, setInstagramChannel] = useState('');
   const [threadsChannel, setThreadsChannel] = useState('');
@@ -126,6 +132,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       setBookingFormat('Booking Video KOC');
       setFormError(null);
       setShopeeChannel('');
+      setExtraTiktokChannels('');
       setFacebookChannel('');
       setInstagramChannel('');
       setThreadsChannel('');
@@ -387,6 +394,13 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
     setFormError(null);
 
     const formattedChannel = channelId.startsWith('@') ? channelId : `@${channelId}`;
+    const extraTiktokList = extraTiktokChannels
+      .split(/[,;\n]/)
+      .map((s) => extractHandleFromSocialInput('TIKTOK', s) || s.trim().replace(/^@+/, ''))
+      .filter(Boolean);
+    const allTiktokHandles = Array.from(
+      new Set([formattedChannel.replace(/^@+/, ''), ...extraTiktokList].filter(Boolean)),
+    );
 
     const cleanShopee = extractHandleFromSocialInput('SHOPEE', shopeeChannel) || undefined;
     const cleanFb = extractHandleFromSocialInput('FACEBOOK', facebookChannel) || undefined;
@@ -429,6 +443,8 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       rateCardVideo: Number(rateCardVideo) || 0,
       bookingFormat: bookingFormat,
       platforms: activePlatforms,
+      tiktokChannel: formattedChannel.replace(/^@+/, ''),
+      tiktokChannels: allTiktokHandles,
       shopeeChannel: cleanShopee,
       facebookChannel: cleanFb,
       instagramChannel: cleanIg,
@@ -561,7 +577,11 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
         ]
       : existingProfiles;
 
-    const syncedKoc = nextProfiles.length > 0 ? syncKocWithLegalProfiles(newKoc, nextProfiles) : newKoc;
+    const syncedLegalKoc = nextProfiles.length > 0 ? syncKocWithLegalProfiles(newKoc, nextProfiles) : newKoc;
+    const syncedKoc = syncKocWithConnectedChannels(
+      syncedLegalKoc,
+      getKocConnectedChannels(syncedLegalKoc),
+    );
 
     onKocCreated(syncedKoc);
     onClose();
@@ -704,6 +724,19 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
             </div>
 
+            <div className="space-y-1 pt-2 border-t border-line">
+              <label className="text-ink-2 font-semibold text-2xs block">
+                Các tài khoản TikTok phụ của KOC (Vlog / Review / Livestream — cách nhau bởi dấu phẩy):
+              </label>
+              <input
+                type="text"
+                placeholder="VD: @haiyen.daily, @haiyen.livestream"
+                value={extraTiktokChannels}
+                onChange={(e) => setExtraTiktokChannels(e.target.value)}
+                className="w-full bg-surface border border-line-strong rounded-lg px-3 py-1.5 text-xs text-ink font-mono focus:outline-none focus:border-primary"
+              />
+            </div>
+
             {/* Kênh mạng xã hội khác: Shopee, Facebook, Instagram, Threads */}
             <div className="pt-3 border-t border-line space-y-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -724,6 +757,8 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   {isSearchingSocial ? 'Đang tìm kênh...' : 'Tìm nick & xác nhận'}
                 </button>
               </div>
+
+
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -1238,7 +1273,9 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-ink-2 font-medium block mb-1">
                       {legalType === 'BUSINESS_COMPANY' ? 'Tên công ty / pháp nhân (theo ĐKKD):' : 'Tên hộ kinh doanh cá thể:'}

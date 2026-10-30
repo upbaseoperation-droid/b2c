@@ -1241,6 +1241,11 @@ function buildContentPerformanceReviewOutput(cleanInput: string, _hasModuleHeade
   ].join('\n');
 }
 
+/** Không có khóa mô hình: không bịa kết quả, để màn nghiệm thu chỉ dùng kết quả kiểm tra từ khóa. */
+function buildSelfVideoAcceptanceOutput(): string {
+  return JSON.stringify({ items: [], suggestion: '' });
+}
+
 function buildInternalPurposeOutput(
   purposeId: OperationalApiPurposeId,
   inputText: string,
@@ -1376,6 +1381,9 @@ function buildInternalPurposeOutput(
       case 'CONTENT_PERFORMANCE_REVIEW':
         return buildContentPerformanceReviewOutput(cleanInput, true);
 
+      case 'SELF_VIDEO_ACCEPTANCE':
+        return buildSelfVideoAcceptanceOutput();
+
       case 'KOC_MATCHING':
       default:
         return [
@@ -1506,6 +1514,9 @@ function buildInternalPurposeOutput(
 
     case 'CONTENT_PERFORMANCE_REVIEW':
       return buildContentPerformanceReviewOutput(cleanInput, false);
+
+    case 'SELF_VIDEO_ACCEPTANCE':
+      return buildSelfVideoAcceptanceOutput();
 
     case 'KOC_MATCHING':
     default:

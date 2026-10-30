@@ -3,6 +3,7 @@ import { readRecord, readRecordsBatch, updateRecord, RecordError } from '@/lib/s
 import { dealBoardKey } from '@/lib/server/boardKeys';
 import { assertPlanIdAccess, listMonthlyPlans } from '@/lib/server/monthlyPlanStore';
 import { planJobToBookingDeal } from '@/lib/planDealLink';
+import { maskSensitivePii } from '@/lib/format';
 import type { BookingDealItem } from '@/lib/types';
 import {
   EMPTY_DEAL_BOARD,
@@ -35,6 +36,10 @@ const keyOf = dealBoardKey;
 export async function GET(request: NextRequest) {
   const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
+  const canViewFullPii =
+    ['FINANCE', 'ADMIN', 'BRAND_DIRECTOR'].includes(String(actor.role || '')) &&
+    !String(actor.role || '').includes('_PARTNER') &&
+    !actor.partnerType;
   const fetchAll = request.nextUrl.searchParams.get('all') === '1';
   if (fetchAll) {
     try {
@@ -64,7 +69,20 @@ export async function GET(request: NextRequest) {
           const fw = fwById.get(normHandle(deal.kocHandle));
           for (const job of deal.jobs || []) {
             if (job.sourcePlanId) continue;
-            bookingDeals.push(planJobToBookingDeal(deal, job, plan, undefined, fw?.contractNo));
+            const bd = planJobToBookingDeal(deal, job, plan, undefined, fw?.contractNo);
+            if (!canViewFullPii) {
+              if (bd.kocIdCardNumber) bd.kocIdCardNumber = maskSensitivePii(bd.kocIdCardNumber);
+              if (bd.kocBankAccount) bd.kocBankAccount = maskSensitivePii(bd.kocBankAccount);
+              if (bd.legalProfileSnapshot) {
+                bd.legalProfileSnapshot = {
+                  ...bd.legalProfileSnapshot,
+                  cccd: bd.legalProfileSnapshot.cccd ? maskSensitivePii(bd.legalProfileSnapshot.cccd) : undefined,
+                  taxCode: bd.legalProfileSnapshot.taxCode ? maskSensitivePii(bd.legalProfileSnapshot.taxCode) : undefined,
+                  bankAccountNumber: bd.legalProfileSnapshot.bankAccountNumber ? maskSensitivePii(bd.legalProfileSnapshot.bankAccountNumber) : undefined,
+                };
+              }
+            }
+            bookingDeals.push(bd);
           }
         }
       }

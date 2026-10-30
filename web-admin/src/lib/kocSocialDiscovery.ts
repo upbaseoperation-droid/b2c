@@ -198,7 +198,7 @@ export function formatSocialChannelUrl(platform: SocialPlatformKey, rawInput: st
   }
 }
 
-export function extractHandleFromSocialInput(platform: SocialPlatformKey, rawInput: string): string {
+export function extractHandleFromSocialInput(platform: SocialPlatformKey | 'TIKTOK', rawInput: string): string {
   const trimmed = (rawInput || '').trim();
   if (!trimmed) return '';
 

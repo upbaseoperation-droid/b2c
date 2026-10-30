@@ -8,7 +8,7 @@
  * 3. Lịch sử hợp tác & Hiệu quả hợp tác chi tiết (Tổng hợp ROI/CPO/Đơn hàng, bảng chi tiết từng deal, phân bổ Organic vs Ads, đánh giá chất lượng 3 bên).
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -19,9 +19,11 @@ import {
   CloudDownload,
   Copy,
   ExternalLink,
+  Eye,
   FileScan,
   FileText,
   History,
+  Layers,
   MessageSquare,
   Music,
   Plus,
@@ -33,7 +35,8 @@ import {
   Truck,
   XCircle,
 } from 'lucide-react';
-import type { BookingDealItem, KocItem, TikTokVideoItem, UserProfile } from '../../lib/types';
+import type { BookingDealItem, KocItem, KocPlatformType, LegalDocAttachment, TikTokVideoItem, UserProfile } from '../../lib/types';
+import { LEGAL_DOC_CATEGORY_LABEL, LegalDocPreviewModal } from '../contracts/LegalAttachmentsPanel';
 import { formatDate, formatNumber, formatVndShort } from '../../lib/format';
 import { computeMedianViews } from '../../lib/tiktokKocScraper';
 import { formatSocialChannelUrl } from '../../lib/kocSocialDiscovery';
@@ -74,7 +77,10 @@ import {
 } from '../ui';
 import type { Column, TabItem } from '../ui';
 import {
+  DEAL_CHANNEL_SCOPE_EVENT,
+  KOC_LEGAL_ATTACHMENTS_EVENT,
   LEGAL_TYPE_LABEL,
+  KOC_PLATFORM_LABEL,
   READINESS_LABEL,
   calculateKocPerformanceStats,
   canRevealSensitive,
@@ -85,8 +91,12 @@ import {
   dealStepOf,
   dealViewsOf,
   dealsOfKoc,
+  filterDealsByChannelScope,
   formatFollowers,
+  getDealChannelBreakdown,
+  getKocConnectedChannels,
   getKocLegalProfiles,
+  getKocTikTokChannels,
   hasLegalId,
   isCooperatedKoc,
   isDealOpen,
@@ -95,13 +105,30 @@ import {
   legalTypeOf,
   mask,
   picOfDeal,
+  saveDealChannelScopeOverride,
+  syncKocWithConnectedChannels,
   syncKocWithLegalProfiles,
   type DuplicateMatch,
   type KocPerformanceSummary,
 } from './kocUtils';
 import { KocHistoryEvaluationModal } from './KocHistoryEvaluationModal';
-import { KocLegalProfilesSection } from './KocLegalProfilesSection';
+import { KocContractLegalPickerModal, KocLegalProfilesSection } from './KocLegalProfilesSection';
+import { KocSocialChannelsModal } from './KocSocialChannelsModal';
 import { KocVideoWeeklyHistoryPanel } from './KocVideoWeeklyHistoryPanel';
+
+function PlatformChannelIcon({
+  platform,
+  className = 'w-3.5 h-3.5 shrink-0',
+}: {
+  platform: KocPlatformType;
+  className?: string;
+}) {
+  if (platform === 'SHOPEE') return <ShopeeLogo className={className} />;
+  if (platform === 'FACEBOOK') return <FacebookLogo className={className} />;
+  if (platform === 'INSTAGRAM') return <InstagramLogo className={className} />;
+  if (platform === 'THREADS') return <ThreadsLogo className={className} />;
+  return <TikTokLogo className={className} />;
+}
 
 const cx = (...p: Array<string | false | null | undefined>) => p.filter(Boolean).join(' ');
 
@@ -170,13 +197,33 @@ export function KocProfile({
   onCreateContractForKoc,
 }: KocProfileProps) {
   const isPage = layout === 'page';
+  const [channelScopeVersion, setChannelScopeVersion] = useState(0);
+  const [internalSocialModalOpen, setInternalSocialModalOpen] = useState(false);
+
+  useEffect(() => {
+    const onScopeUpdated = () => setChannelScopeVersion((v) => v + 1);
+    window.addEventListener(DEAL_CHANNEL_SCOPE_EVENT, onScopeUpdated);
+    return () => window.removeEventListener(DEAL_CHANNEL_SCOPE_EVENT, onScopeUpdated);
+  }, []);
+
+  const handleOpenSocialChannels = (targetKoc: KocItem = koc) => {
+    if (onSearchSocialChannels) {
+      onSearchSocialChannels(targetKoc);
+    } else {
+      setInternalSocialModalOpen(true);
+    }
+  };
+
   const kocDeals = useMemo(
     () => dealsOfKoc(deals, koc).sort((a, b) => Number(isDealOpen(b)) - Number(isDealOpen(a))),
     [deals, koc],
   );
 
-  const stats = useMemo(() => calculateKocPerformanceStats(deals || [], koc), [deals, koc]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stats = useMemo(() => calculateKocPerformanceStats(deals || [], koc), [deals, koc, channelScopeVersion]);
   const legalProfiles = useMemo(() => getKocLegalProfiles(koc), [koc]);
+  const connectedChannels = useMemo(() => getKocConnectedChannels(koc), [koc]);
+  const tiktokChannels = useMemo(() => getKocTikTokChannels(koc), [koc]);
   const isCooperated = useMemo(() => isCooperatedKoc(koc, deals), [koc, deals]);
 
   const [activeTab, setActiveTab] = useState<MainTabKey>(() =>
@@ -186,6 +233,7 @@ export function KocProfile({
   const [vietQrDeal, setVietQrDeal] = useState<KocItem | null>(null);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [historyEvalModalOpen, setHistoryEvalModalOpen] = useState(false);
+  const [contractLegalPickerOpen, setContractLegalPickerOpen] = useState(false);
   const [channelReviewModalOpen, setChannelReviewModalOpen] = useState(false);
   const [channelReviewInitialVerdict, setChannelReviewInitialVerdict] = useState<
     'SUITABLE' | 'CAUTION' | 'NOT_SUITABLE' | undefined
@@ -259,7 +307,7 @@ export function KocProfile({
       ? [{ label: `Lịch sử đánh giá (${channelReviewSummary.totalReviews})`, icon: History, onSelect: () => openChannelReviewWithVerdict() }]
       : []),
     { label: 'Đánh giá lịch sử & rủi ro', icon: FileText, onSelect: () => setHistoryEvalModalOpen(true) },
-    ...(onSearchSocialChannels ? [{ label: 'Tìm kênh MXH', icon: Search, onSelect: () => onSearchSocialChannels(koc) }] : []),
+    { label: 'Quản lý tài khoản & kênh kết nối', icon: Layers, onSelect: () => handleOpenSocialChannels(koc) },
     ...(koc.bankAccount ? [{ label: 'Mã QR VietQR', icon: QrCode, onSelect: () => setVietQrDeal(koc) }] : []),
   ];
 
@@ -323,7 +371,7 @@ export function KocProfile({
                 {channelDuplicates.length > 0 && <Status tone="warning">Trùng kênh</Status>}
               </div>
             )}
-            <p className="text-ctl text-ink-2">
+            <p className="text-ctl text-ink-2 flex flex-wrap items-center gap-x-1.5 gap-y-1">
               <a
                 href={koc.channelLink || `https://www.tiktok.com/@${handle}`}
                 target="_blank"
@@ -333,6 +381,16 @@ export function KocProfile({
                 @{handle}
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
+              {tiktokChannels.length > 1 && (
+                <span className="text-2xs font-medium text-ink-2">
+                  (+{tiktokChannels.length - 1} kênh TikTok phụ:{' '}
+                  {tiktokChannels
+                    .filter((c) => !c.isPrimary)
+                    .map((c) => `@${c.handle}`)
+                    .join(', ')}
+                  )
+                </span>
+              )}
               {isPage && <span className="text-ink-3"> · {classificationOf(koc)}</span>}
             </p>
             {isPage && (
@@ -340,14 +398,22 @@ export function KocProfile({
                 <span className="font-figure">{getUpaffiliateCreatorId(koc)}</span>
                 {' · '}
                 {syncStatus === 'SYNCED' ? 'Đã đồng bộ UpAffiliate' : 'Chờ đồng bộ UpAffiliate'}
-                {legalProfiles.length > 1 && (
-                  <>
-                    {' · '}
-                    <button type="button" onClick={() => setActiveTab('LEGAL_PROFILES')} className="text-accent hover:underline">
-                      {legalProfiles.length} hồ sơ pháp lý
-                    </button>
-                  </>
-                )}
+                {' · '}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('LEGAL_PROFILES')}
+                  className="text-accent hover:underline"
+                >
+                  {legalProfiles.length} hồ sơ pháp lý
+                </button>
+                {' · '}
+                <button
+                  type="button"
+                  onClick={() => handleOpenSocialChannels(koc)}
+                  className="text-accent hover:underline"
+                >
+                  {connectedChannels.length} kênh nền tảng kết nối ({tiktokChannels.length} TikTok)
+                </button>
                 {sharedOwners.length > 0 && ` · Chung chủ / MCN với ${formatNumber(sharedOwners.length)} kênh`}
               </p>
             )}
@@ -355,7 +421,11 @@ export function KocProfile({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {onCreateContractForKoc && (
-            <Button variant="secondary" icon={FileText} onClick={() => onCreateContractForKoc(koc)}>
+            <Button
+              variant="secondary"
+              icon={FileText}
+              onClick={() => setContractLegalPickerOpen(true)}
+            >
               Ký hợp đồng
             </Button>
           )}
@@ -414,10 +484,13 @@ export function KocProfile({
             <CollaborationHistorySection
               koc={koc}
               deals={kocDeals}
+              allDeals={deals}
               stats={stats}
               currentUser={currentUser}
               onViewDetail={setSelectedCollabDetail}
               onOpenHistoryEvaluation={() => setHistoryEvalModalOpen(true)}
+              onSearchSocialChannels={handleOpenSocialChannels}
+              onUpdateKoc={onUpdateKoc}
             />
           )}
 
@@ -458,7 +531,7 @@ export function KocProfile({
               onOpenLegalTab={() => setActiveTab('LEGAL_PROFILES')}
               onCreateContractForKoc={onCreateContractForKoc}
             />
-            <ShippingAndContactPanel koc={koc} onSearchSocialChannels={onSearchSocialChannels} onUpdateKoc={onUpdateKoc} />
+            <ShippingAndContactPanel koc={koc} currentUser={currentUser} onSearchSocialChannels={handleOpenSocialChannels} onUpdateKoc={onUpdateKoc} />
           </div>
           {channelReviewSummary && channelReviewSummary.totalReviews > 0 && (
             <Panel
@@ -503,8 +576,33 @@ export function KocProfile({
       {selectedCollabDetail && (
         <CollaborationDetailModal
           deal={selectedCollabDetail}
+          koc={koc}
           onClose={() => setSelectedCollabDetail(null)}
           onSelectDealForContract={onSelectDealForContract}
+        />
+      )}
+
+      {/* Modal quản lý tài khoản & kênh kết nối nội bộ (khi mở trực tiếp từ KocProfile) */}
+      <KocSocialChannelsModal
+        open={internalSocialModalOpen}
+        koc={koc}
+        onClose={() => setInternalSocialModalOpen(false)}
+        onSave={(updated) => {
+          onUpdateKoc?.(updated, `Đã cập nhật hệ thống tài khoản & kênh kết nối cho ${updated.stageName}`);
+          setInternalSocialModalOpen(false);
+        }}
+      />
+
+      {onCreateContractForKoc && (
+        <KocContractLegalPickerModal
+          open={contractLegalPickerOpen}
+          onClose={() => setContractLegalPickerOpen(false)}
+          koc={koc}
+          currentUser={currentUser}
+          onUpdateKoc={onUpdateKoc}
+          onConfirmSelectProfile={(targetKoc, legalProfileId) =>
+            onCreateContractForKoc(targetKoc, legalProfileId)
+          }
         />
       )}
 
@@ -1065,35 +1163,387 @@ function TikTokSellerMetricsSection({
 }
 
 /* =========================================================================
+   MODAL PHÂN BỔ KÊNH THỰC THI CỦA ĐỢT HỢP TÁC (RIÊNG 1 KÊNH vs ĐA KÊNH)
+   ========================================================================= */
+
+function DealChannelScopeModal({
+  deal,
+  koc,
+  onClose,
+  onUpdateKoc,
+}: {
+  deal: BookingDealItem;
+  koc: KocItem;
+  onClose: () => void;
+  onUpdateKoc?: (updated: KocItem, message?: string) => void;
+}) {
+  const connectedChannels = useMemo(() => getKocConnectedChannels(koc), [koc]);
+  const currentBreakdown = useMemo(() => getDealChannelBreakdown(deal, koc), [deal, koc]);
+
+  const [scopeMode, setScopeMode] = useState<'SINGLE' | 'MULTI'>(() =>
+    currentBreakdown.channels.length > 1 ? 'MULTI' : 'SINGLE',
+  );
+  const [selectedKeys, setSelectedKeys] = useState<string[]>(() => {
+    const init = currentBreakdown.channels.map((c) => `${c.platform}::${c.handle}`);
+    if (init.length > 0) return init;
+    const first = connectedChannels[0];
+    return first ? [`${first.platform}::${first.handle}`] : [`TIKTOK::${koc.channelId.replace(/^@/, '')}`];
+  });
+
+  const [newPlat, setNewPlat] = useState<KocPlatformType>('TIKTOK');
+  const [newHandle, setNewHandle] = useState('');
+
+  const allSelectableChannels = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        key: string;
+        platform: KocPlatformType;
+        handle: string;
+        roleLabel: string;
+        isPrimary?: boolean;
+      }
+    >();
+
+    for (const ch of connectedChannels) {
+      const k = `${ch.platform}::${ch.handle}`;
+      map.set(k.toLowerCase(), {
+        key: k,
+        platform: ch.platform,
+        handle: ch.handle,
+        roleLabel:
+          ch.platform === 'TIKTOK'
+            ? ch.isPrimary
+              ? 'Kênh TikTok chính'
+              : ch.roleLabel || 'Kênh TikTok phụ'
+            : ch.roleLabel || KOC_PLATFORM_LABEL[ch.platform],
+        isPrimary: ch.isPrimary,
+      });
+    }
+
+    for (const ch of currentBreakdown.channels) {
+      const k = `${ch.platform}::${ch.handle}`;
+      if (!map.has(k.toLowerCase())) {
+        map.set(k.toLowerCase(), {
+          key: k,
+          platform: ch.platform,
+          handle: ch.handle,
+          roleLabel: KOC_PLATFORM_LABEL[ch.platform],
+        });
+      }
+    }
+
+    return Array.from(map.values());
+  }, [connectedChannels, currentBreakdown]);
+
+  const isSelected = (key: string) =>
+    selectedKeys.some((k) => k.toLowerCase() === key.toLowerCase());
+
+  const handleToggleChannel = (key: string) => {
+    if (scopeMode === 'SINGLE') {
+      setSelectedKeys([key]);
+      return;
+    }
+    setSelectedKeys((prev) => {
+      const exists = prev.some((k) => k.toLowerCase() === key.toLowerCase());
+      if (exists) {
+        if (prev.length <= 1) return prev;
+        return prev.filter((k) => k.toLowerCase() !== key.toLowerCase());
+      }
+      return [...prev, key];
+    });
+  };
+
+  const handleAddQuickChannel = () => {
+    const clean = newHandle.trim().replace(/^@/, '');
+    if (!clean) return;
+    const key = `${newPlat}::${clean}`;
+    if (onUpdateKoc) {
+      const nextChannels = [
+        ...connectedChannels,
+        {
+          id: `${koc.id}-ch-${newPlat.toLowerCase()}-${Date.now()}`,
+          platform: newPlat,
+          handle: clean,
+          isPrimary: false,
+          roleLabel:
+            newPlat === 'TIKTOK'
+              ? 'Kênh TikTok phụ'
+              : `Kênh ${KOC_PLATFORM_LABEL[newPlat]}`,
+        },
+      ];
+      const updatedKoc = syncKocWithConnectedChannels(koc, nextChannels);
+      onUpdateKoc(updatedKoc, `Đã thêm kênh @${clean} vào tài khoản KOC ${koc.stageName}`);
+    }
+    if (scopeMode === 'SINGLE') {
+      setSelectedKeys([key]);
+    } else {
+      setSelectedKeys((prev) =>
+        prev.some((k) => k.toLowerCase() === key.toLowerCase()) ? prev : [...prev, key],
+      );
+    }
+    setNewHandle('');
+  };
+
+  const handleSaveScope = () => {
+    const finalKeys =
+      scopeMode === 'SINGLE' ? selectedKeys.slice(0, 1) : selectedKeys;
+    if (finalKeys.length === 0) return;
+    saveDealChannelScopeOverride(deal.id, deal.dealCode, finalKeys);
+    onClose();
+  };
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={`Phân bổ kênh thực thi · ${deal.dealCode}`}
+      size="md"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Hủy
+          </Button>
+          <Button variant="primary" onClick={handleSaveScope}>
+            Lưu phạm vi kênh ({scopeMode === 'SINGLE' ? 'Riêng 1 kênh' : `${selectedKeys.length} kênh`})
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="rounded-lg border border-line bg-sunken/40 p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div>
+            <span className="font-semibold text-ink">{deal.brandName}</span>
+            {deal.productName ? <span className="text-ink-2"> · {deal.productName}</span> : null}
+            <div className="text-2xs text-ink-3 mt-0.5">
+              Mã đợt: <span className="font-mono text-ink-2">{deal.dealCode}</span> · Tài khoản KOC chính: <span className="font-medium text-ink">{koc.stageName}</span>
+            </div>
+          </div>
+          <Status tone={scopeMode === 'MULTI' && selectedKeys.length > 1 ? 'info' : 'neutral'}>
+            {scopeMode === 'MULTI' && selectedKeys.length > 1
+              ? `Đa kênh (${selectedKeys.length} kênh)`
+              : 'Riêng 1 kênh'}
+          </Status>
+        </div>
+
+        {/* Chọn chế độ: Riêng 1 kênh hoặc Đa kênh */}
+        <div className="grid grid-cols-2 gap-2.5">
+          <button
+            type="button"
+            onClick={() => {
+              setScopeMode('SINGLE');
+              if (selectedKeys.length > 1) {
+                setSelectedKeys([selectedKeys[0]]);
+              }
+            }}
+            className={cx(
+              'flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left transition-colors',
+              scopeMode === 'SINGLE'
+                ? 'border-accent bg-accent-soft/40'
+                : 'border-line bg-surface hover:border-line-strong',
+            )}
+          >
+            <span className="text-xs font-semibold text-ink">Hợp tác riêng 1 kênh</span>
+            <Status tone={scopeMode === 'SINGLE' ? 'info' : 'neutral'}>1 tài khoản</Status>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setScopeMode('MULTI')}
+            className={cx(
+              'flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left transition-colors',
+              scopeMode === 'MULTI'
+                ? 'border-accent bg-accent-soft/40'
+                : 'border-line bg-surface hover:border-line-strong',
+            )}
+          >
+            <span className="text-xs font-semibold text-ink">Hợp tác Đa kênh</span>
+            <Status tone={scopeMode === 'MULTI' ? 'info' : 'neutral'}>Nhiều tài khoản</Status>
+          </button>
+        </div>
+
+        {/* Danh sách các tài khoản kênh của KOC để chọn */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-ink">
+              Chọn tài khoản kênh tham gia đợt hợp tác ({allSelectableChannels.length} kênh khả dụng)
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 max-h-[260px] overflow-y-auto pr-1">
+            {allSelectableChannels.map((ch) => {
+              const checked = isSelected(ch.key);
+              const prefix =
+                ch.platform === 'TIKTOK' || ch.platform === 'INSTAGRAM' || ch.platform === 'THREADS'
+                  ? '@'
+                  : '';
+              return (
+                <button
+                  key={ch.key}
+                  type="button"
+                  onClick={() => handleToggleChannel(ch.key)}
+                  className={cx(
+                    'flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors',
+                    checked
+                      ? 'border-accent bg-accent-soft/30'
+                      : 'border-line bg-surface hover:border-line-strong',
+                  )}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-sunken">
+                      <PlatformChannelIcon platform={ch.platform} className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs font-semibold text-ink">
+                          {prefix}{ch.handle}
+                        </span>
+                        <Status tone={ch.isPrimary ? 'positive' : 'neutral'}>
+                          {ch.roleLabel}
+                        </Status>
+                      </div>
+                    </div>
+                  </div>
+
+                  <span
+                    className={cx(
+                      'inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs',
+                      checked
+                        ? 'border-accent bg-accent text-white'
+                        : 'border-line-strong bg-surface text-transparent',
+                    )}
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Thêm nhanh tài khoản kênh mới nếu chưa có trong danh sách */}
+        <div className="rounded-lg border border-line bg-sunken/30 p-3 space-y-2">
+          <div className="text-2xs font-medium text-ink-2">
+            Thêm nhanh kênh khác của KOC vào đợt hợp tác này:
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-12">
+            <div className="sm:col-span-4">
+              <Select
+                value={newPlat}
+                onChange={(e) => setNewPlat(e.target.value as KocPlatformType)}
+              >
+                <option value="TIKTOK">TikTok</option>
+                <option value="SHOPEE">Shopee Video</option>
+                <option value="FACEBOOK">Facebook</option>
+                <option value="INSTAGRAM">Instagram</option>
+                <option value="THREADS">Threads</option>
+              </Select>
+            </div>
+            <div className="sm:col-span-5">
+              <Input
+                value={newHandle}
+                onChange={(e) => setNewHandle(e.target.value)}
+                placeholder="@handle kênh..."
+              />
+            </div>
+            <div className="sm:col-span-3">
+              <Button
+                variant="secondary"
+                className="w-full justify-center"
+                icon={Plus}
+                onClick={handleAddQuickChannel}
+                disabled={!newHandle.trim()}
+              >
+                Thêm kênh
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/* =========================================================================
    2. LỊCH SỬ HỢP TÁC & HIỆU QUẢ HỢP TÁC CHI TIẾT (TÂM ĐIỂM NGHIỆP VỤ B2C)
    ========================================================================= */
 
 function CollaborationHistorySection({
   koc,
   deals,
+  allDeals,
   stats,
   currentUser,
+  channelScopeVersion = 0,
   onViewDetail,
   onOpenHistoryEvaluation,
+  onSearchSocialChannels,
+  onUpdateKoc,
 }: {
   koc: KocItem;
   deals: BookingDealItem[];
+  allDeals?: BookingDealItem[];
   stats: KocPerformanceSummary;
   currentUser?: UserProfile;
+  channelScopeVersion?: number;
   onViewDetail: (d: BookingDealItem) => void;
   onOpenHistoryEvaluation?: () => void;
+  onSearchSocialChannels?: (koc: KocItem) => void;
+  onUpdateKoc?: (updated: KocItem, message?: string) => void;
 }) {
   const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>('ALL');
   const [selectedFormatFilter, setSelectedFormatFilter] = useState<string>('ALL');
+  const [selectedChannelFilter, setSelectedChannelFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [askDeal, setAskDeal] = useState<BookingDealItem | null>(null);
+  const [editingChannelDeal, setEditingChannelDeal] = useState<BookingDealItem | null>(null);
+
+  const connectedChannels = useMemo(() => getKocConnectedChannels(koc), [koc]);
+  const detailedDeals = useMemo(() => deals.filter((d) => !isMasterSummaryDeal(d)), [deals]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const singleChannelDealsCount = useMemo(
+    () => detailedDeals.filter((d) => !getDealChannelBreakdown(d, koc).isMultiChannel).length,
+    [detailedDeals, koc, channelScopeVersion],
+  );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const multiChannelDealsCount = useMemo(
+    () => detailedDeals.filter((d) => getDealChannelBreakdown(d, koc).isMultiChannel).length,
+    [detailedDeals, koc, channelScopeVersion],
+  );
+
+  // Thống kê số đợt & GMV theo từng tài khoản kênh kết nối của KOC
+  const channelAccountStats = useMemo(() => {
+    return connectedChannels.map((ch) => {
+      const key = `${ch.platform}::${ch.handle}`;
+      const matched = filterDealsByChannelScope(detailedDeals, koc, key);
+      const gmv = matched.reduce((s, d) => s + (d.gmv30 || d.affiliateGmv || 0), 0);
+      return {
+        channel: ch,
+        key,
+        dealsCount: matched.length,
+        gmv,
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connectedChannels, detailedDeals, koc, channelScopeVersion]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const displayStats = useMemo(
+    () =>
+      selectedChannelFilter === 'ALL'
+        ? stats
+        : calculateKocPerformanceStats(allDeals || deals, koc, selectedChannelFilter),
+    [selectedChannelFilter, stats, allDeals, deals, koc, channelScopeVersion],
+  );
 
   // Danh sách các Brand đã từng hợp tác
   const brandList = useMemo(() => Array.from(new Set(deals.map((d) => d.brandName).filter(Boolean))), [deals]);
 
   const [showWeekly, setShowWeekly] = useState(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const filteredDeals = useMemo(() => {
-    return deals.filter((d) => {
+    const channelScoped = filterDealsByChannelScope(deals, koc, selectedChannelFilter);
+    return channelScoped.filter((d) => {
       // Đợt chỉ có số tổng từ Master không có chi tiết: gom thành một dòng dưới bảng
       if (isMasterSummaryDeal(d)) return false;
       if (selectedBrandFilter !== 'ALL' && d.brandName !== selectedBrandFilter) return false;
@@ -1112,26 +1562,25 @@ function CollaborationHistorySection({
       }
       return true;
     });
-  }, [deals, selectedBrandFilter, selectedFormatFilter, searchQuery]);
+  }, [deals, koc, selectedChannelFilter, selectedBrandFilter, selectedFormatFilter, searchQuery, channelScopeVersion]);
 
   const columns: Column<BookingDealItem>[] = [
     {
       key: 'campaign',
       header: 'Đợt hợp tác',
-      width: 250,
+      width: 225,
       render: (d) => {
         const date = d.postedDate || d.deadlinePost;
         const format = (d.totalValue || 0) === 0 ? 'FOC' : d.bookingFormat === 'Booking Livestream KOC' ? 'Livestream' : 'Paid';
-        // Đợt dựng lại từ số tổng Master KOC: mã BO, brand, sản phẩm là suy đoán nên không hiện như deal thật
         return isMasterSummaryDeal(d) ? (
-          <div className="min-w-0 max-w-[250px] leading-snug">
+          <div className="min-w-0 max-w-[225px] leading-snug">
             <span className="block text-ctl text-ink-2">Đợt book theo Master KOC</span>
             <span className="block text-2xs text-ink-3">
               Chưa có chi tiết trên hệ thống{d.bookingBatch ? ` · gần nhất ${d.bookingBatch}` : ''}
             </span>
           </div>
         ) : (
-          <div className="min-w-0 max-w-[250px] leading-snug" title={[d.campaignTitle, d.productName, d.dealCode].filter(Boolean).join('\n')}>
+          <div className="min-w-0 max-w-[225px] leading-snug" title={[d.campaignTitle, d.productName, d.dealCode].filter(Boolean).join('\n')}>
             <span className="block font-medium text-ink text-ctl hover:text-accent cursor-pointer truncate" onClick={() => onViewDetail(d)}>
               {d.brandName}
               {d.productName ? <span className="font-normal text-ink-2"> · {d.productName}</span> : null}
@@ -1140,6 +1589,50 @@ function CollaborationHistorySection({
               <span className="font-figure">{d.dealCode}</span> · {format}
               {date ? ` · ${shortDate(date)}` : ''}
             </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'channelScope',
+      header: 'Kênh hợp tác',
+      width: 215,
+      render: (d) => {
+        const bd = getDealChannelBreakdown(d, koc);
+        return (
+          <div className="grid gap-1.5 justify-items-start max-w-[215px]">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Status tone={bd.isMultiChannel ? 'info' : 'neutral'}>{bd.scopeLabel}</Status>
+              <button
+                type="button"
+                onClick={() => setEditingChannelDeal(d)}
+                className="text-2xs font-medium text-accent hover:underline"
+              >
+                Phân kênh
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-1">
+              {bd.channels.map((ch) => {
+                const prefix =
+                  ch.platform === 'TIKTOK' || ch.platform === 'INSTAGRAM' || ch.platform === 'THREADS'
+                    ? '@'
+                    : '';
+                return (
+                  <button
+                    key={ch.key}
+                    type="button"
+                    onClick={() => setEditingChannelDeal(d)}
+                    title={`Bấm để cấu hình kênh cho ${d.dealCode}`}
+                    className="inline-flex items-center gap-1 rounded border border-line bg-sunken/50 px-1.5 py-0.5 font-mono text-2xs text-ink hover:border-line-strong"
+                  >
+                    <PlatformChannelIcon platform={ch.platform} className="h-3 w-3 shrink-0" />
+                    <span className="truncate max-w-[130px]">
+                      {prefix}{ch.handle}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         );
       },
@@ -1169,7 +1662,6 @@ function CollaborationHistorySection({
       align: 'right',
       width: 150,
       render: (d) => {
-        // Chỉ số thật của deal: không ước tính đơn từ GMV / AOV; đợt tổng hợp từ Master không có số hiệu quả
         const summary = isMasterSummaryDeal(d);
         const gmv = summary ? 0 : d.gmv30 || d.affiliateGmv || 0;
         const orders = summary ? 0 : d.ordersCount || 0;
@@ -1197,7 +1689,6 @@ function CollaborationHistorySection({
       header: 'Tiến độ & Đánh giá',
       width: 130,
       render: (d) => {
-        // Deal đồng bộ từ Sheet mang điểm 4 và "đúng hạn" mặc định: coi như chưa có đánh giá
         const onTime = dealPostOnTimeOf(d);
         const rating = dealRatingOf(d);
         return (
@@ -1269,35 +1760,198 @@ function CollaborationHistorySection({
 
   return (
     <div className="space-y-4">
-      {/* 4 ô chính; số đơn, chi phí, số deal làm mẫu số nằm ở dòng ghi chú */}
+      {/* Khối Quản lý Tài khoản KOC & Phân rã Lịch sử Hợp tác Đa kênh */}
+      <Panel
+        icon={Layers}
+        title="Tài khoản KOC & Phân rã hợp tác đa kênh"
+        meta={`${connectedChannels.length} tài khoản kết nối · Riêng 1 kênh: ${formatNumber(singleChannelDealsCount)} đợt · Đa kênh: ${formatNumber(multiChannelDealsCount)} đợt`}
+        actions={
+          <div className="flex items-center gap-2">
+            {selectedChannelFilter !== 'ALL' && (
+              <Button size="sm" variant="ghost" onClick={() => setSelectedChannelFilter('ALL')}>
+                Bỏ lọc kênh
+              </Button>
+            )}
+            {onSearchSocialChannels && (
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={Plus}
+                onClick={() => onSearchSocialChannels(koc)}
+              >
+                Quản lý tài khoản &amp; kênh ({connectedChannels.length})
+              </Button>
+            )}
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          {/* Hàng 1: 3 thẻ lọc theo phạm vi hợp tác (Tất cả · Riêng 1 kênh · Đa kênh) */}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <button
+              type="button"
+              onClick={() => setSelectedChannelFilter('ALL')}
+              className={cx(
+                'flex items-center justify-between rounded-lg border px-3.5 py-2 text-left transition-colors',
+                selectedChannelFilter === 'ALL'
+                  ? 'border-accent bg-accent-soft/40'
+                  : 'border-line bg-surface hover:border-line-strong',
+              )}
+            >
+              <span className="text-xs font-semibold text-ink">Tất cả đợt hợp tác</span>
+              <Status tone={selectedChannelFilter === 'ALL' ? 'info' : 'neutral'}>
+                {formatNumber(detailedDeals.length)} đợt
+              </Status>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setSelectedChannelFilter(
+                  selectedChannelFilter === 'SINGLE_CHANNEL' ? 'ALL' : 'SINGLE_CHANNEL',
+                )
+              }
+              className={cx(
+                'flex items-center justify-between rounded-lg border px-3.5 py-2 text-left transition-colors',
+                selectedChannelFilter === 'SINGLE_CHANNEL'
+                  ? 'border-accent bg-accent-soft/40'
+                  : 'border-line bg-surface hover:border-line-strong',
+              )}
+            >
+              <span className="text-xs font-semibold text-ink">Hợp tác riêng 1 kênh</span>
+              <Status tone={selectedChannelFilter === 'SINGLE_CHANNEL' ? 'info' : 'neutral'}>
+                {formatNumber(singleChannelDealsCount)} đợt
+              </Status>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setSelectedChannelFilter(
+                  selectedChannelFilter === 'MULTI_CHANNEL' ? 'ALL' : 'MULTI_CHANNEL',
+                )
+              }
+              className={cx(
+                'flex items-center justify-between rounded-lg border px-3.5 py-2 text-left transition-colors',
+                selectedChannelFilter === 'MULTI_CHANNEL'
+                  ? 'border-accent bg-accent-soft/40'
+                  : 'border-line bg-surface hover:border-line-strong',
+              )}
+            >
+              <span className="text-xs font-semibold text-ink">Hợp tác Đa kênh</span>
+              <Status tone={selectedChannelFilter === 'MULTI_CHANNEL' ? 'info' : 'neutral'}>
+                {formatNumber(multiChannelDealsCount)} đợt
+              </Status>
+            </button>
+          </div>
+
+          {/* Hàng 2: Danh sách từng tài khoản kênh kết nối (TikTok chính, TikTok phụ, Shopee, FB, IG, Threads) */}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {channelAccountStats.map(({ channel: ch, key, dealsCount, gmv }) => {
+              const isActive = selectedChannelFilter.toLowerCase() === key.toLowerCase();
+              const prefix =
+                ch.platform === 'TIKTOK' || ch.platform === 'INSTAGRAM' || ch.platform === 'THREADS'
+                  ? '@'
+                  : '';
+              const roleTag =
+                ch.platform === 'TIKTOK'
+                  ? ch.isPrimary
+                    ? 'TikTok chính'
+                    : ch.roleLabel || 'TikTok phụ'
+                  : KOC_PLATFORM_LABEL[ch.platform];
+
+              return (
+                <div
+                  key={key}
+                  onClick={() => setSelectedChannelFilter(isActive ? 'ALL' : key)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedChannelFilter(isActive ? 'ALL' : key);
+                    }
+                  }}
+                  className={cx(
+                    'flex items-center justify-between gap-2.5 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors',
+                    isActive
+                      ? 'border-accent bg-accent-soft/40'
+                      : 'border-line bg-sunken/30 hover:border-line-strong hover:bg-surface',
+                  )}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-surface">
+                      <PlatformChannelIcon platform={ch.platform} className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate font-mono text-xs font-semibold text-ink">
+                          {prefix}{ch.handle}
+                        </span>
+                        {ch.url && (
+                          <a
+                            href={ch.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-ink-3 hover:text-accent shrink-0"
+                            title="Mở trang kênh"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-2xs text-ink-3 mt-0.5">
+                        <span>{roleTag}</span>
+                        {gmv > 0 && (
+                          <>
+                            <span>·</span>
+                            <span className="font-figure text-ink-2">GMV {formatVndShort(gmv)}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <Status tone={isActive ? 'info' : dealsCount > 0 ? 'positive' : 'neutral'}>
+                    {formatNumber(dealsCount)} đợt
+                  </Status>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Panel>
+
+      {/* 4 ô chính; số đơn, chi phí, số deal làm mẫu số nằm ở dòng ghi chú (tự động tính lại khi lọc riêng 1 kênh / đa kênh) */}
       <StatRow>
         <Stat
           label="GMV từ booking"
-          value={stats.totalGmv > 0 ? formatVndShort(stats.totalGmv) : '—'}
+          value={displayStats.totalGmv > 0 ? formatVndShort(displayStats.totalGmv) : '—'}
           note={[
-            stats.totalOrders > 0 ? `${formatNumber(stats.totalOrders)} đơn` : '',
-            `${formatNumber(stats.completedDeals)} xong · ${formatNumber(stats.runningDeals)} đang chạy`,
+            displayStats.totalOrders > 0 ? `${formatNumber(displayStats.totalOrders)} đơn` : '',
+            `${formatNumber(displayStats.completedDeals)} xong · ${formatNumber(displayStats.runningDeals)} đang chạy`,
           ]
             .filter(Boolean)
             .join(' · ')}
         />
         <Stat
           label="ROI"
-          value={stats.overallRoi > 0 ? `${stats.overallRoi.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}x` : '—'}
-          note={`Chi phí Net ${formatVndShort(stats.totalSpentNet)}`}
+          value={displayStats.overallRoi > 0 ? `${displayStats.overallRoi.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}x` : '—'}
+          note={`Chi phí Net ${formatVndShort(displayStats.totalSpentNet)}`}
         />
         <Stat
           label="Lượt xem TB / video"
-          value={stats.avgViewsPerCollab > 0 ? formatNumber(stats.avgViewsPerCollab) : '—'}
-          note={`${formatNumber(stats.viewsDealsCount)} video có số`}
+          value={displayStats.avgViewsPerCollab > 0 ? formatNumber(displayStats.avgViewsPerCollab) : '—'}
+          note={`${formatNumber(displayStats.viewsDealsCount)} video có số`}
         />
         <Stat
           label="Đánh giá TB"
-          value={stats.ratedDealsCount > 0 ? `${stats.avgRatingScore.toLocaleString('vi-VN')} / 5` : '—'}
+          value={displayStats.ratedDealsCount > 0 ? `${displayStats.avgRatingScore.toLocaleString('vi-VN')} / 5` : '—'}
           note={
-            stats.postCheckedDealsCount > 0
-              ? `${stats.onTimePostRate}% đăng đúng hạn · ${formatNumber(stats.ratedDealsCount)} deal có điểm`
-              : `${formatNumber(stats.ratedDealsCount)} deal có điểm`
+            displayStats.postCheckedDealsCount > 0
+              ? `${displayStats.onTimePostRate}% đăng đúng hạn · ${formatNumber(displayStats.ratedDealsCount)} deal có điểm`
+              : `${formatNumber(displayStats.ratedDealsCount)} deal có điểm`
           }
         />
       </StatRow>
@@ -1306,15 +1960,17 @@ function CollaborationHistorySection({
         flush
         icon={History}
         title="Các đợt hợp tác"
-        meta={`${formatNumber(filteredDeals.length)} / ${formatNumber(deals.length - summaryDeals)} đợt có chi tiết${
-          stats.uniqueBrands.length ? ` · ${stats.uniqueBrands.join(', ')}` : ''
+        meta={`${formatNumber(filteredDeals.length)} / ${formatNumber(deals.length - summaryDeals)} đợt có chi tiết · Riêng 1 kênh: ${formatNumber(singleChannelDealsCount)} · Đa kênh: ${formatNumber(multiChannelDealsCount)}${
+          displayStats.uniqueBrands.length ? ` · ${displayStats.uniqueBrands.join(', ')}` : ''
         }`}
         actions={
-          onOpenHistoryEvaluation && (
-            <Button size="sm" variant="ghost" icon={FileText} onClick={onOpenHistoryEvaluation}>
-              Đánh giá lịch sử & rủi ro
-            </Button>
-          )
+          <div className="flex items-center gap-1.5">
+            {onOpenHistoryEvaluation && (
+              <Button size="sm" variant="ghost" icon={FileText} onClick={onOpenHistoryEvaluation}>
+                Đánh giá lịch sử &amp; rủi ro
+              </Button>
+            )}
+          </div>
         }
       >
         <div className="px-4 pb-3 border-b border-line">
@@ -1322,6 +1978,29 @@ function CollaborationHistorySection({
             search={{ value: searchQuery, onChange: setSearchQuery, placeholder: 'Sản phẩm, mã BO, chiến dịch' }}
             filters={
               <>
+                <Select
+                  value={selectedChannelFilter}
+                  onChange={(e) => setSelectedChannelFilter(e.target.value)}
+                  aria-label="Phạm vi kênh"
+                  className="w-auto"
+                >
+                  <option value="ALL">Tất cả kênh ({detailedDeals.length} đợt)</option>
+                  <option value="SINGLE_CHANNEL">Riêng 1 kênh ({singleChannelDealsCount})</option>
+                  <option value="MULTI_CHANNEL">Đa kênh ({multiChannelDealsCount})</option>
+                  {connectedChannels.map((ch) => {
+                    const key = `${ch.platform}::${ch.handle}`;
+                    return (
+                      <option key={key} value={key}>
+                        {KOC_PLATFORM_LABEL[ch.platform]}: @{ch.handle}{' '}
+                        {ch.platform === 'TIKTOK'
+                          ? ch.isPrimary
+                            ? '(Kênh chính)'
+                            : `(${ch.roleLabel || 'Kênh phụ'})`
+                          : ''}
+                      </option>
+                    );
+                  })}
+                </Select>
                 <Select value={selectedBrandFilter} onChange={(e) => setSelectedBrandFilter(e.target.value)} aria-label="Nhãn hàng" className="w-auto">
                   <option value="ALL">Mọi nhãn hàng ({brandList.length})</option>
                   {brandList.map((b) => (
@@ -1380,6 +2059,15 @@ function CollaborationHistorySection({
         )}
       </div>
 
+      {/* Modal phân bổ kênh hợp tác (Riêng 1 kênh vs Đa kênh) */}
+      {editingChannelDeal && (
+        <DealChannelScopeModal
+          deal={editingChannelDeal}
+          koc={koc}
+          onClose={() => setEditingChannelDeal(null)}
+          onUpdateKoc={onUpdateKoc}
+        />
+      )}
 
       {/* Modal hỏi đồng nghiệp */}
       {askDeal && (
@@ -1506,23 +2194,58 @@ function ActiveDealsSection({
 
 function ShippingAndContactPanel({
   koc,
+  currentUser,
   onSearchSocialChannels,
   onUpdateKoc,
 }: {
   koc: KocItem;
+  currentUser?: UserProfile;
   onSearchSocialChannels?: (k: KocItem) => void;
   onUpdateKoc?: (updated: KocItem, message?: string) => void;
 }) {
+  const allowedPii = canRevealSensitive(currentUser, koc);
   const prefs = koc.samplePreferences;
-  const tiktokHandle = koc.channelId.replace(/^@+/, '');
-  const socialLinks = [
-    { name: 'TikTok', Logo: TikTokLogo, text: `@${tiktokHandle}`, href: koc.channelLink || `https://www.tiktok.com/@${tiktokHandle}` },
-    koc.shopeeChannel && { name: 'Shopee', Logo: ShopeeLogo, text: koc.shopeeChannel, href: formatSocialChannelUrl('SHOPEE', koc.shopeeChannel) },
-    koc.facebookChannel && { name: 'Facebook', Logo: FacebookLogo, text: koc.facebookChannel, href: formatSocialChannelUrl('FACEBOOK', koc.facebookChannel) },
-    koc.instagramChannel && { name: 'Instagram', Logo: InstagramLogo, text: koc.instagramChannel, href: formatSocialChannelUrl('INSTAGRAM', koc.instagramChannel) },
-    koc.threadsChannel && { name: 'Threads', Logo: ThreadsLogo, text: koc.threadsChannel, href: formatSocialChannelUrl('THREADS', koc.threadsChannel) },
-  ].filter((c): c is { name: string; Logo: typeof TikTokLogo; text: string; href: string } => Boolean(c));
-  const missingSocial = ['Shopee', 'Facebook', 'Instagram', 'Threads'].filter((n) => !socialLinks.some((c) => c.name === n));
+  const connectedChannels = useMemo(() => getKocConnectedChannels(koc), [koc]);
+  const socialLinks = connectedChannels.map((ch) => {
+    const Logo =
+      ch.platform === 'SHOPEE'
+        ? ShopeeLogo
+        : ch.platform === 'FACEBOOK'
+          ? FacebookLogo
+          : ch.platform === 'INSTAGRAM'
+            ? InstagramLogo
+            : ch.platform === 'THREADS'
+              ? ThreadsLogo
+              : TikTokLogo;
+    const label =
+      ch.platform === 'TIKTOK'
+        ? ch.isPrimary
+          ? 'TikTok chính'
+          : ch.roleLabel || 'TikTok phụ'
+        : KOC_PLATFORM_LABEL[ch.platform];
+    const prefix =
+      ch.platform === 'TIKTOK' || ch.platform === 'INSTAGRAM' || ch.platform === 'THREADS'
+        ? '@'
+        : '';
+    return {
+      key: `${ch.platform}::${ch.handle}`,
+      name: label,
+      platform: ch.platform,
+      Logo,
+      text: `${prefix}${ch.handle}`,
+      href:
+        ch.url ||
+        (ch.platform === 'TIKTOK'
+          ? `https://www.tiktok.com/@${ch.handle}`
+          : formatSocialChannelUrl(
+              ch.platform as 'SHOPEE' | 'FACEBOOK' | 'INSTAGRAM' | 'THREADS',
+              ch.handle,
+            )),
+    };
+  });
+  const missingSocial = ['Shopee', 'Facebook', 'Instagram', 'Threads'].filter(
+    (n) => !connectedChannels.some((c) => KOC_PLATFORM_LABEL[c.platform] === n),
+  );
 
   const [isEditingContact, setIsEditingContact] = useState(false);
   const [draftEmail, setDraftEmail] = useState(koc.email || '');
@@ -1601,10 +2324,24 @@ function ShippingAndContactPanel({
       }
     >
       <dl className="grid gap-3 text-xs">
-        {/* Kênh mạng xã hội: chỉ hiện kênh đã có, kênh còn thiếu gom thành một dòng */}
+        {/* Kênh mạng xã hội: hiển thị toàn bộ kênh TikTok (kênh chính + kênh phụ) & các nền tảng kết nối */}
         <div className="grid gap-1.5 text-2xs">
+          <div className="flex items-center justify-between gap-2 pb-1">
+            <span className="font-semibold text-ink">
+              Tài khoản kênh liên kết ({socialLinks.length})
+            </span>
+            {onSearchSocialChannels && (
+              <button
+                type="button"
+                onClick={() => onSearchSocialChannels(koc)}
+                className="text-accent hover:underline font-medium"
+              >
+                + Quản lý kênh &amp; TikTok phụ
+              </button>
+            )}
+          </div>
           {socialLinks.map((c) => (
-            <div key={c.name} className="flex items-center justify-between gap-2">
+            <div key={c.key} className="flex items-center justify-between gap-2">
               <span className="inline-flex items-center gap-1.5 text-ink-3">
                 <c.Logo className="w-3.5 h-3.5 shrink-0" />
                 {c.name}
@@ -1723,11 +2460,11 @@ function ShippingAndContactPanel({
         ) : (
           <>
             {/* Liên hệ trao đổi */}
-            <InfoRow label="Số điện thoại">{koc.phone}</InfoRow>
+            <InfoRow label="Số điện thoại">{koc.phone ? (allowedPii ? koc.phone : mask(koc.phone)) : '—'}</InfoRow>
             <InfoRow label="Zalo trao đổi">
               {koc.zalo ? (
                 <span className="inline-flex items-center gap-1.5">
-                  <span>{koc.zalo}</span>
+                  <span>{allowedPii ? koc.zalo : mask(koc.zalo)}</span>
                   <a
                     href={`https://zalo.me/${koc.zalo.replace(/\D/g, '')}`}
                     target="_blank"
@@ -1753,7 +2490,7 @@ function ShippingAndContactPanel({
                 '—'
               )}
             </InfoRow>
-            <InfoRow label="Khu vực">{koc.location || 'Hà Nội'}</InfoRow>
+            <InfoRow label="Khu vực">{koc.location || '—'}</InfoRow>
 
             {/* Gửi mẫu: chỉ cần khi chuẩn bị gửi hàng nên thu gọn mặc định */}
             <details className="group border-t border-line pt-2.5">
@@ -1777,7 +2514,7 @@ function ShippingAndContactPanel({
               )}
             </InfoRow>
 
-            <InfoRow label="SĐT nhận hàng">{koc.shippingPhone || koc.phone}</InfoRow>
+            <InfoRow label="SĐT nhận hàng">{(koc.shippingPhone || koc.phone) ? (allowedPii ? (koc.shippingPhone || koc.phone) : mask(koc.shippingPhone || koc.phone)) : '—'}</InfoRow>
 
             <InfoRow label="Địa chỉ nhận mẫu chi tiết">
               <span className="leading-relaxed">{koc.shippingAddress || 'Chưa cung cấp địa chỉ nhận mẫu'}</span>
@@ -1854,8 +2591,26 @@ function LegalPaymentPanel({
   onCreateContractForKoc?: (koc: KocItem, legalProfileId?: string) => void;
 }) {
   const [revealed, setRevealed] = useState(false);
+  const [syncTick, setSyncTick] = useState(0);
+  const [previewState, setPreviewState] = useState<{
+    attachments: LegalDocAttachment[];
+    activeDoc: LegalDocAttachment;
+    profileLabel: string;
+  } | null>(null);
   const allowed = canRevealSensitive(currentUser, koc);
-  const legalProfiles = useMemo(() => getKocLegalProfiles(koc), [koc]);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleSync = () => setSyncTick((t) => t + 1);
+    window.addEventListener(KOC_LEGAL_ATTACHMENTS_EVENT, handleSync);
+    return () => window.removeEventListener(KOC_LEGAL_ATTACHMENTS_EVENT, handleSync);
+  }, []);
+
+  const legalProfiles = useMemo(
+    () => getKocLegalProfiles(koc),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [koc, syncTick],
+  );
   const defProfile = useMemo(
     () => legalProfiles.find((p) => p.isDefault) || legalProfiles[0],
     [legalProfiles],
@@ -2010,6 +2765,32 @@ function LegalPaymentPanel({
               '—'
             )}
           </InfoRow>
+          {(defProfile?.legalAttachments || []).length > 0 && (
+            <InfoRow label="Giấy tờ CCCD / ĐKKD">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(defProfile?.legalAttachments || []).map((doc) => (
+                  <button
+                    key={doc.id}
+                    type="button"
+                    onClick={() =>
+                      setPreviewState({
+                        attachments: defProfile?.legalAttachments || [],
+                        activeDoc: doc,
+                        profileLabel: `${defProfile?.profileCode || 'HSPL'} · ${
+                          defProfile?.holderName || koc.stageName
+                        }`,
+                      })
+                    }
+                    title="Ấn vào để xem giấy tờ"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-line bg-sunken/70 text-ink hover:border-accent hover:text-accent font-medium text-2xs transition-colors"
+                  >
+                    <Eye className="w-3 h-3 text-accent shrink-0" />
+                    <span>{doc.label || LEGAL_DOC_CATEGORY_LABEL[doc.docType]}</span>
+                  </button>
+                ))}
+              </div>
+            </InfoRow>
+          )}
           {koc.sharedMcnInfo && (
             <InfoRow label="Đầu mối dùng chung">{koc.sharedMcnInfo}</InfoRow>
           )}
@@ -2037,6 +2818,18 @@ function LegalPaymentPanel({
           </span>
           {scanButton}
         </div>
+      )}
+
+      {previewState && (
+        <LegalDocPreviewModal
+          attachments={previewState.attachments}
+          activeDoc={previewState.activeDoc}
+          profileLabel={previewState.profileLabel}
+          onSelectDoc={(doc) =>
+            setPreviewState((prev) => (prev ? { ...prev, activeDoc: doc } : null))
+          }
+          onClose={() => setPreviewState(null)}
+        />
       )}
     </AsideSection>
   );
@@ -2109,18 +2902,27 @@ function OperationalNotesPanel({ koc }: { koc: KocItem }) {
 
 function CollaborationDetailModal({
   deal,
+  koc,
+  channelScopeVersion = 0,
   onClose,
   onSelectDealForContract,
+  onUpdateKoc,
 }: {
   deal: BookingDealItem;
+  koc?: KocItem;
+  channelScopeVersion?: number;
   onClose: () => void;
   onSelectDealForContract?: (deal: BookingDealItem) => void;
+  onUpdateKoc?: (updated: KocItem, message?: string) => void;
 }) {
+  const [editingChannelScope, setEditingChannelScope] = useState(false);
   const gmv = deal.gmv30 || deal.affiliateGmv || 0;
   const cost = deal.totalValue || 0;
   const roi = deal.roi || (cost > 0 ? gmv / cost : 0);
   const orders = deal.ordersCount || (gmv > 0 ? Math.round(gmv / 280000) : 0);
   const cpo = deal.cpo || (orders > 0 && cost > 0 ? Math.round(cost / orders) : 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const channelBreakdown = useMemo(() => getDealChannelBreakdown(deal, koc), [deal, koc, channelScopeVersion]);
 
   const organicGmv = deal.organicGmv || Math.round(gmv * 0.55);
   const adsGmv = deal.adsGmv || Math.round(gmv * 0.45);
@@ -2130,7 +2932,6 @@ function CollaborationDetailModal({
       open
       onClose={onClose}
       title={`Chi tiết hợp tác: ${deal.dealCode}`}
-      
       size="xl"
       footer={
         <div className="flex items-center justify-between w-full">
@@ -2169,6 +2970,56 @@ function CollaborationDetailModal({
       }
     >
       <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-1">
+        {/* Phạm vi kênh hợp tác (Riêng 1 kênh hoặc Đa kênh) & Hồ sơ pháp lý thanh toán */}
+        <div className="p-3.5 rounded-xl border border-line bg-sunken/50 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold text-ink">Phạm vi kênh thực thi:</span>
+            <Status tone={channelBreakdown.isMultiChannel ? 'info' : 'neutral'}>
+              {channelBreakdown.scopeLabel}
+            </Status>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {channelBreakdown.channels.map((ch) => (
+                <span
+                  key={ch.key}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-line bg-surface font-mono text-2xs text-ink"
+                >
+                  <PlatformChannelIcon platform={ch.platform} className="h-3 w-3 shrink-0" />
+                  {ch.displayLabel}
+                </span>
+              ))}
+            </div>
+            {koc && (
+              <Button
+                size="sm"
+                variant="ghost"
+                icon={Layers}
+                onClick={() => setEditingChannelScope(true)}
+              >
+                Phân bổ kênh
+              </Button>
+            )}
+          </div>
+          {(deal.legalProfileSnapshot?.holderName || deal.kocBankHolder) && (
+            <div className="text-2xs text-ink-2">
+              Hồ sơ pháp lý thụ hưởng:{' '}
+              <strong className="text-ink">
+                {deal.legalProfileSnapshot?.holderName || deal.kocBankHolder}
+              </strong>
+              {deal.legalProfileSnapshot?.profileCode
+                ? ` (${deal.legalProfileSnapshot.profileCode})`
+                : ''}
+            </div>
+          )}
+        </div>
+        {editingChannelScope && koc && (
+          <DealChannelScopeModal
+            deal={deal}
+            koc={koc}
+            onClose={() => setEditingChannelScope(false)}
+            onUpdateKoc={onUpdateKoc}
+          />
+        )}
+
         {/* Thẻ KPI hiệu quả tài chính của lần hợp tác */}
         <StatRow>
           <Stat

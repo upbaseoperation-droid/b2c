@@ -23,7 +23,6 @@ import { B2cStaffAnalyticsRecord } from '../../lib/b2cAnalyticsDataset';
 
 type StaffQuadrant = 'STAR' | 'HIGH_VOL_OPT_COST' | 'HIGH_EFF_NEED_VOL' | 'NEED_COACHING';
 
-/** Bản ghi nhân sự đã làm giàu ở file cha (enrichedStaffList). Chỉ khai báo các trường màn này dùng. */
 export type DashboardStaffRow = B2cStaffAnalyticsRecord & {
   airVsBookPct: number;
   pendingAirVideos: number;
@@ -37,8 +36,8 @@ export type DashboardStaffRow = B2cStaffAnalyticsRecord & {
 
 type RoleFilter = 'ALL' | 'SPECIALIST' | 'MANAGEMENT';
 type ScatterY = 'COST' | 'GMV';
-type RankBy = 'KPI' | 'AIRED' | 'GMV' | 'SLA';
-type SortBy = 'KPI' | 'AIRED' | 'COST' | 'SLA' | 'LATE';
+type RankBy = 'AIRED' | 'GMV' | 'SLA';
+type SortBy = 'AIRED' | 'GMV' | 'COST' | 'SLA' | 'LATE';
 
 const QUADRANTS: { key: StaffQuadrant; label: string; color: string }[] = [
   { key: 'STAR', label: 'Đạt chỉ tiêu', color: 'var(--color-positive)' },
@@ -52,7 +51,7 @@ const roleSub = (st: DashboardStaffRow) =>
   st.roleLevel === 'HEAD' ? 'Giám đốc' : st.roleLevel === 'LEADER' ? 'Trưởng nhóm' : st.teamName || undefined;
 
 function StaffStatus({ st }: { st: DashboardStaffRow }) {
-  if (st.unbudgetedStoresCount > 0) return <Status tone="critical">{`${st.unbudgetedStoresCount} gian chi ngoài kế hoạch`}</Status>;
+  if (st.unbudgetedStoresCount > 0) return <Status tone="critical">{`${st.unbudgetedStoresCount} gian chi ngoài KH`}</Status>;
   if (st.lateSlaVideosCount > 0) return <Status tone="critical">{`Trễ ${st.lateSlaVideosCount} đơn`}</Status>;
   if (st.overbudgetStoresCount > 0) return <Status tone="warning">{`${st.overbudgetStoresCount} gian vượt Net`}</Status>;
   if (st.pendingAirVideos > 5) return <Status tone="warning">{`Chờ đăng ${st.pendingAirVideos} đơn`}</Status>;
@@ -79,8 +78,8 @@ export function DashboardStaffReport({
   const [query, setQuery] = useState('');
   const [role, setRole] = useState<RoleFilter>('ALL');
   const [scatterY, setScatterY] = useState<ScatterY>('COST');
-  const [rankBy, setRankBy] = useState<RankBy>('KPI');
-  const [sortBy, setSortBy] = useState<SortBy>('KPI');
+  const [rankBy, setRankBy] = useState<RankBy>('AIRED');
+  const [sortBy, setSortBy] = useState<SortBy>('AIRED');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
@@ -98,7 +97,6 @@ export function DashboardStaffReport({
     });
   }, [staffList, query, role]);
 
-  // Tổng hợp trên tập chuyên viên để không cộng trùng số gộp của cấp quản lý.
   const summary = useMemo(() => {
     const specialists = filtered.filter((s) => s.roleLevel === 'SPECIALIST');
     const base = specialists.length > 0 ? specialists : filtered;
@@ -110,20 +108,17 @@ export function DashboardStaffReport({
     const avgSla = filtered.length > 0 ? filtered.reduce((s, x) => s + x.slaRate, 0) / filtered.length : null;
     return {
       count: filtered.length,
-      star: filtered.filter((s) => s.staffQuadrant === 'STAR').length,
       budgetWarn: filtered.filter((s) => s.unbudgetedStoresCount > 0 || s.overbudgetStoresCount > 0).length,
       budget,
       spent,
       booked,
       aired,
-      pending: Math.max(0, booked - aired),
       late,
       avgSla,
       costPerAir: aired > 0 && spent > 0 ? spent / aired : null,
     };
   }, [filtered]);
 
-  // Cấp quản lý là số gộp của cả nhóm nên không đặt chung trục với chuyên viên.
   const scatter = useMemo(() => {
     const pts: ScatterPoint[] = filtered
       .filter((st) => st.roleLevel === 'SPECIALIST')
@@ -140,7 +135,6 @@ export function DashboardStaffReport({
       counts,
       xScale: autoScale(pts.map((p) => p.x)),
       yScale: autoScale(pts.map((p) => p.y)),
-      dropped: pts.filter((p) => !((p.x ?? 0) > 0) || !((p.y ?? 0) > 0)).length,
     };
   }, [filtered, scatterY]);
 
@@ -148,11 +142,9 @@ export function DashboardStaffReport({
 
   const ranking = useMemo<BarItem[]>(() => {
     const metric = (st: DashboardStaffRow) =>
-      rankBy === 'KPI' ? st.kpiScore : rankBy === 'AIRED' ? st.actualAiredVideos : rankBy === 'GMV' ? st.attributedGmv : st.slaRate;
+      rankBy === 'AIRED' ? st.actualAiredVideos : rankBy === 'GMV' ? st.attributedGmv : st.slaRate;
     const show = (st: DashboardStaffRow) =>
-      rankBy === 'KPI'
-        ? `${st.kpiScore} · ${st.kpiGrade}`
-        : rankBy === 'AIRED'
+      rankBy === 'AIRED'
         ? formatNumber(st.actualAiredVideos)
         : rankBy === 'GMV'
         ? formatVndShort(st.attributedGmv)
@@ -175,10 +167,11 @@ export function DashboardStaffReport({
     const cost = (s: DashboardStaffRow) => (s.avgCostPerAiredVideo > 0 ? s.avgCostPerAiredVideo : Number.MAX_SAFE_INTEGER);
     return [...filtered].sort((a, b) => {
       if (sortBy === 'AIRED') return b.actualAiredVideos - a.actualAiredVideos || b.actualSpentNet - a.actualSpentNet;
+      if (sortBy === 'GMV') return b.attributedGmv - a.attributedGmv || b.actualAiredVideos - a.actualAiredVideos;
       if (sortBy === 'COST') return cost(a) - cost(b);
       if (sortBy === 'SLA') return b.slaRate - a.slaRate || b.actualAiredVideos - a.actualAiredVideos;
       if (sortBy === 'LATE') return b.lateSlaVideosCount - a.lateSlaVideosCount || b.pendingAirVideos - a.pendingAirVideos;
-      return b.kpiScore - a.kpiScore || b.actualAiredVideos - a.actualAiredVideos;
+      return b.actualAiredVideos - a.actualAiredVideos;
     });
   }, [filtered, sortBy]);
 
@@ -199,7 +192,7 @@ export function DashboardStaffReport({
     },
     {
       key: 'spend',
-      header: 'Đã chi / trần Net',
+      header: 'Đã chi / Trần Net',
       width: 170,
       render: (st) =>
         st.orderBudgetNet > 0 ? (
@@ -211,18 +204,18 @@ export function DashboardStaffReport({
             <Progress value={st.actualSpentNet} max={st.orderBudgetNet} invert label={`Đã chi của ${st.name}`} />
           </div>
         ) : (
-          <span className="text-ink-3">Không có hạn mức</span>
+          <span className="text-ink-3">—</span>
         ),
     },
     {
       key: 'videos',
-      header: 'Video đăng / book',
+      header: 'Video đăng / Book',
       align: 'right',
       render: (st) => <span className="tabular-nums">{`${formatNumber(st.actualAiredVideos)} / ${formatNumber(st.actualBookedVideos)}`}</span>,
     },
     {
       key: 'unitCost',
-      header: 'Chi phí / video',
+      header: 'Chi phí / Video',
       align: 'right',
       render: (st) => <span className="tabular-nums">{st.avgCostPerAiredVideo > 0 ? formatVndShort(st.avgCostPerAiredVideo) : '—'}</span>,
     },
@@ -264,31 +257,27 @@ export function DashboardStaffReport({
         <Stat
           label="Nhân sự phụ trách"
           value={formatNumber(summary.count)}
-          note={`${summary.star} đạt chỉ tiêu · ${summary.budgetWarn} cần lưu ý ngân sách`}
           tone={summary.budgetWarn > 0 ? 'warning' : undefined}
         />
         <Stat
-          label="Video đăng / đơn book"
+          label="Video đăng / Đơn book"
           value={`${formatNumber(summary.aired)} / ${formatNumber(summary.booked)}`}
           progress={{ value: summary.aired, max: Math.max(1, summary.booked) }}
-          note={`Chờ đăng ${formatNumber(summary.pending)} đơn`}
         />
         <Stat
           label="Đúng hạn SLA"
           value={summary.avgSla === null ? '—' : formatPercent(summary.avgSla / 100)}
-          note={summary.late > 0 ? `${formatNumber(summary.late)} đơn trễ hạn` : 'Không có đơn trễ'}
           tone={summary.late > 0 ? 'critical' : undefined}
         />
         <Stat
-          label="Chi phí / video air"
+          label="Chi phí / Video air"
           value={summary.costPerAir === null ? '—' : formatVndShort(summary.costPerAir)}
-          note={`Đã chi ${formatVndShort(summary.spent)} / ${formatVndShort(summary.budget)} Net`}
         />
       </StatRow>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,8fr)_minmax(0,5fr)] gap-4 items-start">
         <Panel
-          title={panelTitle(ScatterChart, 'Khối lượng × hiệu quả')}
+          title={panelTitle(ScatterChart, 'Khối lượng × Hiệu quả')}
           actions={
             <Segmented<ScatterY>
               items={[
@@ -329,11 +318,6 @@ export function DashboardStaffReport({
               </div>
             </>
           )}
-          <p className="mt-2 text-2xs text-ink-3">
-            Mỗi điểm là một chuyên viên, bấm để mở hồ sơ. Cấp quản lý là số gộp nên không vẽ.
-            {scatter.dropped > 0 && ` Bỏ ${scatter.dropped} người chưa có video hoặc chi phí.`}
-            {scatterY === 'GMV' && ' GMV quy đổi từ mẫu video booking của từng người.'}
-          </p>
         </Panel>
 
         <Panel
@@ -341,7 +325,6 @@ export function DashboardStaffReport({
           actions={
             <Segmented<RankBy>
               items={[
-                { key: 'KPI', label: 'Điểm' },
                 { key: 'AIRED', label: 'Video' },
                 { key: 'GMV', label: 'GMV' },
                 { key: 'SLA', label: 'SLA' },
@@ -354,11 +337,8 @@ export function DashboardStaffReport({
           {ranking.length === 0 ? (
             <p className="text-sm text-ink-3 py-16 text-center">Không có nhân sự trong phạm vi lọc.</p>
           ) : (
-            <BarList items={ranking} max={rankBy === 'KPI' || rankBy === 'SLA' ? 100 : undefined} />
+            <BarList items={ranking} max={rankBy === 'SLA' ? 100 : undefined} />
           )}
-          <p className="mt-3 text-2xs text-ink-3">
-            Top 10 theo {rankBy === 'KPI' ? 'điểm hiệu suất (thang 100: air 35, giải ngân 25, ROAS 20, SLA 20)' : rankBy === 'AIRED' ? 'video đã đăng' : rankBy === 'GMV' ? 'GMV quy đổi' : 'tỷ lệ đúng hạn SLA'}.
-          </p>
         </Panel>
       </div>
 
@@ -368,8 +348,8 @@ export function DashboardStaffReport({
         actions={
           <Segmented<SortBy>
             items={[
-              { key: 'KPI', label: 'Điểm' },
               { key: 'AIRED', label: 'Video' },
+              { key: 'GMV', label: 'GMV' },
               { key: 'COST', label: 'Chi phí' },
               { key: 'SLA', label: 'SLA' },
               { key: 'LATE', label: 'Trễ hạn' },

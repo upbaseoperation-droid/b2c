@@ -21,6 +21,10 @@ import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
 import {
   evaluateLegalProfileContractReadiness,
+  getKocConnectedChannels,
+  KOC_PLATFORM_LABEL,
+  mergeLegalDocAttachments,
+  saveSyncedKocLegalAttachments,
   getKocLegalProfiles,
   LEGAL_TYPE_LABEL,
 } from '../koc/kocUtils';
@@ -120,6 +124,7 @@ export function ContractForm({
   onCancel,
   onSave,
   onQuickFrameworkCreated,
+  onSyncKocLegalAttachments,
   onBackToBooking,
 }: {
   data: ContractBootstrap;
@@ -132,10 +137,54 @@ export function ContractForm({
   onCancel: () => void;
   onSave: (payload: ContractFormPayload) => void;
   onQuickFrameworkCreated?: (createdRecord: ContractRecord) => void;
+  onSyncKocLegalAttachments?: (
+    kocId: string,
+    legalProfileId: string | undefined,
+    attachments: LegalDocAttachment[],
+  ) => void;
   onBackToBooking?: () => void;
 }) {
   const editing = !!record;
-  const findFrameworkForKoc = (k?: KocItem, d?: BookingDealItem): ContractRecord | undefined => {
+  const findFrameworkForKoc = (
+    k?: KocItem,
+    d?: BookingDealItem,
+    legalProfileIdOverride?: string,
+  ): ContractRecord | undefined => {
+    const targetKocId = k?.id || d?.kocId;
+    const activeProf = resolveActiveLegalProfile(
+      k,
+      d,
+      legalProfileIdOverride || init?.legalProfileId || d?.legalProfileId,
+    );
+    const expectedPrefix = activeProf
+      ? activeProf.legalType === 'COMPANY'
+        ? 'COM-'
+        : activeProf.legalType === 'HOUSEHOLD'
+          ? 'HKD-'
+          : 'IND-'
+      : '';
+    const targetPartnerName = partnerName(k, d, activeProf?.id);
+    const targetCleanHandle = (k?.channelId || d?.kocChannelId || '').replace(/^@/, '').toLowerCase();
+
+    if (expectedPrefix) {
+      const strictMatch = data.records.find(
+        r =>
+          r.templateId.endsWith('-HDNT') &&
+          r.templateId.startsWith(expectedPrefix) &&
+          ((targetKocId && r.kocId === targetKocId && (!targetPartnerName || r.partner === targetPartnerName)) ||
+            (targetPartnerName && r.partner === targetPartnerName)),
+      );
+      if (strictMatch) return strictMatch;
+
+      const prefixAndKocMatch = data.records.find(
+        r =>
+          r.templateId.endsWith('-HDNT') &&
+          r.templateId.startsWith(expectedPrefix) &&
+          ((targetKocId && r.kocId === targetKocId) ||
+            (targetCleanHandle && (r.values['token:[ID KOC]'] || '').toLowerCase().startsWith(targetCleanHandle))),
+      );
+      return prefixAndKocMatch;
+    }
     const kId = k?.id || d?.kocId;
     const pName = partnerName(k, d);
     const cleanHandle = (k?.channelId || d?.kocChannelId || '').replace(/^@/, '').toLowerCase();
@@ -868,7 +917,9 @@ export function ContractForm({
         legalProfileId: profId,
         ctvAcceptedDeals,
       });
-      setValues(result.values);
+      const synced = syncValuesFromJobAcceptanceBreakdown(fields, result.values, freshBd);
+      synced[SOW_JOBS_META_KEY] = JSON.stringify(freshJobs);
+      setValues(synced);
       setPrefilled(new Set(result.filled));
     }
   };
@@ -1000,7 +1051,9 @@ export function ContractForm({
       setTemplateId(nextTemplate);
     } else if (template) {
       const result = prefill(fields, {}, nextCtx);
-      setValues(result.values);
+      const synced = syncValuesFromJobAcceptanceBreakdown(fields, result.values, freshBd);
+      synced[SOW_JOBS_META_KEY] = JSON.stringify(freshJobs);
+      setValues(synced);
       setPrefilled(new Set(result.filled));
     }
   };
@@ -1010,6 +1063,10 @@ export function ContractForm({
     const prof = kocLegalProfiles.find(p => p.id === profId);
     if (prof?.legalAttachments) {
       setLegalAttachments(prof.legalAttachments);
+    }
+    if (docStage === 'SOW') {
+      const nextFw = findFrameworkForKoc(koc, deal, profId);
+      setParentId(nextFw?.id || '');
     }
     const nextPartner = partnerName(koc, deal, profId);
     if (nextPartner) {
@@ -1072,7 +1129,9 @@ export function ContractForm({
       setTemplateId(nextTemplate);
     } else if (template) {
       const result = prefill(fields, {}, nextCtx);
-      setValues(result.values);
+      const synced = syncValuesFromJobAcceptanceBreakdown(fields, result.values, jobAcceptanceBreakdown);
+      synced[SOW_JOBS_META_KEY] = JSON.stringify(draftJobTables);
+      setValues(synced);
       setPrefilled(new Set(result.filled));
     }
   };
@@ -1089,28 +1148,48 @@ export function ContractForm({
     if (nextStage === 'BBNT') {
       nextParent = findBestParentForAcceptance(deal, koc);
       setParentId(nextParent?.id || '');
-      const freshBd = buildJobAcceptanceBreakdown(dealWithActiveProfile || deal, koc, nextParent || parentRecord);
-      setDraftVideoFee(freshBd.videoItem.feeNetVnd);
-      setDraftAddons(freshBd.addonItems);
-      setDraftAdvanceAmount(freshBd.financials.advanceAmount);
-      setDraftProductName(freshBd.videoItem.productName);
-      setDraftAirDate(deal?.postedDate || deal?.deadlinePost || freshBd.videoItem.airDate || '');
     } else if (nextStage === 'SOW') {
-      nextParent = findFrameworkForKoc(koc, deal);
+      nextParent = findFrameworkForKoc(koc, deal, selectedLegalProfileId);
       setParentId(nextParent?.id || '');
-      const freshBd = buildJobAcceptanceBreakdown(dealWithActiveProfile || deal, koc, nextParent || parentRecord);
-      setDraftVideoFee(freshBd.videoItem.feeNetVnd);
-      setDraftAddons(freshBd.addonItems);
-      setDraftAdvanceAmount(freshBd.financials.advanceAmount);
-      setDraftProductName(freshBd.videoItem.productName);
-      setDraftAirDate(deal?.postedDate || deal?.deadlinePost || freshBd.videoItem.airDate || '');
     } else {
       setParentId('');
     }
+    const freshJobs = buildDealSowJobTables(dealWithActiveProfile || deal, koc, nextParent || parentRecord);
+    const freshBd = aggregateMultiJobAcceptanceBreakdown({
+      jobs: freshJobs,
+      deal: dealWithActiveProfile || deal,
+      koc,
+      parentRecord: nextParent || parentRecord,
+    });
+    setDraftJobTables(freshJobs);
+    setActiveJobTableIdx(0);
+    setDraftVideoFee(freshJobs[0]?.videoFeeNetVnd ?? freshBd.videoItem.feeNetVnd);
+    setDraftAddons(freshJobs[0]?.addonItems ?? freshBd.addonItems);
+    setDraftAdvanceAmount(freshBd.financials.advanceAmount);
+    setDraftProductName(freshJobs[0]?.productName ?? freshBd.videoItem.productName);
+    setDraftAirDate(freshJobs[0]?.airDate || deal?.postedDate || deal?.deadlinePost || freshBd.videoItem.airDate || '');
     const nextTpl = templateFor(koc, nextKind, dealWithActiveProfile || deal, data.templates, nextStage);
-    setTemplate(null);
-    setValues({});
-    setTemplateId(nextTpl);
+    if (nextTpl !== templateId) {
+      setTemplate(null);
+      setValues({});
+      setTemplateId(nextTpl);
+    } else if (template) {
+      const nextParentTpl = nextParent ? data.templates.find(t => t.id === nextParent.templateId) : undefined;
+      const result = prefill(fields, {}, {
+        koc,
+        deal: dealWithActiveProfile || deal,
+        brand: nextStage === 'HDNT' && !brand.trim() ? 'UPBASE' : brand,
+        existingRecords: data.records,
+        parentRecord: nextParent,
+        parentFields: nextParentTpl ? uniqueFields(nextParentTpl) : [],
+        legalProfileId: selectedLegalProfileId || undefined,
+        ctvAcceptedDeals,
+      });
+      const synced = syncValuesFromJobAcceptanceBreakdown(fields, result.values, freshBd);
+      synced[SOW_JOBS_META_KEY] = JSON.stringify(freshJobs);
+      setValues(synced);
+      setPrefilled(new Set(result.filled));
+    }
   };
 
   const switchSourceMode = (nextOwnForm: boolean) => {
@@ -1273,7 +1352,15 @@ export function ContractForm({
       .then(r => r.json())
       .then(json => {
         if (json?.attachment) {
-          setLegalAttachments(prev => [...prev, json.attachment as LegalDocAttachment]);
+          setLegalAttachments(prev => {
+            const next = mergeLegalDocAttachments(prev, [json.attachment as LegalDocAttachment]);
+            if (koc?.id) {
+              const targetProfId = activeLegalProfile?.id || selectedLegalProfileId;
+              saveSyncedKocLegalAttachments(koc.id, targetProfId, next);
+              onSyncKocLegalAttachments?.(koc.id, targetProfId, next);
+            }
+            return next;
+          });
         }
       })
       .catch(() => undefined);
@@ -1977,10 +2064,156 @@ export function ContractForm({
                 </Field>
               </div>
 
+              {koc && kocLegalProfiles.length > 1 && (
+                <div className="p-3 rounded-xl border border-line bg-sunken/40 space-y-2">
+                  <span className="text-2xs font-semibold text-ink block">
+                    Chọn nhanh hồ sơ pháp lý ký hợp đồng ({kocLegalProfiles.length} hồ sơ pháp lý của {koc.stageName}):
+                  </span>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {kocLegalProfiles.map(prof => {
+                      const isSel = prof.id === (activeLegalProfile?.id || selectedLegalProfileId);
+                      const readiness = evaluateLegalProfileContractReadiness(prof, koc);
+                      const fwMatch = findFrameworkForKoc(koc, deal, prof.id);
+                      const hasFw = Boolean(fwMatch || prof.frameworkContractStatus === 'ĐÃ_KÝ');
+                      return (
+                        <button
+                          key={prof.id}
+                          type="button"
+                          onClick={() => chooseLegalProfile(prof.id)}
+                          className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg border text-left text-2xs transition-colors ${
+                            isSel
+                              ? 'border-primary bg-surface font-semibold text-ink'
+                              : 'border-line bg-canvas text-ink-2 hover:border-line-strong'
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                            <span className="font-mono text-ink">{prof.profileCode}</span>
+                            <span className="truncate">{prof.holderName}</span>
+                            <Status
+                              tone={
+                                prof.legalType === 'COMPANY'
+                                  ? 'info'
+                                  : prof.legalType === 'HOUSEHOLD'
+                                    ? 'warning'
+                                    : 'neutral'
+                              }
+                            >
+                              {LEGAL_TYPE_LABEL[prof.legalType]}
+                            </Status>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Status tone={hasFw ? 'positive' : 'warning'}>
+                              {hasFw ? 'Đã có HĐNT' : 'Chưa có HĐNT'}
+                            </Status>
+                            <Status tone={readiness.ready ? 'positive' : 'warning'}>
+                              {readiness.ready ? 'Đủ trường' : `Thiếu ${readiness.missingFields.length}`}
+                            </Status>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {koc && getKocConnectedChannels(koc).length > 0 && (
+                <div className="p-3 rounded-xl border border-line bg-sunken/40 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-2xs font-semibold text-ink">
+                      Tài khoản kênh của KOC kết nối với hợp đồng ({getKocConnectedChannels(koc).length} kênh — bấm để chọn 1 kênh hoặc đa kênh):
+                    </span>
+                    {getKocConnectedChannels(koc).length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const channelField = fields.find(f => f.source === 'channelLink');
+                          if (!channelField) return;
+                          const allUrls = getKocConnectedChannels(koc)
+                            .map(
+                              c =>
+                                c.url ||
+                                (c.platform === 'TIKTOK'
+                                  ? `https://www.tiktok.com/@${c.handle}`
+                                  : c.handle),
+                            )
+                            .join(' ; ');
+                          setValue(channelField, allUrls);
+                        }}
+                        className="text-2xs font-medium text-accent hover:underline"
+                      >
+                        Đưa tất cả kênh vào hợp đồng
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {getKocConnectedChannels(koc).map(ch => {
+                      const chUrl =
+                        ch.url ||
+                        (ch.platform === 'TIKTOK'
+                          ? `https://www.tiktok.com/@${ch.handle}`
+                          : ch.handle);
+                      const channelField = fields.find(f => f.source === 'channelLink');
+                      const curLinkVal = channelField ? values[channelField.key] || '' : '';
+                      const isIncluded =
+                        curLinkVal.toLowerCase().includes(ch.handle.toLowerCase()) ||
+                        (!curLinkVal && ch.isPrimary);
+                      return (
+                        <button
+                          key={`${ch.platform}::${ch.handle}`}
+                          type="button"
+                          onClick={() => {
+                            if (!channelField) return;
+                            const parts = curLinkVal
+                              .split(/\s*[,;\n]\s*/)
+                              .map(s => s.trim())
+                              .filter(Boolean);
+                            const existsIdx = parts.findIndex(p =>
+                              p.toLowerCase().includes(ch.handle.toLowerCase()),
+                            );
+                            let nextParts: string[];
+                            if (existsIdx >= 0) {
+                              nextParts =
+                                parts.length > 1
+                                  ? parts.filter((_, idx) => idx !== existsIdx)
+                                  : parts;
+                            } else {
+                              nextParts = [...parts, chUrl];
+                            }
+                            setValue(channelField, nextParts.join(' ; '));
+                          }}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-2xs font-mono transition-colors ${
+                            isIncluded
+                              ? 'border-primary bg-surface text-ink font-semibold'
+                              : 'border-line bg-canvas text-ink-2 hover:border-line-strong'
+                          }`}
+                          title="Bấm để thêm/bớt kênh này vào ô Link kênh trên hợp đồng"
+                        >
+                          <span>{KOC_PLATFORM_LABEL[ch.platform]}:</span>
+                          <span>@{ch.handle}</span>
+                          {ch.platform === 'TIKTOK' && !ch.isPrimary && (
+                            <span className="font-sans text-ink-3">({ch.roleLabel || 'Kênh phụ'})</span>
+                          )}
+                          {ch.platform === 'TIKTOK' && ch.isPrimary && (
+                            <span className="font-sans text-positive">(Kênh chính)</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Tệp đính kèm CCCD & ĐKKD của Hồ sơ pháp lý Bên B lưu trên Cloudflare R2 */}
               <LegalAttachmentsPanel
                 attachments={legalAttachments}
-                onChange={setLegalAttachments}
+                onChange={nextAttachments => {
+                  setLegalAttachments(nextAttachments);
+                  if (koc?.id) {
+                    const targetProfId = activeLegalProfile?.id || selectedLegalProfileId;
+                    saveSyncedKocLegalAttachments(koc.id, targetProfId, nextAttachments);
+                    onSyncKocLegalAttachments?.(koc.id, targetProfId, nextAttachments);
+                  }
+                }}
                 entitySlug={koc?.channelId || koc?.id || partner || 'koc-legal'}
                 legalType={activeLegalProfile?.legalType || 'INDIVIDUAL'}
                 editable
@@ -2289,10 +2522,10 @@ export function ContractForm({
                             if (d) addDealToSow(d);
                           }}
                         >
-                          <option value="">+ Thêm Job từ kế hoạch KOC (${availableDealsToAdd.length} có sẵn)...</option>
+                          <option value="">+ Thêm Job từ kế hoạch KOC ({availableDealsToAdd.length} có sẵn)...</option>
                           {availableDealsToAdd.map(d => (
                             <option key={d.id} value={d.id}>
-                              ${d.dealCode} · ${d.brandName} — ${d.productName || 'Sản phẩm'} (${formatNumber(d.totalValue || 0)}đ)
+                              {d.dealCode} · {d.brandName} — {d.productName || 'Sản phẩm'} ({formatNumber(d.totalValue || 0)}đ)
                             </option>
                           ))}
                         </select>
@@ -2317,25 +2550,25 @@ export function ContractForm({
                 <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg border border-line bg-sunken/40">
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="font-semibold text-ink">
-                      ${draftJobTables.length} Bảng công việc trong ${isSow ? 'Phụ lục SOW' : 'Biên bản nghiệm thu'}
+                      {draftJobTables.length} Bảng công việc trong {isSow ? 'Phụ lục SOW' : 'Biên bản nghiệm thu'}
                     </span>
                     {jobAcceptanceBreakdown.appendixCode && (
                       <span className="px-2 py-0.5 rounded bg-surface border border-line font-code text-2xs text-ink-2">
-                        Số SOW: ${jobAcceptanceBreakdown.appendixCode}
+                        Số SOW: {jobAcceptanceBreakdown.appendixCode}
                       </span>
                     )}
                     {jobAcceptanceBreakdown.masterContractCode && (
                       <span className="px-2 py-0.5 rounded bg-surface border border-line font-code text-2xs text-ink-2">
-                        Kế thừa HĐNT: ${jobAcceptanceBreakdown.masterContractCode}
+                        Kế thừa HĐNT: {jobAcceptanceBreakdown.masterContractCode}
                       </span>
                     )}
                   </div>
                   <Status tone="positive">
-                    Tổng thù lao Net: ${formatNumber(jobAcceptanceBreakdown.financials.plannedTotalNet)}đ
+                    Tổng thù lao Net: {formatNumber(jobAcceptanceBreakdown.financials.plannedTotalNet)}đ
                   </Status>
                 </div>
 
-                {/* Bảng danh sách tất cả các Job trong Phụ lục (DataTable) */}
+                {/* Bảng danh sách tất cả các Job trong Phụ lục */}
                 <div className="overflow-x-auto border border-line rounded-lg bg-surface">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-sunken/70 text-ink-2 border-b border-line font-semibold text-2xs">
@@ -2377,32 +2610,32 @@ export function ContractForm({
                             }`}
                           >
                             <td className="py-2.5 px-3 text-center text-ink-3 font-code">
-                              ${jIdx + 1}
+                              {jIdx + 1}
                             </td>
                             <td className="py-2.5 px-3 font-code font-semibold text-ink">
-                              ${jTab.jobCode}
+                              {jTab.jobCode}
                             </td>
                             <td className="py-2.5 px-3 text-ink">
-                              <div className="font-medium truncate max-w-[200px]">${jTab.productName || 'Sản phẩm chiến dịch'}</div>
+                              <div className="font-medium truncate max-w-[200px]">{jTab.productName || 'Sản phẩm chiến dịch'}</div>
                             </td>
                             <td className="py-2.5 px-3 text-ink-2">
                               <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs">
-                                ${jTab.mediaChannel || 'TikTok'}
+                                {jTab.mediaChannel || 'TikTok'}
                               </span>
                             </td>
                             <td className="py-2.5 px-3 font-code text-ink-2">
-                              ${jTab.airDate || '—'}
+                              {jTab.airDate || '—'}
                             </td>
                             <td className="py-2.5 px-3 text-right font-code font-medium text-ink">
-                              ${formatNumber(jVideoNet)}đ
+                              {formatNumber(jVideoNet)}đ
                             </td>
                             <td className="py-2.5 px-3">
                               <div className="flex flex-wrap items-center gap-1">
                                 {activeAddons.length === 0 ? (
-                                  <span className="text-3xs text-ink-3">Chỉ video</span>
+                                  <span className="text-2xs text-ink-3">Chỉ video</span>
                                 ) : (
                                   activeAddons.map(a => (
-                                    <span key={a.id || a.termType} className="px-1.5 py-0.5 rounded bg-surface border border-line text-3xs text-ink-2">
+                                    <span key={a.id || a.termType} className="px-1.5 py-0.5 rounded bg-surface border border-line text-2xs text-ink-2">
                                       {a.termType === 'ADS_CODE' ? 'Spark Ads' : a.termType === 'LINK_BIO_CART' ? 'Giỏ hàng' : a.termType === 'IMAGE_USAGE' ? 'Hình ảnh' : 'Độc quyền'}
                                     </span>
                                   ))
@@ -2410,7 +2643,7 @@ export function ContractForm({
                               </div>
                             </td>
                             <td className="py-2.5 px-3 text-right font-code font-semibold text-accent">
-                              ${formatNumber(jSubtotal)}đ
+                              {formatNumber(jSubtotal)}đ
                             </td>
                             <td className="py-2.5 px-3 text-right">
                               <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
@@ -2453,20 +2686,20 @@ export function ContractForm({
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 rounded bg-accent text-white font-code text-2xs font-semibold">
-                        Bảng công việc #${activeJobTableIdx + 1}
+                        Bảng công việc #{activeJobTableIdx + 1}
                       </span>
                       <span className="font-semibold text-ink text-xs">
-                        Chi tiết đầu việc: ${draftJobTables[activeJobTableIdx]?.jobCode}
+                        Chi tiết đầu việc: {draftJobTables[activeJobTableIdx]?.jobCode}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-2xs text-ink-3 font-code">
-                        Mã Job: ${draftJobTables[activeJobTableIdx]?.jobCode}
+                        Mã Job: {draftJobTables[activeJobTableIdx]?.jobCode}
                       </span>
                       {draftJobTables[activeJobTableIdx]?.videoUrl ? (
                         <Status tone="positive">Đã gắn Link Air</Status>
                       ) : (
-                        <Status tone="neutral">${isSow ? 'Chưa Air' : 'Chờ Link Air'}</Status>
+                        <Status tone="neutral">{isSow ? 'Chưa Air' : 'Chờ Link Air'}</Status>
                       )}
                     </div>
                   </div>
@@ -2557,7 +2790,7 @@ export function ContractForm({
 
                   {/* Task #2..N: Dịch vụ bổ sung đi kèm (4 gói chuẩn) */}
                   <div className="pt-2.5 border-t border-line space-y-2">
-                    <span className="font-semibold text-2xs text-ink-2 uppercase tracking-wide">
+                    <span className="font-semibold text-2xs text-ink-2">
                       Dịch vụ bổ sung đi kèm theo Job này
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -2746,13 +2979,13 @@ export function ContractForm({
                               }}
                               className="px-2.5 py-1 rounded-lg border border-line bg-surface hover:bg-sunken text-ink text-2xs font-medium transition"
                             >
-                              ${chip.label} (${formatNumber(chip.val)}đ)
+                              {chip.label} ({formatNumber(chip.val)}đ)
                             </button>
                           ))}
                         </div>
 
                         <div className="md:col-span-12 text-2xs text-ink-2 font-code">
-                          Thanh toán Đợt 2 sau khi ký BBNT: <strong className="text-positive">${formatNumber(Math.max(0, (jobAcceptanceBreakdown.financials.plannedTotalNet || 0) - (draftAdvanceAmount || 0)))}đ</strong>
+                          Thanh toán Đợt 2 sau khi ký BBNT: <strong className="text-positive">{formatNumber(Math.max(0, (jobAcceptanceBreakdown.financials.plannedTotalNet || 0) - (draftAdvanceAmount || 0)))}đ</strong>
                         </div>
                       </div>
                     )}
@@ -2763,7 +2996,7 @@ export function ContractForm({
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-3 rounded-lg border border-line bg-sunken/60 font-code text-xs">
                   <div>
                     <span className="text-2xs text-ink-3 block">Tổng Phụ lục SOW</span>
-                    <span className="font-semibold text-ink">${formatNumber(jobAcceptanceBreakdown.financials.plannedTotalNet)}đ</span>
+                    <span className="font-semibold text-ink">{formatNumber(jobAcceptanceBreakdown.financials.plannedTotalNet)}đ</span>
                   </div>
                   <div>
                     <span className="text-2xs text-ink-3 block">Khấu trừ hủy Task</span>
@@ -2775,7 +3008,7 @@ export function ContractForm({
                   </div>
                   <div>
                     <span className="text-2xs text-ink-3 block">Nghiệm thu Net</span>
-                    <span className="font-semibold text-ink">${formatNumber(jobAcceptanceBreakdown.financials.acceptedTotalNet)}đ</span>
+                    <span className="font-semibold text-ink">{formatNumber(jobAcceptanceBreakdown.financials.acceptedTotalNet)}đ</span>
                   </div>
                   <div>
                     <span className="text-2xs text-ink-3 block">
@@ -2786,7 +3019,7 @@ export function ContractForm({
                           : 'Thuế TNCN (10%)'}
                     </span>
                     <span className="font-semibold text-ink">
-                      ${formatNumber(
+                      {formatNumber(
                         jobAcceptanceBreakdown.subjectKind === 'COM'
                           ? jobAcceptanceBreakdown.financials.vatTax
                           : jobAcceptanceBreakdown.financials.pitTax,
@@ -2795,9 +3028,9 @@ export function ContractForm({
                   </div>
                   <div>
                     <span className="text-2xs text-ink-3 block">
-                      Còn trả (Sau tạm ứng ${formatNumber(jobAcceptanceBreakdown.financials.advanceAmount)}đ)
+                      Còn trả (Sau tạm ứng {formatNumber(jobAcceptanceBreakdown.financials.advanceAmount)}đ)
                     </span>
-                    <span className="font-semibold text-positive">${formatNumber(jobAcceptanceBreakdown.financials.remainingPayable)}đ</span>
+                    <span className="font-semibold text-positive">{formatNumber(jobAcceptanceBreakdown.financials.remainingPayable)}đ</span>
                   </div>
                 </div>
               </div>

@@ -122,3 +122,85 @@ test('Chi phí phát sinh khi kế hoạch 0đ là ngoài kế hoạch', () => {
   assert.equal(r.budget.isUnbudgeted, true);
   assert.equal(r.total.committed, 13_000_000);
 });
+
+test('Theo Kênh × Tuần & Bậc KL × Tuần + tích hợp airSyncRecord từ File 3.2', () => {
+  const r = buildPlanActualReport(
+    plan,
+    listing,
+    { deals: [] } as never,
+    '2026-10-20',
+    undefined,
+    {
+      storeName: 'Gian_TikTok',
+      brandName: 'Brand A',
+      platform: 'TikTok Shop',
+      primaryPic: 'PIC A',
+      bookingLeader: '',
+      hasBookingLeader: false,
+      targetPaidVideos: 12,
+      targetFocVideos: 0,
+      targetSelfVideos: 0,
+      targetBudgetNet: 36_000_000,
+      totalBookedDeals: 2,
+      totalAiredDeals: 1,
+      totalPendingAirDeals: 1,
+      onTimeCount: 1,
+      earlyCount: 0,
+      lateCount: 0,
+      unscheduledPlanCount: 0,
+      onTimeRatePct: 100,
+      peakAirDate: '08/10/2026',
+      peakAirCount: 1,
+      syncDiagnosis: 'IN_PROGRESS_BOTTLENECK',
+      syncVerdictText: 'Đang thực thi',
+      weeklyMatrix: [],
+      deals: [
+        {
+          code: 'BO26_TEST_01',
+          kocHandle: '@a',
+          product: 'Combo A',
+          kl: 'KL3',
+          format: 'Booking Video KOC',
+          cost: 2_000_000,
+          plannedAirDate: '2026-10-08',
+          plannedWeek: 'W41 (05/10-11/10)',
+          actualAirDate: '2026-10-08',
+          actualWeek: 'W41 (05/10-11/10)',
+          dayLag: 0,
+          syncTimingStatus: 'ON_TIME',
+          pipeline: 'Làm ĐNTT',
+          linkAir: 'https://www.tiktok.com/@a/video/1',
+          pic: 'PIC A',
+        },
+        {
+          code: 'BO26_TEST_02',
+          kocHandle: '@b',
+          product: 'Combo B',
+          kl: 'KL5',
+          format: 'Booking Video KOC',
+          cost: 8_000_000,
+          plannedAirDate: '2026-10-15',
+          plannedWeek: 'W42 (12/10-18/10)',
+          actualAirDate: '',
+          actualWeek: '',
+          dayLag: null,
+          syncTimingStatus: 'NOT_AIRED',
+          pipeline: 'Đã nhận hàng',
+          linkAir: '',
+          pic: 'PIC A',
+        },
+      ],
+    },
+  );
+  const castChannel = r.channels.find(c => c.key === 'CAST_PAID')!;
+  assert.equal(castChannel.planQty, 12);
+  assert.equal(castChannel.jobs, 2);
+  assert.equal(castChannel.aired, 1);
+  assert.equal(castChannel.accepted, 1);
+  const w41 = r.weeks.find(w => w.weekCode === 'W41')!;
+  assert.equal(w41.byChannel.CAST_PAID.planQty, 4);
+  assert.equal(w41.byChannel.CAST_PAID.aired, 1);
+  assert.equal(w41.byTier.KL3.planQty, 4);
+  assert.equal(w41.byTier.KL3.aired, 1);
+  assert.equal(r.deals.length, 2);
+});

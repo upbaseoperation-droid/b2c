@@ -24,7 +24,7 @@ import {
 import { getVietnamDateYmd, maskSensitivePii } from './format';
 import { pushSharedStateToDb } from './sharedStateClient';
 
-export const APPROVED_BOOKING_LIST_STORAGE_KEY = 'upbase_b2c_approved_booking_list_v2';
+export const APPROVED_BOOKING_LIST_STORAGE_KEY = 'upbase_b2c_approved_booking_list_v3';
 export const APPROVED_BOOKING_LIST_UPDATED_EVENT = 'upbase-approved-booking-list-updated';
 
 export type ApprovedBookingPaymentStatus =
@@ -88,6 +88,7 @@ export interface ApprovedBookingListItem {
   plannedSendSampleDate: string;       // Cột 84: P.Ngày gửi hàng
   plannedScriptDate: string;           // Cột 86: P.Ngày KOC gửi kịch bản
   plannedDemoDate: string;             // Cột 87: P.Ngày KOC gửi demo
+  paymentScheduleOption?: 'ONE_TIME' | 'TWO_TIMES'; // Phương thức thanh toán trên Phụ lục SOW: 1 lần | 2 đợt (mở tạm ứng)
   soTienTamUngTruoc: number;           // Cột 40: 🎃 Số tiền tạm ứng trước
   advanceAmount?: number;              // Alias tương thích ngược cho soTienTamUngTruoc
   loaiTaiKhoanThanhToan: string;       // Cột 17: 🎃📝Loại tài khoản thanh toán
@@ -193,7 +194,8 @@ export interface ApprovedBookingListItem {
     | 'Tạm ứng trước Booking KOC'
     | 'Thanh toán Booking KOC'
     | 'Tạm ứng trước Booking Livestream'
-    | 'Thanh toán Booking Livestream';
+    | 'Thanh toán Booking Livestream'
+    | 'Thanh toán CTV Content kênh';
   isBrandBudgetAdvance?: boolean;      // Ngoại lệ GĐ2 (B-11..B-14): Brand chưa kịp chuyển ngân sách, UpBase ứng trước thay Brand
   brandConfirmPaymentDate?: string;    // Ngày Brand cam kết thanh toán trong email xác nhận gửi Kế toán
   daDiTien?: boolean;                  // Checkbox "Đã đi tiền" trên Bảng 6.1 sau bước KT Handle
@@ -626,7 +628,14 @@ export function recalculateApprovedBookingItem(
     : Math.max(0, Number(item.chiPhiBookingNetCuoi) || 0);
   const grossWithTax = computeGrossFeeWithTax(finalNet, item.loaiTaiKhoanThanhToan);
   const klGrade = mapTepBookingToSalaryGrade(finalNet);
-  const tamUng = Math.max(0, Number(item.soTienTamUngTruoc) || 0);
+  const isAdvAlreadyProcessed =
+    item.larkAdvanceStatus === 'ĐÃ_CHI_TẠM_ỨNG' ||
+    item.larkAdvanceStatus === 'ĐÃ_DUYỆT_TẠM_ỨNG' ||
+    item.larkAdvanceStatus === 'CHỜ_DUYỆT_TẠM_ỨNG';
+  const tamUng =
+    item.paymentScheduleOption === 'ONE_TIME' && !isAdvAlreadyProcessed
+      ? 0
+      : Math.max(0, Number(item.soTienTamUngTruoc) || 0);
 
   const hasAir =
     hasExplicitMultiJobs && normalizedDealJobs.length > 1
@@ -1095,6 +1104,14 @@ function mergeDealsAndKocsIntoApprovedList(
         matchedDeal?.contractAppendixStatus === 'ĐÃ_KÝ'
           ? 'ĐÃ_KÝ'
           : matchedDeal?.contractAppendixStatus || rawItem.contractAppendixStatus,
+      paymentScheduleOption:
+        matchedDeal?.paymentScheduleOption || rawItem.paymentScheduleOption,
+      soTienTamUngTruoc:
+        matchedDeal?.paymentScheduleOption === 'ONE_TIME'
+          ? 0
+          : matchedDeal?.paymentScheduleOption === 'TWO_TIMES' && (matchedDeal.advanceAmount || 0) > 0
+            ? rawItem.soTienTamUngTruoc || matchedDeal.advanceAmount
+            : rawItem.soTienTamUngTruoc,
       larkApprovalInstanceCode:
         matchedDeal?.larkFinalApprovalCode || rawItem.larkApprovalInstanceCode,
       linkAir: rawItem.linkAir || matchedDeal?.tiktokVideoUrl || matchedDeal?.videoUrl || '',
@@ -1584,6 +1601,10 @@ export function buildBookingDealFromApprovedItem(
     contractAppendixCode:
       normalized.contractAppendixCode || generateDealAppendixCode(maBo, 1),
     contractAppendixStatus: normalized.contractAppendixStatus || 'CHỜ_KÝ',
+    paymentScheduleOption:
+      normalized.paymentScheduleOption ||
+      (normalized.soTienTamUngTruoc > 0 ? 'TWO_TIMES' : undefined),
+    soTienTamUngTruoc: normalized.soTienTamUngTruoc,
     contractAppendixGoogleDocsUrl: normalized.contractAppendixGoogleDocsUrl,
     contractAppendixSignedUrl: normalized.contractAppendixSignedUrl,
     bbntCode: normalized.bbntCode,

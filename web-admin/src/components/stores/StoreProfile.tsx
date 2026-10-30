@@ -42,6 +42,7 @@ import {
   ChannelTag,
   DataTable,
   EmptyState,
+  Input,
   Modal,
   Pagination,
   Panel,
@@ -56,6 +57,7 @@ import {
 } from '../ui';
 import type { Column } from '../ui';
 import { INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
+import { resolveBrandBookingSheetUrl } from '../../lib/bookingList';
 import {
   PROFILE_MONTH_OPTIONS,
   buildStoreMonthlyPlanReport,
@@ -117,6 +119,7 @@ export function StoreProfile({
   onMonthChange,
   layout = 'page',
   nav,
+  onUpdateStore,
   onNavigateToBrandProfile,
   onOpenHandover,
   onOpenEdit,
@@ -137,6 +140,31 @@ export function StoreProfile({
   const [inspectedBooking, setInspectedBooking] = useState<StoreMonthlyBookingRecord | null>(null);
   const [bookingPage, setBookingPage] = useState<number>(1);
   const BOOKING_PAGE_SIZE = 25;
+  const resolvedSheetUrl = useMemo(
+    () => (store.bookingSheetUrl || resolveBrandBookingSheetUrl(store.brandName, store.storeName, store) || '').trim(),
+    [store]
+  );
+  const [isEditingSheetUrl, setIsEditingSheetUrl] = useState(false);
+  const [sheetUrlDraft, setSheetUrlDraft] = useState(resolvedSheetUrl);
+
+  const handleSaveInlineSheetUrl = () => {
+    const nextUrl = sheetUrlDraft.trim();
+    const updatedStore: StorePortfolioItem = {
+      ...store,
+      bookingSheetUrl: nextUrl || undefined,
+      updatedAt: new Date().toISOString(),
+    };
+    onUpdateStore?.(updatedStore);
+    void fetch('/api/master-data', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storeId: store.id,
+        assignment: { bookingSheetUrl: nextUrl },
+      }),
+    }).catch(() => undefined);
+    setIsEditingSheetUrl(false);
+  };
 
   // Lịch sử Hồ sơ Plan & Report qua các kỳ tháng (2026/11, 2026/10, 2026/09, 2026/08)
   const monthlyLedger = useMemo(() => {
@@ -728,6 +756,17 @@ export function StoreProfile({
                 }
               >
                 Mở Booking ({currentMonthReport.bookings.length})
+              </Button>
+            )}
+
+            {resolvedSheetUrl && (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={FileSpreadsheet}
+                onClick={() => window.open(resolvedSheetUrl, '_blank', 'noreferrer')}
+              >
+                Mở Google Sheet
               </Button>
             )}
 
@@ -1401,6 +1440,51 @@ export function StoreProfile({
                 <dd className="text-ink">
                   {store.isB2cManaged !== false ? 'B2C phụ trách (= 1)' : 'Gian hàng ngoài'}
                 </dd>
+              </div>
+
+              <div className="py-2 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <dt className="text-ink-3">Link Google Sheet</dt>
+                  <dd className="flex items-center gap-2">
+                    {resolvedSheetUrl ? (
+                      <a
+                        href={resolvedSheetUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-accent font-medium hover:underline"
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
+                        <span>Mở Google Sheet</span>
+                        <ExternalLink className="w-3 h-3 shrink-0" />
+                      </a>
+                    ) : (
+                      <span className="text-ink-3">Chưa gắn link</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSheetUrlDraft(resolvedSheetUrl);
+                        setIsEditingSheetUrl(v => !v);
+                      }}
+                      className="text-2xs font-medium text-accent hover:underline"
+                    >
+                      {isEditingSheetUrl ? 'Đóng' : resolvedSheetUrl ? 'Đổi link' : 'Gắn link'}
+                    </button>
+                  </dd>
+                </div>
+                {isEditingSheetUrl && (
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <Input
+                      type="url"
+                      value={sheetUrlDraft}
+                      onChange={e => setSheetUrlDraft(e.target.value)}
+                      placeholder="https://docs.google.com/spreadsheets/d/..."
+                    />
+                    <Button size="sm" variant="primary" onClick={handleSaveInlineSheetUrl}>
+                      Lưu
+                    </Button>
+                  </div>
+                )}
               </div>
             </dl>
           </Panel>

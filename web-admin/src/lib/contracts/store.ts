@@ -270,6 +270,50 @@ function defaultSeedRecords(): ContractRecord[] {
         { at: now, actorId: 'contract-demo-owner', actorName: 'Chuyên viên Booking B2C', action: 'SUBMIT', note: 'Trình Kế toán duyệt quyết toán', version: 1 },
       ],
     },
+    {
+      id: 'CTR-DEMO-2026-000',
+      title: 'Hợp đồng nguyên tắc KOC · Chanh Beauty · Kutieskin',
+      brand: 'Kutieskin',
+      partner: 'Đặng Mai Phương (Chanh Beauty)',
+      templateId: 'IND-HDNT',
+      templateHash: indTpl.hash,
+      dealCode: 'BO260511200',
+      kocId: 'koc-1',
+      ownerId: 'contract-demo-owner',
+      ownerName: 'Chuyên viên Booking B2C',
+      version: 1,
+      revision: 2,
+      approval: 'APPROVED',
+      steps: [
+        { role: 'FINANCE', reviewerId: 'contract-demo-finance', reviewerName: 'Lê Thị Thu Hà (Kế toán B2C)', version: 1, status: 'APPROVED', decidedAt: now, note: 'Đã kiểm tra CCCD gốc, MST và tài khoản Techcombank hợp lệ.' },
+      ],
+      values: baseValues,
+      versions: [],
+      signing: [
+        {
+          documentId: 'ws-demo-000-completed',
+          version: 1,
+          provider: 'DEMO',
+          status: 'COMPLETED',
+          sourceStatus: 2,
+          linkedBy: 'contract-demo-owner',
+          linkedAt: now,
+          syncedAt: now,
+          evidenceConfirmedBy: 'contract-demo-finance',
+          evidenceHash: 'sha256:demo000',
+          people: [
+            { name: 'Đặng Thị Yến Nhi', email: 'marketing-lead@upbase.vn', role: 1, level: 1, action: 2, status: 'SIGNED', at: now },
+            { name: 'Đặng Mai Phương (Chanh Beauty)', email: 'chanhbeauty.booking@gmail.com', role: 1, level: 2, action: 2, status: 'SIGNED', at: now },
+          ],
+        },
+      ],
+      checks: [],
+      createdAt: now,
+      updatedAt: now,
+      history: [
+        { at: now, actorId: 'contract-demo-finance', actorName: 'Lê Thị Thu Hà (Kế toán B2C)', action: 'APPROVE', note: 'Đã thẩm định Hồ sơ pháp lý & duyệt FINAL', version: 1 },
+      ],
+    },
   ];
 }
 

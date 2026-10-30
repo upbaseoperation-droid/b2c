@@ -529,11 +529,11 @@ async function run() {
       const cat = normalizeKocCategory(d.kocCat, tep, defaultCat);
       const pillar = normalizePillar(d.pillar);
       const gmv = d.gmv30;
-      const views = d.views30 > 0 ? d.views30 : (gmv > 0 ? Math.max(8500, Math.round(gmv / 650)) : 12000);
-      const orders = d.orders30 > 0 ? d.orders30 : (gmv > 0 ? Math.max(1, Math.round(gmv / 245000)) : 0);
+      const views = d.views30 > 0 ? d.views30 : 0;
+      const orders = d.orders30 > 0 ? d.orders30 : 0;
       const roi = d.roi30 > 0
         ? Number(d.roi30.toFixed(2))
-        : (totalVal > 0 && gmv > 0 ? Number((gmv / totalVal).toFixed(2)) : (totalVal === 0 && gmv > 0 ? 50 : 0));
+        : (totalVal > 0 && gmv > 0 ? Number((gmv / totalVal).toFixed(2)) : 0);
       const cpo = orders > 0 && totalVal > 0 ? Math.round(totalVal / orders) : 0;
       const isFoc = totalVal === 0 || d.videoType.toLowerCase().includes('free') || d.kl === 'TAP UpAffiliate';
       const bookingFormat = d.formatRaw.toLowerCase().includes('live')
@@ -600,9 +600,6 @@ async function run() {
         isSlaWarning: false,
         ordersCount: orders,
         ...(cpo > 0 ? { cpo } : {}),
-        ...(isFoc ? { focSampleCost: 180000 } : {}),
-        organicGmv: Math.round(gmv * 0.7),
-        adsGmv: Math.round(gmv * 0.3),
         isScriptOnTime: true,
         isPostOnTime: true,
         ratingScore: perfRating === 'XUẤT_SẮC' ? 4.9 : perfRating === 'ĐẠT_MỤC_TIÊU' ? 4.5 : 4.0,
@@ -657,20 +654,15 @@ async function run() {
       ? (isCompany ? holderClean : toTitleCase(holderClean))
       : stageName;
 
-    const followers = info34.followers > 0
-      ? info34.followers
-      : (salaryGrade === 'KL7' ? 650000 : salaryGrade === 'KL6' ? 280000 : salaryGrade === 'KL5' ? 140000 : salaryGrade === 'KL4' ? 75000 : 32000);
-
-    const avgViews = info34.avgViews > 0
-      ? info34.avgViews
-      : Math.max(5500, Math.round(followers * 0.18));
+    const followers = info34.followers > 0 ? info34.followers : 0;
+    const avgViews = info34.avgViews > 0 ? info34.avgViews : 0;
 
     const totalDealsCount = (m.totalPaidVideos || 0) + (m.totalFocVideos || 0) || dList.length || 1;
     const totalPastGmv = Math.max(m.totalGmv30d || 0, info34.gmvReal || 0);
     const totalPastCost = m.totalSpent || 0;
     const historicalRoi = totalPastCost > 0 && totalPastGmv > 0
       ? Number((totalPastGmv / totalPastCost).toFixed(2))
-      : (info34.roi30 > 0 ? Number(info34.roi30.toFixed(2)) : (totalPastGmv > 0 ? 8.5 : 1.8));
+      : (info34.roi30 > 0 ? Number(info34.roi30.toFixed(2)) : 0);
 
     const cccdClean = normalizeLegalIdDigits(m.cccd);
     const mstClean = normalizeLegalIdDigits(m.taxCode);
@@ -709,13 +701,13 @@ async function run() {
     }
     const alternatePayees = payeeMap.size > 1 ? [...payeeMap.values()] : undefined;
 
-    const fem = info34.femaleRatio > 0 ? info34.femaleRatio : 78;
+    const fem = info34.femaleRatio > 0 ? info34.femaleRatio : undefined;
     const mal = info34.maleRatio > 0 ? info34.maleRatio : Math.max(0, 100 - fem);
     const a18 = info34.age18_24 > 0 ? info34.age18_24 : 36;
     const a25 = info34.age25_34 > 0 ? info34.age25_34 : 48;
     const a35 = info34.age35Plus > 0 ? info34.age35Plus : Math.max(0, 100 - a18 - a25);
 
-    const vShare = info34.gmvShareVideo > 0 ? info34.gmvShareVideo : 82;
+    const vShare = info34.gmvShareVideo > 0 ? info34.gmvShareVideo : undefined;
     const lShare = info34.gmvShareLive >= 0 && info34.gmvShareVideo > 0 ? info34.gmvShareLive : 12;
     const pShare = Math.max(0, 100 - vShare - lShare);
 
@@ -737,11 +729,11 @@ async function run() {
       avgViews,
       rateCardVideo: rate,
       bookingFormat: m.totalPaidVideos === 0 && m.totalFocVideos > 0 ? 'Affiliate Thuần' : 'Booking Video KOC',
-      reliabilityScore: info34.kocScore >= 7 && info34.kocScore <= 10 ? Number(info34.kocScore.toFixed(1)) : (historicalRoi >= 3 ? 9.5 : 8.9),
+      reliabilityScore: info34.kocScore >= 7 && info34.kocScore <= 10 ? Number(info34.kocScore.toFixed(1)) : 0,
       phone: info34.zalo || '',
       zalo: info34.zalo || '',
       ...(info34.email ? { email: info34.email } : {}),
-      location: latestDeal.location === 'Nam' ? 'TP.HCM' : latestDeal.location === 'Bắc' ? 'Hà Nội' : (i % 2 === 0 ? 'Hà Nội' : 'TP.HCM'),
+      location: latestDeal.location === 'Nam' ? 'TP.HCM' : latestDeal.location === 'Bắc' ? 'Hà Nội' : '',
       cccd: cccdClean || '',
       ...(mstClean ? { taxCode: mstClean } : {}),
       bankName: m.bankName || '',

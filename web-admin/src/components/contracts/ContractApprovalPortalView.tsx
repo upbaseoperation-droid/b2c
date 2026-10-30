@@ -2,21 +2,17 @@
 
 import React, { useMemo, useState } from 'react';
 import {
-  AlertTriangle,
   CheckCircle2,
-  CreditCard,
   ExternalLink,
   Eye,
   EyeOff,
-  FileCheck2,
   FileText,
-  Scale,
   Send,
-  ShieldCheck,
-  XCircle,
 } from 'lucide-react';
 import type { BookingDealItem, KocItem, LegalDocAttachment } from '../../lib/types';
-import type { ContractRecord, ReviewStep } from '../../lib/contracts/types';
+import type { ContractRecord, FieldSource, ReviewStep } from '../../lib/contracts/types';
+import { OFFICIAL_TEMPLATES_SNAPSHOT } from '../../lib/contracts/builtInTemplatesSnapshot';
+import { resolvePaymentScheduleOption } from '../../lib/contracts/contractRules';
 import {
   evaluateLegalProfileSigningHistory,
   resolveContractLegalAttachments,
@@ -24,7 +20,11 @@ import {
 } from '../../lib/contracts/legalProfileHistory';
 import { formatVnd } from '../../lib/format';
 import { documentOfTemplate } from '../../lib/planDealLink';
-import { LegalAttachmentsPanel, LegalProfileSigningHistoryBanner } from './LegalAttachmentsPanel';
+import {
+  LegalAttachmentsPanel,
+  LegalDocPreviewModal,
+  LegalProfileSigningHistoryBanner,
+} from './LegalAttachmentsPanel';
 import {
   Button,
   Chips,
@@ -36,6 +36,7 @@ import {
   Modal,
   Pagination,
   Panel,
+  Segmented,
   Stat,
   StatRow,
   Status,
@@ -43,8 +44,10 @@ import {
 } from '../ui';
 import type { Column, StatusTone } from '../ui';
 import { contractApi, type ContractBootstrap } from './api';
+import { FinanceAdvancePaymentReportView } from './FinanceAdvancePaymentReportView';
+import { FinanceReminderInboxView } from './FinanceReminderInboxView';
 import { GoogleDocsFinanceApproveDialog } from './GoogleDocsFinanceApproveDialog';
-import { isAcceptance } from './contractUi';
+import { isAcceptance, resolveActiveLegalProfile } from './contractUi';
 
 export type ApprovalPortalMode = 'LEGAL_PORTAL' | 'FINANCE_PORTAL';
 
@@ -96,14 +99,33 @@ export interface ExtractedFinancialSummary {
   missingBankInfo: boolean;
 }
 
+function findValueByFieldSource(
+  record: ContractRecord,
+  ...sources: (FieldSource | string)[]
+): string {
+  const v = record.values || {};
+  const snap = OFFICIAL_TEMPLATES_SNAPSHOT[record.templateId];
+  if (!snap?.fields) return '';
+  for (const src of sources) {
+    for (const f of snap.fields) {
+      if (f.source === src && v[f.key]?.trim()) {
+        return v[f.key].trim();
+      }
+    }
+  }
+  return '';
+}
+
 export function extractContractFinancials(
   record: ContractRecord,
   deal?: BookingDealItem,
   koc?: KocItem,
 ): ExtractedFinancialSummary {
   const v = record.values || {};
+  const snap = OFFICIAL_TEMPLATES_SNAPSHOT[record.templateId];
   const grossFromValues =
     parseVndNumber(v['src:grossAmount']) ||
+    parseVndNumber(findValueByFieldSource(record, 'grossTotal', 'subtotal', 'videoFee')) ||
     parseVndNumber(v['word/document.xml:p190:cell']) ||
     parseVndNumber(v['word/document.xml:p168:cell']) ||
     parseVndNumber(v['word/document.xml:p166:cell']) ||
@@ -118,17 +140,19 @@ export function extractContractFinancials(
 
   const explicitTax =
     parseVndNumber(v['src:pitTax']) ||
+    parseVndNumber(findValueByFieldSource(record, 'pitAmount', 'vatAmount')) ||
     parseVndNumber(v['word/document.xml:p188:cell']);
   const explicitNet =
     parseVndNumber(v['src:netAmount']) ||
+    parseVndNumber(findValueByFieldSource(record, 'netTotal')) ||
     parseVndNumber(v['word/document.xml:p186:cell']);
 
   let taxAmount = explicitTax;
   let netAmount = explicitNet;
-  let taxLabel = 'Thuế TNCN 10% (≥ 2tr)';
+  let taxLabel = 'Thuế TNCN 10%';
 
   if (isCompany) {
-    taxLabel = 'VAT 8-10% (Pháp nhân Công ty)';
+    taxLabel = 'Thuế VAT';
     if (!taxAmount && grossAmount > 0) {
       taxAmount = Math.round(grossAmount * 0.08);
     }
@@ -136,7 +160,7 @@ export function extractContractFinancials(
       netAmount = grossAmount;
     }
   } else if (isHousehold) {
-    taxLabel = 'Thuế HKD theo biểu mẫu';
+    taxLabel = 'Thuế HKD';
     if (!netAmount && grossAmount > 0) {
       netAmount = grossAmount - taxAmount;
     }
@@ -149,20 +173,36 @@ export function extractContractFinancials(
     }
   }
 
+  const payOption = resolvePaymentScheduleOption(v, record.templateId, snap?.fields);
+  const explicitAdvance =
+    parseVndNumber(v['sowAdvanceAmount']) ||
+    parseVndNumber(findValueByFieldSource(record, 'advanceAmount')) ||
+    parseVndNumber(v['word/document.xml:p208:14']);
   const advanceAmount =
-    parseVndNumber(v['word/document.xml:p208:14']) ||
-    Math.round(netAmount * 0.5);
+    payOption === 'ONE_TIME'
+      ? 0
+      : explicitAdvance > 0
+        ? explicitAdvance
+        : payOption === 'TWO_TIMES'
+          ? Math.round(netAmount * 0.5)
+          : 0;
   const remainingAmount = Math.max(0, netAmount - advanceAmount);
 
-  const activeProfile = koc?.legalProfiles?.[0];
+  const activeProfile = resolveActiveLegalProfile(
+    koc,
+    deal,
+    record.legalProfileId || v['LEGAL_PROFILE_ID'],
+  );
   const bankAccount =
     v['src:bankAccount'] ||
+    findValueByFieldSource(record, 'bankAccountNumber') ||
     v['SO_TAI_KHOAN'] ||
     activeProfile?.bankAccountNumber ||
     koc?.bankAccount ||
     '';
   const bankName =
     v['src:bankName'] ||
+    findValueByFieldSource(record, 'bankName') ||
     v['NGAN_HANG'] ||
     activeProfile?.bankName ||
     koc?.bankName ||
@@ -170,14 +210,18 @@ export function extractContractFinancials(
   const cccdOrTaxCode =
     v['src:cccd'] ||
     v['src:taxCode'] ||
+    findValueByFieldSource(record, 'cccd', 'taxCode', 'businessLicenseNo') ||
     v['word/document.xml:p39:cell'] ||
+    activeProfile?.cccd ||
     activeProfile?.taxCode ||
     koc?.cccd ||
     koc?.taxCode ||
     '';
   const phone =
     v['src:phone'] ||
+    findValueByFieldSource(record, 'phone') ||
     v['word/document.xml:p45:cell'] ||
+    activeProfile?.contactPhone ||
     koc?.phone ||
     '';
 
@@ -205,22 +249,26 @@ export function extractContractFinancials(
 
 export function ContractApprovalPortalView({
   mode,
+  initialFinanceSection = 'CONTRACT_REVIEW',
   data,
   deals = [],
   kocs = [],
   busy,
   onOpenRecord,
   onQuickViewRecord,
+  onOpenDealLookup,
   onRefresh,
   onNotify,
 }: {
   mode: ApprovalPortalMode;
+  initialFinanceSection?: 'CONTRACT_REVIEW' | 'ADVANCE_PAYMENT_REPORT' | 'FINANCE_REMINDERS';
   data: ContractBootstrap;
   deals?: BookingDealItem[];
   kocs?: KocItem[];
   busy: boolean;
   onOpenRecord: (id: string) => void;
   onQuickViewRecord: (record: ContractRecord) => void;
+  onOpenDealLookup?: (dealCode: string) => void;
   onRefresh: () => Promise<unknown>;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }) {
@@ -231,25 +279,40 @@ export function ContractApprovalPortalView({
   const [search, setSearch] = useState('');
   const [legalFilter, setLegalFilter] = useState<LegalFilter>('PENDING_LEGAL');
   const [financeFilter, setFinanceFilter] = useState<FinanceFilter>('PENDING_FINANCE');
+  const [financeSection, setFinanceSection] = useState<
+    'CONTRACT_REVIEW' | 'ADVANCE_PAYMENT_REPORT' | 'FINANCE_REMINDERS'
+  >(initialFinanceSection);
+  const [prevInitialFinanceSection, setPrevInitialFinanceSection] =
+    useState(initialFinanceSection);
+  if (initialFinanceSection !== prevInitialFinanceSection) {
+    setPrevInitialFinanceSection(initialFinanceSection);
+    setFinanceSection(initialFinanceSection);
+  }
   const [page, setPage] = useState(1);
   const [revealSensitive, setRevealSensitive] = useState(false);
+  const [dealLookupQuery, setDealLookupQuery] = useState('');
+  const [dealLookupSubTab, setDealLookupSubTab] = useState<'DEAL_LEDGER' | 'LARK_SLIPS'>(
+    'DEAL_LEDGER',
+  );
 
-  // Hộp thoại thẩm định chi tiết ngay trên Portal
+  // Hộp thoại đối soát & phê duyệt 2 cột
   const [inspectRecord, setInspectRecord] = useState<ContractRecord | null>(null);
-  const [decisionModal, setDecisionModal] = useState<{
+  const [leftPaneTab, setLeftPaneTab] = useState<'DOCS' | 'CLAUSES'>('DOCS');
+  const [rejectOrChangeModal, setRejectOrChangeModal] = useState<{
     record: ContractRecord;
-    decision: 'APPROVED' | 'CHANGES' | 'REJECTED';
-    role: 'LEGAL' | 'FINANCE';
+    decision: 'CHANGES' | 'REJECTED';
   } | null>(null);
   const [gdocsFinanceRecord, setGdocsFinanceRecord] = useState<ContractRecord | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
 
-  // Trạng thái form duyệt Pháp chế & Kế toán
-  const [legalApproveNote, setLegalApproveNote] = useState('');
+  const [approveNote, setApproveNote] = useState('');
   const [saveAsKocTemplate, setSaveAsKocTemplate] = useState(true);
   const [kocLegalNotes, setKocLegalNotes] = useState('');
-  const [financeApproveNote, setFinanceApproveNote] = useState('');
-  const [quickPreviewDoc, setQuickPreviewDoc] = useState<LegalDocAttachment | null>(null);
+  const [quickPreviewState, setQuickPreviewState] = useState<{
+    docs: LegalDocAttachment[];
+    active: LegalDocAttachment;
+    label?: string;
+  } | null>(null);
 
   // Index O(1) cho Deals và KOCs theo RULE-PERF-01
   const dealMap = useMemo(() => {
@@ -272,8 +335,14 @@ export function ContractApprovalPortalView({
   const financialMap = useMemo(() => {
     const map = new Map<string, ExtractedFinancialSummary>();
     for (const r of data.records) {
-      const deal = (r.dealId && dealMap.get(r.dealId)) || (r.dealCode && dealMap.get(r.dealCode)) || undefined;
-      const koc = (r.kocId && kocMap.get(r.kocId)) || (deal?.kocId && kocMap.get(deal.kocId)) || undefined;
+      const deal =
+        (r.dealId && dealMap.get(r.dealId)) ||
+        (r.dealCode && dealMap.get(r.dealCode)) ||
+        undefined;
+      const koc =
+        (r.kocId && kocMap.get(r.kocId)) ||
+        (deal?.kocId && kocMap.get(deal.kocId)) ||
+        undefined;
       map.set(r.id, extractContractFinancials(r, deal, koc));
     }
     return map;
@@ -292,10 +361,37 @@ export function ContractApprovalPortalView({
     return resolveContractLegalAttachments(r, dealMap, kocMap, data.records);
   };
 
+  const openUnifiedInspectModal = (record: ContractRecord) => {
+    const hist = signingHistoryMap.get(record.id);
+    if (mode === 'LEGAL_PORTAL') {
+      setApproveNote(
+        'Pháp chế đã rà soát và đồng ý với các điều khoản sửa đổi / bổ sung trên hồ sơ.',
+      );
+      setSaveAsKocTemplate(Boolean(record.hasCustomTerms || record.isKocOwnForm));
+      setKocLegalNotes(record.customTermsSummary || record.internalNotes || '');
+      setLeftPaneTab(
+        record.hasCustomTerms || (record.googleDocsReviewRouting?.clauseDiffs.length ?? 0) > 0
+          ? 'CLAUSES'
+          : 'DOCS',
+      );
+    } else {
+      setApproveNote(
+        hist?.recommendedFinanceNote ||
+          'Đã kiểm tra khớp hạn mức Booking, thuế khấu trừ và thông tin tài khoản thụ hưởng.',
+      );
+      setLeftPaneTab('DOCS');
+    }
+    setInspectRecord(record);
+  };
+
   const isPendingLegal = (r: ContractRecord) => {
     const legalStep = r.steps.find(s => s.role === 'LEGAL' && s.version === r.version);
     if (r.approval === 'IN_REVIEW' && legalStep?.status === 'PENDING') return true;
-    if (r.approval === 'IN_REVIEW' && (r.hasCustomTerms || r.isKocOwnForm || r.googleDocsReviewRouting?.requiresLegal) && (!legalStep || legalStep.status === 'PENDING')) {
+    if (
+      r.approval === 'IN_REVIEW' &&
+      (r.hasCustomTerms || r.isKocOwnForm || r.googleDocsReviewRouting?.requiresLegal) &&
+      (!legalStep || legalStep.status === 'PENDING')
+    ) {
       return true;
     }
     return false;
@@ -307,7 +403,9 @@ export function ContractApprovalPortalView({
   };
 
   const isGDocsPendingFinal = (r: ContractRecord) =>
-    Boolean(r.googleDocsUrl) && r.approval !== 'APPROVED' && !r.signing.some(s => s.status === 'COMPLETED');
+    Boolean(r.googleDocsUrl) &&
+    r.approval !== 'APPROVED' &&
+    !r.signing.some(s => s.status === 'COMPLETED');
 
   const isLegalApproved = (r: ContractRecord) =>
     r.steps.some(s => s.role === 'LEGAL' && s.status === 'APPROVED' && s.version === r.version) ||
@@ -332,13 +430,22 @@ export function ContractApprovalPortalView({
   const searchedRecords = useMemo(() => {
     const q = search.trim().toLowerCase();
     return data.records.filter(
-      r => !q || `${r.title} ${r.brand} ${r.partner} ${r.dealCode || ''} ${r.id}`.toLowerCase().includes(q),
+      r =>
+        !q ||
+        `${r.title} ${r.brand} ${r.partner} ${r.dealCode || ''} ${r.id}`
+          .toLowerCase()
+          .includes(q),
     );
   }, [data.records, search]);
 
   const legalMatches: Record<LegalFilter, (r: ContractRecord) => boolean> = {
     PENDING_LEGAL: isPendingLegal,
-    CLAUSE_DIFF: r => Boolean(r.googleDocsUrl || r.hasCustomTerms || (r.googleDocsReviewRouting?.clauseDiffs.length ?? 0) > 0),
+    CLAUSE_DIFF: r =>
+      Boolean(
+        r.googleDocsUrl ||
+          r.hasCustomTerms ||
+          (r.googleDocsReviewRouting?.clauseDiffs.length ?? 0) > 0,
+      ),
     KOC_OWN_FORM: r => Boolean(r.isKocOwnForm),
     LEGAL_APPROVED: isLegalApproved,
     ALL: () => true,
@@ -348,7 +455,8 @@ export function ContractApprovalPortalView({
     PENDING_FINANCE: isPendingFinance,
     VERIFIED_PROFILE: r => isPendingFinance(r) && isVerifiedLegalProfile(r),
     GDOCS_FINAL: isGDocsPendingFinal,
-    BBNT_SETTLEMENT: r => isAcceptance(r.templateId) || documentOfTemplate(r.templateId) === 'BBNT',
+    BBNT_SETTLEMENT: r =>
+      isAcceptance(r.templateId) || documentOfTemplate(r.templateId) === 'BBNT',
     BUDGET_ALERT: hasBudgetOrBankAlert,
     FINANCE_APPROVED: isFinanceApproved,
     ALL: () => true,
@@ -363,32 +471,6 @@ export function ContractApprovalPortalView({
 
   const pageSize = 15;
   const pagedRows = filteredRows.slice((page - 1) * pageSize, page * pageSize);
-
-  const openLegalDecision = (record: ContractRecord, decision: 'APPROVED' | 'CHANGES' | 'REJECTED') => {
-    setLegalApproveNote(
-      decision === 'APPROVED'
-        ? 'Pháp chế đã rà soát và đồng ý với các điều khoản sửa đổi / bổ sung trên hồ sơ.'
-        : '',
-    );
-    setSaveAsKocTemplate(Boolean(record.hasCustomTerms || record.isKocOwnForm));
-    setKocLegalNotes(record.customTermsSummary || record.internalNotes || '');
-    setDecisionModal({ record, decision, role: 'LEGAL' });
-  };
-
-  const openFinanceDecision = (record: ContractRecord, decision: 'APPROVED' | 'CHANGES' | 'REJECTED') => {
-    if (decision === 'APPROVED' && record.googleDocsUrl) {
-      setGdocsFinanceRecord(record);
-      return;
-    }
-    const hist = signingHistoryMap.get(record.id);
-    setFinanceApproveNote(
-      decision === 'APPROVED'
-        ? hist?.recommendedFinanceNote ||
-            'Đã kiểm tra khớp hạn mức Booking, thuế khấu trừ và thông tin tài khoản thụ hưởng.'
-        : '',
-    );
-    setDecisionModal({ record, decision, role: 'FINANCE' });
-  };
 
   const submitDecision = async (
     target: ContractRecord,
@@ -407,7 +489,7 @@ export function ContractApprovalPortalView({
         ...extra,
       });
       await onRefresh();
-      setDecisionModal(null);
+      setRejectOrChangeModal(null);
       setInspectRecord(null);
       onNotify?.(
         decision === 'APPROVED'
@@ -424,7 +506,11 @@ export function ContractApprovalPortalView({
     }
   };
 
-  const handleGDocsFinanceApprove = async (payload: { note: string; partyAEmail?: string; partyBEmail?: string }) => {
+  const handleGDocsFinanceApprove = async (payload: {
+    note: string;
+    partyAEmail?: string;
+    partyBEmail?: string;
+  }) => {
     if (!gdocsFinanceRecord) return;
     setActionBusy(true);
     try {
@@ -437,7 +523,10 @@ export function ContractApprovalPortalView({
       await onRefresh();
       setGdocsFinanceRecord(null);
       setInspectRecord(null);
-      onNotify?.(`Kế toán đã duyệt chốt (FINAL) và đẩy "${gdocsFinanceRecord.title}" sang WeSign`, 'success');
+      onNotify?.(
+        `Kế toán đã duyệt chốt và đẩy "${gdocsFinanceRecord.title}" sang WeSign`,
+        'success',
+      );
     } catch (err) {
       onNotify?.((err as Error).message, 'error');
     } finally {
@@ -445,37 +534,31 @@ export function ContractApprovalPortalView({
     }
   };
 
-  // Thống kê tổng giá trị chờ Kế toán duyệt
   const totalPendingNetVnd = useMemo(() => {
     return data.records
       .filter(isPendingFinance)
       .reduce((sum, r) => sum + (financialMap.get(r.id)?.netAmount || 0), 0);
   }, [data.records, financialMap]);
 
-  // Cột bảng Portal Pháp chế
+  // Cột bảng Portal Pháp chế: Tối đa 2 dòng/ô, chỉ 1 Status/hàng, không dùng badge tô nền cho thuộc tính
   const legalColumns: Column<ContractRecord>[] = [
     {
       key: 'title',
-      header: 'Hồ sơ & Giai đoạn',
-      width: 235,
+      header: 'Hồ sơ',
+      width: 240,
       render: r => {
         const docStage = documentOfTemplate(r.templateId);
-        const stageBadge =
+        const stageLabel =
           docStage === 'HDNT'
-            ? { label: '1. HĐNT Khung', cls: 'bg-sunken border-line text-ink-2' }
+            ? 'Hợp đồng nguyên tắc'
             : docStage === 'SOW'
-              ? { label: '2. Phụ lục SOW', cls: 'bg-accent-soft/50 border-accent/30 text-accent' }
-              : { label: '3. Nghiệm thu BBNT', cls: 'bg-positive-soft/60 border-positive/30 text-positive' };
+              ? 'Phụ lục SOW'
+              : 'Biên bản nghiệm thu';
         return (
-          <div className="min-w-0 max-w-[260px] leading-tight space-y-1">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className={`text-2xs font-semibold px-1.5 py-0.5 rounded border shrink-0 ${stageBadge.cls}`}>
-                {stageBadge.label}
-              </span>
-              <span className="block truncate font-semibold text-ink">{r.title}</span>
-            </div>
+          <div className="min-w-0 max-w-[260px] leading-snug space-y-0.5">
+            <span className="block truncate font-medium text-ink">{r.title}</span>
             <span className="block truncate text-2xs text-ink-3">
-              {r.brand} · {r.dealCode || 'Hợp đồng khung'} · v{r.version}
+              {stageLabel} · <span className="font-code">{r.templateId}</span> · v{r.version}
             </span>
           </div>
         );
@@ -483,113 +566,103 @@ export function ContractApprovalPortalView({
     },
     {
       key: 'partner',
-      header: 'Đối tác KOC · Định danh & CCCD/ĐKKD',
-      width: 215,
-      render: r => {
-        const fin = financialMap.get(r.id);
-        const docs = resolveRecordLegalAttachments(r);
-        const isUnder50M = r.isKocOwnForm && (fin?.grossAmount || 0) > 0 && (fin?.grossAmount || 0) < 50_000_000;
-        return (
-          <div className="min-w-0 max-w-[235px] leading-tight space-y-1">
-            <span className="block truncate font-medium text-ink">{r.partner}</span>
-            <span className="block truncate text-2xs text-ink-3 font-code">
-              CCCD/MST: {maskSensitiveNumber(fin?.cccdOrTaxCode, revealSensitive)}
-            </span>
-            {docs.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-1 pt-0.5" onClick={e => e.stopPropagation()}>
-                {docs.map(doc => (
-                  <button
-                    key={doc.id}
-                    type="button"
-                    onClick={() => setQuickPreviewDoc(doc)}
-                    className="inline-flex items-center gap-1 text-2xs font-medium px-1.5 py-0.5 rounded border border-accent/30 bg-accent-soft/50 text-accent hover:bg-accent-soft transition-colors"
-                    title={`Bấm để xem ${doc.label}`}
-                  >
-                    <Eye className="w-3 h-3 shrink-0" />
-                    {doc.docType === 'DKKD'
-                      ? 'Xem ĐKKD'
-                      : doc.docType === 'CCCD_BACK'
-                        ? 'CCCD sau'
-                        : 'CCCD trước'}
-                  </button>
-                ))}
-              </div>
+      header: 'KOC & nhãn hàng',
+      width: 190,
+      render: r => (
+        <div className="min-w-0 max-w-[210px] leading-snug space-y-0.5">
+          <span className="block truncate font-medium text-ink">{r.partner}</span>
+          <span className="block truncate text-2xs text-ink-3">
+            {r.brand}
+            {r.dealCode ? (
+              <>
+                {' · '}
+                <span className="font-code text-ink-2">{r.dealCode}</span>
+              </>
             ) : (
-              <span className="block truncate text-2xs text-warning-strong font-medium">
-                Chưa đính kèm CCCD/ĐKKD
-              </span>
+              ' · HĐ khung'
             )}
-            {r.isKocOwnForm && (
-              <span
-                className={`inline-block text-2xs px-1.5 py-0.5 rounded border font-medium ${
-                  isUnder50M
-                    ? 'border-critical/40 bg-critical-soft text-critical'
-                    : 'border-warning/40 bg-warning-soft text-warning-strong'
-                }`}
-              >
-                {isUnder50M ? 'Mẫu riêng KOC (< 50tr: Cần ngoại lệ)' : 'Mẫu riêng KOC (≥ 50tr)'}
-              </span>
-            )}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'clauses',
+      header: 'Nội dung rà soát',
+      width: 240,
+      render: r => {
+        const routing = r.googleDocsReviewRouting;
+        const legalClauses = routing?.legalClauses || [];
+        if (!r.hasCustomTerms && !r.googleDocsUrl && !r.isKocOwnForm) {
+          return (
+            <div className="leading-snug space-y-0.5">
+              <span className="block text-ink-2">Mẫu chuẩn</span>
+              <span className="block text-2xs text-ink-3">Miễn duyệt Pháp chế</span>
+            </div>
+          );
+        }
+        const headline = r.isKocOwnForm
+          ? 'Mẫu riêng KOC'
+          : legalClauses.length > 0
+            ? legalClauses.join(' · ')
+            : 'Sửa đổi điều khoản';
+        return (
+          <div className="min-w-0 max-w-[260px] leading-snug space-y-0.5">
+            <span className="block truncate font-medium text-ink">{headline}</span>
+            <span className="block truncate text-2xs text-ink-3">
+              {r.customTermsSummary || routing?.summary || 'Kiểm tra quyền hình ảnh & phạt vi phạm'}
+            </span>
           </div>
         );
       },
     },
     {
-      key: 'clauses',
-      header: 'Điều khoản sửa đổi & Phân luồng',
-      width: 250,
+      key: 'docs',
+      header: 'Giấy tờ CCCD / ĐKKD',
+      width: 165,
       render: r => {
-        const routing = r.googleDocsReviewRouting;
-        const legalClauses = routing?.legalClauses || [];
-        const diffsCount = routing?.clauseDiffs?.length || 0;
-        if (!r.hasCustomTerms && !r.googleDocsUrl && !r.isKocOwnForm) {
-          return <span className="text-2xs text-ink-3">Mẫu chuẩn (Miễn duyệt Pháp chế)</span>;
+        const docs = resolveRecordLegalAttachments(r);
+        if (docs.length === 0) {
+          return <span className="text-2xs text-ink-3">Chưa đính kèm</span>;
         }
         return (
-          <div className="min-w-0 max-w-[270px] leading-tight space-y-1">
-            <div className="flex flex-wrap items-center gap-1">
-              {legalClauses.length > 0 ? (
-                legalClauses.map(c => (
-                  <span
-                    key={c}
-                    className="text-2xs font-semibold px-1.5 py-0.5 rounded border border-warning/40 bg-warning-soft text-warning-strong"
-                  >
-                    {c}
-                  </span>
-                ))
-              ) : (
-                <span className="text-2xs font-medium text-warning-strong">Có điều khoản chỉnh sửa riêng</span>
-              )}
-              {diffsCount > 0 && (
-                <span className="text-2xs text-ink-3">({diffsCount} điểm khác biệt)</span>
-              )}
-            </div>
-            <span className="block truncate text-2xs text-ink-2">
-              {r.customTermsSummary || routing?.summary || 'Cần Pháp chế thẩm định điều khoản bản quyền & phạt vi phạm'}
-            </span>
+          <div
+            className="leading-snug space-y-0.5"
+            onClick={e => e.stopPropagation()}
+          >
+            <span className="block text-ink-2">{docs.length} tệp đính kèm</span>
+            <button
+              type="button"
+              onClick={() =>
+                setQuickPreviewState({
+                  docs,
+                  active: docs[0],
+                  label: r.partner,
+                })
+              }
+              className="text-2xs font-medium text-accent hover:underline"
+            >
+              Xem giấy tờ →
+            </button>
           </div>
         );
       },
     },
     {
       key: 'legalStatus',
-      header: 'Trạng thái Pháp chế',
-      width: 145,
+      header: 'Trạng thái',
+      width: 135,
       render: r => {
         const step = r.steps.find(s => s.role === 'LEGAL' && s.version === r.version);
-        let label = 'Miễn duyệt';
-        let tone: StatusTone = 'neutral';
+        let label = 'Đã duyệt';
+        let tone: StatusTone = 'positive';
         if (step?.status === 'APPROVED' || r.googleDocsAuditTrail?.approvedByLegal) {
-          label = 'Đã duyệt điều khoản';
+          label = 'Đã duyệt';
           tone = 'positive';
-        } else if (step?.status === 'CHANGES') {
-          label = 'Yêu cầu sửa';
-          tone = 'warning';
-        } else if (step?.status === 'REJECTED') {
-          label = 'Đã từ chối';
+        } else if (step?.status === 'CHANGES' || step?.status === 'REJECTED') {
+          label = 'Cần sửa';
           tone = 'critical';
         } else if (isPendingLegal(r)) {
-          label = 'Chờ Pháp chế (SLA 24h)';
+          label = 'Chờ duyệt';
           tone = 'warning';
         }
         return <Status tone={tone}>{label}</Status>;
@@ -597,196 +670,179 @@ export function ContractApprovalPortalView({
     },
     {
       key: 'actions',
-      header: 'Thẩm định Pháp chế',
-      width: 215,
+      header: '',
+      width: 110,
       align: 'right',
       render: r => {
         const pending = isPendingLegal(r);
         return (
-          <div className="inline-flex items-center justify-end gap-1.5" onClick={e => e.stopPropagation()}>
-            <Button size="sm" variant="secondary" icon={Scale} onClick={() => setInspectRecord(r)}>
-              Rà soát điều khoản
+          <div
+            className="inline-flex items-center justify-end"
+            onClick={e => e.stopPropagation()}
+          >
+            <Button
+              size="sm"
+              variant={pending && isLegalActor ? 'primary' : 'secondary'}
+              onClick={() => openUnifiedInspectModal(r)}
+            >
+              {pending && isLegalActor ? 'Duyệt' : 'Xem'}
             </Button>
-            {pending && isLegalActor && r.ownerId !== me.id && (
-              <Button size="sm" variant="primary" icon={CheckCircle2} disabled={busy || actionBusy} onClick={() => openLegalDecision(r, 'APPROVED')}>
-                Duyệt
-              </Button>
-            )}
           </div>
         );
       },
     },
   ];
 
-  // Cột bảng Portal Kế toán
+  // Cột bảng Portal Kế toán: Không đưa số nhạy cảm (CCCD/STK) vào danh sách (Rule 8), chỉ 1 Status/hàng (Rule 6)
   const financeColumns: Column<ContractRecord>[] = [
     {
       key: 'title',
-      header: 'Hồ sơ & Mã Booking',
-      width: 225,
+      header: 'Hồ sơ',
+      width: 230,
       render: r => {
         const docStage = documentOfTemplate(r.templateId);
-        const stageBadge =
+        const stageLabel =
           docStage === 'HDNT'
-            ? { label: '1. HĐNT Khung', cls: 'bg-sunken border-line text-ink-2' }
+            ? 'Hợp đồng nguyên tắc'
             : docStage === 'SOW'
-              ? { label: '2. Phụ lục SOW', cls: 'bg-accent-soft/50 border-accent/30 text-accent' }
-              : { label: '3. Nghiệm thu BBNT', cls: 'bg-positive-soft/60 border-positive/30 text-positive' };
+              ? 'Phụ lục SOW'
+              : 'Biên bản nghiệm thu';
         return (
-          <div className="min-w-0 max-w-[250px] leading-tight space-y-1">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className={`text-2xs font-semibold px-1.5 py-0.5 rounded border shrink-0 ${stageBadge.cls}`}>
-                {stageBadge.label}
-              </span>
-              <span className="block truncate font-semibold text-ink">{r.title}</span>
-            </div>
+          <div className="min-w-0 max-w-[250px] leading-snug space-y-0.5">
+            <span className="block truncate font-medium text-ink">{r.title}</span>
             <span className="block truncate text-2xs text-ink-3">
-              {r.brand} · <span className="font-code text-ink-2">{r.dealCode || 'HĐ Khung'}</span> · v{r.version}
+              {stageLabel}
+              {r.dealCode ? (
+                <>
+                  {' · '}
+                  <span className="font-code text-ink-2">{r.dealCode}</span>
+                </>
+              ) : (
+                ' · HĐ khung'
+              )}
             </span>
           </div>
         );
       },
     },
     {
-      key: 'beneficiary',
-      header: 'Thụ hưởng · Hồ sơ pháp lý & CCCD/ĐKKD',
-      width: 265,
+      key: 'partner',
+      header: 'KOC & nhãn hàng',
+      width: 195,
       render: r => {
         const fin = financialMap.get(r.id);
-        const docs = resolveRecordLegalAttachments(r);
-        const hist = signingHistoryMap.get(r.id);
         return (
-          <div className="min-w-0 max-w-[285px] leading-tight space-y-1">
+          <div className="min-w-0 max-w-[210px] leading-snug space-y-0.5">
             <span className="block truncate font-medium text-ink">{r.partner}</span>
-            <span className="block truncate text-2xs text-ink-2 font-code">
-              {fin?.bankName ? `${fin.bankName} · ` : ''}
-              {maskSensitiveNumber(fin?.bankAccount, revealSensitive)} · MST/CCCD:{' '}
-              {maskSensitiveNumber(fin?.cccdOrTaxCode, revealSensitive)}
+            <span className="block truncate text-2xs text-ink-3">
+              {r.brand} · {fin?.bankName || 'Chưa rõ NH'}
             </span>
-
-            {/* Gợi ý Kế toán: Hồ sơ pháp lý đã từng ký hay ký lần đầu */}
-            {hist && (
-              <div>
-                {hist.status === 'SIGNED_VERIFIED' || hist.status === 'FINANCE_VERIFIED' ? (
-                  <span
-                    className="inline-flex items-center gap-1 text-2xs font-semibold px-1.5 py-0.5 rounded border border-positive/40 bg-positive-soft text-positive"
-                    title={hist.detailMessage}
-                  >
-                    <ShieldCheck className="w-3 h-3 shrink-0" />
-                    {hist.badgeLabel} ({hist.latestMatch?.id} · Miễn check lại)
-                  </span>
-                ) : hist.status === 'PROFILE_CHANGED' ? (
-                  <span
-                    className="inline-flex items-center gap-1 text-2xs font-semibold px-1.5 py-0.5 rounded border border-critical/40 bg-critical-soft text-critical"
-                    title={hist.detailMessage}
-                  >
-                    <AlertTriangle className="w-3 h-3 shrink-0" />
-                    {hist.badgeLabel}
-                  </span>
-                ) : (
-                  <span
-                    className="inline-flex items-center gap-1 text-2xs font-medium px-1.5 py-0.5 rounded border border-warning/40 bg-warning-soft text-warning-strong"
-                    title={hist.detailMessage}
-                  >
-                    {hist.badgeLabel}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Nút mở xem nhanh CCCD & ĐKKD ngay trên dòng bảng cho Kế toán */}
-            {docs.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-1 pt-0.5" onClick={e => e.stopPropagation()}>
-                {docs.map(doc => (
-                  <button
-                    key={doc.id}
-                    type="button"
-                    onClick={() => setQuickPreviewDoc(doc)}
-                    className="inline-flex items-center gap-1 text-2xs font-medium px-1.5 py-0.5 rounded border border-accent/30 bg-accent-soft/50 text-accent hover:bg-accent-soft transition-colors"
-                    title={`Bấm để xem trực tiếp ${doc.label} (${doc.fileName})`}
-                  >
-                    <Eye className="w-3 h-3 shrink-0" />
-                    {doc.docType === 'DKKD'
-                      ? 'Xem ĐKKD'
-                      : doc.docType === 'CCCD_BACK'
-                        ? 'Xem CCCD sau'
-                        : 'Xem CCCD trước'}
-                  </button>
-                ))}
-              </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'historyAndDocs',
+      header: 'Lịch sử ký & giấy tờ',
+      width: 235,
+      render: r => {
+        const hist = signingHistoryMap.get(r.id);
+        const docs = resolveRecordLegalAttachments(r);
+        return (
+          <div
+            className="min-w-0 max-w-[250px] leading-snug space-y-0.5"
+            onClick={e => e.stopPropagation()}
+          >
+            {hist?.status === 'SIGNED_VERIFIED' || hist?.status === 'FINANCE_VERIFIED' ? (
+              <span className="block truncate font-medium text-positive">
+                Đã từng ký ({hist.latestMatch?.id}) · Miễn kiểm tra lại
+              </span>
+            ) : hist?.status === 'PROFILE_CHANGED' ? (
+              <span className="block truncate font-medium text-critical">
+                Đổi STK / MST so với HĐ cũ
+              </span>
             ) : (
-              <span className="block truncate text-2xs text-critical font-medium">
-                Thiếu tệp CCCD/ĐKKD trên R2
+              <span className="block truncate text-ink-2">
+                Ký lần đầu · Cần kiểm tra CCCD / ĐKKD
               </span>
             )}
+            <div className="flex items-center gap-1.5 text-2xs text-ink-3">
+              <span>
+                {docs.length > 0 ? `${docs.length} tệp CCCD / ĐKKD` : 'Chưa đính kèm giấy tờ'}
+              </span>
+              {docs.length > 0 && (
+                <>
+                  <span>·</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setQuickPreviewState({
+                        docs,
+                        active: docs[0],
+                        label: r.partner,
+                      })
+                    }
+                    className="font-medium text-accent hover:underline"
+                  >
+                    Xem ảnh
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         );
       },
     },
     {
       key: 'financials',
-      header: 'Gross · Thuế · Thực chi (Net)',
-      width: 225,
+      header: 'Thực chi Net',
+      width: 175,
       align: 'right',
       render: r => {
         const fin = financialMap.get(r.id);
         if (!fin || fin.grossAmount === 0) {
-          return <span className="text-2xs text-ink-3">Hợp đồng khung (Theo SOW)</span>;
+          return <span className="text-2xs text-ink-3">Theo phụ lục SOW</span>;
         }
         return (
-          <div className="leading-tight space-y-0.5 tabular-nums text-right">
-            <div className="text-xs font-semibold text-ink">
-              Net: {formatVnd(fin.netAmount)}
+          <div className="leading-snug space-y-0.5 tabular-nums text-right">
+            <div className="font-code font-semibold text-ink">
+              {formatVnd(fin.netAmount)}
             </div>
             <div className="text-2xs text-ink-3">
-              Gross {formatVnd(fin.grossAmount)} · Thuế {formatVnd(fin.taxAmount)}
+              {fin.isOverDealBudget ? (
+                <span className="text-critical font-medium">Vượt trần Booking</span>
+              ) : fin.isUnbudgetedSpend ? (
+                <span className="text-critical font-medium">Hạn mức 0đ</span>
+              ) : (
+                `Gross ${formatVnd(fin.grossAmount)} · Thuế ${formatVnd(fin.taxAmount)}`
+              )}
             </div>
-            {fin.isOverDealBudget ? (
-              <span className="inline-block text-2xs font-semibold text-critical">
-                Vượt trần Deal ({formatVnd(fin.dealBudget)})
-              </span>
-            ) : fin.isUnbudgetedSpend ? (
-              <span className="inline-block text-2xs font-semibold text-critical">
-                Hạn mức Deal 0đ (Unbudgeted)
-              </span>
-            ) : fin.missingBankInfo ? (
-              <span className="inline-block text-2xs font-semibold text-warning-strong">
-                Thiếu STK ngân hàng
-              </span>
-            ) : (
-              <span className="inline-block text-2xs text-positive">
-                Khớp hạn mức Booking
-              </span>
-            )}
           </div>
         );
       },
     },
     {
       key: 'financeStatus',
-      header: 'Trạng thái Kế toán',
-      width: 145,
+      header: 'Trạng thái',
+      width: 135,
       render: r => {
         const finStep = r.steps.find(s => s.role === 'FINANCE' && s.version === r.version);
-        let label = 'Chưa trình duyệt';
+        let label = 'Nháp';
         let tone: StatusTone = 'neutral';
         if (r.signing.at(-1)?.status === 'COMPLETED') {
-          label = 'Đã ký đủ 2 bên';
+          label = 'Hoàn tất';
           tone = 'positive';
         } else if (r.approval === 'APPROVED' || finStep?.status === 'APPROVED') {
-          label = 'Đã duyệt FINAL';
+          label = 'Đã duyệt';
           tone = 'positive';
-        } else if (finStep?.status === 'CHANGES') {
-          label = 'Yêu cầu sửa';
-          tone = 'warning';
-        } else if (finStep?.status === 'REJECTED') {
-          label = 'Đã từ chối';
+        } else if (finStep?.status === 'CHANGES' || finStep?.status === 'REJECTED') {
+          label = 'Cần sửa';
           tone = 'critical';
-        } else if (r.googleDocsUrl && r.approval === 'IN_REVIEW') {
-          label = 'Chờ chốt & đẩy WeSign';
-          tone = 'warning';
-        } else if (finStep?.status === 'PENDING') {
-          label = 'Chờ Kế toán (SLA 48h)';
+        } else if (
+          (r.googleDocsUrl && r.approval === 'IN_REVIEW') ||
+          finStep?.status === 'PENDING'
+        ) {
+          label = 'Chờ duyệt';
           tone = 'warning';
         }
         return <Status tone={tone}>{label}</Status>;
@@ -794,42 +850,26 @@ export function ContractApprovalPortalView({
     },
     {
       key: 'actions',
-      header: 'Thao tác Kế toán',
-      width: 235,
+      header: '',
+      width: 110,
       align: 'right',
       render: r => {
         const pendingFin = isPendingFinance(r);
         const gdocsPending = isGDocsPendingFinal(r);
+        const canAct = isFinanceActor && (pendingFin || gdocsPending);
         return (
-          <div className="inline-flex items-center justify-end gap-1.5" onClick={e => e.stopPropagation()}>
-            <Button size="sm" variant="secondary" icon={CreditCard} onClick={() => setInspectRecord(r)}>
-              Đối soát
+          <div
+            className="inline-flex items-center justify-end"
+            onClick={e => e.stopPropagation()}
+          >
+            <Button
+              size="sm"
+              variant={canAct ? 'primary' : 'secondary'}
+              disabled={busy || actionBusy}
+              onClick={() => openUnifiedInspectModal(r)}
+            >
+              {canAct ? 'Duyệt' : 'Xem'}
             </Button>
-            {isFinanceActor && gdocsPending ? (
-              <Button
-                size="sm"
-                variant="primary"
-                icon={Send}
-                disabled={busy || actionBusy}
-                onClick={() => setGdocsFinanceRecord(r)}
-              >
-                Duyệt &amp; WeSign
-              </Button>
-            ) : (
-              isFinanceActor &&
-              pendingFin &&
-              r.ownerId !== me.id && (
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={CheckCircle2}
-                  disabled={busy || actionBusy}
-                  onClick={() => openFinanceDecision(r, 'APPROVED')}
-                >
-                  Duyệt FINAL
-                </Button>
-              )
-            )}
           </div>
         );
       },
@@ -837,174 +877,243 @@ export function ContractApprovalPortalView({
   ];
 
   const legalChipItems: { key: LegalFilter; label: string; count: number }[] = [
-    { key: 'PENDING_LEGAL', label: 'Chờ Pháp chế duyệt', count: searchedRecords.filter(legalMatches.PENDING_LEGAL).length },
-    { key: 'CLAUSE_DIFF', label: 'Sửa điều khoản / Google Docs', count: searchedRecords.filter(legalMatches.CLAUSE_DIFF).length },
-    { key: 'KOC_OWN_FORM', label: 'Mẫu riêng KOC (≥ 50tr)', count: searchedRecords.filter(legalMatches.KOC_OWN_FORM).length },
-    { key: 'LEGAL_APPROVED', label: 'Đã duyệt điều khoản', count: searchedRecords.filter(legalMatches.LEGAL_APPROVED).length },
-    { key: 'ALL', label: 'Tất cả hồ sơ', count: searchedRecords.length },
+    {
+      key: 'PENDING_LEGAL',
+      label: 'Chờ duyệt',
+      count: searchedRecords.filter(legalMatches.PENDING_LEGAL).length,
+    },
+    {
+      key: 'CLAUSE_DIFF',
+      label: 'Sửa điều khoản',
+      count: searchedRecords.filter(legalMatches.CLAUSE_DIFF).length,
+    },
+    {
+      key: 'KOC_OWN_FORM',
+      label: 'Mẫu riêng KOC',
+      count: searchedRecords.filter(legalMatches.KOC_OWN_FORM).length,
+    },
+    {
+      key: 'LEGAL_APPROVED',
+      label: 'Đã duyệt',
+      count: searchedRecords.filter(legalMatches.LEGAL_APPROVED).length,
+    },
+    { key: 'ALL', label: 'Tất cả', count: searchedRecords.length },
   ];
 
   const financeChipItems: { key: FinanceFilter; label: string; count: number }[] = [
-    { key: 'PENDING_FINANCE', label: 'Chờ Kế toán duyệt', count: searchedRecords.filter(financeMatches.PENDING_FINANCE).length },
-    { key: 'GDOCS_FINAL', label: 'Google Docs chờ chốt WeSign', count: searchedRecords.filter(financeMatches.GDOCS_FINAL).length },
-    { key: 'BBNT_SETTLEMENT', label: 'Nghiệm thu & Tất toán (BBNT)', count: searchedRecords.filter(financeMatches.BBNT_SETTLEMENT).length },
-    { key: 'BUDGET_ALERT', label: 'Cảnh báo lệch trần / Thiếu STK', count: searchedRecords.filter(financeMatches.BUDGET_ALERT).length },
-    { key: 'FINANCE_APPROVED', label: 'Đã duyệt FINAL', count: searchedRecords.filter(financeMatches.FINANCE_APPROVED).length },
-    { key: 'ALL', label: 'Tất cả hồ sơ', count: searchedRecords.length },
+    {
+      key: 'PENDING_FINANCE',
+      label: 'Chờ duyệt',
+      count: searchedRecords.filter(financeMatches.PENDING_FINANCE).length,
+    },
+    {
+      key: 'VERIFIED_PROFILE',
+      label: 'Đã từng ký HSPL',
+      count: searchedRecords.filter(financeMatches.VERIFIED_PROFILE).length,
+    },
+    {
+      key: 'GDOCS_FINAL',
+      label: 'Google Docs chờ chốt',
+      count: searchedRecords.filter(financeMatches.GDOCS_FINAL).length,
+    },
+    {
+      key: 'BBNT_SETTLEMENT',
+      label: 'Nghiệm thu BBNT',
+      count: searchedRecords.filter(financeMatches.BBNT_SETTLEMENT).length,
+    },
+    {
+      key: 'BUDGET_ALERT',
+      label: 'Cảnh báo lệch trần / STK',
+      count: searchedRecords.filter(financeMatches.BUDGET_ALERT).length,
+    },
+    {
+      key: 'FINANCE_APPROVED',
+      label: 'Đã duyệt',
+      count: searchedRecords.filter(financeMatches.FINANCE_APPROVED).length,
+    },
+    { key: 'ALL', label: 'Tất cả', count: searchedRecords.length },
   ];
 
   const inspectFinancials = inspectRecord ? financialMap.get(inspectRecord.id) : undefined;
-  const inspectLegalStep = inspectRecord?.steps.find(s => s.role === 'LEGAL' && s.version === inspectRecord.version);
-  const inspectFinanceStep = inspectRecord?.steps.find(s => s.role === 'FINANCE' && s.version === inspectRecord.version);
+  const inspectHistory = inspectRecord ? signingHistoryMap.get(inspectRecord.id) : undefined;
+  const inspectDocs = inspectRecord ? resolveRecordLegalAttachments(inspectRecord) : [];
+  const inspectLegalStep = inspectRecord?.steps.find(
+    s => s.role === 'LEGAL' && s.version === inspectRecord.version,
+  );
+  const inspectFinanceStep = inspectRecord?.steps.find(
+    s => s.role === 'FINANCE' && s.version === inspectRecord.version,
+  );
+
+  const canApproveInInspectModal = Boolean(
+    inspectRecord &&
+      ((mode === 'LEGAL_PORTAL' &&
+        isLegalActor &&
+        isPendingLegal(inspectRecord) &&
+        inspectRecord.ownerId !== me.id) ||
+        (mode === 'FINANCE_PORTAL' &&
+          isFinanceActor &&
+          (isPendingFinance(inspectRecord) || isGDocsPendingFinal(inspectRecord)))),
+  );
+
+  if (mode === 'FINANCE_PORTAL' && financeSection === 'ADVANCE_PAYMENT_REPORT') {
+    return (
+      <FinanceAdvancePaymentReportView
+        deals={deals}
+        kocs={kocs}
+        contractRecords={data.records}
+        isFinanceActor={isFinanceActor}
+        initialSearch={dealLookupQuery}
+        initialSubTab={dealLookupSubTab}
+        onOpenContractRecord={onOpenRecord}
+        onQuickViewRecord={onQuickViewRecord}
+        onNotify={onNotify}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {mode === 'LEGAL_PORTAL' ? (
-        <StatRow>
-          <Stat
-            label="Hồ sơ chờ Pháp chế duyệt"
-            value={`${data.records.filter(isPendingLegal).length} bộ`}
-            tone={data.records.some(isPendingLegal) ? 'warning' : 'positive'}
-            note="Cam kết SLA phản hồi trong 24h làm việc"
-          />
-          <Stat
-            label="Hồ sơ sửa đổi điều khoản / Google Docs"
-            value={`${data.records.filter(legalMatches.CLAUSE_DIFF).length} bộ`}
-            note="Phân luồng tự động điều khoản bản quyền & phạt vi phạm"
-          />
-          <Stat
-            label="Hợp đồng theo mẫu riêng KOC"
-            value={`${data.records.filter(legalMatches.KOC_OWN_FORM).length} bộ`}
-            note="Kiểm soát ngưỡng BR-01 (Giá trị hợp đồng ≥ 50.000.000đ)"
-          />
-          <Stat
-            label="Mẫu KOC đã chuẩn hóa (Miễn duyệt lại)"
-            value={`${data.templates.filter(t => t.scope === 'KOC_CUSTOM').length} mẫu`}
-            tone="positive"
-            note="Áp dụng tự động cho các đợt Booking tiếp theo"
-          />
-        </StatRow>
+      {mode === 'FINANCE_PORTAL' && financeSection === 'FINANCE_REMINDERS' ? (
+        <FinanceReminderInboxView
+          data={data}
+          deals={deals}
+          kocs={kocs}
+          busy={busy || actionBusy}
+          onOpenContractReview={record => openUnifiedInspectModal(record)}
+          onOpenDealLookup={(dealCode, subTab) => {
+            setDealLookupQuery(dealCode);
+            setDealLookupSubTab(subTab || 'DEAL_LEDGER');
+            setFinanceSection('ADVANCE_PAYMENT_REPORT');
+            onOpenDealLookup?.(dealCode);
+          }}
+        />
       ) : (
-        <StatRow>
-          <Stat
-            label="Hồ sơ chờ Kế toán phê duyệt"
-            value={`${data.records.filter(isPendingFinance).length} bộ`}
-            tone={data.records.some(isPendingFinance) ? 'warning' : 'positive'}
-            note={`Tổng thực chi Net chờ duyệt: ${formatVnd(totalPendingNetVnd)}`}
-          />
-          <Stat
-            label="Google Docs chờ chốt FINAL & WeSign"
-            value={`${data.records.filter(isGDocsPendingFinal).length} bộ`}
-            tone={data.records.some(isGDocsPendingFinal) ? 'warning' : undefined}
-            note="Kế toán là cấp phê duyệt cuối cùng trước khi phát lệnh ký"
-          />
-          <Stat
-            label="Biên bản nghiệm thu chờ quyết toán"
-            value={`${data.records.filter(financeMatches.BBNT_SETTLEMENT).length} bộ`}
-            note="Đối soát link sản phẩm thực tế & giải ngân đợt 2"
-          />
-          <Stat
-            label="Cảnh báo vượt trần / thiếu thông tin"
-            value={`${data.records.filter(hasBudgetOrBankAlert).length} bộ`}
-            tone={data.records.some(hasBudgetOrBankAlert) ? 'critical' : 'positive'}
-            note="Kiểm tra khớp ngân sách Deal & tài khoản thụ hưởng"
-          />
-        </StatRow>
-      )}
+        <>
+          {mode === 'LEGAL_PORTAL' ? (
+            <StatRow size="sm">
+              <Stat
+                label="Chờ Pháp chế duyệt"
+                value={`${data.records.filter(isPendingLegal).length} bộ`}
+                tone={data.records.some(isPendingLegal) ? 'warning' : 'positive'}
+                note="SLA phản hồi trong 24h"
+              />
+              <Stat
+                label="Sửa điều khoản"
+                value={`${data.records.filter(legalMatches.CLAUSE_DIFF).length} bộ`}
+                note="Rà soát bản quyền & phạt vi phạm"
+              />
+              <Stat
+                label="Mẫu riêng KOC"
+                value={`${data.records.filter(legalMatches.KOC_OWN_FORM).length} bộ`}
+                note="Hợp đồng giá trị ≥ 50.000.000đ"
+              />
+              <Stat
+                label="Mẫu KOC đã chuẩn hóa"
+                value={`${data.templates.filter(t => t.scope === 'KOC_CUSTOM').length} mẫu`}
+                tone="positive"
+                note="Tự động miễn duyệt đợt sau"
+              />
+            </StatRow>
+          ) : (
+            <StatRow size="sm">
+              <Stat
+                label="Chờ Kế toán duyệt"
+                value={`${data.records.filter(isPendingFinance).length} bộ`}
+                tone={data.records.some(isPendingFinance) ? 'warning' : 'positive'}
+                note={`Thực chi Net: ${formatVnd(totalPendingNetVnd)}`}
+              />
+              <Stat
+                label="Đã từng ký với HSPL này"
+                value={`${data.records.filter(financeMatches.VERIFIED_PROFILE).length} bộ`}
+                tone="positive"
+                note="Khớp CCCD & STK — miễn kiểm tra lại"
+              />
+              <Stat
+                label="Chờ chốt ký WeSign"
+                value={`${data.records.filter(r => isGDocsPendingFinal(r) || financeMatches.BBNT_SETTLEMENT(r)).length} bộ`}
+                tone={data.records.some(isGDocsPendingFinal) ? 'warning' : undefined}
+                note="Hợp đồng Google Docs & BBNT"
+              />
+              <Stat
+                label="Cảnh báo vượt trần / đổi STK"
+                value={`${data.records.filter(hasBudgetOrBankAlert).length} bộ`}
+                tone={data.records.some(hasBudgetOrBankAlert) ? 'critical' : 'positive'}
+                note="Kiểm tra ngân sách & số tài khoản"
+              />
+            </StatRow>
+          )}
 
-      <Panel flush>
-        <div className="p-4 border-b border-line space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              {mode === 'LEGAL_PORTAL' ? (
-                <Scale className="w-4 h-4 text-accent" />
-              ) : (
-                <CreditCard className="w-4 h-4 text-accent" />
-              )}
-              <span className="text-sm font-semibold text-ink">
-                {mode === 'LEGAL_PORTAL'
-                  ? 'Bàn làm việc Ban Pháp chế — Thẩm định điều khoản & Biểu mẫu KOC'
-                  : 'Bàn làm việc Phòng Kế toán — Đối soát Ngân sách, Thuế TNCN & Chốt trình ký WeSign'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {(isLegalActor || isFinanceActor) && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={revealSensitive ? EyeOff : Eye}
-                  onClick={() => setRevealSensitive(v => !v)}
-                >
-                  {revealSensitive ? 'Ẩn số CCCD / STK' : 'Hiện đầy đủ CCCD / STK'}
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <FilterBar
-            search={{
-              value: search,
-              onChange: v => {
-                setSearch(v);
-                setPage(1);
-              },
-              placeholder: 'Tìm theo tên hồ sơ, KOC, nhãn hàng, mã booking...',
-            }}
-            chips={
-              mode === 'LEGAL_PORTAL' ? (
-                <Chips
-                  items={legalChipItems}
-                  value={legalFilter}
-                  onChange={v => {
-                    setLegalFilter(v);
+          <Panel flush>
+            <div className="p-4 border-b border-line">
+              <FilterBar
+                search={{
+                  value: search,
+                  onChange: v => {
+                    setSearch(v);
                     setPage(1);
-                  }}
-                />
-              ) : (
-                <Chips
-                  items={financeChipItems}
-                  value={financeFilter}
-                  onChange={v => {
-                    setFinanceFilter(v);
-                    setPage(1);
-                  }}
-                />
-              )
-            }
-            resultCount={search.trim() ? filteredRows.length : undefined}
-          />
-        </div>
+                  },
+                  placeholder: 'Tìm hồ sơ, tên KOC, nhãn hàng, mã deal...',
+                }}
+                chips={
+                  mode === 'LEGAL_PORTAL' ? (
+                    <Chips
+                      items={legalChipItems}
+                      value={legalFilter}
+                      onChange={v => {
+                        setLegalFilter(v);
+                        setPage(1);
+                      }}
+                    />
+                  ) : (
+                    <Chips
+                      items={financeChipItems}
+                      value={financeFilter}
+                      onChange={v => {
+                        setFinanceFilter(v);
+                        setPage(1);
+                      }}
+                    />
+                  )
+                }
+                resultCount={search.trim() ? filteredRows.length : undefined}
+              />
+            </div>
 
-        <DataTable
-          columns={mode === 'LEGAL_PORTAL' ? legalColumns : financeColumns}
-          rows={pagedRows}
-          rowKey={r => r.id}
-          onRowClick={r => setInspectRecord(r)}
-          empty={
-            <EmptyState
-              title={
-                mode === 'LEGAL_PORTAL'
-                  ? 'Không có hồ sơ cần Pháp chế xử lý trong bộ lọc này'
-                  : 'Không có hồ sơ cần Kế toán xử lý trong bộ lọc này'
+            <DataTable
+              columns={mode === 'LEGAL_PORTAL' ? legalColumns : financeColumns}
+              rows={pagedRows}
+              rowKey={r => r.id}
+              onRowClick={r => openUnifiedInspectModal(r)}
+              empty={
+                <EmptyState
+                  title={
+                    mode === 'LEGAL_PORTAL'
+                      ? 'Không có hồ sơ cần Pháp chế xử lý'
+                      : 'Không có hồ sơ cần Kế toán xử lý'
+                  }
+                />
               }
             />
-          }
-        />
-        <Pagination page={page} pageSize={pageSize} total={filteredRows.length} onPageChange={setPage} />
-      </Panel>
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={filteredRows.length}
+              onPageChange={setPage}
+            />
+          </Panel>
+        </>
+      )}
 
-      {/* Hộp thoại Thẩm định Pháp chế / Đối soát Kế toán */}
+      {/* HỘP THOẠI ĐỐI SOÁT & PHÊ DUYỆT 2 CỘT CHUẨN DESIGN SYSTEM (§7 Rule 14) */}
       <Modal
         open={Boolean(inspectRecord)}
         onClose={() => setInspectRecord(null)}
         title={
           inspectRecord
-            ? mode === 'LEGAL_PORTAL'
-              ? `Thẩm định Pháp chế · ${inspectRecord.title}`
-              : `Đối soát Kế toán & Duyệt chi · ${inspectRecord.title}`
-            : 'Chi tiết thẩm định'
+            ? `${inspectRecord.title} · ${inspectRecord.partner}`
+            : 'Chi tiết hồ sơ'
         }
-        size="lg"
+        size="xl"
         footer={
           inspectRecord && (
             <div className="flex flex-wrap items-center justify-between w-full gap-2">
@@ -1019,11 +1128,11 @@ export function ContractApprovalPortalView({
                     onQuickViewRecord(target);
                   }}
                 >
-                  Xem văn bản A4
+                  Xem văn bản
                 </Button>
                 <Button
                   size="sm"
-                  variant="secondary"
+                  variant="ghost"
                   icon={FileText}
                   onClick={() => {
                     const id = inspectRecord.id;
@@ -1031,18 +1140,38 @@ export function ContractApprovalPortalView({
                     onOpenRecord(id);
                   }}
                 >
-                  Mở hồ sơ đầy đủ
+                  Mở trang chi tiết
                 </Button>
+                {inspectRecord.dealCode && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      const code = inspectRecord.dealCode || '';
+                      setInspectRecord(null);
+                      setDealLookupQuery(code);
+                      setFinanceSection('ADVANCE_PAYMENT_REPORT');
+                      onOpenDealLookup?.(code);
+                    }}
+                  >
+                    Tra cứu deal ({inspectRecord.dealCode}) →
+                  </Button>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
-                {mode === 'LEGAL_PORTAL' && isLegalActor && isPendingLegal(inspectRecord) && inspectRecord.ownerId !== me.id && (
+                {canApproveInInspectModal ? (
                   <>
                     <Button
                       size="sm"
                       variant="secondary"
                       disabled={actionBusy}
-                      onClick={() => openLegalDecision(inspectRecord, 'CHANGES')}
+                      onClick={() =>
+                        setRejectOrChangeModal({
+                          record: inspectRecord,
+                          decision: 'CHANGES',
+                        })
+                      }
                     >
                       Yêu cầu sửa
                     </Button>
@@ -1050,45 +1179,31 @@ export function ContractApprovalPortalView({
                       size="sm"
                       variant="danger"
                       disabled={actionBusy}
-                      onClick={() => openLegalDecision(inspectRecord, 'REJECTED')}
+                      onClick={() =>
+                        setRejectOrChangeModal({
+                          record: inspectRecord,
+                          decision: 'REJECTED',
+                        })
+                      }
                     >
                       Từ chối
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      icon={CheckCircle2}
-                      disabled={actionBusy}
-                      onClick={() => openLegalDecision(inspectRecord, 'APPROVED')}
-                    >
-                      Pháp chế duyệt điều khoản
-                    </Button>
-                  </>
-                )}
-
-                {mode === 'FINANCE_PORTAL' && isFinanceActor && (isPendingFinance(inspectRecord) || isGDocsPendingFinal(inspectRecord)) && (
-                  <>
-                    {isPendingFinance(inspectRecord) && inspectRecord.ownerId !== me.id && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          disabled={actionBusy}
-                          onClick={() => openFinanceDecision(inspectRecord, 'CHANGES')}
-                        >
-                          Yêu cầu sửa
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          disabled={actionBusy}
-                          onClick={() => openFinanceDecision(inspectRecord, 'REJECTED')}
-                        >
-                          Từ chối
-                        </Button>
-                      </>
-                    )}
-                    {inspectRecord.googleDocsUrl ? (
+                    {mode === 'LEGAL_PORTAL' ? (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon={CheckCircle2}
+                        disabled={actionBusy}
+                        onClick={() =>
+                          submitDecision(inspectRecord, 'APPROVED', approveNote, {
+                            saveAsKocTemplate,
+                            kocLegalNotes,
+                          })
+                        }
+                      >
+                        {actionBusy ? 'Đang lưu...' : 'Duyệt pháp chế'}
+                      </Button>
+                    ) : inspectRecord.googleDocsUrl ? (
                       <Button
                         size="sm"
                         variant="primary"
@@ -1096,22 +1211,31 @@ export function ContractApprovalPortalView({
                         disabled={actionBusy}
                         onClick={() => setGdocsFinanceRecord(inspectRecord)}
                       >
-                        Kế toán duyệt FINAL &amp; Đẩy WeSign
+                        Duyệt &amp; đẩy WeSign
                       </Button>
                     ) : (
-                      inspectRecord.ownerId !== me.id && (
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          icon={CheckCircle2}
-                          disabled={actionBusy}
-                          onClick={() => openFinanceDecision(inspectRecord, 'APPROVED')}
-                        >
-                          Kế toán duyệt chuẩn (FINAL)
-                        </Button>
-                      )
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon={CheckCircle2}
+                        disabled={actionBusy}
+                        onClick={() =>
+                          submitDecision(
+                            inspectRecord,
+                            'APPROVED',
+                            approveNote ||
+                              'Đã kiểm tra khớp hạn mức Booking, thuế khấu trừ và thông tin tài khoản thụ hưởng.',
+                          )
+                        }
+                      >
+                        {actionBusy ? 'Đang lưu...' : 'Duyệt kế toán'}
+                      </Button>
                     )}
                   </>
+                ) : (
+                  <Button variant="primary" size="sm" onClick={() => setInspectRecord(null)}>
+                    Đóng
+                  </Button>
                 )}
               </div>
             </div>
@@ -1120,362 +1244,354 @@ export function ContractApprovalPortalView({
       >
         {inspectRecord && inspectFinancials && (
           <div className="space-y-4 text-xs">
-            {/* Thông tin định danh & Đối tác */}
-            <div className="rounded-xl border border-line bg-surface p-3.5 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
-                <div>
-                  <span className="font-semibold text-ink text-sm block">{inspectRecord.partner}</span>
-                  <span className="text-2xs text-ink-3">
-                    Nhãn hàng: <strong className="text-ink-2">{inspectRecord.brand}</strong> · Mã Booking:{' '}
-                    <strong className="font-code text-ink-2">{inspectRecord.dealCode || 'Hợp đồng khung'}</strong> · Mẫu:{' '}
-                    <strong className="font-code text-ink-2">{inspectRecord.templateId}</strong>
-                  </span>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  icon={revealSensitive ? EyeOff : Eye}
-                  onClick={() => setRevealSensitive(v => !v)}
-                >
-                  {revealSensitive ? 'Ẩn thông tin nhạy cảm' : 'Mở xem CCCD & STK'}
-                </Button>
-              </div>
+            {/* Gợi ý 1 dòng về lịch sử ký hợp đồng với Hồ sơ pháp lý của KOC */}
+            {inspectHistory && (
+              <LegalProfileSigningHistoryBanner
+                summary={inspectHistory}
+                onOpenPriorContract={id => {
+                  const found = data.records.find(x => x.id === id);
+                  if (found) openUnifiedInspectModal(found);
+                }}
+              />
+            )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="rounded-lg bg-sunken p-2.5">
-                  <span className="text-2xs text-ink-3 block">Số CCCD / Mã số thuế</span>
-                  <span className="font-code font-semibold text-ink">
-                    {maskSensitiveNumber(inspectFinancials.cccdOrTaxCode, revealSensitive)}
-                  </span>
+            {/* Bố cục 2 cột chuẩn §7 Rule 14: Cột chính (Xem CCCD/ĐKKD & Điều khoản) | Cột phụ 340px (Hồ sơ pháp lý, Đối soát giá trị, Ghi chú duyệt) */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5 items-start">
+              {/* CỘT CHÍNH: Giấy tờ CCCD/ĐKKD & Điều khoản */}
+              <div className="space-y-3 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Segmented
+                    value={leftPaneTab}
+                    onChange={v => setLeftPaneTab(v)}
+                    items={[
+                      {
+                        key: 'DOCS',
+                        label: `Giấy tờ (${inspectDocs.length})`,
+                      },
+                      {
+                        key: 'CLAUSES',
+                        label: 'Điều khoản & tiến độ',
+                      },
+                    ]}
+                  />
+                  {inspectRecord.googleDocsUrl && (
+                    <a
+                      href={inspectRecord.googleDocsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
+                    >
+                      Mở Google Docs <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
                 </div>
-                <div className="rounded-lg bg-sunken p-2.5">
-                  <span className="text-2xs text-ink-3 block">Tài khoản thụ hưởng</span>
-                  <span className="font-code font-semibold text-ink">
-                    {maskSensitiveNumber(inspectFinancials.bankAccount, revealSensitive)}
-                  </span>
-                  <span className="text-2xs text-ink-2 block truncate">
-                    {inspectFinancials.bankName || 'Chưa khai báo ngân hàng'}
-                  </span>
-                </div>
-                <div className="rounded-lg bg-sunken p-2.5">
-                  <span className="text-2xs text-ink-3 block">Điện thoại &amp; Người trình</span>
-                  <span className="font-code font-medium text-ink">
-                    {maskSensitiveNumber(inspectFinancials.phone, revealSensitive)}
-                  </span>
-                  <span className="text-2xs text-ink-2 block truncate">
-                    PIC: {inspectRecord.ownerName}
-                  </span>
-                </div>
-              </div>
-            </div>
 
-            {/* Khối đối chiếu Tệp đính kèm CCCD & ĐKKD trên Cloudflare R2 */}
-            <LegalAttachmentsPanel
-              attachments={resolveRecordLegalAttachments(inspectRecord)}
-              entitySlug={inspectRecord.kocId || inspectRecord.partner || inspectRecord.id}
-              legalType={
-                inspectRecord.templateId.startsWith('COM-')
-                  ? 'COMPANY'
-                  : inspectRecord.templateId.startsWith('HKD-')
-                    ? 'HOUSEHOLD'
-                    : 'INDIVIDUAL'
-              }
-              editable
-              onChange={async (nextAttachments) => {
-                try {
-                  const res = await contractApi<{ record: ContractRecord }>('/api/contracts', {
-                    id: inspectRecord.id,
-                    revision: inspectRecord.revision,
-                    action: 'ATTACH_LEGAL_DOCS',
-                    legalAttachments: nextAttachments,
-                  });
-                  setInspectRecord(res.record);
-                  await onRefresh();
-                } catch (err) {
-                  onNotify?.((err as Error).message, 'error');
-                }
-              }}
-              title="Hồ sơ pháp lý đính kèm: CCCD & Giấy phép ĐKKD (Cloudflare R2)"
-            />
-
-            {/* Khối đối soát tài chính & Thuế (luôn hiển thị chi tiết cho Kế toán & Pháp chế) */}
-            <div className="rounded-xl border border-line bg-surface p-3.5 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-ink flex items-center gap-1.5">
-                  <CreditCard className="w-4 h-4 text-accent" />
-                  Bảng đối soát Giá trị hợp đồng, Thuế khấu trừ &amp; Hạn mức Booking
-                </span>
-                {inspectFinancials.isOverDealBudget ? (
-                  <Status tone="critical">Vượt trần Booking</Status>
-                ) : inspectFinancials.isUnbudgetedSpend ? (
-                  <Status tone="critical">Chưa cấp hạn mức (0đ)</Status>
+                {leftPaneTab === 'DOCS' ? (
+                  <LegalAttachmentsPanel
+                    attachments={inspectDocs}
+                    entitySlug={
+                      inspectRecord.kocId || inspectRecord.partner || inspectRecord.id
+                    }
+                    legalType={
+                      inspectRecord.templateId.startsWith('COM-')
+                        ? 'COMPANY'
+                        : inspectRecord.templateId.startsWith('HKD-')
+                          ? 'HOUSEHOLD'
+                          : 'INDIVIDUAL'
+                    }
+                    editable
+                    defaultExpandPreview={true}
+                    onChange={async nextAttachments => {
+                      try {
+                        const res = await contractApi<{ record: ContractRecord }>(
+                          '/api/contracts',
+                          {
+                            id: inspectRecord.id,
+                            revision: inspectRecord.revision,
+                            action: 'ATTACH_LEGAL_DOCS',
+                            legalAttachments: nextAttachments,
+                          },
+                        );
+                        setInspectRecord(res.record);
+                        await onRefresh();
+                      } catch (err) {
+                        onNotify?.((err as Error).message, 'error');
+                      }
+                    }}
+                    title="Ảnh CCCD & Giấy phép ĐKKD"
+                  />
                 ) : (
-                  <Status tone="positive">Trong hạn mức duyệt</Status>
-                )}
-              </div>
+                  <div className="rounded-xl border border-line bg-surface divide-y divide-line">
+                    {inspectRecord.customTermsSummary && (
+                      <div className="p-3.5 space-y-1">
+                        <span className="font-semibold text-ink block">
+                          Tóm tắt điều khoản điều chỉnh
+                        </span>
+                        <p className="text-ink-2">{inspectRecord.customTermsSummary}</p>
+                      </div>
+                    )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 tabular-nums">
-                <div className="rounded-lg border border-line p-2.5">
-                  <span className="text-2xs text-ink-3 block">Tổng giá trị (Gross)</span>
-                  <span className="text-sm font-semibold text-ink">
-                    {formatVnd(inspectFinancials.grossAmount)}
-                  </span>
-                </div>
-                <div className="rounded-lg border border-line p-2.5">
-                  <span className="text-2xs text-ink-3 block">{inspectFinancials.taxLabel}</span>
-                  <span className="text-sm font-semibold text-warning-strong">
-                    {formatVnd(inspectFinancials.taxAmount)}
-                  </span>
-                </div>
-                <div className="rounded-lg border border-line bg-positive-soft/30 p-2.5">
-                  <span className="text-2xs text-ink-3 block">Thực nhận KOC (Net)</span>
-                  <span className="text-sm font-semibold text-positive">
-                    {formatVnd(inspectFinancials.netAmount)}
-                  </span>
-                </div>
-                <div className="rounded-lg border border-line p-2.5">
-                  <span className="text-2xs text-ink-3 block">Tạm ứng / Còn lại</span>
-                  <span className="text-xs font-semibold text-ink block">
-                    Tạm ứng: {formatVnd(inspectFinancials.advanceAmount)}
-                  </span>
-                  <span className="text-2xs text-ink-2 block">
-                    Tất toán: {formatVnd(inspectFinancials.remainingAmount)}
-                  </span>
-                </div>
-              </div>
-            </div>
+                    <div className="p-3.5 space-y-2.5">
+                      <span className="font-semibold text-ink block">
+                        So sánh điều khoản thay đổi
+                      </span>
+                      {inspectRecord.googleDocsReviewRouting?.clauseDiffs &&
+                      inspectRecord.googleDocsReviewRouting.clauseDiffs.length > 0 ? (
+                        <div className="divide-y divide-line border border-line rounded-lg">
+                          {inspectRecord.googleDocsReviewRouting.clauseDiffs.map((diff, idx) => (
+                            <div key={idx} className="p-3 space-y-1.5">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-medium text-ink">
+                                  {diff.clauseNumber}: {diff.title}
+                                </span>
+                                <span className="text-2xs text-ink-3">
+                                  {diff.targetRole === 'FINANCE' ? 'Kế toán' : 'Pháp chế'}
+                                </span>
+                              </div>
+                              {diff.originalText && (
+                                <p className="text-2xs text-ink-3 line-through">
+                                  Mẫu gốc: {diff.originalText}
+                                </p>
+                              )}
+                              {diff.modifiedText && (
+                                <p className="text-2xs text-ink font-medium">
+                                  Bản sửa: {diff.modifiedText}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-2xs text-ink-3">
+                          Hồ sơ sử dụng điều khoản chuẩn, không phát sinh điểm khác biệt.
+                        </p>
+                      )}
+                    </div>
 
-            {/* Khối Rà soát Điều khoản sửa đổi & Google Docs Diff */}
-            <div className="rounded-xl border border-line bg-surface p-3.5 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-semibold text-ink flex items-center gap-1.5">
-                  <Scale className="w-4 h-4 text-accent" />
-                   So khớp Điều khoản sửa đổi (Clause Diffs) &amp; Trao đổi Google Docs
-                </span>
-                {inspectRecord.googleDocsUrl && (
-                  <a
-                    href={inspectRecord.googleDocsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-2xs font-semibold text-accent hover:underline"
-                  >
-                    Mở tài liệu Google Docs <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                )}
-              </div>
-
-              {inspectRecord.customTermsSummary && (
-                <div className="rounded-lg border border-warning/40 bg-warning-soft p-2.5 text-ink">
-                  <span className="font-semibold text-warning-strong block">Tóm tắt đề xuất sửa đổi từ KOC:</span>
-                  <span>{inspectRecord.customTermsSummary}</span>
-                </div>
-              )}
-
-              {inspectRecord.googleDocsReviewRouting?.clauseDiffs &&
-              inspectRecord.googleDocsReviewRouting.clauseDiffs.length > 0 ? (
-                <div className="space-y-2">
-                  {inspectRecord.googleDocsReviewRouting.clauseDiffs.map((diff, idx) => (
-                    <div key={idx} className="rounded-lg border border-line bg-sunken/50 p-3 space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-ink">
-                          {diff.clauseNumber}: {diff.title}
+                    <div className="p-3.5 space-y-2">
+                      <span className="font-semibold text-ink block">Tiến độ phê duyệt</span>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-ink-2">
+                          Pháp chế ({inspectLegalStep?.reviewerName || 'Miễn duyệt'})
                         </span>
                         <span
-                          className={`text-2xs font-semibold px-1.5 py-0.5 rounded border ${
-                            diff.targetRole === 'FINANCE'
-                              ? 'border-accent/30 bg-accent-soft text-accent'
-                              : 'border-warning/40 bg-warning-soft text-warning-strong'
+                          className={`text-2xs font-medium ${
+                            !inspectLegalStep || inspectLegalStep.status === 'APPROVED'
+                              ? 'text-positive'
+                              : inspectLegalStep.status === 'REJECTED'
+                                ? 'text-critical'
+                                : 'text-warning'
                           }`}
                         >
-                          {diff.targetRole === 'FINANCE'
-                            ? 'Phân luồng: Kế toán'
-                            : diff.targetRole === 'LEGAL'
-                              ? 'Phân luồng: Pháp chế'
-                              : 'Pháp chế & Kế toán'}
+                          {!inspectLegalStep
+                            ? 'Miễn duyệt'
+                            : inspectLegalStep.status === 'APPROVED'
+                              ? 'Đã duyệt'
+                              : 'Chờ duyệt'}
                         </span>
                       </div>
-                      {diff.originalText && (
-                        <div className="text-2xs text-ink-3 line-through bg-surface p-2 rounded border border-line">
-                          Mẫu gốc: {diff.originalText}
-                        </div>
-                      )}
-                      {diff.modifiedText && (
-                        <div className="text-2xs text-ink bg-surface p-2 rounded border border-line font-medium">
-                          Bản sửa đổi: {diff.modifiedText}
-                        </div>
-                      )}
-                      <div className="text-2xs text-ink-2">{diff.explanation}</div>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-ink-2">
+                          Kế toán ({inspectFinanceStep?.reviewerName || 'Lê Thị Thu Hà'})
+                        </span>
+                        <span
+                          className={`text-2xs font-medium ${
+                            inspectRecord.approval === 'APPROVED' ||
+                            inspectFinanceStep?.status === 'APPROVED'
+                              ? 'text-positive'
+                              : inspectFinanceStep?.status === 'REJECTED'
+                                ? 'text-critical'
+                                : 'text-warning'
+                          }`}
+                        >
+                          {inspectRecord.approval === 'APPROVED' ||
+                          inspectFinanceStep?.status === 'APPROVED'
+                            ? 'Đã duyệt'
+                            : 'Chờ duyệt'}
+                        </span>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-2xs text-ink-3">
-                  Hồ sơ sử dụng điều khoản chuẩn, không phát sinh điểm khác biệt tự động trên Google Docs.
-                </p>
-              )}
+                  </div>
+                )}
+              </div>
 
-              {/* Tiến độ 2 bước Pháp chế & Kế toán */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-line">
-                <div className="rounded-lg border border-line p-2.5 flex items-center justify-between">
-                  <div>
-                    <span className="text-2xs text-ink-3 block">Bước 1: Ban Pháp chế</span>
-                    <span className="font-medium text-ink">
-                      {inspectLegalStep?.reviewerName || 'Miễn duyệt (Mẫu chuẩn)'}
-                    </span>
+              {/* CỘT PHỤ 340PX: Chung một khung, ngăn bằng đường kẻ mảnh (DESIGN_SYSTEM.md §7 Rule 14) */}
+              <div className="rounded-xl border border-line bg-surface divide-y divide-line">
+                {/* Khối 1: Định danh & Thụ hưởng */}
+                <div className="p-4 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-ink">Hồ sơ pháp lý &amp; thụ hưởng</span>
+                    <button
+                      type="button"
+                      onClick={() => setRevealSensitive(v => !v)}
+                      className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
+                    >
+                      {revealSensitive ? (
+                        <>
+                          <EyeOff className="w-3 h-3" /> Ẩn số
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-3 h-3" /> Hiện số
+                        </>
+                      )}
+                    </button>
                   </div>
-                  <Status
-                    tone={
-                      !inspectLegalStep || inspectLegalStep.status === 'APPROVED'
-                        ? 'positive'
-                        : inspectLegalStep.status === 'REJECTED'
-                          ? 'critical'
-                          : 'warning'
-                    }
-                  >
-                    {!inspectLegalStep
-                      ? 'Miễn duyệt'
-                      : inspectLegalStep.status === 'APPROVED'
-                        ? 'Đã duyệt'
-                        : inspectLegalStep.status === 'CHANGES'
-                          ? 'Yêu cầu sửa'
-                          : inspectLegalStep.status === 'REJECTED'
-                            ? 'Từ chối'
-                            : 'Đang chờ'}
-                  </Status>
+
+                  <dl className="space-y-1.5">
+                    <div className="flex justify-between gap-2">
+                      <dt className="text-ink-3">Đối tác KOC</dt>
+                      <dd className="font-medium text-ink text-right">{inspectRecord.partner}</dd>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <dt className="text-ink-3">Nhãn hàng · Deal</dt>
+                      <dd className="text-ink text-right">
+                        {inspectRecord.brand} ·{' '}
+                        <span className="font-code">{inspectRecord.dealCode || 'HĐ khung'}</span>
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <dt className="text-ink-3">Số CCCD / MST</dt>
+                      <dd className="font-code font-medium text-ink text-right">
+                        {maskSensitiveNumber(inspectFinancials.cccdOrTaxCode, revealSensitive)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <dt className="text-ink-3">Ngân hàng</dt>
+                      <dd className="text-ink text-right">
+                        {inspectFinancials.bankName || 'Chưa cập nhật'}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <dt className="text-ink-3">Số tài khoản</dt>
+                      <dd className="font-code font-medium text-ink text-right">
+                        {maskSensitiveNumber(inspectFinancials.bankAccount, revealSensitive)}
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
-                <div className="rounded-lg border border-line p-2.5 flex items-center justify-between">
-                  <div>
-                    <span className="text-2xs text-ink-3 block">Bước 2: Phòng Kế toán (FINAL)</span>
-                    <span className="font-medium text-ink">
-                      {inspectFinanceStep?.reviewerName || 'Lê Thị Thu Hà (Kế toán B2C)'}
-                    </span>
+
+                {/* Khối 2: Đối soát giá trị */}
+                <div className="p-4 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-ink">Đối soát giá trị</span>
+                    {inspectFinancials.isOverDealBudget ? (
+                      <span className="text-2xs font-medium text-critical">Vượt trần</span>
+                    ) : inspectFinancials.isUnbudgetedSpend ? (
+                      <span className="text-2xs font-medium text-critical">Hạn mức 0đ</span>
+                    ) : (
+                      <span className="text-2xs font-medium text-positive">Khớp hạn mức</span>
+                    )}
                   </div>
-                  <Status
-                    tone={
-                      inspectRecord.approval === 'APPROVED' || inspectFinanceStep?.status === 'APPROVED'
-                        ? 'positive'
-                        : inspectFinanceStep?.status === 'REJECTED'
-                          ? 'critical'
-                          : 'warning'
-                    }
-                  >
-                    {inspectRecord.approval === 'APPROVED' || inspectFinanceStep?.status === 'APPROVED'
-                      ? 'Đã duyệt FINAL'
-                      : inspectFinanceStep?.status === 'CHANGES'
-                        ? 'Yêu cầu sửa'
-                        : inspectFinanceStep?.status === 'REJECTED'
-                          ? 'Từ chối'
-                          : 'Đang chờ'}
-                  </Status>
+
+                  <dl className="space-y-1.5 tabular-nums">
+                    <div className="flex justify-between gap-2">
+                      <dt className="text-ink-3">Tổng giá trị Gross</dt>
+                      <dd className="font-code text-ink">
+                        {formatVnd(inspectFinancials.grossAmount)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <dt className="text-ink-3">{inspectFinancials.taxLabel}</dt>
+                      <dd className="font-code text-ink-2">
+                        -{formatVnd(inspectFinancials.taxAmount)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-2 pt-1.5 border-t border-line">
+                      <dt className="font-semibold text-ink">Thực chi Net</dt>
+                      <dd className="font-code font-semibold text-positive">
+                        {formatVnd(inspectFinancials.netAmount)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-2 text-2xs text-ink-3 pt-1">
+                      <dt>Tạm ứng đợt 1 / Còn lại</dt>
+                      <dd className="font-code">
+                        {formatVnd(inspectFinancials.advanceAmount)} /{' '}
+                        {formatVnd(inspectFinancials.remainingAmount)}
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
+
+                {/* Khối 3: Ghi chú phê duyệt */}
+                {canApproveInInspectModal && (
+                  <div className="p-4 space-y-2.5">
+                    <Field
+                      label={
+                        mode === 'LEGAL_PORTAL'
+                          ? 'Ghi chú thẩm định Pháp chế'
+                          : 'Ghi chú phê duyệt Kế toán'
+                      }
+                      htmlFor="unified-approve-note"
+                    >
+                      <Textarea
+                        id="unified-approve-note"
+                        rows={2}
+                        value={approveNote}
+                        onChange={e => setApproveNote(e.target.value)}
+                        placeholder="Nhập ghi chú phê duyệt..."
+                      />
+                    </Field>
+
+                    {mode === 'LEGAL_PORTAL' && (
+                      <div className="space-y-2 pt-1">
+                        <label className="flex items-start gap-2 text-2xs text-ink cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="mt-0.5 rounded border-line text-accent"
+                            checked={saveAsKocTemplate}
+                            onChange={e => setSaveAsKocTemplate(e.target.checked)}
+                          />
+                          <span>
+                            Lưu làm mẫu chuẩn riêng của KOC ({inspectRecord.partner}) cho các đợt sau
+                          </span>
+                        </label>
+                        {saveAsKocTemplate && (
+                          <Textarea
+                            rows={2}
+                            value={kocLegalNotes}
+                            onChange={e => setKocLegalNotes(e.target.value)}
+                            placeholder="Lưu ý pháp lý khi tái sử dụng mẫu này..."
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
       </Modal>
 
-      {/* Hộp thoại Pháp chế Xác nhận duyệt + Lưu mẫu riêng KOC */}
-      {decisionModal && decisionModal.role === 'LEGAL' && decisionModal.decision === 'APPROVED' && (
-        <Modal
-          open={true}
-          onClose={() => setDecisionModal(null)}
-          title={`Pháp chế phê duyệt điều khoản · ${decisionModal.record.partner}`}
-          footer={
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setDecisionModal(null)} disabled={actionBusy}>
-                Hủy
-              </Button>
-              <Button
-                variant="primary"
-                icon={CheckCircle2}
-                disabled={actionBusy}
-                onClick={() =>
-                  submitDecision(decisionModal.record, 'APPROVED', legalApproveNote, {
-                    saveAsKocTemplate,
-                    kocLegalNotes,
-                  })
-                }
-              >
-                {actionBusy ? 'Đang lưu...' : 'Xác nhận duyệt Pháp chế'}
-              </Button>
-            </div>
-          }
-        >
-          <div className="space-y-4 text-xs">
-            <Field label="Nhận xét thẩm định của Pháp chế" htmlFor="portal-legal-note">
-              <Textarea
-                id="portal-legal-note"
-                rows={3}
-                value={legalApproveNote}
-                onChange={e => setLegalApproveNote(e.target.value)}
-                placeholder="Nhập ý kiến thẩm định điều khoản..."
-              />
-            </Field>
-
-            <div className="rounded-lg border border-line bg-surface p-3 space-y-3">
-              <label className="flex items-start gap-2.5 text-xs font-medium text-ink cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="mt-0.5 rounded border-line text-accent"
-                  checked={saveAsKocTemplate}
-                  onChange={e => setSaveAsKocTemplate(e.target.checked)}
-                />
-                <span>
-                  Lưu làm Mẫu hợp đồng đã duyệt riêng cho KOC ({decisionModal.record.partner}) — Miễn duyệt lại cho các đợt Booking sau
-                </span>
-              </label>
-
-              {saveAsKocTemplate && (
-                <Field label="Lưu ý pháp lý bắt buộc khi tái sử dụng mẫu KOC này" htmlFor="portal-koc-legal-notes">
-                  <Textarea
-                    id="portal-koc-legal-notes"
-                    rows={2}
-                    value={kocLegalNotes}
-                    onChange={e => setKocLegalNotes(e.target.value)}
-                    placeholder="Ví dụ: Chỉ được chạy Spark Ads tối đa 45 ngày, thanh toán trong 05 ngày..."
-                  />
-                </Field>
-              )}
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* Hộp thoại Kế toán duyệt chuẩn hoặc Yêu cầu sửa / Từ chối */}
-      {decisionModal && !(decisionModal.role === 'LEGAL' && decisionModal.decision === 'APPROVED') && (
+      {/* Hộp thoại Yêu cầu sửa / Từ chối */}
+      {rejectOrChangeModal && (
         <ConfirmDialog
           open={true}
           title={
-            decisionModal.decision === 'APPROVED'
-              ? 'Kế toán phê duyệt hồ sơ (FINAL)'
-              : decisionModal.decision === 'CHANGES'
-                ? 'Yêu cầu chỉnh sửa hồ sơ'
-                : 'Từ chối phê duyệt hồ sơ'
+            rejectOrChangeModal.decision === 'CHANGES'
+              ? 'Yêu cầu chỉnh sửa hồ sơ'
+              : 'Từ chối phê duyệt hồ sơ'
           }
-          tone={decisionModal.decision === 'REJECTED' ? 'danger' : undefined}
+          tone={rejectOrChangeModal.decision === 'REJECTED' ? 'danger' : undefined}
           confirmLabel={
-            decisionModal.decision === 'APPROVED'
-              ? 'Xác nhận duyệt FINAL'
-              : decisionModal.decision === 'CHANGES'
-                ? 'Gửi yêu cầu sửa'
-                : 'Từ chối hồ sơ'
+            rejectOrChangeModal.decision === 'CHANGES'
+              ? 'Gửi yêu cầu sửa'
+              : 'Từ chối hồ sơ'
           }
           reason={{
-            label:
-              decisionModal.decision === 'APPROVED'
-                ? 'Ghi chú kiểm soát ngân sách & thuế (không bắt buộc)'
-                : 'Lý do yêu cầu sửa / từ chối (bắt buộc)',
-            required: decisionModal.decision !== 'APPROVED',
+            label: 'Lý do yêu cầu sửa / từ chối',
+            required: true,
           }}
           onConfirm={note =>
             submitDecision(
-              decisionModal.record,
-              decisionModal.decision,
-              note || 'Đã kiểm tra khớp hạn mức Booking, thuế khấu trừ và thông tin tài khoản thụ hưởng.',
+              rejectOrChangeModal.record,
+              rejectOrChangeModal.decision,
+              note || '',
             )
           }
-          onCancel={() => setDecisionModal(null)}
-          onOpenChange={o => !o && setDecisionModal(null)}
+          onCancel={() => setRejectOrChangeModal(null)}
+          onOpenChange={o => !o && setRejectOrChangeModal(null)}
         />
       )}
 
@@ -1485,8 +1601,23 @@ export function ContractApprovalPortalView({
           open={Boolean(gdocsFinanceRecord)}
           record={gdocsFinanceRecord}
           busy={actionBusy}
+          signingHistory={signingHistoryMap.get(gdocsFinanceRecord.id)}
+          legalAttachments={resolveRecordLegalAttachments(gdocsFinanceRecord)}
           onClose={() => setGdocsFinanceRecord(null)}
           onConfirm={handleGDocsFinanceApprove}
+        />
+      )}
+
+      {/* Hộp thoại Xem nhanh trực tiếp CCCD / ĐKKD từ dòng bảng */}
+      {quickPreviewState && (
+        <LegalDocPreviewModal
+          attachments={quickPreviewState.docs}
+          activeDoc={quickPreviewState.active}
+          profileLabel={quickPreviewState.label}
+          onSelectDoc={doc =>
+            setQuickPreviewState(prev => (prev ? { ...prev, active: doc } : null))
+          }
+          onClose={() => setQuickPreviewState(null)}
         />
       )}
     </div>

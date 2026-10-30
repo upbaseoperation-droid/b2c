@@ -11,27 +11,36 @@ import {
   EMPTY_SELF_CHANNEL_BOARD,
   isSelfScriptReady,
   sanitizeSelfChannelBoard,
+  selfCtvConfirmBlocker,
+  type SelfContentCheck,
+  type SelfContentCheckItem,
   type SelfAirCheck,
   type SelfChannelBoardData,
   type SelfChannelJob,
   type SelfPublishPlatform,
 } from '../selfChannelBoardRules';
+import {
+  buildSelfContentRuleItems,
+  combineContentVerdict,
+  type SelfContentEvidence,
+} from '../selfChannelContentCheck';
 import type { Contributor, InputPlanBreakdownState } from '../types';
 
 export type CtvSubmissionKind = 'SCRIPT' | 'DRAFT' | 'AIR';
+export type CtvNextKind = CtvSubmissionKind | 'CONFIRM';
 
 export interface CtvJobRow {
   plan: InputPlanBreakdownState;
   job: SelfChannelJob;
 }
 
-const PLATFORM_OF: Record<SelfPublishPlatform, LinkAirPlatform> = {
+const PLATFORM_OF = {
   TIKTOK_BRAND: 'tiktok',
   SHOPEE_VIDEO: 'shopee',
   FACEBOOK_PAGE: 'facebook',
   INSTAGRAM: 'instagram',
   YOUTUBE_SHORTS: 'youtube',
-};
+} as const satisfies Record<SelfPublishPlatform, LinkAirPlatform>;
 
 export async function readCtvDirectory(): Promise<CtvDirectoryData> {
   return { ...EMPTY_CTV_DIRECTORY, ...(await readRecord<CtvDirectoryData>('ctv-directory-v1', EMPTY_CTV_DIRECTORY)).data };
@@ -146,6 +155,96 @@ export async function runSelfAirCheck(plan: InputPlanBreakdownState, jobId: stri
 }
 
 /**
+ * Đối chiếu nội dung bài đăng với brief của việc. Máy chỉ đề xuất; kết quả ghi vào việc để người nghiệm thu xem.
+ * - Không có modelPatch: đọc lại link, chạy luật từ khóa (luôn chạy được, không cần khóa mô hình).
+ * - Có modelPatch: gộp kết quả mô hình (client gọi theo cấu hình mục đích) vào kết quả luật của đúng link đó.
+ */
+export async function runSelfContentCheck(
+  plan: InputPlanBreakdownState,
+  jobId: string,
+  actorName: string,
+  modelPatch?: { items: SelfContentCheckItem[]; suggestion?: string }
+): Promise<{ contentCheck: SelfContentCheck; evidence: SelfContentEvidence | null }> {
+  const board = sanitizeSelfChannelBoard((await readRecord<SelfChannelBoardData>(selfChannelBoardKey(plan.id), EMPTY_SELF_CHANNEL_BOARD)).data);
+  const job = board.jobs.find(j => j.id === jobId);
+  if (!job) throw new RecordError('Không tìm thấy việc (có thể chưa lưu).', 404);
+  const link = job.airLink.trim();
+  if (!link) throw new RecordError('Việc chưa có link đăng.', 400);
+
+  if (modelPatch) {
+    const base = job.contentCheck;
+    if (!base || base.checkedLink !== link) throw new RecordError('Cần chạy đối chiếu từ khóa trên link hiện tại trước.', 409);
+    const items = [...base.items.filter(i => !i.key.startsWith('model-')), ...modelPatch.items];
+    const merged: SelfContentCheck = {
+      ...base,
+      verdict: combineContentVerdict(items),
+      source: 'MODEL',
+      items,
+      suggestion: modelPatch.suggestion || base.suggestion,
+      checkedAt: new Date().toISOString(),
+      checkedBy: actorName,
+    };
+    await patchJob(plan.id, job.id, j => (j.airLink.trim() !== link ? j : { ...j, contentCheck: merged }));
+    return { contentCheck: merged, evidence: null };
+  }
+
+  const result = await checkSingleLinkServerless(link, {});
+  if (result.status !== 'LIVE') throw new RecordError(`Không đọc được bài đăng (${result.statusDetail || result.status}). Kiểm tra lại link.`, 422);
+  const evidence: SelfContentEvidence = {
+    caption: result.caption || '',
+    hashtags: result.hashtags || [],
+    transcript: result.transcriptText || '',
+    hasProductLink: result.hasProductLink,
+    productMentions: result.productMentionMoments?.length || 0,
+    policyViolations: result.policyViolations || [],
+    durationSeconds: result.durationSeconds,
+  };
+  const items = buildSelfContentRuleItems(job, evidence);
+  const contentCheck: SelfContentCheck = {
+    verdict: combineContentVerdict(items),
+    checkedAt: new Date().toISOString(),
+    checkedBy: actorName,
+    checkedLink: link,
+    source: 'RULES',
+    items,
+  };
+  await patchJob(plan.id, job.id, j => (j.airLink.trim() !== link ? j : { ...j, contentCheck }));
+  return { contentCheck, evidence };
+}
+
+/** CTV nhận hoặc từ chối việc được giao. */
+export async function respondCtvJob(params: {
+  contributor: Contributor;
+  jobCode: string;
+  planId?: string;
+  decision: 'CONFIRM' | 'DECLINE';
+  reason?: string;
+}): Promise<{ ok: boolean; message: string }> {
+  const code = params.jobCode.trim().toUpperCase();
+  const rows = (await findCtvJobs(params.contributor.id)).filter(r => r.job.code.toUpperCase() === code && (!params.planId || r.plan.id === params.planId));
+  if (rows.length === 0) return { ok: false, message: `Không thấy việc ${code} được giao cho bạn.` };
+  if (rows.length > 1) return { ok: false, message: `Có ${rows.length} việc cùng mã ${code} ở nhiều gian. Chọn đúng việc trong Cổng CTV.` };
+  const { plan, job } = rows[0];
+  if (job.ctvConfirmStatus && job.ctvConfirmStatus !== 'ASSIGNED') {
+    return { ok: false, message: `Việc ${code} đã được phản hồi, không đổi lại được. Liên hệ người phụ trách nếu cần.` };
+  }
+  if (job.paymentStatus === 'REQUESTED' || job.paymentStatus === 'PAID' || job.acceptanceStatus === 'PASSED') {
+    return { ok: false, message: `Việc ${code} đã nghiệm thu / quyết toán.` };
+  }
+  if (params.decision === 'DECLINE' && !params.reason?.trim()) return { ok: false, message: 'Ghi lý do từ chối việc.' };
+  const nowIso = new Date().toISOString();
+  await patchJob(plan.id, job.id, j =>
+    params.decision === 'CONFIRM'
+      ? { ...j, ctvConfirmStatus: 'CONFIRMED', ctvConfirmedAt: nowIso, ctvDeclineReason: undefined }
+      : { ...j, ctvConfirmStatus: 'DECLINED', ctvConfirmedAt: nowIso, ctvDeclineReason: params.reason!.trim().slice(0, 300) }
+  );
+  return {
+    ok: true,
+    message: params.decision === 'CONFIRM' ? `Đã nhận việc ${code} (${plan.storeName || plan.title}).` : `Đã từ chối việc ${code}. Người phụ trách sẽ giao lại.`,
+  };
+}
+
+/**
  * CTV nộp bài vào đúng việc của mình:
  * - SCRIPT: link kịch bản → "Đã nộp kịch bản" (chưa được Brand duyệt).
  * - DRAFT: link video nháp → "Đã nộp video nháp" (kịch bản phải được Brand duyệt).
@@ -170,6 +269,9 @@ export async function submitCtvWork(params: {
   if (job.paymentStatus === 'REQUESTED' || job.paymentStatus === 'PAID' || job.acceptanceStatus === 'PASSED') {
     return { ok: false, message: `Việc ${code} đã nghiệm thu / quyết toán, không nộp lại được.` };
   }
+
+  const confirmBlocker = selfCtvConfirmBlocker(job);
+  if (confirmBlocker) return { ok: false, message: confirmBlocker };
 
   if (params.kind === 'SCRIPT') {
     if (job.scriptStatus === 'NOT_NEEDED') return { ok: false, message: `Việc ${code} không cần kịch bản.` };
@@ -203,7 +305,9 @@ export async function submitCtvWork(params: {
 }
 
 /** Bước tiếp theo của việc, nhìn từ phía CTV. */
-export function ctvNextStep(job: SelfChannelJob): { label: string; waitingOnCtv: boolean; kind?: CtvSubmissionKind } {
+export function ctvNextStep(job: SelfChannelJob): { label: string; waitingOnCtv: boolean; kind?: CtvNextKind } {
+  if (job.ctvConfirmStatus === 'DECLINED') return { label: 'Bạn đã từ chối việc này', waitingOnCtv: false };
+  if (job.ctvConfirmStatus === 'ASSIGNED') return { label: 'Xác nhận nhận việc', waitingOnCtv: true, kind: 'CONFIRM' };
   if (job.paymentStatus === 'PAID') return { label: 'Đã thanh toán', waitingOnCtv: false };
   if (job.paymentStatus === 'REQUESTED') return { label: 'Đã lập đề nghị thanh toán', waitingOnCtv: false };
   if (job.acceptanceStatus === 'PASSED') return { label: 'Đã nghiệm thu, chờ quyết toán cuối tháng', waitingOnCtv: false };

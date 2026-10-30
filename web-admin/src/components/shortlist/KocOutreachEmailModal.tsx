@@ -26,7 +26,7 @@ import {
 import type { KocItem, StorePortfolioItem, UserRole } from '../../lib/types';
 import type { StaffListingSheetRow } from '../../lib/staffBrandListingSheet';
 import { normalizeTikTokId } from '../../lib/staffBrandListingSheet';
-import { formatVndShort } from '../../lib/format';
+import { formatVndShort, maskSensitivePii } from '../../lib/format';
 import {
   DEFAULT_KOC_EMAIL_TEMPLATES,
   KOC_EMAIL_CATEGORY_LABELS,
@@ -109,12 +109,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
   );
 
   // Quyền Trưởng phòng quản lý mẫu thư (mặc định bật cho Manager/Admin/Leader hoặc cho phép bật trực tiếp để quản trị)
-  const isDefaultManager =
-    MANAGER_ROLES.includes(currentRole) ||
-    currentUserName.includes('Yến Nhi') ||
-    currentUserName.includes('Ngọc Tâm') ||
-    currentUserName.includes('Giang') ||
-    currentUserName.includes('Quản trị');
+  const isDefaultManager = MANAGER_ROLES.includes(currentRole);
   const [managerModeEnabled, setManagerModeEnabled] = useState<boolean>(isDefaultManager);
 
   // Danh sách dòng KOC đưa vào phiên gửi mail
@@ -1291,7 +1286,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                                 {getEffectiveRowZalo(row) ? (
                                   <div className="flex items-center gap-0.5 text-accent shrink-0 font-medium">
                                     <MessageCircle className="w-3 h-3 shrink-0" />
-                                    <span>{getEffectiveRowZalo(row)}</span>
+                                    <span>{maskSensitivePii(getEffectiveRowZalo(row))}</span>
                                   </div>
                                 ) : null}
                               </div>

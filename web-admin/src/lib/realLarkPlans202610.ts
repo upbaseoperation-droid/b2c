@@ -1,7 +1,8 @@
 // Dữ liệu thực tế Tháng 10/2026 (2026/10) đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking
 // App Token: W6vRbbuOVar3qtsV18dlan1xgXb
-// Bảng 4.1 Plan order tổng: tblvgyOkneDKOVsB (64 gian hàng B2C phụ trách = true)
-// Bảng 4.1.1 Input plan: tblWvkHgK4fQF83t (416 dòng phân rã tuần W40-W45 trên 48 gian hàng B2C, đã khôi phục 36 dòng FOC thiếu Ngày đầu tháng)
+// Bảng 4.1 Plan order tổng: tblvgyOkneDKOVsB (64 gian hàng B2C phụ trách = true; rev 13876)
+// Bảng 4.1.1 Input plan: tblWvkHgK4fQF83t (420 dòng phân rã tuần W40-W45 trên 49 gian hàng B2C; rev 31011)
+// Cập nhật lúc: 2026-10-30T13:30:00.000Z
 
 import type { InputPlanBreakdownState, LarkbaseBookingPlanRecordItem } from './types';
 
@@ -24,16 +25,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 110,
     "targetGmv": 954000000,
-    "deliveredContents": 25,
-    "spentBudget": 469200000,
-    "actualGmv": 181790620,
+    "deliveredContents": 38,
+    "spentBudget": 243200000,
+    "actualGmv": 230356320,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWycb3S0). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "IN_EXECUTION",
     "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-BABE-TIKTOK-E2E-O-41-FOC",
@@ -169,7 +170,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWycb3S0",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-BANIPHAR-SHOPEE-E2E-S",
@@ -190,16 +191,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 77,
     "targetGmv": 763326071,
-    "deliveredContents": 48,
+    "deliveredContents": 53,
     "spentBudget": 0,
-    "actualGmv": 127966119,
+    "actualGmv": 135372949,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWycNUm3) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 48 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-BANIPHAR-SHOPEE-E2E-S-411-SELF",
@@ -1232,7 +1233,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWycNUm3",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-BANIPHAR-TIKTOK-E2E-S",
@@ -1253,16 +1254,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 113150000,
     "totalTargetContents": 76,
     "targetGmv": 1922495512,
-    "deliveredContents": 59,
-    "spentBudget": 148807000,
-    "actualGmv": 439952918,
+    "deliveredContents": 70,
+    "spentBudget": 117245000,
+    "actualGmv": 537401290,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWycnJpY) & Bảng 4.1.1 (11 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 59 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-BANIPHAR-TIKTOK-E2E-S-411-KL1",
@@ -2566,7 +2567,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWycnJpY",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-BYE-BYE-BLEMISH-SHOPEE-E2E-S",
@@ -2586,16 +2587,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 4545455,
     "totalTargetContents": 46,
     "targetGmv": 148685581,
-    "deliveredContents": 7,
+    "deliveredContents": 47,
     "spentBudget": 25650000,
-    "actualGmv": 105148816,
+    "actualGmv": 134435288,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWycfzl4) & Bảng 4.1.1 (2 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 7 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [],
     "weeklyBreakdown": [
       {
@@ -3305,7 +3306,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWycfzl4",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-BYE-BYE-BLEMISH-TIKTOK-E2E-S",
@@ -3327,16 +3328,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 175046665,
     "totalTargetContents": 140,
     "targetGmv": 2262121586,
-    "deliveredContents": 49,
-    "spentBudget": 178720000,
-    "actualGmv": 804437624,
+    "deliveredContents": 56,
+    "spentBudget": 150240000,
+    "actualGmv": 1058271683,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWycOx5R) & Bảng 4.1.1 (9 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 49 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-BYE-BYE-BLEMISH-TIKTOK-E2E-S-411-KL1",
@@ -4593,7 +4594,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWycOx5R",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-CINDY-BLOOM-TIKTOK-E2E-C",
@@ -4616,16 +4617,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 92181818,
     "totalTargetContents": 351,
     "targetGmv": 2528289940,
-    "deliveredContents": 34,
-    "spentBudget": 117300000,
-    "actualGmv": 1521223045,
+    "deliveredContents": 73,
+    "spentBudget": 81300000,
+    "actualGmv": 1783570584,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWycsO8Y) & Bảng 4.1.1 (13 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 34 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-CINDY-BLOOM-TIKTOK-E2E-C-411-KL1",
@@ -6201,7 +6202,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWycsO8Y",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-DOCILEE-TIKTOK-E2E-S",
@@ -6221,16 +6222,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 54200000,
     "totalTargetContents": 67,
     "targetGmv": 1170913741,
-    "deliveredContents": 12,
-    "spentBudget": 81400000,
-    "actualGmv": 334123058,
+    "deliveredContents": 29,
+    "spentBudget": 45050000,
+    "actualGmv": 415445969,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWycJkzy) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 12 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-DOCILEE-TIKTOK-E2E-S-411-KL1",
@@ -7109,7 +7110,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWycJkzy",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-DYNIK-TIKTOK-E2E-C",
@@ -7130,16 +7131,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 127727273,
     "totalTargetContents": 221,
     "targetGmv": 172595121,
-    "deliveredContents": 11,
-    "spentBudget": 145770000,
-    "actualGmv": 9404426,
+    "deliveredContents": 16,
+    "spentBudget": 90610000,
+    "actualGmv": 14737731,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWyczWRO) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 11 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-DYNIK-TIKTOK-E2E-C-411-KL4",
@@ -8256,7 +8257,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWyczWRO",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-EUPC--SHOPEE-E2E-C",
@@ -8278,16 +8279,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 16363636,
     "totalTargetContents": 55,
     "targetGmv": 843125000,
-    "deliveredContents": 0,
+    "deliveredContents": 20,
     "spentBudget": 0,
-    "actualGmv": 116246851,
+    "actualGmv": 148802255,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWycM4um) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 0 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-EUPC--SHOPEE-E2E-C-411-MULTI",
@@ -9339,7 +9340,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWycM4um",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-EUPC--TIKTOK-E2E-C",
@@ -9365,16 +9366,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 626909091,
     "totalTargetContents": 414,
     "targetGmv": 4820000000,
-    "deliveredContents": 123,
-    "spentBudget": 891643226,
-    "actualGmv": 819074253,
+    "deliveredContents": 111,
+    "spentBudget": 485453226,
+    "actualGmv": 1007452236,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWycwTdR) & Bảng 4.1.1 (30 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 123 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-EUPC--TIKTOK-E2E-C-411-KL1",
@@ -12311,7 +12312,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWycwTdR",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-EKSEPTION-SHOPEE-E2E-O",
@@ -12331,16 +12332,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 18181818,
     "totalTargetContents": 33,
     "targetGmv": 1959214751,
-    "deliveredContents": 0,
+    "deliveredContents": 240,
     "spentBudget": 0,
-    "actualGmv": 107865217,
+    "actualGmv": 132713367,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWyc8nrQ). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "APPROVED",
     "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-EKSEPTION-SHOPEE-E2E-O-41-KL2",
@@ -12472,7 +12473,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWyc8nrQ",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-EKSEPTION-TIKTOK-E2E-O",
@@ -12492,16 +12493,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 8,
     "totalTargetContents": 8,
     "targetGmv": 1300639993,
-    "deliveredContents": 139,
-    "spentBudget": 325105000,
-    "actualGmv": 255423785,
+    "deliveredContents": 35,
+    "spentBudget": 143465000,
+    "actualGmv": 307157190,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWyc76ZN). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "IN_EXECUTION",
     "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
@@ -12616,7 +12617,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWyc76ZN",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-FRESH-TIKTOK-E2E-C",
@@ -12637,16 +12638,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 131409091,
     "totalTargetContents": 686,
     "targetGmv": 2892000000,
-    "deliveredContents": 36,
-    "spentBudget": 235833903,
-    "actualGmv": 1042776510,
+    "deliveredContents": 46,
+    "spentBudget": 153128903,
+    "actualGmv": 1236572792,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWycdmPA) & Bảng 4.1.1 (9 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 36 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-FRESH-TIKTOK-E2E-C-411-KL1",
@@ -13872,7 +13873,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWycdmPA",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-MISS-SAIGON-TIKTOK-E2E-C",
@@ -13894,16 +13895,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 232500000,
     "totalTargetContents": 375,
     "targetGmv": 982400000,
-    "deliveredContents": 16,
-    "spentBudget": 76680000,
-    "actualGmv": 365569755,
+    "deliveredContents": 19,
+    "spentBudget": 78368888,
+    "actualGmv": 431488987,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWMuwRNa) & Bảng 4.1.1 (14 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 16 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-MISS-SAIGON-TIKTOK-E2E-C-411-KL2",
@@ -15645,7 +15646,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWMuwRNa",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-MISS-SAIGON-SHOPEE-E2E-C",
@@ -15665,19 +15666,616 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 0,
     "targetGmv": 349777204,
-    "deliveredContents": 0,
+    "deliveredContents": 20,
     "spentBudget": 0,
-    "actualGmv": 77454557,
+    "actualGmv": 92545474,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
-    "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWMuQeOA). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
+    "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWMuQeOA) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "status": "APPROVED",
-    "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
+    "statusLabel": "Đã chốt 4.1 & 4.1.1",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [],
-    "weeklyBreakdown": [],
-    "staffWeeklySlices": [],
+    "weeklyBreakdown": [
+      {
+        "week": "W40 [25.09-01.10]",
+        "tiers": {},
+        "foc": {
+          "tapBrand": 0,
+          "tap": 0,
+          "tapUp": 0
+        },
+        "self": {
+          "reviewVoice": 0,
+          "videoAi": 0,
+          "videoRemix": 0,
+          "videoToLive": 0,
+          "nhacText": 0,
+          "budgetNet": 0
+        },
+        "live": {
+          "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
+        }
+      },
+      {
+        "week": "W41 [02.10-08.10]",
+        "tiers": {},
+        "foc": {
+          "tapBrand": 0,
+          "tap": 0,
+          "tapUp": 0
+        },
+        "self": {
+          "reviewVoice": 0,
+          "videoAi": 0,
+          "videoRemix": 0,
+          "videoToLive": 0,
+          "nhacText": 5,
+          "budgetNet": 0
+        },
+        "live": {
+          "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
+        }
+      },
+      {
+        "week": "W42 [09.10-15.10]",
+        "tiers": {},
+        "foc": {
+          "tapBrand": 0,
+          "tap": 0,
+          "tapUp": 0
+        },
+        "self": {
+          "reviewVoice": 0,
+          "videoAi": 0,
+          "videoRemix": 0,
+          "videoToLive": 0,
+          "nhacText": 5,
+          "budgetNet": 0
+        },
+        "live": {
+          "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
+        }
+      },
+      {
+        "week": "W43 [16.10-22.10]",
+        "tiers": {},
+        "foc": {
+          "tapBrand": 0,
+          "tap": 0,
+          "tapUp": 0
+        },
+        "self": {
+          "reviewVoice": 0,
+          "videoAi": 0,
+          "videoRemix": 0,
+          "videoToLive": 0,
+          "nhacText": 10,
+          "budgetNet": 0
+        },
+        "live": {
+          "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
+        }
+      },
+      {
+        "week": "W44 [23.10-29.10]",
+        "tiers": {},
+        "foc": {
+          "tapBrand": 0,
+          "tap": 0,
+          "tapUp": 0
+        },
+        "self": {
+          "reviewVoice": 0,
+          "videoAi": 0,
+          "videoRemix": 0,
+          "videoToLive": 0,
+          "nhacText": 0,
+          "budgetNet": 0
+        },
+        "live": {
+          "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
+        }
+      },
+      {
+        "week": "W45 [30.10-05.11]",
+        "tiers": {},
+        "foc": {
+          "tapBrand": 0,
+          "tap": 0,
+          "tapUp": 0
+        },
+        "self": {
+          "reviewVoice": 0,
+          "videoAi": 0,
+          "videoRemix": 0,
+          "videoToLive": 0,
+          "nhacText": 5,
+          "budgetNet": 0
+        },
+        "live": {
+          "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
+        }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Lê Phương Thảo",
+        "roleLabel": "Phụ trách Self",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W40 [25.09-01.10]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W41 [02.10-08.10]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 5,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W42 [09.10-15.10]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 5,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W43 [16.10-22.10]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 10,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W44 [23.10-29.10]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 5,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      }
+    ],
     "reference41": {
       "month": "2026/10",
       "importedAt": "2026-10-25T01:45:00.000Z",
@@ -15787,7 +16385,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWMuQeOA",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-ZIAJA-SHOPEE-E2E-S",
@@ -15808,16 +16406,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 18181818,
     "totalTargetContents": 95,
     "targetGmv": 4271823739,
-    "deliveredContents": 105,
-    "spentBudget": 31030000,
-    "actualGmv": 161297272,
+    "deliveredContents": 48,
+    "spentBudget": 15530000,
+    "actualGmv": 206677606,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWMulq80) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 105 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-ZIAJA-SHOPEE-E2E-S-411-MULTI",
@@ -16550,7 +17148,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWMulq80",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-ZIAJA-TIKTOK-E2E-S",
@@ -16571,16 +17169,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 79800000,
     "totalTargetContents": 78,
     "targetGmv": 1518521394,
-    "deliveredContents": 29,
-    "spentBudget": 76100000,
-    "actualGmv": 309392988,
+    "deliveredContents": 62,
+    "spentBudget": 75300000,
+    "actualGmv": 334323073,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWMuUrab) & Bảng 4.1.1 (6 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 29 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-ZIAJA-TIKTOK-E2E-S-411-KL1",
@@ -17493,7 +18091,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPbWMuUrab",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-KARMART-SHOPEE-E2E-C",
@@ -17511,16 +18109,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 4545455,
     "totalTargetContents": 71,
     "targetGmv": 493373502,
-    "deliveredContents": 0,
+    "deliveredContents": 397,
     "spentBudget": 0,
-    "actualGmv": 123529366,
+    "actualGmv": 152764035,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339xnYZ). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "APPROVED",
     "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-KARMART-SHOPEE-E2E-C-41-KL2",
@@ -17650,7 +18248,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339xnYZ",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-KUTIESKIN-MAMA-TIKTOK-E2E-S",
@@ -17671,16 +18269,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 160400000,
     "totalTargetContents": 122,
     "targetGmv": 3335545900,
-    "deliveredContents": 126,
-    "spentBudget": 130840000,
-    "actualGmv": 1185247077,
+    "deliveredContents": 178,
+    "spentBudget": 100660000,
+    "actualGmv": 1405497613,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339xivN) & Bảng 4.1.1 (11 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 126 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-KUTIESKIN-MAMA-TIKTOK-E2E-S-411-KL1",
@@ -19024,7 +19622,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339xivN",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-KUTIESKIN-MAMA-SHOPEE-E2E-S",
@@ -19044,16 +19642,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 61,
     "targetGmv": 645317654,
-    "deliveredContents": 21,
+    "deliveredContents": 116,
     "spentBudget": 0,
-    "actualGmv": 73177683,
+    "actualGmv": 77532924,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339NEla) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 21 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [],
     "weeklyBreakdown": [
       {
@@ -19763,7 +20361,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339NEla",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-L-OCCITANE-VI-T-NAM-SHOPEE-E2E-C",
@@ -19783,16 +20381,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 46,
     "targetGmv": 4056020639,
-    "deliveredContents": 0,
+    "deliveredContents": 67,
     "spentBudget": 0,
-    "actualGmv": 224093175,
+    "actualGmv": 284758304,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339ii5E). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "APPROVED",
     "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
@@ -19907,7 +20505,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339ii5E",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-LIPIT-TIKTOK-E2E-C",
@@ -19929,16 +20527,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 30000000,
     "totalTargetContents": 134,
     "targetGmv": 577500000,
-    "deliveredContents": 12,
-    "spentBudget": 13600000,
-    "actualGmv": 212898965,
+    "deliveredContents": 16,
+    "spentBudget": 13000000,
+    "actualGmv": 268139156,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339WoZq) & Bảng 4.1.1 (9 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 12 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-LIPIT-TIKTOK-E2E-C-411-KL2",
@@ -21137,7 +21735,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339WoZq",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-MERACINE-TIKTOK-E2E-S",
@@ -21157,16 +21755,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 13000000,
     "totalTargetContents": 56,
     "targetGmv": 1225000000,
-    "deliveredContents": 45,
-    "spentBudget": 15110000,
-    "actualGmv": 356609470,
+    "deliveredContents": 54,
+    "spentBudget": 12100000,
+    "actualGmv": 400187775,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339HM2H) & Bảng 4.1.1 (6 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 45 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-MERACINE-TIKTOK-E2E-S-411-SELF",
@@ -21893,7 +22491,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339HM2H",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-MINE-TIKTOK-E2E-C",
@@ -21915,16 +22513,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 197500000,
     "totalTargetContents": 144,
     "targetGmv": 1456000000,
-    "deliveredContents": 119,
-    "spentBudget": 367000000,
-    "actualGmv": 737239594,
+    "deliveredContents": 118,
+    "spentBudget": 260850000,
+    "actualGmv": 863279445,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339UCQm) & Bảng 4.1.1 (9 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 119 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-MINE-TIKTOK-E2E-C-411-KL1",
@@ -23368,7 +23966,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339UCQm",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-NABIZAM-SHOPEE-E2E-S",
@@ -23388,16 +23986,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 30,
     "targetGmv": 2364000000,
-    "deliveredContents": 24,
-    "spentBudget": 30750000,
-    "actualGmv": 89691523,
+    "deliveredContents": 23,
+    "spentBudget": 15750000,
+    "actualGmv": 104620926,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339snEM) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 24 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-NABIZAM-SHOPEE-E2E-S-411-SELF",
@@ -24128,7 +24726,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339snEM",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-NABIZAM-TIKTOK-E2E-S",
@@ -24149,16 +24747,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 545455,
     "totalTargetContents": 110,
     "targetGmv": 1730450000,
-    "deliveredContents": 43,
-    "spentBudget": 1040000,
-    "actualGmv": 41782170,
+    "deliveredContents": 10,
+    "spentBudget": 600000,
+    "actualGmv": 48958958,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339dZpb) & Bảng 4.1.1 (9 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 43 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-NABIZAM-TIKTOK-E2E-S-411-FOC",
@@ -25209,7 +25807,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339dZpb",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-NATURE-S-WAY-SHOPEE-E2E-S",
@@ -25230,16 +25828,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 221136364,
     "totalTargetContents": 56,
     "targetGmv": 285853858,
-    "deliveredContents": 6,
-    "spentBudget": 26800000,
-    "actualGmv": 173631133,
+    "deliveredContents": 55,
+    "spentBudget": 19100000,
+    "actualGmv": 217421352,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339jMz6) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 6 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-NATURE-S-WAY-SHOPEE-E2E-S-411-KL4",
@@ -26126,7 +26724,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339jMz6",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-NUCOS-TIKTOK-E2E-S",
@@ -26146,16 +26744,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 71969701,
     "totalTargetContents": 147,
     "targetGmv": 1484399994,
-    "deliveredContents": 33,
-    "spentBudget": 73130000,
-    "actualGmv": 365546458,
+    "deliveredContents": 44,
+    "spentBudget": 59130000,
+    "actualGmv": 459706670,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339gDRu) & Bảng 4.1.1 (6 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 33 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-NUCOS-TIKTOK-E2E-S-411-KL3",
@@ -27038,7 +27636,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339gDRu",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-REVISION-TIKTOK-E2E-O",
@@ -27058,16 +27656,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 68,
     "targetGmv": 1052619731,
-    "deliveredContents": 18,
-    "spentBudget": 311040000,
-    "actualGmv": 132123926,
+    "deliveredContents": 29,
+    "spentBudget": 114850000,
+    "actualGmv": 163675048,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339R0w8). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "IN_EXECUTION",
     "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-REVISION-TIKTOK-E2E-O-41-FOC",
@@ -27201,7 +27799,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339R0w8",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-SCC-SAIGON-COSMETICS-SHOPEE-E2E-C",
@@ -27221,7 +27819,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 4545455,
     "totalTargetContents": 14,
     "targetGmv": 2023164000,
-    "deliveredContents": 0,
+    "deliveredContents": 36,
     "spentBudget": 0,
     "actualGmv": 139230128,
     "cancellationRate": 8,
@@ -27230,7 +27828,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "status": "APPROVED",
     "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-SCC-SAIGON-COSMETICS-SHOPEE-E2E-C-41-KL2",
@@ -27365,7 +27963,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339FszQ",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-UPBEAUTY-TIKTOK-E2E-T",
@@ -27386,7 +27984,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetContents": 44,
     "targetGmv": 14000000,
     "deliveredContents": 1,
-    "spentBudget": 750000,
+    "spentBudget": 350000,
     "actualGmv": 836640,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
@@ -27394,7 +27992,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 1 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-UPBEAUTY-TIKTOK-E2E-T-411-SELF",
@@ -28121,7 +28719,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339HdJO",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-L-OCCITANE-VI-T-NAM-TIKTOK-E2E-C",
@@ -28142,16 +28740,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 3363636,
     "totalTargetContents": 90,
     "targetGmv": 4248615377,
-    "deliveredContents": 0,
+    "deliveredContents": 49,
     "spentBudget": 0,
-    "actualGmv": 1072894038,
+    "actualGmv": 1422594361,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339onwV) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 0 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-L-OCCITANE-VI-T-NAM-TIKTOK-E2E-C-411-KL1",
@@ -28924,7 +29522,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339onwV",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-REVISION-SHOPEE-E2E-O",
@@ -28942,16 +29540,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 80000000,
     "totalTargetContents": 136,
     "targetGmv": 365801909,
-    "deliveredContents": 1,
+    "deliveredContents": 60,
     "spentBudget": 5400000,
-    "actualGmv": 36324092,
+    "actualGmv": 39509734,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339kYyK). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "IN_EXECUTION",
     "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-REVISION-SHOPEE-E2E-O-41-KL2",
@@ -29083,7 +29681,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339kYyK",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-VENUS-TIKTOK-E2E-C",
@@ -29104,16 +29702,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 209090904,
     "totalTargetContents": 606,
     "targetGmv": 1621145011,
-    "deliveredContents": 27,
-    "spentBudget": 146127000,
-    "actualGmv": 573199582,
+    "deliveredContents": 101,
+    "spentBudget": 115127000,
+    "actualGmv": 677093108,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339s54q) & Bảng 4.1.1 (9 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 27 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-VENUS-TIKTOK-E2E-C-411-KL2",
@@ -30368,7 +30966,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339s54q",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-CATHY-DOLL-TIKTOK-E2E-C",
@@ -30390,16 +30988,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 81611564,
     "totalTargetContents": 237,
     "targetGmv": 502500005,
-    "deliveredContents": 22,
-    "spentBudget": 17900000,
-    "actualGmv": 266562988,
+    "deliveredContents": 27,
+    "spentBudget": 24300000,
+    "actualGmv": 351644873,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr3395ucN) & Bảng 4.1.1 (13 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 22 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-CATHY-DOLL-TIKTOK-E2E-C-411-KL1",
@@ -32056,7 +32654,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr3395ucN",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-CM24-TIKTOK-E2E-C",
@@ -32078,16 +32676,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 42800000,
     "totalTargetContents": 175,
     "targetGmv": 632000000,
-    "deliveredContents": 32,
-    "spentBudget": 49866664,
-    "actualGmv": 329029978,
+    "deliveredContents": 40,
+    "spentBudget": 91616664,
+    "actualGmv": 452161721,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339S6SZ) & Bảng 4.1.1 (9 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 32 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-CM24-TIKTOK-E2E-C-411-KL7",
@@ -33470,7 +34068,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339S6SZ",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-CM24-SHOPEE-E2E-C",
@@ -33490,16 +34088,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 1,
     "targetGmv": 73668051,
-    "deliveredContents": 0,
+    "deliveredContents": 30,
     "spentBudget": 0,
-    "actualGmv": 19703281,
+    "actualGmv": 23918258,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr3391Fal) & Bảng 4.1.1 (1 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 0 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [],
     "weeklyBreakdown": [
       {
@@ -34209,7 +34807,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr3391Fal",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-MINE-SHOPEE-E2E-C",
@@ -34230,16 +34828,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 36,
     "targetGmv": 156935864,
-    "deliveredContents": 0,
+    "deliveredContents": 56,
     "spentBudget": 0,
-    "actualGmv": 21880117,
+    "actualGmv": 29267082,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339PXlX) & Bảng 4.1.1 (1 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 0 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [],
     "weeklyBreakdown": [
       {
@@ -34950,7 +35548,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339PXlX",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-NATURAL-CARE-SHOPEE-E2E-C",
@@ -34970,16 +35568,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 5,
     "targetGmv": 65455001,
-    "deliveredContents": 0,
+    "deliveredContents": 30,
     "spentBudget": 0,
-    "actualGmv": 23051694,
+    "actualGmv": 25207035,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339KdEa) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 0 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [],
     "weeklyBreakdown": [
       {
@@ -35689,7 +36287,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339KdEa",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-NATURAL-CARE-TIKTOK-E2E-C",
@@ -35711,16 +36309,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 397171730,
     "totalTargetContents": 325,
     "targetGmv": 1711788100,
-    "deliveredContents": 18,
-    "spentBudget": 451715226,
-    "actualGmv": 369163664,
+    "deliveredContents": 26,
+    "spentBudget": 155492000,
+    "actualGmv": 436086703,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPr339T3iW) & Bảng 4.1.1 (14 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 18 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-NATURAL-CARE-TIKTOK-E2E-C-411-KL2",
@@ -37573,7 +38171,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPr339T3iW",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-BADLAB-TIKTOK-E2E-S",
@@ -37595,15 +38193,15 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetContents": 60,
     "targetGmv": 31800000,
     "deliveredContents": 7,
-    "spentBudget": 10350000,
-    "actualGmv": 9826915,
+    "spentBudget": 7250000,
+    "actualGmv": 14886635,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9HeOAPR) & Bảng 4.1.1 (9 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 7 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-BADLAB-TIKTOK-E2E-S-411-FOC",
@@ -38652,7 +39250,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9HeOAPR",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-REJURAN-TIKTOK-E2E-O",
@@ -38674,16 +39272,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 52000000,
     "totalTargetContents": 302,
     "targetGmv": 711430511,
-    "deliveredContents": 2,
-    "spentBudget": 64320000,
-    "actualGmv": 110079007,
+    "deliveredContents": 29,
+    "spentBudget": 62220000,
+    "actualGmv": 136586324,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9HeDwSK) & Bảng 4.1.1 (2 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 2 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-REJURAN-TIKTOK-E2E-O-411-KL6",
@@ -39436,7 +40034,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9HeDwSK",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-HERBAL-CARE-SHOPEE-E2E-C",
@@ -39456,16 +40054,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 27272727,
     "totalTargetContents": 15,
     "targetGmv": 42650342,
-    "deliveredContents": 0,
+    "deliveredContents": 92,
     "spentBudget": 0,
-    "actualGmv": 6998652,
+    "actualGmv": 9895898,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9HeyDmf) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 0 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-HERBAL-CARE-SHOPEE-E2E-C-411-KL4",
@@ -40235,7 +40833,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9HeyDmf",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-HERBAL-CARE-TIKTOK-E2E-C",
@@ -40258,16 +40856,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 369800000,
     "totalTargetContents": 213,
     "targetGmv": 684000000,
-    "deliveredContents": 68,
-    "spentBudget": 605572000,
-    "actualGmv": 139431992,
+    "deliveredContents": 72,
+    "spentBudget": 222582000,
+    "actualGmv": 154804255,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9HeJGMd) & Bảng 4.1.1 (20 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 68 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-HERBAL-CARE-TIKTOK-E2E-C-411-KL1",
@@ -42235,7 +42833,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9HeJGMd",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-PHCARE-TIKTOK-E2E-C",
@@ -42255,19 +42853,19 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "hasBookingLeader": false,
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
-    "totalTargetBudget": 341818181,
+    "totalTargetBudget": 298454545,
     "totalTargetContents": 474,
     "targetGmv": 3050122794,
-    "deliveredContents": 65,
-    "spentBudget": 432350000,
-    "actualGmv": 1224759666,
+    "deliveredContents": 90,
+    "spentBudget": 146900000,
+    "actualGmv": 1669215079,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9HemQVh) & Bảng 4.1.1 (14 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 65 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-PHCARE-TIKTOK-E2E-C-411-KL1",
@@ -43853,7 +44451,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "reference41": {
       "month": "2026/10",
-      "importedAt": "2026-10-25T01:45:00.000Z",
+      "importedAt": "2026-10-30T13:30:00.000Z",
       "importedBy": "Lark Base B2C_Quản lý Booking (4.1 Plan order tổng)",
       "isGrowthLocked": true,
       "growthLockLabel": "Đã chốt (Chốt)",
@@ -43861,23 +44459,23 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
       "foc": 400,
       "cast": 30,
       "affCostGross": 327240000,
-      "affCostNet": 275454545,
+      "affCostNet": 275454546,
       "selfVideos": 40,
-      "selfCostGross": 32400000,
-      "selfCostNet": 27272727,
+      "selfCostGross": 27324000,
+      "selfCostNet": 23000000,
       "liveSessions": 4,
       "liveCostGross": 46440000,
       "liveCostNet": 39090909,
       "tiers": {
-        "KL1": 4,
-        "KL2": 10,
-        "KL3": 5,
-        "KL4": 3,
-        "KL5": 2,
-        "KL6": 3,
-        "KL7": 3
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
       },
-      "kl4PlusTarget": 11,
+      "kl4PlusTarget": 0,
       "focBreakdown": {
         "tapBrand": 0,
         "tap": 0,
@@ -43918,8 +44516,8 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
         "ctvCostGross": 0,
         "ctvGmv": 0,
         "brand2h": 0,
-        "totalCostGross": 166692401,
-        "totalCostNet": 140313469
+        "totalCostGross": 156879982,
+        "totalCostNet": 132053857
       },
       "gmvTargets": {
         "nmvPlan": 3800000000,
@@ -43927,8 +44525,8 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
         "videoSelf": 54000000,
         "liveInhouse": 902139000,
         "liveCtv": 0,
-        "lastMonth30d": 134282514,
-        "thisMonth30d": 32789212
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
       },
       "rolePics": {
         "growthPics": [
@@ -43942,23 +44540,19 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
           "Nguyễn Phạm Thanh Diệp"
         ],
         "bookingPics": [
-          "Hoàng Diệu Thùy",
-          "Trần Phương Thảo",
-          "Đinh Thị Bích Liên"
+          "Hoàng Diệu Thuỳ"
         ],
         "contentPics": [],
-        "focPics": [
-          "Trần Thị Hảo"
-        ],
+        "focPics": [],
         "livePics": [
           "Đặng Thị Liên",
-          "Lâm Chí Bảo"
+          "Tạ Thị Thuỳ An"
         ],
         "b2cPics": []
       }
     },
     "budgetAffiliate": 275454545,
-    "budgetSelfChannel": 27272727,
+    "budgetSelfChannel": 23000000,
     "budgetAdsTotal": 346047253,
     "targetAffiliateContents": 430,
     "targetSelfChannelContents": 40,
@@ -43968,7 +44562,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9HemQVh",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-VENUS-SHOPEE-E2E-C",
@@ -43988,16 +44582,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 13863636,
     "totalTargetContents": 170,
     "targetGmv": 320659484,
-    "deliveredContents": 8,
-    "spentBudget": 34300000,
-    "actualGmv": 54955240,
+    "deliveredContents": 134,
+    "spentBudget": 1900000,
+    "actualGmv": 58659636,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9HeUvuO). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "IN_EXECUTION",
     "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-VENUS-SHOPEE-E2E-C-41-FOC",
@@ -44135,7 +44729,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9HeUvuO",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-TM-CLEAN--SHOPEE-E2E-C",
@@ -44157,32 +44751,32 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "targetGmv": 42480000,
     "deliveredContents": 1,
     "spentBudget": 0,
-    "actualGmv": 13192920,
+    "actualGmv": 18058052,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9He36Lh) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-TM-CLEAN--SHOPEE-E2E-C-411-MULTI",
         "channel": "SHOPEE",
         "platform": "Đa sàn (Shopee / Threads / FB / IG)",
         "category": "KOC_TIER",
-        "tierCode": "KL1",
+        "tierCode": "KL2",
         "tierLabel": "Booking Affiliate Đa sàn",
-        "salaryGrade": "KL1",
+        "salaryGrade": "KL2",
         "contentFormat": "Video Affiliate Đa sàn",
-        "qty": 9000000,
-        "unitCost": 0,
-        "benchmarkCost": 500000,
-        "totalBudget": 0,
+        "qty": 7,
+        "unitCost": 1168831,
+        "benchmarkCost": 1000000,
+        "totalBudget": 8181818,
         "expectedRoiMultiplier": 4,
         "targetGmv": 0,
         "assignedStaff": "Nguyễn Thị Mai Anh",
-        "staffNotes": "PIC chính · 9000000 Đa sàn",
+        "staffNotes": "PIC chính · 7 Đa sàn (9.000.000đ)",
         "notes": "Phân bổ Đa sàn trên Lark 4.1.1 Input plan (Nguyễn Thị Mai Anh)"
       }
     ],
@@ -44258,9 +44852,9 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
         },
         "multiPlatform": {
           "shopee": {
-            "affQty": 1200000,
-            "budgetNet": 0,
-            "reupQty": 1
+            "affQty": 1,
+            "budgetNet": 1200000,
+            "reupQty": 0
           },
           "threads": {
             "affQty": 0,
@@ -44307,9 +44901,9 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
         },
         "multiPlatform": {
           "shopee": {
-            "affQty": 2600000,
-            "budgetNet": 0,
-            "reupQty": 2
+            "affQty": 2,
+            "budgetNet": 2600000,
+            "reupQty": 0
           },
           "threads": {
             "affQty": 0,
@@ -44356,9 +44950,9 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
         },
         "multiPlatform": {
           "shopee": {
-            "affQty": 2600000,
-            "budgetNet": 0,
-            "reupQty": 2
+            "affQty": 2,
+            "budgetNet": 2600000,
+            "reupQty": 0
           },
           "threads": {
             "affQty": 0,
@@ -44405,9 +44999,9 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
         },
         "multiPlatform": {
           "shopee": {
-            "affQty": 2600000,
-            "budgetNet": 0,
-            "reupQty": 2
+            "affQty": 2,
+            "budgetNet": 2600000,
+            "reupQty": 0
           },
           "threads": {
             "affQty": 0,
@@ -44485,7 +45079,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "staffWeeklySlices": [
       {
         "staffName": "Nguyễn Thị Mai Anh",
-        "roleLabel": "PIC chính · 9000000 Đa sàn",
+        "roleLabel": "PIC chính · 7 Đa sàn (9.000.000đ)",
         "rowCount": 4,
         "weeklyBreakdown": [
           {
@@ -44559,9 +45153,9 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
             },
             "multiPlatform": {
               "shopee": {
-                "affQty": 1200000,
-                "budgetNet": 0,
-                "reupQty": 1
+                "affQty": 1,
+                "budgetNet": 1200000,
+                "reupQty": 0
               },
               "threads": {
                 "affQty": 0,
@@ -44608,9 +45202,9 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
             },
             "multiPlatform": {
               "shopee": {
-                "affQty": 2600000,
-                "budgetNet": 0,
-                "reupQty": 2
+                "affQty": 2,
+                "budgetNet": 2600000,
+                "reupQty": 0
               },
               "threads": {
                 "affQty": 0,
@@ -44657,9 +45251,9 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
             },
             "multiPlatform": {
               "shopee": {
-                "affQty": 2600000,
-                "budgetNet": 0,
-                "reupQty": 2
+                "affQty": 2,
+                "budgetNet": 2600000,
+                "reupQty": 0
               },
               "threads": {
                 "affQty": 0,
@@ -44706,9 +45300,9 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
             },
             "multiPlatform": {
               "shopee": {
-                "affQty": 2600000,
-                "budgetNet": 0,
-                "reupQty": 2
+                "affQty": 2,
+                "budgetNet": 2600000,
+                "reupQty": 0
               },
               "threads": {
                 "affQty": 0,
@@ -44894,7 +45488,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9He36Lh",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-TM-CLEAN--TIKTOK-E2E-C",
@@ -44916,16 +45510,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 88000009,
     "totalTargetContents": 107,
     "targetGmv": 699511300,
-    "deliveredContents": 33,
-    "spentBudget": 126960000,
-    "actualGmv": 294018695,
+    "deliveredContents": 40,
+    "spentBudget": 86460000,
+    "actualGmv": 325739248,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9Hegmxb) & Bảng 4.1.1 (15 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 33 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-TM-CLEAN--TIKTOK-E2E-C-411-KL1",
@@ -46472,7 +47066,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9Hegmxb",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-CATHY-DOLL-SHOPEE-E2E-C",
@@ -46492,16 +47086,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 13636364,
     "totalTargetContents": 52,
     "targetGmv": 135000000,
-    "deliveredContents": 28,
-    "spentBudget": 5600000,
-    "actualGmv": 35449483,
+    "deliveredContents": 45,
+    "spentBudget": 16600000,
+    "actualGmv": 44503933,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9HejWBL). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "IN_EXECUTION",
     "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-CATHY-DOLL-SHOPEE-E2E-C-41-KL2",
@@ -46633,7 +47227,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9HejWBL",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-HDT-SHOPEE-E2E-C",
@@ -46654,16 +47248,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 21818182,
     "totalTargetContents": 127,
     "targetGmv": 75600013,
-    "deliveredContents": 93,
-    "spentBudget": 12800000,
-    "actualGmv": 4982183,
+    "deliveredContents": 27,
+    "spentBudget": 15600000,
+    "actualGmv": 5537932,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9Hem3c2) & Bảng 4.1.1 (9 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 93 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-HDT-SHOPEE-E2E-C-411-MULTI",
@@ -47716,7 +48310,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9Hem3c2",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-HDT-TIKTOK-E2E-C",
@@ -47738,8 +48332,8 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 212600000,
     "totalTargetContents": 415,
     "targetGmv": 897300000,
-    "deliveredContents": 68,
-    "spentBudget": 216800000,
+    "deliveredContents": 67,
+    "spentBudget": 98700000,
     "actualGmv": 297616555,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
@@ -47747,7 +48341,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 68 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-HDT-TIKTOK-E2E-C-411-KL1",
@@ -49501,7 +50095,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9HeDppg",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-ORGALIFE-SHOPEE-E2E-C",
@@ -49521,16 +50115,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 3636364,
     "totalTargetContents": 62,
     "targetGmv": 140068334,
-    "deliveredContents": 1,
+    "deliveredContents": 36,
     "spentBudget": 15000000,
-    "actualGmv": 24589067,
+    "actualGmv": 34438884,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9HeoDef). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "IN_EXECUTION",
     "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-ORGALIFE-SHOPEE-E2E-C-41-KL2",
@@ -49682,7 +50276,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9HeoDef",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-ORGALIFE-TIKTOK-E2E-C",
@@ -49704,16 +50298,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 43636363,
     "totalTargetContents": 431,
     "targetGmv": 395610908,
-    "deliveredContents": 21,
-    "spentBudget": 69250000,
-    "actualGmv": 200706651,
+    "deliveredContents": 25,
+    "spentBudget": 42150000,
+    "actualGmv": 243217345,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9HeAXXU) & Bảng 4.1.1 (12 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 21 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-ORGALIFE-TIKTOK-E2E-C-411-KL2",
@@ -51227,7 +51821,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9HeAXXU",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-FEELCLEANS-SHOPEE-E2E-S",
@@ -51247,16 +51841,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 5,
     "targetGmv": 28999995,
-    "deliveredContents": 0,
+    "deliveredContents": 31,
     "spentBudget": 0,
-    "actualGmv": 3209713,
+    "actualGmv": 3846416,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9HeHUCJ). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "APPROVED",
     "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
     "staffWeeklySlices": [],
@@ -51369,7 +51963,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9HeHUCJ",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-FEELCLEANS-TIKTOK-E2E-S",
@@ -51390,16 +51984,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 89989899,
     "totalTargetContents": 41,
     "targetGmv": 334314993,
-    "deliveredContents": 19,
-    "spentBudget": 79590000,
-    "actualGmv": 127469428,
+    "deliveredContents": 38,
+    "spentBudget": 92470000,
+    "actualGmv": 155490569,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9HeuCMR) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 19 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-FEELCLEANS-TIKTOK-E2E-S-411-KL1",
@@ -52666,7 +53260,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9HeuCMR",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-REJURAN-SHOPEE-E2E-O",
@@ -52684,16 +53278,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 0,
     "totalTargetContents": 10,
     "targetGmv": 147875716,
-    "deliveredContents": 0,
+    "deliveredContents": 9,
     "spentBudget": 0,
-    "actualGmv": 21218376,
+    "actualGmv": 25226734,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9HebsvS). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "APPROVED",
     "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-REJURAN-SHOPEE-E2E-O-41-KL2",
@@ -52823,7 +53417,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9HebsvS",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-CLUBCLIO-SHOPEE-E2E-O",
@@ -52845,16 +53439,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 10101010,
     "totalTargetContents": 60,
     "targetGmv": 1572223132,
-    "deliveredContents": 0,
+    "deliveredContents": 606,
     "spentBudget": 3100000,
-    "actualGmv": 335324648,
+    "actualGmv": 407304924,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9He3bTR) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 0 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [],
     "weeklyBreakdown": [
       {
@@ -53567,7 +54161,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPG9He3bTR",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-CLUBCLIO-TIKTOK-E2E-O",
@@ -53591,16 +54185,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 83430622,
     "totalTargetContents": 229,
     "targetGmv": 1082580000,
-    "deliveredContents": 27,
-    "spentBudget": 107428000,
-    "actualGmv": 186627358,
+    "deliveredContents": 20,
+    "spentBudget": 61171000,
+    "actualGmv": 225217108,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPVnFXk485) & Bảng 4.1.1 (13 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 27 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-CLUBCLIO-TIKTOK-E2E-O-411-KL1",
@@ -55240,7 +55834,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPVnFXk485",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-CHULALA-SHOPEE-E2E-C",
@@ -55260,16 +55854,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 15000000,
     "totalTargetContents": 18,
     "targetGmv": 18310102,
-    "deliveredContents": 7,
+    "deliveredContents": 10,
     "spentBudget": 0,
-    "actualGmv": 2310064,
+    "actualGmv": 2613239,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPVnFXoH3f) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 7 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-CHULALA-SHOPEE-E2E-C-411-MULTI",
@@ -55999,7 +56593,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPVnFXoH3f",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-CHULALA-TIKTOK-E2E-C",
@@ -56021,16 +56615,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 207727273,
     "totalTargetContents": 140,
     "targetGmv": 392850466,
-    "deliveredContents": 23,
-    "spentBudget": 268000000,
-    "actualGmv": 56778750,
+    "deliveredContents": 29,
+    "spentBudget": 150900000,
+    "actualGmv": 53936858,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPVnFXadfG) & Bảng 4.1.1 (14 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 23 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-CHULALA-TIKTOK-E2E-C-411-KL3",
@@ -57598,7 +58192,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPVnFXadfG",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-BELLA-SHOPEE-E2E-S",
@@ -57618,16 +58212,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 4500000,
     "totalTargetContents": 65,
     "targetGmv": 63903986,
-    "deliveredContents": 0,
+    "deliveredContents": 25,
     "spentBudget": 0,
-    "actualGmv": 19049583,
+    "actualGmv": 24310289,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPVnFXHGuq) & Bảng 4.1.1 (5 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 0 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-BELLA-SHOPEE-E2E-S-411-MULTI",
@@ -58357,7 +58951,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPVnFXHGuq",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-BELLA-TIKTOK-E2E-S",
@@ -58378,16 +58972,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 136363636,
     "totalTargetContents": 135,
     "targetGmv": 163620008,
-    "deliveredContents": 21,
-    "spentBudget": 135050000,
-    "actualGmv": 53010674,
+    "deliveredContents": 28,
+    "spentBudget": 81050000,
+    "actualGmv": 95899091,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPVnFXCix1) & Bảng 4.1.1 (10 dòng phân rã tuần).",
     "status": "IN_EXECUTION",
     "statusLabel": "Đang thực thi T10 (Đã air 21 video)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-26T14:20:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-BELLA-TIKTOK-E2E-S-411-KL1",
@@ -59715,7 +60309,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPVnFXCix1",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-26T14:20:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-ORGALIFE-MALL-SHOPEE-E2E-C",
@@ -59735,16 +60329,16 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "totalTargetBudget": 16363636,
     "totalTargetContents": 92,
     "targetGmv": 72638474,
-    "deliveredContents": 32,
+    "deliveredContents": 62,
     "spentBudget": 34350000,
-    "actualGmv": 4079002,
+    "actualGmv": 12491572,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPVnFX0TSj). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
     "status": "IN_EXECUTION",
     "statusLabel": "Đã chốt 4.1 (Chưa nhập phân rã 4.1.1)",
     "createdAt": "2026-09-25T09:00:00.000Z",
-    "updatedAt": "2026-10-25T01:45:00.000Z",
+    "updatedAt": "2026-10-30T13:30:00.000Z",
     "items": [
       {
         "id": "PLAN-2026-10-ORGALIFE-MALL-SHOPEE-E2E-C-41-FOC",
@@ -59881,7 +60475,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "larkRecordId": "recvuPVnFX0TSj",
     "larkAppToken": "W6vRbbuOVar3qtsV18dlan1xgXb",
     "larkTableId": "tblvgyOkneDKOVsB",
-    "larkSyncedAt": "2026-10-25T01:45:00.000Z"
+    "larkSyncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "PLAN-2026-10-ROYAL-CANIN-TIKTOK-E2E-S",
@@ -61381,7 +61975,7 @@ export const REAL_LARKBASE_RECORDS_OCT_2026: LarkbaseBookingPlanRecordItem[] = [
     "month": "2026/10",
     "week": "Tháng 10/2026 (W40-W45)",
     "versionCode": "v1.0",
-    "versionName": "v1.0 — Chốt 4.1 (Chờ phân rã 4.1.1)",
+    "versionName": "v1.0 — Đã nhập 4 dòng trên 4.1.1",
     "storeId": "store-b2c-45-miss-saigon-shopee-e2e-c",
     "storeName": "Miss Saigon_Shopee_E2E-C",
     "brandName": "Miss Saigon",
@@ -61416,10 +62010,10 @@ export const REAL_LARKBASE_RECORDS_OCT_2026: LarkbaseBookingPlanRecordItem[] = [
     "multiPlatformBudgetNet": 0,
     "liveSessions": 0,
     "liveBudgetNet": 0,
-    "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPbWMuQeOA). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
+    "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPVnFXg9wL) & Bảng 4.1.1 (4 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-25T01:45:00.000Z"
+    "syncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "LARK-202610-recvuPbWMulq80",
@@ -62865,8 +63459,8 @@ export const REAL_LARKBASE_RECORDS_OCT_2026: LarkbaseBookingPlanRecordItem[] = [
     "larkApprovalInstanceId": "LARK-41-recvuPG9HemQVh",
     "approvedBy": "Đặng Thị Yến Nhi",
     "approvedAt": "2026-09-28T09:00:00.000Z",
-    "budgetGross": 406080000,
-    "budgetNet": 341818181,
+    "budgetGross": 27324000,
+    "budgetNet": 23000000,
     "budgetAdsTotal": 346047253,
     "targetGmv": 3050122794,
     "totalTargetVideos": 474,
@@ -62884,7 +63478,7 @@ export const REAL_LARKBASE_RECORDS_OCT_2026: LarkbaseBookingPlanRecordItem[] = [
     "focFreeVideos": 400,
     "focPic": "Trần Thị Hảo",
     "selfChannelVideos": 40,
-    "selfChannelBudgetNet": 27272727,
+    "selfChannelBudgetNet": 23000000,
     "multiPlatformVideos": 0,
     "multiPlatformBudgetNet": 0,
     "liveSessions": 4,
@@ -62892,7 +63486,7 @@ export const REAL_LARKBASE_RECORDS_OCT_2026: LarkbaseBookingPlanRecordItem[] = [
     "changeReason": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvuPG9HemQVh) & Bảng 4.1.1 (14 dòng phân rã tuần).",
     "syncSource": "API_PULL",
     "syncedBy": "Lark Base B2C_Quản lý Booking",
-    "syncedAt": "2026-10-26T14:20:00.000Z"
+    "syncedAt": "2026-10-30T13:30:00.000Z"
   },
   {
     "id": "LARK-202610-recvuPG9HeUvuO",

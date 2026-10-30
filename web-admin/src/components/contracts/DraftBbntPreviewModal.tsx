@@ -164,7 +164,7 @@ export function DraftBbntPreviewModal({
       nextValues['src:email'] ||
         nextValues['token:[ĐIỀN EMAIL]'] ||
         koc?.email ||
-        'partner@booking.upbase.vn',
+        '',
     );
   }
 
@@ -240,6 +240,12 @@ export function DraftBbntPreviewModal({
       .filter(Boolean)
       .join(' · ');
 
+    const effectiveLegalProfileId =
+      activeBbntRecord?.legalProfileId ||
+      parentRecord?.legalProfileId ||
+      deal.legalProfileId ||
+      undefined;
+
     if (activeBbntRecord) {
       const res = await contractApi<{ record: ContractRecord }>('/api/contracts', {
         action: 'EDIT',
@@ -254,6 +260,7 @@ export function DraftBbntPreviewModal({
         dealId: deal.id,
         dealCode: deal.dealCode,
         kocId: koc?.id || deal.kocId,
+        legalProfileId: effectiveLegalProfileId,
         acceptanceScreenshots,
       });
       setSavedContractRecord(res.record);
@@ -272,6 +279,7 @@ export function DraftBbntPreviewModal({
       dealId: deal.id,
       dealCode: deal.dealCode,
       kocId: koc?.id || deal.kocId,
+      legalProfileId: effectiveLegalProfileId,
       acceptanceScreenshots,
     });
     setSavedContractRecord(res.record);
@@ -330,7 +338,13 @@ export function DraftBbntPreviewModal({
           id: current.id,
           revision: current.revision,
           partyAEmail: partyAEmail.trim() || 'hopdong@upbase.vn',
-          partyBEmail: partyBEmail.trim() || 'partner@booking.upbase.vn',
+          partyBEmail:
+            partyBEmail.trim() ||
+            current.values['src:email'] ||
+            current.values['token:[ĐIỀN EMAIL]'] ||
+            current.values['token:[EMAIL]'] ||
+            current.values['partnerEmail'] ||
+            '',
         });
         current = res.record;
         setSavedContractRecord(current);

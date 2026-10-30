@@ -18,7 +18,11 @@ import type { ContractIntent } from '../components/views/ContractManagementView'
 import type { ContractDocument } from '../lib/planDealLink';
 import type { ListingPlanContext } from '../components/views/KocListingBatchHubView';
 import type { StoreSheetSetupTabKey } from '../components/views/StoreStaffSheetSetupView';
-import { getKocLegalProfiles } from '../components/koc/kocUtils';
+import {
+  getKocLegalProfiles,
+  mergeLegalDocAttachments,
+  saveSyncedKocLegalAttachments,
+} from '../components/koc/kocUtils';
 
 /** Khung giữ chỗ khi màn đang tải gói: đúng hình dạng màn (thanh lọc → hàng chỉ số → bảng), DESIGN_SYSTEM.md §9. */
 function ViewLoading() {
@@ -1138,7 +1142,7 @@ export default function App() {
   // Deal/Job của kế hoạch: đưa bản Job vào danh sách rồi mở hồ sơ hợp đồng nguyên tắc, SOW hoặc biên bản nghiệm thu của Job đó.
   const openContractForPlanDeal = (deal: BookingDealItem, document: ContractDocument) => {
     setDeals(prev => (prev.some(d => d.id === deal.id) ? prev.map(d => (d.id === deal.id ? deal : d)) : [deal, ...prev]));
-    setContractIntent({ dealId: deal.id, nonce: Date.now(), document });
+    setContractIntent({ dealId: deal.id, kocId: deal.kocId, legalProfileId: deal.legalProfileId, nonce: Date.now(), document });
     setActiveTab('contracts');
   };
   const [preselectedKoc, setPreselectedKoc] = useState<KocItem | null>(null);
@@ -1751,6 +1755,8 @@ export default function App() {
               activeSidebarTab={activeTab}
               onNotify={showToast}
               onNavigateToTab={(tabKey) => setActiveTab(tabKey as TabKey)}
+              onOpenPlanForStore={handleDrilldownToPlan}
+              onOpenListingForStore={handleDrilldownToListing}
             />
           </KeepAliveTab>
 
@@ -2147,18 +2153,29 @@ export default function App() {
                 setDeals(prev => prev.map(d => (d.id === dealId ? { ...d, ...patch } : d)));
               }}
               onSyncKocLegalProfileContract={(kocId, legalProfileId, frameworkData) => {
+                if (frameworkData.legalAttachments && frameworkData.legalAttachments.length > 0) {
+                  saveSyncedKocLegalAttachments(kocId, legalProfileId, frameworkData.legalAttachments);
+                }
                 setKocs(prev => {
                   const updated = prev.map(k => {
                     if (k.id !== kocId) return k;
                     const profiles = getKocLegalProfiles(k);
                     const updatedProfiles = profiles.map(p => {
                       if (p.id === legalProfileId || (!legalProfileId && (p.isDefault || profiles.length === 1))) {
+                        const nextAttachments =
+                          frameworkData.legalAttachments && frameworkData.legalAttachments.length > 0
+                            ? mergeLegalDocAttachments(p.legalAttachments, frameworkData.legalAttachments)
+                            : p.legalAttachments;
                         return {
                           ...p,
                           frameworkContractCode: frameworkData.contractCode || p.frameworkContractCode,
-                          frameworkContractStatus: frameworkData.status,
+                          frameworkContractStatus: frameworkData.status || p.frameworkContractStatus,
                           frameworkContractSignedAt: frameworkData.signedAt || p.frameworkContractSignedAt,
                           frameworkContractDriveUrl: frameworkData.driveUrl || p.frameworkContractDriveUrl,
+                          legalAttachments: nextAttachments,
+                          isOcrVerified: Boolean(
+                            p.isOcrVerified || (nextAttachments && nextAttachments.length > 0),
+                          ),
                         };
                       }
                       return p;
@@ -2166,6 +2183,10 @@ export default function App() {
                     return {
                       ...k,
                       legalProfiles: updatedProfiles,
+                      isOcrVerified: Boolean(
+                        k.isOcrVerified ||
+                          (frameworkData.legalAttachments && frameworkData.legalAttachments.length > 0),
+                      ),
                       contractDriveUrl: frameworkData.driveUrl || k.contractDriveUrl,
                     };
                   });
@@ -2177,20 +2198,22 @@ export default function App() {
                   return updated;
                 });
 
-                setDeals(prev =>
-                  prev.map(d => {
-                    if (d.kocId === kocId && (!d.legalProfileId || !legalProfileId || d.legalProfileId === legalProfileId)) {
-                      return {
-                        ...d,
-                        masterContractCode: frameworkData.contractCode || d.masterContractCode,
-                        masterContractStatus: frameworkData.status === 'ĐÃ_KÝ' ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
-                        masterContractGoogleDocsUrl: frameworkData.googleDocsUrl || d.masterContractGoogleDocsUrl,
-                        masterContractSignedUrl: frameworkData.driveUrl || d.masterContractSignedUrl,
-                      };
-                    }
-                    return d;
-                  })
-                );
+                if (frameworkData.status) {
+                  setDeals(prev =>
+                    prev.map(d => {
+                      if (d.kocId === kocId && (!d.legalProfileId || !legalProfileId || d.legalProfileId === legalProfileId)) {
+                        return {
+                          ...d,
+                          masterContractCode: frameworkData.contractCode || d.masterContractCode,
+                          masterContractStatus: frameworkData.status === 'ĐÃ_KÝ' ? 'ĐÃ_KÝ' : 'CHỜ_KÝ',
+                          masterContractGoogleDocsUrl: frameworkData.googleDocsUrl || d.masterContractGoogleDocsUrl,
+                          masterContractSignedUrl: frameworkData.driveUrl || d.masterContractSignedUrl,
+                        };
+                      }
+                      return d;
+                    })
+                  );
+                }
               }}
               currentUserId={currentUser.id}
             />

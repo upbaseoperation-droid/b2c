@@ -53,6 +53,7 @@ import { LegalOcrModal } from '../LegalOcrModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { KalodataSyncModal } from '../kalodata/KalodataSyncModal';
 import { KocProfile } from '../koc/KocProfile';
+import { KocContractLegalPickerModal } from '../koc/KocLegalProfilesSection';
 import { KocHistoryEvaluationModal } from '../koc/KocHistoryEvaluationModal';
 import { KocVideoHistoryRegistryModal } from '../koc/KocVideoHistoryRegistryModal';
 import { KocSocialChannelsModal } from '../koc/KocSocialChannelsModal';
@@ -80,6 +81,7 @@ import {
   findDuplicates,
   formatFollowers,
   getKocLegalProfiles,
+  getKocTikTokChannels,
   hasLegalId,
   isCooperatedKoc,
   legalTypeOf,
@@ -225,6 +227,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   }, [onKocUpdated]);
 
   const [openKocId, setOpenKocId] = useState<string | null>(selectedKocId);
+  const [contractPickerTarget, setContractPickerTarget] = useState<KocItem | null>(null);
   const [syncedSelectedId, setSyncedSelectedId] = useState<string | null>(selectedKocId);
   const [syncedTrigger, setSyncedTrigger] = useState<number>(externalOpenTrigger);
   if (selectedKocId !== syncedSelectedId || externalOpenTrigger !== syncedTrigger) {
@@ -841,7 +844,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
             {
               label: 'Ký hợp đồng (1 KOC – N Pháp nhân)',
               icon: FileText,
-              onSelect: () => onCreateContractForKoc(k),
+              onSelect: () => setContractPickerTarget(k),
             },
           ]
         : []),
@@ -883,6 +886,9 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               title={[k.realName, k.email, k.phone ? `****${k.phone.trim().slice(-4)}` : ''].filter(Boolean).join(' · ') || undefined}
             >
               @{k.channelId.replace(/^@/, '')}
+              {getKocTikTokChannels(k).length > 1
+                ? ` (+${getKocTikTokChannels(k).length - 1} TikTok)`
+                : ''}
               {k.realName && k.realName !== k.stageName ? ` · ${k.realName}` : ''}
             </span>
           </div>
@@ -1039,6 +1045,9 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
             </span>
             <span className="block truncate text-2xs text-ink-3">
               @{k.channelId.replace(/^@/, '')}
+              {getKocTikTokChannels(k).length > 1
+                ? ` (+${getKocTikTokChannels(k).length - 1} TikTok)`
+                : ''}
               {k.realName && k.realName !== k.stageName ? ` · ${k.realName}` : ''}
             </span>
             <span className="block truncate text-2xs text-accent">
@@ -1628,6 +1637,21 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         />
       )}
 
+      <KocContractLegalPickerModal
+        open={!!contractPickerTarget}
+        onClose={() => setContractPickerTarget(null)}
+        koc={contractPickerTarget}
+        currentUser={currentUser}
+        onUpdateKoc={(updated, msg) => {
+          applyUpdate(updated, msg || `Đã cập nhật hồ sơ pháp lý cho ${updated.stageName}`);
+          setContractPickerTarget(updated);
+        }}
+        onConfirmSelectProfile={(targetKoc, legalProfileId) => {
+          onCreateContractForKoc?.(targetKoc, legalProfileId);
+          setContractPickerTarget(null);
+        }}
+      />
+
       <KocSocialChannelsModal
         open={!!socialTarget}
         onClose={() => setSocialTarget(null)}
@@ -1638,6 +1662,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
             applyUpdate(
               {
                 ...target,
+                channelId: updates.channelId || target.channelId,
+                tiktokChannel: updates.tiktokChannel || target.tiktokChannel,
+                tiktokChannels: updates.tiktokChannels,
+                connectedChannels: updates.connectedChannels,
                 shopeeChannel: updates.shopeeChannel,
                 facebookChannel: updates.facebookChannel,
                 instagramChannel: updates.instagramChannel,

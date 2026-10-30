@@ -456,7 +456,7 @@ export function WorkflowRulesDialog({
 
         {/* Nhóm 5: Thông tin bàn giao & Bộ file gốc (Bảng 3.5 Danh sách file brand) */}
         <div className="rounded-lg border border-line bg-canvas/50 p-3.5 space-y-3">
-          <h4 className="text-xs font-semibold text-ink">5. Thông tin bàn giao &amp; Bộ liên kết file vận hành gốc (Bảng 3.5)</h4>
+          <h4 className="text-xs font-semibold text-ink">5. Thông tin bàn giao &amp; Link Google Sheet</h4>
           <div className="grid gap-3 md:grid-cols-2">
             <Field label="Người bàn giao" htmlFor="wf-h-from">
               <Input id="wf-h-from" value={v.handoverFrom || ''} onChange={e => set('handoverFrom', e.target.value)} />
@@ -464,17 +464,11 @@ export function WorkflowRulesDialog({
             <Field label="Người nhận bàn giao" htmlFor="wf-h-to">
               <Input id="wf-h-to" value={v.handoverTo || ''} onChange={e => set('handoverTo', e.target.value)} />
             </Field>
-            <Field label="Link File Booking Google Sheet" htmlFor="wf-sheet-url">
+            <Field label="Link Google Sheet" htmlFor="wf-sheet-url">
               <Input id="wf-sheet-url" type="url" value={v.bookingSheetUrl || ''} onChange={e => set('bookingSheetUrl', e.target.value)} placeholder="https://docs.google.com/spreadsheets/..." />
-            </Field>
-            <Field label="Link File vận hành gian hàng" htmlFor="wf-ops-url">
-              <Input id="wf-ops-url" type="url" value={v.operationFileUrl || ''} onChange={e => set('operationFileUrl', e.target.value)} placeholder="https://docs.google.com/spreadsheets/..." />
             </Field>
             <Field label="Link Canva Brief sản phẩm" htmlFor="wf-canva-url">
               <Input id="wf-canva-url" type="url" value={v.canvaBriefUrl || ''} onChange={e => set('canvaBriefUrl', e.target.value)} placeholder="https://www.canva.com/design/..." />
-            </Field>
-            <Field label="Link File bàn giao dự án" htmlFor="wf-handover-url">
-              <Input id="wf-handover-url" type="url" value={v.handoverFileUrl || ''} onChange={e => set('handoverFileUrl', e.target.value)} placeholder="https://docs.google.com/spreadsheets/..." />
             </Field>
           </div>
         </div>

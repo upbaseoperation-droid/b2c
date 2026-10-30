@@ -21,7 +21,8 @@ export type OperationalApiPurposeId =
   | 'TRAINING_EXAM_GENERATION'
   | 'BRAND_GUIDELINE_EXTRACT'
   | 'CONTENT_PROPOSAL'
-  | 'CONTENT_PERFORMANCE_REVIEW';
+  | 'CONTENT_PERFORMANCE_REVIEW'
+  | 'SELF_VIDEO_ACCEPTANCE';
 
 export interface ApiModelOption {
   id: string;
@@ -889,6 +890,24 @@ Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng
       sampleInputText:
         'Nhãn hàng: Kutieskin\nBài đăng 1: @chanhbeauty | Góc: Mẩn ngứa rôm sảy mùa nóng | Mở đầu 3s: "Mẹ nào con hay gãi sồn sột cả đêm vì rôm sảy thì xem ngay" | Chi phí: 2.500.000đ | Lượt xem: 145.000 | Đơn hàng: 92 | GMV: 18.400.000đ | ROI: 7.36x.\nBài đăng 2: @minhdan | Góc: Mở hộp bộ 3 sản phẩm | Mở đầu 3s: "Hôm nay mình khui hộp đồ sơ sinh mới mua" | Chi phí: 3.000.000đ | Lượt xem: 18.000 | Đơn hàng: 9 | GMV: 1.800.000đ | ROI: 0.6x.',
     },
+    SELF_VIDEO_ACCEPTANCE: {
+      purposeId: 'SELF_VIDEO_ACCEPTANCE',
+      title: '14. Đối chiếu nội dung video kênh Brand khi nghiệm thu',
+      departmentTag: 'Content',
+      usedInScreens: ['Content kênh Brand · Nghiệm thu video'],
+      description:
+        'Đối chiếu caption, lời thoại và giỏ hàng của bài đã đăng với brief của việc (hook, điểm chính, kêu gọi, từ cấm). Chỉ đề xuất kết quả và bằng chứng, người duyệt quyết định nghiệm thu.',
+      primaryProvider: 'CLAUDE',
+      primaryModel: 'claude-sonnet-5-5',
+      fallbackProvider: 'INTERNAL',
+      fallbackModel: 'upbase-local-engine',
+      temperature: 0.1,
+      maxTokens: 1500,
+      systemInstruction:
+        'Bạn là người kiểm duyệt nội dung video kênh Brand của Upbase. Đối chiếu bài đã đăng với brief: mở đầu có đúng hook không, có nêu điểm chính sản phẩm không, có kêu gọi mua hoặc gắn giỏ hàng không, có từ cấm hoặc cam kết sai quy định không. Chỉ dựa trên caption và lời thoại được cung cấp, không suy đoán điều không có trong dữ liệu. Trả về duy nhất JSON: {"items":[{"key":"hook","label":"Mở đầu đúng hook","status":"PASS|WARN|FAIL","detail":"lý do ngắn","evidence":"trích nguyên văn từ bài"}],"suggestion":"một đoạn ngắn gợi ý phản hồi cho CTV nếu cần sửa, để trống nếu đạt"}. Mỗi mục phải có trích dẫn nguyên văn làm bằng chứng; không có bằng chứng thì status là WARN.',
+      sampleInputText:
+        'Sản phẩm: Kem mẩn ngứa Kutieskin 30g\nHook trong brief: Mẹ nào con gãi sồn sột cả đêm vì rôm sảy\nĐiểm chính trong brief: nghệ trắng Nano, không corticoid\nTừ cấm: trị dứt điểm, thuốc đặc trị\nCaption bài đăng: Con gãi cả đêm vì rôm sảy, mẹ thử kem này thấy dịu hẳn #kutieskin\nLời thoại: Mẹ nào con gãi sồn sột cả đêm thì xem ngay nhé, kem có nghệ trắng, không corticoid, bấm giỏ hàng góc trái.',
+    },
   },
   updatedAt: '2026-10-20T12:00:00.000Z',
 };
@@ -1001,6 +1020,7 @@ export function loadApiWorkspaceConfig(): ApiWorkspaceConfigState {
         BRAND_GUIDELINE_EXTRACT: mergeRoute('BRAND_GUIDELINE_EXTRACT'),
         CONTENT_PROPOSAL: mergeRoute('CONTENT_PROPOSAL'),
         CONTENT_PERFORMANCE_REVIEW: mergeRoute('CONTENT_PERFORMANCE_REVIEW'),
+        SELF_VIDEO_ACCEPTANCE: mergeRoute('SELF_VIDEO_ACCEPTANCE'),
       },
       updatedAt: parsed.updatedAt || INITIAL_API_WORKSPACE_CONFIG.updatedAt,
     };
@@ -1370,6 +1390,7 @@ export function getAggregatedUsageMetrics(logs: ApiUsageLogItem[]) {
     BRAND_GUIDELINE_EXTRACT: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
     CONTENT_PROPOSAL: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
     CONTENT_PERFORMANCE_REVIEW: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
+    SELF_VIDEO_ACCEPTANCE: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
   };
 
   for (const log of logs) {
